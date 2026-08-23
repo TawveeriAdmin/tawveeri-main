@@ -11,7 +11,7 @@ import { isApprovedStore, isDisplayableRetailer, resolveApprovedSlug, retailerDi
 import { normalizeExitUrl } from '@/lib/retailers/exit-url';
 import { routeQuery } from '@/lib/agent/route-query';
 import type { CompareIntent } from '@/lib/agent/compare-intent';
-import { parseShoppingTask, isPriorityDescriptorWord } from '@/lib/agent/task-parser';
+import { parseShoppingTask, isPriorityDescriptorWord, parseScreenSizeComparator, sizeSatisfiesComparator } from '@/lib/agent/task-parser';
 import { resolveComparisonRoute } from '@/lib/agent/resolve-comparison';
 import { hoursSince, PICK_FRESHNESS_MAX_HOURS, productTrust, type TrustAssessment } from '@/lib/intelligence/evidence-engine';
 
@@ -112,7 +112,7 @@ type DecisionLayer = {
     // card". TV only, disclosure-only: present when a requested screen size (parsed from the
     // raw query) doesn't match this pick's own screen size (parsed from its title). Never
     // changes which product is `best` — see buildDecisionLayer().
-    size_mismatch?: { requested: number; actual: number } | null;
+    size_mismatch?: { requested: number; actual: number; comparator?: "eq" | "gt" | "gte" | "lt" | "lte" } | null;
   } | null;
   topMatches: DecisionTopMatch[];
 };
@@ -1458,7 +1458,7 @@ function buildDecisionLayer(
   // purely on the query itself naming a screen size — reusing `extractSpecsFromTitle`'s
   // existing inch regex (the SAME one every product title is already parsed with) is why
   // this only ever fires for a size-shaped query, with no separate "is this a TV" check.
-  let sizeMismatch: { requested: number; actual: number } | null = null;
+  let sizeMismatch: { requested: number; actual: number; comparator?: "eq" | "gt" | "gte" | "lt" | "lte" } | null = null;
   let sizeUnverifiable = false;
   if (best) {
     const requestedSizeRaw = extractSpecsFromTitle(rawQuery).screen_size;
@@ -1466,8 +1466,15 @@ function buildDecisionLayer(
     if (requestedSize) {
       const actualSizeRaw = extractSpecsFromTitle(`${best.name_ar || ''} ${best.name_en || ''}`).screen_size;
       const actualSize = actualSizeRaw ? Number(actualSizeRaw) : null;
+      // Intent Router follow-up #3 (ADR-270 consolidated list, 2026-08-23) — same fix as the
+      // Path-1 advisor card: equality-only before this, so «فوق 65 بوصة» read a 65" pick as a
+      // match. Comparator defaults to "eq" for a plain "65 بوصة" ask — every existing
+      // exact-match query is byte-for-bit unchanged.
+      const comparator = parseScreenSizeComparator(rawQuery);
       if (actualSize == null) sizeUnverifiable = true; // fail closed — see B1
-      else if (actualSize !== requestedSize) sizeMismatch = { requested: requestedSize, actual: actualSize };
+      else if (!sizeSatisfiesComparator(actualSize, comparator, requestedSize)) {
+        sizeMismatch = { requested: requestedSize, actual: actualSize, comparator };
+      }
     }
   }
 

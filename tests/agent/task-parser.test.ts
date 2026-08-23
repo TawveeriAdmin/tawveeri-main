@@ -4,7 +4,7 @@
  * correct category/size/priorities/budget/connectivity, and that unresolvable
  * fields are reported (fail-loud), never guessed.
  */
-import { parseShoppingTask } from "../../src/lib/agent/task-parser";
+import { parseShoppingTask, sizeSatisfiesComparator } from "../../src/lib/agent/task-parser";
 
 describe("Task parser — Arabic flagship AC task", () => {
   const t = parseShoppingTask("أبغى مكيف لغرفة 30 متر في الرياض، هادئ وموفر للكهرباء، تحت 4000 ريال");
@@ -99,6 +99,71 @@ describe("Task parser — storage dialect spelling (قيقا/قيغا)", () => {
   it("does not regress the existing جيجا/gb spellings", () => {
     expect(parseShoppingTask("جوال 128 جيجا").storage_min).toBe(128);
     expect(parseShoppingTask("phone 128gb").storage_min).toBe(128);
+  });
+});
+
+// Intent Router follow-up #3 (ADR-270 consolidated list, "»65 inch«-style comparator
+// parsing", 2026-08-23): equality-only before this fix — «تلفزيون فوق 65 بوصة» extracted
+// requested=65 with no way to record that ">65" and "=65" are different claims.
+describe("Task parser — screen-size comparator", () => {
+  it("a plain size with no comparator word defaults to eq", () => {
+    const t = parseShoppingTask("تلفزيون 65 بوصة");
+    expect(t.screen_size_requested).toBe(65);
+    expect(t.screen_size_comparator).toBe("eq");
+  });
+  it("«فوق»/«أكثر من» before the size → gt", () => {
+    expect(parseShoppingTask("تلفزيون سامسونج فوق 65 بوصة").screen_size_comparator).toBe("gt");
+    expect(parseShoppingTask("تلفزيون أكثر من 55 بوصة").screen_size_comparator).toBe("gt");
+  });
+  it("«أقل من»/«تحت» before the size → lt", () => {
+    expect(parseShoppingTask("تلفزيون أقل من 55 بوصة").screen_size_comparator).toBe("lt");
+    expect(parseShoppingTask("تلفزيون تحت 43 بوصة").screen_size_comparator).toBe("lt");
+  });
+  it("«فأكثر»/«أو أكثر» after the size → gte; «فأقل»/«أو أقل» after → lte", () => {
+    expect(parseShoppingTask("تلفزيون 65 بوصة فأكثر").screen_size_comparator).toBe("gte");
+    expect(parseShoppingTask("تلفزيون 65 بوصة أو أكثر").screen_size_comparator).toBe("gte");
+    expect(parseShoppingTask("تلفزيون 55 بوصة فأقل").screen_size_comparator).toBe("lte");
+  });
+  it("a comparator word ELSEWHERE in the sentence, unrelated to the size, is not misread", () => {
+    // "أرخص من قبل" (cheaper than before) has "من" nearby but no size-adjacent comparator.
+    const t = parseShoppingTask("ابي تلفزيون 55 بوصة وسعره أرخص من قبل");
+    expect(t.screen_size_comparator).toBe("eq");
+  });
+  it("non-TV categories never carry a screen-size comparator", () => {
+    const t = parseShoppingTask("لابتوب فوق 15 بوصة");
+    expect(t.screen_size_comparator).toBeUndefined();
+  });
+});
+
+describe("sizeSatisfiesComparator", () => {
+  it("eq: only an exact match satisfies", () => {
+    expect(sizeSatisfiesComparator(65, "eq", 65)).toBe(true);
+    expect(sizeSatisfiesComparator(55, "eq", 65)).toBe(false);
+  });
+  it("gt: strictly greater only — the exact requested value does NOT satisfy", () => {
+    expect(sizeSatisfiesComparator(75, "gt", 65)).toBe(true);
+    expect(sizeSatisfiesComparator(65, "gt", 65)).toBe(false); // the exact ADR-270 gap this closes
+    expect(sizeSatisfiesComparator(55, "gt", 65)).toBe(false);
+  });
+  it("gte/lt/lte", () => {
+    expect(sizeSatisfiesComparator(65, "gte", 65)).toBe(true);
+    expect(sizeSatisfiesComparator(55, "lt", 65)).toBe(true);
+    expect(sizeSatisfiesComparator(65, "lt", 65)).toBe(false);
+    expect(sizeSatisfiesComparator(65, "lte", 65)).toBe(true);
+  });
+});
+
+// Intent Router follow-up #3, budget-floor half ("and budget where not already handled" —
+// `parseBudget` is ceiling-only by construction; «فوق»/«أكثر من» was entirely unparsed).
+describe("Task parser — budget floor (budget_min)", () => {
+  it("«فوق 2000»/«أكثر من 2000 ريال» parse budget_min, never budget_total's ceiling meaning", () => {
+    const t1 = parseShoppingTask("مكيف فوق 2000 ريال");
+    expect(t1.budget_min).toBe(2000);
+    const t2 = parseShoppingTask("لابتوب أكثر من 3000");
+    expect(t2.budget_min).toBe(3000);
+  });
+  it("a plain ceiling query never sets budget_min", () => {
+    expect(parseShoppingTask("مكيف تحت 2000 ريال").budget_min).toBeUndefined();
   });
 });
 

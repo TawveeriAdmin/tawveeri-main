@@ -213,6 +213,18 @@ describe('routeQuery — a stated TV screen size routes to advisory (Intent Rout
   });
 });
 
+// Intent Router follow-up #3 (2026-08-23): a stated budget FLOOR routes the same as a ceiling.
+describe('routeQuery — a stated budget floor ("فوق"/"أكثر من") routes to advisory', () => {
+  it('«مكيف فوق 2000 ريال» → advisory on the budget_min signal', () => {
+    const route = routeQuery('مكيف فوق 2000 ريال');
+    expect(route.mode).toBe('advisory');
+    if (route.mode === 'advisory') {
+      expect(route.task.budget_min).toBe(2000);
+      expect(route.reason).toMatch(/budget_min/);
+    }
+  });
+});
+
 // Bare-keyword control group — must NEVER over-route to advisory, before or after any of the
 // Intent Router follow-up fixes. A brand name alone (no size/budget/priority/use-case) is
 // browsing, not a described need.

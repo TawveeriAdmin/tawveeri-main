@@ -84,6 +84,11 @@ function needSignals(task: ParsedTask): string[] {
   // storage_min/ram_min above; withholding it from routing while every other structured field
   // counts was an oversight, not a deliberate exclusion.
   if (typeof task.screen_size_requested === 'number') signals.push('screen_size_requested');
+  // Intent Router follow-up #3 (2026-08-23): a stated budget FLOOR («فوق 2000», «أكثر من
+  // 2000 ريال») is exactly as describable a constraint as a budget ceiling — routing only;
+  // see `budget_min`'s own doc comment (task-parser.ts) for why it stays separate from
+  // `budget_total` and untouched by any ranking/eligibility path.
+  if (typeof task.budget_min === 'number') signals.push('budget_min');
   return signals;
 }
 

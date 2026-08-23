@@ -54,7 +54,7 @@ export interface AdvisorRecommendation {
   /** Decision Card v1, ruling B1 — TV only. Present when a requested screen size doesn't match
    *  this pick's `dna.screen_size`. Disclosure only; never affects ranking or which item is
    *  first in `recommendations`. */
-  size_mismatch?: { requested: number; actual: number } | null;
+  size_mismatch?: { requested: number; actual: number; comparator?: "eq" | "gt" | "gte" | "lt" | "lte" } | null;
 }
 
 // ── Trust Engine breakdown (ADR-087) surfaced to the customer ────────────────

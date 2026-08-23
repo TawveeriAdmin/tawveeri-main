@@ -48,7 +48,7 @@ export interface SmartPick {
   trust?: { score: number; tier: 'high' | 'medium' | 'low' | string } | null;
   /** Decision Card v1, ruling B1 (2026-08-22) — TV only. Present when a requested screen size
    *  doesn't match this pick's own. Disclosure only; never changes which product this is. */
-  size_mismatch?: { requested: number; actual: number } | null;
+  size_mismatch?: { requested: number; actual: number; comparator?: "eq" | "gt" | "gte" | "lt" | "lte" } | null;
 }
 
 export function SmartPickCard({ pick, locale }: { pick: SmartPick; locale: string }) {

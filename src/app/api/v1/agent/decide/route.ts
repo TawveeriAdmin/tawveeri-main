@@ -3,7 +3,7 @@ import { createServerClient } from "@/lib/database";
 import { decide, explainChoice, requiredBtuForRoom, AC_BTU_FIT_TOLERANCE, type ShoppingTask, type CanonicalRow, type Recommendation } from "@/lib/agent/decision-engine";
 import { buildPublishedEvidence } from "@/lib/agent/published-evidence";
 import { guardAdvisorPayload } from "@/lib/agent/answer-guard";
-import { parseShoppingTask } from "@/lib/agent/task-parser";
+import { parseShoppingTask, sizeSatisfiesComparator } from "@/lib/agent/task-parser";
 import { semanticExtract } from "@/lib/agent/semantic-fallback";
 import { buildBasketSummary } from "@/lib/agent/basket";
 import { shouldAsk } from "@/lib/agent/clarify";
@@ -303,7 +303,7 @@ export async function POST(req: NextRequest) {
       ...r, is_smart_pick, trust, confidence: trust.score, go_url: goByCanon.get(r.canonical_id) ?? null,
       stores: storeNames(r.canonical_id), best_offer_store_ar: bestOfferStore(r.canonical_id), data_age_hours,
       price_intel, discount_intel: discounts.get(r.canonical_id) ?? null, alternatives: alternatives.get(r.canonical_id) ?? null,
-      size_mismatch: null as { requested: number; actual: number } | null,
+      size_mismatch: null as { requested: number; actual: number; comparator?: "eq" | "gt" | "gte" | "lt" | "lte" } | null,
     };
   });
   // TV SIZE-MISMATCH DISCLOSURE (Decision Card v1, ruling B1, 2026-08-22). MEASURED on
@@ -316,6 +316,12 @@ export async function POST(req: NextRequest) {
   // `is_smart_pick` — "more options" cards are unaffected.
   if (engineTask.category === "tv" && engineTask.screen_size_requested) {
     const requested = engineTask.screen_size_requested;
+    // Intent Router follow-up #3 (ADR-270 consolidated list, 2026-08-23): equality-only
+    // before this fix — "»65 inch«"-style requests («فوق 65 بوصة») read a 65" pick as a
+    // match even though ">65" and "=65" are different claims. `comparator` defaults to "eq"
+    // for a plain "65 بوصة" ask, so every existing exact-match query is byte-for-bit
+    // unchanged; only an inequality-phrased request is now honestly compared.
+    const comparator = engineTask.screen_size_comparator ?? "eq";
     for (const r of out) {
       if (!r.is_smart_pick) continue;
       const actual = (r.dna as { screen_size?: unknown })?.screen_size;
@@ -327,8 +333,8 @@ export async function POST(req: NextRequest) {
         // mechanism the freshness gate uses two blocks above.
         r.is_smart_pick = false;
         console.warn(`[tv-size-mismatch] label withheld: screen_size unknown for canonical=${r.canonical_id}, requested=${requested}"`);
-      } else if (actualNum !== requested) {
-        r.size_mismatch = { requested, actual: actualNum };
+      } else if (!sizeSatisfiesComparator(actualNum, comparator, requested)) {
+        r.size_mismatch = { requested, actual: actualNum, comparator };
       }
     }
   }

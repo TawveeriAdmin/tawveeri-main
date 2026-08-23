@@ -99,6 +99,24 @@ export interface ShoppingTask {
    * meaningful for `tv`.
    */
   screen_size_requested?: number | null;
+  /**
+   * Intent Router follow-up #3 (ADR-270 consolidated list, 2026-08-23) — the comparator for
+   * `screen_size_requested` («فوق 65 بوصة» = "gt", «65 بوصة» = "eq"), parsed by
+   * `task-parser.ts`'s `parseScreenSizeComparator`. DISCLOSURE ONLY, same rule as
+   * `screen_size_requested` itself — never read by `decideTv()` or any ranking/eligibility
+   * path; `decide/route.ts`/`search/route.ts` use it (via `sizeSatisfiesComparator`) to decide
+   * whether the winning candidate's actual size honestly satisfies an inequality-phrased
+   * request, not just an exact one. Only meaningful for `tv`.
+   */
+  screen_size_comparator?: "eq" | "gt" | "gte" | "lt" | "lte" | null;
+  /**
+   * Budget FLOOR («فوق 2000»/«أكثر من 2000 ريال»), parsed by `task-parser.ts`'s
+   * `parseBudgetMin`. Deliberately SEPARATE from `budget_total`, which every existing
+   * ranking/eligibility consumer reads as a hard MAX price ceiling — this field is parsed and
+   * exposed for routing/disclosure only; nothing outside task-parser.ts/route-query.ts reads
+   * it yet.
+   */
+  budget_min?: number | null;
 }
 
 export interface CanonicalRow {

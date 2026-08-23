@@ -629,11 +629,87 @@ function parseStorageMin(x: string): number | undefined {
  */
 export const CHEAPEST_MARKER = /ارخص|أرخص|اقل سعر|أقل سعر|اوفر|أوفر|cheapest|cheaper|lowest[- ]?price/;
 
+/**
+ * COMPARATOR PARSING (2026-08-23, Intent Router follow-up #3, ADR-270 consolidated list —
+ * "»65 inch«-style comparator parsing... needs inequality-aware parsing before an
+ * inequality-phrased request can be honestly compared"). Previously EQUALITY-ONLY: «تلفزيون
+ * سامسونج فوق 65 بوصة» ("over 65 inches") extracted `requested=65` with no way to record that
+ * ">65" and "=65" are different claims, so a 65" pick read as a match to an "over 65" ask.
+ * DISCLOSURE ONLY, same rule as `screen_size_requested` itself — never read by any
+ * ranking/eligibility path, only by the mismatch-disclosure comparison downstream.
+ */
+export type SizeComparator = "eq" | "gt" | "gte" | "lt" | "lte";
+
+// Matches the SAME size+unit shape `extractSpecsFromTitle`'s screen-size regex accepts
+// (inch/"/بوصة/انش/إنش/in) — kept in sync manually since this needs the MATCH POSITION (to
+// inspect the surrounding words for a comparator), which extractSpecsFromTitle's return
+// value alone cannot provide.
+const SIZE_UNIT_RE = /(\d+(?:\.\d+)?)\s*[-"]?\s*(?:inch|"|بوصة|انش|إنش|in\b)/i;
+const SIZE_GT_BEFORE = /(?:فوق|أكثر من|اكثر من|اعلى من|أعلى من|more than|over|above)\s*$/i;
+const SIZE_LT_BEFORE = /(?:أقل من|اقل من|دون|تحت|less than|under|below)\s*$/i;
+const SIZE_GTE_AFTER = /^\s*(?:فأكثر|أو أكثر|وأكثر|or more|or above)/i;
+const SIZE_LTE_AFTER = /^\s*(?:فأقل|أو أقل|وأقل|or less|or below)/i;
+
+/**
+ * The comparator for a stated screen size, read from a narrow window immediately around the
+ * matched size+unit text — a comparator word ELSEWHERE in the sentence (unrelated to the
+ * size) must never be misread as qualifying it. Exported so decide/route.ts and search/
+ * route.ts's mismatch-disclosure code can share ONE implementation of "does this actual size
+ * satisfy that requested comparator" rather than two independently-maintained copies.
+ */
+export function parseScreenSizeComparator(x: string): SizeComparator {
+  const m = SIZE_UNIT_RE.exec(x);
+  if (!m || m.index == null) return "eq";
+  const before = x.slice(Math.max(0, m.index - 20), m.index);
+  const after = x.slice(m.index + m[0].length, m.index + m[0].length + 15);
+  const gtBefore = SIZE_GT_BEFORE.test(before);
+  const ltBefore = SIZE_LT_BEFORE.test(before);
+  const gteAfter = SIZE_GTE_AFTER.test(after);
+  const lteAfter = SIZE_LTE_AFTER.test(after);
+  if (gtBefore) return gteAfter ? "gte" : "gt";
+  if (ltBefore) return lteAfter ? "lte" : "lt";
+  if (gteAfter) return "gte";
+  if (lteAfter) return "lte";
+  return "eq";
+}
+
+/** True when `actual` satisfies `requested` under `comparator` — the one place this
+ *  inequality logic lives, shared by every mismatch-disclosure call site. */
+export function sizeSatisfiesComparator(actual: number, comparator: SizeComparator, requested: number): boolean {
+  switch (comparator) {
+    case "gt": return actual > requested;
+    case "gte": return actual >= requested;
+    case "lt": return actual < requested;
+    case "lte": return actual <= requested;
+    default: return actual === requested;
+  }
+}
+
+/**
+ * Budget FLOOR — «فوق 2000»/«أكثر من 2000 ريال» ("more than 2000"), the mirror case
+ * `parseBudget` above never covers: that function is CEILING-only by construction (تحت/أقل
+ * من/ميزانية/... phrasings all state a MAX). Kept on a SEPARATE field, never folded into
+ * `budget_total` — every existing consumer of `budget_total` (applyBudgetGate, closestOptions,
+ * inferredMaxPrice in search/route.ts) reads it as a hard MAX price ceiling; silently
+ * repurposing it for a floor statement would flip "spend more than 2000" into a "spend under
+ * 2000" filter downstream — a real eligibility regression outside this mission's scope
+ * (parser/router only, no ranking or eligibility changes). `budget_min` is parsed and exposed
+ * for routing/disclosure only; nothing outside task-parser.ts/route-query.ts reads it yet.
+ */
+function parseBudgetMin(x: string): number | undefined {
+  const m = x.match(/(?:فوق|أكثر من|اكثر من|اعلى من|أعلى من|more than|over|above)\s*(?:الى|إلى|to)?\s*([\d,]{3,7})\s*(?:ريال|sar\b|sr\b)?/);
+  if (m) { const n = Number(m[1].replace(/,/g, "")); if (n >= 100 && n <= 500000) return n; }
+  return undefined;
+}
+
 export interface ParsedTask extends ShoppingTask {
   use?: string[];
   connectivity_needed?: string;
   storage_min?: number;
   ram_min?: number;
+  /** Budget FLOOR («فوق 2000»/«أكثر من 2000 ريال») — see `parseBudgetMin`'s own doc comment.
+   *  Disclosure/routing only; never read by any ranking or eligibility gate. */
+  budget_min?: number;
   parsed_from_text: string;
   unresolved?: string[]; // fields the parser could not extract (fail-loud transparency)
   /** Section 7 (2026-08-09): stated but explicitly de-prioritized ("ما يهمني X") — never
@@ -710,6 +786,7 @@ export function parseShoppingTask(text: string): ParsedTask {
   const tv_panel = parseTvPanel(x);
   const room_size_m2 = parseRoomSize(x);
   const budget_total = parseBudget(x);
+  const budget_min = parseBudgetMin(x);
   const quantity = parseQuantity(x, category);
   const priorityParse = parsePriorities(x);
   const priorities = priorityParse.positive;
@@ -732,6 +809,7 @@ export function parseShoppingTask(text: string): ParsedTask {
     fuel_type, ac_type, wants_inverter, fridge_type, washer_type, tv_panel,
     room_size_m2, city, priorities: priorities.length ? priorities : undefined,
     budget_total: budget_total ?? undefined,
+    budget_min: budget_min ?? undefined,
     quantity,
     wants_cheapest: wants_cheapest || undefined,
     wants_recommendation: wantsRecommendation(x) || undefined,
@@ -756,7 +834,12 @@ export function parseShoppingTask(text: string): ParsedTask {
   // product title goes through — rather than a second, possibly-diverging regex.
   if (category === "tv") {
     const requestedSize = extractSpecsFromTitle(text).screen_size;
-    if (requestedSize) task.screen_size_requested = Number(requestedSize);
+    if (requestedSize) {
+      task.screen_size_requested = Number(requestedSize);
+      // Intent Router follow-up #3 (2026-08-23) — see `parseScreenSizeComparator`'s own doc
+      // comment. DISCLOSURE ONLY, same rule as screen_size_requested itself.
+      task.screen_size_comparator = parseScreenSizeComparator(x);
+    }
   }
   if (category === "mobile" && storage_min) task.storage_min = storage_min;
   if (category === "laptop") {
