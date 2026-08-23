@@ -199,6 +199,29 @@ describe("Task parser — capacity (washer kg / fridge liters / dishwasher place
   });
 });
 
+// Intent Router item 6 (2026-08-23) — the second gap in the query that motivated this whole
+// mission («تلفزيون 43 بوصة للمطبخ»): «للمطبخ» matched no existing extractor at all.
+describe("Task parser — room type", () => {
+  it("parses كitchen/living_room/bedroom/majlis from their standard phrasings", () => {
+    expect(parseShoppingTask("تلفزيون للمطبخ").room_type).toBe("kitchen");
+    expect(parseShoppingTask("مكيف للصالة").room_type).toBe("living_room");
+    expect(parseShoppingTask("تلفزيون لغرفة النوم").room_type).toBe("bedroom");
+    expect(parseShoppingTask("سماعة للمجلس").room_type).toBe("majlis");
+  });
+  it("is category-agnostic — the same room word parses the same way regardless of category", () => {
+    expect(parseShoppingTask("ثلاجة للمطبخ").room_type).toBe("kitchen");
+    expect(parseShoppingTask("مكنسة للمطبخ").room_type).toBe("kitchen");
+  });
+  it("the exact motivating query parses BOTH the size and the room type", () => {
+    const t = parseShoppingTask("تلفزيون 43 بوصة للمطبخ");
+    expect(t.screen_size_requested).toBe(43);
+    expect(t.room_type).toBe("kitchen");
+  });
+  it("no room word present leaves the field unset", () => {
+    expect(parseShoppingTask("تلفزيون سامسونج").room_type).toBeUndefined();
+  });
+});
+
 describe("Task parser — fail-loud on unresolvable input", () => {
   it("undetectable category → empty category + unresolved flag", () => {
     const t = parseShoppingTask("أبغى شيء حلو");

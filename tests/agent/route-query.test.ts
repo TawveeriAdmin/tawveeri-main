@@ -250,6 +250,29 @@ describe('routeQuery — a stated capacity routes to advisory', () => {
   });
 });
 
+// Intent Router item 6 (2026-08-23) — the second half of the query that motivated this whole
+// mission: «تلفزيون 43 بوصة للمطبخ» needed BOTH the screen-size fix (item 1) and this
+// room-type fix to route correctly on every phrasing, not just size-bearing ones.
+describe('routeQuery — a stated room type routes to advisory', () => {
+  it('«تلفزيون للمطبخ» (no size at all) → advisory on room_type alone', () => {
+    const route = routeQuery('تلفزيون للمطبخ');
+    expect(route.mode).toBe('advisory');
+    if (route.mode === 'advisory') {
+      expect(route.task.room_type).toBe('kitchen');
+      expect(route.reason).toMatch(/room_type:kitchen/);
+    }
+  });
+  it('«مكيف للصالة» → advisory on room_type (no room SIZE stated, only room TYPE)', () => {
+    const route = routeQuery('مكيف للصالة');
+    expect(route.mode).toBe('advisory');
+  });
+  it('audio/camera stay retrieval even with a room type stated — category-not-advisable rule wins first', () => {
+    const route = routeQuery('سماعات للمطبخ');
+    expect(route.mode).toBe('retrieval');
+    expect(route.reason).toMatch(/not advisable/);
+  });
+});
+
 // Bare-keyword control group — must NEVER over-route to advisory, before or after any of the
 // Intent Router follow-up fixes. A brand name alone (no size/budget/priority/use-case) is
 // browsing, not a described need.

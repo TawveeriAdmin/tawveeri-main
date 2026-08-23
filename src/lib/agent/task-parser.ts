@@ -602,6 +602,29 @@ function parseCity(x: string): string | undefined {
   return undefined;
 }
 
+/**
+ * ROOM-TYPE — Intent Router item 6 (2026-08-23), the exact second gap in the query that
+ * motivated this whole mission («تلفزيون 43 بوصة للمطبخ»): «للمطبخ» ("for the kitchen")
+ * matched no existing extractor at all — `USE_CASE_REFERENCE` only covers «احتياجي/
+ * استخدامي/يناسبني», not a location noun. Category-AGNOSTIC (unlike AC's numeric
+ * `room_size_m2`): a TV, an AC, or a speaker can all genuinely be "for the kitchen" — the
+ * room word itself carries no category information, so it is parsed the same way regardless
+ * of what category the query resolves to. ROUTING/DISCLOSURE ONLY — never read by any
+ * `decide*()` scoring function; it earns a query a seat at the advisory table, exactly like
+ * `use_case_referenced` already does, without changing which product ranks first.
+ */
+const ROOM_TYPE_PATTERNS: [string, RegExp][] = [
+  ["kitchen", /للمطبخ|بالمطبخ|في المطبخ|\bkitchen\b/i],
+  ["living_room", /للصالة|بالصالة|في الصالة|\bliving room\b|\blounge\b/i],
+  ["bedroom", /لغرفة النوم|لغرفه النوم|بغرفة النوم|بغرفه النوم|في غرفة النوم|في غرفه النوم|\bbedroom\b/i],
+  ["majlis", /للمجلس|بالمجلس|في المجلس|\bmajlis\b/i],
+];
+
+function parseRoomType(x: string): string | undefined {
+  for (const [type, re] of ROOM_TYPE_PATTERNS) if (re.test(x)) return type;
+  return undefined;
+}
+
 // «قيقا»/«قيغا» (2026-08-23, Intent Router follow-up #2, ADR-270 consolidated list): the
 // everyday-typed dialect spelling of «جيجا» — MEASURED on production («جوال ايفون 128 قيغا
 // تحت 3500» returned zero closest-options candidates, ADR-271) — matched neither this regex
@@ -745,6 +768,9 @@ export interface ParsedTask extends ShoppingTask {
   capacity_kg_requested?: number;
   capacity_liters_requested?: number;
   capacity_settings_requested?: number;
+  /** Room type («للمطبخ»/«للصالة»/«لغرفة النوم»/«للمجلس») — see `parseRoomType`'s doc
+   *  comment. Category-agnostic, routing/disclosure only. */
+  room_type?: string;
   parsed_from_text: string;
   unresolved?: string[]; // fields the parser could not extract (fail-loud transparency)
   /** Section 7 (2026-08-09): stated but explicitly de-prioritized ("ما يهمني X") — never
@@ -822,6 +848,7 @@ export function parseShoppingTask(text: string): ParsedTask {
   const room_size_m2 = parseRoomSize(x);
   const budget_total = parseBudget(x);
   const budget_min = parseBudgetMin(x);
+  const room_type = parseRoomType(x);
   const quantity = parseQuantity(x, category);
   const priorityParse = parsePriorities(x);
   const priorities = priorityParse.positive;
@@ -845,6 +872,7 @@ export function parseShoppingTask(text: string): ParsedTask {
     room_size_m2, city, priorities: priorities.length ? priorities : undefined,
     budget_total: budget_total ?? undefined,
     budget_min: budget_min ?? undefined,
+    room_type: room_type ?? undefined,
     quantity,
     wants_cheapest: wants_cheapest || undefined,
     wants_recommendation: wantsRecommendation(x) || undefined,

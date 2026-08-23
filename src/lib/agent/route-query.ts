@@ -94,6 +94,10 @@ function needSignals(task: ParsedTask): string[] {
   if (typeof task.capacity_kg_requested === 'number') signals.push('capacity_kg_requested');
   if (typeof task.capacity_liters_requested === 'number') signals.push('capacity_liters_requested');
   if (typeof task.capacity_settings_requested === 'number') signals.push('capacity_settings_requested');
+  // Intent Router item 6 (2026-08-23) — the second half of the query that motivated this
+  // whole mission («تلفزيون 43 بوصة للمطبخ»): a stated room type is a real situational
+  // constraint, category-agnostic, same rule as use_case_referenced above.
+  if (task.room_type) signals.push(`room_type:${task.room_type}`);
   return signals;
 }
 

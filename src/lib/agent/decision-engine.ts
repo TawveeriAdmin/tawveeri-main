@@ -130,6 +130,14 @@ export interface ShoppingTask {
   capacity_kg_requested?: number | null;
   capacity_liters_requested?: number | null;
   capacity_settings_requested?: number | null;
+  /**
+   * Intent Router item 6 (2026-08-23) — a stated room type («للمطبخ»/«للصالة»/«لغرفة
+   * النوم»/«للمجلس»), parsed by `task-parser.ts`'s `parseRoomType`. Category-agnostic
+   * (unlike AC's numeric `room_size_m2`) and ROUTING/DISCLOSURE ONLY — never read by any
+   * `decide*()` scoring function. Earns a query a seat at the advisory table; never changes
+   * which product ranks first.
+   */
+  room_type?: string | null;
 }
 
 export interface CanonicalRow {
