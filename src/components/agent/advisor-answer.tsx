@@ -18,8 +18,9 @@ import { ConstraintLedger } from '@/components/agent/constraint-ledger';
 // ADR-260: the SAME observation-age phrasing Tawveeri Home renders, imported rather than
 // re-written, so the two surfaces cannot describe the same observation differently.
 import { ageLabel } from '@/lib/agent/home-mission-view';
-import { track } from '@/lib/analytics/track';
+import { track, sessionId } from '@/lib/analytics/track';
 import { hasSeenDecisionCard, markDecisionCardSeen } from '@/lib/agent/return-to-decision';
+import { deriveReferralCode, appendReferralParams } from '@/lib/analytics/referral-link';
 
 /**
  * AdvisorAnswer — the وفّر decision engine's answer, rendered.
@@ -478,7 +479,12 @@ function ShareDecisionButton({ rec, loc, t, source }: { rec: AdvisorRecommendati
     const title = recTitle(rec, loc);
     const price = rec.unit_price;
     const badge = comparisonBadge(rec, loc);
-    const url = typeof window !== 'undefined' ? window.location.href : '';
+    // Referral-loop follow-up (2026-08-25) — the code is a derived slice of this browser's
+    // own already-existing anonymous session id, never a new stored value (see
+    // referral-link.ts's own header). Whoever opens this link gets the referral captured
+    // automatically by the globally-mounted CampaignCapture — no new wiring on their end.
+    const rawUrl = typeof window !== 'undefined' ? window.location.href : '';
+    const url = rawUrl ? appendReferralParams(rawUrl, 'decision_card_share', deriveReferralCode(sessionId())) : rawUrl;
     const text = loc === 'ar'
       ? `وفّر رشّح: ${title}${price != null ? ` — ${Math.round(price).toLocaleString('ar')} ريال` : ''} (${badge.text})`
       : `Waffar picked: ${title}${price != null ? ` — ${Math.round(price).toLocaleString('en')} SAR` : ''} (${badge.text})`;

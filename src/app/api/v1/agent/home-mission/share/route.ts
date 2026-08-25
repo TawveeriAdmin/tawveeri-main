@@ -9,6 +9,7 @@ import { randomBytes } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/database";
 import { sanitizeShareRequest, assembleSnapshot, type CanonicalFact } from "@/lib/agent/home-mission-share";
+import { deriveReferralCode, appendReferralParams } from "@/lib/analytics/referral-link";
 
 export async function POST(request: NextRequest) {
   let body: unknown;
@@ -65,10 +66,15 @@ export async function POST(request: NextRequest) {
   if (ins?.error) return NextResponse.json({ error: "store_failed" }, { status: 500 });
 
   const base = process.env.NEXT_PUBLIC_APP_URL || "https://tawveeri.com";
+  // Referral-loop follow-up (2026-08-25) — the code is a derived slice of the token ALREADY
+  // generated above, never a new stored value (see referral-link.ts's own header). Once a
+  // recipient opens this URL, the globally-mounted CampaignCapture picks up utm_content for
+  // free — no new capture code, no new table.
+  const refCode = deriveReferralCode(token);
   return NextResponse.json({
     token,
     owner_key: ownerKey,
-    url: `${base}/${req.locale}/plan/${token}`,
+    url: appendReferralParams(`${base}/${req.locale}/plan/${token}`, "home_mission_share", refCode),
     expires_days: 30,
   });
 }

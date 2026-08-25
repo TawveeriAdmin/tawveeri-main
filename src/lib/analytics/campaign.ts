@@ -8,11 +8,23 @@
 //   utm_source=x|tiktok|instagram|snapchat|youtube · utm_medium=organic_social|paid_social|social_reply
 //   utm_campaign=controlled_demand_validation_<wave> · utm_content=<content_id>
 //
+// utm_source=referral (2026-08-25, docs/CATEGORY-PAGES-PLAN.md §8 "GEO + Referral
+// Follow-ups") — the SAME capture path, extended to peer-to-peer shares rather than
+// external social platforms: utm_medium=home_mission_share|decision_card_share,
+// utm_content=<8-char code> (src/lib/analytics/referral-link.ts). utm_campaign unset —
+// nothing meaningful to put there for a peer share. No new field, no new capture logic.
+//
 // Scope is per browser-tab SESSION (sessionStorage), not per-visitor-forever like the
 // entry-variant assignment — a new social click in the same tab is a new attributed
 // landing and should overwrite, but attribution must not leak across an unrelated later
-// session. Never touches the /go route or outbound_clicks — that ledger's attribution
-// (Amazon/Noon affiliate tags) is a separate, already-verified concern (T5/F5).
+// session.
+//
+// CORRECTION (2026-08-25): the line that stood here — "Never touches the /go route or
+// outbound_clicks" — was stale the moment ADR-244 landed. `initCampaignFromUrl()` below
+// mirrors the SAME campaign into a session cookie specifically so `/go/[offerId]/route.ts`
+// can read it and stamp `outbound_clicks` server-side (confirmed live in that file — it
+// reads `req.cookies.get("tw_campaign")`) — the two comments in this file already
+// contradicted each other; this one was wrong, not that one.
 const KEY = "tw_campaign";
 
 export type Campaign = {
