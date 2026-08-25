@@ -10,6 +10,7 @@
 import type { MetadataRoute } from 'next';
 import { getAllProductSlugs, getComparableIdentityKeys } from '@/lib/catalog/getProductComparison';
 import { getNavigableCategories } from '@/lib/intelligence/navigable-categories';
+import { getQualifyingAcFacets } from '@/lib/catalog/getAcFacetOverview';
 
 const baseUrl =
   process.env.NEXT_PUBLIC_APP_URL ||
@@ -88,6 +89,40 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // DB unavailable — skip dynamic entries
   }
 
+  // 2b) صفحات الفئات الفرعية (facets) — air_conditioner فقط اليوم
+  //
+  // 2026-08-25, category-facet-pages mission (docs/CATEGORY-PAGES-PLAN.md). One level below
+  // the category entries above: BTU-band and brand slices of air_conditioner, gated by the
+  // SAME live measurement (`getQualifyingAcFacets`) the facet pages themselves enforce — a
+  // facet that drops below the gate disappears from the sitemap and the parent page's
+  // internal links in the same request, never advertised once it can't back itself up.
+  // Slightly lower priority than the parent category page (a facet is a slice of it, not a
+  // peer surface) but still above plain product pages — it carries a real, checkable subset.
+  let facetEntries: MetadataRoute.Sitemap = [];
+  try {
+    const cats = await getNavigableCategories();
+    const acCategory = cats.find((c) => c.key === 'air_conditioner');
+    if (acCategory) {
+      const facets = await getQualifyingAcFacets();
+      facetEntries = facets.flatMap((f) =>
+        locales.map((locale) => ({
+          url: `${baseUrl}/${locale}/categories/${acCategory.slug}/${f.slug}`,
+          lastModified: now,
+          changeFrequency: 'daily' as const,
+          priority: 0.75,
+          alternates: {
+            languages: {
+              ar: `${baseUrl}/ar/categories/${acCategory.slug}/${f.slug}`,
+              en: `${baseUrl}/en/categories/${acCategory.slug}/${f.slug}`,
+            },
+          },
+        }))
+      );
+    }
+  } catch {
+    // DB unavailable — skip dynamic entries
+  }
+
   // 3) صفحات المنتجات — ADR-189
   //
   // THE PATH WAS `/product/` (SINGULAR) AND THE ROUTE IS `/products/`. Combined with the
@@ -146,6 +181,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [
     ...staticEntries,
     ...catalogEntries,
+    ...facetEntries,
     ...compareEntries,
     ...productEntries,
   ];

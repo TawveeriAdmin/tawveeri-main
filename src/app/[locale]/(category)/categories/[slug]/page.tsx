@@ -28,14 +28,15 @@
 import { Metadata } from 'next';
 import { notFound, permanentRedirect } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowRight, ShieldCheck, Store } from 'lucide-react';
+import { ArrowRight, ShieldCheck } from 'lucide-react';
 import { PublicPageShell } from '@/components/public/public-page-shell';
 import { Badge } from '@/components/ui/badge';
-import { Price } from '@/components/ui/price';
 import { findNavigableCategory } from '@/lib/intelligence/navigable-categories';
 import { getCategoryOverview } from '@/lib/catalog/getCategoryOverview';
+import { getQualifyingAcFacets } from '@/lib/catalog/getAcFacetOverview';
 import { buildAlternates, getBaseUrl } from '@/lib/seo/metadata';
 import { getCategoryGuide } from '@/lib/seo/category-guide';
+import { CategoryProductGrid } from '@/components/catalog/category-product-grid';
 
 // Rendered on demand, NOT prerendered: `redirect()`/`notFound()` throw their control-flow
 // signal at render time, which fails during static generation — this is the exact defect
@@ -113,6 +114,11 @@ export default async function CategorySlugPage({
   const baseUrl = getBaseUrl();
   const canonicalUrl = `${baseUrl}/${locale}/categories/${cat.slug}`;
 
+  // Facet tier (2026-08-25, category-facet-pages mission) — AC-only today, per the plan's
+  // "single category, don't pad" scope. Reads the SAME live gate the facet pages themselves
+  // enforce, so a link never points at a facet that would 404.
+  const acFacets = cat.key === 'air_conditioner' ? await getQualifyingAcFacets() : [];
+
   // The gate that put this category in navigation at all requires ≥30 comparable
   // canonicals; a mid-flight drop below that between the nav computation and this render
   // is the only way `products` is empty. Handle it honestly rather than assume it cannot
@@ -161,7 +167,18 @@ export default async function CategorySlugPage({
     },
     mainEntity: {
       '@type': 'ItemList',
-      numberOfItems: overview.products.length,
+      // `comparableCount`, not `products.length` (2026-08-25 fix): `getCategoryOverview`
+      // caps `products` at PRODUCTS_LIMIT (60) for a renderable grid, but the page's own
+      // visible prose above states the TRUE total (`overview.comparableCount` — 172 for
+      // this category today, only 60 of which get a card). Before this fix, numberOfItems
+      // silently reported the capped 60 while the h1 subtitle said 172 on the same
+      // render — structured data disagreeing with the visible page is exactly what
+      // ADR-189 calls "a fabricated claim with a schema wrapper on it". `numberOfItems` is
+      // schema.org-valid as the list's TRUE size with `itemListElement` enumerating a
+      // ranked subset (the same pattern Google's own paginated-ItemList guidance uses) —
+      // each listed item's `position` still reflects its real rank (rows are ordered by
+      // `store_count desc` before the cap is applied), so nothing here is invented.
+      numberOfItems: overview.comparableCount,
       itemListElement: overview.products.map((p, i) => ({
         '@type': 'ListItem',
         position: i + 1,
@@ -252,36 +269,26 @@ export default async function CategorySlugPage({
           )}
         </div>
 
-        {/* ── Product grid ── */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {overview.products.map((p) => {
-            const displayName = isAr ? (p.nameAr || p.nameEn) : (p.nameEn || p.nameAr);
-            return (
+        {/* ── Facet links (AC-only today — see docs/CATEGORY-PAGES-PLAN.md §3) ── */}
+        {acFacets.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs text-on-surface-variant">
+              {isAr ? 'تصفّح حسب:' : 'Browse by:'}
+            </span>
+            {acFacets.map((f) => (
               <Link
-                key={p.identityKey}
-                href={`/${locale}${p.compareUrl}`}
-                className="flex flex-col rounded-2xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] p-4 transition-colors hover:border-[var(--brand-green)]/50 hover:bg-[var(--brand-bg-green)]"
+                key={f.slug}
+                href={`/${locale}/categories/${cat.slug}/${f.slug}`}
+                className="inline-flex items-center rounded-full border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container)] px-3 py-1 text-xs font-medium text-on-surface transition-colors hover:border-[var(--brand-green)]/50 hover:bg-[var(--brand-bg-green)]"
               >
-                <div className="flex items-start justify-between gap-2">
-                  {p.brand && <Badge variant="outline" className="text-[11px]">{p.brand}</Badge>}
-                  <span className="inline-flex items-center gap-1 text-[11px] text-on-surface-variant">
-                    <Store className="h-3 w-3" />
-                    {isAr ? `${p.storeCount} متاجر` : `${p.storeCount} stores`}
-                  </span>
-                </div>
-                <p className="mt-2 text-sm font-semibold text-on-surface line-clamp-2 min-h-[2.5rem]">
-                  {displayName}
-                </p>
-                {p.lowestPrice != null && (
-                  <div className="mt-2 flex items-baseline gap-1.5">
-                    <span className="text-[11px] text-on-surface-variant">{isAr ? 'من' : 'from'}</span>
-                    <Price amount={p.lowestPrice} className="text-lg font-extrabold text-[var(--brand-green-dark)]" symbolClassName="w-4 h-4" />
-                  </div>
-                )}
+                {isAr ? f.labelAr : f.labelEn} ({f.count})
               </Link>
-            );
-          })}
-        </div>
+            ))}
+          </div>
+        )}
+
+        {/* ── Product grid ── */}
+        <CategoryProductGrid products={overview.products} locale={locale} isAr={isAr} />
 
         {/* ── Fallback to broader search ── */}
         <div className="text-center">

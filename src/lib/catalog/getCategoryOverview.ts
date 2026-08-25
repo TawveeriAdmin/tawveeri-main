@@ -55,7 +55,7 @@ export interface CategoryOverview {
   freshestObservedAt: string | null;
 }
 
-interface ProjectionRow {
+export interface ProjectionRow {
   tps_identity_key: string | null;
   display_name_ar: string | null;
   display_name_en: string | null;
@@ -80,7 +80,13 @@ interface LooseQuery {
 // is a landing page, not a paginated catalogue.
 const PRODUCTS_LIMIT = 60;
 
-async function fetchProjectionRows(categoryKey: string): Promise<ProjectionRow[]> {
+/**
+ * Exported so `getAcFacetOverview.ts` (2026-08-25, category-facet-pages mission) can filter
+ * the SAME rows this page reads — by BTU band / brand — rather than running a second query
+ * against `tps_product_projection`. Never call this per-facet in a loop; fetch once, filter
+ * client-side (the category's row count is in the low hundreds, well within one page).
+ */
+export async function fetchProjectionRows(categoryKey: string): Promise<ProjectionRow[]> {
   // `tps_product_projection` is a TPS-layer table, not in the generated storefront types —
   // same narrow loose-view cast used by navigable-categories.ts and home-verified-deals.ts.
   const db = createServerClient() as unknown as { from(table: string): LooseQuery };
@@ -103,13 +109,12 @@ async function fetchProjectionRows(categoryKey: string): Promise<ProjectionRow[]
 }
 
 /**
- * Memoized per request (React `cache()`, same pattern as `src/lib/auth/server.ts`) — both
- * `generateMetadata` and the page body call this for the same category, and it must not run
- * the query twice.
+ * Pure aggregation, split out from `getCategoryOverview` (2026-08-25, category-facet-pages
+ * mission) so a facet page can produce the identical `CategoryOverview` shape from a filtered
+ * subset of the SAME rows — one aggregation implementation, not two. Takes rows, not a
+ * category key: has no idea whether it was called for a whole category or one facet slice.
  */
-export const getCategoryOverview = cache(async (categoryKey: string): Promise<CategoryOverview> => {
-  const rows = await fetchProjectionRows(categoryKey);
-
+export function summarizeProjectionRows(rows: ProjectionRow[]): CategoryOverview {
   const brandCounts = new Map<string, number>();
   let min: number | null = null;
   let max: number | null = null;
@@ -150,4 +155,14 @@ export const getCategoryOverview = cache(async (categoryKey: string): Promise<Ca
     products,
     freshestObservedAt: freshest,
   };
+}
+
+/**
+ * Memoized per request (React `cache()`, same pattern as `src/lib/auth/server.ts`) — both
+ * `generateMetadata` and the page body call this for the same category, and it must not run
+ * the query twice.
+ */
+export const getCategoryOverview = cache(async (categoryKey: string): Promise<CategoryOverview> => {
+  const rows = await fetchProjectionRows(categoryKey);
+  return summarizeProjectionRows(rows);
 });
