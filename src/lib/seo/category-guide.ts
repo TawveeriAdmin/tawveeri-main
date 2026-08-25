@@ -19,13 +19,23 @@ export interface GuideQA { q: string; a: string }
 
 const BESPOKE: Record<string, { ar: GuideQA[]; en: GuideQA[] }> = {
   air_conditioner: {
+    // 2026-08-25 addition (GEO readiness audit, docs/CATEGORY-PAGES-PLAN.md "GEO + Referral
+    // Follow-ups"): 2 new entries, both grounded in a real hard-constraint dimension
+    // decision-engine.ts already scores for air_conditioner (cooling_mode / ac_type explicit
+    // match — see requiredBtuForRoom/scoreAcCandidate's own reasoning strings, e.g. "بارد فقط
+    // — مناسب لأغلب أجواء المملكة"), same discipline as the original 2 — never a brand claim,
+    // never a price/value judgment, purely technical product education.
     ar: [
       { q: 'كيف أعرف قدرة المكيف (BTU) المناسبة لغرفتي؟', a: 'القدرة المناسبة تعتمد على مساحة الغرفة بالمتر المربع — غرفة أكبر تحتاج قدرة أعلى، والأجواء الحارة في السعودية عادة تحتاج قدرة أعلى مما تنصح به الجداول المعتدلة. حدد مساحة الغرفة عند البحث لنساعدك في مقارنة الخيارات المناسبة.' },
       { q: 'هل مكيف الإنفرتر يستحق الفرق في السعر؟', a: 'مكيفات الإنفرتر عادة أهدأ في التشغيل وأوفر للكهرباء على المدى الطويل مقارنة بالمكيفات العادية بنفس القدرة — إن كان الهدوء أو توفير الفاتورة أولوية عندك، وضّح ذلك في بحثك.' },
+      { q: 'هل أحتاج مكيف حار وبارد أم بارد فقط؟', a: 'المكيف بخاصية حار وبارد يُستخدم للتدفئة في الشتاء أيضًا، بينما بارد فقط مخصص للتبريد وحده وهو مناسب لأغلب أجواء المملكة معظم أيام السنة. إن كنت تحتاج التدفئة أيضًا، وضّح ذلك في بحثك.' },
+      { q: 'ما الفرق بين المكيف السبليت والشباك؟', a: 'المكيف السبليت يتكون من وحدتين (داخلية وخارجية) ويحتاج تركيب متخصص، بينما الشباك وحدة واحدة تُركّب مباشرة في فتحة بالجدار أو النافذة. إن كان لديك تفضيل، وضّحه في بحثك لنعرض الخيارات المطابقة.' },
     ],
     en: [
       { q: 'How do I know the right AC capacity (BTU) for my room?', a: 'The right capacity depends on your room\'s area in square meters — a larger room needs higher capacity, and Saudi Arabia\'s hot climate typically needs more capacity than moderate-climate charts suggest. State your room size when searching so we can compare the right-sized options.' },
       { q: 'Is an inverter AC worth the price difference?', a: 'Inverter ACs are typically quieter and more electricity-efficient long-term than standard units of the same capacity. If quiet operation or a lower bill matters to you, say so in your search.' },
+      { q: 'Do I need hot/cold or cool-only?', a: 'A hot/cold unit also heats in winter, while cool-only handles cooling alone — which suits most of Saudi Arabia\'s climate most of the year. If you also need heating, say so in your search.' },
+      { q: "What's the difference between split and window AC?", a: 'A split AC has two units (indoor and outdoor) and needs professional installation, while a window unit is a single piece that mounts directly in a wall or window opening. If you have a preference, say so in your search.' },
     ],
   },
   mobile: {

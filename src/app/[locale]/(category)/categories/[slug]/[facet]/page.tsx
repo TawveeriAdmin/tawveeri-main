@@ -117,6 +117,9 @@ export default async function CategoryFacetPage({
     '@type': 'CollectionPage',
     name: isAr ? `${categoryName} ${facetLabel} — مقارنة الأسعار` : `${categoryName} ${facetLabel} — price comparison`,
     url: canonicalUrl,
+    // GEO readiness audit (2026-08-25) — same dateModified addition as the parent category
+    // page, same reused `freshestObservedAt` fact, no new query.
+    ...(overview.freshestObservedAt ? { dateModified: overview.freshestObservedAt } : {}),
     breadcrumb: {
       '@type': 'BreadcrumbList',
       itemListElement: [
@@ -141,19 +144,27 @@ export default async function CategoryFacetPage({
     },
   };
 
-  // Facet-scoped FAQ: the BTU-band pages specialize AC's existing "right BTU capacity"
-  // question from category-guide.ts for this facet's own band — never a fabricated
-  // question, reusing the same real Q&A already grounded in a decision-engine priority.
-  // Brand facets get no FAQPage block (no genuine, non-generic brand-specific question
-  // exists in category-guide.ts today — better to omit than to invent one).
+  // Facet-scoped FAQ (reworked 2026-08-25, GEO readiness audit —
+  // docs/CATEGORY-PAGES-PLAN.md "GEO + Referral Follow-ups"). Every entry below is one of
+  // category-guide.ts's real, decision-engine-grounded AC questions — never a fabricated or
+  // facet-specific-invented one. BTU-band pages specialize the BTU question for that band;
+  // every OTHER facet-agnostic question (inverter, cooling mode, split-vs-window) now shows
+  // on every facet, BTU or brand — previously brand facets got zero FAQ content because no
+  // brand-specific question existed; the fix isn't inventing one, it's recognizing these
+  // three questions were never actually BTU-specific and were being needlessly withheld.
   const baseGuide = getCategoryGuide(cat.key, locale);
-  const btuQuestion = f.type === 'btu' ? baseGuide.find((qa) => /BTU|وحدة حرارية/i.test(qa.q)) : null;
-  const guide = btuQuestion
-    ? [{
-        q: isAr ? `${btuQuestion.q} (${facetLabel})` : `${btuQuestion.q} (${facetLabel})`,
-        a: btuQuestion.a,
-      }]
-    : [];
+  const btuQuestion = baseGuide.find((qa) => /BTU|وحدة حرارية/i.test(qa.q));
+  const otherQuestions = baseGuide.filter((qa) => qa !== btuQuestion);
+  const guide = [
+    ...(btuQuestion
+      ? [
+          f.type === 'btu'
+            ? { q: isAr ? `${btuQuestion.q} (${facetLabel})` : `${btuQuestion.q} (${facetLabel})`, a: btuQuestion.a }
+            : btuQuestion,
+        ]
+      : []),
+    ...otherQuestions,
+  ];
   const guideJsonLd = guide.length > 0 ? {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
@@ -204,10 +215,12 @@ export default async function CategoryFacetPage({
               <h1 className="text-xl md:text-2xl font-bold text-on-surface leading-snug">
                 {categoryName} — {facetLabel}
               </h1>
+              {/* GEO readiness audit (2026-08-25): same self-contained, dated, quotable
+                  sentence as the parent category page — see that page's comment. */}
               <p className="mt-1 text-sm text-on-surface-variant">
                 {isAr
-                  ? `نقارن أسعار ${overview.comparableCount} من ${categoryName} — ${facetLabel} — بين أكثر من متجر سعودي.`
-                  : `We compare ${overview.comparableCount} ${categoryName.toLowerCase()} — ${facetLabel} — across more than one Saudi retailer.`}
+                  ? `نقارن أسعار ${overview.comparableCount} من ${categoryName} — ${facetLabel} — بين أكثر من متجر سعودي${overview.priceRange ? ` — نطاق سعري مرصود من ${overview.priceRange.min} إلى ${overview.priceRange.max} ريال` : ''}${overview.freshestObservedAt ? `، آخر رصد ${freshnessLabel(overview.freshestObservedAt, true)}` : ''}.`
+                  : `We compare ${overview.comparableCount} ${categoryName.toLowerCase()} — ${facetLabel} — across more than one Saudi retailer${overview.priceRange ? ` — observed price range ${overview.priceRange.min}–${overview.priceRange.max} SAR` : ''}${overview.freshestObservedAt ? `, most recently observed ${freshnessLabel(overview.freshestObservedAt, false)}` : ''}.`}
               </p>
             </div>
           </div>

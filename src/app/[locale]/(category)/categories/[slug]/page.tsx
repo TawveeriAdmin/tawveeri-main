@@ -158,6 +158,12 @@ export default async function CategorySlugPage({
     '@type': 'CollectionPage',
     name: isAr ? `${name} — مقارنة الأسعار` : `${name} — price comparison`,
     url: canonicalUrl,
+    // GEO readiness audit (2026-08-25, docs/CATEGORY-PAGES-PLAN.md): AI answer engines weigh
+    // freshness heavily, and structured `dateModified` removes the ambiguity a relative
+    // "أحدث رصد اليوم" badge alone leaves for a machine reader. Reuses the SAME
+    // `freshestObservedAt` the freshness badge below already renders — no new query, no new
+    // claim, just the existing fact stated in the format a crawler/LLM can parse directly.
+    ...(overview.freshestObservedAt ? { dateModified: overview.freshestObservedAt } : {}),
     breadcrumb: {
       '@type': 'BreadcrumbList',
       itemListElement: [
@@ -240,10 +246,16 @@ export default async function CategorySlugPage({
               <h1 className="text-xl md:text-2xl font-bold text-on-surface leading-snug">
                 {name}
               </h1>
+              {/* GEO readiness audit (2026-08-25): a single, self-contained, dated sentence
+                  stating the count + observed price range — quotable verbatim by an AI
+                  answer engine, not split across this paragraph and a separate badge below.
+                  Same "observed range" framing as the badges/generateMetadata description
+                  already use (LAUNCH_VOCABULARY.md — never an absolute "cheapest" claim);
+                  every number here is already fetched, nothing new is computed. */}
               <p className="mt-1 text-sm text-on-surface-variant">
                 {isAr
-                  ? `نقارن أسعار ${overview.comparableCount} من ${name} بين أكثر من متجر سعودي — لكل منتج نعرض من أي متجر جاء السعر ومتى رصدناه.`
-                  : `We compare ${overview.comparableCount} ${name.toLowerCase()} across more than one Saudi retailer — each shows which retailer priced it and when we observed it.`}
+                  ? `نقارن أسعار ${overview.comparableCount} من ${name} بين أكثر من متجر سعودي${overview.priceRange ? ` — نطاق سعري مرصود من ${overview.priceRange.min} إلى ${overview.priceRange.max} ريال` : ''}${overview.freshestObservedAt ? `، آخر رصد ${freshnessLabel(overview.freshestObservedAt, true)}` : ''}. لكل منتج نعرض من أي متجر جاء السعر ومتى رصدناه.`
+                  : `We compare ${overview.comparableCount} ${name.toLowerCase()} across more than one Saudi retailer${overview.priceRange ? ` — observed price range ${overview.priceRange.min}–${overview.priceRange.max} SAR` : ''}${overview.freshestObservedAt ? `, most recently observed ${freshnessLabel(overview.freshestObservedAt, false)}` : ''}. Each product shows which retailer priced it and when we observed it.`}
               </p>
             </div>
           </div>
