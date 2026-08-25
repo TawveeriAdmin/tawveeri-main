@@ -14,6 +14,8 @@ import { getComparison, isComparisonError } from '@/lib/compare/get-comparison';
 import { buildAlternates } from '@/lib/seo/metadata';
 import { retailerDisplayName, resolveApprovedSlug } from '@/lib/retailers/approved-retailers';
 import { CompareStateSync } from '@/components/agent/compare-state-sync';
+import { readCategoryAttribution } from '@/lib/catalog/category-link';
+import { CategoryExitLink } from '@/components/catalog/category-exit-link';
 
 interface CampaignEligibility {
   eligible: true;
@@ -198,13 +200,20 @@ function StaleEvidenceNote({ offer, isAr }: { offer: CompareOffer; isAr: boolean
 
 export default async function TpsComparePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string; key: string }>;
+  searchParams: Promise<{ src?: string; category?: string; facet?: string }>;
 }) {
   const { locale, key } = await params;
   const isAr = locale === 'ar';
   const decodedKey = decodeURIComponent(key);
   const data = await fetchCompare(decodedKey);
+  // Category-facet-pages analytics mission (2026-08-25): if this visit came from a category
+  // or facet page's product card (withCategoryAttribution, category-product-grid.tsx), the
+  // merchant-exit links below fire `category_go_click` instead of rendering a plain,
+  // untracked `<a>`. Every other visitor's experience is byte-identical to before this.
+  const attribution = readCategoryAttribution(await searchParams);
 
   // No multi-store comparison for this product yet → a helpful state with a search fallback,
   // NEVER a 404/error (the compare button used to dead-end here). This is honest empty-state
@@ -423,15 +432,28 @@ export default async function TpsComparePage({
             <StaleEvidenceNote offer={cheapestOffer} isAr={isAr} />
 
             {cheapestOffer.product_url ? (
-              <a
-                href={cheapestOffer.product_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-[var(--brand-green)] px-5 text-sm font-semibold text-white shadow-[var(--elevation-1)] transition-colors hover:bg-[var(--brand-green-dark)]"
-              >
-                <span>{isAr ? `اذهب إلى ${cheapestOffer.store_name}` : `Go to ${cheapestOffer.store_name}`}</span>
-                <ExternalLink className="h-4 w-4" />
-              </a>
+              attribution ? (
+                <CategoryExitLink
+                  href={cheapestOffer.product_url}
+                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-[var(--brand-green)] px-5 text-sm font-semibold text-white shadow-[var(--elevation-1)] transition-colors hover:bg-[var(--brand-green-dark)]"
+                  attribution={attribution}
+                  store={cheapestOffer.store_name}
+                  canonicalId={canonical.id}
+                >
+                  <span>{isAr ? `اذهب إلى ${cheapestOffer.store_name}` : `Go to ${cheapestOffer.store_name}`}</span>
+                  <ExternalLink className="h-4 w-4" />
+                </CategoryExitLink>
+              ) : (
+                <a
+                  href={cheapestOffer.product_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-[var(--brand-green)] px-5 text-sm font-semibold text-white shadow-[var(--elevation-1)] transition-colors hover:bg-[var(--brand-green-dark)]"
+                >
+                  <span>{isAr ? `اذهب إلى ${cheapestOffer.store_name}` : `Go to ${cheapestOffer.store_name}`}</span>
+                  <ExternalLink className="h-4 w-4" />
+                </a>
+              )
             ) : (
               // No exit URL for this listing. Say exactly that — the old copy read
               // "شوف في المتاجر" but ran another search, doing the opposite of what it said.
@@ -493,15 +515,28 @@ export default async function TpsComparePage({
                       symbolClassName="w-4 h-4"
                     />
                     {offer.product_url ? (
-                      <a
-                        href={offer.product_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface)] px-3 text-xs font-semibold text-on-surface transition-colors hover:border-[var(--brand-green)]/50 hover:bg-[var(--brand-bg-green)]"
-                      >
-                        {isAr ? `اذهب إلى ${offer.store_name}` : `Go to ${offer.store_name}`}
-                        <ExternalLink className="h-3 w-3" />
-                      </a>
+                      attribution ? (
+                        <CategoryExitLink
+                          href={offer.product_url}
+                          className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface)] px-3 text-xs font-semibold text-on-surface transition-colors hover:border-[var(--brand-green)]/50 hover:bg-[var(--brand-bg-green)]"
+                          attribution={attribution}
+                          store={offer.store_name}
+                          canonicalId={canonical.id}
+                        >
+                          {isAr ? `اذهب إلى ${offer.store_name}` : `Go to ${offer.store_name}`}
+                          <ExternalLink className="h-3 w-3" />
+                        </CategoryExitLink>
+                      ) : (
+                        <a
+                          href={offer.product_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface)] px-3 text-xs font-semibold text-on-surface transition-colors hover:border-[var(--brand-green)]/50 hover:bg-[var(--brand-bg-green)]"
+                        >
+                          {isAr ? `اذهب إلى ${offer.store_name}` : `Go to ${offer.store_name}`}
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                      )
                     ) : (
                       // "في المتاجر" looked like a link and ran a search. If we have no exit
                       // URL, show plain text — never a control that pretends to reach the store.

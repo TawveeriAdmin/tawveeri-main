@@ -37,6 +37,7 @@ import { getQualifyingAcFacets } from '@/lib/catalog/getAcFacetOverview';
 import { buildAlternates, getBaseUrl } from '@/lib/seo/metadata';
 import { getCategoryGuide } from '@/lib/seo/category-guide';
 import { CategoryProductGrid } from '@/components/catalog/category-product-grid';
+import { CategoryViewTracker } from '@/components/catalog/category-view-tracker';
 
 // Rendered on demand, NOT prerendered: `redirect()`/`notFound()` throw their control-flow
 // signal at render time, which fails during static generation — this is the exact defect
@@ -207,6 +208,7 @@ export default async function CategorySlugPage({
 
   return (
     <PublicPageShell locale={locale}>
+      <CategoryViewTracker category={cat.key} facet={null} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -288,7 +290,7 @@ export default async function CategorySlugPage({
         )}
 
         {/* ── Product grid ── */}
-        <CategoryProductGrid products={overview.products} locale={locale} isAr={isAr} />
+        <CategoryProductGrid products={overview.products} locale={locale} isAr={isAr} category={cat.key} />
 
         {/* ── Fallback to broader search ── */}
         <div className="text-center">

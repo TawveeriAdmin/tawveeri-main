@@ -28,6 +28,7 @@ import { getAcFacetOverview } from '@/lib/catalog/getAcFacetOverview';
 import { buildAlternates, getBaseUrl } from '@/lib/seo/metadata';
 import { getCategoryGuide } from '@/lib/seo/category-guide';
 import { CategoryProductGrid } from '@/components/catalog/category-product-grid';
+import { CategoryViewTracker } from '@/components/catalog/category-view-tracker';
 
 export const dynamic = 'force-dynamic';
 
@@ -165,6 +166,7 @@ export default async function CategoryFacetPage({
 
   return (
     <PublicPageShell locale={locale}>
+      <CategoryViewTracker category={cat.key} facet={f.slug} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -234,7 +236,7 @@ export default async function CategoryFacetPage({
         </div>
 
         {/* ── Product grid ── */}
-        <CategoryProductGrid products={overview.products} locale={locale} isAr={isAr} />
+        <CategoryProductGrid products={overview.products} locale={locale} isAr={isAr} category={cat.key} facet={f.slug} />
 
         {/* ── Fallback to parent category ── */}
         <div className="text-center">

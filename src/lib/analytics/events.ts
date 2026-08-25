@@ -26,6 +26,18 @@ export const USAGE_EVENT_TYPES = [
   "comparison_view",                     // Comparison seen (≥2 stores)
   "evidence_view",                       // Evidence / trust engaged
   "go_click",                            // Outbound Click (measured exit intent, client-side)
+  // Category-facet-pages mission (2026-08-25) — /categories/[slug] (ADR-226) and its facet
+  // tier had ZERO measurement of any kind: no page-view event, and a click on a category
+  // page's product card lands on /compare/[key], where the merchant-exit link was (and for
+  // non-category traffic still is) a plain <a> with no track() call at all — so even a
+  // category-originated exit click could never be attributed anywhere. These two close that:
+  "category_page_view",                  // A /categories/[slug] or /categories/[slug]/[facet]
+                                          // page rendered. meta.facet set only on the facet tier.
+  "category_go_click",                   // Merchant-exit click on /compare/[key], attributed
+                                          // back to the category/facet page that linked here
+                                          // (via ?src=category on the compare-page URL) — see
+                                          // category-exit-link.tsx. `category` = TPS category
+                                          // key, meta.facet = facet slug when applicable.
   "home_mission",                        // «جهّز بيتك بذكاء» pilot funnel — step in meta.step
                                          // (started | plan | partial | refined | rejected | clarified)
   "home_share",                          // shared-plan lifecycle (ADR-257) — meta.step:
