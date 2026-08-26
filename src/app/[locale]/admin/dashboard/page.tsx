@@ -14,6 +14,7 @@ import {
   AlertTriangle,
   ArrowUpRight,
   Boxes,
+  Layers,
   Radio,
   Store,
   Users,
@@ -151,12 +152,17 @@ export default async function AdminDashboardPage({
         </div>
       </Section>
 
-      {/* CATALOG */}
+      {/* CATALOG — TPS knowledge layer (canonical_products / tps_product_projection).
+          Kept in its own section, deliberately NOT sharing a grid with the
+          storefront-layer count below: the two pipelines have no foreign key
+          between them, so a reader must not be able to eyeball a ratio across
+          them (see docs/DECISIONS.md ADR-242 — canonical_products/
+          tps_product_projection vs the legacy products/product_stores layer). */}
       <Section
         icon={<Boxes size={16} />}
-        title={t('الكتالوج', 'Catalog')}
+        title={t('الكتالوج — طبقة هوية TPS', 'Catalog — TPS identity layer')}
       >
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
           <Card
             label={t('منتجات معرفة الهوية', 'Canonical products')}
             value={fmt(data.catalog.canonicalProducts)}
@@ -170,10 +176,26 @@ export default async function AdminDashboardPage({
             label={t('حديثة (<72س)', 'Fresh (<72h)')}
             value={fmt(data.catalog.freshCanonicals72h)}
           />
+        </div>
+      </Section>
+
+      {/* STOREFRONT LAYER — legacy products/product_stores. A separate table
+          with no join to canonical_products (confirmed: product_stores.product_id
+          → products.id only; products.canonical_product_id is the only real
+          link, and it covers a minority of rows — see ADR-242). Never divide
+          this number by anything in the Catalog section above. */}
+      <Section
+        icon={<Layers size={16} />}
+        title={t('طبقة الواجهة (تراثية)', 'Storefront layer (legacy)')}
+      >
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
           <Card
             label={t('قوائم المتاجر (كل الطبقات)', 'Store listings (all layers)')}
             value={fmt(data.catalog.storefrontListings)}
-            hint={t('حجم، وليس جودة مقارنة', 'volume, not comparison quality')}
+            hint={t(
+              'حجم فقط — جدول منفصل تماماً عن الكتالوج أعلاه، لا رابط بينهما',
+              'volume only — a separate table from the catalog above, not joined to it'
+            )}
           />
         </div>
       </Section>
