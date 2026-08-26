@@ -18,6 +18,7 @@ import { heuristicClassification, extractBudget } from '@/lib/growth/demand-rada
 import { rankOpportunity } from '@/lib/growth/demand-radar/rank';
 import { violatesClaimSafety } from '@/lib/growth/demand-radar/draft';
 import { MockAdapter } from '@/lib/growth/demand-radar/adapters';
+import { CATEGORY_LEXICONS, RADAR_CATEGORY_KEYS } from '@/lib/growth/demand-radar/saudi-lexicon';
 import type { RadarCandidate } from '@/lib/growth/demand-radar/types';
 
 const mk = (text: string, minsAgo = 10): RadarCandidate => ({
@@ -204,6 +205,38 @@ describe('freshness gate (founder correction: 40h-old post must never urgent-ema
     expect(mentionAlertEligible(ago(55))).toBe(true);
     expect(mentionAlertEligible(ago(90))).toBe(false);
     expect(mentionAlertEligible(null)).toBe(false);
+  });
+});
+
+describe('lexicon narrowed to direct purchase-need phrasing (founder decision 2026-08-26)', () => {
+  const BROAD_MARKERS = ['وش افضل', 'محتار', 'انصحوني', 'تنصحون'];
+
+  it('no category query still carries the dropped broad/comparison phrasing', () => {
+    for (const c of CATEGORY_LEXICONS) {
+      for (const marker of BROAD_MARKERS) {
+        expect(c.xQuery).not.toContain(marker);
+      }
+    }
+  });
+
+  it('every query keeps direct-need phrasing (ابي/أبي/ابغى/أبغى/احتاج/أحتاج)', () => {
+    for (const c of CATEGORY_LEXICONS) {
+      const hasNeedMarker = ['ابي ', 'أبي ', 'ابغى ', 'أبغى ', 'احتاج ', 'أحتاج '].some((m) =>
+        c.xQuery.includes(m)
+      );
+      expect(hasNeedMarker).toBe(true);
+    }
+  });
+
+  it('oven is now a radar category with direct-need phrasing', () => {
+    expect(RADAR_CATEGORY_KEYS).toContain('oven');
+    const oven = CATEGORY_LEXICONS.find((c) => c.category === 'oven');
+    expect(oven?.xQuery).toContain('ابي فرن');
+    expect(oven?.xQuery).toContain('فرني خرب وابي بديل');
+  });
+
+  it('home-furnishing was never added — no matching production category exists', () => {
+    expect(CATEGORY_LEXICONS.some((c) => c.nameAr.includes('تأثيث'))).toBe(false);
   });
 });
 

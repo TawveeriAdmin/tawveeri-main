@@ -16,12 +16,19 @@ import { rankOpportunity } from './rank';
 import { draftReply } from './draft';
 import { sendHighOpportunityAlert } from './alert';
 import { opportunityAlertEligible } from './freshness';
+import { recordWeeklyExpiry } from './weekly-stats';
 import type { RadarCandidate } from './types';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://tawveeri.com';
 /** HIGH alerts: at most this many emails per rolling window (§25). */
 const ALERT_MAX_PER_WINDOW = 3;
 const ALERT_WINDOW_HOURS = 4;
+/** Founder-review SLA (founder decision 2026-08-26): an unreviewed opportunity
+ *  is hard-deleted after this many hours — no soft "expired" status, no
+ *  per-item detail kept, only a weekly count (see weekly-stats.ts). This is
+ *  distinct from heuristics.ts's isStale()/rank.ts's 48h source-post-age gate,
+ *  which answer "is this post still worth replying to" — left unchanged. */
+const REVIEW_WINDOW_HOURS = 24;
 
 export interface RadarRunResult {
   source: string;
@@ -182,12 +189,25 @@ export async function runDemandRadar(opts: { source: 'x' | 'mock'; isTest?: bool
     }
   }
 
-  // expire stale unreviewed opportunities (48h) — keeps the queue honest
-  await sb
+  // Hard-delete unreviewed opportunities past the founder-review SLA (24h) —
+  // no soft "expired" status, no per-item detail kept (founder decision
+  // 2026-08-26). Count first so the weekly total is exact even though the
+  // rows themselves are gone.
+  const reviewCutoff = new Date(Date.now() - REVIEW_WINDOW_HOURS * 3600_000).toISOString();
+  const { data: staleRows } = await sb
     .from('demand_opportunities')
-    .update({ status: 'expired', updated_at: new Date().toISOString() })
+    .select('id')
     .in('status', ['new', 'ready_for_review'])
-    .lt('created_at', new Date(Date.now() - 48 * 3600_000).toISOString());
+    .lt('created_at', reviewCutoff);
+  const staleCount = staleRows?.length ?? 0;
+  if (staleCount > 0) {
+    await sb
+      .from('demand_opportunities')
+      .delete()
+      .in('status', ['new', 'ready_for_review'])
+      .lt('created_at', reviewCutoff);
+    await recordWeeklyExpiry(sb, staleCount);
+  }
 
   await writeState('ok', result.polled);
 
