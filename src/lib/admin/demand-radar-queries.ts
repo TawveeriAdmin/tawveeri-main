@@ -14,6 +14,7 @@ export interface OpportunityRow {
   first_seen_at: string;
   classified_at: string | null;
   alerted_at: string | null;
+  opportunity_type: string;
   category: string | null;
   intent_class: string | null;
   intent_strength: string | null;

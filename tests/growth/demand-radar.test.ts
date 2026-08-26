@@ -258,6 +258,72 @@ describe('lexicon narrowed to direct purchase-need phrasing (founder decision 20
   });
 });
 
+describe('Phase 2 lexicon expansion (founder decision 2026-08-26, same day as narrowing)', () => {
+  it('every category gains the two Gulf-dialect direct-need verb variants (ودي X / بشتري X)', () => {
+    for (const c of CATEGORY_LEXICONS) {
+      expect(c.xQuery).toMatch(/"ودي [^"]+"/);
+      expect(c.xQuery).toMatch(/"بشتري [^"]+"/);
+    }
+  });
+
+  it('mobile and laptop gain brand-first phrasing; other categories do not', () => {
+    const mobile = CATEGORY_LEXICONS.find((c) => c.category === 'mobile');
+    const laptop = CATEGORY_LEXICONS.find((c) => c.category === 'laptop');
+    expect(mobile?.xQuery).toContain('ابي ايفون');
+    expect(mobile?.xQuery).toContain('ابغى جالكسي');
+    expect(laptop?.xQuery).toContain('ابي ماك بوك');
+    expect(laptop?.xQuery).toContain('ابي MacBook');
+
+    const BRAND_TOKENS = ['ايفون', 'iPhone', 'جالكسي', 'ماك بوك', 'MacBook'];
+    for (const c of CATEGORY_LEXICONS) {
+      if (c.category === 'mobile' || c.category === 'laptop') continue;
+      for (const token of BRAND_TOKENS) {
+        expect(c.xQuery).not.toContain(token);
+      }
+    }
+  });
+
+  it('every category query still fits X recent-search self-serve limit (512 chars, incl. adapter suffix)', () => {
+    const ADAPTER_SUFFIX = ' lang:ar -is:retweet -from:Tawveeri';
+    for (const c of CATEGORY_LEXICONS) {
+      expect((c.xQuery + ADAPTER_SUFFIX).length).toBeLessThanOrEqual(512);
+    }
+  });
+
+  it('the dropped broad/comparison markers still never reappear after Phase 2 additions', () => {
+    const BROAD_MARKERS = ['وش افضل', 'محتار', 'انصحوني', 'تنصحون'];
+    for (const c of CATEGORY_LEXICONS) {
+      for (const marker of BROAD_MARKERS) {
+        expect(c.xQuery).not.toContain(marker);
+      }
+    }
+  });
+});
+
+describe('Home Mission Watch query (Growth Radar Phase 2, Part B — founder decision 2026-08-26)', () => {
+  it('carries the founder-approved furnishing and new-home-receipt phrases', async () => {
+    const { HOME_MISSION_QUERY } = await import('@/lib/growth/demand-radar/home-mission-detect');
+    for (const phrase of [
+      'أبي أثث شقتي', 'أبي أثث بيتي', 'أثاث شقة جديدة',
+      'استلمت بيتي الجديد', 'استلمت شقتي الجديدة', 'استلمنا الشقة',
+    ]) {
+      expect(HOME_MISSION_QUERY).toContain(phrase);
+    }
+  });
+
+  it('excludes our own account and non-Arabic results, same as every other query', async () => {
+    const { HOME_MISSION_QUERY } = await import('@/lib/growth/demand-radar/home-mission-detect');
+    expect(HOME_MISSION_QUERY).toContain('-from:Tawveeri');
+    expect(HOME_MISSION_QUERY).toContain('lang:ar');
+    expect(HOME_MISSION_QUERY).toContain('-is:retweet');
+  });
+
+  it('fits the X recent-search self-serve length limit', async () => {
+    const { HOME_MISSION_QUERY } = await import('@/lib/growth/demand-radar/home-mission-detect');
+    expect(HOME_MISSION_QUERY.length).toBeLessThanOrEqual(512);
+  });
+});
+
 describe('generic توفيري usage guard (live-cycle lesson: coupon spam is not the brand)', () => {
   it('coupon/promo adjective usage is filtered; brand forms and Latin pass', async () => {
     const { isGenericTawfeeriUsage, BRAND_QUERY } = await import('@/lib/growth/demand-radar/brand-mentions');

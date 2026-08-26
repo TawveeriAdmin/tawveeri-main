@@ -20,7 +20,7 @@ export async function GET(
   const sb = createServerClient() as any;
   const { data } = await sb
     .from('demand_opportunities')
-    .select('short_id, source, category, is_test')
+    .select('short_id, source, category, opportunity_type, is_test')
     .eq('short_id', shortId)
     .maybeSingle();
   if (!data) return fallback;
@@ -32,5 +32,8 @@ export async function GET(
     utm_content: `dr-${data.short_id}`,
   });
   if (data.is_test) utm.set('test', '1'); // TEST lineage stays TEST end-to-end
-  return NextResponse.redirect(`${base}/ar?${utm}`, 302);
+  // Home Mission opportunities (Growth Radar Phase 2, Part B) point to the
+  // mission tool itself, not the homepage — same UTM lineage either way.
+  const destination = data.opportunity_type === 'home_mission' ? '/ar/home-mission' : '/ar';
+  return NextResponse.redirect(`${base}${destination}?${utm}`, 302);
 }

@@ -164,7 +164,13 @@ export default async function GrowthPage() {
                       }`}>
                         {op.tier === 'high' ? 'فرصة قوية' : 'فرصة متوسطة'}
                       </span>
-                      <span className="font-bold">{categoryNameAr(op.category)}</span>
+                      {op.opportunity_type === 'home_mission' ? (
+                        <span className="rounded-full bg-violet-100 px-2.5 py-1 font-bold text-violet-800 dark:bg-violet-500/15 dark:text-violet-300">
+                          جهّز بيتك
+                        </span>
+                      ) : (
+                        <span className="font-bold">{categoryNameAr(op.category)}</span>
+                      )}
                       <span className="text-gray-500">{op.source === 'x' ? 'X' : op.source}</span>
                       {op.author_handle && <span className="text-gray-500" dir="ltr">@{op.author_handle}</span>}
                       <span className="text-gray-500">{relAgo(op.source_posted_at ?? op.first_seen_at)}</span>

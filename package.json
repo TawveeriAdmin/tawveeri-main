@@ -29,7 +29,7 @@
     "flask:start": "./scripts/scraping/run-flask.sh",
     "flask:dev": "FLASK_DEBUG=true ./scripts/scraping/run-flask.sh",
     "flask:check": "./scripts/scraping/check-flask.sh",
-    "test:integration": "jest tests/auth/audit.test.ts tests/auth/notifications.test.ts tests/auth/profile.test.ts tests/auth/phone-otp.test.ts --testPathIgnorePatterns /node_modules/ /.next/ /mobile/",
+    "test:integration": "jest tests/auth/audit.test.ts tests/auth/notifications.test.ts tests/auth/profile.test.ts tests/auth/phone-otp.test.ts tests/growth/home-mission-integration.test.ts --testPathIgnorePatterns /node_modules/ /.next/ /mobile/",
     "typecheck": "tsc --noEmit",
     "typecheck:baseline": "tsx scripts/quality/typecheck-baseline.ts",
     "typecheck:baseline:update": "tsx scripts/quality/typecheck-baseline.ts --update",

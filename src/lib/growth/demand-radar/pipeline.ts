@@ -140,6 +140,7 @@ export async function runDemandRadar(opts: { source: 'x' | 'mock'; isTest?: bool
         post_lang: c.lang,
         source_posted_at: c.postedAt,
         classified_at: new Date().toISOString(),
+        opportunity_type: 'product',
         category: cls.category,
         intent_class: cls.intentClass,
         intent_strength: cls.intentStrength,
@@ -219,6 +220,19 @@ export async function runDemandRadar(opts: { source: 'x' | 'mock'; isTest?: bool
       await runBrandMentionWatch({ isTest });
     } catch {
       /* observable via demand_radar_state('x-brand'), never fatal here */
+    }
+  }
+
+  // Home Mission Watch (Growth Radar Phase 2, Part B — founder decision
+  // 2026-08-26): one extra query per cycle, writes into demand_opportunities
+  // with opportunity_type='home_mission' (bypasses the per-product
+  // answerability gate by design). A failure here never fails the radar run.
+  if (opts.source === 'x') {
+    try {
+      const { runHomeMissionWatch } = await import('./home-mission-detect');
+      await runHomeMissionWatch({ isTest });
+    } catch {
+      /* observable via demand_radar_state('home-mission'), never fatal here */
     }
   }
   return result;
