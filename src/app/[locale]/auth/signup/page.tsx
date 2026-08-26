@@ -7,7 +7,7 @@ import { useTranslations } from '@/lib/simple-intl-provider';
 import { useTheme } from 'next-themes';
 import { useAuth } from '@/lib/auth/auth-context';
 import { useToast } from '@/components/ui/use-toast';
-import { Mail, Lock, Eye, EyeOff, User, Moon, Sun, Languages, Phone, ArrowLeft, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, User, Moon, Sun, Languages, Phone, ArrowLeft, AlertCircle, CheckCircle2, Tag } from 'lucide-react';
 import { validateEmail, validatePassword, validatePasswordMatch, validateFullName } from '@/lib/auth-validation';
 
 // Social auth icons (same as login page)
@@ -555,9 +555,6 @@ export default function SignupPage() {
  <p className="text-lg leading-relaxed" style={{ color: '#d1d5db' }}>
  {t('auth.welcomeDescription')}
  </p>
- <p className="text-sm mt-4" style={{ color: '#9ca3af' }}>
- {t('auth.joinMessage')}
- </p>
  </div>
 
  {/* Feature Card */}
@@ -569,23 +566,12 @@ export default function SignupPage() {
  {t('auth.ctaDescription')}
  </p>
 
- {/* Avatar Group */}
+ {/* Real, current comparison stat — no fabricated user/avatar count */}
  <div className="flex items-center gap-2">
- <div className="flex -space-x-3">
- <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 border-2 border-gray-800 flex items-center justify-center text-sm font-bold" style={{ color: '#ffffff' }}>
- A
+ <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center">
+ <Tag className="w-5 h-5" style={{ color: '#ffffff' }} />
  </div>
- <div className="w-10 h-10 rounded-full bg-gradient-to-br from-success-500 to-success-700 border-2 border-gray-800 flex items-center justify-center text-sm font-bold" style={{ color: '#ffffff' }}>
- M
- </div>
- <div className="w-10 h-10 rounded-full bg-gradient-to-br from-featured-500 to-featured-700 border-2 border-gray-800 flex items-center justify-center text-sm font-bold" style={{ color: '#ffffff' }}>
- S
- </div>
- <div className="w-10 h-10 rounded-full bg-gradient-to-br from-warning-500 to-warning-700 border-2 border-gray-800 flex items-center justify-center text-sm font-bold" style={{ color: '#ffffff' }}>
- +
- </div>
- </div>
- <span className="text-sm" style={{ color: '#9ca3af' }}>{t('auth.stats.users')}</span>
+ <span className="text-sm" style={{ color: '#9ca3af' }}>{t('auth.stats.comparableProducts')}</span>
  </div>
  </div>
  </div>
