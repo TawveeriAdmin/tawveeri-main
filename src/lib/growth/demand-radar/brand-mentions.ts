@@ -16,6 +16,18 @@ const MODEL = process.env.DEMAND_RADAR_CLASSIFY_MODEL || 'claude-haiku-4-5-20251
 const ALERT_MAX_PER_WINDOW = 3;
 const ALERT_WINDOW_HOURS = 4;
 
+/** True when X rejected the request because `since_id` is older than its
+ *  7-day recent-search window. Found 2026-08-26: the watch was previously
+ *  keeping the stale cursor on every failure, so once since_id fell outside
+ *  the window it could never succeed again on retry — a permanent deadlock
+ *  (x-brand stuck silently since 2026-08-19, 7+ days with zero polls). This
+ *  is the ONLY failure this recovers from by resetting the cursor; any other
+ *  failure (rate limit, network, auth) keeps the existing cursor as before,
+ *  since those are transient and retrying with the same cursor is correct. */
+export function isStaleSinceIdError(status: number, body: string): boolean {
+  return status === 400 && body.includes('since_id');
+}
+
 // No lang filter — brand mentions matter in any language. Own posts excluded.
 // LIVE LESSON (first real cycle, 2026-08-15): bare «توفيري» is a GENERIC Arabic
 // adjective — the cycle returned SHEIN/Amazon coupon spam («خصم توفيري», «عرض
@@ -191,7 +203,8 @@ export async function runBrandMentionWatch(opts: { isTest?: boolean; mockCandida
       if (!res.ok) {
         const body = (await res.text().catch(() => '')).slice(0, 300);
         const detail = `X API ${res.status}: ${body}`;
-        await upsertState(sb, `source_unavailable: ${detail}`.slice(0, 300), 0, st?.cursor ?? null);
+        const nextCursor = isStaleSinceIdError(res.status, body) ? null : (st?.cursor ?? null);
+        await upsertState(sb, `source_unavailable: ${detail}`.slice(0, 300), 0, nextCursor);
         return { ...result, status: 'source_unavailable', detail };
       }
       json = await res.json();

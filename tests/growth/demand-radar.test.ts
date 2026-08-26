@@ -171,6 +171,24 @@ describe('brand mention watch (ADR-248) — separation + heuristic classes', () 
   });
 });
 
+describe('x-brand stale since_id recovery (found + fixed 2026-08-26: cursor was stuck 7+ days)', () => {
+  it('recognizes the exact X error for a since_id outside the 7-day window', async () => {
+    const { isStaleSinceIdError } = await import('@/lib/growth/demand-radar/brand-mentions');
+    const body = JSON.stringify({
+      detail: 'One or more parameters to your request was invalid.',
+      errors: [{ message: "'since_id' must be a tweet id created after 2026-08-19T08:41Z. Please use a 'since_id' that is larger than 2089996193672200192", parameters: { since_id: ['2087867603335160198'] } }],
+    });
+    expect(isStaleSinceIdError(400, body)).toBe(true);
+  });
+  it('does not trigger on unrelated 400s or other statuses (rate limit, auth, network) — those keep the cursor', async () => {
+    const { isStaleSinceIdError } = await import('@/lib/growth/demand-radar/brand-mentions');
+    expect(isStaleSinceIdError(400, 'invalid query syntax')).toBe(false);
+    expect(isStaleSinceIdError(429, "'since_id' must be a tweet id")).toBe(false);
+    expect(isStaleSinceIdError(401, 'unauthorized')).toBe(false);
+    expect(isStaleSinceIdError(500, '')).toBe(false);
+  });
+});
+
 describe('freshness gate (founder correction: 40h-old post must never urgent-email)', () => {
   const ago = (mins: number) => new Date(Date.now() - mins * 60000).toISOString();
 
