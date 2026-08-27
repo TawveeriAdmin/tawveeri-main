@@ -56,7 +56,17 @@ interface FamilyRule {
 const BRAND_FAMILIES: Record<string, FamilyRule[]> = {
   apple: [{
     family: "iPhone",
-    gen: /(?:iphone|ايفون)\s*(\d{1,2})/,
+    // MEASURED DEFECT (2026-08-27, quality program P0): the bare `\d{1,2}` capture had
+    // no boundary after the digits, so "iPhone 16e" (a real, distinct, cheaper Apple
+    // model — Apple also ships "iPhone 17e") captured generation="16", identical to a
+    // genuine "iPhone 16". A Noon "iPhone 16e" listing (real current price ~SAR 2,129)
+    // was merged into the "apple|iPhone|16|Standard|128" canonical, corrupting its price
+    // comparison — the genuine iPhone 16 (two OTHER, correctly-identified stores) is
+    // ~SAR 3,172-3,249, not the ~SAR 1,899-2,097 the contaminated canonical showed.
+    // `e?` is optional so a genuine "iPhone 16" (no trailing e) is unaffected; `\b`
+    // after it means the "e" must be directly glued to the digits (Apple's actual
+    // naming), not a separate later word like "...16 eSIM...".
+    gen: /(?:iphone|ايفون)\s*(\d{1,2}e?)\b/,
     // iPhone Air / iPhone SE carry a NAME where other models carry a number.
     named: [
       { re: /(?:iphone|ايفون)\s*(?:air|اير)/, generation: "Air", variant: "Standard" },
@@ -211,6 +221,16 @@ export function normalize(
     if (generation) break;
     const m = rule.gen.exec(text);
     if (m) { family = rule.family; generation = m[1].toUpperCase(); break; }
+  }
+
+  // iPhone's own "e" line (16e, 17e, ...) is real Apple branding with a lowercase "e"
+  // ("iPhone 16e", never "iPhone 16E") — the shared `.toUpperCase()` above turns the
+  // captured "16e" into "16E"; restore the lowercase suffix so this reads correctly and,
+  // more importantly, so it keeps comparing UNEQUAL to plain "16" downstream (both are
+  // already distinct strings either way — this is a display/consistency fix, not what
+  // separates the two identities, which the widened capture group above already does).
+  if (family === "iPhone" && generation && /E$/.test(generation)) {
+    generation = `${generation.slice(0, -1)}e`;
   }
 
   // Samsung generations are conventionally written with their line letter.

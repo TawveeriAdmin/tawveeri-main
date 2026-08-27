@@ -188,6 +188,40 @@ describe("named generations and variants", () => {
     expect(idOf("سامسونج جالاكسي زد فولد 7، 256 جيجا", "", "سامسونج").key).toBe("samsung|Galaxy Z|Z Fold 7|Standard|256");
     expect(idOf("سامسونج جالاكسي زد فليب 7، 256 جيجا", "", "سامسونج").key).toBe("samsung|Galaxy Z|Z Flip 7|Standard|256");
   });
+
+  /**
+   * MEASURED DEFECT (2026-08-27, quality program P0): the bare `\d{1,2}` iPhone generation
+   * capture had no boundary after the digits, so "iPhone 16e" (a real, distinct, cheaper
+   * Apple model — Apple also ships "iPhone 17e") captured generation="16", identical to a
+   * genuine "iPhone 16". Confirmed live in production: a Noon "iPhone 16e" listing (real
+   * price ~SAR 2,129) was merged into the "apple|iPhone|16|Standard|128" canonical,
+   * corrupting its displayed price (~SAR 1,899-2,097) against the genuine iPhone 16's real
+   * price (~SAR 3,172-3,249, confirmed against noon.com directly and against two OTHER,
+   * correctly-identified stores in the same canonical).
+   */
+  it("keeps iPhone 16e a DISTINCT identity from iPhone 16 (production incident, exact title)", () => {
+    const contaminated = idOf("", "iPhone 16e 128GB Black 5G With Facetime - Middle East Version", "Apple");
+    const genuine = idOf("", "Apple iPhone 16, 5G, 6.1 inch,  128GB, Teal", "Apple");
+    expect(contaminated.key).toBe("apple|iPhone|16e|Standard|128");
+    expect(genuine.key).toBe("apple|iPhone|16|Standard|128");
+    expect(contaminated.key).not.toBe(genuine.key);
+  });
+
+  it("generalizes to iPhone 17e vs iPhone 17 (Apple ships more than one 'e' line)", () => {
+    const e = idOf("", "Apple IPhone 17e 256GB Soft Pink (ESIM Only) 5G With Facetime", "Apple");
+    const plain = idOf("", "Apple iPhone 17 256GB (ESIM Only) Sage 5G With FaceTime", "Apple");
+    expect(e.key).toBe("apple|iPhone|17e|Standard|256");
+    expect(plain.key).toBe("apple|iPhone|17|Standard|256");
+    expect(e.key).not.toBe(plain.key);
+  });
+
+  it("does not treat a later, space-separated 'e' word (eSIM) as part of the generation", () => {
+    expect(idOf("", "Apple iPhone 16 256GB eSIM Only", "Apple").key).toBe("apple|iPhone|16|Standard|256");
+  });
+
+  it("Pro Max / Pro variants of a plain-numbered iPhone are unaffected by the 'e' capture", () => {
+    expect(idOf("", "Apple iPhone 16 Pro Max 256GB Black", "Apple").key).toBe("apple|iPhone|16|Pro Max|256");
+  });
 });
 
 describe("long-tail brands (previously unsupported entirely)", () => {
