@@ -1776,6 +1776,22 @@ async function searchTPSCanonical(
       .limit(10000);
     const delisted = new Set((delistRows ?? []).map((d) => `${(d as { canonical_product_id: string }).canonical_product_id}|${(d as { store_slug: string }).store_slug}`));
 
+    // MEASURED DEFECT (2026-08-27, quality program P0 — the iPhone 16/16e incident, see
+    // docs/TAWVEERI_QUALITY_PROGRAM_STATE.md §9.2): this function reads `price_history`
+    // directly and, until now, excluded ONLY delisted (page-gone) offers — never
+    // `tps_price_implausibility_signals`, the table `build-tps-projection.ts` already reads
+    // as an exclusion (ADR-267) and this session's price-transition guard also writes to
+    // (§8.13). A quarantined (canonical, store) price could therefore still win "cheapest"
+    // on THIS specific live customer-facing surface even after being correctly excluded
+    // everywhere else. Keyed on `canonical_product_id|store_display_name` — the SAME
+    // display-name convention `price_history.store_name` already uses, so no slug
+    // resolution is needed (unlike the delist signals, which are slug-keyed).
+    const { data: implausibleRows } = await supabase
+      .from('tps_price_implausibility_signals')
+      .select('canonical_product_id, store_display_name')
+      .limit(10000);
+    const implausible = new Set((implausibleRows ?? []).map((d) => `${(d as { canonical_product_id: string }).canonical_product_id}|${(d as { store_display_name: string }).store_display_name}`));
+
     const latest = new Map<string, Map<string, { price: number; obsId: string; observedAt: string }>>();
     for (const r of prices ?? []) {
       // Approved scope gate + ONE KEY PER RETAILER. This map used to be keyed on the raw
@@ -1793,6 +1809,7 @@ async function searchTPSCanonical(
       // row (blackbox/lulu/sharafdg) render the moment normalize wrote it.
       if (!slug || !isDisplayableRetailer(slug)) continue;
       if (delisted.has(`${r.canonical_product_id}|${slug}`)) continue; // ADR-196
+      if (implausible.has(`${r.canonical_product_id}|${r.store_name}`)) continue; // ADR-267 / §8.13
       if (!latest.has(r.canonical_product_id)) latest.set(r.canonical_product_id, new Map());
       const m = latest.get(r.canonical_product_id)!;
       if (!m.has(slug)) m.set(slug, { price: Number(r.price), obsId: r.tps_observation_id, observedAt: r.observed_at });
