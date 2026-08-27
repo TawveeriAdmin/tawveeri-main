@@ -2216,7 +2216,21 @@ export async function POST(request: NextRequest) {
         .filter((g) => g.length > 0 && !g.every((t) => GENERIC.has(t)))
     : [];
   const isAcQuery = !!rawQuery && (detectCanonicalCategories(rawQuery) ?? []).includes('air_conditioner');
-  const isMonitorQuery = !!rawQuery && (detectCanonicalCategories(rawQuery) ?? []).includes('monitor');
+  // MEASURED DEFECT (2026-08-27, quality program, TV-008): `detectCanonicalCategories`
+  // groups tv+monitor under ONE shared term list (`شاشة`/`monitor`/`display` are ambiguous
+  // between the two), so it returns `['tv','monitor']` together for ANY match in that
+  // group — including a query that only ever said "تلفزيون" (an unambiguous TV noun, no
+  // "شاشة"/"monitor"/"display" anywhere). That made every TV query ALSO `isMonitorQuery`,
+  // which then ran `hasStrongMonitorSignal` (a HEALTH-CONTEXT check built for smartwatch/
+  // fitness-monitor false positives) against real TVs — no genuine TV passes a "heart rate/
+  // sleep/blood pressure monitor" check, so `needShapedWithCategory` zeroed the entire,
+  // correct result set for "أفضل تلفزيون OLED تحت 5000 ريال" even after real OLED TVs under
+  // budget were found by the relevance gate. Scoped fix: a query naming an unambiguous TV
+  // noun is never treated as monitor-eligible, regardless of what the shared category-term
+  // group returns; a query naming ONLY the ambiguous terms (or naming both) keeps the
+  // existing behavior unchanged.
+  const hasUnambiguousTvNoun = !!rawQuery && /تلفزيون|تلفاز|\btv\b|\btelevision\b/i.test(normalizeArabic(rawQuery));
+  const isMonitorQuery = !!rawQuery && (detectCanonicalCategories(rawQuery) ?? []).includes('monitor') && !hasUnambiguousTvNoun;
   const isWatchQuery = !!rawQuery && (detectCanonicalCategories(rawQuery) ?? []).includes('smartwatch');
   const isDishwasherQuery = !!rawQuery && (detectCanonicalCategories(rawQuery) ?? []).includes('dishwasher');
   const isOvenQuery = !!rawQuery && (detectCanonicalCategories(rawQuery) ?? []).includes('oven');
@@ -2248,7 +2262,23 @@ export async function POST(request: NextRequest) {
   // a 9-word natural-language description is not a literal product-name search regardless of
   // which recognized noun it happens to contain.
   let categoryEnforcedZero = false;
-  if (rawQuery && queryIsMainProduct && !looksLikeSentenceNotProductQuery(rawQuery)) {
+  const isSentenceShaped = !!rawQuery && looksLikeSentenceNotProductQuery(rawQuery);
+  if (rawQuery && queryIsMainProduct) {
+    // MEASURED DEFECT (2026-08-27, quality program §8 next-defect pass, TV-008): this branch
+    // used to require `!looksLikeSentenceNotProductQuery(rawQuery)` to even TRY relevance
+    // gating — any 6+-word query fell straight to the unconditional-zero branch below
+    // WITHOUT ever checking whether real products actually matched. "أفضل تلفزيون OLED تحت
+    // 5000 ريال" (best OLED TV under 5000 SAR) is exactly 6 words, has a real, unambiguous
+    // product-type noun ("تلفزيون"), and real matching OLED TVs exist under budget (Samsung
+    // S85F, SAR 3,184-4,499) — but it zeroed anyway, never even attempting the match. A
+    // T3 constrained-recommendation query (category + attribute + budget) is the opposite of
+    // the vague, unstructured "ابي ثلاجة كبيرة للعائلة موفرة للكهرباء..." case the word-count
+    // heuristic was built to catch (see this function's own comment above) — word count alone
+    // cannot tell the two apart, but a genuine relevance match can. Relevance gating now
+    // always runs first for any resolved product-type query, sentence-shaped or not; the
+    // sentence-shape signal is demoted to just ONE of the reasons a zero-match falls back to
+    // honest zero instead of unfiltered noise (alongside the pre-existing category/need
+    // signals), never a reason to skip trying the match at all.
     const wordGroups = relevanceGroups;
     if (wordGroups.length) {
       const gated = products.filter((p) => {
@@ -2256,7 +2286,7 @@ export async function POST(request: NextRequest) {
         return wordGroups.every((group) => group.some((t) => hay.includes(t)));
       });
       if (gated.length > 0) products = gated;
-      else if (needShapedWithCategory || constraintTask?.category) {
+      else if (needShapedWithCategory || constraintTask?.category || isSentenceShaped) {
         // Master Book category enforcement (measured 2026-08-04): a need-shaped query with
         // an EXPLICIT category («ابي 3 مكيفات بميزانيتي 5000 ريال») must never fall back to
         // unrelated products. Fewer or zero relevant results beat confident wrong ones.
@@ -2273,17 +2303,22 @@ export async function POST(request: NextRequest) {
         // A resolved category is enough on its own to earn "zero beats wrong"; the
         // numeric constraint was never the thing doing the protecting. Genuinely
         // uncategorized queries (`constraintTask?.category` null) still keep the softer
-        // fallback, unchanged.
+        // fallback, unless the sentence-shape signal alone triggers it (below).
         products = [];
         categoryEnforcedZero = true;
         console.warn(`[category-enforced-zero] "${rawQuery.slice(0, 60)}" — category "${constraintTask?.category}" matched nothing; returning honest zero instead of unrelated results`);
       }
+    } else if (isSentenceShaped) {
+      // No relevance groups at all (every word was generic/short/a priority descriptor) —
+      // preserves the original unconditional-zero behavior for this narrower case.
+      products = [];
+      categoryEnforcedZero = true;
+      console.warn(`[category-enforced-zero] "${rawQuery.slice(0, 60)}" — sentence-shaped query with no relevance signal; returning honest zero instead of unfiltered results`);
     }
-  } else if (rawQuery && looksLikeSentenceNotProductQuery(rawQuery)) {
-    // GENERIC candidate-eligibility floor (Section 6): sentence-shaped — whether or not it
-    // also contains a recognized product-type noun — is not a product-name search. Same
-    // "zero beats wrong" rule as above, now applied unconditionally for this shape rather
-    // than only when `queryIsMainProduct` happened to be false.
+  } else if (rawQuery && isSentenceShaped) {
+    // GENERIC candidate-eligibility floor (Section 6): sentence-shaped with NO recognized
+    // product-type noun at all — nothing to relevance-gate against, so honest zero remains
+    // unconditional here (unchanged from before).
     products = [];
     categoryEnforcedZero = true;
     console.warn(`[category-enforced-zero] "${rawQuery.slice(0, 60)}" — sentence-shaped query; returning honest zero instead of unfiltered results`);
