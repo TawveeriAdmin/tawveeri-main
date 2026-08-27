@@ -2216,11 +2216,24 @@ export async function POST(request: NextRequest) {
         return wordGroups.every((group) => group.some((t) => hay.includes(t)));
       });
       if (gated.length > 0) products = gated;
-      else if (needShapedWithCategory) {
+      else if (needShapedWithCategory || constraintTask?.category) {
         // Master Book category enforcement (measured 2026-08-04): a need-shaped query with
         // an EXPLICIT category («ابي 3 مكيفات بميزانيتي 5000 ريال») must never fall back to
         // unrelated products. Fewer or zero relevant results beat confident wrong ones.
-        // Model queries (no parsed category constraint shape) keep the soft fallback.
+        //
+        // WIDENED (measured 2026-08-27, quality program — AirPods Pro 2 aftermath): the
+        // ORIGINAL rule only fired for `needShapedWithCategory` (category + a budget/
+        // quantity/room-size constraint), so a bare specific-model search with a resolved
+        // category but no number — "airpods pro 2" — kept the untouched, unfiltered
+        // pre-gate result set whenever `gated` came back empty. Live measured: after the
+        // real "apple|airpods pro 2" canonical was quarantined for a data-quality defect,
+        // this exact query started serving two unrelated "JBL Tune 520" headphones as
+        // "أرخص سعر" (cheapest price) — a confident, wrong-product answer for a query with
+        // an unambiguous resolved category (audio) and zero titles containing "airpods".
+        // A resolved category is enough on its own to earn "zero beats wrong"; the
+        // numeric constraint was never the thing doing the protecting. Genuinely
+        // uncategorized queries (`constraintTask?.category` null) still keep the softer
+        // fallback, unchanged.
         products = [];
         categoryEnforcedZero = true;
         console.warn(`[category-enforced-zero] "${rawQuery.slice(0, 60)}" — category "${constraintTask?.category}" matched nothing; returning honest zero instead of unrelated results`);
