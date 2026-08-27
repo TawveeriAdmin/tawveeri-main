@@ -157,7 +157,7 @@ const arg = (name: string, dflt: number) => {
 
   let fetched = 0, staged = 0, canonicals = 0, corroborated = 0;
   // Dry-run accounting. Skip reasons are the engine's own classification, not an estimate.
-  const dryTotals = { detected: 0, valid: 0, lowConfidence: 0, invalid: 0, singleStore: 0, normalized: 0, matches: 0, prices: 0, keys: new Set<string>() };
+  const dryTotals = { detected: 0, valid: 0, lowConfidence: 0, invalid: 0, singleStore: 0, normalized: 0, matches: 0, prices: 0, priceTransitionsRejected: 0, keys: new Set<string>() };
   for (let i = 0; i < effBatches; i++) {
     const r = await runSweepUnit(sb, defs, limit, onlyStores, dryRun, replayFrom);
     fetched += r.normalize.fetched;
@@ -172,6 +172,7 @@ const arg = (name: string, dflt: number) => {
       corroborated += m.corroborated;
       dryTotals.singleStore += m.singleStore; dryTotals.normalized += m.normalized;
       dryTotals.matches += m.matches; dryTotals.prices += m.prices;
+      dryTotals.priceTransitionsRejected += m.priceTransitionsRejected;
     }
     // Cursors have caught up — stop early rather than burn empty sweeps.
     // In DRY mode the cursor never advances, so every batch would re-read the SAME rows;
@@ -191,6 +192,7 @@ const arg = (name: string, dflt: number) => {
     console.log(`    of which single-store (Layer 2, resolved-single)      ${dryTotals.singleStore}`);
     console.log(`  product_matches that WOULD be written                   ${dryTotals.matches}`);
     console.log(`  price_history rows that WOULD be appended               ${dryTotals.prices}`);
+    console.log(`  price transitions REJECTED (implausible, quarantined)    ${dryTotals.priceTransitionsRejected}`);
     console.log(`  SKIPPED, by explicit reason:`);
     console.log(`    read but not detected by any plugin                   ${Math.max(0, fetched - dryTotals.detected)}`);
     console.log(`    detected but low confidence                           ${dryTotals.lowConfidence}`);

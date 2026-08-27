@@ -13,6 +13,7 @@ import { CATEGORY_DEFS, TPS_STORES, type CategoryDef } from "./category-registry
 import { TPS_MAX_OBSERVATIONS } from "./tps-batch";
 import { isValidGtin } from "../../src/lib/enrichment/icecat";
 import { isAccessoryOnlyAudioTitle } from "../../src/lib/scraping/utils/category-utils";
+import { assessPriceTransition } from "../../src/lib/intelligence/price-truth-gate";
 
 function stableUuid(seed: string): string {
   const h = createHash("sha256").update(seed).digest("hex");
@@ -197,7 +198,7 @@ export async function normalizeSweep(sb: SupabaseClient, defs: CategoryDef[], li
   return m;
 }
 
-export interface CorroborateMetrics { keysConsidered: number; corroborated: number; singleStore: number; canonicalsWritten: number; normalized: number; matches: number; prices: number; }
+export interface CorroborateMetrics { keysConsidered: number; corroborated: number; singleStore: number; canonicalsWritten: number; normalized: number; matches: number; prices: number; priceTransitionsRejected: number; }
 
 export interface CorroborateOpts {
   singleStore?: boolean; // singleStore=true writes the resolved-single (Layer 2, has_comparison=false) products
@@ -215,7 +216,7 @@ export interface CorroborateOpts {
 //    known identity, one offer, comparison_available=false). Both via
 //    write_ac_batch. Idempotent; only touched keys are (re)written per run. ──
 export async function corroboratePass(sb: SupabaseClient, def: CategoryDef, touchedKeys: string[], opts: CorroborateOpts = {}): Promise<CorroborateMetrics> {
-  const R: CorroborateMetrics = { keysConsidered: touchedKeys.length, corroborated: 0, singleStore: 0, canonicalsWritten: 0, normalized: 0, matches: 0, prices: 0 };
+  const R: CorroborateMetrics = { keysConsidered: touchedKeys.length, corroborated: 0, singleStore: 0, canonicalsWritten: 0, normalized: 0, matches: 0, prices: 0, priceTransitionsRejected: 0 };
   if (!touchedKeys.length) return R;
   const single = !!opts.singleStore;
 
@@ -278,6 +279,55 @@ export async function corroboratePass(sb: SupabaseClient, def: CategoryDef, touc
     }
   }
 
+  // ── TPS-LAYER PRICE-TRANSITION GUARD (2026-08-27, quality program P0-B) ──────────────
+  // MEASURED GAP (§8.12 of docs/TAWVEERI_QUALITY_PROGRAM_STATE.md): `assessPriceTransition`
+  // (ADR-200/211, `src/lib/intelligence/price-truth-gate.ts`) is proven and already wired
+  // into the STOREFRONT layer's price-refresh path — a newly scraped price more than 4x or
+  // less than 1/4 of the last-trusted price for that exact (listing, store) is never
+  // published. This TPS layer's write path had NO equivalent: the AirPods Pro 2 canonical
+  // (SAR 1,049 -> SAR 79, a 0.075x transition) was written here with zero sanity check.
+  //
+  // AUDITED FIRST, ALL CATEGORIES, BEFORE WRITING THIS (read-only, production
+  // `price_history`, 104,831 real consecutive (canonical,store) transitions): extreme
+  // transitions (ratio<0.25 or >4, the SAME bound already proven in the storefront layer)
+  // are 0.019% of all transitions (20 total) — confirming the SAME threshold is safe to
+  // reuse UNCHANGED for TPS, not just assumed. Of the 7 extreme-DOWN transitions, 5 carried
+  // `original_price` evidence (legitimate flash-sale pattern already documented in
+  // PRICE_INTEGRITY.md) and the other 2 were the AirPods Pro 2 incident itself and one
+  // nutricook air-fryer transition that TWO INDEPENDENT STORES later corroborated at the
+  // new lower price (a genuine settled markdown, not a data error) — i.e. exactly the shape
+  // `assessPriceTransition`'s design already anticipates (a surprising but real market move).
+  //
+  // DESIGN CHOICE, disclosed: the storefront layer's full pending-value/auto-confirm-on-
+  // second-observation cycle needs a place to durably persist the pending value across
+  // sweeps; `tps_current_offers` has no such column and adding one is a schema migration
+  // this fix deliberately avoids (smallest safe fix — the measured rate below justifies
+  // this). Instead: a rejected transition is quarantined — the offer's price/status/url do
+  // NOT overwrite the current trusted state this sweep (same "retain last trustworthy
+  // state" principle, same all-fields-held-back posture as the accessory guard just
+  // shipped) — and a reviewable signal is written to the EXISTING
+  // `tps_price_implausibility_signals` table (ADR-267), already read by
+  // `build-tps-projection.ts` as an exclusion, so a quarantined price can never leak into
+  // the customer-facing projection even if it slipped past this filter some other way.
+  // This does NOT auto-confirm a persistent genuine market move the way the storefront gate
+  // does — it requires a human to review and clear the signal (matching ADR-267's own
+  // vacuum-gate precedent, which is also manual-review, not auto-confirming). Justified by
+  // the measured rate: at ~1-2 genuinely-ambiguous cases across 104,831 historical
+  // transitions, requiring manual review is a small, acceptable cost, not a material
+  // blocker on legitimate promotions (which this filter never touches at all — only the
+  // 0.019% extreme tail).
+  const rejectedPriceTransitions: { key: string; storeId: number; price: number; priorPrice: number; reason: string }[] = [];
+  for (const [k, row] of [...newByKeyStore]) {
+    if (row.price == null || row.price <= 0) continue;
+    const prior = prevByKeyStore.get(k);
+    const assessment = assessPriceTransition({ newPrice: row.price, priorPrice: prior?.price ?? null, pendingValue: null });
+    if (!assessment.credible) {
+      newByKeyStore.delete(k);
+      rejectedPriceTransitions.push({ key: row.identity_key, storeId: row.store_id as number, price: row.price, priorPrice: prior!.price as number, reason: assessment.reason ?? "implausible price transition" });
+      R.priceTransitionsRejected++;
+    }
+  }
+
   // Merge: current state = previous, overridden by this sweep's newer rows.
   const mergedByKeyStore = new Map<string, Stg>(prevByKeyStore);
   for (const [k, r] of newByKeyStore) mergedByKeyStore.set(k, r);
@@ -307,6 +357,7 @@ export async function corroboratePass(sb: SupabaseClient, def: CategoryDef, touc
 
   const now = new Date().toISOString();
   const canonicalRows: Record<string, unknown>[] = [], normalizedRows: Record<string, unknown>[] = [], matchRows: Record<string, unknown>[] = [], priceRows: Record<string, unknown>[] = [], canonicalIds: string[] = [];
+  const implausibilitySignalRows: Record<string, unknown>[] = [];
   for (const [key, all] of byKey) {
     let offers = all;
     // ACCESSORY-CONTAMINATION GUARD (2026-08-27, quality program P0-B — AirPods Pro 2
@@ -356,6 +407,15 @@ export async function corroboratePass(sb: SupabaseClient, def: CategoryDef, touc
     // is this sweep's ONLY explicit signal that a founding price event is still owed.
     const isNewCanonical = !existing;
     const canonicalId = existing?.id ?? stableUuid(def.canonSeed(key)); canonicalIds.push(canonicalId);
+    for (const rej of rejectedPriceTransitions) {
+      if (rej.key !== key) continue;
+      const storeName = TPS_STORES.find((s) => s.id === rej.storeId)?.name ?? String(rej.storeId);
+      implausibilitySignalRows.push({
+        canonical_product_id: canonicalId, store_display_name: storeName,
+        observed_price: rej.price, plausible_floor: rej.priorPrice,
+        reason: `${rej.reason} (price-transition-guard)`, source: "price-transition-guard",
+      });
+    }
     const rep = offers[0].payload || {};
     const { nameAr, nameEn } = def.names(key, rep);
     const parts = key.split("|");
@@ -448,6 +508,15 @@ export async function corroboratePass(sb: SupabaseClient, def: CategoryDef, touc
       const { error } = await sb.from("tps_current_offers").upsert(upserts.slice(i, i + 500), { onConflict: "category,identity_key,store_id" });
       if (error) throw new Error(`current-offers upsert: ${error.message}`);
     }
+    // Price-transition guard: quarantine signals for review (ADR-267's existing table,
+    // already read by build-tps-projection.ts as an exclusion). Upserted, not inserted —
+    // a repeat rejection for the same (canonical, store) updates the record with the
+    // latest attempted price rather than erroring on the primary-key conflict.
+    for (let i = 0; i < implausibilitySignalRows.length; i += 500) {
+      const { error } = await sb.from("tps_price_implausibility_signals")
+        .upsert(implausibilitySignalRows.slice(i, i + 500), { onConflict: "canonical_product_id,store_display_name" });
+      if (error) throw new Error(`price-implausibility-signal upsert: ${error.message}`);
+    }
   }
   if (!canonicalRows.length) return R;
 
@@ -523,6 +592,7 @@ export async function runSweepUnit(sb: SupabaseClient, defs: CategoryDef[], limi
         normalized: multi.normalized + singles.normalized,
         matches: multi.matches + singles.matches,
         prices: multi.prices + singles.prices,
+        priceTransitionsRejected: multi.priceTransitionsRejected + singles.priceTransitionsRejected,
       };
     }
   }
