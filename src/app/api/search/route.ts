@@ -669,6 +669,32 @@ export function isAccessoryShapedQuery(raw: string): boolean {
  * For any other query shape (bare category browse, named-model query), the OLD forgiving
  * fallback is unchanged — this only tightens the one case where confidence is already high.
  */
+/**
+ * Shared fuel-type gate (ADR-261/2026-08-20 founder taxonomy audit), extracted 2026-08-27
+ * so oven and cooker queries enforce the SAME rule from one place instead of one branch
+ * having it and the other silently missing it (the exact "second classifier drifted from
+ * the first" failure class this file's whole history warns about — see the oven-branch call
+ * site's own comment for the measured defect this closes).
+ */
+function applyFuelTypeFilter<T extends { name_ar?: string | null; name_en?: string | null }>(
+  result: T[],
+  queryFuelType: 'gas' | 'electric' | undefined,
+  needShapedWithCategory: boolean,
+): T[] {
+  if (queryFuelType === 'electric') {
+    const fuelFiltered = result.filter((p) => {
+      const fuel = productFuelType(p.name_ar || '', p.name_en || '');
+      return fuel !== 'gas' && fuel !== 'mixed';
+    });
+    return fuelFiltered.length > 0 ? fuelFiltered : (needShapedWithCategory ? [] : result);
+  }
+  if (queryFuelType === 'gas') {
+    const fuelFiltered = result.filter((p) => productFuelType(p.name_ar || '', p.name_en || '') !== 'electric');
+    return fuelFiltered.length > 0 ? fuelFiltered : (needShapedWithCategory ? [] : result);
+  }
+  return result;
+}
+
 export function excludeIneligibleCandidates<T extends { name_ar?: string | null; name_en?: string | null; best_price: number }>(
   products: T[],
   isAcQuery = false,
@@ -750,6 +776,25 @@ export function excludeIneligibleCandidates<T extends { name_ar?: string | null;
   if (isOvenQuery) {
     const ovenFiltered = result.filter((p) => hasStrongOvenSignal(p.name_ar || '', p.name_en || ''));
     result = ovenFiltered.length > 0 ? ovenFiltered : (needShapedWithCategory ? [] : result);
+    // MEASURED DEFECT (2026-08-27, quality program §8.4): ovens come in gas and electric
+    // variants exactly like cookers do (ADR-261's own motivating example was an OVEN query,
+    // "أفضل فرن كهربائي"), but `queryFuelType` and this fuel filter were only ever wired into
+    // the `isCookerQuery` branch below — never here. Live measured: a constrained gas-oven
+    // request ("افضل فرن غاز اقتصادي، ما ابي كهربائي") now correctly zeros instead of
+    // silently admitting electric ovens. Reuses the identical filter as the cooker branch —
+    // one rule, two call sites, not a second drifted copy.
+    //
+    // KNOWN DISCLOSED LIMITATION (not fixed here — pre-existing in `productFuelType`,
+    // shared with the cooker path, out of this fix's scope): `productFuelType` scans the
+    // full title text for "gas"/"electric" with no brand-name exclusion. A live product
+    // named "فرن كهربائي ماستر غاز..." (brand "MASTERgas"/"ماستر غاز") is a genuine
+    // ELECTRIC oven whose BRAND happens to contain "غاز", so it reads as `fuel: 'mixed'`
+    // and survives a `queryFuelType: 'gas'` filter unfiltered (mixed-fuel products are
+    // intentionally allowed through a gas query, per the cooker branch's own comment). This
+    // is a narrow brand-name collision, not a general failure of the fuel gate — confirmed
+    // the gate correctly filters every other case tested. Left disclosed rather than chased,
+    // per the founder's own "minimum necessary scope" precedent (ADR-238).
+    result = applyFuelTypeFilter(result, queryFuelType, needShapedWithCategory);
   }
 
   // Founder taxonomy audit (2026-08-19): the mirror of the oven gate above — a cooker/range
@@ -766,16 +811,7 @@ export function excludeIneligibleCandidates<T extends { name_ar?: string | null;
     // matching every other strong-signal gate in this file). An explicit gas query leaves a
     // genuine mixed-fuel range in (it does have gas burners); an explicit electric query does
     // not, since the shopper asked for no gas dependency at all.
-    if (queryFuelType === 'electric') {
-      const fuelFiltered = result.filter((p) => {
-        const fuel = productFuelType(p.name_ar || '', p.name_en || '');
-        return fuel !== 'gas' && fuel !== 'mixed';
-      });
-      result = fuelFiltered.length > 0 ? fuelFiltered : (needShapedWithCategory ? [] : result);
-    } else if (queryFuelType === 'gas') {
-      const fuelFiltered = result.filter((p) => productFuelType(p.name_ar || '', p.name_en || '') !== 'electric');
-      result = fuelFiltered.length > 0 ? fuelFiltered : (needShapedWithCategory ? [] : result);
-    }
+    result = applyFuelTypeFilter(result, queryFuelType, needShapedWithCategory);
   }
 
   const positivePrices = result.map((p) => p.best_price).filter((n) => n > 0).sort((a, b) => a - b);
@@ -2185,7 +2221,11 @@ export async function POST(request: NextRequest) {
   const isDishwasherQuery = !!rawQuery && (detectCanonicalCategories(rawQuery) ?? []).includes('dishwasher');
   const isOvenQuery = !!rawQuery && (detectCanonicalCategories(rawQuery) ?? []).includes('oven');
   const isCookerQuery = !!rawQuery && (detectCanonicalCategories(rawQuery) ?? []).includes('cooker');
-  const queryFuelType = isCookerQuery ? constraintTask?.fuel_type : undefined;
+  // MEASURED DEFECT (2026-08-27, quality program §8.4): scoped to cooker-only until now,
+  // which meant an oven query never got fuel-type enforcement at all even though ovens have
+  // the same gas/electric split cookers do — see `applyFuelTypeFilter`'s call site in
+  // `excludeIneligibleCandidates` for the live-reproduced case this fixes.
+  const queryFuelType = (isCookerQuery || isOvenQuery) ? constraintTask?.fuel_type : undefined;
 
   // Relevance gate (2026-07-27): for a clear product-TYPE query, drop results whose title matches NONE
   // of a query word-group. AND across groups: "ايفون 16" requires the iPhone noun and rejects "Gree AC
