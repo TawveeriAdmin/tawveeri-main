@@ -190,6 +190,77 @@ export function isAccessoryTitleHead(title: string | null | undefined): boolean 
   return isAccessoryTitle(title, 30);
 }
 
+/**
+ * AUDIO-SCOPED accessory-vs-device disambiguator (2026-08-27, quality-program P0-B — the
+ * AirPods Pro 2 SAR-79 incident, ADR pending). `isAccessoryTitleHead`'s 30-char window
+ * cannot separate two near-identical real title shapes: a genuine "سماعات AirPods Pro
+ * الجيل الثاني مع حافظة MagSafe" (real earbuds, case mentioned as a bundled feature) and
+ * the production-confirmed accessory "Baykron Airpods Pro 2nd Gen Silicone Case" both
+ * place their accessory word around the SAME character offset (~36-37) — position alone
+ * cannot tell them apart, and widening the head window only trades one false result for
+ * the other.
+ *
+ * The signal that DOES separate them: whether the title also names a genuine audio
+ * DEVICE noun (earbuds/headphone/speaker/سماعة/…) anywhere, not just the target BRAND.
+ * Reuses `CATEGORY_KEYWORDS.audio` (this file's own, already-proven audio vocabulary),
+ * minus the three brand/product-line entries ("airpods", "airpods pro", "galaxy buds")
+ * that legitimately appear on BOTH a real product and a third-party accessory targeting
+ * it — those three are the ONLY reason a pure accessory listing gets classified as audio
+ * at all, so they cannot also count as evidence the listing IS the device. A title naming
+ * a real device noun is the product, even if it also mentions a bundled case; a title
+ * naming only the target brand plus an accessory word, with no device noun of its own, is
+ * the accessory.
+ */
+const AUDIO_BRAND_ONLY_TERMS = new Set(['airpods', 'airpods pro', 'galaxy buds']);
+// MEASURED (2026-08-27, real-catalog validation before wiring this guard into the primary
+// ingestion path): `CATEGORY_KEYWORDS.audio` has no microphone term at all, so genuine
+// current products — Hollyland LARK A1, BOYA Mini 2, DJI Mic Mini, FIFINE/FDUCE gaming
+// mics — were false-positively flagged as accessory-only, because every one legitimately
+// ships "with Charging Case"/"with Tripod Stand" and none matched a recognized device
+// noun. Added here rather than to the shared `CATEGORY_KEYWORDS.audio` list itself, to
+// keep this fix scoped to this one guard and not risk changing general category
+// classification elsewhere in the codebase.
+const AUDIO_DEVICE_NOUNS = [
+  ...CATEGORY_KEYWORDS.audio.filter((kw) => !AUDIO_BRAND_ONLY_TERMS.has(kw)),
+  // MEASURED (2026-08-27, real-catalog validation): live `tps_current_offers` rows carry
+  // only ONE title string per offer (not a combined ar+en field like the storefront
+  // `products` table) — a genuine BOYA/DJI/Hollyland microphone's single English title
+  // often abbreviates to "Mic", never spelling out "Microphone", so both forms are needed.
+  'microphone', 'mic', 'ميكروفون',
+];
+
+// "mic" is short enough to collide with an unrelated word ("gimmick", "comic") if matched
+// as a bare substring — word-boundary it. Every other term here is either a multi-char
+// phrase specific enough to be safe as a substring, or Arabic (compounds attach, so
+// substring matching is the existing convention `isAccessoryTitle` already uses).
+const WORD_BOUNDARY_TERMS = new Set(['mic']);
+
+function firstIndexOfAny(text: string, terms: string[]): number {
+  let min = -1;
+  for (const term of terms) {
+    const i = WORD_BOUNDARY_TERMS.has(term)
+      ? (text.match(new RegExp(`\\b${term}\\b`))?.index ?? -1)
+      : text.indexOf(term);
+    if (i !== -1 && (min === -1 || i < min)) min = i;
+  }
+  return min;
+}
+
+export function isAccessoryOnlyAudioTitle(title: string | null | undefined): boolean {
+  if (!title) return false;
+  if (!isAccessoryTitle(title)) return false; // no accessory word at all — nothing to veto
+  const t = title.toLowerCase();
+  // ORDER matters, not just presence: "Universal Hard Carrying Case for Wireless
+  // Earbuds" names "earbuds" only as the accessory's COMPATIBILITY TARGET, appearing
+  // AFTER the accessory word — that is still a pure accessory. A genuine product names
+  // its device noun as the SUBJECT, appearing BEFORE any accessory word it also mentions
+  // ("AirPods Pro 3 Earbuds, ... Charging Case" / "سماعات AirPods Pro ... مع حافظة").
+  const accessoryIdx = firstIndexOfAny(t, ACCESSORY_INDICATORS);
+  const deviceIdx = firstIndexOfAny(t, AUDIO_DEVICE_NOUNS);
+  if (deviceIdx !== -1 && deviceIdx < accessoryIdx) return false;
+  return true;
+}
+
 function containsKeyword(text: string, keywords: string[]): boolean {
   return keywords.some((keyword) => text.includes(keyword));
 }

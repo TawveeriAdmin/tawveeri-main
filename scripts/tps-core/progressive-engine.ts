@@ -12,6 +12,7 @@ import { pickBestUrl } from "./url-util";
 import { CATEGORY_DEFS, TPS_STORES, type CategoryDef } from "./category-registry";
 import { TPS_MAX_OBSERVATIONS } from "./tps-batch";
 import { isValidGtin } from "../../src/lib/enrichment/icecat";
+import { isAccessoryOnlyAudioTitle } from "../../src/lib/scraping/utils/category-utils";
 
 function stableUuid(seed: string): string {
   const h = createHash("sha256").update(seed).digest("hex");
@@ -308,6 +309,27 @@ export async function corroboratePass(sb: SupabaseClient, def: CategoryDef, touc
   const canonicalRows: Record<string, unknown>[] = [], normalizedRows: Record<string, unknown>[] = [], matchRows: Record<string, unknown>[] = [], priceRows: Record<string, unknown>[] = [], canonicalIds: string[] = [];
   for (const [key, all] of byKey) {
     let offers = all;
+    // ACCESSORY-CONTAMINATION GUARD (2026-08-27, quality program P0-B — AirPods Pro 2
+    // SAR-79 incident). An accessory listing (case/cover/charger/…) whose title matched
+    // audio's brand/model extraction and got staged under a MAIN PRODUCT's identity_key
+    // (measured: a Baykron "Airpods Pro 2nd Gen Silicone Case" staged under
+    // `apple|airpods pro 2`) must never contribute evidence to that product's canonical —
+    // the same "accessory must not inherit a main-product identity" rule R17
+    // (`accessoryTitleContradiction`, `scripts/tps-core/identity-projection-guards.ts`)
+    // already enforces, but R17 only runs in `project-storefront-identity.ts` (the
+    // legacy-storefront-to-canonical LINKING script) — never in THIS file, the PRIMARY
+    // path that actually wrote the corrupted canonical. Reuses `isAccessoryOnlyAudioTitle`
+    // (`src/lib/scraping/utils/category-utils.ts`), which is itself built from the SAME
+    // accessory vocabulary R17 uses (`isAccessoryTitle`'s `ACCESSORY_INDICATORS`), refined
+    // to also require the ABSENCE of a genuine device noun (earbuds/headphone/speaker/
+    // microphone/سماعة/…) — so a real product that also mentions a bundled case (AirPods
+    // Pro 3/4, Soundcore, JOYROOM, a genuine "سماعات ... مع حافظة MagSafe") is never
+    // vetoed. Filtered BEFORE `priceBand` below: an unfiltered accessory's much-lower
+    // price would otherwise skew `minP` and could wrongly exclude the real product's own,
+    // genuinely higher, offers from the price band.
+    if (def.category === "audio") {
+      offers = offers.filter((o) => !isAccessoryOnlyAudioTitle(o.name));
+    }
     if (def.priceBand) {
       const priced = offers.filter((o) => o.price != null).map((o) => o.price as number);
       const minP = priced.length ? Math.min(...priced) : null;
