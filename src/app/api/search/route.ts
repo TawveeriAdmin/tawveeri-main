@@ -1864,7 +1864,16 @@ async function searchTPSCanonical(
       const m = latest.get(canonicalId)!;
       const existing = m.get(slug);
       const existingEffective = existing ? (trueObserved.get(`${canonicalId}|${slug}`) ?? existing.observedAt) : null;
-      if (!existing || !existingEffective || new Date(co.observed_at).getTime() > new Date(existingEffective).getTime()) {
+      // INCIDENT FOLLOW-UP (2026-08-28, live-verification): tps_current_offers and the
+      // ADR-194 `trueObserved` borrowing are usually written by the SAME ingest event, so
+      // their timestamps are frequently identical to the millisecond — exactly the ongoing-
+      // rescrape-of-a-filtered-listing scenario this merge exists to fix. A strict `>` loses
+      // every such tie to the stale price_history entry, silently no-op'ing the fix for the
+      // cases it targets (measured live: AirPods Pro 2 and a washer canonical both tied and
+      // both kept serving the stale price). `>=` lets tps_current_offers win ties, matching
+      // the stated design intent ("ties favor tps_current_offers as the single-row-per-key,
+      // actively-maintained source" — docs/P0_AIRPODS_PRO2_RECURRENCE_2026-08-28.md §3).
+      if (!existing || !existingEffective || new Date(co.observed_at).getTime() >= new Date(existingEffective).getTime()) {
         m.set(slug, { price: Number(co.price), obsId: '', observedAt: co.observed_at });
         // co.observed_at is already authoritative (tps_current_offers is the hot
         // current-state table) — no borrowing needed; keep the later
