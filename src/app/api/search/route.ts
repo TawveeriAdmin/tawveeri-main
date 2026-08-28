@@ -1888,7 +1888,12 @@ async function searchTPSCanonical(
       const ps2 = freshEntries.map((e) => e.current_price).filter((n) => n > 0);
       const bestPrice = ps2.length ? Math.min(...ps2) : 0;
       if (!bestPrice) continue;
-      const rep = storeEntries[0];
+      // `rep` supplies every OTHER top-level field on the card (store_name, store,
+      // product_url, observed_at, image_urls…) — it must be the SAME offer bestPrice
+      // came from, or the card shows a name/price pair that belongs to two different
+      // stores (e.g. "المنيع" labelled at a price المنيع never charged). Picking
+      // storeEntries[0] (arbitrary Map insertion order) was exactly this bug.
+      const rep = freshEntries.find((e) => e.current_price === bestPrice) ?? freshEntries[0];
       out.push({
         ...rep,
         current_price: bestPrice,
@@ -2357,10 +2362,23 @@ export async function POST(request: NextRequest) {
 
   // Product principle (official 2026-07-27): every comparable card shows its stores auto-sorted from
   // cheapest to most expensive, so the customer never compares manually. Enforce it for every product.
+  //
+  // QUALITY PROGRAM P0 (2026-08-27, §11/§12 — stale-cheapest-store fix): the sort is
+  // display-order only and applies to every product. Reassigning `best_price` from
+  // `stores[0]` here, however, is a THIRD, previously-hidden re-derivation of the
+  // cheapest claim — it silently overwrote the freshness-gated `best_price`
+  // `searchTPSCanonical` already computed (§10.2's exact class of bug: one path
+  // respected the policy, this generic downstream step bypassed it). Guarded to
+  // TPS-origin products only (identified by `tps_identity_key`) — for those, the
+  // freshness-aware value from searchTPSCanonical is authoritative and must not be
+  // reassigned from the raw (freshness-blind) minimum. Storefront-origin products
+  // (no tps_identity_key — a separate identity/pricing system) are unaffected.
   for (const p of products) {
     if (Array.isArray(p.stores) && p.stores.length > 1) {
       p.stores.sort((a, b) => (Number(a.current_price) || Infinity) - (Number(b.current_price) || Infinity));
-      p.best_price = Number(p.stores[0]?.current_price) || p.best_price;
+      if (!p.tps_identity_key) {
+        p.best_price = Number(p.stores[0]?.current_price) || p.best_price;
+      }
     }
   }
 
