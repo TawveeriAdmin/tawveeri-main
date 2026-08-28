@@ -20,6 +20,7 @@ import {
   dealLabelText,
   type DealLabelTier,
 } from "@/lib/intelligence/price-truth-gate";
+import { isFreshObservation } from "@/lib/intelligence/evidence-engine";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
@@ -58,16 +59,42 @@ type Row = {
   current_price: number | null;
   original_price: number | null;
   store_id: number | null;
+  last_checked_at: string | null;
+  last_seen_at: string | null;
   products: { id: string; name_ar: string; name_en: string | null; brand: string | null; slug: string | null; image_url: string | null } | null;
   stores: { name_ar: string | null; name_en: string | null; slug: string | null } | null;
 };
+
+/** A candidate "best offer" row, reduced to just what the best-offer selection needs. */
+export interface OfferCandidate {
+  id: string; price: number; was: number; storeAr: string; storeEn: string; observedAt: string | null;
+}
+
+/**
+ * QUALITY PROGRAM P1 §19.2 item 3 (2026-08-28): the "best offer" (and therefore the
+ * discount % / "hot deal" claim) crowned per product used to be the raw cheapest
+ * flagged-deal row with zero freshness check — the storefront-layer twin of the gap
+ * §17.1/§19.1/§20 already fixed elsewhere, here for the platform's highest-stakes claim
+ * (a "deal" implies urgency; a stale "98% off" is worse than a stale "best price").
+ * Same `isFreshObservation()` gate, same backward-compatible design (no `observed_at`
+ * data at all → behaves exactly as before), same tiered fallback (fresh cheapest > any
+ * cheapest — never drops a product from the deals feed for being stale, only prefers
+ * fresher evidence when it exists). Kept as its own function (not a shared import) for
+ * the same reason as compare/page.tsx's version: this file's row shape is its own.
+ */
+export function selectBestDealOffer(candidates: OfferCandidate[]): OfferCandidate {
+  const anyObservedAt = candidates.some((c) => c.observedAt != null);
+  const fresh = anyObservedAt ? candidates.filter((c) => isFreshObservation(c.observedAt)) : candidates;
+  const pool = fresh.length ? fresh : candidates;
+  return pool.reduce((best, c) => (c.price < best.price ? c : best), pool[0]);
+}
 
 export async function getDeals(limit = 20, minDiscountPct = 1): Promise<Deal[]> {
   const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
 
   const { data, error } = await supabase
     .from("product_stores")
-    .select(`id, current_price, original_price, store_id,
+    .select(`id, current_price, original_price, store_id, last_checked_at, last_seen_at,
       products!inner(id, name_ar, name_en, brand, slug, image_url),
       stores(name_ar, name_en, slug)`)
     .eq("is_deal", true)
@@ -79,10 +106,13 @@ export async function getDeals(limit = 20, minDiscountPct = 1): Promise<Deal[]> 
     .limit(1200);
   if (error || !data?.length) return [];
 
-  // Group offers by product; keep the cheapest offer whose recorded original price beats it.
+  // Group offers by product; resolve the crowned "best" offer per product via
+  // selectBestDealOffer (fresh-preferred, never-drops-coverage fallback) below, not a
+  // raw running-cheapest track — freshness needs to see ALL of a product's candidate
+  // rows at once to know whether any of them are fresh at all.
   interface Agg {
     product: NonNullable<Row["products"]>;
-    bestId: string; best: number; was: number; storeAr: string; storeEn: string;
+    offers: OfferCandidate[];
     stores: Set<number>;
   }
   const byProduct = new Map<string, Agg>();
@@ -95,22 +125,23 @@ export async function getDeals(limit = 20, minDiscountPct = 1): Promise<Deal[]> 
     const storeAr = r.stores?.name_ar || r.stores?.slug || "";
     const storeEn = r.stores?.name_en || r.stores?.slug || storeAr;
     let agg = byProduct.get(p.id);
-    if (!agg) { agg = { product: p, bestId: r.id, best: cur, was, storeAr, storeEn, stores: new Set() }; byProduct.set(p.id, agg); }
-    if (cur < agg.best) { agg.bestId = r.id; agg.best = cur; agg.was = was; agg.storeAr = storeAr; agg.storeEn = storeEn; }
+    if (!agg) { agg = { product: p, offers: [], stores: new Set() }; byProduct.set(p.id, agg); }
+    agg.offers.push({ id: r.id, price: cur, was, storeAr, storeEn, observedAt: r.last_checked_at ?? r.last_seen_at ?? null });
     if (r.store_id != null) agg.stores.add(r.store_id);
   }
 
-  interface Candidate { agg: Agg; discountPct: number; }
+  interface Candidate { agg: Agg; best: OfferCandidate; discountPct: number; }
   const candidates: Candidate[] = [];
   for (const agg of byProduct.values()) {
-    const discountPct = Math.round(((agg.was - agg.best) / agg.was) * 100);
+    const best = selectBestDealOffer(agg.offers);
+    const discountPct = Math.round(((best.was - best.price) / best.was) * 100);
     if (discountPct < minDiscountPct) continue;
     // Best Deals contract (P0 incident 2026-08-05): an extreme discount claim from a
     // single retailer, with nothing else corroborating it, is not honest to publish —
     // it is exactly the shape of the false 98%-off TV claim. Quarantine for
     // revalidation by omission; never auto-promote. See price-truth-gate.ts.
     if (isExtremeUncorroboratedDiscount({ discountPct, corroboratingStoreCount: agg.stores.size })) continue;
-    candidates.push({ agg, discountPct });
+    candidates.push({ agg, best, discountPct });
   }
 
   // Provisional sort by naive strength (discount-based) so the price_history lookup
@@ -125,7 +156,7 @@ export async function getDeals(limit = 20, minDiscountPct = 1): Promise<Deal[]> 
   // ADR-211 bounded closeout — the label tier for a single-retailer offer depends on
   // whether we hold a reproducible, stable price-history baseline for THAT exact
   // listing. Batched to just the finalist ids (not all 1200 candidates).
-  const finalistIds = finalists.map((c) => c.agg.bestId);
+  const finalistIds = finalists.map((c) => c.best.id);
   const baselineById = new Map<string, { obs: number; days: number }>();
   if (finalistIds.length) {
     const { data: phRows } = await supabase
@@ -151,8 +182,8 @@ export async function getDeals(limit = 20, minDiscountPct = 1): Promise<Deal[]> 
     }
   }
 
-  const deals: Deal[] = finalists.map(({ agg, discountPct }) => {
-    const baseline = baselineById.get(agg.bestId) ?? { obs: 0, days: 0 };
+  const deals: Deal[] = finalists.map(({ agg, best, discountPct }) => {
+    const baseline = baselineById.get(best.id) ?? { obs: 0, days: 0 };
     const tier = classifyDealLabelTier({
       corroboratingStoreCount: agg.stores.size,
       priceHistoryObservationCount: baseline.obs,
@@ -160,8 +191,8 @@ export async function getDeals(limit = 20, minDiscountPct = 1): Promise<Deal[]> 
     });
     const strength: DealStrength =
       tierAllowsStrongDealBadge(tier) && discountPct >= HOT_DISCOUNT_PCT ? "hot" : "good";
-    const label = dealLabelText(tier, agg.storeAr);
-    const labelEn = dealLabelText(tier, agg.storeEn);
+    const label = dealLabelText(tier, best.storeAr);
+    const labelEn = dealLabelText(tier, best.storeEn);
 
     return {
       productId: agg.product.id,
@@ -171,9 +202,9 @@ export async function getDeals(limit = 20, minDiscountPct = 1): Promise<Deal[]> 
       nameEn: agg.product.name_en,
       brand: agg.product.brand,
       imageUrl: agg.product.image_url,
-      bestPrice: Math.round(agg.best),
-      bestStore: agg.storeAr,
-      averagePrice: Math.round(agg.was),
+      bestPrice: Math.round(best.price),
+      bestStore: best.storeAr,
+      averagePrice: Math.round(best.was),
       discountPct,
       isLowestEver: false,
       trackingDays: 0,
@@ -182,7 +213,7 @@ export async function getDeals(limit = 20, minDiscountPct = 1): Promise<Deal[]> 
       labelTier: tier,
       labelAr: label.ar,
       labelEn: labelEn.en,
-      reason: `أرخص من سعره المعتاد (${Math.round(agg.was).toLocaleString("ar-SA")} ريال) بنسبة ${discountPct}٪`,
+      reason: `أرخص من سعره المعتاد (${Math.round(best.was).toLocaleString("ar-SA")} ريال) بنسبة ${discountPct}٪`,
     };
   });
 
