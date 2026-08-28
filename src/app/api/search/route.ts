@@ -1336,7 +1336,7 @@ function applyCommonFilters(query: any, body: SearchBody): any {
   return query;
 }
 
-function scoreProduct(p: GroupedSearchProduct, priceMin: number, priceMax: number, queryIsMainProduct: boolean, relevanceGroups: string[][] = [], isAcQuery = false): number {
+export function scoreProduct(p: GroupedSearchProduct, priceMin: number, priceMax: number, queryIsMainProduct: boolean, relevanceGroups: string[][] = [], isAcQuery = false): number {
   const isAccessory = hasAccessoryHint(p.name_ar || '', p.name_en || '');
   const acSignal = hasACSignal(p.name_ar || '', p.name_en || '');
   // Relevance DOMINATES: a product must match the query's product noun (every word-group), not just a
@@ -2245,7 +2245,26 @@ export async function POST(request: NextRequest) {
   // its own SEO-stuffed title is the one product matching BOTH the product-identity group AND
   // the context-word group. Same fix, same governing rule, applied at this second site: a
   // priority-descriptor word never forms a REQUIRED relevance group.
-  const relevanceGroups: string[][] = queryIsMainProduct
+  // MEASURED DEFECT (2026-08-28, quality program P1 §14.3): this was gated on
+  // `queryIsMainProduct` (a closed product-noun taxonomy), so a query naming no
+  // recognized noun — "PlayStation 5", «ابي شي يبرد الغرفة بسرعة» — got `relevanceGroups
+  // = []` unconditionally. Every downstream consumer treats an empty array as "no
+  // relevance signal to check" rather than "unknown, be cautious": `scoreProduct` never
+  // penalizes an irrelevant match, and `bestMatchesQuery` (line ~1469) short-circuits to
+  // `true` via its own `relevanceGroups.length === 0` clause — its ONE safety check
+  // becomes a no-op exactly when it matters most. Live-reproduced: "PlayStation 5"
+  // returned a sandwich maker/vacuum/contact grill (matching the bare digit "5" in
+  // "5000 Series...") ranked ABOVE relevance, with a decisionCard confidently
+  // recommending a genuine PS5 game only because nothing else was capable of catching
+  // the sandwich maker further down — the check that should have caught it never ran.
+  // Computing the SAME word-groups unconditionally (any non-empty query, not just a
+  // recognized product noun) makes `scoreProduct`/`bestMatchesQuery` real checks for
+  // every query — zero new matching logic, the exact code every `queryIsMainProduct`
+  // query already runs today. Scoped narrowly: this does NOT touch the `gated`/
+  // `categoryEnforcedZero` result-LIST filter below (still its own `queryIsMainProduct`
+  // gate, unchanged) — the result list itself is untouched; only ranking and the
+  // decisionCard's relevance check are affected.
+  const relevanceGroups: string[][] = rawQuery
     ? normalizeArabic(rawQuery).split(/\s+/).filter(Boolean)
         .filter((w) => !isWrapperWord(w) && !constraintNumbers.has(w) && !isPriorityDescriptorWord(w))
         .map((w) => expandWordTerms(w).filter((t) => t.length >= 2))
