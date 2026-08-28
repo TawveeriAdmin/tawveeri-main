@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { track } from '@/lib/analytics/track';
 import { useTranslations } from '@/lib/simple-intl-provider';
 import type { ProductCardProduct } from '@/components/products/product-card';
+import { selectBestPriceStore } from '@/components/products/product-card';
 
 import { StoreLogo } from '@/components/ui/store-logo';
 import { applyAffiliateTag } from '@/lib/transactions/affiliate-config';
@@ -22,12 +23,18 @@ interface StoreComparisonPanelProps {
 export function StoreComparisonPanel({ product, locale, onClose }: StoreComparisonPanelProps) {
   const t = useTranslations();
 
-  // Sort stores by price (cheapest first)
+  // Sort stores by price (cheapest first) — display order only, unchanged.
   const sortedStores = [...product.product_stores]
     .filter(ps => ps.current_price > 0)
     .sort((a, b) => a.current_price - b.current_price);
 
-  const bestPriceValue = sortedStores[0]?.current_price || 0;
+  // QUALITY PROGRAM P1 §17.4 item 1 (2026-08-28): this panel independently re-derived
+  // its OWN "Best Price" badge from the raw price sort above — exactly the companion gap
+  // §17.1 already fixed on the card itself (`product-card.tsx`'s badges), just not here.
+  // Reuses the SAME shared, tested `selectBestPriceStore()` so the two surfaces can never
+  // disagree about which store is freshness-eligible to be crowned "best price".
+  const { bestPrice } = selectBestPriceStore(product.product_stores);
+  const bestPriceValue = bestPrice?.current_price ?? (sortedStores[0]?.current_price || 0);
   const productName = locale === 'ar' ? product.name_ar : product.name_en;
 
   return (
