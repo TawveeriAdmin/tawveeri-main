@@ -140,13 +140,14 @@ until the benchmark passes."* Accordingly, as of this checkpoint:
 - `docs/benchmark/C2_RESULTS_REPORT_2026-08-28.md` — the full C2 result and per-task detail.
 - This document — the durable closure checkpoint.
 
-### Likely next strategic program (not started, not authorized here)
+### Next strategic program named, not yet designed or authorized (2026-08-28 update)
 
-The founder has indicated the likely next strategic program is **consumer-facing Distribution &
-Growth** — but this requires its own separate founder start decision and its own measurable
-hypotheses. **Nothing in this closure authorizes starting that program.** A future session should
-not infer authorization to begin Distribution/Growth work from the mere fact that the Agent Era
-program is closed.
+The founder has named the next strategic program: **consumer-facing Distribution & Growth**
+(**ADR-273**, `docs/DECISIONS.md`) — direction only. Program design and execution are **NOT**
+authorized. Begin only in a fresh, founder-directed session, following the same discipline as
+prior programs (baseline → diagnosis → research → proposed structure → founder review → freeze →
+execute). **Nothing in this closure, or in ADR-273, authorizes starting that program's design or
+execution in any session automatically.**
 
 ---
 

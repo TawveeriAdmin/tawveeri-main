@@ -6,6 +6,18 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-273 — Next strategic program named: Distribution & Growth. Direction only, design and execution NOT authorized · Accepted (2026-08-28)
+
+**Context.** With the Agent Era broad-payload program closed under ADR-272 and the incidentally-discovered AirPods Pro 2 P0 incident independently closed and verified in production the same day, the founder used this session's end-of-session checkpoint to name the next strategic program rather than leave it open.
+
+**Decision.** The next Tawveeri program to design is **Distribution & Growth**, focused on consumer acquisition, decision-usefulness, merchant handoff, repeat usage, measurable conversion, and proof-based marketing over generic traffic acquisition — governed by the question: *"Can Tawveeri acquire Saudi shoppers with real purchase intent, help them make a useful purchase decision, send them successfully to the merchant, and give them a reason to return?"*
+
+**This is a direction decision only.** It does **not** authorize: designing the program, spending on paid acquisition, a 30-day sprint, KPIs or targets, a growth strategy, production changes, or starting the workstream in this or any other session without a fresh, explicit founder-directed start. The full program must begin in a **fresh session** and follow the same discipline as prior programs: read evidence/governing docs → establish the real baseline → diagnose the highest-leverage distribution problem → research where needed → propose program structure → define KPIs/experiments/sprint scope/stop-change criteria → founder review → freeze → only then execute. No step before founder review is authorized by this ADR.
+
+**What this does NOT decide.** No strategy, roadmap, KPIs, experiments, or channel research exist yet — none were produced in this session, per explicit founder instruction. This ADR records direction only; a future session must not treat it as a green light to skip straight to program design or execution.
+
+---
+
 ### ADR-272 — Agent Era broad agent-layer payload hypothesis: FUNDAMENTAL VALUE GAP under the pre-committed C2 kill criterion; program closed, no Payload v1.2 · Accepted (2026-08-28)
 
 **Context.** Following the Phase 0 agent-era research (`docs/AGENT_ERA_PHASE0_RESEARCH_2026-08-27.md`), a frozen 30-task validation subset was run three ways under `EXECUTION_PROTOCOL_v1.0.md`: Condition A (open web only), B (open web + Tawveeri public site), C (open web + a frozen internal-data payload, v1.0). C scored *worse* than A in aggregate (78.0% vs 87.96%). A causal harm diagnosis (`CAUSAL_HARM_DIAGNOSIS_2026-08-28.md`) found the dominant harm mechanism was agents accepting Tawveeri-flagged-uncertain data without independent verification (57% of harm cases). A verification-first redesign (`CONDITION_C_PAYLOAD_v1.1.md`) — strict `coverage_status` semantics, historical/current-state separation, an explicit agent-use contract — was built directly from that diagnosis and frozen alongside a pre-committed test design and kill criterion (`C2_EXPERIMENT_FREEZE.md`), before any C2 data existed.
