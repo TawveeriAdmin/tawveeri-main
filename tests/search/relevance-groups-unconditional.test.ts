@@ -82,11 +82,41 @@ describe("route.ts — relevanceGroups is no longer gated on queryIsMainProduct 
     expect(routeSrc).toMatch(/const relevanceGroups: string\[\]\[\] = rawQuery\s*\n\s*\?/);
   });
 
-  it("the result-list filter (gated/categoryEnforcedZero) is UNCHANGED — still its own queryIsMainProduct gate", () => {
-    // Regression guard: the fix must not have widened which products are returned, only
-    // ranking/decisionCard eligibility (Tier 2 — widening the result-list filter itself —
-    // is a separate, larger, not-yet-made decision).
+  it("the queryIsMainProduct result-list filter and the sentence-shaped zero branch are UNCHANGED", () => {
+    // Regression guard for Tier 1: ranking/decisionCard eligibility changed, the
+    // established queryIsMainProduct narrowing/zeroing logic did not.
     expect(routeSrc).toMatch(/if \(rawQuery && queryIsMainProduct\) \{/);
     expect(routeSrc).toMatch(/const wordGroups = relevanceGroups;/);
+  });
+});
+
+/**
+ * QUALITY PROGRAM P1 §14.3 Tier 2 (2026-08-28): actually narrows the returned result
+ * LIST for a short, off-taxonomy, non-sentence-shaped query ("PlayStation 5") to titles
+ * matching the query's relevance groups — Tier 1 only fixed ranking/decisionCard
+ * eligibility, so a sandwich maker still SAT in the list, just correctly unranked.
+ * Deliberately conservative: narrows ONLY when genuine matches exist (`gated.length >
+ * 0`), never zeros the page otherwise, and does NOT touch the sentence-shaped zeroing
+ * branch's priority or behavior at all — this file's own documented history (TV-008,
+ * the AirPods aftermath, ADR-205) is a record of regressions from broadening exactly
+ * that trigger, so Tier 2 stays structurally separate from it.
+ */
+describe("route.ts — Tier 2: off-taxonomy, non-sentence-shaped queries now narrow the result list", () => {
+  const routeSrc = fs.readFileSync(path.join(process.cwd(), "src", "app", "api", "search", "route.ts"), "utf8");
+
+  it("a new branch narrows products when relevanceGroups has a signal, positioned AFTER (never instead of) the sentence-shaped zero branch", () => {
+    const sentenceShapedIdx = routeSrc.indexOf("} else if (rawQuery && isSentenceShaped) {");
+    const tier2Idx = routeSrc.indexOf("} else if (rawQuery && relevanceGroups.length) {");
+    expect(sentenceShapedIdx).toBeGreaterThan(-1);
+    expect(tier2Idx).toBeGreaterThan(sentenceShapedIdx); // Tier 2 never pre-empts the zeroing branch
+  });
+
+  it("Tier 2 only ever ADDS a filter (gated.length > 0), it never sets categoryEnforcedZero or empties products unconditionally", () => {
+    const tier2Start = routeSrc.indexOf("} else if (rawQuery && relevanceGroups.length) {");
+    const tier2End = routeSrc.indexOf("\n  }", tier2Start);
+    const tier2Block = routeSrc.slice(tier2Start, tier2End);
+    expect(tier2Block).toMatch(/if \(gated\.length > 0\) products = gated;/);
+    expect(tier2Block).not.toMatch(/categoryEnforcedZero = true/);
+    expect(tier2Block).not.toMatch(/products = \[\];/);
   });
 });

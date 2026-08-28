@@ -2377,6 +2377,24 @@ export async function POST(request: NextRequest) {
     products = [];
     categoryEnforcedZero = true;
     console.warn(`[category-enforced-zero] "${rawQuery.slice(0, 60)}" — sentence-shaped query; returning honest zero instead of unfiltered results`);
+  } else if (rawQuery && relevanceGroups.length) {
+    // QUALITY PROGRAM P1 §14.3 Tier 2 (2026-08-28): before this, a SHORT query naming no
+    // recognized product-type noun and not sentence-shaped ("PlayStation 5") fell through
+    // BOTH branches above untouched — Tier 1 fixed ranking/decisionCard eligibility for
+    // these, but the returned LIST still carried every loose Algolia match verbatim
+    // (a sandwich maker for "PlayStation 5", matching only the bare digit "5").
+    // Deliberately narrow scope, NOT parity with the queryIsMainProduct branch: this
+    // ONLY narrows to genuine matches when they exist (`gated.length > 0`) and NEVER
+    // zeros the page otherwise — falls back to today's already-shipped unfiltered
+    // behavior instead. Does not touch `categoryEnforcedZero` or the sentence-shaped
+    // branch above, which keeps 100% of its existing behavior: this file's own history
+    // (TV-008, the AirPods aftermath, ADR-205) is a record of regressions from
+    // broadening exactly that zeroing trigger, and this deliberately stays out of it.
+    const gated = products.filter((p) => {
+      const hay = (normalizeArabic(p.name_ar || '') + ' ' + (p.name_en || '') + ' ' + (p.brand || '')).toLowerCase();
+      return relevanceGroups.every((group) => group.some((t) => hay.includes(t)));
+    });
+    if (gated.length > 0) products = gated;
   }
 
   // Product principle (official 2026-07-27): every comparable card shows its stores auto-sorted from
