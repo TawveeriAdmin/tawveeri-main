@@ -90,6 +90,12 @@ interface ProductStoreEntry {
  availability: AvailabilityStatus;
  product_url: string | null;
  affiliate_url: string | null;
+ // QUALITY PROGRAM P1 §19.2 item 1 (2026-08-28): last_checked_at/last_seen_at exist on
+ // product_stores (scripts/database/01-schema.sql) but were never selected here, so this
+ // store's own product listing had no freshness signal to gate its "Best Price"/"Hot
+ // Deal" badges on — the same storefront-layer gap §17.1 fixed on the main search grid.
+ last_checked_at: string | null;
+ last_seen_at: string | null;
  products: {
  id: string;
  name_ar: string;
@@ -125,6 +131,7 @@ interface StoreProduct {
  availability: AvailabilityStatus;
  product_url: string | null;
  affiliate_url: string | null;
+ observed_at?: string | null;
  stores: {
  id: string;
  slug: string | null;
@@ -393,6 +400,8 @@ export default function StoreDetailClient() {
  original_price,
  availability,
  product_url,
+ last_checked_at,
+ last_seen_at,
  products!inner(
  id,
  name_ar,
@@ -483,6 +492,11 @@ export default function StoreDetailClient() {
  availability: record.availability,
  product_url: record.product_url,
  affiliate_url: record.affiliate_url,
+ // QUALITY PROGRAM P1 §19.2 item 1: last_checked_at is "when we last looked" (the
+ // ADR-194 observation-time signal); last_seen_at as a fallback when a store's
+ // checked/seen columns diverge. Optional/backward-compatible on ProductCardProduct
+ // (product-card.tsx) — a page not yet wired keeps its exact prior behavior.
+ observed_at: record.last_checked_at ?? record.last_seen_at ?? null,
  stores: {
  id: record.stores!.id,
  slug: record.stores!.slug,
