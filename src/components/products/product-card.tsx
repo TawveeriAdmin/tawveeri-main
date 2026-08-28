@@ -19,6 +19,7 @@ import { bestPrice as bestPriceCopy } from '@/lib/copy';
 import { applyAffiliateTag } from '@/lib/transactions/affiliate-config';
 import { track } from '@/lib/analytics/track';
 import { ProductImageFrame, PRODUCT_PLACEHOLDER_IMAGE } from '@/components/products/shared-product-card';
+import { isFreshObservation, hoursSince, observedAgoLabel } from '@/lib/intelligence/evidence-engine';
 
 interface ProductStore {
   id: string;
@@ -35,6 +36,17 @@ interface ProductStore {
   is_deal?: boolean;
   deal_expires_at?: string | null;
   coupon_code?: string | null;
+  /**
+   * QUALITY PROGRAM P1 §14.1/§14.2 (2026-08-28): when present (TPS-sourced cards via
+   * `mapGroupedToProductCard`), gates the "Best Price"/"Hot Deal" badges on freshness
+   * (`isFreshObservation`, the SAME `PICK_FRESHNESS_MAX_HOURS=168h` floor §12 already
+   * uses for the TPS-layer cheapest claim) and renders a "last observed" label — the
+   * storefront-layer twin of the defect §11/§12 fixed. OPTIONAL and backward-compatible:
+   * a caller that does not supply it (legacy storefront-layer queries not yet wired to
+   * `product_stores.last_checked_at` — tracked as its own follow-up, same as §13) keeps
+   * today's unfiltered behavior exactly, never worse than before.
+   */
+  observed_at?: string | null;
   stores: {
     id: string;
     slug?: string | null;
@@ -44,6 +56,39 @@ interface ProductStore {
     average_rating?: number | null;
     total_reviews?: number | null;
   };
+}
+
+/**
+ * QUALITY PROGRAM P1 §14.1/§14.2 (2026-08-28): extracted from the component so the
+ * freshness-gating logic is directly unit-testable (the same extraction pattern §12
+ * already established for `deriveComparisonSummary`/`bestAndWorstFresh`) rather than only
+ * verifiable via a full React render. Only stores carrying an `observed_at` at all can be
+ * freshness-checked — a caller that supplies none (legacy storefront queries not yet
+ * wired to `product_stores.last_checked_at`, tracked as its own follow-up) leaves
+ * `anyObservedAt` false and every gate becomes a no-op, so a card with no freshness data
+ * behaves EXACTLY as it did before this fix — never worse. The "Best Price"/"Hot Deal"
+ * CLAIM may only be backed by fresh evidence when freshness data exists at all (the same
+ * "cheapest claim, never the coverage" scoping as §12's TPS-layer fix): falls back to the
+ * next fresh-eligible store, or to the raw cheapest when nothing is fresh (still shown,
+ * just not crowned — `product_stores` itself is never filtered by this function).
+ */
+export function selectBestPriceStore(stores: ProductStore[]): {
+  bestPrice: ProductStore | undefined;
+  hasDeal: boolean;
+  storesWithPrices: ProductStore[];
+} {
+  const anyObservedAt = stores.some((ps) => ps.observed_at != null);
+  const isFreshStore = (ps: ProductStore) => !anyObservedAt || isFreshObservation(ps.observed_at);
+
+  const storesWithPrices = stores
+    .filter((ps) => ps.availability !== 'out_of_stock')
+    .sort((a, b) => a.current_price - b.current_price);
+
+  const freshStoresWithPrices = storesWithPrices.filter(isFreshStore);
+  const bestPrice = freshStoresWithPrices[0] ?? storesWithPrices[0];
+  const hasDeal = stores.some((ps) => ps.original_price && ps.original_price > ps.current_price && isFreshStore(ps));
+
+  return { bestPrice, hasDeal, storesWithPrices };
 }
 
 interface ProductCardProps {
@@ -138,16 +183,12 @@ export function ProductCard({
     setImageError(false);
   };
 
-  const storesWithPrices = product.product_stores
-    .filter((ps) => ps.availability !== 'out_of_stock')
-    .sort((a, b) => a.current_price - b.current_price);
-
-  const bestPrice = storesWithPrices[0];
+  const { bestPrice, hasDeal, storesWithPrices } = selectBestPriceStore(product.product_stores);
   const bestPriceValue = bestPrice?.current_price || 0;
   const originalPrice = bestPrice?.original_price || null;
   const storeCount = product.product_stores.length;
-  const hasDeal = product.product_stores.some((ps) => ps.original_price && ps.original_price > ps.current_price);
   const isOutOfStock = product.product_stores.every((ps) => ps.availability === 'out_of_stock');
+  const bestPriceAgeHours = hoursSince(bestPrice?.observed_at ?? null);
 
   const currentImageUrl = availableImages[currentImageIndex] || null;
   const imageSrc = imageError || !currentImageUrl ? PRODUCT_PLACEHOLDER_IMAGE : currentImageUrl;
@@ -432,6 +473,16 @@ export function ProductCard({
                         />
                       )}
                     </div>
+                    {/* QUALITY PROGRAM P1 §14.1 (2026-08-28): the search-results grid showed
+                        freshness on exactly one card (the Smart Pick) — every other card had
+                        zero temporal context even though the data existed upstream. Never
+                        invented (ADR-193): a card with no `observed_at` (storefront-layer,
+                        not yet wired) renders no line, same as before this fix. */}
+                    {bestPriceAgeHours != null && (
+                      <span className="t-caption text-on-surface-variant/80">
+                        {observedAgoLabel(bestPriceAgeHours, currentLocale as 'ar' | 'en')}
+                      </span>
+                    )}
                   </div>
                 ) : (
                   <p className="t-small text-on-surface-variant">

@@ -140,6 +140,11 @@ export function mapGroupedToProductCard(
       is_deal:           sp.is_deal || false,
       deal_expires_at:   sp.deal_expires_at || null,
       coupon_code:       sp.coupon_code || null,
+      // QUALITY PROGRAM P1 §14.1 (2026-08-28): `searchTPSCanonical` already computes the
+      // true per-store observation time (ADR-194) into `sp.observed_at` — this was
+      // computed and then dropped here, so no card past the single Smart Pick ever showed
+      // it. Threaded through so `ProductCard` can render it and freshness-gate its badges.
+      observed_at:       sp.observed_at ?? null,
       stores: {
         id:            sp.store,
         name_ar:       names.name_ar,

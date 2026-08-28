@@ -58,6 +58,12 @@ interface CompareResult {
     cheapest_stale: boolean;
   };
   offers: CompareOffer[];
+  // QUALITY PROGRAM P1 §14.1 (2026-08-28): `getComparison()` (get-comparison.ts, §12)
+  // already returns this honest-zero message when no offer is fresh enough to back a
+  // price claim — this local interface never declared it, so `result as unknown as
+  // CompareResult` silently discarded a real runtime field and the summary bar just
+  // rendered nothing, reading as a broken page rather than an honest state.
+  message?: string;
 }
 
 // Reads the database directly. This used to fetch `${SITE_URL}/api/compare` — a
@@ -241,7 +247,7 @@ export default async function TpsComparePage({
     );
   }
 
-  const { canonical, summary, offers } = data;
+  const { canonical, summary, offers, message } = data;
   const name = isAr ? (canonical.name_ar || canonical.name_en) : (canonical.name_en || canonical.name_ar);
 
   const cheapestOffer = offers.find(o => o.store_name === summary.cheapest_store) ?? offers[0];
@@ -373,6 +379,17 @@ export default async function TpsComparePage({
               )}
             </div>
           )}
+          {/* QUALITY PROGRAM P1 §14.1 (2026-08-28): the honest-zero counterpart to the
+              Summary Bar above — when no offer is fresh enough to back a price claim,
+              this renders instead of nothing, so the page reads as "we checked and have
+              no current price" rather than as broken. `offers` below still lists every
+              known price with its own stale disclosure; only the crowned summary is
+              withheld. */}
+          {!summary.lowest_price && message && (
+            <div className="rounded-xl bg-[color:var(--color-surface-container)] border border-[color:var(--color-outline-variant)]/40 p-3 text-center">
+              <p className="text-sm text-on-surface-variant">{message}</p>
+            </div>
+          )}
         </div>
 
         {/* ── Cheapest Offer (featured) ── */}
@@ -415,6 +432,17 @@ export default async function TpsComparePage({
                 {cheapestOffer.availability === 'in_stock' && (
                   <span className="text-xs text-[var(--brand-green)] font-medium mt-0.5">
                     {isAr ? '● متوفر الآن' : '● In Stock'}
+                  </span>
+                )}
+                {/* QUALITY PROGRAM P1 §14.1 (2026-08-28): `availability` already carries
+                    'out_of_stock' (price_history.availability, populated) but only the
+                    in-stock branch ever rendered — directly relevant to §11's own finding
+                    that a stale offer usually manifests as a live page with a soft
+                    out-of-stock badge, not a 404; this is exactly the signal that catches
+                    that pattern for a shopper, already in the payload, unused until now. */}
+                {cheapestOffer.availability === 'out_of_stock' && (
+                  <span className="text-xs text-[var(--color-error)] font-medium mt-0.5">
+                    {isAr ? '● غير متوفر حالياً' : '● Out of Stock'}
                   </span>
                 )}
               </div>
@@ -488,6 +516,14 @@ export default async function TpsComparePage({
                     {offer.availability === 'in_stock' && (
                       <span className="text-xs text-[var(--brand-green)] font-medium mt-0.5">
                         {isAr ? '● متوفر' : '● In Stock'}
+                      </span>
+                    )}
+                    {/* QUALITY PROGRAM P1 §14.1 (2026-08-28): same gap as the featured
+                        offer above — availability already carries 'out_of_stock', it just
+                        never rendered anywhere in this list. */}
+                    {offer.availability === 'out_of_stock' && (
+                      <span className="text-xs text-[var(--color-error)] font-medium mt-0.5">
+                        {isAr ? '● غير متوفر' : '● Out of Stock'}
                       </span>
                     )}
                     {/* WHEN we saw this price. Measured 2026-07-31: 13.6% of served offers
