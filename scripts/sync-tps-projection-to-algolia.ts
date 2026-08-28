@@ -86,17 +86,29 @@ async function main() {
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
 
   // ── Step 1: قراءة الـ Projection ─────────────────────────────
+  // INCIDENT FOLLOW-UP (2026-08-28): a plain .select() caps at Supabase's default
+  // 1000-row page size. With 1,341 has_comparison=true rows (measured this same day),
+  // this silently dropped ~25% of the comparison-eligible catalog from every sync —
+  // which product/order was arbitrary rather than deterministic, since a bulk
+  // build-tps-projection.ts upsert gives every row nearly-identical updated_at values,
+  // so the "first 1000 by updated_at desc" tie-break could exclude any given product on
+  // any given run. Paginate explicitly so a full sync always covers every eligible row.
   console.log("Step 1: Reading tps_product_projection...");
-  const { data: projections, error: dbErr } = await supabase
-    .from("tps_product_projection")
-    .select("*")
-    .eq("has_comparison", true)
-    .order("updated_at", { ascending: false });
-
-  if (dbErr || !projections) {
-    console.error("DB read failed:", dbErr);
-    process.exit(1);
+  const PAGE = 1000;
+  const projections: Record<string, unknown>[] = [];
+  for (let from = 0; ; from += PAGE) {
+    const { data: page, error: dbErr } = await supabase
+      .from("tps_product_projection")
+      .select("*")
+      .eq("has_comparison", true)
+      .order("updated_at", { ascending: false })
+      .range(from, from + PAGE - 1);
+    if (dbErr) { console.error("DB read failed:", dbErr); process.exit(1); }
+    if (!page || page.length === 0) break;
+    projections.push(...page);
+    if (page.length < PAGE) break;
   }
+
   console.log(`  Found ${projections.length} records`);
 
   if (!projections.length) {

@@ -58,6 +58,9 @@ import { PICK_FRESHNESS_MAX_HOURS } from "../src/lib/intelligence/evidence-engin
 // legacy '7' and a new 'شاكر' must be the ONE store shaker, not two → no false
 // comparison). Names are Arabic literals with no embedded quotes (SQL-safe).
 const STORE_NAME_CASE = `case ph.store_name ${TPS_STORES.map((s) => `when '${s.id}' then '${s.name}'`).join(" ")} else ph.store_name end`;
+// Same mapping, keyed on tps_current_offers.store_id (an integer column, not the legacy
+// text/fallback field price_history.store_name carries) — see the `current_state` CTE below.
+const STORE_ID_NAME_CASE = `case co.store_id ${TPS_STORES.map((s) => `when ${s.id} then '${s.name}'`).join(" ")} else co.store_id::text end`;
 
 const DRY = process.argv.includes("--dry");
 const QUIET = process.argv.includes("--quiet") || DRY;
@@ -195,7 +198,7 @@ async function main() {
   // aggregate then emits parallel store/price arrays already ordered by price.
   const t1 = Date.now();
   const { rows } = await pg.query<Row>(`
-    with latest as (
+    with history_latest as (
       select distinct on (ph.canonical_product_id, ${STORE_NAME_CASE})
              ph.canonical_product_id, ${STORE_NAME_CASE} as store_name, ph.price, ph.observed_at,
              ph.store_id
@@ -232,12 +235,66 @@ async function main() {
       where canonical_product_id is not null and store_id ~ '^[0-9]+$'
       group by canonical_product_id, store_id::int
     ),
+    -- INCIDENT FIX (2026-08-28, AirPods Pro 2 SAR-79 recurrence): history_latest above can
+    -- freeze on a stale, since-superseded price_history row indefinitely for one specific
+    -- (canonical, store) pair — an accessory-contamination guard in progressive-engine.ts
+    -- (commit 824ca8f) correctly stops NEW bad evidence from reaching price_history for that
+    -- pair going forward, but the OLD row from before the guard existed never gets
+    -- superseded there (price_history is append-only), and store_obs's freshness-borrowing
+    -- above can still mark it "fresh" purely because the underlying (now-filtered) raw
+    -- listing keeps being re-scraped into normalized_product_observations. tps_current_offers
+    -- is the actual hot current-state table (ADR-252): one row per (identity_key, store),
+    -- continuously overwritten by the latest corroborated observation, never stuck on
+    -- history. Folded in here as a competing, independently-fresh candidate per (canonical,
+    -- store) — whichever source has the more recent genuine observation wins. Measured
+    -- 2026-08-28: tps_current_offers covers 5,412 valid rows vs 8,948 active canonicals
+    -- (~60%) — a canonical with no current_offers row is completely unaffected by this CTE.
+    current_state as (
+      select c.id as canonical_product_id,
+             ${STORE_ID_NAME_CASE} as store_name,
+             co.store_id, co.price, co.observed_at
+      from tps_current_offers co
+      join canonical_products c on c.tps_identity_key = co.identity_key
+      where co.status = 'valid' and co.price > 0
+        and not exists (
+          select 1 from tps_offer_delist_signals d
+          where d.canonical_product_id = c.id
+            and d.store_display_name = ${STORE_ID_NAME_CASE}
+        )
+        and not exists (
+          select 1 from tps_price_implausibility_signals i
+          where i.canonical_product_id = c.id
+            and i.store_display_name = ${STORE_ID_NAME_CASE}
+        )
+    ),
+    combined as (
+      select h.canonical_product_id, h.store_name, h.price, h.observed_at, h.store_id,
+             'history'::text as source,
+             greatest(h.observed_at, so.last_observed_at) as effective_observed_at
+      from history_latest h
+      left join store_obs so
+        on so.canonical_product_id = h.canonical_product_id and so.store_id = h.store_id
+      union all
+      select cs.canonical_product_id, cs.store_name, cs.price, cs.observed_at, cs.store_id,
+             'current_offer'::text as source,
+             cs.observed_at as effective_observed_at
+      from current_state cs
+    ),
+    -- Per (canonical, store), the source with the more recent EFFECTIVE observation wins:
+    -- history's freshness-borrowed timestamp for a stable-priced, still-scraped offer, or a
+    -- genuinely fresher current_offers row when one exists. Ties prefer current_offer (a
+    -- single-row-per-key, actively-maintained source) over history.
+    latest as (
+      select distinct on (canonical_product_id, store_name)
+             canonical_product_id, store_name, price, observed_at, store_id, effective_observed_at
+      from combined
+      order by canonical_product_id, store_name, effective_observed_at desc nulls last,
+               (source = 'current_offer') desc
+    ),
     latest_fresh as (
       select l.*,
-             greatest(l.observed_at, so.last_observed_at) >= (now() - ($1 || ' hours')::interval) as is_fresh
+             l.effective_observed_at >= (now() - ($1 || ' hours')::interval) as is_fresh
       from latest l
-      left join store_obs so
-        on so.canonical_product_id = l.canonical_product_id and so.store_id = l.store_id
     ),
     agg as (
       select canonical_product_id,
