@@ -49,6 +49,7 @@ import { resolve } from "path";
 config({ path: resolve(process.cwd(), ".env.local") });
 import { Client } from "pg";
 import { TPS_STORES } from "./tps-core/category-registry";
+import { PICK_FRESHNESS_MAX_HOURS } from "../src/lib/intelligence/evidence-engine";
 
 // ADR-082: some price_history rows carry the numeric store_id as store_name (a
 // fallback from before a store was added to TPS_STORES). price_history is
@@ -73,6 +74,17 @@ interface Row {
   /** Latest price per store, ascending. Parallel arrays from the aggregate. */
   stores: string[] | null;
   prices: string[] | null;
+  /**
+   * Parallel to stores/prices (SAME order): true when that specific store's offer is
+   * within PICK_FRESHNESS_MAX_HOURS of its TRUE observation time (quality program P0,
+   * 2026-08-27 — §11/§12 of TAWVEERI_QUALITY_PROGRAM_STATE.md, the stale-cheapest-store
+   * fix). "True" mirrors ADR-194 scoped to the STORE rather than the canonical: the
+   * greater of that price row's own observed_at and the newest
+   * normalized_product_observations row for that exact (canonical, store) — a
+   * stable-priced offer that keeps being re-scraped must not be misread as stale just
+   * because its price never changed.
+   */
+  fresh: (boolean | null)[] | null;
   /** Most recent priced observation across stores — per-product freshness (ADR-088). */
   last_observed_at: string | null;
 }
@@ -100,14 +112,30 @@ export function deriveProjection(r: Row) {
   // `text_for_search` that embeds it) could change between runs on identical
   // evidence — 12 of 1,815 rows were exact price ties. A projection that is not
   // reproducible cannot be verified, so ties now resolve by name.
-  const pairs = (r.stores ?? []).map((store, i) => ({ store, price: Number((r.prices ?? [])[i]) }))
+  const pairs = (r.stores ?? []).map((store, i) => ({
+    store, price: Number((r.prices ?? [])[i]), fresh: (r.fresh ?? [])[i] === true,
+  }))
     .filter((s) => Number.isFinite(s.price) && s.price > 0)
     .sort((a, b) => a.price - b.price || a.store.localeCompare(b.store));
 
-  const lowestPrice = pairs[0]?.price ?? null;
-  const highestPrice = pairs.length ? pairs[pairs.length - 1].price : null;
-  const cheapestStore = pairs[0]?.store ?? null;
+  // store_count/has_comparison stay computed from ALL evidence, unchanged — they are a
+  // CORROBORATION/coverage signal ("how many stores do we know carry this"), not the
+  // price claim, and evidence-engine's trust score already weighs corroboration
+  // separately from freshness (0.32 vs 0.14) — this fix is scoped to the CHEAPEST claim
+  // only (quality program P0, 2026-08-27), not to redefining coverage.
   const storeCount = pairs.length;
+
+  // The CHEAPEST/best-price claim, however, may only be backed by evidence within
+  // PICK_FRESHNESS_MAX_HOURS (§11/§12 of TAWVEERI_QUALITY_PROGRAM_STATE.md). A stale
+  // offer is never deleted (still counted in storeCount above, still present in
+  // price_history) — it simply stops being eligible to WIN "cheapest". When no store's
+  // evidence is fresh enough, the honest state is no current price claim at all
+  // (requirement #4) — never silently promoting the stale minimum as if current.
+  const freshPairs = pairs.filter((p) => p.fresh);
+
+  const lowestPrice = freshPairs[0]?.price ?? null;
+  const highestPrice = freshPairs.length ? freshPairs[freshPairs.length - 1].price : null;
+  const cheapestStore = freshPairs[0]?.store ?? null;
 
   const saving = lowestPrice && highestPrice && highestPrice > lowestPrice
     ? parseFloat((highestPrice - lowestPrice).toFixed(2)) : null;
@@ -169,7 +197,8 @@ async function main() {
   const { rows } = await pg.query<Row>(`
     with latest as (
       select distinct on (ph.canonical_product_id, ${STORE_NAME_CASE})
-             ph.canonical_product_id, ${STORE_NAME_CASE} as store_name, ph.price, ph.observed_at
+             ph.canonical_product_id, ${STORE_NAME_CASE} as store_name, ph.price, ph.observed_at,
+             ph.store_id
       from price_history ph
       where ph.tps_observation_id is not null
         -- ADR-196: an offer whose page is measured GONE (404/410 after the store's own
@@ -192,15 +221,34 @@ async function main() {
         )
       order by ph.canonical_product_id, ${STORE_NAME_CASE}, ph.observed_at desc
     ),
+    -- QUALITY PROGRAM P0 (2026-08-27, §11/§12): TRUE per-(canonical, STORE) observation
+    -- recency, the SAME ADR-194 correction searchTPSCanonical/get-comparison.ts already
+    -- apply to what they DISPLAY, now scoped to what may WIN "cheapest". price_history is
+    -- append-only on CHANGED prices, so a stable-priced offer that is still being
+    -- re-scraped daily must not read as stale just because its price never moved.
+    store_obs as (
+      select canonical_product_id, store_id::int as store_id, max(observed_at) as last_observed_at
+      from normalized_product_observations
+      where canonical_product_id is not null and store_id ~ '^[0-9]+$'
+      group by canonical_product_id, store_id::int
+    ),
+    latest_fresh as (
+      select l.*,
+             greatest(l.observed_at, so.last_observed_at) >= (now() - ($1 || ' hours')::interval) as is_fresh
+      from latest l
+      left join store_obs so
+        on so.canonical_product_id = l.canonical_product_id and so.store_id = l.store_id
+    ),
     agg as (
       select canonical_product_id,
              array_agg(store_name order by price asc, store_name asc) as stores,
              array_agg(price::text order by price asc, store_name asc) as prices,
+             array_agg(coalesce(is_fresh, false) order by price asc, store_name asc) as fresh,
              -- Price-CHANGE recency only. price_history is append-only on CHANGED prices
              -- (progressive-engine corroboratePass), so this max is when a price last
              -- moved — NOT when the product was last observed. Kept as the fallback.
              max(observed_at) as last_price_change_at
-      from latest where price > 0
+      from latest_fresh where price > 0
       group by canonical_product_id
     ),
     -- ADR-194: the TRUE freshness signal. normalized_product_observations gets a row per
@@ -216,7 +264,7 @@ async function main() {
     )
     select c.id::text as canonical_id, c.tps_identity_key, c.name_ar, c.name_en,
            c.brand, c.category, c.identity_confidence, c.attributes,
-           a.stores, a.prices,
+           a.stores, a.prices, a.fresh,
            coalesce(o.last_observed_at, a.last_price_change_at) as last_observed_at
     from canonical_products c
     left join agg a on a.canonical_product_id = c.id
@@ -224,7 +272,7 @@ async function main() {
     where c.tps_identity_key is not null
       and c.is_active
     order by c.id
-  `);
+  `, [PICK_FRESHNESS_MAX_HOURS]);
   queries++;
   const readMs = Date.now() - t1;
 

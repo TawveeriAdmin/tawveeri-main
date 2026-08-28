@@ -6,19 +6,27 @@
 import { deriveProjection } from "../../scripts/build-tps-projection";
 
 type Args = Parameters<typeof deriveProjection>[0];
-const row = (over: Partial<Args> = {}): Args => ({
-  canonical_id: "11111111-1111-4111-8111-111111111111",
-  tps_identity_key: "apple|iPhone|17|Pro|256",
-  name_ar: "آبل آيفون 17 برو 256 جيجابايت",
-  name_en: "Apple iPhone 17 Pro 256GB",
-  brand: "apple",
-  category: "mobile",
-  identity_confidence: 90,
-  attributes: null,
-  stores: null,
-  prices: null,
-  ...over,
-});
+const row = (over: Partial<Args> = {}): Args => {
+  const stores = over.stores !== undefined ? over.stores : null;
+  return {
+    canonical_id: "11111111-1111-4111-8111-111111111111",
+    tps_identity_key: "apple|iPhone|17|Pro|256",
+    name_ar: "آبل آيفون 17 برو 256 جيجابايت",
+    name_en: "Apple iPhone 17 Pro 256GB",
+    brand: "apple",
+    category: "mobile",
+    identity_confidence: 90,
+    attributes: null,
+    stores: null,
+    prices: null,
+    // This suite's whole purpose (ADR-067) is verifying price-AGGREGATION logic —
+    // every store here is fresh by default so those tests are unaffected by the
+    // quality-program-P0 freshness gate (§11/§12); the gate itself is covered by its
+    // own describe block below with explicit fresh/stale arrays.
+    fresh: stores ? stores.map(() => true) : null,
+    ...over,
+  };
+};
 
 describe("price aggregation", () => {
   it("takes lowest/highest/cheapest from the latest price per store", () => {
@@ -164,5 +172,78 @@ describe("high volume", () => {
       deriveProjection(row({ tps_identity_key: `k|${i}`, stores: ["a", "b"], prices: ["100", "200"] }));
     }
     expect(Date.now() - t0).toBeLessThan(1000);
+  });
+});
+
+// Quality program P0 (2026-08-27, §11/§12 — the stale-cheapest-store fix). `fresh` is
+// parallel to stores/prices, in the SAME sorted order deriveProjection produces
+// internally (price asc, then store name) — tests below pass it pre-sorted to match.
+describe("freshness gate — the CHEAPEST claim only, never store_count", () => {
+  it("excludes a stale historical cheapest when a fresher, pricier offer exists", () => {
+    // اكسترا is numerically cheapest but stale; جرير is fresher and must win instead.
+    const p = deriveProjection(row({
+      stores: ["اكسترا", "جرير"], prices: ["999.00", "1099.00"], fresh: [false, true],
+    }));
+    expect(p.cheapest_store).toBe("جرير");
+    expect(p.lowest_price).toBe(1099);
+    // store_count/has_comparison are a coverage signal, untouched by freshness.
+    expect(p.store_count).toBe(2);
+    expect(p.has_comparison).toBe(true);
+  });
+
+  it("returns the honest no-current-comparison state when every offer is stale", () => {
+    const p = deriveProjection(row({
+      stores: ["اكسترا", "جرير"], prices: ["999.00", "1099.00"], fresh: [false, false],
+    }));
+    expect(p.cheapest_store).toBeNull();
+    expect(p.lowest_price).toBeNull();
+    expect(p.highest_price).toBeNull();
+    expect(p.saving).toBeNull();
+    // Evidence is never deleted: store_count still reflects both known offers.
+    expect(p.store_count).toBe(2);
+    expect(p.has_comparison).toBe(true);
+  });
+
+  it("recomputes highest_price/saving from the fresh subset only, not the full set", () => {
+    const p = deriveProjection(row({
+      stores: ["a", "b", "c"], prices: ["100.00", "200.00", "300.00"], fresh: [true, false, true],
+    }));
+    expect(p.lowest_price).toBe(100);
+    expect(p.highest_price).toBe(300); // "b" (200, stale) is skipped, not counted as the ceiling
+    expect(p.saving).toBe(200);
+    expect(p.store_count).toBe(3);
+  });
+
+  it("a single fresh store among several stale ones still wins honestly", () => {
+    const p = deriveProjection(row({
+      stores: ["a", "b", "c"], prices: ["50.00", "60.00", "70.00"], fresh: [false, true, false],
+    }));
+    expect(p.cheapest_store).toBe("b");
+    expect(p.lowest_price).toBe(60);
+  });
+
+  it("a fresh single-store product is unaffected — no comparison, but a real price", () => {
+    const p = deriveProjection(row({ stores: ["جرير"], prices: ["500.00"], fresh: [true] }));
+    expect(p.cheapest_store).toBe("جرير");
+    expect(p.lowest_price).toBe(500);
+    expect(p.has_comparison).toBe(false);
+  });
+
+  it("a stale single-store product goes honest-zero, not honest-single", () => {
+    const p = deriveProjection(row({ stores: ["جرير"], prices: ["500.00"], fresh: [false] }));
+    expect(p.cheapest_store).toBeNull();
+    expect(p.lowest_price).toBeNull();
+    expect(p.store_count).toBe(1); // the offer is still known, just not claimable as current
+  });
+
+  it("treats a missing/null fresh array as entirely stale (unknown never wins 'cheapest')", () => {
+    const p = deriveProjection({
+      canonical_id: "x", tps_identity_key: "k", name_ar: null, name_en: null, brand: null,
+      category: null, identity_confidence: null, attributes: null,
+      stores: ["a"], prices: ["100.00"], fresh: null, last_observed_at: null,
+    });
+    expect(p.cheapest_store).toBeNull();
+    expect(p.lowest_price).toBeNull();
+    expect(p.store_count).toBe(1);
   });
 });

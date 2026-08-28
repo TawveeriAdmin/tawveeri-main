@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/database';
-import { productTrust } from '@/lib/intelligence/evidence-engine';
+import { productTrust, isFreshObservation } from '@/lib/intelligence/evidence-engine';
 import { algoliasearch } from 'algoliasearch';
 import { normalizeSearchQuery } from '@/lib/search/query-normalize';
 import { resolveApprovedSlug, isDisplayableRetailer, retailerDisplayName } from '@/lib/retailers/approved-retailers';
@@ -121,6 +121,15 @@ export async function GET(req: NextRequest) {
     for (const o of (obs ?? []) as NormObs[]) {
       const slug = resolveApprovedSlug(o.store_id);
       if (!slug || !isDisplayableRetailer(slug)) continue;
+      // QUALITY PROGRAM P0 (2026-08-27, §11/§12 — stale-cheapest-store fix): `obs` is
+      // ordered newest-first, so this IS each store's true observation time (ADR-194) —
+      // the same signal `summarizeOffers` below turns into cheapest_store/lowest_price.
+      // A store whose newest observation is older than PICK_FRESHNESS_MAX_HOURS must not
+      // back that claim; this endpoint already recomputes store_count/cheapest_store from
+      // exactly this `kept` list (never trusting the projection's raw fields — see
+      // `summarizeOffers`'s own doc comment), so excluding here is the single, consistent
+      // enforcement point rather than a second gate downstream.
+      if (!isFreshObservation(o.observed_at)) continue;
       const key = `${o.canonical_product_id}|${slug}`;
       if (seenStore.has(key)) continue; // one authoritative offer per store
       seenStore.add(key);

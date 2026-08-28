@@ -7,6 +7,21 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { INTERNAL_TOKENS } from "@/lib/vocabulary/internal-vocabulary";
+import { isFreshObservation } from "@/lib/intelligence/evidence-engine";
+
+/**
+ * Pure, directly-testable price-claim derivation shared by getProductComparison and
+ * getMobileCards — quality program P0 (2026-08-27, §11/§12): "best"/"worst" (and the
+ * savings math built from them) may only be backed by evidence within
+ * PICK_FRESHNESS_MAX_HOURS. The full `offers`/`storesCount` a caller already built stay
+ * untouched — this only recomputes the price CLAIM, never the coverage count.
+ */
+export function bestAndWorstFresh(
+  offers: { price: number; observedAt: string }[],
+): { best: number | null; worst: number | null } {
+  const fresh = offers.filter((o) => isFreshObservation(o.observedAt)).map((o) => o.price);
+  return { best: fresh.length ? Math.min(...fresh) : null, worst: fresh.length ? Math.max(...fresh) : null };
+}
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
@@ -96,6 +111,12 @@ export async function getProductComparison(slug: string): Promise<ProductCompari
   }
 
   // 3) بناء العروض — offerId هو tps_observation_id (يشير لصف normalized الذي فيه _url)
+  // كل العروض المعروفة تبقى ظاهرة (لا حذف لأي دليل) — لكن "أفضل سعر" (bestPrice) يُحسب
+  // فقط من العروض الحديثة (خلال PICK_FRESHNESS_MAX_HOURS)، بنفس القاعدة المطبّقة في
+  // build-tps-projection.ts وباقي الاستهلاكات (quality program P0، 2026-08-27، §11/§12).
+  // هذه الدالة تقرأ price_history.observed_at مباشرة (بدون ضم normalized_product_observations
+  // كما في الملفات الأخرى) — تبسيط مقصود لسطح محدود (صفحة منتج mobile فقط)، وأكثر تحفظاً
+  // وليس أقل (قد يصنّف عرضاً حديثاً فعلياً كقديم إذا كان سعره ثابتاً، وليس العكس أبداً).
   const offers: StoreOffer[] = [...latestByStore.entries()]
     .map(([storeName, v]) => ({
       offerId: v.tpsObservationId,
@@ -105,8 +126,7 @@ export async function getProductComparison(slug: string): Promise<ProductCompari
     }))
     .sort((a, b) => a.price - b.price);
 
-  const bestPrice = offers.length ? offers[0].price : null;
-  const worstPrice = offers.length ? offers[offers.length - 1].price : null;
+  const { best: bestPrice, worst: worstPrice } = bestAndWorstFresh(offers);
   const savings = bestPrice !== null && worstPrice !== null && worstPrice > bestPrice
     ? worstPrice - bestPrice
     : null;
@@ -228,19 +248,18 @@ export async function getMobileCards(): Promise<ProductCard[]> {
     .in("canonical_product_id", ids)
     .order("observed_at", { ascending: false });
 
-  // آخر سعر لكل (منتج، متجر)
-  const latest = new Map<string, Map<string, number>>();
+  // آخر سعر لكل (منتج، متجر) — و"حداثته" (quality program P0، 2026-08-27، §11/§12): نفس
+  // تبسيط getProductComparison أعلاه، يعتمد على price_history.observed_at مباشرة.
+  const latest = new Map<string, Map<string, { price: number; observedAt: string }>>();
   for (const row of prices ?? []) {
     if (!latest.has(row.canonical_product_id)) latest.set(row.canonical_product_id, new Map());
     const byStore = latest.get(row.canonical_product_id)!;
-    if (!byStore.has(row.store_name)) byStore.set(row.store_name, Number(row.price));
+    if (!byStore.has(row.store_name)) byStore.set(row.store_name, { price: Number(row.price), observedAt: row.observed_at });
   }
 
   const cards: ProductCard[] = products.map((p) => {
-    const byStore = latest.get(p.id) ?? new Map<string, number>();
-    const vals = [...byStore.values()];
-    const best = vals.length ? Math.min(...vals) : null;
-    const worst = vals.length ? Math.max(...vals) : null;
+    const byStore = latest.get(p.id) ?? new Map<string, { price: number; observedAt: string }>();
+    const { best, worst } = bestAndWorstFresh([...byStore.values()]);
     return {
       slug: identityKeyToSlug(p.tps_identity_key ?? ""),
       nameAr: p.name_ar,

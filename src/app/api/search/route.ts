@@ -13,7 +13,7 @@ import { routeQuery } from '@/lib/agent/route-query';
 import type { CompareIntent } from '@/lib/agent/compare-intent';
 import { parseShoppingTask, isPriorityDescriptorWord, parseScreenSizeComparator, sizeSatisfiesComparator } from '@/lib/agent/task-parser';
 import { resolveComparisonRoute } from '@/lib/agent/resolve-comparison';
-import { hoursSince, PICK_FRESHNESS_MAX_HOURS, productTrust, type TrustAssessment } from '@/lib/intelligence/evidence-engine';
+import { hoursSince, PICK_FRESHNESS_MAX_HOURS, productTrust, isFreshObservation, type TrustAssessment } from '@/lib/intelligence/evidence-engine';
 
 export const maxDuration = 30;
 export const dynamic = 'force-dynamic';
@@ -1872,8 +1872,22 @@ async function searchTPSCanonical(
         review_count: null,
       });
       });
-      const ps2 = storeEntries.map((e) => e.current_price).filter((n) => n > 0);
+      // QUALITY PROGRAM P0 (2026-08-27, §11/§12 of TAWVEERI_QUALITY_PROGRAM_STATE.md —
+      // stale-cheapest-store fix): `bestPrice`/`current_price` is THE headline claim on
+      // this card and must never be won by evidence older than PICK_FRESHNESS_MAX_HOURS.
+      // `trueObserved` (ADR-194, already computed above for the DISPLAYED per-store
+      // timestamp) is the exact same signal reused here to GATE eligibility — one
+      // authority, no second threshold. `storeEntries`/`store_count` stay computed from
+      // ALL known evidence (corroboration/coverage is a separate signal from freshness,
+      // per evidence-engine's own factor split); only the price claim is freshness-gated.
+      // Zero fresh entries ⇒ nothing honest to claim ⇒ this canonical is skipped from
+      // results entirely (requirement #4), matching the EXISTING `byStore.size === 0`
+      // skip a few lines above rather than inventing a new "zero price" card shape.
+      const freshEntries = storeEntries.filter((e) => isFreshObservation(e.observed_at));
+      if (!freshEntries.length) continue;
+      const ps2 = freshEntries.map((e) => e.current_price).filter((n) => n > 0);
       const bestPrice = ps2.length ? Math.min(...ps2) : 0;
+      if (!bestPrice) continue;
       const rep = storeEntries[0];
       out.push({
         ...rep,

@@ -1,5 +1,5 @@
 // tests/intelligence/evidence-engine.test.ts — Trust & Evidence Engine (ADR-087).
-import { assessTrust, observedAgoLabel, PICK_FRESHNESS_MAX_HOURS } from "../../src/lib/intelligence/evidence-engine";
+import { assessTrust, observedAgoLabel, PICK_FRESHNESS_MAX_HOURS, isFreshObservation } from "../../src/lib/intelligence/evidence-engine";
 
 describe("assessTrust — evidence-grounded, deterministic, honest", () => {
   it("high trust: multi-store, precise identity, confident price history", () => {
@@ -97,5 +97,34 @@ describe("observedAgoLabel — one rendering of observation age (ADR-193)", () =
 
   it("the pick-label gate is the freshness floor band, owned here", () => {
     expect(PICK_FRESHNESS_MAX_HOURS).toBe(168);
+  });
+});
+
+describe("isFreshObservation — the single 'cheapest' claim eligibility test (quality program P0, §11/§12)", () => {
+  const ago = (h: number, from: number) => new Date(from - h * 3_600_000).toISOString();
+
+  it("is fresh strictly within the floor, and exactly AT the floor (inclusive boundary)", () => {
+    const now = Date.parse("2026-08-27T00:00:00.000Z");
+    expect(isFreshObservation(ago(1, now), now)).toBe(true);
+    expect(isFreshObservation(ago(PICK_FRESHNESS_MAX_HOURS, now), now)).toBe(true);
+  });
+
+  it("is stale one second past the floor", () => {
+    const now = Date.parse("2026-08-27T00:00:00.000Z");
+    const justOver = new Date(now - PICK_FRESHNESS_MAX_HOURS * 3_600_000 - 1000).toISOString();
+    expect(isFreshObservation(justOver, now)).toBe(false);
+  });
+
+  it("treats missing, empty, or unparseable timestamps as stale — unknown never wins 'cheapest'", () => {
+    const now = Date.parse("2026-08-27T00:00:00.000Z");
+    expect(isFreshObservation(null, now)).toBe(false);
+    expect(isFreshObservation(undefined, now)).toBe(false);
+    expect(isFreshObservation("", now)).toBe(false);
+    expect(isFreshObservation("not-a-date", now)).toBe(false);
+  });
+
+  it("defaults to the real clock when no `now` is injected", () => {
+    expect(isFreshObservation(new Date().toISOString())).toBe(true);
+    expect(isFreshObservation(new Date(Date.now() - 9999 * 3_600_000).toISOString())).toBe(false);
   });
 });

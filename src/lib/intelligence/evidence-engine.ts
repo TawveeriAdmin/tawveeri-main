@@ -230,6 +230,25 @@ export function hoursSince(iso: string | null | undefined): number | null {
 }
 
 /**
+ * The single eligibility test for "is this specific offer's evidence current enough to
+ * back a 'cheapest'/best-price CLAIM" (quality program P0, 2026-08-27 —
+ * docs/TAWVEERI_QUALITY_PROGRAM_STATE.md §11/§12, the stale-cheapest-store fix). Reuses
+ * `PICK_FRESHNESS_MAX_HOURS` — the SAME floor ADR-193 already established for the Smart
+ * Pick label — rather than inventing a second threshold. One authority, one predicate:
+ * every consumer that independently derives a cheapest/best-price claim from raw evidence
+ * (the projection builder, live search, the compare page, the v1 TPS API, the UCP feed)
+ * calls this instead of re-deriving its own staleness rule, which is exactly the class of
+ * bug §10.2 already found once (`searchTPSCanonical` silently missing an exclusion table).
+ * `nowMs` is injectable so tests can pin exact boundary timestamps deterministically.
+ */
+export function isFreshObservation(observedAtIso: string | null | undefined, nowMs: number = Date.now()): boolean {
+  if (!observedAtIso) return false;
+  const t = Date.parse(observedAtIso);
+  if (!Number.isFinite(t)) return false;
+  return (nowMs - t) / 3_600_000 <= PICK_FRESHNESS_MAX_HOURS;
+}
+
+/**
  * Convenience wrapper: assess trust from a standard TPS projection row, so every
  * customer surface (decide / search / recommendations / feed) computes trust ONE way
  * instead of copies of the old ad-hoc heuristic. `extra` layers price/freshness

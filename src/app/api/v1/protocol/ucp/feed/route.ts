@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/database";
-import { productTrust } from '@/lib/intelligence/evidence-engine';
+import { productTrust, isFreshObservation } from '@/lib/intelligence/evidence-engine';
 import { ucpAdapter, type TawveeriProduct } from "@/lib/protocol/adapter";
 
 export const runtime = "nodejs";
@@ -46,6 +46,12 @@ export async function GET(req: NextRequest) {
     for (const p of prices ?? []) { const k = `${p.canonical_product_id}|${p.store_name}`; if (!latestPrice.has(k)) latestPrice.set(k, Number(p.price)); }
     const seen = new Set<string>();
     for (const o of obs ?? []) {
+      // QUALITY PROGRAM P0 (2026-08-27, §11/§12 — stale-cheapest-store fix): `obs` is
+      // ordered newest-first, so this is each store's true observation time (ADR-194).
+      // A public structured-data feed must not publish a price claim backed by evidence
+      // older than PICK_FRESHNESS_MAX_HOURS — an external consumer has no way to know it
+      // is stale. Excluded here, at the one place offers are assembled for this feed.
+      if (!isFreshObservation(o.observed_at)) continue;
       const k = `${o.canonical_product_id}|${o.store_id}`;
       if (seen.has(k)) continue; seen.add(k);
       const list = offersByCanon.get(o.canonical_product_id) ?? [];

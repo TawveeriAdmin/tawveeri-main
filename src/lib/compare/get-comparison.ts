@@ -26,7 +26,7 @@
 import { createServerClient } from '@/lib/database';
 import { resolveApprovedSlug, retailerDisplayName, isDisplayableRetailer } from '@/lib/retailers/approved-retailers';
 import { displayedObservedAt } from '@/lib/intelligence/observed-freshness';
-import { STALE_CAVEAT_HOURS } from '@/lib/intelligence/evidence-engine';
+import { STALE_CAVEAT_HOURS, isFreshObservation } from '@/lib/intelligence/evidence-engine';
 import { deriveCampaignEligibility, type CampaignEligibilityEvidence } from '@/lib/providers/campaigns/blackbox-riyal-festival';
 
 interface PriceRow {
@@ -319,23 +319,54 @@ export async function getComparison(params: {
     .sort((a, b) => a.price - b.price);
 
   // ── 5. summary ───────────────────────────────────────────────
-  const allPrices = offers.map((o) => o.price);
-  const lowestPrice = Math.min(...allPrices);
-  const highestPrice = Math.max(...allPrices);
-  const saving = highestPrice > lowestPrice ? Math.round((highestPrice - lowestPrice) * 100) / 100 : null;
+  const { summary, message } = deriveComparisonSummary(offers);
+  return { canonical: canonicalOut, summary, offers, ...(message ? { message } : {}) };
+}
+
+/**
+ * Pure, directly-testable derivation of the comparison summary from an already-built
+ * offer list — the SAME extraction pattern `summarizeOffers` (v1-search-helpers.ts)
+ * already established for this codebase. Quality program P0 (2026-08-27, §11/§12 —
+ * stale-cheapest-store fix): each offer already carries `observed_at`/`stale` (the
+ * ADR-194-correct TRUE observation time, composing the price-change event with any
+ * later trusted re-observation) — reused here as the SAME eligibility test the
+ * projection and search route apply, not a re-derived one. `offers`/`store_count` stay
+ * the FULL known set (never deleted, ADR-132 dedup unchanged, per-offer `stale`
+ * disclosure untouched) — only the CHEAPEST/best-price claim requires fresh
+ * (<=168h) backing. This supersedes the 2026-08-07 "disclosure, not exclusion" note on
+ * `CompareOffer.stale`: the founder has now approved exclusion from the CHEAPEST claim
+ * specifically (the softer 72h `stale` caveat on every individual offer is unchanged).
+ */
+export function deriveComparisonSummary(offers: CompareOffer[]): {
+  summary: ComparisonResult["summary"];
+  message?: string;
+} {
+  // Sorted defensively rather than trusting the caller's ordering (the SAME discipline
+  // summarizeOffers in v1-search-helpers.ts already applies) — this is a standalone,
+  // independently-testable function now.
+  const freshOffers = offers.filter((o) => isFreshObservation(o.observed_at)).sort((a, b) => a.price - b.price);
+  const noFreshEvidence = offers.length > 0 && freshOffers.length === 0;
+
+  const cheapest = freshOffers[0] ?? null;
+  const freshPrices = freshOffers.map((o) => o.price);
+  const lowestPrice = freshPrices.length ? Math.min(...freshPrices) : null;
+  const highestPrice = freshPrices.length ? Math.max(...freshPrices) : null;
+  const saving = lowestPrice != null && highestPrice != null && highestPrice > lowestPrice
+    ? Math.round((highestPrice - lowestPrice) * 100) / 100 : null;
 
   return {
-    canonical: canonicalOut,
     summary: {
-      cheapest_store: offers[0]?.store_name ?? null,
+      cheapest_store: cheapest?.store_name ?? null,
       lowest_price: lowestPrice,
       highest_price: highestPrice,
       saving,
       // DISTINCT RETAILERS, not offer rows — a store must never be counted twice (ADR-132).
       store_count: offers.length,
-      cheapest_stale: offers[0]?.stale ?? false,
+      cheapest_stale: cheapest?.stale ?? false,
     },
-    offers,
+    ...(noFreshEvidence
+      ? { message: 'لا تتوفر مقارنة أسعار محدثة حالياً — كل الأسعار المتوفرة أقدم من أسبوع' }
+      : {}),
   };
 }
 
