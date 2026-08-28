@@ -1792,6 +1792,34 @@ async function searchTPSCanonical(
       .limit(10000);
     const implausible = new Set((implausibleRows ?? []).map((d) => `${(d as { canonical_product_id: string }).canonical_product_id}|${(d as { store_display_name: string }).store_display_name}`));
 
+    // INCIDENT FIX (2026-08-28, AirPods Pro 2 SAR-79 recurrence, live-search leg): this
+    // function's own price_history-derived `latest` map below has the exact same
+    // vulnerability build-tps-projection.ts had (fixed the same day) — a stale
+    // price_history row can be marked "fresh" purely by normalized_product_observations
+    // recency-borrowing even after the accessory-contamination guard (progressive-
+    // engine.ts, commit 824ca8f) stops it from ever writing a NEW price_history row for
+    // that (canonical, store). tps_current_offers is the hot current-state table
+    // (ADR-252) — folding it in here as a competing, independently-fresh candidate closes
+    // the same gap on THIS live, customer-facing surface. One more chunked, indexed IN()
+    // lookup on the same id-count this function already pays for price_history/
+    // normalized_product_observations — no new N+1, no unbounded per-request cost.
+    const matchedForOffers = matched as unknown as { id: string; tps_identity_key: string | null }[];
+    const identityKeyToCanonicalId = new Map(matchedForOffers.map((p) => [p.tps_identity_key, p.id]));
+    const identityKeys = [...identityKeyToCanonicalId.keys()].filter((k): k is string => !!k);
+    type CurrentOfferRow = { identity_key: string; store_id: number; price: number | string; observed_at: string };
+    const currentOfferChunks = identityKeys.length
+      ? await Promise.all(
+          Array.from({ length: Math.ceil(identityKeys.length / CHUNK) }, (_, i) =>
+            supabase
+              .from('tps_current_offers')
+              .select('identity_key, store_id, price, observed_at')
+              .eq('status', 'valid')
+              .in('identity_key', identityKeys.slice(i * CHUNK, (i + 1) * CHUNK)),
+          ),
+        )
+      : [];
+    const currentOffers = currentOfferChunks.flatMap((c) => (c.data ?? []) as unknown as CurrentOfferRow[]);
+
     const latest = new Map<string, Map<string, { price: number; obsId: string; observedAt: string }>>();
     for (const r of prices ?? []) {
       // Approved scope gate + ONE KEY PER RETAILER. This map used to be keyed on the raw
@@ -1813,6 +1841,36 @@ async function searchTPSCanonical(
       if (!latest.has(r.canonical_product_id)) latest.set(r.canonical_product_id, new Map());
       const m = latest.get(r.canonical_product_id)!;
       if (!m.has(slug)) m.set(slug, { price: Number(r.price), obsId: r.tps_observation_id, observedAt: r.observed_at });
+    }
+
+    // Merge tps_current_offers candidates in: per (canonical, store), whichever source has
+    // the more recent EFFECTIVE observation wins — comparing against the same borrowed
+    // `trueObserved` timestamp the price_history path uses below, not just its raw
+    // price_history.observed_at, so this is a fair freshness comparison, not a biased one.
+    // No exit-link id is available from tps_current_offers (its raw_obs_id is a different
+    // id space than the normalized_product_observations UUID `/go/` expects) — mirroring
+    // this function's own existing rule a few lines below ("we do NOT substitute an older
+    // row that does have an id... keep the true latest price, omit the exit"), the price
+    // still wins honestly; the exit link is simply omitted for that one store entry,
+    // exactly like any other price_history row with a null tps_observation_id already does.
+    for (const co of currentOffers) {
+      const canonicalId = identityKeyToCanonicalId.get(co.identity_key);
+      if (!canonicalId) continue;
+      const slug = resolveApprovedSlug(co.store_id);
+      if (!slug || !isDisplayableRetailer(slug)) continue;
+      if (delisted.has(`${canonicalId}|${slug}`)) continue;
+      if (implausible.has(`${canonicalId}|${slug}`)) continue;
+      if (!latest.has(canonicalId)) latest.set(canonicalId, new Map());
+      const m = latest.get(canonicalId)!;
+      const existing = m.get(slug);
+      const existingEffective = existing ? (trueObserved.get(`${canonicalId}|${slug}`) ?? existing.observedAt) : null;
+      if (!existing || !existingEffective || new Date(co.observed_at).getTime() > new Date(existingEffective).getTime()) {
+        m.set(slug, { price: Number(co.price), obsId: '', observedAt: co.observed_at });
+        // co.observed_at is already authoritative (tps_current_offers is the hot
+        // current-state table) — no borrowing needed; keep the later
+        // `trueObserved ?? v.observedAt` lookup in sync so it can't override this back.
+        trueObserved.set(`${canonicalId}|${slug}`, co.observed_at);
+      }
     }
 
     const out: GroupedSearchProduct[] = [];
