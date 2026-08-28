@@ -154,5 +154,21 @@ program is closed.
 
 A live production defect (AirPods Pro 2 SAR-79 price recurrence) was discovered incidentally during
 the C2 read-only data-gathering pass. That is production engineering work, not benchmark work, and
-is tracked separately — see `docs/P0_AIRPODS_PRO2_RECURRENCE_2026-08-28.md` for its own incident
-record, independent of this closure. Do not conflate the two when reading either document.
+was tracked entirely separately across two incident documents, both now **CLOSED and verified in
+production**:
+
+- `docs/P0_AIRPODS_PRO2_RECURRENCE_2026-08-28.md` — `tps_product_projection` /
+  `build-tps-projection.ts` freshness fix + `tawveeri_tps_products` Algolia sync pagination fix.
+- `docs/P0_LIVE_SEARCH_STALE_PRICE_2026-08-28.md` — the live `searchTPSCanonical()` fix (the
+  actual shopper-facing serving path), including a second defect found during its own live
+  verification (a tie-breaking bug that neutralized the first fix) and its resolution, final commit
+  `c8e44da`.
+
+Final verified state: `tawveeri.com` search now returns **SAR 1,049** for AirPods Pro 2 (was SAR
+79), and the same fix corrects the other checked cases from the 629-pair / 626-canonical blast
+radius identified during the incident. Do not reopen either incident document without fresh
+production evidence — this closure does not authorize re-litigating them from memory.
+
+Decision Register: **ADR-272** (`docs/DECISIONS.md`) records the Agent Era program's own closure
+decision; the P0 incident is production engineering, not a benchmark decision, and has no separate
+ADR — its two incident documents above are its decision record.

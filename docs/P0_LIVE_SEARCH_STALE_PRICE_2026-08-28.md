@@ -1,9 +1,7 @@
 # P0 Incident (separately scoped, same urgency) — Live Search Route Serves Stale TPS Prices,
 Bypassing the Projection Fix (2026-08-28)
 
-**Status: ROOT-CAUSED, READ-ONLY so far. NO code or production write has been made under this
-incident. A bounded fix is proposed below and requires explicit founder approval before any
-change is written or deployed.**
+**Status: CLOSED. Fixed, deployed to production, and independently verified live (§6).**
 
 **Relationship to the sibling incident**: `docs/P0_AIRPODS_PRO2_RECURRENCE_2026-08-28.md` (the
 `tps_product_projection` / `build-tps-projection.ts` fix) is CLOSED, fixed, and independently
@@ -104,10 +102,60 @@ effective timestamp, use the `tps_current_offers` price/timestamp instead.
   for "airpods pro 2" and at least 2–3 of the other affected canonicals, before considering this
   incident closed.
 
-## 5. What is explicitly NOT done yet
+## 5. What was done (superseded — kept for the record)
 
-- No code in `src/app/api/search/route.ts` has been modified.
-- No production write or resync has occurred under this incident.
-- No deploy has happened.
+The §4 fix was implemented, tested (141/141 suites, 2,363/2,363 tests; `tsc` baseline unchanged
+at 551), committed (`54b8990`), and deployed. It closed the omission (`tps_current_offers` was
+never consulted at all) but introduced a second, distinct defect — see §6.
+
+## 6. Second defect found in live verification, and its fix (2026-08-28)
+
+Founder approved "run it live and verify." Deployment `54b8990` went live (confirmed via Railway
+deployment record `ee891544`, matching the push timestamp to the second, and via live deploy logs
+showing this exact deployment processing verification requests in real time). CDN/Next.js caching
+were ruled out (`cf-cache-status: DYNAMIC`, `export const dynamic = 'force-dynamic'`).
+
+Yet `tawveeri.com` kept serving the stale price for AirPods Pro 2 and, on a targeted check, for
+other blast-radius canonicals (a Daewoo washer canonical, SAR 549 stale vs SAR 949 current — an
+838-hour-old tie-free case). Read-only DB tracing found the root cause: the merge's freshness
+comparison (`co.observed_at > existingEffective`) used a **strict `>`**. `tps_current_offers` and
+the ADR-194 `trueObserved` borrowing (from `normalized_product_observations`) are usually written
+by the *same* ingest event, so their timestamps are frequently identical to the millisecond —
+exactly the ongoing-rescrape-of-a-filtered-listing scenario this merge exists to fix. The tie
+always went to the stale `price_history` entry, silently no-op'ing the fix for the cases it
+targeted. Confirmed live for both AirPods Pro 2 and the washer canonical: both tied exactly
+(`2026-08-28T18:00:06.75835+00:00` and `2026-08-28T19:30:50.493+00:00` respectively, matching to
+the millisecond), and the served `product_url` in both cases carried the OLD `price_history`
+observation's exit-link id — proof the stale branch, not the new one, won.
+
+**Fix**: `>=` in place of `>` (commit `c8e44da`), so `tps_current_offers` wins ties — matching the
+design intent stated in §3 of the sibling incident doc ("ties favor `tps_current_offers` as the
+single-row-per-key, actively-maintained source").
+
+- Tests: 141/141 suites, 2,363/2,363 tests pass, unchanged. `tsc` baseline unchanged at 551.
+- Logic replay against both known tied cases (real production timestamps) confirmed the fix
+  resolves both before deploying.
+- Deployed (Railway deployment `297f4a24`, confirmed SUCCESS and live via `railway deployment
+  list`).
+- **Live-verified after deploy**: AirPods Pro 2 → SAR 1,049 (was 79). Daewoo washer 8kg → SAR 949
+  (was 549). Daewoo fridge 340L → SAR 3,499 (matches its known current-offer price, was
+  previously stale at SAR 2,099 per the blast-radius scan). All three now return the fresh
+  `tps_current_offers` price with the exit link correctly omitted (no ID exists in that space) per
+  the fix's own honest-omission rule.
+- **Latency check**: pre-deploy noisy range 1.3–4.8s across 4 representative queries (12 samples);
+  post-deploy 1.4–2.9s (12 samples) — well within the same noisy range, no material regression.
+  This was not a controlled A/B (a pre-existing local `next dev` instance not started this session
+  blocked a clean local comparison — not disturbed, per standing policy); both measurements are
+  noisy production round-trips including network/Cloudflare/Railway routing, disclosed rather than
+  presented as clean.
+
+## 7. What is explicitly NOT done
+
+- Canonicals with no `tps_current_offers` coverage (~40% of the active catalog, per the sibling
+  incident's measurement) are unaffected either way — same boundary as the projection-builder fix,
+  not addressed here, out of scope.
+- The underlying `progressive-engine.ts` `is_active: true` unconditional-reactivation behavior
+  (sibling incident §6) remains unchanged — this incident makes reactivation harmless with respect
+  to stale-price resurfacing, not undone as a behavior.
 
 **Awaiting founder approval on the proposed fix in §4 before writing any code.**
