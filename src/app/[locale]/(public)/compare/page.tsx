@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { cn, calculateSavings } from '@/lib/utils';
 import type { ProductCategory, AvailabilityStatus } from '@/lib/database/types';
+import { isFreshObservation } from '@/lib/intelligence/evidence-engine';
 
 interface StoreInfo {
   id: string;
@@ -36,7 +37,7 @@ interface StoreInfo {
   warranty_info_en: string | null;
 }
 
-interface ProductStore {
+export interface ProductStore {
   id: string;
   current_price: number;
   original_price: number | null;
@@ -46,6 +47,12 @@ interface ProductStore {
   is_free_delivery: boolean | null;
   product_url: string | null;
   affiliate_url: string | null;
+  // QUALITY PROGRAM P1 §19.2 item 2 (2026-08-28): threaded through so the "best price"
+  // crown can be freshness-gated — same storefront-layer gap §17.1/§19.1 already fixed
+  // on the main search grid and the store-comparison panel, different call site (this
+  // separate localStorage-backed multi-product compare TOOL, distinct from
+  // /compare/[key] which §12 already fixed).
+  observed_at?: string | null;
   stores: StoreInfo | null;
 }
 
@@ -135,6 +142,8 @@ const EXTENDED_COMPARE_SELECT = `
     delivery_cost,
     is_free_delivery,
     product_url,
+    last_checked_at,
+    last_seen_at,
     stores(
       id,
       name_ar,
@@ -166,6 +175,8 @@ const FALLBACK_COMPARE_SELECT = `
     current_price,
     original_price,
     availability,
+    last_checked_at,
+    last_seen_at,
     stores(
       id,
       name_ar,
@@ -206,6 +217,8 @@ interface ProductStoreRecord {
   is_free_delivery?: boolean | null;
   product_url?: string | null;
   affiliate_url?: string | null;
+  last_checked_at?: string | null;
+  last_seen_at?: string | null;
   stores?: StoreRecord | StoreRecord[] | null;
 }
 
@@ -279,6 +292,30 @@ function normalizeAvailability(availability: unknown): AvailabilityStatus {
   return 'out_of_stock';
 }
 
+/**
+ * QUALITY PROGRAM P1 §19.2 item 2 (2026-08-28): the "best price" crown for a compared
+ * product used to be the raw cheapest in-stock offer (falling back to the raw cheapest
+ * overall if nothing is in stock) with no freshness check at all — the storefront-layer
+ * twin of the gap §17.1/§19.1 already fixed on the main search grid and the
+ * store-comparison panel. Mirrors `selectBestPriceStore()` (product-card.tsx) — same
+ * `isFreshObservation()` gate, same backward-compatible design (a store/product with no
+ * `observed_at` at all behaves exactly as before) — reimplemented locally rather than
+ * imported because this page's `ProductStore` type is its own (a nullable `stores` field
+ * product-card.tsx's shape does not allow), not because the selection logic differs.
+ * `sortedStores` is `getStoresByPrice(product)`'s own output (price-sorted, current_price
+ * > 0) — this function only changes WHICH tier of that list wins, never re-sorts or
+ * re-filters it, so the original availability-fallback tiering is preserved exactly:
+ * fresh in-stock > stale in-stock > any in-stock > cheapest overall (only when NOTHING
+ * is in stock, unchanged from before this fix).
+ */
+export function selectBestPriceStore(sortedStores: ProductStore[]): ProductStore | null {
+  const inStock = sortedStores.filter((s) => s.availability !== 'out_of_stock');
+  const anyObservedAt = inStock.some((s) => s.observed_at != null);
+  const isFresh = (s: ProductStore) => !anyObservedAt || isFreshObservation(s.observed_at);
+  const freshInStock = inStock.filter(isFresh);
+  return freshInStock[0] ?? inStock[0] ?? sortedStores[0] ?? null;
+}
+
 function normalizeProductStore(store: ProductStoreRecord): ProductStore {
   return {
     id: store.id,
@@ -290,6 +327,12 @@ function normalizeProductStore(store: ProductStoreRecord): ProductStore {
     is_free_delivery: typeof store.is_free_delivery === 'boolean' ? store.is_free_delivery : null,
     product_url: store.product_url ?? null,
     affiliate_url: store.affiliate_url ?? null,
+    // last_checked_at is "when we last looked" (the ADR-194 observation-time signal);
+    // last_seen_at as a fallback when a store's checked/seen columns diverge. Flows
+    // through the localStorage cache path too (parseCachedCompareProducts also calls
+    // this function), so a cached comparison carries the same freshness signal as a
+    // fresh fetch.
+    observed_at: store.last_checked_at ?? store.last_seen_at ?? null,
     stores: normalizeStoreRecord(store.stores),
   };
 }
@@ -594,8 +637,7 @@ export default function ComparePage() {
   products.forEach((product) => {
     const sortedStores = getStoresByPrice(product);
     sortedStoresByProductId.set(product.id, sortedStores);
-    const availableStore = sortedStores.find((store) => store.availability !== 'out_of_stock');
-    bestStoreByProductId.set(product.id, availableStore || sortedStores[0] || null);
+    bestStoreByProductId.set(product.id, selectBestPriceStore(sortedStores));
   });
 
   const bestPriceValues = Array.from(bestStoreByProductId.values())
