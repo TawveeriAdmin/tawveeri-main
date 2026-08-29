@@ -14,7 +14,11 @@ export const metadata: Metadata = { robots: { index: false, follow: false } };
 export const dynamic = 'force-dynamic';
 
 export default async function ShadowReviewPage() {
-  const rows = await listPendingShadowReview(20);
+  // Limit matches REVIEW_QUEUE_MAX_INSERT (shadow-control-parity.ts /
+  // shadow-recommendation-experiment.ts) so a single experiment run's full
+  // queue is always visible on one page — no pagination added, just a
+  // limit that matches the actual write-side cap.
+  const rows = await listPendingShadowReview(50);
 
   return (
     <div className="mx-auto max-w-4xl p-6" dir="rtl">
