@@ -19,7 +19,7 @@ export const SHADOW_REVIEW_LABELS = [
 ] as const;
 export type ShadowReviewLabel = (typeof SHADOW_REVIEW_LABELS)[number];
 
-export const SHADOW_FUNNEL_STAGES = ['fetched', 'replay_checked'] as const;
+export const SHADOW_FUNNEL_STAGES = ['fetched', 'replay_checked', 'family_fetch_failed'] as const;
 export type ShadowFunnelStage = (typeof SHADOW_FUNNEL_STAGES)[number];
 
 export interface ShadowFunnelEvent {
