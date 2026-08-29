@@ -31,6 +31,21 @@ export type IntentClass =
   | 'other'
   | 'none';
 
+// Four-axis taxonomy (Radar 2.0 Phase 1, founder decision 2026-08-29). Additive
+// to Classification below — computed and logged for measurement (§ funnel
+// events), but NOT yet consumed by rank.ts's tier decision. See
+// computeOpportunityScore() in rank.ts and PHASE1_TAXONOMY_NOTES there.
+export type Domain = 'product' | 'home_mission' | 'housing_partnership' | 'brand_mention' | 'other';
+export type BuyingStage =
+  | 'problem' | 'research' | 'comparison' | 'decision'
+  | 'purchase_imminent' | 'post_purchase' | 'none';
+export type IntentType =
+  | 'help_request' | 'recommendation' | 'comparison' | 'price_search'
+  | 'availability' | 'budget' | 'replacement' | 'gift_purchase' | 'other' | 'none';
+export type ExclusionClass =
+  | 'contest' | 'joke' | 'ad_seller' | 'post_purchase_story'
+  | 'support_complaint' | 'spam' | 'needs_context' | 'none';
+
 export interface Classification {
   category: string | null; // production category key or null
   intentClass: IntentClass;
@@ -40,6 +55,64 @@ export interface Classification {
   budgetSar: number | null;
   confidence: number; // classifier's own confidence in the category+intent call
   via: 'heuristic' | 'llm';
+  /** Phase 1 four-axis taxonomy — observational only in Phase 1 (§ above). */
+  domain: Domain;
+  buyingStage: BuyingStage;
+  intentType: IntentType;
+  exclusion: ExclusionClass;
+}
+
+// ---- Funnel observability (Radar 2.0 Phase 1) ----------------------------
+// One event per candidate per stage transition, content-free by construction.
+// Never carries post_text / author_handle / source_url / tracking_url / raw
+// source_post_id — only `fingerprint` (a one-way HMAC, see heuristics.ts).
+
+export const FUNNEL_STAGES = [
+  'fetched',
+  'prefilter_rejected',
+  'classified',
+  'excluded',
+  'ranked_ignore',
+  'ranked_medium',
+  'ranked_high',
+  'alert_attempted',
+  'alert_accepted',
+  'founder_acted',
+  'founder_dismissed',
+  'expired',
+] as const;
+export type FunnelStage = (typeof FUNNEL_STAGES)[number];
+
+export interface FunnelEvent {
+  fingerprint: string | null; // null only when no post id/text was available to hash
+  source: RadarCandidate['source'];
+  domain: Domain | null;
+  category: string | null;
+  stage: FunnelStage;
+  /** Small enum context: which prefilter gate, which exclusion class, etc. */
+  detail: string | null;
+  opportunityScore: number | null;
+  answerabilityStatus: Answerability | null;
+  queryFamily: string;
+  isTest: boolean;
+}
+
+export const FOUNDER_OUTCOMES = ['accepted', 'rejected', 'expired_no_review'] as const;
+export type FounderOutcome = (typeof FOUNDER_OUTCOMES)[number];
+
+export interface OutcomeRecord {
+  fingerprint: string | null;
+  tier: Tier;
+  domain: Domain | null;
+  category: string | null;
+  intentType: IntentType | null;
+  buyingStage: BuyingStage | null;
+  exclusion: ExclusionClass | null;
+  opportunityScore: number | null;
+  answerabilityStatus: Answerability | null;
+  queryFamily: string;
+  isTest: boolean;
+  founderOutcome: FounderOutcome | null;
 }
 
 export interface RankedOpportunity {

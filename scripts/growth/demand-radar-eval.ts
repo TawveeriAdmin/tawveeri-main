@@ -8,7 +8,7 @@
 // PRECISION > RECALL: the harness fails loudly if any adversarial case ranks HIGH.
 
 import { classifyCandidate } from '../../src/lib/growth/demand-radar/classify';
-import { rankOpportunity } from '../../src/lib/growth/demand-radar/rank';
+import { rankOpportunity, computeOpportunityScore } from '../../src/lib/growth/demand-radar/rank';
 import { looksLikeNoise, lexicalIntent, hasArabic, isStale } from '../../src/lib/growth/demand-radar/heuristics';
 import type { RadarCandidate, Tier } from '../../src/lib/growth/demand-radar/types';
 
@@ -62,6 +62,15 @@ const CASES: EvalCase[] = [
   { text: 'بدي براد كبير شو بتنصحوني؟ الاسعار بالدينار الاردني', expectCategory: 'refrigerator', maxTier: 'medium', label: 'adv:non-ksa' },
   { text: 'وش افضل مكيف تحت 2500؟', expectCategory: 'air_conditioner', maxTier: 'ignore', label: 'adv:stale-3-days', minsAgo: 72 * 60 },
   { text: 'خدمة التوصيل عندكم سيئة جدا والمنتج وصل مكسور', expectCategory: null, maxTier: 'ignore', label: 'adv:store-complaint' },
+
+  // ── Radar 2.0 Phase 1 additions (founder-reviewed false-positive classes,
+  // 2026-08-29): real gaps the production tier decision does NOT yet close
+  // (rankOpportunity is unchanged in Phase 1) — these cases exist to MEASURE
+  // the gap via maxTier and via the diagnostic exclusion-axis report below,
+  // not to assert a fix that hasn't shipped. §5/§10 of the architecture doc. ──
+  { text: 'يارب افوز في القرعة وابي جوال جديد يكفيني', expectCategory: 'mobile', maxTier: 'medium', label: 'adv:contest-giveaway' },
+  { text: 'اشتريت جوال جديد الحمدلله واخيرا ودعت القديم', expectCategory: 'mobile', maxTier: 'medium', label: 'adv:post-purchase-story' },
+  { text: 'اشتريت لي جوال جديد', expectCategory: 'mobile', maxTier: 'medium', label: 'adv:post-purchase-story-founder-example' },
 ];
 
 const mk = (c: EvalCase, i: number): RadarCandidate => ({
@@ -82,6 +91,7 @@ const tierRank = (t: Tier) => (t === 'ignore' ? 0 : t === 'medium' ? 1 : 2);
 
 (async () => {
   let catCorrect = 0, catTotal = 0, highViolations = 0, wantHits = 0, wantTotal = 0;
+  let exclusionHits = 0, exclusionCases = 0; // diagnostic only — see summary note
   const rows: string[] = [];
   for (let i = 0; i < CASES.length; i++) {
     const c = CASES[i];
@@ -89,14 +99,28 @@ const tierRank = (t: Tier) => (t === 'ignore' ? 0 : t === 'medium' ? 1 : 2);
     // full pipeline prefilters first (an eval case filtered here scores as 'ignore')
     let tier: Tier = 'ignore';
     let category: string | null = null;
+    let diagLine: string | null = null;
     const prefiltered =
       !hasArabic(cand.text) || looksLikeNoise(cand.text) || isStale(cand.postedAt) ||
       lexicalIntent(cand.text).strength === 'none';
     if (!prefiltered) {
       const cls = await classifyCandidate(cand);
       category = cls.category;
+      // PRODUCTION path — unchanged by Radar 2.0 Phase 1. This is what the
+      // 0-violations gate below actually measures.
       const r = rankOpportunity(cand, cls, cls.category ? 'yes' : 'unknown', 'eval: assumed supported');
       tier = r.tier;
+      // DIAGNOSTIC ONLY (Phase 1) — the independent Opportunity Score + the
+      // four-axis exclusion class, computed side-by-side. Never affects `tier`
+      // above and never gates the exit code; this exists purely to measure,
+      // on the adversarial set, whether the new taxonomy WOULD have flagged
+      // what rankOpportunity's real decision still lets through.
+      const opp = computeOpportunityScore(cand, cls);
+      if (c.label.startsWith('adv:')) {
+        exclusionCases++;
+        if (cls.exclusion !== 'none' || opp.excluded) exclusionHits++;
+      }
+      diagLine = `  ↳ diag: domain=${cls.domain} buying_stage=${cls.buyingStage} exclusion=${cls.exclusion} opp_score=${opp.score}${opp.excluded ? ' (opp-excluded)' : ''}`;
     }
     if (c.expectCategory !== undefined) {
       catTotal++;
@@ -109,12 +133,14 @@ const tierRank = (t: Tier) => (t === 'ignore' ? 0 : t === 'medium' ? 1 : 2);
       if (tierRank(tier) >= tierRank(c.wantTier)) wantHits++;
     }
     rows.push(`${violated ? '✗ VIOLATION' : '✓'} [${c.label}] tier=${tier} (max=${c.maxTier}${c.wantTier ? `, want=${c.wantTier}` : ''}) cat=${category ?? '-'} (expect=${c.expectCategory ?? '-'})`);
+    if (diagLine) rows.push(diagLine);
   }
   console.log(rows.join('\n'));
   console.log('\n──────── EVAL SUMMARY ────────');
   console.log(`mode: ${process.env.ANTHROPIC_API_KEY ? 'LLM (' + (process.env.DEMAND_RADAR_CLASSIFY_MODEL || 'claude-haiku-4-5-20251001') + ')' : 'heuristic-only'}`);
   console.log(`category accuracy: ${catCorrect}/${catTotal} (${Math.round((catCorrect / catTotal) * 100)}%)`);
-  console.log(`tier ceiling violations (false-positive risk): ${highViolations} — MUST be 0`);
+  console.log(`tier ceiling violations (false-positive risk, PRODUCTION path — unchanged by Phase 1): ${highViolations} — MUST be 0`);
   console.log(`intended-tier recall: ${wantHits}/${wantTotal} (${Math.round((wantHits / wantTotal) * 100)}%) — informational; precision rules V1`);
+  console.log(`[Phase 1 diagnostic, NOT a gate] new exclusion axis flags ${exclusionHits}/${exclusionCases} adversarial cases that reached classification — measures the gap Phase 2 may close, does not close it here`);
   if (highViolations > 0) process.exit(1);
 })();

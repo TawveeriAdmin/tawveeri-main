@@ -5,6 +5,7 @@
 // Arabic matching uses substring checks, never JS \b (which cannot match beside
 // Arabic letters — see the bilingual-matching invariant).
 
+import { createHmac } from 'crypto';
 import {
   INTENT_MARKERS,
   NOISE_MARKERS,
@@ -104,4 +105,63 @@ export function dedupKey(sourcePostId: string, threadKey: string | null, text: s
   if (threadKey) return `thread:${threadKey}`;
   const fp = norm(text).replace(/\s+/g, ' ').trim().slice(0, 120);
   return `text:${fp}`;
+}
+
+// ---- Funnel observability fingerprint (Radar 2.0 Phase 1) -----------------
+// A stable, ONE-WAY, keyed hash used only for cross-stage/cross-time dedup in
+// the de-identified funnel event log — never the raw source_post_id, which
+// resolves directly to a public URL and must never enter that log. The key
+// lives only in server env config, is never logged, and is never stored next
+// to the fingerprints it produces. Falls back to CRON_SECRET (already
+// server-only, already provisioned) when DEMAND_RADAR_FINGERPRINT_SECRET is
+// unset, so Phase 1 doesn't require a brand-new secret before it can even be
+// tested — see the Phase 1 doc's §E note recommending a dedicated secret
+// before Phase 2 widens this system's real usage.
+function fingerprintSecret(): string | null {
+  return process.env.DEMAND_RADAR_FINGERPRINT_SECRET || process.env.CRON_SECRET || null;
+}
+
+/** Returns null (never a guessable placeholder) when no secret is configured
+ *  at all — an explicit "can't fingerprint" state, matching the codebase's
+ *  own "unconfigured, never a silent wrong value" discipline. */
+export function candidateFingerprint(source: string, sourcePostId: string | null, text: string): string | null {
+  const secret = fingerprintSecret();
+  if (!secret) return null;
+  const basis = sourcePostId ? `${source}:${sourcePostId}` : `${source}:text:${norm(text).slice(0, 200)}`;
+  return createHmac('sha256', secret).update(basis).digest('hex');
+}
+
+// ---- Deterministic exclusion signals (Radar 2.0 Phase 1) ------------------
+// Founder-review lesson: a real HIGH-scored candidate turned out to be a
+// contest entry or a past-tense purchase story. These are deterministic
+// vetoes for the SAME reason isAccessoryQuestion() above is deterministic —
+// "the eval showed the LLM alone lets these through — a guard, not prompt
+// hope." Phase 1 computes and logs these for measurement only; they do not
+// change rank.ts's real tier decision (see rank.ts's computeOpportunityScore).
+
+const CONTEST_TOKENS = [
+  'مسابقة', 'سحب على', 'قرعة', 'تفاعل وربح', 'شارك وربح', 'منشن صديق',
+  'اعادة تغريد وربح', 'لو فزت', 'يارب افوز', 'يارب أفوز', 'ريتوت وربح',
+].map((t) => norm(t));
+
+/** True when the text reads as a contest/giveaway entry rather than a real
+ *  purchase question — even when it also contains a genuine intent marker
+ *  (e.g. "يارب أفوز بالمسابقة أبي آيفون" still says "أبي"). */
+export function isContestQuestion(text: string): boolean {
+  const t = norm(text);
+  return CONTEST_TOKENS.some((m) => t.includes(m));
+}
+
+// First-person past-tense purchase verbs. Deliberately distinct from
+// INTENT_MARKERS' 'اشتري'/'أشتري' (present/imperative stem) — "اشتريت" shares
+// that root and already trips the generic intent-marker match today, which
+// is exactly the false-positive class this targets (founder example: "اشتريت
+// لي جوال جديد" reads as a post-purchase story, not a purchase intent).
+const POST_PURCHASE_TOKENS = ['اشتريت', 'شريت', 'جبت', 'اقتنيت', 'خذيت'].map((t) => norm(t));
+
+/** True when the text is a past-tense purchase story, not a forward-looking
+ *  purchase question. */
+export function isPostPurchaseStory(text: string): boolean {
+  const t = norm(text);
+  return POST_PURCHASE_TOKENS.some((m) => t.includes(m));
 }

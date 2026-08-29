@@ -9,14 +9,15 @@
 
 import { createServerClient } from '@/lib/database';
 import { getAdapter } from './adapters';
-import { hasArabic, looksLikeNoise, lexicalIntent, dedupKey, isStale } from './heuristics';
+import { hasArabic, looksLikeNoise, lexicalIntent, lexicalCategory, dedupKey, isStale, candidateFingerprint } from './heuristics';
 import { classifyCandidate } from './classify';
 import { assessAnswerability } from './answerability';
-import { rankOpportunity } from './rank';
+import { rankOpportunity, computeOpportunityScore } from './rank';
 import { draftReply } from './draft';
 import { sendHighOpportunityAlert } from './alert';
 import { opportunityAlertEligible } from './freshness';
 import { recordWeeklyExpiry } from './weekly-stats';
+import { emitFunnelEvent, recordOutcome, DEFAULT_QUERY_FAMILY } from './funnel';
 import type { RadarCandidate } from './types';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://tawveeri.com';
@@ -82,6 +83,26 @@ export async function runDemandRadar(opts: { source: 'x' | 'mock'; isTest?: bool
   }
   result.polled = poll.candidates.length;
 
+  // Funnel observability (Radar 2.0 Phase 1): one 'fetched' event per raw
+  // candidate X returned, BEFORE dedup — matches "every candidate returned
+  // from an X query." Best-effort category tag via the same lexical guess
+  // used elsewhere (adapters.ts itself is untouched in Phase 1, so the
+  // per-query category isn't threaded through RadarCandidate yet).
+  for (const c of poll.candidates) {
+    await emitFunnelEvent({
+      fingerprint: candidateFingerprint(c.source, c.sourcePostId, c.text),
+      source: c.source,
+      domain: 'product',
+      category: lexicalCategory(c.text).category,
+      stage: 'fetched',
+      detail: null,
+      opportunityScore: null,
+      answerabilityStatus: null,
+      queryFamily: DEFAULT_QUERY_FAMILY,
+      isTest,
+    });
+  }
+
   // dedup against DB (post id + thread + text fingerprint)
   const fresh: RadarCandidate[] = [];
   for (const c of poll.candidates) {
@@ -105,19 +126,66 @@ export async function runDemandRadar(opts: { source: 'x' | 'mock'; isTest?: bool
   result.deduped = result.polled - fresh.length;
 
   // deterministic prefilters — cheap, before any LLM tokens
-  const worthy = fresh.filter((c) => {
-    if (!hasArabic(c.text)) return false;
-    if (looksLikeNoise(c.text)) return false;
-    if (isStale(c.postedAt)) return false;
-    return lexicalIntent(c.text).strength !== 'none';
-  });
+  const worthy: RadarCandidate[] = [];
+  for (const c of fresh) {
+    const gate = !hasArabic(c.text)
+      ? 'not_arabic'
+      : looksLikeNoise(c.text)
+        ? 'noise'
+        : isStale(c.postedAt)
+          ? 'stale'
+          : lexicalIntent(c.text).strength === 'none'
+            ? 'no_intent'
+            : null;
+    if (gate) {
+      await emitFunnelEvent({
+        fingerprint: candidateFingerprint(c.source, c.sourcePostId, c.text),
+        source: c.source,
+        domain: 'product',
+        category: lexicalCategory(c.text).category,
+        stage: 'prefilter_rejected',
+        detail: gate,
+        opportunityScore: null,
+        answerabilityStatus: null,
+        queryFamily: DEFAULT_QUERY_FAMILY,
+        isTest,
+      });
+    } else {
+      worthy.push(c);
+    }
+  }
   result.prefiltered = fresh.length - worthy.length;
 
   for (const c of worthy) {
     const cls = await classifyCandidate(c);
     result.classified++;
+    const fingerprint = candidateFingerprint(c.source, c.sourcePostId, c.text);
+
+    // Funnel observability (Phase 1): exactly one of 'excluded' / 'classified'
+    // per candidate — never both, so the funnel doesn't double-count.
+    await emitFunnelEvent({
+      fingerprint, source: c.source, domain: cls.domain, category: cls.category,
+      stage: cls.exclusion !== 'none' ? 'excluded' : 'classified',
+      detail: cls.exclusion !== 'none' ? cls.exclusion : null,
+      opportunityScore: null, answerabilityStatus: null,
+      queryFamily: DEFAULT_QUERY_FAMILY, isTest,
+    });
+
+    // Independent Purchase/Market Opportunity Score (§9/§10 of the
+    // architecture doc) — computed and logged for measurement ONLY. It never
+    // feeds rankOpportunity() below, which is the untouched, real tier/email
+    // decision (Phase 1 preserves "current tier decisions exactly").
+    const oppScore = computeOpportunityScore(c, cls);
+
     const { answerability, reason } = await assessAnswerability(cls.category);
     const rank = rankOpportunity(c, cls, answerability, reason);
+
+    await emitFunnelEvent({
+      fingerprint, source: c.source, domain: cls.domain, category: cls.category,
+      stage: rank.tier === 'high' ? 'ranked_high' : rank.tier === 'medium' ? 'ranked_medium' : 'ranked_ignore',
+      detail: null, opportunityScore: oppScore.score, answerabilityStatus: answerability,
+      queryFamily: DEFAULT_QUERY_FAMILY, isTest,
+    });
 
     if (rank.tier === 'ignore') continue; // silence is a valid outcome (§16)
 
@@ -162,6 +230,16 @@ export async function runDemandRadar(opts: { source: 'x' | 'mock'; isTest?: bool
     if (rank.tier === 'high') result.high++;
     if (rank.tier === 'medium') result.medium++;
 
+    // Baseline outcome row (Phase 1) — founder_outcome starts null; the
+    // founder-action route (PATCH /api/admin/growth/opportunities) and the
+    // 24h expiry sweep below are the only two places that ever set it.
+    await recordOutcome({
+      fingerprint, tier: rank.tier, domain: cls.domain, category: cls.category,
+      intentType: cls.intentType, buyingStage: cls.buyingStage, exclusion: cls.exclusion,
+      opportunityScore: oppScore.score, answerabilityStatus: answerability,
+      queryFamily: DEFAULT_QUERY_FAMILY, isTest, founderOutcome: null,
+    });
+
     // HIGH → rapid founder email — ONLY while the conversation is still live.
     // Backfill/stale posts stay dashboard-only (founder correction: a 40h-old
     // post must never arrive as an urgent email). Cooldown still applies.
@@ -178,6 +256,11 @@ export async function runDemandRadar(opts: { source: 'x' | 'mock'; isTest?: bool
         .not('alerted_at', 'is', null)
         .gte('alerted_at', new Date(Date.now() - ALERT_WINDOW_HOURS * 3600_000).toISOString());
       if ((count ?? 0) < ALERT_MAX_PER_WINDOW) {
+        await emitFunnelEvent({
+          fingerprint, source: c.source, domain: cls.domain, category: cls.category,
+          stage: 'alert_attempted', detail: null, opportunityScore: oppScore.score,
+          answerabilityStatus: answerability, queryFamily: DEFAULT_QUERY_FAMILY, isTest,
+        });
         const sent = await sendHighOpportunityAlert({
           id: inserted.id, candidate: c, category: cls.category, reasons: rank.reasons,
           suggestedReply: reply, suggestedQuery: rank.suggestedQuery, isTest,
@@ -185,6 +268,11 @@ export async function runDemandRadar(opts: { source: 'x' | 'mock'; isTest?: bool
         if (sent) {
           await sb.from('demand_opportunities').update({ alerted_at: new Date().toISOString() }).eq('id', inserted.id);
           result.alerted++;
+          await emitFunnelEvent({
+            fingerprint, source: c.source, domain: cls.domain, category: cls.category,
+            stage: 'alert_accepted', detail: null, opportunityScore: oppScore.score,
+            answerabilityStatus: answerability, queryFamily: DEFAULT_QUERY_FAMILY, isTest,
+          });
         }
       }
     }
@@ -197,11 +285,30 @@ export async function runDemandRadar(opts: { source: 'x' | 'mock'; isTest?: bool
   const reviewCutoff = new Date(Date.now() - REVIEW_WINDOW_HOURS * 3600_000).toISOString();
   const { data: staleRows } = await sb
     .from('demand_opportunities')
-    .select('id')
+    // Phase 1: select enough to write a de-identified 'expired' outcome
+    // BEFORE the delete below removes the identifying columns — source_post_id
+    // here only ever feeds candidateFingerprint() (a one-way hash), never
+    // written to any table itself.
+    .select('id, source, source_post_id, opportunity_type, category, tier, is_test')
     .in('status', ['new', 'ready_for_review'])
     .lt('created_at', reviewCutoff);
   const staleCount = staleRows?.length ?? 0;
   if (staleCount > 0) {
+    for (const row of staleRows ?? []) {
+      const fp = candidateFingerprint(row.source, row.source_post_id, '');
+      const domain = row.opportunity_type === 'home_mission' ? 'home_mission' : 'product';
+      await emitFunnelEvent({
+        fingerprint: fp, source: row.source, domain, category: row.category,
+        stage: 'expired', detail: null, opportunityScore: null, answerabilityStatus: null,
+        queryFamily: DEFAULT_QUERY_FAMILY, isTest: row.is_test,
+      });
+      await recordOutcome({
+        fingerprint: fp, tier: row.tier, domain, category: row.category,
+        intentType: null, buyingStage: null, exclusion: null,
+        opportunityScore: null, answerabilityStatus: null,
+        queryFamily: DEFAULT_QUERY_FAMILY, isTest: row.is_test, founderOutcome: 'expired_no_review',
+      });
+    }
     await sb
       .from('demand_opportunities')
       .delete()
