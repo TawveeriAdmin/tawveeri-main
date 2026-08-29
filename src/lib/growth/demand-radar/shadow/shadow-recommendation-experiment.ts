@@ -29,8 +29,10 @@ import { computeOpportunityScore } from '../rank';
 import { assessAnswerability } from '../answerability';
 import { wouldRadar1Retrieve } from './would-radar1-retrieve';
 import { emitShadowFunnelEvent, recordShadowOutcome } from './shadow-funnel';
+import { applyShadowExclusionOverrides } from './shadow-exclusion';
+import { NearDuplicateTracker } from './shadow-dedup';
 import { PRODUCT_RECOMMENDATION_QUERIES, PRODUCT_RECOMMENDATION_QUERY_FAMILY } from './shadow-vocabulary';
-import type { RadarCandidate } from '../types';
+import type { RadarCandidate, ExclusionClass } from '../types';
 
 const X_API = 'https://api.x.com/2/tweets/search/recent';
 const ADAPTER_SUFFIX = ' lang:ar -is:retweet -from:Tawveeri';
@@ -51,6 +53,8 @@ export interface RecommendationExperimentResult {
   matchedRadar1: number; // Radar 1 overlap
   unmatchedRadar1: number; // net-new (Shadow-only recovery)
   reviewQueueInserted: number;
+  nearDuplicatesSuppressed: number; // Checkpoint 5.1
+  exclusionOverridesApplied: number; // Checkpoint 5.1
   stoppedEarly: boolean;
   stopReason?: string;
   isTest: boolean;
@@ -75,7 +79,8 @@ export async function runShadowRecommendationExperiment(opts: { isTest?: boolean
   const token = process.env.X_RADAR_BEARER_TOKEN;
   const result: RecommendationExperimentResult = {
     status: 'ok', perCategory: [], totalPolled: 0, matchedRadar1: 0, unmatchedRadar1: 0,
-    reviewQueueInserted: 0, stoppedEarly: false, isTest,
+    reviewQueueInserted: 0, nearDuplicatesSuppressed: 0, exclusionOverridesApplied: 0,
+    stoppedEarly: false, isTest,
   };
   if (!token) {
     result.status = 'unconfigured';
@@ -87,6 +92,9 @@ export async function runShadowRecommendationExperiment(opts: { isTest?: boolean
   const cursor: string | null = stateRow?.cursor ?? null;
   let maxId: bigint | null = cursor ? BigInt(cursor) : null;
   let anyIsolatedFailure = false;
+  // Checkpoint 5.1: within-run near-duplicate suppression (shadow-dedup.ts).
+  // One tracker per run — resets on every invocation, never persisted.
+  const nearDupTracker = new NearDuplicateTracker();
 
   for (const spec of PRODUCT_RECOMMENDATION_QUERIES) {
     const params = new URLSearchParams({
@@ -173,15 +181,45 @@ export async function runShadowRecommendationExperiment(opts: { isTest?: boolean
       } catch { /* non-numeric id — cursor unchanged */ }
 
       const fingerprint = candidateFingerprint(c.source, c.sourcePostId, c.text);
+
+      // Checkpoint 5.1: suppress within-run near-duplicates (e.g. the same
+      // promotional template reposted with a different tracking link) before
+      // spending an LLM classification call on it. No review-queue insert,
+      // no outcome record — just a funnel trace of the suppression itself.
+      if (nearDupTracker.seen(c.source, c.text)) {
+        result.nearDuplicatesSuppressed++;
+        await emitShadowFunnelEvent({
+          fingerprint, source: c.source, domain: null, category: spec.category,
+          stage: 'near_duplicate_suppressed', detail: null, opportunityScore: null, answerabilityStatus: null,
+          queryFamily: PRODUCT_RECOMMENDATION_QUERY_FAMILY, isTest,
+        });
+        continue;
+      }
+
       const check = wouldRadar1Retrieve(c.text);
       if (check.matched) result.matchedRadar1++; else result.unmatchedRadar1++;
 
       // Read-only reuse of Radar 1's own classification/scoring/answerability
       // logic — none of these write anywhere.
       const cls = await classifyCandidate(c);
-      const opp = computeOpportunityScore(c, cls);
-      const { answerability } = await assessAnswerability(cls.category);
-      const category = cls.category ?? spec.category;
+
+      // Checkpoint 5.1: deterministic exclusion overrides for the exact
+      // failure modes observed in the Checkpoint 5 founder-reviewed sample
+      // (shadow-exclusion.ts). Shadow-local — cls itself (and Radar 1's own
+      // classify.ts) is never mutated; only the values used for THIS
+      // candidate's scoring/storage are widened.
+      const override = applyShadowExclusionOverrides(c.text, cls);
+      if (override) result.exclusionOverridesApplied++;
+      const effectiveExclusion = override ? override.exclusion : cls.exclusion;
+      const effectiveCategory = override && override.categoryOverride !== undefined ? override.categoryOverride : cls.category;
+      // computeOpportunityScore() only ever compares cls.exclusion !== 'none'
+      // (rank.ts's existing, unmodified hard-gate) — a same-shaped value is
+      // sufficient for the score to zero correctly without touching rank.ts.
+      const scoringCls = override ? { ...cls, exclusion: effectiveExclusion as ExclusionClass, category: effectiveCategory } : cls;
+
+      const opp = computeOpportunityScore(c, scoringCls);
+      const { answerability } = await assessAnswerability(effectiveCategory);
+      const category = effectiveCategory ?? spec.category;
 
       await emitShadowFunnelEvent({
         fingerprint, source: c.source, domain: cls.domain, category,
@@ -197,7 +235,7 @@ export async function runShadowRecommendationExperiment(opts: { isTest?: boolean
       });
       await recordShadowOutcome({
         fingerprint, tier: null, domain: cls.domain, category,
-        intentType: cls.intentType, buyingStage: cls.buyingStage, exclusion: cls.exclusion,
+        intentType: cls.intentType, buyingStage: cls.buyingStage, exclusion: effectiveExclusion,
         opportunityScore: opp.score, answerabilityStatus: answerability,
         queryFamily: PRODUCT_RECOMMENDATION_QUERY_FAMILY, isTest,
         retrievedByRadar1: check.matched, shadowReviewLabel: null,

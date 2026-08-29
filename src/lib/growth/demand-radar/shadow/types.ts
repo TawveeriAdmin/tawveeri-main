@@ -19,7 +19,7 @@ export const SHADOW_REVIEW_LABELS = [
 ] as const;
 export type ShadowReviewLabel = (typeof SHADOW_REVIEW_LABELS)[number];
 
-export const SHADOW_FUNNEL_STAGES = ['fetched', 'replay_checked', 'family_fetch_failed'] as const;
+export const SHADOW_FUNNEL_STAGES = ['fetched', 'replay_checked', 'family_fetch_failed', 'near_duplicate_suppressed'] as const;
 export type ShadowFunnelStage = (typeof SHADOW_FUNNEL_STAGES)[number];
 
 export interface ShadowFunnelEvent {
@@ -35,6 +35,14 @@ export interface ShadowFunnelEvent {
   isTest: boolean;
 }
 
+/** Checkpoint 5.1 (founder decision 2026-08-29): two additional exclusion
+ *  values, Shadow-local only — never added to the shared ExclusionClass in
+ *  '../types' (Radar 1's classify.ts prompt/enum stays byte-for-byte
+ *  unchanged). The demand_radar_shadow_outcomes.exclusion column has no DB
+ *  CHECK constraint, so widening this type is the only change needed to
+ *  store them. */
+export type ShadowExclusionClass = ExclusionClass | 'news_review' | 'generic_conversation';
+
 export interface ShadowOutcomeRecord {
   fingerprint: string | null;
   tier: Tier | null;
@@ -42,7 +50,7 @@ export interface ShadowOutcomeRecord {
   category: string | null;
   intentType: IntentType | null;
   buyingStage: BuyingStage | null;
-  exclusion: ExclusionClass | null;
+  exclusion: ShadowExclusionClass | null;
   opportunityScore: number | null;
   answerabilityStatus: Answerability | null;
   queryFamily: string;
