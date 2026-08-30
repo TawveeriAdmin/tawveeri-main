@@ -51,8 +51,15 @@ export function buildShadowOutcomeRow(record: ShadowOutcomeRecord) {
 export async function emitShadowFunnelEvent(event: ShadowFunnelEvent): Promise<void> {
   try {
     const sb = createServerClient() as any;
-    await sb.from('demand_radar_shadow_funnel_events').insert(buildShadowFunnelEventRow(event));
-  } catch {
+    const { error } = await sb.from('demand_radar_shadow_funnel_events').insert(buildShadowFunnelEventRow(event));
+    // Engineering-debt fix (2026-08-30): a PostgREST-level error resolves
+    // normally (no thrown exception), so the try/catch below never saw it —
+    // funnel writes could fail silently with zero trace anywhere. Still never
+    // fatal to the run (same discipline as before); now at least observable
+    // in server logs instead of vanishing.
+    if (error) console.error('[demand-radar/shadow] emitShadowFunnelEvent insert failed:', error.message, 'stage:', event.stage);
+  } catch (e) {
+    console.error('[demand-radar/shadow] emitShadowFunnelEvent threw:', e instanceof Error ? e.message : e);
     /* observability must never break the shadow run */
   }
 }
@@ -61,12 +68,14 @@ export async function recordShadowOutcome(record: ShadowOutcomeRecord): Promise<
   try {
     const sb = createServerClient() as any;
     const row = buildShadowOutcomeRow(record);
-    if (record.fingerprint) {
-      await sb.from('demand_radar_shadow_outcomes').upsert(row, { onConflict: 'fingerprint' });
-    } else {
-      await sb.from('demand_radar_shadow_outcomes').insert(row);
-    }
-  } catch {
+    const { error } = record.fingerprint
+      ? await sb.from('demand_radar_shadow_outcomes').upsert(row, { onConflict: 'fingerprint' })
+      : await sb.from('demand_radar_shadow_outcomes').insert(row);
+    // Same debt fix as emitShadowFunnelEvent above — make a returned {error}
+    // observable; still never throws or blocks the run.
+    if (error) console.error('[demand-radar/shadow] recordShadowOutcome write failed:', error.message, 'queryFamily:', record.queryFamily);
+  } catch (e) {
+    console.error('[demand-radar/shadow] recordShadowOutcome threw:', e instanceof Error ? e.message : e);
     /* observability must never break the shadow run */
   }
 }
@@ -85,10 +94,18 @@ export async function updateShadowOutcomeReviewLabel(
   label: ShadowReviewLabel
 ): Promise<{ ok: boolean; error?: string }> {
   const sb = createServerClient() as any;
-  const { error } = await sb
+  // Engineering-debt fix (2026-08-30): an UPDATE matching zero rows is not a
+  // PostgREST error — `error` stays null and this used to report ok:true even
+  // when no outcome row existed under this fingerprint, silently discarding
+  // the founder's label with no trace. `.select()` after the update forces
+  // PostgREST to return the affected row(s); an empty array is the only
+  // reliable signal that nothing was actually updated.
+  const { data, error } = await sb
     .from('demand_radar_shadow_outcomes')
     .update({ shadow_review_label: label, shadow_reviewed_at: new Date().toISOString() })
-    .eq('fingerprint', fingerprint);
+    .eq('fingerprint', fingerprint)
+    .select('fingerprint');
   if (error) return { ok: false, error: error.message };
+  if (!data || data.length === 0) return { ok: false, error: 'no matching outcome row for fingerprint — label was not persisted' };
   return { ok: true };
 }

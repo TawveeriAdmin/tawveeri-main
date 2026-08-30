@@ -22,6 +22,11 @@ type Call = { table: string; op: 'update' | 'insert'; payload: any };
 function makeMockClient(opts: {
   queueSelectResult?: { data: any; error: any };
   outcomeUpdateError?: { message: string } | null;
+  /** Rows the outcomes-table UPDATE's .select() should report as affected.
+   *  Defaults to one matching row (the normal case). An empty array
+   *  simulates a fingerprint that matches nothing — the zero-row bug this
+   *  file's second describe block regression-tests. */
+  outcomeUpdateAffectedRows?: any[];
 } = {}) {
   const calls: Call[] = [];
   const queueSelectResult = opts.queueSelectResult ?? {
@@ -29,6 +34,7 @@ function makeMockClient(opts: {
     error: null,
   };
   const outcomeUpdateError = opts.outcomeUpdateError ?? null;
+  const outcomeUpdateAffectedRows = opts.outcomeUpdateAffectedRows ?? [{ fingerprint: 'fp-abc123' }];
 
   function from(table: string) {
     if (table === 'demand_radar_shadow_review_queue') {
@@ -51,7 +57,16 @@ function makeMockClient(opts: {
       return {
         update(payload: any) {
           calls.push({ table, op: 'update', payload });
-          return { eq: (_col: string, _val: string) => Promise.resolve({ error: outcomeUpdateError }) };
+          return {
+            eq: (_col: string, _val: string) => ({
+              select: (_cols: string) =>
+                Promise.resolve(
+                  outcomeUpdateError
+                    ? { data: null, error: outcomeUpdateError }
+                    : { data: outcomeUpdateAffectedRows, error: null }
+                ),
+            }),
+          };
         },
       };
     }
@@ -119,6 +134,21 @@ describe('labelShadowReview — measurement-integrity fix', () => {
     expect(updates).toHaveLength(1);
   });
 
+  it('engineering-debt fix: a zero-row outcome UPDATE (fingerprint matches nothing) is reported as a FAILURE, not a false success', async () => {
+    // Regression test for the exact defect flagged in the integrated review
+    // (2026-08-30): PostgREST reports no error when an UPDATE's WHERE clause
+    // matches zero rows, so without checking affected-row existence this
+    // silently "succeeded" while never persisting the founder's label.
+    currentMock = makeMockClient({ outcomeUpdateAffectedRows: [] });
+    const result = await labelShadowReview('row-1', 'valuable');
+    expect(result.ok).toBe(false);
+    expect(result.error).toMatch(/no matching outcome row/i);
+    // exactly one update was attempted — the bug is in how the result is
+    // interpreted, not in retrying or double-writing
+    const updates = currentMock.calls.filter((c) => c.table === 'demand_radar_shadow_outcomes' && c.op === 'update');
+    expect(updates).toHaveLength(1);
+  });
+
   it('a missing/invalid row id fails cleanly without ever reaching the outcomes table', async () => {
     currentMock = makeMockClient({ queueSelectResult: { data: null, error: { message: 'no rows' } } });
     const result = await labelShadowReview('does-not-exist', 'valuable');
@@ -148,6 +178,16 @@ describe('review_label_submitted / review_label_failed — observability semanti
     expect(events).toHaveLength(1);
     expect(events[0].payload.stage).toBe('review_label_failed');
     expect(events[0].payload.detail).toBe('outcome_update_failed');
+  });
+
+  it('a zero-row outcome UPDATE emits review_label_failed with detail outcome_update_failed, never review_label_submitted', async () => {
+    currentMock = makeMockClient({ outcomeUpdateAffectedRows: [] });
+    await labelShadowReview('row-1', 'valuable');
+    const events = funnelInserts(currentMock.calls);
+    expect(events).toHaveLength(1);
+    expect(events[0].payload.stage).toBe('review_label_failed');
+    expect(events[0].payload.detail).toBe('outcome_update_failed');
+    expect(events[0].payload.fingerprint).toBe('fp-abc123'); // fingerprint WAS resolved (queue row existed) — only the outcomes write failed
   });
 
   it('a bad/missing row id still emits review_label_failed (request reached the server), de-identified since no fingerprint was ever resolved', async () => {
