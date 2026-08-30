@@ -63,6 +63,24 @@ describe("detector — accessories and other categories are hard-rejected", () =
     expect(detect("شاومي 14T برو، 5 جي، 6.67 بوصة، 512 جيجا، رمادي", "")).toBe(true);
     expect(detect("شاومي ريدمي نوت 14 برو بلس، 6.67 بوصة، 256 جيجا", "")).toBe(true);
   });
+
+  // 30-day production study (2026-08-30): only "honor magic" had a phone signal,
+  // so every non-Magic Honor line matched nothing and fell through to
+  // accessories/other, even though the catalog carries 69 Honor products and
+  // real shoppers search for them. Titles below are the real, currently-live
+  // production listings that were confirmed miscategorized.
+  it.each([
+    ["هونر 600 لايت، سعة 256 جيجا، رام 8 جيجا، 5G، شريحتين - اخضر براعم", "Honor 600 Lite"],
+    ["هونر 600، 256 جيجا، 12 جيجا رام، 5G - أبيض ذهبي", "Honor 600"],
+    ["هونر 600 برو ،512 جيجا، 12 جيجا رام، 5G - اسود", "Honor 600 Pro"],
+  ])("detects bare Honor as a phone, not just Honor Magic: %s (%s)", (title) => {
+    expect(detect(title, "")).toBe(true);
+  });
+
+  it("bare Honor still does not leak into Honor's own tablet/watch/earbud lines — the foreign-category guard runs first", () => {
+    expect(detect("تابلت هونر Honor Pad X8a 11\" 128GB Wi-Fi", "")).toBe(false);
+    expect(detect("HONOR PAD X9a, 11.5\" HONOR Fullview Display, 8300mAh Long Life", "")).toBe(false);
+  });
 });
 
 describe("Arabic orthography and separators", () => {

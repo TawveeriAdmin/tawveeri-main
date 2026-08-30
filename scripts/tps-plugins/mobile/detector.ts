@@ -52,6 +52,12 @@ const FOREIGN_CATEGORY_SIGNALS = [
   "شاومي باد", "ريدمي باد", "redmi pad", "xiaomi pad", "mi pad", "لوحه مفاتيح عربيه",
   // Tecno Megapad is a tablet; it was claimed as a phone off the "tecno" token.
   "ميجا باد", "megapad", "mega pad",
+  // Honor Pad — caught here (not by the generic "tablet"/"باد" entries above)
+  // because listings like "HONOR PAD X9a, 11.5" HONOR Fullview Display" carry
+  // no separate "tablet" word at all. Added alongside bare "honor"/"هونر" in
+  // PHONE_SIGNALS (30-day study fix) — without this, that addition would have
+  // reclassified every Honor Pad as a phone.
+  "honor pad", "هونر باد",
   // Monitor-only resolution tokens — a phone is never described as WQHD.
   "wqhd",
   // computing & display — "أسوس فيفو بوك" (Asus VivoBook) matched the "فيفو"
@@ -87,6 +93,15 @@ const PHONE_SIGNALS = [
   "redmi", "ريدمي", "poco", "بوكو", "xiaomi", "شاومي",
   // Huawei / Honor — bare "magic" is gone: it matched LG's "Magic Remote".
   "nova", "نوفا", "honor magic", "هونر ماجيك",
+  // Bare Honor brand (2026-08-30, 30-day study finding): only the "Magic" sub-line
+  // had a signal, so every non-Magic Honor phone (600, 200, X, Play series — real
+  // production example: "هونر 600، 256 جيجا، 12 جيجا رام، 5G") matched no phone
+  // signal at all and fell through to accessories/other. Safe to add bare —
+  // FOREIGN_CATEGORY_SIGNALS/ACCESSORY_SIGNALS above already hard-reject Honor
+  // tablets/watches/earbuds/laptops before this list is ever checked, so this
+  // cannot pull in a non-phone Honor device (same reasoning as every other bare
+  // brand token here: vivo, oppo, tecno, etc.).
+  "honor", "هونر",
   // Oppo / realme / vivo / OnePlus
   "reno", "رينو", "oppo", "اوبو", "realme", "ريلمي", "vivo", "فيفو",
   "oneplus", "ون بلس", "nord", "نورد",
