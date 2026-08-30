@@ -22,6 +22,16 @@
 // six detectors) — plus two NEW exclusion detectors for the noise class
 // Checkpoint 5.1's detectors do NOT catch (verified: 0/23 of Radar 1's real
 // rejected texts matched any existing Shadow detector).
+//
+// BACKTEST TRUTH (ADR-274 — read this before citing any number from this
+// file): the comparison detector originally used a JS `\b` word-boundary,
+// which never matches beside Arabic script — silently dead since this file
+// was written. Fixed via the shared decision-evidence.ts module's
+// containsWholeWord(). The corrected Radar 1 backtest is 2/23 surfaced (1
+// valuable, 1 false positive) = 50% precision / 100% recall — NOT the
+// 100%/100% first reported before the fix. Shadow's 25-item pool is
+// unaffected (86.7%/86.7%). ADR-274 is the authoritative record; this file
+// stays Shadow-only regardless.
 
 import type { Classification } from '../types';
 import { applyShadowExclusionOverrides } from './shadow-exclusion';

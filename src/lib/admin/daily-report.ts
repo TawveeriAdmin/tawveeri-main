@@ -31,11 +31,22 @@ const DOMAIN_LABEL_AR: Record<FocusItem['domain'], string> = {
   marketing_content: 'تسويق ومحتوى', product_engineering: 'منتج وهندسة',
   catalog_coverage: 'تغطية الكتالوج', commercial: 'تجاري', demand_radar: 'مرصد الطلب', home_mission: 'جهّز بيتك',
 };
-const CONFIDENCE_LABEL_AR: Record<FocusItem['confidence'], string> = { low: 'منخفضة', medium: 'متوسطة', high: 'عالية' };
+const CONFIDENCE_LABEL_AR: Record<FocusItem['evidenceConfidence'], string> = { low: 'منخفضة', medium: 'متوسطة', high: 'عالية' };
+// ACT/WATCH/INSUFFICIENT_EVIDENCE (ADR-275) — structural, computed deterministically per-kind in
+// opportunities.ts, never set or upgraded by the AI. Rendered as a visible badge so the
+// evidence-strength/action-readiness distinction is legible at a glance, not just in prose.
+const ACTION_TIER_LABEL_AR: Record<FocusItem['actionTier'], string> = {
+  ACT: 'جاهز للتحرك', WATCH: 'راقب فقط', INSUFFICIENT_EVIDENCE: 'دليل غير كافٍ بعد',
+};
+const ACTION_TIER_COLOR: Record<FocusItem['actionTier'], string> = {
+  ACT: '#1f6f59', WATCH: '#9a5b13', INSUFFICIENT_EVIDENCE: '#7a7a7a',
+};
 
 function focusItemHtml(item: FocusItem): string {
   return `<div style="border-top:1px solid #eef6f2;padding:10px 0">
-    <p style="margin:0 0 4px;font-weight:bold">${escapeHtml(item.titleAr)} <span style="font-weight:normal;color:#5b6b63;font-size:12px">(${DOMAIN_LABEL_AR[item.domain]} — ثقة ${CONFIDENCE_LABEL_AR[item.confidence]}${item.earlySignal ? '، إشارة مبكرة' : ''})</span></p>
+    <p style="margin:0 0 4px;font-weight:bold">${escapeHtml(item.titleAr)}
+      <span style="font-weight:bold;color:${ACTION_TIER_COLOR[item.actionTier]};font-size:11px;border:1px solid ${ACTION_TIER_COLOR[item.actionTier]};border-radius:8px;padding:1px 6px;margin-inline-start:4px">${ACTION_TIER_LABEL_AR[item.actionTier]}</span>
+      <span style="font-weight:normal;color:#5b6b63;font-size:12px">(${DOMAIN_LABEL_AR[item.domain]} — ثقة الدليل ${CONFIDENCE_LABEL_AR[item.evidenceConfidence]}${item.earlySignal ? '، إشارة مبكرة' : ''})</span></p>
     <p style="margin:0 0 4px;color:#333">${escapeHtml(item.whyNowAr)}</p>
     <p style="margin:0 0 4px;color:#333"><b>الإجراء المقترح:</b> ${escapeHtml(item.recommendedActionAr)}</p>
     <p style="margin:0;color:#5b6b63;font-size:12px">الدليل: ${escapeHtml(item.evidenceAr)}${item.riskCaveatAr ? ` — تحذير: ${escapeHtml(item.riskCaveatAr)}` : ''}</p>

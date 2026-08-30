@@ -75,6 +75,21 @@ describe('computeNeedSignals — category volume, momentum, decision evidence, a
     expect(signals[0].decisionEvidenceCount).toBe(1);
   });
 
+  it('breaks decision evidence down by signal type (ADR-275 scaffolding for future constraint-aware slicing) without changing decisionEvidenceShare/Count', async () => {
+    const recent = [
+      ev({ category: 'air_conditioner', query_text: 'مكيف 12000 ريال للجامعة' }), // budget + use-case
+      ev({ category: 'air_conditioner', query_text: 'هل موجود مكيف سبليت' }),      // availability
+      ev({ category: 'air_conditioner', query_text: 'ابي مكيف' }),                 // bare want, no signal
+    ];
+    const signals = await computeNeedSignals(recent, []);
+    const s = signals[0];
+    expect(s.signalBreakdown.budgetStated).toBe(1);
+    expect(s.signalBreakdown.useCaseStated).toBe(1);
+    expect(s.signalBreakdown.availabilityQuestion).toBe(1);
+    expect(s.signalBreakdown.urgency).toBe(0);
+    expect(s.decisionEvidenceCount).toBe(2); // matches the pre-existing aggregate, unchanged
+  });
+
   it('reuses Demand Radar live-catalog answerability — never a second, re-derived check', async () => {
     const recent = [ev({ category: 'air_conditioner' }), ev({ category: 'cooker' })];
     const signals = await computeNeedSignals(recent, []);

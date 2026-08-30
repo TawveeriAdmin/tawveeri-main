@@ -1,4 +1,4 @@
-// Founder Intelligence — AI reasoning layer (integrated review, 2026-08-30).
+// Founder Intelligence — AI reasoning layer (integrated review, 2026-08-30; ADR-275).
 // AI is a REASONING layer over already-computed facts, never a number
 // generator (ADR-002's "no LLM in the score/ranking path" precedent,
 // extended to this new surface deliberately, not by accident). This file
@@ -10,6 +10,15 @@
 // silently dropped — fail closed, never a fabricated fact shown to the
 // founder.
 //
+// evidenceConfidence and actionTier (ADR-275) are STRUCTURAL — computed
+// deterministically per-kind in opportunities.ts and carried through to the
+// founder unchanged. The model is shown both as given facts and MUST NOT
+// invent its own confidence/action label; it may only explain, in prose, why
+// the given tier is what it is. This is a deliberate, load-bearing removal
+// of a place where the AI could previously self-report a "confidence" —
+// removed because a self-reported number is exactly the kind of AI-authored
+// fact this file's whole design exists to prevent.
+//
 // Same containment/fallback discipline as classify.ts (this codebase's own
 // established pattern, reused rather than re-invented): fenced untrusted-
 // context block is not applicable here (there is no untrusted freeform text
@@ -20,7 +29,7 @@
 // aiAvailable:false, per ADR-216 Decision 6's still-correct guarantee that
 // the email must never depend on an AI call succeeding.
 
-import type { Opportunity } from './opportunities';
+import type { Opportunity, EvidenceConfidence, ActionTier } from './opportunities';
 
 const MODEL = process.env.FOUNDER_INTEL_BRIEF_MODEL || 'claude-sonnet-5';
 const TIMEOUT_MS = 15000;
@@ -44,12 +53,15 @@ export interface FocusItem {
   sampleSize: number;
   earlySignal: boolean;
   domain: FocusDomain;
+  /** STRUCTURAL — computed deterministically in opportunities.ts, carried through unchanged.
+   *  The model never sets or upgrades either of these (ADR-275). */
+  evidenceConfidence: EvidenceConfidence;
+  actionTier: ActionTier;
   /** Model-authored narrative fields ONLY — no fact/number lives here. */
   whyNowAr: string;
   recommendedActionAr: string;
   riskCaveatAr: string;
   whatToMeasureNextAr: string;
-  confidence: 'low' | 'medium' | 'high';
 }
 
 export interface FounderIntelligenceBriefResult {
@@ -58,27 +70,30 @@ export interface FounderIntelligenceBriefResult {
   reason?: string;
 }
 
-const SYSTEM_PROMPT = `You are a prioritization assistant for the founder of Tawveeri (توفيري), a Saudi price-comparison site. You will be given a JSON list of CANDIDATE opportunities — each already computed deterministically from real production evidence, each with a stable "id".
+const SYSTEM_PROMPT = `You are a prioritization assistant for the founder of Tawveeri (توفيري), a Saudi price-comparison site. You will be given a JSON list of CANDIDATE opportunities — each already computed deterministically from real production evidence, each with a stable "id", a fixed "evidence_confidence" (low|medium|high), and a fixed "action_tier" (ACT|WATCH|INSUFFICIENT_EVIDENCE).
 
 Your ONLY job: pick at most ${MAX_FOCUS_ITEMS} candidates (0, 1, 2, or 3 — fewer is correct when the evidence is weak; picking zero is a valid and often correct answer) that deserve the founder's attention TODAY, and write a short Arabic explanation for each.
 
-HARD RULES:
-- You may ONLY reference a candidate by the exact "id" string given to you. Never invent an id, a number, a sample size, a percentage, or any fact not present in the candidate you were given.
-- Do not restate the candidate's evidence in your own words with different numbers — the evidence text is already correct and will be shown verbatim; your job is WHY IT MATTERS and WHAT TO DO, not re-reporting the facts.
+HARD RULES — you may NOT:
+- Reference any id, number, sample size, percentage, or fact not present in the candidate you were given.
+- Restate the candidate's evidence in your own words with different numbers — the evidence text is already correct and will be shown verbatim; your job is WHY IT MATTERS and WHAT TO DO, not re-reporting the facts.
+- Set, change, upgrade, or contradict evidence_confidence or action_tier — these are fixed and shown to the founder exactly as given, regardless of what you write. If action_tier is WATCH, your recommended_action_ar must describe watching/monitoring/reviewing, never an irreversible commitment; if it is INSUFFICIENT_EVIDENCE, your action must be about gathering more evidence, not acting on what exists.
+- Claim, imply, or estimate a sale, a conversion, or revenue for any candidate — no evidence source given to you measures revenue; a redirect or search is traffic/demand evidence only.
+- Suggest changing a Demand Radar tier, retraining or reweighting any production policy, or any autonomous system action — every recommended_action must be something the founder personally reviews and decides.
+- Suggest external publishing, sending, or posting on Tawveeri's behalf.
+
+Other rules:
 - If two candidates describe the same underlying situation, pick only the stronger one.
-- A candidate with earlySignal=true is a small sample — say so plainly in confidence, do not inflate it.
-- If NOTHING here is genuinely worth the founder's attention today (all early-signal, all already-known, nothing actionable), return an EMPTY list. Recommending nothing is a correct, valued answer — never manufacture urgency.
-- Never suggest external publishing, sending, or a production change — every recommended_action must be something the founder personally reviews and decides, never something this system does automatically.
+- If NOTHING here is genuinely worth the founder's attention today (all INSUFFICIENT_EVIDENCE, all already-known, nothing actionable), return an EMPTY list. Recommending nothing is a correct, valued answer — never manufacture urgency.
 
 For each item you pick, respond with:
 - candidate_id: the exact id string.
 - why_now_ar: one short Arabic sentence — why this, why today, grounded only in the given evidence.
-- recommended_action_ar: one short, concrete Arabic sentence — what the founder should actually do.
-- risk_caveat_ar: one short Arabic sentence naming the real limitation (sample size, concentration, correlation-not-causation, etc).
+- recommended_action_ar: one short, concrete Arabic sentence — what the founder should actually do, consistent with the given action_tier (see HARD RULES).
+- risk_caveat_ar: one short Arabic sentence naming the real limitation (sample size, concentration, correlation-not-causation, unmeasured revenue, etc).
 - what_to_measure_next_ar: one short Arabic sentence — what evidence would confirm or update this.
-- confidence: "low" | "medium" | "high" — low if earlySignal is true or the evidence is thin, high only for large, unambiguous, well-covered evidence.
 
-Respond with ONLY a JSON array (possibly empty), no prose: [{"candidate_id": "...", "why_now_ar": "...", "recommended_action_ar": "...", "risk_caveat_ar": "...", "what_to_measure_next_ar": "...", "confidence": "low"|"medium"|"high"}]`;
+Respond with ONLY a JSON array (possibly empty), no prose: [{"candidate_id": "...", "why_now_ar": "...", "recommended_action_ar": "...", "risk_caveat_ar": "...", "what_to_measure_next_ar": "..."}]`;
 
 function buildCandidatePayload(candidates: FounderIntelligenceCandidate[]) {
   return candidates.map((c) => ({
@@ -88,6 +103,8 @@ function buildCandidatePayload(candidates: FounderIntelligenceCandidate[]) {
     evidence_ar: c.opportunity.evidenceAr,
     sample_size: c.opportunity.sampleSize,
     early_signal: c.opportunity.earlySignal,
+    evidence_confidence: c.opportunity.evidenceConfidence,
+    action_tier: c.opportunity.actionTier,
   }));
 }
 
@@ -107,7 +124,6 @@ function validateAndResolve(raw: unknown, candidates: FounderIntelligenceCandida
     if (!candidate) continue; // model cited an id that doesn't exist — dropped, never fabricated
     if (typeof o.why_now_ar !== 'string' || !o.why_now_ar) continue;
     if (typeof o.recommended_action_ar !== 'string' || !o.recommended_action_ar) continue;
-    const confidence = o.confidence === 'low' || o.confidence === 'medium' || o.confidence === 'high' ? o.confidence : 'low';
     items.push({
       candidateId: candidate.id,
       titleAr: candidate.opportunity.titleAr,
@@ -115,11 +131,14 @@ function validateAndResolve(raw: unknown, candidates: FounderIntelligenceCandida
       sampleSize: candidate.opportunity.sampleSize,
       earlySignal: candidate.opportunity.earlySignal,
       domain: candidate.domain,
+      // Structural — from the candidate, never from the model's response object `o`, even if it
+      // echoed one back. See module header.
+      evidenceConfidence: candidate.opportunity.evidenceConfidence,
+      actionTier: candidate.opportunity.actionTier,
       whyNowAr: o.why_now_ar,
       recommendedActionAr: o.recommended_action_ar,
       riskCaveatAr: typeof o.risk_caveat_ar === 'string' ? o.risk_caveat_ar : '',
       whatToMeasureNextAr: typeof o.what_to_measure_next_ar === 'string' ? o.what_to_measure_next_ar : '',
-      confidence,
     });
   }
   return items;
@@ -182,6 +201,7 @@ const KIND_DOMAIN: Record<Opportunity['kind'], FocusDomain> = {
   no_agreement_retailer: 'commercial',
   high_demand_low_coverage: 'catalog_coverage',
   demand_momentum: 'marketing_content',
+  recoverable_unmet: 'catalog_coverage',
   emerging_language: 'product_engineering',
 };
 

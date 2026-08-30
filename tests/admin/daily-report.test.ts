@@ -7,13 +7,14 @@
 // ENABLE_FOUNDER_AI_BRIEF is read into a module-level const at import time (matches this
 // codebase's existing convention for env-gated consts, e.g. MODEL/TIMEOUT_MS in
 // founder-intelligence.ts) — so each test that needs a specific flag value sets the env var,
-// then jest.resetModules() + require()s a fresh copy of the module under test.
+// then jest.resetModules() + require()s a fresh copy of the module under test. This is why this
+// file uses require() instead of import() throughout — deliberate, not an oversight.
+/* eslint-disable @typescript-eslint/no-require-imports */
 
 function freshDailyReport(enableAiBrief: boolean) {
   if (enableAiBrief) process.env.ENABLE_FOUNDER_AI_BRIEF = '1';
   else delete process.env.ENABLE_FOUNDER_AI_BRIEF;
   jest.resetModules();
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
   return require('@/lib/admin/daily-report') as typeof import('@/lib/admin/daily-report');
 }
 
@@ -127,16 +128,16 @@ describe('generateDailyFounderReport — FOCUS TODAY flag ON', () => {
     expect(result.html).toContain('لا توجد إشارة قوية بما يكفي');
   });
 
-  it('renders a real focus item with correct domain/confidence labels and the early-signal marker', async () => {
+  it('renders a real focus item with correct domain/evidence-confidence/action-tier labels and the early-signal marker', async () => {
     mockPipeline({
       briefImpl: async () => ({
         aiAvailable: true,
         focusItems: [{
           candidateId: 'c0', titleAr: 'عنوان الفرصة', evidenceAr: 'دليل الفرصة',
           sampleSize: 12, earlySignal: true, domain: 'catalog_coverage',
+          evidenceConfidence: 'low', actionTier: 'INSUFFICIENT_EVIDENCE',
           whyNowAr: 'لأن الطلب حقيقي', recommendedActionAr: 'راجع الفئة',
           riskCaveatAr: 'عينة صغيرة', whatToMeasureNextAr: 'راقب الأسبوع القادم',
-          confidence: 'low',
         }],
       }),
     });
@@ -147,9 +148,27 @@ describe('generateDailyFounderReport — FOCUS TODAY flag ON', () => {
     expect(result.html).toContain('راجع الفئة');
     expect(result.html).toContain('دليل الفرصة');
     expect(result.html).toContain('تغطية الكتالوج'); // catalog_coverage domain label
-    expect(result.html).toContain('ثقة منخفضة'); // low confidence label
+    expect(result.html).toContain('ثقة الدليل منخفضة'); // low evidence-confidence label
+    expect(result.html).toContain('دليل غير كافٍ بعد'); // INSUFFICIENT_EVIDENCE action-tier badge
     expect(result.html).toContain('إشارة مبكرة'); // earlySignal true
     expect(result.html).toContain('عينة صغيرة'); // risk caveat rendered
+  });
+
+  it('renders the ACT badge for an action-ready focus item', async () => {
+    mockPipeline({
+      briefImpl: async () => ({
+        aiAvailable: true,
+        focusItems: [{
+          candidateId: 'c0', titleAr: 'فرصة قوية', evidenceAr: 'دليل قوي',
+          sampleSize: 150, earlySignal: false, domain: 'commercial',
+          evidenceConfidence: 'high', actionTier: 'ACT',
+          whyNowAr: 'x', recommendedActionAr: 'y', riskCaveatAr: '', whatToMeasureNextAr: '',
+        }],
+      }),
+    });
+    const { generateDailyFounderReport } = freshDailyReport(true);
+    const result = await generateDailyFounderReport();
+    expect(result.html).toContain('جاهز للتحرك'); // ACT badge
   });
 
   it('HTML-escapes every model-influenced field so a candidate/AI string can never inject markup into the founder email', async () => {
@@ -159,9 +178,9 @@ describe('generateDailyFounderReport — FOCUS TODAY flag ON', () => {
         focusItems: [{
           candidateId: 'c0', titleAr: '<img src=x onerror=alert(1)>', evidenceAr: 'A & B',
           sampleSize: 1, earlySignal: false, domain: 'marketing_content',
+          evidenceConfidence: 'high', actionTier: 'ACT',
           whyNowAr: '<script>steal()</script>', recommendedActionAr: '"quoted"',
           riskCaveatAr: "it's risky", whatToMeasureNextAr: '',
-          confidence: 'high',
         }],
       }),
     });
@@ -188,6 +207,10 @@ describe('generateDailyFounderReport — FOCUS TODAY flag ON', () => {
     const strongSignal = {
       category: 'tablet', volume: 200, recorded: 20, derived: 180, baselineVolume: 30,
       momentumPct: 400, topSessionShare: 0.2, decisionEvidenceShare: 0.1, decisionEvidenceCount: 20,
+      signalBreakdown: {
+        recommendationRequest: 0, explicitComparison: 0, budgetStated: 0, useCaseStated: 0,
+        namedCompetingProducts: 0, urgency: 0, replacement: 0, availabilityQuestion: 0,
+      },
       answerability: 'yes' as const, answerabilityReason: 'well covered', sampleSize: 200, belowConfidenceFloor: false,
     };
     let capturedCandidateCount = 0;

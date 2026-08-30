@@ -21,7 +21,7 @@
 // actually support. Re-evaluate the granularity once volume grows.
 
 import { parseShoppingTask } from '@/lib/agent/task-parser';
-import { hasDecisionEvidence } from '@/lib/language/decision-evidence';
+import { hasDecisionEvidence, detectDecisionEvidence } from '@/lib/language/decision-evidence';
 import { assessAnswerability } from '@/lib/growth/demand-radar/answerability';
 import type { UsageEventRow } from './command-center-queries';
 
@@ -33,6 +33,25 @@ const DEMAND_TYPES = new Set([...SEARCH_TYPES, ...RESULTS_TYPES]);
  *  reported as a number rather than "insufficient volume." Matches the
  *  existing EARLY_SIGNAL_THRESHOLD convention in opportunities.ts. */
 export const MIN_SAMPLE_FOR_SIGNAL = 20;
+
+/** Per-signal-type counts within a category's decision-evidence, at the SAME category
+ *  granularity as the rest of this file (ADR-275) — deliberately not a constraint-level cluster
+ *  (budget × use-case × category would fragment into n=1 at today's volume, exactly what this
+ *  file's own header comment argues against). This is scaffolding, not a feature: it costs one
+ *  extra pass over already-fetched events and changes no eligibility/scoring decision anywhere
+ *  today. It exists so that once real per-category volume grows enough to support it, a future
+ *  constraint-aware slice (e.g. "air_conditioner searches stating a budget") can be built as an
+ *  additive read over data this file is already computing, not a new instrumentation project. */
+export interface DecisionEvidenceBreakdown {
+  recommendationRequest: number;
+  explicitComparison: number;
+  budgetStated: number;
+  useCaseStated: number;
+  namedCompetingProducts: number;
+  urgency: number;
+  replacement: number;
+  availabilityQuestion: number;
+}
 
 export interface CategoryNeedSignal {
   category: string;
@@ -57,6 +76,10 @@ export interface CategoryNeedSignal {
    *  bare declarative want. */
   decisionEvidenceShare: number;
   decisionEvidenceCount: number;
+  /** Counts of each individual decision-evidence signal type within this category's recent
+   *  demand — see DecisionEvidenceBreakdown above. Not used in any eligibility/scoring decision
+   *  today; kept for future constraint-aware slicing once volume supports it. */
+  signalBreakdown: DecisionEvidenceBreakdown;
   /** Live catalog-capability read — the SAME check Demand Radar's real
    *  tier decision uses, never re-derived. */
   answerability: 'yes' | 'partial' | 'no' | 'unknown';
@@ -109,16 +132,31 @@ function topSessionShareForCategory(events: UsageEventRow[], category: string): 
   return max / total;
 }
 
-function decisionEvidenceForCategory(events: UsageEventRow[], category: string): { share: number; count: number } {
+function decisionEvidenceForCategory(
+  events: UsageEventRow[], category: string
+): { share: number; count: number; breakdown: DecisionEvidenceBreakdown } {
   let total = 0;
   let withEvidence = 0;
+  const breakdown: DecisionEvidenceBreakdown = {
+    recommendationRequest: 0, explicitComparison: 0, budgetStated: 0, useCaseStated: 0,
+    namedCompetingProducts: 0, urgency: 0, replacement: 0, availabilityQuestion: 0,
+  };
   for (const e of events) {
     if (!DEMAND_TYPES.has(e.event_type) || !e.query_text) continue;
     if ((e.category ?? deriveCategory(e)) !== category) continue;
     total++;
     if (hasDecisionEvidence(e.query_text)) withEvidence++;
+    const s = detectDecisionEvidence(e.query_text);
+    if (s.recommendationRequest) breakdown.recommendationRequest++;
+    if (s.explicitComparison) breakdown.explicitComparison++;
+    if (s.budgetStated) breakdown.budgetStated++;
+    if (s.useCaseStated) breakdown.useCaseStated++;
+    if (s.namedCompetingProducts) breakdown.namedCompetingProducts++;
+    if (s.urgency) breakdown.urgency++;
+    if (s.replacement) breakdown.replacement++;
+    if (s.availabilityQuestion) breakdown.availabilityQuestion++;
   }
-  return { share: total > 0 ? withEvidence / total : 0, count: withEvidence };
+  return { share: total > 0 ? withEvidence / total : 0, count: withEvidence, breakdown };
 }
 
 /**
@@ -165,6 +203,7 @@ export async function computeNeedSignals(
       topSessionShare: topSessionShareForCategory(recentEvents, category),
       decisionEvidenceShare: decisionEvidence.share,
       decisionEvidenceCount: decisionEvidence.count,
+      signalBreakdown: decisionEvidence.breakdown,
       answerability: ans.answerability,
       answerabilityReason: ans.reason,
       sampleSize: volume,
