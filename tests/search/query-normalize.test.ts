@@ -80,4 +80,17 @@ describe("Saudi shopping vocabulary", () => {
   it("every group is usable — at least two interchangeable terms", () => {
     for (const g of SAUDI_SEARCH_SYNONYMS) expect(g.length).toBeGreaterThanOrEqual(2);
   });
+
+  // 30-day production study (2026-08-30): the catalog carries 69 Honor products
+  // (Honor Pad 10 alone drew 20 real merchant exits from a correctly-spelled
+  // search) but real shopper spellings — تابلت هورنر, Honer تابلت, Horno ipad,
+  // Ipad Horno — matched none of them. Genuine retrieval failure, not a
+  // catalog gap; fixed the same way every other colloquial-vocabulary gap in
+  // this file was fixed, via a synonym group, never fuzzy matching.
+  it("links every real shopper misspelling of Honor to the catalogue spelling", () => {
+    const groupFor = (w: string) => SAUDI_SEARCH_SYNONYMS.find((g) => g.includes(w)) ?? [];
+    for (const misspelling of ["هونر", "هورنر", "هونور", "honer", "horno"]) {
+      expect(groupFor(misspelling)).toEqual(expect.arrayContaining(["honor"]));
+    }
+  });
 });

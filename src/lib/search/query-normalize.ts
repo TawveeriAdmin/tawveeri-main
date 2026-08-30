@@ -70,6 +70,15 @@ export const SAUDI_SEARCH_SYNONYMS: string[][] = [
   ["جوال", "جوالات", "موبايل", "هاتف", "هواتف", "تلفون", "mobile", "phone", "smartphone"],
   ["ايفون", "أيفون", "آيفون", "iphone", "ابل", "آبل", "apple"],
   ["جالاكسي", "جالكسي", "قلاكسي", "galaxy", "سامسونج", "samsung"],
+  // Honor — 30-day study finding (2026-08-30): real shoppers searched "تابلت هورنر",
+  // "Honer تابلت", "Horno ipad", "Ipad Horno", none of which matched the catalog's
+  // "Honor" spelling, despite the catalog carrying 69 Honor products (one, Honor
+  // Pad 10, drew 20 real merchant exits from shoppers who found it via a query that
+  // spelled the brand correctly). Deliberately only the brand token — never widened
+  // to a fuzzy/phonetic matcher, which risks false product-identity matches. Word
+  // order doesn't matter to Algolia's token matching, so "Horno ipad" and "Ipad
+  // Horno" both resolve once "Horno" folds to "Honor" here.
+  ["هونر", "هورنر", "هونور", "honor", "honer", "horno"],
   // TV — "shasha" (screen) is how Saudis ask for a television
   ["شاشة", "شاشات", "تلفزيون", "تلفاز", "تي في", "television", "tv", "screen"],
   // computing
