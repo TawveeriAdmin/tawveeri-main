@@ -25,6 +25,36 @@ describe('clusterEmergingLanguage — deterministic, no AI', () => {
     expect(clusters[0].belowClusterFloor).toBe(false);
   });
 
+  it('counts RAW OCCURRENCES, not distinct spellings — the exact same query repeated many times must not silently collapse to count=1 (integrity review, 2026-08-30: found on real production data that "هونر" repeated 14 times as the literal same string reported count=1, so an obviously large real pattern never crossed MIN_CLUSTER_SIZE)', () => {
+    const events = [
+      ev({ query_text: 'هونر', session_id: 's1' }),
+      ev({ query_text: 'هونر', session_id: 's1' }),
+      ev({ query_text: 'هونر', session_id: 's1' }),
+      ev({ query_text: 'هونر', session_id: 's1' }),
+    ];
+    const clusters = clusterEmergingLanguage(events);
+    expect(clusters).toHaveLength(1);
+    expect(clusters[0].count).toBe(4); // raw occurrences, not the 1 distinct spelling
+    expect(clusters[0].distinctSessions).toBe(1); // still correctly reports only one real corroborating session
+    expect(clusters[0].sampleQueries).toEqual(['هونر']); // one distinct example, not duplicated 4x
+  });
+
+  it('sampleQueries stays a DISTINCT-spelling preview even when count is much larger — up to 5 different real spellings, never the same string repeated', () => {
+    const events = [
+      ev({ query_text: 'هونر باد 9', session_id: 's1' }),
+      ev({ query_text: 'هونر باد 9', session_id: 's1' }),
+      ev({ query_text: 'هونر باد 9', session_id: 's1' }),
+      ev({ query_text: 'Honor Pad 9', session_id: 's2' }),
+    ];
+    // "هونر باد 9" and "Honor Pad 9" do not share a normalized token signature (different scripts),
+    // so this is two clusters — the point of this test is only that count within EACH reflects raw
+    // occurrences and sampleQueries reflects distinct spellings within that same cluster.
+    const clusters = clusterEmergingLanguage(events);
+    const arabicCluster = clusters.find((c) => c.sampleQueries.includes('هونر باد 9'))!;
+    expect(arabicCluster.count).toBe(3);
+    expect(arabicCluster.sampleQueries).toEqual(['هونر باد 9']);
+  });
+
   it('does NOT cluster queries that merely share a topic but use different phrasing — conservative by design', () => {
     // Real-world case this guards against: "وش افضل جهاز غريب جدا" and "جهاز غريب جدا ابيه"
     // are about the same thing to a human reader, but carry different token sets

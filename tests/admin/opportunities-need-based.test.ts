@@ -1,5 +1,5 @@
 // Founder Intelligence — need-based opportunities (integrated review, 2026-08-30).
-import { computeNeedBasedOpportunities } from '@/lib/admin/opportunities';
+import { computeNeedBasedOpportunities, type Opportunity } from '@/lib/admin/opportunities';
 import type { CategoryNeedSignal } from '@/lib/admin/need-signals';
 import type { EmergingLanguageCluster } from '@/lib/admin/emerging-language';
 
@@ -111,6 +111,38 @@ describe('computeNeedBasedOpportunities — recoverable_unmet (ADR-275)', () => 
   it('a thin sample stays INSUFFICIENT_EVIDENCE, same discipline as every other kind', () => {
     const opps = computeNeedBasedOpportunities([needSignal({ answerability: 'no', volume: 25 })], []);
     expect(opps.find((o) => o.kind === 'recoverable_unmet')!.actionTier).toBe('INSUFFICIENT_EVIDENCE');
+  });
+});
+
+describe('computeNeedBasedOpportunities — cross-kind dedup with high_demand_low_coverage (integrity review, 2026-08-30)', () => {
+  function highDemandLowCoverageOpp(category: string): Opportunity {
+    return {
+      kind: 'high_demand_low_coverage', category, titleAr: `طلب مرتفع على فئة "${category}"`, titleEn: `High demand for "${category}"`,
+      evidenceAr: 'x', evidenceEn: 'x', sampleSize: 40, earlySignal: false,
+      evidenceConfidence: 'medium', actionTier: 'ACT',
+      recommendedActionAr: 'x', recommendedActionEn: 'x',
+    };
+  }
+
+  it('never surfaces recoverable_unmet for a category high_demand_low_coverage already reported — no duplicated/overlapping intelligence for the founder to reconcile themselves', () => {
+    const existing = [highDemandLowCoverageOpp('oven')];
+    const opps = computeNeedBasedOpportunities(
+      [needSignal({ category: 'oven', answerability: 'no' })], [], existing
+    );
+    expect(opps.find((o) => o.kind === 'recoverable_unmet')).toBeUndefined();
+  });
+
+  it('still surfaces recoverable_unmet for a DIFFERENT category than the ones high_demand_low_coverage covered', () => {
+    const existing = [highDemandLowCoverageOpp('oven')];
+    const opps = computeNeedBasedOpportunities(
+      [needSignal({ category: 'cooker', answerability: 'no' })], [], existing
+    );
+    expect(opps.find((o) => o.kind === 'recoverable_unmet' && o.category === 'cooker')).toBeDefined();
+  });
+
+  it('with no existingOpportunities passed (the pre-fix call shape), still works — the parameter is additive/optional', () => {
+    const opps = computeNeedBasedOpportunities([needSignal({ category: 'oven', answerability: 'no' })], []);
+    expect(opps.find((o) => o.kind === 'recoverable_unmet')).toBeDefined();
   });
 });
 

@@ -4,7 +4,7 @@ import {
   AlertTriangle, CheckCircle2, Search, FileSearch, Eye, Scale, BookOpen, ExternalLink, Users, TrendingUp, ShoppingBag,
 } from 'lucide-react';
 import { getCommandCenterData, type Period, type ConfidenceState } from '@/lib/admin/command-center-queries';
-import { getProviderByStoreId } from '@/lib/providers/registry';
+import { retailerDisplayName } from '@/lib/providers/registry';
 import { FocusTodaySection } from './focus-today';
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
@@ -46,12 +46,6 @@ function ConfidenceBadge({ state, note, isRTL }: { state: ConfidenceState; note:
       {isRTL ? CONFIDENCE_LABEL_AR[state] : state}
     </span>
   );
-}
-
-function retailerDisplayName(storeSlugOrId: string, isRTL: boolean): string {
-  const provider = getProviderByStoreId(storeSlugOrId);
-  if (provider) return (isRTL ? provider.displayNameAr : provider.displayName) || provider.displayName;
-  return storeSlugOrId;
 }
 
 export default async function CommandCenterPage({

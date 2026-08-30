@@ -18,6 +18,7 @@
 import type { CommandCenterData } from './command-center-queries';
 import type { CategoryNeedSignal } from './need-signals';
 import type { EmergingLanguageCluster } from './emerging-language';
+import { retailerDisplayName } from '@/lib/providers/registry';
 
 const EARLY_SIGNAL_THRESHOLD = 30;
 
@@ -44,6 +45,10 @@ export interface Opportunity {
   actionTier: ActionTier;
   recommendedActionAr: string;
   recommendedActionEn: string;
+  /** Set only for category-scoped kinds (high_demand_low_coverage, demand_momentum,
+   *  recoverable_unmet) — a stable machine key for cross-kind dedup, deliberately NOT parsed back
+   *  out of titleAr/titleEn (title wording is free to change without breaking dedup). */
+  category?: string;
 }
 
 /** The one shared piece of the "common indicator contract": a sample size relative to
@@ -74,10 +79,16 @@ export function computeOpportunities(data: CommandCenterData): Opportunity[] {
     // conversion truth source in this codebase yet to confirm the redirect became a sale. See
     // the module header note. This is the concrete case the founder's own eXtra example names.
     const actionTier: ActionTier = evidenceConfidence === 'low' ? 'INSUFFICIENT_EVIDENCE' : 'WATCH';
+    // Integrity review (2026-08-30): storeSlug is a raw id/registry slug (e.g. "4"), never a
+    // founder-facing name — found showing literal "Retailer 4" instead of "eXtra" in real
+    // production output. retailerDisplayName() is the same resolver daily-report.ts and the
+    // Command Center page already use for this exact column.
+    const nameAr = retailerDisplayName(r.storeSlug, true);
+    const nameEn = retailerDisplayName(r.storeSlug, false);
     opportunities.push({
       kind: 'no_agreement_retailer',
-      titleAr: `متجر ${r.storeSlug} يستقبل إحالات حقيقية بدون برنامج عمولة معروف`,
-      titleEn: `Retailer ${r.storeSlug} is receiving real referrals with no known affiliate program`,
+      titleAr: `متجر ${nameAr} يستقبل إحالات حقيقية بدون برنامج عمولة معروف`,
+      titleEn: `Retailer ${nameEn} is receiving real referrals with no known affiliate program`,
       evidenceAr: `${r.confirmedRedirects} تحويلة مؤكدة عبر ${r.distinctProducts} منتجاً خلال الفترة المحددة.`,
       evidenceEn: `${r.confirmedRedirects} confirmed redirects across ${r.distinctProducts} products in the selected period.`,
       sampleSize: r.confirmedRedirects,
@@ -105,6 +116,7 @@ export function computeOpportunities(data: CommandCenterData): Opportunity[] {
     const actionTier: ActionTier = evidenceConfidence === 'low' ? 'INSUFFICIENT_EVIDENCE' : 'ACT';
     opportunities.push({
       kind: 'high_demand_low_coverage',
+      category: c.category,
       titleAr: `طلب مرتفع على فئة "${c.category}" بدون تحويلات مؤكدة`,
       titleEn: `High demand for "${c.category}" with zero confirmed referrals`,
       evidenceAr: `${c.searchCount} عملية بحث في هذه الفئة، و0 تحويلة مؤكدة خلال نفس الفترة.`,
@@ -142,9 +154,21 @@ const MIN_SESSIONS_FOR_MOMENTUM = 3; // concentration guard's companion — neve
 
 export function computeNeedBasedOpportunities(
   needSignals: CategoryNeedSignal[],
-  emergingClusters: EmergingLanguageCluster[]
+  emergingClusters: EmergingLanguageCluster[],
+  existingOpportunities: Opportunity[] = []
 ): Opportunity[] {
   const opportunities: Opportunity[] = [];
+
+  // Integrity review (2026-08-30): high_demand_low_coverage (computeOpportunities, search-term
+  // granularity) and recoverable_unmet (below, category/need-signal granularity) both describe
+  // "real demand, weak coverage" for a category, from two different evidence sources. Verified
+  // against real production data that they do NOT currently overlap, but the architecture allows
+  // it — and the founder explicitly does not want overlapping intelligence cluttering FOCUS
+  // TODAY. recoverable_unmet is the richer signal (momentum/session-concentration already
+  // applied), so when both would fire for the same category, only it survives.
+  const alreadyCoveredCategories = new Set(
+    existingOpportunities.filter((o) => o.kind === 'high_demand_low_coverage' && o.category).map((o) => o.category)
+  );
 
   for (const s of needSignals) {
     if (s.belowConfidenceFloor) continue;
@@ -159,6 +183,7 @@ export function computeNeedBasedOpportunities(
       : (evidenceConfidence === 'high' && s.topSessionShare <= 0.4) ? 'ACT' : 'WATCH';
     opportunities.push({
       kind: 'demand_momentum',
+      category: s.category,
       titleAr: `طلب فئة "${s.category}" في ازدياد ملحوظ`,
       titleEn: `Demand for "${s.category}" is accelerating`,
       evidenceAr: `${s.volume} حدث طلب في الفترة الأخيرة مقابل ${s.baselineVolume} في الفترة السابقة (+${s.momentumPct.toFixed(0)}%). أعلى حصة جلسة واحدة: ${(s.topSessionShare * 100).toFixed(0)}%. توفيري يغطي هذه الفئة (${s.answerabilityReason}).`,
@@ -183,12 +208,14 @@ export function computeNeedBasedOpportunities(
     if (s.belowConfidenceFloor) continue;
     if (s.answerability === 'yes' || s.answerability === 'unknown') continue;
     if (s.topSessionShare > 0.7) continue;
+    if (alreadyCoveredCategories.has(s.category)) continue; // high_demand_low_coverage already told this story for this category
     const evidenceConfidence = evidenceConfidenceFromSample(s.volume, EARLY_SIGNAL_THRESHOLD, 100);
     // Coverage-shaped, like high_demand_low_coverage above: the evidence IS the trigger — no
     // separate revenue-truth gap blocks ACT the way it does for Commercial.
     const actionTier: ActionTier = evidenceConfidence === 'low' ? 'INSUFFICIENT_EVIDENCE' : 'ACT';
     opportunities.push({
       kind: 'recoverable_unmet',
+      category: s.category,
       titleAr: `طلب حقيقي على فئة "${s.category}" لا يستطيع توفيري الإجابة عليه بثقة حالياً`,
       titleEn: `Real demand for "${s.category}" Tawveeri cannot confidently answer today`,
       evidenceAr: `${s.volume} حدث طلب خلال الفترة الأخيرة. سبب ضعف التغطية: ${s.answerabilityReason}.`,

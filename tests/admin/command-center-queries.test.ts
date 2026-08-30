@@ -3,6 +3,7 @@
 // no production dependency. Real production numbers behind this fix: docs/DECISIONS.md ADR-214.
 import {
   buildFunnel, topSessionSearchShare, computeCampaignAttribution, topDemand,
+  topSearchTerms, unmetDemand,
   type UsageEventRow, type OutboundClickRow,
 } from "../../src/lib/admin/command-center-queries";
 
@@ -191,5 +192,105 @@ describe("topDemand — category derivation (fixes the live-dashboard (unparsed)
   it("ignores non-search/results event types", () => {
     const events = [ev({ event_type: "product_view", category: "laptop" })];
     expect(topDemand(events)).toEqual([]);
+  });
+});
+
+// Integrity review (2026-08-30): found auditing real production output that internal-whitespace
+// variants of the exact same query ("تابلت هونر" vs "تابلت  هونر", double space) were counted as
+// two different search terms, understating each one's real count and fragmenting what looked to
+// the founder like one product's demand into several unrelated-looking rows.
+describe("topSearchTerms — whitespace normalization", () => {
+  it("collapses internal whitespace-only variants into one line item", () => {
+    const events = [
+      ev({ event_type: "search", session_id: "s1", query_text: "تابلت هونر", created_at: "2026-08-05T10:00:00.000Z" }),
+      ev({ event_type: "search", session_id: "s2", query_text: "تابلت  هونر", created_at: "2026-08-05T10:01:00.000Z" }), // double space
+      ev({ event_type: "search", session_id: "s3", query_text: "تابلت هونر", created_at: "2026-08-05T10:02:00.000Z" }),
+    ];
+    const terms = topSearchTerms(events);
+    expect(terms).toHaveLength(1);
+    expect(terms[0]).toEqual({ query: "تابلت هونر", count: 3 });
+  });
+
+  it("does not merge genuinely different queries that merely share a substring", () => {
+    const events = [
+      ev({ event_type: "search", session_id: "s1", query_text: "هونر باد 9" }),
+      ev({ event_type: "search", session_id: "s2", query_text: "هونر باد 10" }),
+    ];
+    expect(topSearchTerms(events)).toHaveLength(2);
+  });
+});
+
+describe("unmetDemand — whitespace normalization (same fix as topSearchTerms)", () => {
+  it("collapses internal whitespace-only variants into one line item", () => {
+    const events = [
+      ev({ event_type: "no_answer", session_id: "s1", query_text: "مكيف رخيص", created_at: "2026-08-05T10:00:00.000Z" }),
+      ev({ event_type: "no_answer", session_id: "s2", query_text: "مكيف  رخيص", created_at: "2026-08-05T10:01:00.000Z" }),
+    ];
+    expect(unmetDemand(events)).toEqual([{ query: "مكيف رخيص", count: 2 }]);
+  });
+});
+
+// Integrity review (2026-08-30): found on real production data that Amazon's real redirects were
+// silently split across two unmerged retailer rows ("2" and the literal "أمازون") because
+// outbound_clicks held the bare brand name while stores.name_ar holds the fuller "أمازون
+// السعودية" — an exact-string lookup never matched. retailerBreakdown() calls the private
+// resolveStoreNameKey() internally; tested here through the public function, against a `stores`
+// mock that reproduces the exact real mismatch found.
+// require() (not the top-level import) is deliberate in this block: each test needs a fresh
+// module instance after jest.resetModules() to pick up that test's own jest.doMock("@/lib/database").
+/* eslint-disable @typescript-eslint/no-require-imports */
+describe("retailerBreakdown — merchant-name normalization (word-boundary fallback)", () => {
+  afterEach(() => jest.dontMock("@/lib/database"));
+
+  function mockStores(rows: Array<{ id: number; name_ar: string; name_en: string }>) {
+    jest.doMock("@/lib/database", () => ({
+      createServerClient: () => ({
+        from: (table: string) => {
+          if (table !== "stores") throw new Error(`unexpected table in mock: ${table}`);
+          return { select: () => Promise.resolve({ data: rows, error: null }) };
+        },
+      }),
+    }));
+  }
+
+  it("merges a bare-brand literal store_name into its numeric id via a whitespace-delimited LEADING-word match", async () => {
+    mockStores([{ id: 2, name_ar: "أمازون السعودية", name_en: "Amazon SA" }]);
+    jest.resetModules();
+    const { retailerBreakdown: freshRetailerBreakdown } = require("@/lib/admin/command-center-queries");
+    const outbound: OutboundClickRow[] = [
+      click({ store_name: "2", canonical_product_id: "p1" }),
+      click({ store_name: "أمازون", canonical_product_id: "p2" }), // real production case: bare brand, not the full stores.name_ar
+    ];
+    const rows = await freshRetailerBreakdown([], outbound);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ storeSlug: "2", confirmedRedirects: 2 });
+  });
+
+  it("merges a bare-brand literal store_name into its numeric id via a whitespace-delimited TRAILING-word match — the real Jarir case (\"جرير\" vs stores.name_ar \"مكتبة جرير\")", async () => {
+    mockStores([{ id: 1, name_ar: "مكتبة جرير", name_en: "Jarir" }]);
+    jest.resetModules();
+    const { retailerBreakdown: freshRetailerBreakdown } = require("@/lib/admin/command-center-queries");
+    const outbound: OutboundClickRow[] = [
+      click({ store_name: "1", canonical_product_id: "p1" }),
+      click({ store_name: "جرير", canonical_product_id: "p2" }),
+    ];
+    const rows = await freshRetailerBreakdown([], outbound);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ storeSlug: "1", confirmedRedirects: 2 });
+  });
+
+  it("never merges two different stores that merely share a short common substring (word-boundary required)", async () => {
+    mockStores([
+      { id: 2, name_ar: "أمازون السعودية", name_en: "Amazon SA" },
+      { id: 30, name_ar: "أمازونيا للأثاث", name_en: "Amazonia Furniture" }, // shares the "أمازون" substring, NOT a word prefix
+    ]);
+    jest.resetModules();
+    const { retailerBreakdown: freshRetailerBreakdown } = require("@/lib/admin/command-center-queries");
+    const outbound: OutboundClickRow[] = [click({ store_name: "أمازون", canonical_product_id: "p1" })];
+    const rows = await freshRetailerBreakdown([], outbound);
+    // "أمازون" is a whole-word prefix of "أمازون السعودية" (id 2) but only a raw substring of
+    // "أمازونيا للأثاث" (id 30, no space after the shared prefix) — must resolve to 2, not 30.
+    expect(rows).toHaveLength(1);
+    expect(rows[0].storeSlug).toBe("2");
   });
 });

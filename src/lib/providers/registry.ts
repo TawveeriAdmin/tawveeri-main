@@ -132,6 +132,20 @@ export function getProviderByStoreId(storeId: number | string | null | undefined
   return getProvider(BY_ID[id]);
 }
 
+/**
+ * The ONE canonical way to turn a store id/slug into a founder-facing name (integrity review,
+ * 2026-08-30). Previously reimplemented independently in daily-report.ts and the Command Center
+ * page — and NOT implemented at all in opportunities.ts, which showed the founder literal
+ * "Retailer 4" instead of "eXtra" in every no_agreement_retailer opportunity (found auditing real
+ * production output). Falls back to the raw id/slug only when the store genuinely isn't in the
+ * registry — never silently swallowed.
+ */
+export function retailerDisplayName(storeSlugOrId: string | number, isRTL: boolean = true): string {
+  const provider = getProviderByStoreId(storeSlugOrId);
+  if (!provider) return String(storeSlugOrId);
+  return (isRTL ? provider.displayNameAr : provider.displayName) || provider.displayName || String(storeSlugOrId);
+}
+
 /** All enabled providers (feature-flags applied). */
 export function listProviders(): RetailerProvider[] {
   return Object.values(BASE).map(withFlags).filter((p) => p.enabled);

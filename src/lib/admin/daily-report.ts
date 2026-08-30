@@ -22,7 +22,7 @@
 import { getCommandCenterData } from './command-center-queries';
 import { computeOpportunities } from './opportunities';
 import { fetchGrowthContent } from './growth-queries';
-import { getProviderByStoreId } from '@/lib/providers/registry';
+import { retailerDisplayName as retailerName } from '@/lib/providers/registry';
 import {
   computeFocusToday, DOMAIN_LABEL_AR, EVIDENCE_CONFIDENCE_LABEL_AR, ACTION_TIER_LABEL_AR,
 } from './focus-today';
@@ -59,14 +59,20 @@ async function buildFocusTodaySection(existingOpportunities: ReturnType<typeof c
       تعذر توليد توصيات الذكاء الاصطناعي اليوم (${escapeHtml(result.reason)}) — الأرقام أدناه غير متأثرة، هذا القسم فقط غير متاح.
     </div>`;
   }
+  // Window disclosure (ADR-278): the rest of this email is about YESTERDAY specifically; this
+  // section always looks at the last 7 days vs. the 7 before that — never let the founder read
+  // the two as the same window.
+  const windowNote = '<p style="margin:4px 0 0;color:#5b6b63;font-size:11px">يعتمد على آخر 7 أيام مقابل الأسبوع السابق — بخلاف بقية هذه الرسالة التي تخص يوم أمس فقط.</p>';
   if (result.focusItems.length === 0) {
     return `<div style="background:#f8fcfa;border-radius:12px;padding:14px;margin:0 0 20px">
       <b style="color:#1f6f59">ركّز اليوم على:</b>
       <p style="margin:6px 0 0;color:#5b6b63">لا توجد إشارة قوية بما يكفي لتوصية اليوم — لا حاجة لإنشاء عمل جديد.</p>
+      ${windowNote}
     </div>`;
   }
   return `<div style="background:#f8fcfa;border-radius:12px;padding:14px;margin:0 0 20px">
     <b style="color:#1f6f59">ركّز اليوم على:</b>
+    ${windowNote}
     ${result.focusItems.map(focusItemHtml).join('')}
   </div>`;
 }
@@ -213,11 +219,6 @@ export async function generateDailyFounderReport(): Promise<DailyReportResult> {
   `);
 
   return { subjectAr: `توفيري — ملخص يوم ${dateStr}: ${real.sessions} جلسة، ${commercial.confirmedRetailerRedirects} تحويلة`, html, hasActivity: true };
-}
-
-function retailerName(storeSlugOrId: string): string {
-  const provider = getProviderByStoreId(storeSlugOrId);
-  return provider?.displayNameAr || provider?.displayName || storeSlugOrId;
 }
 
 function statRow(label: string, value: string, delta: string): string {

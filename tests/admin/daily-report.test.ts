@@ -77,6 +77,13 @@ describe('generateDailyFounderReport — FOCUS TODAY rendering', () => {
     expect(result.hasActivity).toBe(true);
   });
 
+  it('discloses the fixed 7-day window (ADR-278) — the rest of the email is about yesterday specifically, this section is not', async () => {
+    mockPipeline({ enabled: true, aiAvailable: true, focusItems: [] });
+    const { generateDailyFounderReport } = freshDailyReport();
+    const result = await generateDailyFounderReport();
+    expect(result.html).toContain('آخر 7 أيام');
+  });
+
   it('renders the "no strong signal" note for an empty focusItems array', async () => {
     mockPipeline({ enabled: true, aiAvailable: true, focusItems: [] });
     const { generateDailyFounderReport } = freshDailyReport();

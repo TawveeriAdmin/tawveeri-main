@@ -29,6 +29,12 @@ describe('FocusTodayView', () => {
     expect(screen.getByText(/لا توجد إشارة قوية بما يكفي/)).toBeInTheDocument();
   });
 
+  it('discloses the fixed 7-day window (ADR-278) — independent of the period selector shown elsewhere on the dashboard', () => {
+    const result: FocusTodayResult = { enabled: true, aiAvailable: true, focusItems: [] };
+    render(<FocusTodayView result={result} isRTL />);
+    expect(screen.getByText(/آخر 7 أيام/)).toBeInTheDocument();
+  });
+
   it('renders a real focus item with its ACT badge, domain, evidence confidence, and early-signal marker', () => {
     const result: FocusTodayResult = {
       enabled: true, aiAvailable: true,

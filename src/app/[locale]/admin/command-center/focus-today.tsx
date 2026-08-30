@@ -66,6 +66,14 @@ export function FocusTodayView({ result, isRTL }: { result: FocusTodayResult; is
           {isRTL ? 'ركّز اليوم على' : 'Focus today on'}
         </h2>
       </div>
+      {/* Window disclosure (ADR-278): this section ALWAYS looks at the last 7 days vs. the 7
+          before that, regardless of the period selector above — never let the founder read these
+          numbers as if they were scoped to the currently-selected period. */}
+      <p className="mt-0.5 text-[11px] text-on-surface-variant dark:text-white/40">
+        {isRTL
+          ? 'يعتمد دائمًا على آخر 7 أيام مقابل الأسبوع السابق — بغض النظر عن الفترة المختارة أعلاه.'
+          : 'Always based on the last 7 days vs. the 7 before that — independent of the period selector above.'}
+      </p>
 
       {!result.aiAvailable && (
         <p className="mt-2 rounded-xl bg-amber-50 p-3 text-xs font-bold text-amber-800 dark:bg-amber-500/10 dark:text-amber-200">

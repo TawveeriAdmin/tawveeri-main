@@ -168,6 +168,21 @@ describe("computeOpportunities — evidence-based, EARLY SIGNAL below threshold"
     expect(computeOpportunities(data).some((o: Opportunity) => o.kind === "no_agreement_retailer")).toBe(false);
   });
 
+  it("resolves storeSlug to a real founder-facing name, never the raw id (integrity review, 2026-08-30: found showing literal \"Retailer 4\" instead of \"eXtra\" in real production output)", () => {
+    const data = fakeData({ retailers: [{ storeSlug: "4", qualifiedSessions: 5, confirmedRedirects: 12, distinctProducts: 8, hasAffiliateProgram: false }] });
+    const opp = computeOpportunities(data)[0];
+    expect(opp.titleAr).toContain("اكسترا"); // real registry: storeId 4 = eXtra, displayNameAr "اكسترا"
+    expect(opp.titleEn).toContain("eXtra");
+    expect(opp.titleAr).not.toContain("متجر 4");
+    expect(opp.titleEn).not.toContain("Retailer 4");
+  });
+
+  it("falls back to the raw id only for a store genuinely absent from the registry — never throws, never blank", () => {
+    const data = fakeData({ retailers: [{ storeSlug: "99999", qualifiedSessions: 1, confirmedRedirects: 6, distinctProducts: 2, hasAffiliateProgram: false }] });
+    expect(() => computeOpportunities(data)).not.toThrow();
+    expect(computeOpportunities(data)[0].titleAr).toContain("99999");
+  });
+
   it("flags a high-search category with zero referred coverage", () => {
     const data = fakeData({ referredCategoryDemand: [] }, [{ category: "air_conditioner", count: 40 }]);
     const opps = computeOpportunities(data);

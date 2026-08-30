@@ -575,13 +575,25 @@ export function wasAnsweredElsewhere(e: UsageEventRow, events: UsageEventRow[]):
   );
 }
 
-function unmetDemand(events: UsageEventRow[], limit = 10): Array<{ query: string; count: number }> {
+// Integrity review (2026-08-30): grouping by raw query_text let pure whitespace artifacts (one
+// space vs two between words — the same query, mistyped or double-tapped) fragment what should be
+// one line item into several, understating each one's real count. Verified on real production
+// data (7-day window): "تابلت هونر" and "تابلت  هونر" (double space) were counted as two different
+// search terms. This collapses internal whitespace runs to one space — NOT a semantic/fuzzy merge,
+// just insignificant-whitespace normalization; two genuinely different queries are never affected.
+function normalizeQueryWhitespace(text: string): string {
+  return text.trim().replace(/\s+/g, ' ');
+}
+
+export function unmetDemand(events: UsageEventRow[], limit = 10): Array<{ query: string; count: number }> {
   const map = new Map<string, number>();
   for (const e of events) {
     if (e.event_type !== 'no_answer' || !e.query_text) continue;
     // Genuine unmet demand only: a query the customer asked and nothing answered.
     if (wasAnsweredElsewhere(e, events)) continue;
-    map.set(e.query_text, (map.get(e.query_text) || 0) + 1);
+    const key = normalizeQueryWhitespace(e.query_text);
+    if (!key) continue;
+    map.set(key, (map.get(key) || 0) + 1);
   }
   return Array.from(map.entries()).map(([query, count]) => ({ query, count })).sort((a, b) => b.count - a.count).slice(0, limit);
 }
@@ -781,7 +793,7 @@ export function topSearchTerms(events: UsageEventRow[], limit = 10): Array<{ que
     const lastTs = seen.get(key);
     if (lastTs !== undefined && ts - lastTs <= ACTION_WINDOW_MS) continue; // same action, already counted
     seen.set(key, ts);
-    const text = e.query_text!.trim();
+    const text = normalizeQueryWhitespace(e.query_text!);
     if (!text) continue;
     counts.set(text, (counts.get(text) || 0) + 1);
   }
@@ -833,6 +845,16 @@ export interface RetailerReferralRow {
 // splits one merchant's redirects across two untotaled buckets. This resolves any display-name-
 // shaped value back to the canonical numeric id at READ time only — no historical row is rewritten,
 // no ingestion behavior changes; if the upstream defect is ever fixed, this becomes a no-op.
+//
+// EXACT-MATCH WAS NOT ENOUGH (found auditing real production output, 2026-08-30, twice — both
+// real, both distinct patterns): (1) outbound_clicks held the literal "أمازون" (bare brand) while
+// stores.name_ar holds "أمازون السعودية" (brand + "Saudi Arabia") — the bare brand is a LEADING
+// word of the full name. (2) outbound_clicks held "جرير" while stores.name_ar holds "مكتبة جرير"
+// ("Jarir Bookstore") — the bare brand is here the TRAILING word instead. An exact-string lookup
+// caught neither, so both merchants' real redirects were silently split across two unmerged
+// buckets in the Retailer Partnership Report and the Command Center's retailer breakdown. Falls
+// back to a whitespace-DELIMITED word match at EITHER end — never a raw substring — so two
+// different stores that happen to share a short common substring are never accidentally merged.
 async function resolveStoreNameKey(rawKeys: Iterable<string>): Promise<Map<string, string>> {
   const keys = new Set(rawKeys);
   const resolved = new Map<string, string>();
@@ -841,14 +863,24 @@ async function resolveStoreNameKey(rawKeys: Iterable<string>): Promise<Map<strin
   if (needsResolution.length === 0) return resolved;
   const supabase = createServerClient() as unknown as { from: (table: string) => any };
   const { data } = await supabase.from('stores').select('id, name_ar, name_en');
+  const stores = (data ?? []) as Array<{ id: number | string; name_ar: string | null; name_en: string | null }>;
   const byName = new Map<string, string>();
-  for (const s of (data ?? []) as Array<{ id: number | string; name_ar: string | null; name_en: string | null }>) {
+  for (const s of stores) {
     if (s.name_ar) byName.set(s.name_ar, String(s.id));
     if (s.name_en) byName.set(s.name_en, String(s.id));
   }
+  // `shorter` is a whole word (or run of whole words) at the START or END of `longer` — a leading
+  // OR trailing word-boundary match, never a mid-string substring.
+  const isWordBoundaryMatch = (shorter: string, longer: string) =>
+    longer === shorter || longer.startsWith(`${shorter} `) || longer.endsWith(` ${shorter}`);
   for (const k of needsResolution) {
-    const canonical = byName.get(k);
-    if (canonical) resolved.set(k, canonical);
+    const exact = byName.get(k);
+    if (exact) { resolved.set(k, exact); continue; }
+    const wordMatch = stores.find((s) =>
+      (s.name_ar && (isWordBoundaryMatch(k, s.name_ar) || isWordBoundaryMatch(s.name_ar, k))) ||
+      (s.name_en && (isWordBoundaryMatch(k, s.name_en) || isWordBoundaryMatch(s.name_en, k)))
+    );
+    if (wordMatch) resolved.set(k, String(wordMatch.id));
   }
   return resolved;
 }

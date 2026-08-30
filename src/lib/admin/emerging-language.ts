@@ -59,9 +59,15 @@ function contentSignature(text: string): string[] {
 export interface EmergingLanguageCluster {
   /** The sorted content-token signature every member shares exactly. */
   signature: string[];
-  /** Up to 5 real, verbatim example queries — kept small and only ever
-   *  shown to a human reviewer, never used to auto-derive anything. */
+  /** Up to 5 real, DISTINCT verbatim example spellings — kept small and only ever shown to a
+   *  human reviewer, never used to auto-derive anything. May be fewer than `count` even at
+   *  count>=5: the same exact spelling repeated many times contributes one example, not five. */
   sampleQueries: string[];
+  /** Total raw occurrences (events) sharing this signature — NOT distinct spelling count (fixed
+   *  2026-08-30: found auditing real production output that this previously counted distinct
+   *  query TEXT, silently collapsing e.g. 14 real repeats of the exact same query to count=1,
+   *  which is why an obviously large, real pattern never crossed MIN_CLUSTER_SIZE). This is what
+   *  "X عملية بحث حقيقية" (X real searches) in the founder-facing copy actually means now. */
   count: number;
   distinctSessions: number;
   belowClusterFloor: boolean;
@@ -75,7 +81,7 @@ export interface EmergingLanguageCluster {
  * REAL/TEST here).
  */
 export function clusterEmergingLanguage(events: UsageEventRow[]): EmergingLanguageCluster[] {
-  const byBigSignature = new Map<string, { queries: Set<string>; sessions: Set<string>; sampleOrder: string[] }>();
+  const byBigSignature = new Map<string, { count: number; distinctTexts: Set<string>; sessions: Set<string>; sampleOrder: string[] }>();
 
   for (const e of events) {
     if (!DEMAND_TYPES.has(e.event_type) || !e.query_text) continue;
@@ -91,9 +97,12 @@ export function clusterEmergingLanguage(events: UsageEventRow[]): EmergingLangua
     const sig = contentSignature(e.query_text);
     if (sig.length === 0) continue; // nothing but stopwords/noise — not a pattern
     const key = sig.join('|');
-    const cur = byBigSignature.get(key) ?? { queries: new Set<string>(), sessions: new Set<string>(), sampleOrder: [] };
-    if (!cur.queries.has(e.query_text)) cur.sampleOrder.push(e.query_text);
-    cur.queries.add(e.query_text);
+    const cur = byBigSignature.get(key) ?? { count: 0, distinctTexts: new Set<string>(), sessions: new Set<string>(), sampleOrder: [] };
+    cur.count++;
+    // sampleQueries stays a DISTINCT-spelling preview (up to 5 different real spellings is more
+    // informative than the same string five times) — deliberately decoupled from `count` above.
+    if (!cur.distinctTexts.has(e.query_text)) cur.sampleOrder.push(e.query_text);
+    cur.distinctTexts.add(e.query_text);
     if (e.session_id) cur.sessions.add(e.session_id);
     byBigSignature.set(key, cur);
   }
@@ -103,9 +112,9 @@ export function clusterEmergingLanguage(events: UsageEventRow[]): EmergingLangua
     clusters.push({
       signature: key.split('|'),
       sampleQueries: v.sampleOrder.slice(0, 5),
-      count: v.queries.size,
+      count: v.count,
       distinctSessions: v.sessions.size,
-      belowClusterFloor: v.queries.size < MIN_CLUSTER_SIZE,
+      belowClusterFloor: v.count < MIN_CLUSTER_SIZE,
     });
   }
   return clusters.sort((a, b) => b.count - a.count);

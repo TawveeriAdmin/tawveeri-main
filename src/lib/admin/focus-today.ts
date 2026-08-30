@@ -50,7 +50,10 @@ export async function computeFocusToday(existingOpportunities: Opportunity[]): P
 
     const needSignals = await computeNeedSignals(recentReal, baselineReal);
     const emergingClusters = clusterEmergingLanguage(recentReal);
-    const needOpportunities = computeNeedBasedOpportunities(needSignals, emergingClusters);
+    // existingOpportunities passed through for cross-kind dedup (ADR-278): recoverable_unmet
+    // skips any category high_demand_low_coverage already reported, so FOCUS TODAY never shows
+    // the same category twice under two different opportunity kinds.
+    const needOpportunities = computeNeedBasedOpportunities(needSignals, emergingClusters, existingOpportunities);
 
     const candidates = assembleFounderIntelligenceCandidates([...existingOpportunities, ...needOpportunities]);
     const brief = await generateFounderIntelligenceBrief(candidates);
