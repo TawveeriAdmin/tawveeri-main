@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { getCommandCenterData, type Period, type ConfidenceState } from '@/lib/admin/command-center-queries';
 import { getProviderByStoreId } from '@/lib/providers/registry';
+import { FocusTodaySection } from './focus-today';
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 export const dynamic = 'force-dynamic';
@@ -21,7 +22,7 @@ function trend(current: number, previous: number) {
   return { dir: delta >= 0 ? ('up' as const) : ('down' as const), pct: Math.abs(delta) };
 }
 
-function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+export function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return (
     <div className={`rounded-[1.35rem] border border-[#d7ece5] bg-white p-5 dark:border-[#263b33] dark:bg-[#141c18] ${className}`}>
       {children}
@@ -172,6 +173,12 @@ export default async function CommandCenterPage({
         {isRTL ? 'حركة اختبار/إدارية مستبعدة' : 'TEST/admin traffic excluded'}: {isRTL ? 'جلسات' : 'sessions'}={test.sessions}.
         {includeHistorical && (isRTL ? ' — تعرض بيانات ما قبل الإطلاق.' : ' — showing pre-launch data.')}
       </p>
+
+      {/* ── FOCUS TODAY (ADR-277) — the persistent Founder Intelligence surface; the 8AM email is
+          its daily briefing. Same pipeline, same evidence, same ACT/WATCH/INSUFFICIENT_EVIDENCE
+          tiers as the email — computed once in src/lib/admin/focus-today.ts, never duplicated.
+          Renders nothing at all when ENABLE_FOUNDER_AI_BRIEF is off. ── */}
+      <FocusTodaySection data={data} isRTL={isRTL} />
 
       {/* ── Commercial headline — answers the founder's 7 questions in one screen ── */}
       <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">

@@ -6,38 +6,33 @@
 // UNCHANGED. Every line here is traceable to a governed metric; UNKNOWN/insufficient-sample
 // data is stated, never shown as zero or invented as a strong claim.
 //
-// FOCUS TODAY (integrated review, 2026-08-30) — optional, additive, default OFF. Reasons over
-// a WEEK of trend-relative evidence (need-signals momentum, emerging-language, existing
-// opportunities), not a single day's raw count, which is the distinction that makes an AI
-// layer defensible now where ADR-213 correctly deferred it before. Gated behind
-// ENABLE_FOUNDER_AI_BRIEF (unset/anything other than '1' = OFF, byte-identical output to
-// before this section existed). The whole assembly is wrapped in its own try/catch on top of
-// founder-intelligence.ts's own never-throws guarantee — a defect in THIS wiring code can
-// never break the guaranteed-send deterministic email either.
-import { getCommandCenterData, fetchUsageEvents } from './command-center-queries';
-import { computeOpportunities, computeNeedBasedOpportunities } from './opportunities';
+// FOCUS TODAY (integrated review, 2026-08-30; shared with the Command Center dashboard per
+// ADR-277) — optional, additive, default OFF. Reasons over a WEEK of trend-relative evidence
+// (need-signals momentum, emerging-language, existing opportunities), not a single day's raw
+// count, which is the distinction that makes an AI layer defensible now where ADR-213 correctly
+// deferred it before. Gated behind ENABLE_FOUNDER_AI_BRIEF (unset/anything other than '1' = OFF,
+// byte-identical output to before this section existed).
+//
+// The actual computation (fetch events, need-signals, emerging-language, opportunities, the AI
+// call) lives ONE place — src/lib/admin/focus-today.ts's computeFocusToday() — reused verbatim by
+// this file and by the Command Center dashboard (src/app/[locale]/admin/command-center/
+// focus-today.tsx). This file's job is ONLY to render that shared result as HTML for the email;
+// it computes nothing of its own. computeFocusToday() never throws — a defect in the assembly
+// can never break the guaranteed-send deterministic email either.
+import { getCommandCenterData } from './command-center-queries';
+import { computeOpportunities } from './opportunities';
 import { fetchGrowthContent } from './growth-queries';
 import { getProviderByStoreId } from '@/lib/providers/registry';
-import { computeNeedSignals } from './need-signals';
-import { clusterEmergingLanguage } from './emerging-language';
 import {
-  assembleFounderIntelligenceCandidates, generateFounderIntelligenceBrief,
-  describeUnavailability, type FocusItem,
-} from './founder-intelligence';
+  computeFocusToday, DOMAIN_LABEL_AR, EVIDENCE_CONFIDENCE_LABEL_AR, ACTION_TIER_LABEL_AR,
+} from './focus-today';
+import type { FocusItem } from './founder-intelligence';
 
-const ENABLE_AI_BRIEF = process.env.ENABLE_FOUNDER_AI_BRIEF === '1';
-
-const DOMAIN_LABEL_AR: Record<FocusItem['domain'], string> = {
-  marketing_content: 'تسويق ومحتوى', product_engineering: 'منتج وهندسة',
-  catalog_coverage: 'تغطية الكتالوج', commercial: 'تجاري', demand_radar: 'مرصد الطلب', home_mission: 'جهّز بيتك',
-};
-const CONFIDENCE_LABEL_AR: Record<FocusItem['evidenceConfidence'], string> = { low: 'منخفضة', medium: 'متوسطة', high: 'عالية' };
 // ACT/WATCH/INSUFFICIENT_EVIDENCE (ADR-275) — structural, computed deterministically per-kind in
 // opportunities.ts, never set or upgraded by the AI. Rendered as a visible badge so the
-// evidence-strength/action-readiness distinction is legible at a glance, not just in prose.
-const ACTION_TIER_LABEL_AR: Record<FocusItem['actionTier'], string> = {
-  ACT: 'جاهز للتحرك', WATCH: 'راقب فقط', INSUFFICIENT_EVIDENCE: 'دليل غير كافٍ بعد',
-};
+// evidence-strength/action-readiness distinction is legible at a glance, not just in prose. Only
+// the color mapping is email-specific (inline hex, HTML email can't use Tailwind) — the labels
+// themselves come from the shared focus-today.ts module, same words the dashboard shows.
 const ACTION_TIER_COLOR: Record<FocusItem['actionTier'], string> = {
   ACT: '#1f6f59', WATCH: '#9a5b13', INSUFFICIENT_EVIDENCE: '#7a7a7a',
 };
@@ -46,56 +41,34 @@ function focusItemHtml(item: FocusItem): string {
   return `<div style="border-top:1px solid #eef6f2;padding:10px 0">
     <p style="margin:0 0 4px;font-weight:bold">${escapeHtml(item.titleAr)}
       <span style="font-weight:bold;color:${ACTION_TIER_COLOR[item.actionTier]};font-size:11px;border:1px solid ${ACTION_TIER_COLOR[item.actionTier]};border-radius:8px;padding:1px 6px;margin-inline-start:4px">${ACTION_TIER_LABEL_AR[item.actionTier]}</span>
-      <span style="font-weight:normal;color:#5b6b63;font-size:12px">(${DOMAIN_LABEL_AR[item.domain]} — ثقة الدليل ${CONFIDENCE_LABEL_AR[item.evidenceConfidence]}${item.earlySignal ? '، إشارة مبكرة' : ''})</span></p>
+      <span style="font-weight:normal;color:#5b6b63;font-size:12px">(${DOMAIN_LABEL_AR[item.domain]} — ثقة الدليل ${EVIDENCE_CONFIDENCE_LABEL_AR[item.evidenceConfidence]}${item.earlySignal ? '، إشارة مبكرة' : ''})</span></p>
     <p style="margin:0 0 4px;color:#333">${escapeHtml(item.whyNowAr)}</p>
     <p style="margin:0 0 4px;color:#333"><b>الإجراء المقترح:</b> ${escapeHtml(item.recommendedActionAr)}</p>
     <p style="margin:0;color:#5b6b63;font-size:12px">الدليل: ${escapeHtml(item.evidenceAr)}${item.riskCaveatAr ? ` — تحذير: ${escapeHtml(item.riskCaveatAr)}` : ''}</p>
   </div>`;
 }
 
-/** Builds the FOCUS TODAY section. Returns '' (no section at all — byte-identical to today's
- *  email) when the flag is off, or on ANY failure anywhere in this assembly. Never throws. */
+/** Renders computeFocusToday()'s result as HTML. Returns '' (no section at all — byte-identical
+ *  to today's email) when the shared function reports the flag off. Never throws — the shared
+ *  function itself never throws, and every branch here is a plain string template. */
 async function buildFocusTodaySection(existingOpportunities: ReturnType<typeof computeOpportunities>): Promise<string> {
-  if (!ENABLE_AI_BRIEF) return '';
-  try {
-    const recentEnd = new Date();
-    const recentStart = new Date(recentEnd.getTime() - 7 * 24 * 3600_000);
-    const baselineStart = new Date(recentStart.getTime() - 7 * 24 * 3600_000);
-    const [recentEvents, baselineEvents] = await Promise.all([
-      fetchUsageEvents(recentStart, recentEnd),
-      fetchUsageEvents(baselineStart, recentStart),
-    ]);
-    const recentReal = recentEvents.filter((e) => !e.is_test);
-    const baselineReal = baselineEvents.filter((e) => !e.is_test);
-
-    const needSignals = await computeNeedSignals(recentReal, baselineReal);
-    const emergingClusters = clusterEmergingLanguage(recentReal);
-    const needOpportunities = computeNeedBasedOpportunities(needSignals, emergingClusters);
-
-    const candidates = assembleFounderIntelligenceCandidates([...existingOpportunities, ...needOpportunities]);
-    const brief = await generateFounderIntelligenceBrief(candidates);
-
-    if (!brief.aiAvailable) {
-      const reason = describeUnavailability(brief);
-      return `<div style="background:#fff7ed;border-radius:12px;padding:12px;margin:0 0 20px;color:#9a5b13;font-size:13px">
-        تعذر توليد توصيات الذكاء الاصطناعي اليوم (${escapeHtml(reason ?? 'سبب غير معروف')}) — الأرقام أدناه غير متأثرة، هذا القسم فقط غير متاح.
-      </div>`;
-    }
-    if (brief.focusItems.length === 0) {
-      return `<div style="background:#f8fcfa;border-radius:12px;padding:14px;margin:0 0 20px">
-        <b style="color:#1f6f59">ركّز اليوم على:</b>
-        <p style="margin:6px 0 0;color:#5b6b63">لا توجد إشارة قوية بما يكفي لتوصية اليوم — لا حاجة لإنشاء عمل جديد.</p>
-      </div>`;
-    }
-    return `<div style="background:#f8fcfa;border-radius:12px;padding:14px;margin:0 0 20px">
-      <b style="color:#1f6f59">ركّز اليوم على:</b>
-      ${brief.focusItems.map(focusItemHtml).join('')}
-    </div>`;
-  } catch (e) {
+  const result = await computeFocusToday(existingOpportunities);
+  if (!result.enabled) return '';
+  if (!result.aiAvailable) {
     return `<div style="background:#fff7ed;border-radius:12px;padding:12px;margin:0 0 20px;color:#9a5b13;font-size:13px">
-      تعذر توليد توصيات الذكاء الاصطناعي اليوم (${escapeHtml(e instanceof Error ? e.message : 'خطأ غير متوقع')}).
+      تعذر توليد توصيات الذكاء الاصطناعي اليوم (${escapeHtml(result.reason)}) — الأرقام أدناه غير متأثرة، هذا القسم فقط غير متاح.
     </div>`;
   }
+  if (result.focusItems.length === 0) {
+    return `<div style="background:#f8fcfa;border-radius:12px;padding:14px;margin:0 0 20px">
+      <b style="color:#1f6f59">ركّز اليوم على:</b>
+      <p style="margin:6px 0 0;color:#5b6b63">لا توجد إشارة قوية بما يكفي لتوصية اليوم — لا حاجة لإنشاء عمل جديد.</p>
+    </div>`;
+  }
+  return `<div style="background:#f8fcfa;border-radius:12px;padding:14px;margin:0 0 20px">
+    <b style="color:#1f6f59">ركّز اليوم على:</b>
+    ${result.focusItems.map(focusItemHtml).join('')}
+  </div>`;
 }
 
 export interface DailyReportResult {

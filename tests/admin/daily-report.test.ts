@@ -1,19 +1,13 @@
-// Daily Founder Email — FOCUS TODAY wiring (integrated review, 2026-08-30).
-// generateDailyFounderReport()'s core body (stats/brief/opportunities) is pre-existing and
-// untouched; these tests exist ONLY to prove the new optional AI section behaves per its own
-// contract: OFF by default with zero added cost, never breaks the guaranteed-send email on
-// failure, and never lets model-influenced text bypass HTML escaping.
-//
-// ENABLE_FOUNDER_AI_BRIEF is read into a module-level const at import time (matches this
-// codebase's existing convention for env-gated consts, e.g. MODEL/TIMEOUT_MS in
-// founder-intelligence.ts) — so each test that needs a specific flag value sets the env var,
-// then jest.resetModules() + require()s a fresh copy of the module under test. This is why this
-// file uses require() instead of import() throughout — deliberate, not an oversight.
+// Daily Founder Email — FOCUS TODAY HTML rendering (ADR-277). generateDailyFounderReport()'s
+// core body (stats/brief/opportunities) is pre-existing and untouched. The FOCUS TODAY
+// COMPUTATION (need-signals/emerging-language/AI call) is no longer this file's job — that lives
+// in src/lib/admin/focus-today.ts and is tested once, directly, in tests/admin/focus-today.test.ts.
+// These tests exist ONLY to prove this file renders computeFocusToday()'s result correctly as
+// HTML for the email: the three result shapes (disabled/unavailable/populated), the
+// ACT/WATCH/INSUFFICIENT_EVIDENCE badges, and that model-influenced text is always escaped.
 /* eslint-disable @typescript-eslint/no-require-imports */
 
-function freshDailyReport(enableAiBrief: boolean) {
-  if (enableAiBrief) process.env.ENABLE_FOUNDER_AI_BRIEF = '1';
-  else delete process.env.ENABLE_FOUNDER_AI_BRIEF;
+function freshDailyReport() {
   jest.resetModules();
   return require('@/lib/admin/daily-report') as typeof import('@/lib/admin/daily-report');
 }
@@ -44,16 +38,9 @@ const baseData = {
   baseline: { date: '2026-08-01', currentIsPreLaunch: false, previousIsPreLaunch: false, includesHistorical: true },
 };
 
-function mockPipeline({
-  needSignalsImpl, clustersImpl, briefImpl,
-}: {
-  needSignalsImpl?: (...args: unknown[]) => Promise<unknown[]>;
-  clustersImpl?: (...args: unknown[]) => unknown[];
-  briefImpl?: (...args: unknown[]) => Promise<{ focusItems: unknown[]; aiAvailable: boolean; reason?: string }>;
-}) {
+function mockPipeline(focusTodayResult: unknown) {
   jest.doMock('@/lib/admin/command-center-queries', () => ({
     getCommandCenterData: jest.fn(async () => baseData),
-    fetchUsageEvents: jest.fn(async () => []),
   }));
   jest.doMock('@/lib/admin/growth-queries', () => ({
     fetchGrowthContent: jest.fn(async () => []),
@@ -61,68 +48,38 @@ function mockPipeline({
   jest.doMock('@/lib/providers/registry', () => ({
     getProviderByStoreId: jest.fn(() => null),
   }));
-  jest.doMock('@/lib/admin/need-signals', () => ({
-    computeNeedSignals: jest.fn(needSignalsImpl ?? (async () => [])),
-  }));
-  jest.doMock('@/lib/admin/emerging-language', () => ({
-    clusterEmergingLanguage: jest.fn(clustersImpl ?? (() => [])),
-  }));
-  jest.doMock('@/lib/admin/founder-intelligence', () => {
-    const actual = jest.requireActual('@/lib/admin/founder-intelligence');
-    return {
-      ...actual,
-      generateFounderIntelligenceBrief: jest.fn(briefImpl ?? (async () => ({ focusItems: [], aiAvailable: true }))),
-    };
+  jest.doMock('@/lib/admin/focus-today', () => {
+    const actual = jest.requireActual('@/lib/admin/focus-today');
+    return { ...actual, computeFocusToday: jest.fn(async () => focusTodayResult) };
   });
 }
 
-describe('generateDailyFounderReport — FOCUS TODAY flag OFF (default)', () => {
+describe('generateDailyFounderReport — FOCUS TODAY rendering', () => {
   beforeEach(() => { jest.resetModules(); jest.clearAllMocks(); });
 
-  it('renders no FOCUS TODAY section and never calls any of the AI-layer functions', async () => {
-    mockPipeline({});
-    const { generateDailyFounderReport } = freshDailyReport(false);
-    const needSignals = require('@/lib/admin/need-signals');
-    const emergingLanguage = require('@/lib/admin/emerging-language');
-    const founderIntel = require('@/lib/admin/founder-intelligence');
-    const cc = require('@/lib/admin/command-center-queries');
-
+  it('renders no FOCUS TODAY section when computeFocusToday reports {enabled:false}', async () => {
+    mockPipeline({ enabled: false });
+    const { generateDailyFounderReport } = freshDailyReport();
     const result = await generateDailyFounderReport();
-
     expect(result.html).not.toContain('ركّز اليوم على');
-    expect(needSignals.computeNeedSignals).not.toHaveBeenCalled();
-    expect(emergingLanguage.clusterEmergingLanguage).not.toHaveBeenCalled();
-    expect(founderIntel.generateFounderIntelligenceBrief).not.toHaveBeenCalled();
-    // fetchUsageEvents is only ever called by buildFocusTodaySection — flag off means zero extra queries.
-    expect(cc.fetchUsageEvents).not.toHaveBeenCalled();
-  });
-
-  it('still produces the normal deterministic email (subject, activity flag, core stats)', async () => {
-    mockPipeline({});
-    const { generateDailyFounderReport } = freshDailyReport(false);
-    const result = await generateDailyFounderReport();
     expect(result.hasActivity).toBe(true);
     expect(result.subjectAr).toContain('50 جلسة');
     expect(result.html).toContain('الجلسات الحقيقية');
   });
-});
 
-describe('generateDailyFounderReport — FOCUS TODAY flag ON', () => {
-  beforeEach(() => { jest.resetModules(); jest.clearAllMocks(); });
-
-  it('renders the amber "AI unavailable" note (with the stated reason) when the model call fails, and the rest of the email is unaffected', async () => {
-    mockPipeline({ briefImpl: async () => ({ focusItems: [], aiAvailable: false, reason: 'Anthropic API 500' }) });
-    const { generateDailyFounderReport } = freshDailyReport(true);
+  it('renders the amber "AI unavailable" note with the stated reason, and the rest of the email is unaffected', async () => {
+    mockPipeline({ enabled: true, aiAvailable: false, reason: 'Anthropic API 500' });
+    const { generateDailyFounderReport } = freshDailyReport();
     const result = await generateDailyFounderReport();
     expect(result.html).toContain('تعذر توليد توصيات الذكاء الاصطناعي اليوم');
     expect(result.html).toContain('Anthropic API 500');
-    expect(result.html).toContain('الجلسات الحقيقية'); // core email body still rendered
+    expect(result.html).toContain('الجلسات الحقيقية');
     expect(result.hasActivity).toBe(true);
   });
 
-  it('renders the "no strong signal" note when the model correctly recommends nothing', async () => {
-    mockPipeline({ briefImpl: async () => ({ focusItems: [], aiAvailable: true }) });
-    const { generateDailyFounderReport } = freshDailyReport(true);
+  it('renders the "no strong signal" note for an empty focusItems array', async () => {
+    mockPipeline({ enabled: true, aiAvailable: true, focusItems: [] });
+    const { generateDailyFounderReport } = freshDailyReport();
     const result = await generateDailyFounderReport();
     expect(result.html).toContain('ركّز اليوم على');
     expect(result.html).toContain('لا توجد إشارة قوية بما يكفي');
@@ -130,18 +87,16 @@ describe('generateDailyFounderReport — FOCUS TODAY flag ON', () => {
 
   it('renders a real focus item with correct domain/evidence-confidence/action-tier labels and the early-signal marker', async () => {
     mockPipeline({
-      briefImpl: async () => ({
-        aiAvailable: true,
-        focusItems: [{
-          candidateId: 'c0', titleAr: 'عنوان الفرصة', evidenceAr: 'دليل الفرصة',
-          sampleSize: 12, earlySignal: true, domain: 'catalog_coverage',
-          evidenceConfidence: 'low', actionTier: 'INSUFFICIENT_EVIDENCE',
-          whyNowAr: 'لأن الطلب حقيقي', recommendedActionAr: 'راجع الفئة',
-          riskCaveatAr: 'عينة صغيرة', whatToMeasureNextAr: 'راقب الأسبوع القادم',
-        }],
-      }),
+      enabled: true, aiAvailable: true,
+      focusItems: [{
+        candidateId: 'c0', titleAr: 'عنوان الفرصة', evidenceAr: 'دليل الفرصة',
+        sampleSize: 12, earlySignal: true, domain: 'catalog_coverage',
+        evidenceConfidence: 'low', actionTier: 'INSUFFICIENT_EVIDENCE',
+        whyNowAr: 'لأن الطلب حقيقي', recommendedActionAr: 'راجع الفئة',
+        riskCaveatAr: 'عينة صغيرة', whatToMeasureNextAr: 'راقب الأسبوع القادم',
+      }],
     });
-    const { generateDailyFounderReport } = freshDailyReport(true);
+    const { generateDailyFounderReport } = freshDailyReport();
     const result = await generateDailyFounderReport();
     expect(result.html).toContain('عنوان الفرصة');
     expect(result.html).toContain('لأن الطلب حقيقي');
@@ -156,74 +111,36 @@ describe('generateDailyFounderReport — FOCUS TODAY flag ON', () => {
 
   it('renders the ACT badge for an action-ready focus item', async () => {
     mockPipeline({
-      briefImpl: async () => ({
-        aiAvailable: true,
-        focusItems: [{
-          candidateId: 'c0', titleAr: 'فرصة قوية', evidenceAr: 'دليل قوي',
-          sampleSize: 150, earlySignal: false, domain: 'commercial',
-          evidenceConfidence: 'high', actionTier: 'ACT',
-          whyNowAr: 'x', recommendedActionAr: 'y', riskCaveatAr: '', whatToMeasureNextAr: '',
-        }],
-      }),
+      enabled: true, aiAvailable: true,
+      focusItems: [{
+        candidateId: 'c0', titleAr: 'فرصة قوية', evidenceAr: 'دليل قوي',
+        sampleSize: 150, earlySignal: false, domain: 'commercial',
+        evidenceConfidence: 'high', actionTier: 'ACT',
+        whyNowAr: 'x', recommendedActionAr: 'y', riskCaveatAr: '', whatToMeasureNextAr: '',
+      }],
     });
-    const { generateDailyFounderReport } = freshDailyReport(true);
+    const { generateDailyFounderReport } = freshDailyReport();
     const result = await generateDailyFounderReport();
     expect(result.html).toContain('جاهز للتحرك'); // ACT badge
   });
 
   it('HTML-escapes every model-influenced field so a candidate/AI string can never inject markup into the founder email', async () => {
     mockPipeline({
-      briefImpl: async () => ({
-        aiAvailable: true,
-        focusItems: [{
-          candidateId: 'c0', titleAr: '<img src=x onerror=alert(1)>', evidenceAr: 'A & B',
-          sampleSize: 1, earlySignal: false, domain: 'marketing_content',
-          evidenceConfidence: 'high', actionTier: 'ACT',
-          whyNowAr: '<script>steal()</script>', recommendedActionAr: '"quoted"',
-          riskCaveatAr: "it's risky", whatToMeasureNextAr: '',
-        }],
-      }),
+      enabled: true, aiAvailable: true,
+      focusItems: [{
+        candidateId: 'c0', titleAr: '<img src=x onerror=alert(1)>', evidenceAr: 'A & B',
+        sampleSize: 1, earlySignal: false, domain: 'marketing_content',
+        evidenceConfidence: 'high', actionTier: 'ACT',
+        whyNowAr: '<script>steal()</script>', recommendedActionAr: '"quoted"',
+        riskCaveatAr: "it's risky", whatToMeasureNextAr: '',
+      }],
     });
-    const { generateDailyFounderReport } = freshDailyReport(true);
+    const { generateDailyFounderReport } = freshDailyReport();
     const result = await generateDailyFounderReport();
     expect(result.html).not.toContain('<img src=x onerror=alert(1)>');
     expect(result.html).not.toContain('<script>steal()</script>');
     expect(result.html).toContain('&lt;img src=x onerror=alert(1)&gt;');
     expect(result.html).toContain('&lt;script&gt;steal()&lt;/script&gt;');
     expect(result.html).toContain('A &amp; B');
-  });
-
-  it('a thrown failure anywhere in the FOCUS TODAY assembly (e.g. computeNeedSignals rejecting) is caught, renders a stated-error note, and never breaks the guaranteed-send email', async () => {
-    mockPipeline({ needSignalsImpl: async () => { throw new Error('catalog read timed out'); } });
-    const { generateDailyFounderReport } = freshDailyReport(true);
-    const result = await generateDailyFounderReport();
-    expect(result.html).toContain('تعذر توليد توصيات الذكاء الاصطناعي اليوم');
-    expect(result.html).toContain('catalog read timed out');
-    expect(result.hasActivity).toBe(true);
-    expect(result.subjectAr).toContain('50 جلسة');
-  });
-
-  it('a real demand_momentum need-signal is folded into the AI candidate pool (integration through the real, unmocked opportunities.ts)', async () => {
-    const strongSignal = {
-      category: 'tablet', volume: 200, recorded: 20, derived: 180, baselineVolume: 30,
-      momentumPct: 400, topSessionShare: 0.2, decisionEvidenceShare: 0.1, decisionEvidenceCount: 20,
-      signalBreakdown: {
-        recommendationRequest: 0, explicitComparison: 0, budgetStated: 0, useCaseStated: 0,
-        namedCompetingProducts: 0, urgency: 0, replacement: 0, availabilityQuestion: 0,
-      },
-      answerability: 'yes' as const, answerabilityReason: 'well covered', sampleSize: 200, belowConfidenceFloor: false,
-    };
-    let capturedCandidateCount = 0;
-    mockPipeline({
-      needSignalsImpl: async () => [strongSignal],
-      briefImpl: async (...args: unknown[]) => {
-        const candidates = args[0] as unknown[];
-        capturedCandidateCount = candidates.length;
-        return { focusItems: [], aiAvailable: true };
-      },
-    });
-    const { generateDailyFounderReport } = freshDailyReport(true);
-    await generateDailyFounderReport();
-    expect(capturedCandidateCount).toBeGreaterThanOrEqual(1);
   });
 });
