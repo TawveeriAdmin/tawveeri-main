@@ -2,7 +2,7 @@
 // campaign-to-outbound attribution (ADR-214). Pure-function tests against synthetic fixtures —
 // no production dependency. Real production numbers behind this fix: docs/DECISIONS.md ADR-214.
 import {
-  buildFunnel, topSessionSearchShare, computeCampaignAttribution,
+  buildFunnel, topSessionSearchShare, computeCampaignAttribution, topDemand,
   type UsageEventRow, type OutboundClickRow,
 } from "../../src/lib/admin/command-center-queries";
 
@@ -149,5 +149,47 @@ describe("computeCampaignAttribution — session-level, never person-level (ADR-
     expect(real.rows[0].isTest).toBe(false);
     expect(test.rows[0].isTest).toBe(true);
     expect(test.rows[0].utmSource).toBe("controlled_test");
+  });
+});
+
+describe("topDemand — category derivation (fixes the live-dashboard (unparsed) gap)", () => {
+  it("uses the recorded category column when present, unchanged", () => {
+    const events = [ev({ event_type: "search", category: "laptop", query_text: "لابتوب" })];
+    const rows = topDemand(events);
+    expect(rows).toEqual([{ category: "laptop", count: 1, recorded: 1, derived: 0 }]);
+  });
+
+  it("derives a category from query_text via parseShoppingTask when the column is null — the exact ADR-259 gap", () => {
+    // No recorded category, but the query text is trivially categorizable — this is the
+    // production case measured at 83.7% of the real "(unparsed)" bucket (2026-08-30 audit).
+    const events = [ev({ event_type: "search", category: null, query_text: "مكيف رخيص لغرفة 30 متر" })];
+    const rows = topDemand(events);
+    expect(rows).toEqual([{ category: "air_conditioner", count: 1, recorded: 0, derived: 1 }]);
+  });
+
+  it("keeps recorded and derived counts for the same category separate but summed in count", () => {
+    const events = [
+      ev({ event_type: "search", category: "laptop", query_text: "لابتوب" }),
+      ev({ event_type: "results", category: null, query_text: "لابتوب للجامعة" }),
+    ];
+    const rows = topDemand(events);
+    expect(rows).toEqual([{ category: "laptop", count: 2, recorded: 1, derived: 1 }]);
+  });
+
+  it("still buckets genuinely unparseable text as (unparsed), never silently drops it", () => {
+    const events = [ev({ event_type: "search", category: null, query_text: "مكروويف" })]; // real production example the parser misses
+    const rows = topDemand(events);
+    expect(rows).toEqual([{ category: "(unparsed)", count: 1, recorded: 0, derived: 0 }]);
+  });
+
+  it("never throws when query_text is null alongside a missing category", () => {
+    const events = [ev({ event_type: "search", category: null, query_text: null })];
+    expect(() => topDemand(events)).not.toThrow();
+    expect(topDemand(events)).toEqual([{ category: "(unparsed)", count: 1, recorded: 0, derived: 0 }]);
+  });
+
+  it("ignores non-search/results event types", () => {
+    const events = [ev({ event_type: "product_view", category: "laptop" })];
+    expect(topDemand(events)).toEqual([]);
   });
 });

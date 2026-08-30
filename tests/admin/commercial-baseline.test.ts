@@ -8,6 +8,26 @@ import {
 import { computeOpportunities, type Opportunity } from "../../src/lib/admin/opportunities";
 import type { CommandCenterData } from "../../src/lib/admin/command-center-queries";
 
+// retailerBreakdown's merchant-name normalization (2026-08-30) reads the `stores` table only
+// when a store_name value isn't already numeric — mocked here so this stays what the file
+// header promises: pure-function tests against synthetic fixtures, no production dependency.
+jest.mock("../../src/lib/database", () => ({
+  createServerClient: () => ({
+    from: (table: string) => {
+      if (table !== "stores") throw new Error(`unexpected table in mock: ${table}`);
+      return {
+        select: () => Promise.resolve({
+          data: [
+            { id: 4, name_ar: "اكسترا", name_en: "Extra" },
+            { id: 5, name_ar: "المنيع", name_en: "Almanea" },
+          ],
+          error: null,
+        }),
+      };
+    },
+  }),
+}));
+
 function ev(overrides: Partial<UsageEventRow>): UsageEventRow {
   return {
     event_type: "search", session_id: "s1", is_test: false, source: "web",
@@ -56,14 +76,14 @@ describe("qualifiedReferredSessions — session-level, never a click count", () 
 });
 
 describe("retailerBreakdown — commercial vocabulary, never calls a redirect a sale", () => {
-  it("groups confirmed redirects and distinct products by store, excluding TEST rows", () => {
+  it("groups confirmed redirects and distinct products by store, excluding TEST rows", async () => {
     const outbound = [
       click({ store_name: "4", canonical_product_id: "p1" }),
       click({ store_name: "4", canonical_product_id: "p2" }),
       click({ store_name: "2", canonical_product_id: "p3", is_test: true }), // excluded
       click({ store_name: "3", canonical_product_id: "p4", affiliate_program: "param" }),
     ];
-    const result = retailerBreakdown([], outbound);
+    const result = await retailerBreakdown([], outbound);
     const store4 = result.find((r) => r.storeSlug === "4")!;
     expect(store4.confirmedRedirects).toBe(2);
     expect(store4.distinctProducts).toBe(2);
@@ -73,15 +93,32 @@ describe("retailerBreakdown — commercial vocabulary, never calls a redirect a 
     expect(result.find((r) => r.storeSlug === "2")).toBeUndefined(); // TEST-only store excluded entirely
   });
 
-  it("approximates qualified sessions via product-level correlation to go_click events", () => {
+  it("approximates qualified sessions via product-level correlation to go_click events", async () => {
     const outbound = [click({ store_name: "4", canonical_product_id: "p1" })];
     const events = [
       ev({ event_type: "go_click", session_id: "s1", canonical_id: "p1" }),
       ev({ event_type: "go_click", session_id: "s2", canonical_id: "p1" }),
       ev({ event_type: "go_click", session_id: "s3", canonical_id: "unrelated-product" }),
     ];
-    const result = retailerBreakdown(events, outbound);
+    const result = await retailerBreakdown(events, outbound);
     expect(result.find((r) => r.storeSlug === "4")!.qualifiedSessions).toBe(2);
+  });
+
+  it("2026-08-30 merchant-normalization fix: a display-name-shaped store_name resolves to the same bucket as its numeric id", async () => {
+    const outbound = [
+      click({ store_name: "4", canonical_product_id: "p1" }),
+      click({ store_name: "اكسترا", canonical_product_id: "p2" }), // the fragmentation bug — same merchant (Extra, id 4)
+    ];
+    const result = await retailerBreakdown([], outbound);
+    const store4 = result.find((r) => r.storeSlug === "4");
+    expect(store4?.confirmedRedirects).toBe(2); // both rows counted together, not split across "4" and "اكسترا"
+    expect(result.find((r) => r.storeSlug === "اكسترا")).toBeUndefined(); // no orphaned second bucket
+  });
+
+  it("a display name that matches no known store stays its own honest, unresolved bucket — never silently dropped", async () => {
+    const outbound = [click({ store_name: "متجر غير معروف تمامًا", canonical_product_id: "p1" })];
+    const result = await retailerBreakdown([], outbound);
+    expect(result.find((r) => r.storeSlug === "متجر غير معروف تمامًا")?.confirmedRedirects).toBe(1);
   });
 });
 

@@ -5,6 +5,7 @@
 // Metric definitions: docs/METRIC_DEFINITIONS.md. Data-quality rules: docs/DATA_QUALITY_CONTRACT.md.
 import { createServerClient } from '@/lib/database';
 import { getAffiliateConfig } from '@/lib/transactions/affiliate-config';
+import { parseShoppingTask } from '@/lib/agent/task-parser';
 
 export type Period = 'today' | 'yesterday' | '7d' | '30d' | 'custom';
 
@@ -495,14 +496,41 @@ function bySurface(events: UsageEventRow[]): SurfaceRow[] {
     .sort((a, b) => b.sessions - a.sessions);
 }
 
-function topDemand(events: UsageEventRow[], limit = 12): Array<{ category: string; count: number }> {
-  const map = new Map<string, number>();
+// ADR-259 fixed this exact gap in the CLI tool (scripts/tps-analysis/usage-report.ts) but it
+// was never ported here, so the live dashboard kept bucketing anything with no RECORDED
+// category column as "(unparsed)" — even when the query text itself is trivially categorizable
+// by the same deterministic parser /api/search already uses. Measured on production 2026-08-30:
+// 83.7% of the real "(unparsed)" bucket in a 30-day window derives a real category this way
+// (2,555 of 3,053 rows) — the true category-demand ranking was off by roughly 5-9x per category.
+// Fixed at the source of truth: `parseShoppingTask` is the ONE canonical category-derivation
+// function (task-parser.ts, also used by /api/search and the CLI tool) — never re-derive
+// category with a second parser here or anywhere else.
+export function topDemand(
+  events: UsageEventRow[],
+  limit = 12
+): Array<{ category: string; count: number; recorded: number; derived: number }> {
+  const agg = new Map<string, { recorded: number; derived: number }>();
+  let uncategorized = 0;
+  const bump = (key: string, kind: 'recorded' | 'derived') => {
+    const cur = agg.get(key) ?? { recorded: 0, derived: 0 };
+    cur[kind]++;
+    agg.set(key, cur);
+  };
   for (const e of events) {
     if (!SEARCH_TYPES.has(e.event_type) && !RESULTS_TYPES.has(e.event_type)) continue;
-    const key = e.category || '(unparsed)';
-    map.set(key, (map.get(key) || 0) + 1);
+    if (e.category) { bump(e.category, 'recorded'); continue; }
+    let derived: string | null = null;
+    try {
+      derived = e.query_text ? parseShoppingTask(e.query_text).category || null : null;
+    } catch {
+      derived = null; // parser failure is never fatal to a founder-facing report — stays uncategorized
+    }
+    if (derived) bump(derived, 'derived');
+    else uncategorized++;
   }
-  return Array.from(map.entries()).map(([category, count]) => ({ category, count })).sort((a, b) => b.count - a.count).slice(0, limit);
+  const rows = Array.from(agg.entries()).map(([category, v]) => ({ category, count: v.recorded + v.derived, recorded: v.recorded, derived: v.derived }));
+  if (uncategorized > 0) rows.push({ category: '(unparsed)', count: uncategorized, recorded: 0, derived: 0 });
+  return rows.sort((a, b) => b.count - a.count).slice(0, limit);
 }
 
 /**
@@ -639,7 +667,7 @@ export interface CommandCenterData {
   test: Funnel;
   prevReal: Funnel;
   surfaces: SurfaceRow[];
-  topDemand: Array<{ category: string; count: number }>;
+  topDemand: Array<{ category: string; count: number; recorded: number; derived: number }>;
   unmetDemand: Array<{ query: string; count: number }>;
   outboundReal: { clicks: number; distinctProducts: number; monetized: number };
   outboundTest: { clicks: number; distinctProducts: number; monetized: number };
@@ -796,11 +824,41 @@ export interface RetailerReferralRow {
   hasAffiliateProgram: boolean;
 }
 
-export function retailerBreakdown(realEvents: UsageEventRow[], outboundRows: OutboundClickRow[]): RetailerReferralRow[] {
+// Merchant-name normalization (2026-08-30 integrated review): `outbound_clicks.store_name`
+// is supposed to always be the numeric store id (what /go writes, verified as the only real
+// INSERT site — src/app/go/[offerId]/route.ts). For a handful of merchants it instead holds
+// the literal Arabic/English display name, because the upstream `normalized_product_observations
+// .store_id` column that /go reads from holds a display name for those same stores (a separate,
+// out-of-scope ingestion defect — not fixed here). Grouping by raw store_name therefore silently
+// splits one merchant's redirects across two untotaled buckets. This resolves any display-name-
+// shaped value back to the canonical numeric id at READ time only — no historical row is rewritten,
+// no ingestion behavior changes; if the upstream defect is ever fixed, this becomes a no-op.
+async function resolveStoreNameKey(rawKeys: Iterable<string>): Promise<Map<string, string>> {
+  const keys = new Set(rawKeys);
+  const resolved = new Map<string, string>();
+  for (const k of keys) resolved.set(k, k); // default: identity (already a numeric id, or genuinely unknown)
+  const needsResolution = [...keys].filter((k) => !/^\d+$/.test(k) && k !== '(unknown)');
+  if (needsResolution.length === 0) return resolved;
+  const supabase = createServerClient() as unknown as { from: (table: string) => any };
+  const { data } = await supabase.from('stores').select('id, name_ar, name_en');
+  const byName = new Map<string, string>();
+  for (const s of (data ?? []) as Array<{ id: number | string; name_ar: string | null; name_en: string | null }>) {
+    if (s.name_ar) byName.set(s.name_ar, String(s.id));
+    if (s.name_en) byName.set(s.name_en, String(s.id));
+  }
+  for (const k of needsResolution) {
+    const canonical = byName.get(k);
+    if (canonical) resolved.set(k, canonical);
+  }
+  return resolved;
+}
+
+export async function retailerBreakdown(realEvents: UsageEventRow[], outboundRows: OutboundClickRow[]): Promise<RetailerReferralRow[]> {
   const realOutboundRows = outboundRows.filter((r) => !r.is_test);
+  const keyFor = await resolveStoreNameKey(realOutboundRows.map((r) => r.store_name || '(unknown)'));
   const bySlug = new Map<string, OutboundClickRow[]>();
   for (const r of realOutboundRows) {
-    const key = r.store_name || '(unknown)';
+    const key = keyFor.get(r.store_name || '(unknown)') ?? (r.store_name || '(unknown)');
     const arr = bySlug.get(key);
     if (arr) arr.push(r); else bySlug.set(key, [r]);
   }
@@ -929,7 +987,7 @@ export async function getCommandCenterData(
   const realOutboundRows = outboundRows.filter((r) => !r.is_test);
   const [categoryDemand, retailers, referredProducts] = await Promise.all([
     referredCategoryDemand(realOutboundRows),
-    Promise.resolve(retailerBreakdown(realEvents, outboundRows)),
+    retailerBreakdown(realEvents, outboundRows),
     topReferredProducts(realOutboundRows),
   ]);
 
