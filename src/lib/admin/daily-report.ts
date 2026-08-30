@@ -1,14 +1,91 @@
 // Daily Founder Email — report generator (ADR-216). Summarizes the previous Riyadh calendar
 // day using the SAME governed data as the Command Center — no separate metric definitions.
-// The "AI brief" here is a deterministic template, not an LLM call: at current sample sizes
-// (well under 100 real sessions/day) a narrated brief would mostly restate noise as insight,
-// and the founder's own mandate prefers deterministic text when an LLM adds no real value.
-// Every line is traceable to a governed metric; UNKNOWN/insufficient-sample data is stated,
-// never shown as zero or invented as a strong claim.
-import { getCommandCenterData } from './command-center-queries';
-import { computeOpportunities } from './opportunities';
+// The base template below is still a deterministic template, not an LLM call — ADR-216's
+// original reasoning (at well under 100 real sessions/day, a narrated brief mostly restates
+// noise) remains correct for a single day read in isolation, and this file's core behavior is
+// UNCHANGED. Every line here is traceable to a governed metric; UNKNOWN/insufficient-sample
+// data is stated, never shown as zero or invented as a strong claim.
+//
+// FOCUS TODAY (integrated review, 2026-08-30) — optional, additive, default OFF. Reasons over
+// a WEEK of trend-relative evidence (need-signals momentum, emerging-language, existing
+// opportunities), not a single day's raw count, which is the distinction that makes an AI
+// layer defensible now where ADR-213 correctly deferred it before. Gated behind
+// ENABLE_FOUNDER_AI_BRIEF (unset/anything other than '1' = OFF, byte-identical output to
+// before this section existed). The whole assembly is wrapped in its own try/catch on top of
+// founder-intelligence.ts's own never-throws guarantee — a defect in THIS wiring code can
+// never break the guaranteed-send deterministic email either.
+import { getCommandCenterData, fetchUsageEvents } from './command-center-queries';
+import { computeOpportunities, computeNeedBasedOpportunities } from './opportunities';
 import { fetchGrowthContent } from './growth-queries';
 import { getProviderByStoreId } from '@/lib/providers/registry';
+import { computeNeedSignals } from './need-signals';
+import { clusterEmergingLanguage } from './emerging-language';
+import {
+  assembleFounderIntelligenceCandidates, generateFounderIntelligenceBrief,
+  describeUnavailability, type FocusItem,
+} from './founder-intelligence';
+
+const ENABLE_AI_BRIEF = process.env.ENABLE_FOUNDER_AI_BRIEF === '1';
+
+const DOMAIN_LABEL_AR: Record<FocusItem['domain'], string> = {
+  marketing_content: 'تسويق ومحتوى', product_engineering: 'منتج وهندسة',
+  catalog_coverage: 'تغطية الكتالوج', commercial: 'تجاري', demand_radar: 'مرصد الطلب', home_mission: 'جهّز بيتك',
+};
+const CONFIDENCE_LABEL_AR: Record<FocusItem['confidence'], string> = { low: 'منخفضة', medium: 'متوسطة', high: 'عالية' };
+
+function focusItemHtml(item: FocusItem): string {
+  return `<div style="border-top:1px solid #eef6f2;padding:10px 0">
+    <p style="margin:0 0 4px;font-weight:bold">${escapeHtml(item.titleAr)} <span style="font-weight:normal;color:#5b6b63;font-size:12px">(${DOMAIN_LABEL_AR[item.domain]} — ثقة ${CONFIDENCE_LABEL_AR[item.confidence]}${item.earlySignal ? '، إشارة مبكرة' : ''})</span></p>
+    <p style="margin:0 0 4px;color:#333">${escapeHtml(item.whyNowAr)}</p>
+    <p style="margin:0 0 4px;color:#333"><b>الإجراء المقترح:</b> ${escapeHtml(item.recommendedActionAr)}</p>
+    <p style="margin:0;color:#5b6b63;font-size:12px">الدليل: ${escapeHtml(item.evidenceAr)}${item.riskCaveatAr ? ` — تحذير: ${escapeHtml(item.riskCaveatAr)}` : ''}</p>
+  </div>`;
+}
+
+/** Builds the FOCUS TODAY section. Returns '' (no section at all — byte-identical to today's
+ *  email) when the flag is off, or on ANY failure anywhere in this assembly. Never throws. */
+async function buildFocusTodaySection(existingOpportunities: ReturnType<typeof computeOpportunities>): Promise<string> {
+  if (!ENABLE_AI_BRIEF) return '';
+  try {
+    const recentEnd = new Date();
+    const recentStart = new Date(recentEnd.getTime() - 7 * 24 * 3600_000);
+    const baselineStart = new Date(recentStart.getTime() - 7 * 24 * 3600_000);
+    const [recentEvents, baselineEvents] = await Promise.all([
+      fetchUsageEvents(recentStart, recentEnd),
+      fetchUsageEvents(baselineStart, recentStart),
+    ]);
+    const recentReal = recentEvents.filter((e) => !e.is_test);
+    const baselineReal = baselineEvents.filter((e) => !e.is_test);
+
+    const needSignals = await computeNeedSignals(recentReal, baselineReal);
+    const emergingClusters = clusterEmergingLanguage(recentReal);
+    const needOpportunities = computeNeedBasedOpportunities(needSignals, emergingClusters);
+
+    const candidates = assembleFounderIntelligenceCandidates([...existingOpportunities, ...needOpportunities]);
+    const brief = await generateFounderIntelligenceBrief(candidates);
+
+    if (!brief.aiAvailable) {
+      const reason = describeUnavailability(brief);
+      return `<div style="background:#fff7ed;border-radius:12px;padding:12px;margin:0 0 20px;color:#9a5b13;font-size:13px">
+        تعذر توليد توصيات الذكاء الاصطناعي اليوم (${escapeHtml(reason ?? 'سبب غير معروف')}) — الأرقام أدناه غير متأثرة، هذا القسم فقط غير متاح.
+      </div>`;
+    }
+    if (brief.focusItems.length === 0) {
+      return `<div style="background:#f8fcfa;border-radius:12px;padding:14px;margin:0 0 20px">
+        <b style="color:#1f6f59">ركّز اليوم على:</b>
+        <p style="margin:6px 0 0;color:#5b6b63">لا توجد إشارة قوية بما يكفي لتوصية اليوم — لا حاجة لإنشاء عمل جديد.</p>
+      </div>`;
+    }
+    return `<div style="background:#f8fcfa;border-radius:12px;padding:14px;margin:0 0 20px">
+      <b style="color:#1f6f59">ركّز اليوم على:</b>
+      ${brief.focusItems.map(focusItemHtml).join('')}
+    </div>`;
+  } catch (e) {
+    return `<div style="background:#fff7ed;border-radius:12px;padding:12px;margin:0 0 20px;color:#9a5b13;font-size:13px">
+      تعذر توليد توصيات الذكاء الاصطناعي اليوم (${escapeHtml(e instanceof Error ? e.message : 'خطأ غير متوقع')}).
+    </div>`;
+  }
+}
 
 export interface DailyReportResult {
   subjectAr: string;
@@ -93,9 +170,12 @@ export async function generateDailyFounderReport(): Promise<DailyReportResult> {
     ? `مبني على ${real.sessions} جلسة حقيقية — عينة صغيرة، إشارة مبكرة وليست قراراً نهائياً.`
     : `مبني على ${real.sessions} جلسة حقيقية.`;
 
+  const focusTodayBlock = await buildFocusTodaySection(opportunities);
+
   const html = wrap(`
     <h2 style="margin:0 0 4px;font-size:20px">ملخص يوم ${dateStr}</h2>
     <p style="color:#5b6b63;margin:0 0 20px">توفيري — مركز قيادة المؤسس</p>
+    ${focusTodayBlock}
     ${reviewBlock}
 
     <table style="width:100%;border-collapse:collapse;margin-bottom:20px" role="presentation">
