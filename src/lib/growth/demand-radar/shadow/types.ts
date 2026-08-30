@@ -85,5 +85,13 @@ export interface ShadowReviewQueueRow {
 }
 
 export const CONTROL_PARITY_QUERY_FAMILY = 'CONTROL_PARITY_V1';
+
+/** Near-duplicate suppression audit (founder decision 2026-08-30) — a
+ *  distinctly-tagged, measurement-only sample of otherwise-suppressed
+ *  candidates. Analytically separate from PRODUCT_RECOMMENDATION: never
+ *  counted toward the promotion evidence floor, never entered into FAP /
+ *  Shadow-only precision / recovery KPIs. The query_family value itself is
+ *  the machine-readable "why is this here" marker — no new column needed. */
+export const SUPPRESSION_AUDIT_QUERY_FAMILY = 'PRODUCT_RECOMMENDATION_SUPPRESSION_AUDIT';
 /** §T: bounded lifecycle for the one content-bearing Shadow table. */
 export const SHADOW_REVIEW_QUEUE_RETENTION_HOURS = 72;

@@ -59,3 +59,31 @@ export class NearDuplicateTracker {
     return false;
   }
 }
+
+// ---------------------------------------------------------------------------
+// Near-duplicate suppression audit (founder decision 2026-08-30). Suppressed
+// candidates are otherwise unmeasurable — they never reach founder review, so
+// their own false-suppression rate can't be checked. This copies a small,
+// capped, deterministically-selected sample into Shadow Review for
+// measurement only (see shadow-recommendation-experiment.ts's post-loop
+// audit pass) — it never affects which candidates get suppressed from the
+// primary temporal-validation track.
+// ---------------------------------------------------------------------------
+export const SUPPRESSION_AUDIT_CAP = 5;
+
+/** Deterministic, order-independent selection: sort by identity fingerprint
+ *  (a stable, uniformly-distributed hex string already computed for every
+ *  candidate) and take the first N. This is intentionally NOT "whichever
+ *  five appeared first in poll order" — that would bias toward one category
+ *  or one moment in the X search results ordering; sorting by fingerprint
+ *  gives the same selection regardless of iteration/arrival order, and the
+ *  same selection again if this were ever re-run against the same data. */
+export function selectSuppressionAuditSample<T extends { fingerprint: string }>(
+  candidates: T[],
+  cap: number = SUPPRESSION_AUDIT_CAP
+): T[] {
+  return candidates
+    .slice()
+    .sort((a, b) => (a.fingerprint < b.fingerprint ? -1 : a.fingerprint > b.fingerprint ? 1 : 0))
+    .slice(0, cap);
+}

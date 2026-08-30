@@ -30,8 +30,9 @@ import { assessAnswerability } from '../answerability';
 import { wouldRadar1Retrieve } from './would-radar1-retrieve';
 import { emitShadowFunnelEvent, recordShadowOutcome } from './shadow-funnel';
 import { applyShadowExclusionOverrides } from './shadow-exclusion';
-import { NearDuplicateTracker } from './shadow-dedup';
+import { NearDuplicateTracker, selectSuppressionAuditSample, SUPPRESSION_AUDIT_CAP } from './shadow-dedup';
 import { PRODUCT_RECOMMENDATION_QUERIES, PRODUCT_RECOMMENDATION_QUERY_FAMILY } from './shadow-vocabulary';
+import { SUPPRESSION_AUDIT_QUERY_FAMILY } from './types';
 import type { RadarCandidate, ExclusionClass } from '../types';
 
 const X_API = 'https://api.x.com/2/tweets/search/recent';
@@ -55,9 +56,55 @@ export interface RecommendationExperimentResult {
   reviewQueueInserted: number;
   nearDuplicatesSuppressed: number; // Checkpoint 5.1
   exclusionOverridesApplied: number; // Checkpoint 5.1
+  suppressionAuditInserted: number; // Checkpoint 5.1 — measurement-only, never the primary track
   stoppedEarly: boolean;
   stopReason?: string;
   isTest: boolean;
+}
+
+interface SuppressedAuditCandidate {
+  fingerprint: string;
+  category: string;
+  candidate: RadarCandidate;
+}
+
+/** Checkpoint 5.1 near-duplicate suppression audit (founder decision
+ *  2026-08-30). Runs AFTER suppression is already final — the `continue` in
+ *  the main loop is completely unaffected by this; it only asks "of what we
+ *  just threw away, can we audit a small, deterministic sample of it."
+ *  Deliberately skips classifyCandidate()/assessAnswerability(): the
+ *  category is already known (the query spec that matched it), and the
+ *  domain is always 'product' for this family — an LLM call would add cost
+ *  and a DB dependency for information already available for free. Writes
+ *  ONLY to Shadow's own tables, tagged with SUPPRESSION_AUDIT_QUERY_FAMILY —
+ *  same isolation contract as the rest of this file (see the header comment
+ *  above): no production opportunity table, no email/draft path, no Radar 1. */
+async function runSuppressionAuditPass(
+  sb: any,
+  buffered: SuppressedAuditCandidate[],
+  isTest: boolean
+): Promise<number> {
+  const sample = selectSuppressionAuditSample(buffered, SUPPRESSION_AUDIT_CAP);
+  let inserted = 0;
+  for (const item of sample) {
+    const check = wouldRadar1Retrieve(item.candidate.text);
+    await recordShadowOutcome({
+      fingerprint: item.fingerprint, tier: null, domain: 'product', category: item.category,
+      intentType: null, buyingStage: null, exclusion: null,
+      opportunityScore: null, answerabilityStatus: null,
+      queryFamily: SUPPRESSION_AUDIT_QUERY_FAMILY, isTest,
+      retrievedByRadar1: check.matched, shadowReviewLabel: null,
+    });
+    const { error } = await sb.from('demand_radar_shadow_review_queue').insert({
+      fingerprint: item.fingerprint, source: item.candidate.source, source_post_id: item.candidate.sourcePostId,
+      source_url: item.candidate.sourceUrl, author_handle: item.candidate.authorHandle,
+      post_text: item.candidate.text.slice(0, 1000), post_lang: item.candidate.lang,
+      source_posted_at: item.candidate.postedAt, category: item.category, domain: 'product',
+      retrieved_by_radar1: check.matched, query_family: SUPPRESSION_AUDIT_QUERY_FAMILY, is_test: isTest,
+    });
+    if (!error) inserted++;
+  }
+  return inserted;
 }
 
 async function upsertShadowState(sb: any, cursor: string | null, status: string, candidates: number) {
@@ -80,7 +127,7 @@ export async function runShadowRecommendationExperiment(opts: { isTest?: boolean
   const result: RecommendationExperimentResult = {
     status: 'ok', perCategory: [], totalPolled: 0, matchedRadar1: 0, unmatchedRadar1: 0,
     reviewQueueInserted: 0, nearDuplicatesSuppressed: 0, exclusionOverridesApplied: 0,
-    stoppedEarly: false, isTest,
+    suppressionAuditInserted: 0, stoppedEarly: false, isTest,
   };
   if (!token) {
     result.status = 'unconfigured';
@@ -95,6 +142,12 @@ export async function runShadowRecommendationExperiment(opts: { isTest?: boolean
   // Checkpoint 5.1: within-run near-duplicate suppression (shadow-dedup.ts).
   // One tracker per run — resets on every invocation, never persisted.
   const nearDupTracker = new NearDuplicateTracker();
+  // Checkpoint 5.1 suppression audit (founder decision 2026-08-30): buffers
+  // suppressed candidates for the post-loop audit pass — see
+  // runSuppressionAuditPass() above. Buffering (rather than an immediate
+  // per-item audit insert) is what makes deterministic, order-independent
+  // selectSuppressionAuditSample() possible when more than the cap qualify.
+  const suppressedForAudit: SuppressedAuditCandidate[] = [];
 
   for (const spec of PRODUCT_RECOMMENDATION_QUERIES) {
     const params = new URLSearchParams({
@@ -140,6 +193,7 @@ export async function runShadowRecommendationExperiment(opts: { isTest?: boolean
         stage: 'family_fetch_failed', detail: `${res.status}:${body}`.slice(0, 200), opportunityScore: null,
         answerabilityStatus: null, queryFamily: PRODUCT_RECOMMENDATION_QUERY_FAMILY, isTest,
       });
+      result.suppressionAuditInserted = await runSuppressionAuditPass(sb, suppressedForAudit, isTest);
       await upsertShadowState(sb, maxId ? String(maxId) : cursor, result.stopReason, result.totalPolled);
       return result; // hard stop — preserves everything already written above
     }
@@ -193,6 +247,11 @@ export async function runShadowRecommendationExperiment(opts: { isTest?: boolean
           stage: 'near_duplicate_suppressed', detail: null, opportunityScore: null, answerabilityStatus: null,
           queryFamily: PRODUCT_RECOMMENDATION_QUERY_FAMILY, isTest,
         });
+        // Buffered for the post-loop suppression-audit pass only — does not
+        // affect suppression itself (still `continue`s below unconditionally)
+        // and is never counted toward matchedRadar1/unmatchedRadar1 or the
+        // primary reviewQueueInserted total.
+        if (fingerprint) suppressedForAudit.push({ fingerprint, category: spec.category, candidate: c });
         continue;
       }
 
@@ -253,6 +312,7 @@ export async function runShadowRecommendationExperiment(opts: { isTest?: boolean
     }
   }
 
+  result.suppressionAuditInserted = await runSuppressionAuditPass(sb, suppressedForAudit, isTest);
   result.status = anyIsolatedFailure ? 'partial' : 'ok';
   await upsertShadowState(sb, maxId ? String(maxId) : cursor, result.status, result.totalPolled);
   return result;
