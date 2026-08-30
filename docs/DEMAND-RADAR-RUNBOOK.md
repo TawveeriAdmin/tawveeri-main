@@ -200,36 +200,85 @@ end-to-end in production** (no real founder label has gone through the fixed
 path yet). No historical backfill. No new X poll performed. Radar 1 untouched.
 **Checkpoint 6 remains blocked.**
 
-### Locked next gate (founder-approved 2026-08-30 — do not alter without new approval)
+### Label-integrity gate — PASSED (2026-08-30)
 
-**The founder must label the existing 3 temporal-validation candidates** through
-the production Shadow Review UI (`/ar/admin/growth/shadow-review`) — no new run,
-no new poll, this is the same 3 candidates already sitting unlabeled. Then a
-fresh Claude Code session must verify, read-only:
+The founder labeled all 3 temporal-validation candidates through the
+production Shadow Review UI. Full read-only verification passed all 6 gates:
+exactly 3 `review_label_submitted` events (0 `review_label_failed`), all 3
+labels persisted against the correct candidate IDs, `shadow_reviewed_at`
+populated correctly, pre-existing analytical metadata byte-for-byte
+unchanged after labeling, zero unrelated Shadow rows touched. Founder labels:
+air_conditioner `b8f16296…` → `valuable`, laptop `9aff4ac5…` → `valuable`,
+mobile `9a6e9927…` (the ad_seller override) → `not_a_lead` (confirms the
+override's judgment in substance).
 
-1. Exactly 3 successful `review_label_submitted` events (one per candidate).
-2. Zero `review_label_failed` events — unless a genuine failure occurs, in which
-   case report it plainly rather than retrying silently.
-3. All 3 labels persisted against the correct, intended candidate IDs (the
-   exact 3: mobile/ad_seller `9a6e9927…`, laptop `9aff4ac5…`, air_conditioner
-   `b8f16296…`).
-4. `shadow_reviewed_at` populated correctly on all 3.
-5. Pre-existing analytical metadata on those 3 outcome rows (whatever they
-   currently hold — `exclusion`/`opportunity_score`/`answerability_status` from
-   the original run) remains **byte-for-byte unchanged** after labeling — the
-   direct, real-world proof that the fix works, not just the unit tests.
-6. No unrelated Shadow row (any of the other 72, any `CONTROL_PARITY_V1` row)
-   changed.
+**KPIs computed for this n=3 batch** (kept analytically separate from the
+original 22-candidate Checkpoint 5 sample throughout): FAP 66.7% (2/3),
+Shadow-only recovery 2/2 confirmed-valuable-and-net-new (recorded only as
+"2/2 founder-confirmed valuable candidates were Shadow-only" — **not** a
+stable Missed Opportunity Recovery Rate; that formal KPI stays unconfirmed
+until the evidence floor is reached), the ad_seller override's exclusion-class
+judgment agreed with the founder's label, zero legitimate-intent-regression
+evidence. **n=3 is far below the ≥30 evidence floor — none of these numbers
+are stable estimates.** Decision: **CONTINUE TEMPORAL VALIDATION** (not
+ROLL BACK, not SUFFICIENT EVIDENCE TO ADVANCE — the rules leave exactly one
+answer at n=3).
 
-**Only after that verification passes may Checkpoint 5.1 metrics (FAP,
-Shadow-only precision, Recovery Rate, the ad_seller-agreement check, or any
-other label-dependent analysis) be calculated for this 3-candidate batch.**
-Keep it analytically separate from the original 22-candidate Checkpoint 5
-sample throughout. Same locked evaluation rules as before remain in force
-unchanged: Shadow-only precision target ≥70% (≥80% strong, <60% MODIFY again);
-precision gains must not come from suppressing genuine recovered purchase
-intent (university/major-specific laptop recs, CS/design/engineering use
-cases, iPad-vs-laptop/MacBook decisions, genuine «وش أفضل / إيش أفضل / وش
-تنصحوني / محتار بين» questions); promotion evidence floor is ≥30
-founder-reviewed candidates AND ≥1 week of observation, whichever is later —
-until then all results are preliminary. No Checkpoint 6. No widening.
+### Near-duplicate suppression audit — approved, built, deployed (2026-08-30)
+
+Suppressed near-duplicates were previously unmeasurable (never reached
+founder review). Adds a capped (5/run), deterministically-selected (sorted
+by identity fingerprint, not arrival order) audit sample into Shadow Review,
+tagged `PRODUCT_RECOMMENDATION_SUPPRESSION_AUDIT` — analytically isolated by
+construction (distinct `query_family` excludes these from every primary-track
+KPI query; never counted toward the ≥30 evidence floor; never touches
+`demand_opportunities`/email/draft). No LLM classification call for audit
+rows — category comes from the query spec that matched the suppressed
+candidate, domain is always `product` for this family, both free. Production
+near-duplicate suppression itself is byte-for-byte unchanged. 16 new tests
+(`shadow-suppression-audit.test.ts`), full suite 149/149 suites passing.
+Commit `955a1611a73ead683b2d1423897ff4efdec95256`, Railway deployment
+`3ca9c86c-6824-4b5f-9c56-b3ff6a6d3253` — clean boot, `/api/health` → 200,
+deployed commit hash confirmed to match `HEAD`. **Not yet exercised by a
+real near-duplicate in production** — deployed and ready, zero audit rows
+exist yet.
+
+### Continuation observation log
+
+- **2026-08-30, ~14:49 UTC — zero-yield run, valid observation.** First
+  production run with the suppression-audit path deployed. All 3 category
+  requests (mobile, laptop, air_conditioner) returned HTTP 200; **zero
+  matching posts returned** (`totalPolled: 0`). No X errors, no rate/quota
+  issue, `stoppedEarly: false`. This is a **valid temporal observation, not
+  a failed run** — per the locked rule, zero yield is expected sparse-window
+  behavior, not evidence of anything wrong. Read-only confirmed: Radar 1
+  completely unaffected (all Phase 1 counts identical before/after); no
+  unexpected write anywhere; `x-shadow-recommendation-v1`'s cursor unchanged
+  (nothing new to advance past), only `last_poll_at` updated. **No evidence
+  threshold changed as a result of this run** — queries, categories, scoring,
+  thresholds, and sampling were not altered based on this single zero-yield
+  result, per standing instruction.
+
+### Current state (2026-08-30, latest)
+
+- Primary founder-reviewed evidence: **3/30**.
+- Suppression-audit candidates reviewed: **0** (mechanism deployed, not yet
+  exercised).
+- Radar 1: unaffected throughout.
+- **Checkpoint 5.1 decision: CONTINUE TEMPORAL VALIDATION.**
+- **Checkpoint 6 remains blocked.**
+
+### Locked next action (do not alter without new founder approval)
+
+Continue the same daily-cadence manual trigger of the unchanged
+`PRODUCT_RECOMMENDATION × {mobile, laptop, air_conditioner}` experiment —
+same queries, same Checkpoint 5.1 exclusion rules, same near-duplicate logic,
+same suppression-audit sampling, same Shadow isolation boundaries — until
+**≥30 founder-reviewed primary candidates AND ≥1 week of observation**,
+whichever is later, is reached. After each run: capture a read-only
+before/after baseline, report the primary track and suppression-audit
+results **separately** (never pooled), do not compute FAP/Shadow-only
+precision/Recovery Rate for any new candidates until founder review of
+those specific candidates is complete, and do not alter queries, categories,
+scoring, thresholds, or sampling based on any single run's yield — zero or
+otherwise. No Checkpoint 6. No widening.
