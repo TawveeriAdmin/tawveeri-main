@@ -25,6 +25,7 @@
 
 import type { Classification } from '../types';
 import { applyShadowExclusionOverrides } from './shadow-exclusion';
+import { detectDecisionEvidence } from '@/lib/language/decision-evidence';
 
 const norm = (s: string) => s.toLowerCase();
 
@@ -58,39 +59,12 @@ export function isHyperbolicWishNoDecision(text: string): boolean {
 }
 
 // ── Positive decision-evidence signals ──────────────────────────────────────
-// Reuses the exact phrase set Checkpoint 5's own widened experiment already
-// validated as the shape of genuine decision-stage language (60% FAP on
-// production_recommendation vs Radar 1's own 4.3%) — one vocabulary, not a
-// second private list that could drift from it.
-const RECOMMENDATION_PHRASES = [
-  'وش تنصحون', 'وش تنصحوني', 'تنصحوني بـ', 'وش ترشحون', 'افيدوني', 'أفيدوني',
-  'محتار بين', 'محتارة بين', 'وش افضل', 'وش أفضل', 'ايش افضل', 'إيش افضل',
-  'مين افضل', 'مين أفضل',
-];
-const BUDGET_PATTERN = /\d[\d,]*\s*(ريال|ريالات|sar)/i;
-const USE_CASE_MARKERS = ['للجامعة', 'للدراسة', 'للألعاب', 'للتصميم', 'للأعمال', 'للتخصص', 'دراسة', 'مشاريع', 'مشروع'];
-const URGENCY_MARKERS = ['الحين', 'اليوم', 'بسرعة', 'urgent', 'asap', 'ضروري'];
-const REPLACEMENT_MARKERS = ['بدل', 'أبدل', 'ابدل', 'استبدال', 'بديل'];
-const COMPARISON_MARKER = /\bبين\b|\bاو\b|\bأو\b/;
-const BRAND_TOKENS = [
-  'ايفون', 'أيفون', 'iphone', 'سامسونج', 'samsung', 'جالاكسي', 'galaxy',
-  'هواوي', 'huawei', 'هونر', 'honor', 'شاومي', 'xiaomi', 'ايباد', 'ipad',
-  'ماك بوك', 'macbook', 'asus', 'acer', 'dell', 'hp', 'lenovo', 'tcl',
-];
-const DECLARATIVE_WANT = ['ابي', 'أبي', 'ابغى', 'أبغى', 'ابغا', 'ودي', 'احتاج', 'أحتاج'];
-// Explicit availability question — "is this specific thing in stock with you" is
-// buy-ready language, arguably the single strongest signal in this list. Traced
-// to the one real Radar 1 accept: "أحتاج مكيف جري ٣٦٠٠٠ سبليت جداري هل موجود
-// لديكم" — which, before this signal existed, scored 0 on every other rule
-// (no recommendation phrase, no "ريال"-suffixed budget, only one brand token)
-// despite being the single clearest buying-stage post in the entire real,
-// founder-reviewed sample.
-const AVAILABILITY_MARKERS = ['هل موجود', 'متوفر', 'متوفره', 'موجود لديكم', 'عندكم', 'يتوفر'];
-
-function countBrandMentions(text: string): number {
-  const t = norm(text);
-  return new Set(BRAND_TOKENS.filter((b) => t.includes(norm(b)))).size;
-}
+// Reuses src/lib/language/decision-evidence.ts — the ONE canonical set of
+// Saudi decision-evidence phrase lists, shared with Founder Intelligence's
+// need-signal extraction (src/lib/admin/need-signals.ts) so the two never
+// drift into disagreeing about what "decision evidence" means. Was a private
+// copy in this file until 2026-08-30's integrated-review pass extracted it —
+// same values, same weights, relocated only.
 
 export type PolicyV2Tier = 'high' | 'medium' | 'low' | 'excluded';
 
@@ -127,25 +101,24 @@ export function scorePolicyV2(text: string, cls: Classification): PolicyV2Result
   }
 
   let score = 0;
-  const t = norm(text);
-  const hasRecommendationRequest = RECOMMENDATION_PHRASES.some((p) => t.includes(norm(p)));
-  if (hasRecommendationRequest) { score += 2; reasons.push('recommendation_request'); }
-  if (COMPARISON_MARKER.test(text) && countBrandMentions(text) >= 1) { score += 1; reasons.push('explicit_comparison'); }
-  if (BUDGET_PATTERN.test(text)) { score += 1; reasons.push('budget_stated'); }
-  if (USE_CASE_MARKERS.some((m) => t.includes(norm(m)))) { score += 1; reasons.push('use_case_stated'); }
-  if (countBrandMentions(text) >= 2) { score += 1; reasons.push('named_competing_products'); }
-  if (URGENCY_MARKERS.some((m) => t.includes(norm(m)))) { score += 1; reasons.push('urgency'); }
-  if (REPLACEMENT_MARKERS.some((m) => t.includes(norm(m)))) { score += 1; reasons.push('replacement'); }
+  const signals = detectDecisionEvidence(text);
+  if (signals.recommendationRequest) { score += 2; reasons.push('recommendation_request'); }
+  if (signals.explicitComparison) { score += 1; reasons.push('explicit_comparison'); }
+  if (signals.budgetStated) { score += 1; reasons.push('budget_stated'); }
+  if (signals.useCaseStated) { score += 1; reasons.push('use_case_stated'); }
+  if (signals.namedCompetingProducts) { score += 1; reasons.push('named_competing_products'); }
+  if (signals.urgency) { score += 1; reasons.push('urgency'); }
+  if (signals.replacement) { score += 1; reasons.push('replacement'); }
   // Weighted like recommendation_request, not the +1 tier: "is this specific
   // thing in stock" is buying-stage language, not merely interest.
-  if (AVAILABILITY_MARKERS.some((m) => t.includes(norm(m)))) { score += 2; reasons.push('availability_question'); }
+  if (signals.availabilityQuestion) { score += 2; reasons.push('availability_question'); }
 
   // The critical distinction this policy exists to encode: a bare "أبي جوال"
   // with NONE of the decision-evidence signals above earns only +1 — never
   // the +2 "strong intent" bonus rank.ts's current formula gives it just for
   // containing a want-verb, regardless of whether any decision evidence
   // accompanies it.
-  if (score === 0 && DECLARATIVE_WANT.some((m) => t.includes(norm(m)))) {
+  if (signals.declarativeWantOnly) {
     score += 1;
     reasons.push('declarative_want_only');
   }
