@@ -132,47 +132,104 @@ new Shadow-local files only (zero Radar 1 / retrieval / category / query changes
 **No Checkpoint 6 authorization exists.** Do not widen retrieval, add a category,
 or add a query family without a fresh, explicit founder go-ahead.
 
-### Locked next action (founder-approved 2026-08-29 — do not alter without new approval)
+**Temporal-validation run (2026-08-30, ~13:07 AST gate)** — RUN once, exact
+unchanged `PRODUCT_RECOMMENDATION × {mobile, laptop, air_conditioner}` queries.
+4 candidates fetched (mobile 2, laptop 1, air_conditioner 1); 1 near-duplicate
+suppressed (mobile — a second near-identical copy of the same merchant-ad
+template polled in the same window); 1 exclusion override applied (`ad_seller`,
+on a **fresh, different repost** of the same TCL/Samsung ad template Checkpoint
+5.1 was built against — confirms the detector generalizes, not just memorizes);
+3 candidates left for founder review (mobile/ad_seller, laptop, air_conditioner).
+Radar 1 zero-drift re-confirmed by exact before/after diff. Review-UI isolation
+was empirically clean this run (0 unlabeled rows existed in either query_family
+before triggering) but is **not structurally guaranteed** — `listPendingShadowReview()`
+has no `query_family` filter and the admin page doesn't render it; flagged, not
+fixed, per founder instruction.
 
-**On or after 2026-08-30 ~13:07 AST**, manually trigger exactly ONE new temporal-
-validation run: `POST /api/cron/demand-radar-shadow-recommendation` (Bearer
-`CRON_SECRET`, body `{"isTest": false}`) — the exact current, unchanged
-`PRODUCT_RECOMMENDATION × {mobile, laptop, air_conditioner}` queries, the exact
-current Checkpoint 5.1 exclusion rules and near-duplicate logic, the exact current
-Shadow isolation boundaries. No query widening, no category expansion, no Radar 1
-changes, no Shadow emails, no Checkpoint 6. The prior session-only scheduled cron
-job for this was cancelled — this must be triggered manually.
+**Measurement-integrity defect found and fixed (2026-08-30).** While attempting
+to found­er-review the 3 temporal-validation candidates, labels weren't
+persisting. Root-caused read-only: `labelShadowReview()` called
+`recordShadowOutcome()`, which performs a **full-row upsert** on `fingerprint` —
+every successful founder-label write was silently nulling
+`exclusion`/`opportunity_score`/`answerability_status`/`tier`/`intent_type`/
+`buying_stage` on that same row (the label-write payload hard-coded those to
+`null`). Confirmed against production: **all 72 previously-labeled Shadow rows**
+(the original 22-candidate Checkpoint 5 sample + 50 `CONTROL_PARITY_V1` rows)
+lost those fields. **Core precision KPIs already reported are unaffected** — FAP/
+Shadow-only precision/Recovery Rate depend only on `shadow_review_label`/
+`category`/`retrieved_by_radar1`, none of which this bug touches; only
+supplementary analytical fields were lost. `opportunity_score` and
+`answerability_status` were confirmed recoverable from the untouched
+`demand_radar_shadow_funnel_events` `replay_checked` stage (100% coverage,
+72/72); `exclusion`/`intent_type`/`buying_stage` are **not** recoverable from
+any retained table — permanently lost for those 72 rows. **No backfill
+performed** (not authorized).
 
-**Locked evaluation rules (do not alter after seeing results):**
-- Retrieval health: any non-zero count is acceptable evidence; zero again is not
-  failure, just an still-sparse observation window.
-- Shadow-only precision target ≥70% (≥80% = strong result; <60% = MODIFY again).
-- The precision improvement must NOT come from suppressing genuine recovered
-  purchase-intent patterns — specifically: university/major-specific laptop
-  recommendations, CS/design/engineering use cases, iPad-vs-laptop/MacBook
-  decisions, genuine «وش أفضل / إيش أفضل / وش تنصحوني / محتار بين» questions. If
-  these disappear, that is a regression even if precision goes up.
-- Report, specifically, whether Checkpoint 5.1 reduced: merchant/ad comparison
-  bait, owned-device/post-purchase support, already-ordered decisions,
-  migration/support questions, news/generic conversation, carrier/SIM ambiguity,
-  near-duplicate promotional posts.
-- Sample-size floor unchanged: do NOT promote from one small temporal run —
-  promotion evidence floor is ≥30 founder-reviewed candidates AND ≥1 week of
-  observation, whichever is later. Until then, all results are preliminary.
-- Do NOT compute FAP / Shadow-only precision / Recovery Rate for the new sample
-  until founder review of those specific new candidates is complete.
-- The original 22-candidate Checkpoint 5 sample and any new temporal-validation
-  sample remain analytically separate — never merged.
-- Promotion requires, at the evidence floor: Shadow-only precision ≥70%, no
-  material regression in legitimate recovered intent, Missed Opportunity Recovery
-  materially positive, false-positive patterns controlled (not just hidden by
-  lower volume), acceptable X cost/rate behavior. Otherwise: MODIFY if recovery
-  remains valuable but precision is below target; KILL only if widened retrieval
-  repeatedly fails to recover meaningful incremental value.
+**Fix — deployed:**
+- `updateShadowOutcomeReviewLabel()` (new, `shadow-funnel.ts`) — a plain
+  two-column `UPDATE` (`shadow_review_label`, `shadow_reviewed_at`) scoped by
+  `fingerprint`; structurally cannot touch any other column. `recordShadowOutcome()`
+  itself is unchanged, still used correctly by the two run-time experiment files.
+- `review_label_submitted` / `review_label_failed` added to
+  `SHADOW_FUNNEL_STAGES` — de-identified request observability (fingerprint/
+  category/query_family/is_test/generic detail only) on the Shadow Review PATCH
+  path, so a future non-arriving or failed submission is distinguishable from a
+  successful one. `submitted` means the server received AND persisted the
+  label; `failed` means the request reached the server but persistence failed;
+  no event means the request never arrived.
+- Regression suite: `tests/growth/shadow-review-label-integrity.test.ts` (new,
+  9 tests) proves — by pinning the exact `.update()` payload key-set — that a
+  label write can never touch the analytical fields, that repeated/relabeling
+  stays safe, that a failure can't partially mutate a row, and that the new
+  funnel events carry no forbidden (personal-data) field. Full suite:
+  **148/148 suites, 2454/2454 tests passing**, `tsc --noEmit`/`eslint` clean.
+- Commit: `7978a2f57b4302519c2979e9858a192405e314ff`. Railway deployment:
+  `a515384c-aea5-43d8-86de-50ec5ff0333b` (service `tawveeri-main`, production).
+  Clean boot verified, `GET /api/health` → 200. Deployed commit hash confirmed
+  via Railway's own deployment metadata to exactly match `HEAD`.
+- Post-deploy, read-only confirmed: the 3 temporal-validation candidates remain
+  unlabeled; all 72 historical rows unchanged (original Checkpoint 5 label
+  distribution still exactly `valuable:13 / not_a_lead:8 / exclusion_noise:1`);
+  `review_label_submitted`/`review_label_failed` event count = 0 (**zero
+  production review events have occurred since deployment** — no labeling was
+  attempted per founder instruction); Radar 1 state/counts show only its own
+  independent, healthy scheduler activity, untouched by this deploy.
 
-**After the next run, report exactly:** (1) total fetched (2) exclusion overrides
-by reason (3) near-duplicate suppressions (4) remaining founder-review candidates
-(5) Radar 1 overlap vs Shadow-only (6) category breakdown (7) legitimate-intent
-regression evidence (8) zero Radar 1 drift confirmation (9) X errors/rate/billing
-status. Then stop for founder review — do not proceed to Checkpoint 6, do not
-widen another family.
+**Status: the fix is deployed and test-verified, but not yet founder-validated
+end-to-end in production** (no real founder label has gone through the fixed
+path yet). No historical backfill. No new X poll performed. Radar 1 untouched.
+**Checkpoint 6 remains blocked.**
+
+### Locked next gate (founder-approved 2026-08-30 — do not alter without new approval)
+
+**The founder must label the existing 3 temporal-validation candidates** through
+the production Shadow Review UI (`/ar/admin/growth/shadow-review`) — no new run,
+no new poll, this is the same 3 candidates already sitting unlabeled. Then a
+fresh Claude Code session must verify, read-only:
+
+1. Exactly 3 successful `review_label_submitted` events (one per candidate).
+2. Zero `review_label_failed` events — unless a genuine failure occurs, in which
+   case report it plainly rather than retrying silently.
+3. All 3 labels persisted against the correct, intended candidate IDs (the
+   exact 3: mobile/ad_seller `9a6e9927…`, laptop `9aff4ac5…`, air_conditioner
+   `b8f16296…`).
+4. `shadow_reviewed_at` populated correctly on all 3.
+5. Pre-existing analytical metadata on those 3 outcome rows (whatever they
+   currently hold — `exclusion`/`opportunity_score`/`answerability_status` from
+   the original run) remains **byte-for-byte unchanged** after labeling — the
+   direct, real-world proof that the fix works, not just the unit tests.
+6. No unrelated Shadow row (any of the other 72, any `CONTROL_PARITY_V1` row)
+   changed.
+
+**Only after that verification passes may Checkpoint 5.1 metrics (FAP,
+Shadow-only precision, Recovery Rate, the ad_seller-agreement check, or any
+other label-dependent analysis) be calculated for this 3-candidate batch.**
+Keep it analytically separate from the original 22-candidate Checkpoint 5
+sample throughout. Same locked evaluation rules as before remain in force
+unchanged: Shadow-only precision target ≥70% (≥80% strong, <60% MODIFY again);
+precision gains must not come from suppressing genuine recovered purchase
+intent (university/major-specific laptop recs, CS/design/engineering use
+cases, iPad-vs-laptop/MacBook decisions, genuine «وش أفضل / إيش أفضل / وش
+تنصحوني / محتار بين» questions); promotion evidence floor is ≥30
+founder-reviewed candidates AND ≥1 week of observation, whichever is later —
+until then all results are preliminary. No Checkpoint 6. No widening.
