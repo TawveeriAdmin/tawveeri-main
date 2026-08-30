@@ -19,7 +19,15 @@ export const SHADOW_REVIEW_LABELS = [
 ] as const;
 export type ShadowReviewLabel = (typeof SHADOW_REVIEW_LABELS)[number];
 
-export const SHADOW_FUNNEL_STAGES = ['fetched', 'replay_checked', 'family_fetch_failed', 'near_duplicate_suppressed'] as const;
+// 'review_label_submitted' / 'review_label_failed' (measurement-integrity
+// fix, founder decision 2026-08-30): unambiguous request-observability for
+// the Shadow Review PATCH path. 'review_label_submitted' means the server
+// received the request AND successfully persisted the founder label —
+// never merely that a browser attempted one. 'review_label_failed' means
+// the request reached the server but persistence failed. No event at all
+// means the server never received a traceable request. Privacy-safe by
+// construction — same de-identified event shape as every other stage here.
+export const SHADOW_FUNNEL_STAGES = ['fetched', 'replay_checked', 'family_fetch_failed', 'near_duplicate_suppressed', 'review_label_submitted', 'review_label_failed'] as const;
 export type ShadowFunnelStage = (typeof SHADOW_FUNNEL_STAGES)[number];
 
 export interface ShadowFunnelEvent {

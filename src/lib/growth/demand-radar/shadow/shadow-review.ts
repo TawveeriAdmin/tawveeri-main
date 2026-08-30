@@ -7,7 +7,7 @@
 // label. NO email, NO draft, NO write to any Radar 1 / production table.
 
 import { createServerClient } from '@/lib/database';
-import { recordShadowOutcome } from './shadow-funnel';
+import { updateShadowOutcomeReviewLabel, emitShadowFunnelEvent } from './shadow-funnel';
 import { SHADOW_REVIEW_LABELS, SHADOW_REVIEW_QUEUE_RETENTION_HOURS, type ShadowReviewLabel } from './types';
 
 export interface PendingReviewRow {
@@ -44,18 +44,34 @@ export async function labelShadowReview(id: string, label: ShadowReviewLabel, no
     .eq('id', id)
     .select('fingerprint, category, retrieved_by_radar1, is_test, query_family')
     .single();
-  if (error || !data) return { ok: false, error: error?.message ?? 'row not found' };
+  if (error || !data) {
+    // Request reached the server but nothing could be found/persisted — no
+    // fingerprint is known yet in this branch, so the event is de-identified
+    // by construction (fingerprint/category null, a generic family marker).
+    await emitShadowFunnelEvent({
+      fingerprint: null, source: 'x', domain: null, category: null,
+      stage: 'review_label_failed', detail: 'queue_row_not_found',
+      opportunityScore: null, answerabilityStatus: null,
+      queryFamily: 'UNKNOWN', isTest: false,
+    });
+    return { ok: false, error: error?.message ?? 'row not found' };
+  }
 
-  // Propagate to the de-identified outcome row (upsert on fingerprint) —
-  // the label survives the content row's 72h deletion.
-  await recordShadowOutcome({
-    fingerprint: data.fingerprint,
-    tier: null, domain: 'product', category: data.category,
-    intentType: null, buyingStage: null, exclusion: null,
+  // Update ONLY the founder-outcome fields on the existing outcome row —
+  // never a full-row upsert (measurement-integrity fix, founder decision
+  // 2026-08-30: see updateShadowOutcomeReviewLabel()'s own comment). The
+  // outcome row always already exists by the time a candidate is
+  // reviewable — recordShadowOutcome() writes it during the run, strictly
+  // before the review-queue row is ever inserted.
+  const outcomeUpdate = await updateShadowOutcomeReviewLabel(data.fingerprint, label);
+  await emitShadowFunnelEvent({
+    fingerprint: data.fingerprint, source: 'x', domain: null, category: data.category,
+    stage: outcomeUpdate.ok ? 'review_label_submitted' : 'review_label_failed',
+    detail: outcomeUpdate.ok ? null : 'outcome_update_failed',
     opportunityScore: null, answerabilityStatus: null,
     queryFamily: data.query_family, isTest: data.is_test,
-    retrievedByRadar1: data.retrieved_by_radar1, shadowReviewLabel: label,
   });
+  if (!outcomeUpdate.ok) return { ok: false, error: outcomeUpdate.error };
   return { ok: true };
 }
 

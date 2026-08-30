@@ -6,7 +6,7 @@
 // their names. Never throws — same discipline as funnel.ts.
 
 import { createServerClient } from '@/lib/database';
-import type { ShadowFunnelEvent, ShadowOutcomeRecord } from './types';
+import type { ShadowFunnelEvent, ShadowOutcomeRecord, ShadowReviewLabel } from './types';
 
 /** Fields that must NEVER appear in a Shadow funnel/outcome row — mirrors
  *  funnel.ts's FORBIDDEN_FIELDS exactly. */
@@ -69,4 +69,26 @@ export async function recordShadowOutcome(record: ShadowOutcomeRecord): Promise<
   } catch {
     /* observability must never break the shadow run */
   }
+}
+
+/** Measurement-integrity fix (founder decision 2026-08-30): the founder-label
+ *  write path must touch ONLY the founder-outcome fields on an existing
+ *  outcome row — never recordShadowOutcome()'s full-row upsert above, which
+ *  would null out the analytical fields (exclusion/opportunity_score/
+ *  answerability_status/tier/intent_type/buying_stage) already recorded at
+ *  run time. A plain UPDATE on the two intended columns, scoped by
+ *  fingerprint, cannot touch any other column regardless of what it
+ *  currently holds. Unlike recordShadowOutcome(), this does NOT swallow
+ *  errors — a human is waiting on the result (see labelShadowReview()). */
+export async function updateShadowOutcomeReviewLabel(
+  fingerprint: string,
+  label: ShadowReviewLabel
+): Promise<{ ok: boolean; error?: string }> {
+  const sb = createServerClient() as any;
+  const { error } = await sb
+    .from('demand_radar_shadow_outcomes')
+    .update({ shadow_review_label: label, shadow_reviewed_at: new Date().toISOString() })
+    .eq('fingerprint', fingerprint);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
 }
