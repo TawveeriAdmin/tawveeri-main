@@ -183,6 +183,13 @@ describe("computeOpportunities — evidence-based, EARLY SIGNAL below threshold"
     expect(computeOpportunities(data)[0].titleAr).toContain("99999");
   });
 
+  it("never doubles the generic متجر (store) prefix when the resolved name already carries it — found in a real end-to-end send test, 2026-08-31: storeId 18 (Al Nakheel) resolves to \"متجر النخيل\" itself, which had been rendering as the doubled \"متجر متجر النخيل\"", () => {
+    const data = fakeData({ retailers: [{ storeSlug: "18", qualifiedSessions: 1, confirmedRedirects: 6, distinctProducts: 2, hasAffiliateProgram: false }] });
+    const titleAr = computeOpportunities(data)[0].titleAr;
+    expect(titleAr).toContain("متجر النخيل"); // متجر النخيل = "Al Nakheel Store"
+    expect(titleAr).not.toContain("متجر متجر"); // never the doubled word
+  });
+
   it("flags a high-search category with zero referred coverage", () => {
     const data = fakeData({ referredCategoryDemand: [] }, [{ category: "air_conditioner", count: 40 }]);
     const opps = computeOpportunities(data);

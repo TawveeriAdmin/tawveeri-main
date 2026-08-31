@@ -83,11 +83,17 @@ export function computeOpportunities(data: CommandCenterData): Opportunity[] {
     // founder-facing name — found showing literal "Retailer 4" instead of "eXtra" in real
     // production output. retailerDisplayName() is the same resolver daily-report.ts and the
     // Command Center page already use for this exact column.
+    //
+    // Found in a real end-to-end send test (2026-08-31): some registry Arabic names ALREADY
+    // start with "متجر" (e.g. Al Nakheel's own displayNameAr is "متجر النخيل") — prepending the
+    // generic "متجر" prefix unconditionally produced "متجر متجر النخيل" ("store store Al
+    // Nakheel"). Only add the generic prefix when the resolved name doesn't already carry it.
     const nameAr = retailerDisplayName(r.storeSlug, true);
     const nameEn = retailerDisplayName(r.storeSlug, false);
+    const nameArWithPrefix = nameAr.startsWith('متجر ') ? nameAr : `متجر ${nameAr}`;
     opportunities.push({
       kind: 'no_agreement_retailer',
-      titleAr: `متجر ${nameAr} يستقبل إحالات حقيقية بدون برنامج عمولة معروف`,
+      titleAr: `${nameArWithPrefix} يستقبل إحالات حقيقية بدون برنامج عمولة معروف`,
       titleEn: `Retailer ${nameEn} is receiving real referrals with no known affiliate program`,
       evidenceAr: `${r.confirmedRedirects} تحويلة مؤكدة عبر ${r.distinctProducts} منتجاً خلال الفترة المحددة.`,
       evidenceEn: `${r.confirmedRedirects} confirmed redirects across ${r.distinctProducts} products in the selected period.`,

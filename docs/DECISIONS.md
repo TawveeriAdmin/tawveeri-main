@@ -6,6 +6,28 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-279 — Real end-to-end Founder AI Brief send: doubled "متجر متجر" Arabic phrasing found and fixed; AI reasoning, evidence traceability, and graceful fallback all confirmed on real data · Accepted (2026-08-31)
+
+**Context.** With no staging environment available (confirmed unchanged from the prior session), the founder asked for one real, controlled, production-equivalent end-to-end send of the Founder AI Brief — deterministic evidence, FOCUS TODAY selection, ACT/WATCH/INSUFFICIENT_EVIDENCE discipline, AI reasoning, Arabic quality, email rendering, evidence traceability, and graceful fallback — sent only to the authorized founder address, without touching the production `ENABLE_FOUNDER_AI_BRIEF` flag (already `1` since ADR-276) or any other guardrail.
+
+**What the real send found.** All 5 real `no_agreement_retailer` candidates for yesterday (eXtra, Almanea, Al Nakheel, Najm Alajhiza, Jarir) correctly resolved to real names (ADR-278's fix holding) — except Al Nakheel's title read "متجر متجر النخيل" (doubled "store"), because that store's OWN registry `displayNameAr` is itself "متجر النخيل" ("Al Nakheel Store") and `opportunities.ts` unconditionally prepended a second generic "متجر" prefix. A real, live Arabic-quality defect, found by an actual send rather than a synthetic fixture.
+
+**Fix.** `nameArWithPrefix = nameAr.startsWith('متجر ') ? nameAr : \`متجر ${nameAr}\`` — only add the generic prefix when the resolved name doesn't already carry it. Minimal, targeted, one call site. Regression test added using the real storeId (18) and the real registry name. Re-verified against live production data: all 5 real titles now read correctly, no doubled word.
+
+**What the real send confirmed working (all on real production data):**
+- **Deterministic evidence and eligibility**: all 5 real candidates correctly computed as `evidenceConfidence: low`, `actionTier: INSUFFICIENT_EVIDENCE` (small real sample sizes, 1–9 redirects each).
+- **AI reasoning discipline**: given only INSUFFICIENT_EVIDENCE candidates, the model correctly returned zero focus items with the "no signal strong enough — no new work needed" note — weak evidence was NOT inflated into a recommendation.
+- **Window disclosure** (ADR-278) rendered correctly in the real email.
+- **Evidence traceability**: every candidate's evidence was independently recomputed outside the email-generation call and matched exactly.
+- **Graceful fallback**: re-verified locally (read-only, not sent) with a deliberately invalid Anthropic key — the report still generated fully, never threw, rendered the deterministic core untouched plus an honest unavailability note, and fabricated zero focus items.
+- **Delivery**: SendGrid `202`, recipient confirmed the authorized founder address, not on any suppression list.
+
+**What this does NOT change.** `ENABLE_FOUNDER_AI_BRIEF` was not modified (already `1` in production since ADR-276 — this ADR's send used that same live value, pulled read-only, never persisted locally). No change to Radar 1, Checkpoint 5.1, X, Algolia, affiliate data, or Checkpoint 6.
+
+**Verification.** 159/159 suites, 2593/2593 tests (up from 2592). `tsc`/lint clean on touched files.
+
+---
+
 ### ADR-278 — Founder Command Center / Founder Intelligence integrity pass: 5 real data-correctness bugs found and fixed, session-concentration guards verified working, output declared trustworthy for decisions · Accepted (2026-08-30)
 
 **Context.** After reviewing the live Command Center, the founder flagged two concrete observations as things to investigate, not assumptions about root cause: `(unparsed) = 36` in Top Categories, and Honor/iPad demand appearing fragmented across raw spellings. The founder then asked for a full independent integrity review of the Command Center and Founder Intelligence path — metric definitions, time windows, dedup, real/test separation, merchant normalization, momentum/concentration logic, ACT/WATCH/INSUFFICIENT_EVIDENCE decisions, and dashboard/email consistency — with explicit authority to correct, simplify, or consolidate anything found wrong, and an explicit instruction not to silently hide or cosmetically reconcile any apparently-conflicting number.
