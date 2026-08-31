@@ -42,6 +42,10 @@ export const USAGE_EVENT_TYPES = [
                                          // (started | plan | partial | refined | rejected | clarified)
   "home_share",                          // shared-plan lifecycle (ADR-257) — meta.step:
                                          // created | opened | feedback (owner + recipient surfaces)
+  // Zero-state "closest options" fallback (ADR-271) actually rendering candidates — distinct
+  // from `no_answer`, which fires for ANY zero-result cause and doesn't say whether the
+  // fallback found something to show. meta.count = candidates shown.
+  "closest_options_view",
   "no_answer", "error",                  // off-funnel signals
 ] as const;
 

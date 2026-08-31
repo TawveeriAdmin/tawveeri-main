@@ -803,7 +803,7 @@ export default function SearchClient() {
             setAdvisorResult(outcome.advisorResult);
             track('advisor_result', {
               query_text: query.trim(), category: outcome.advisorResult.parsed?.category ?? null, source: 'search',
-              meta: { count: outcome.advisorResult.count, supported: outcome.advisorResult.supported, has_smart_pick: !!outcome.advisorResult.smart_pick, reason: decisionIntent.intent },
+              meta: { count: outcome.advisorResult.count, supported: outcome.advisorResult.supported, has_smart_pick: !!outcome.advisorResult.smart_pick, mismatch: !!outcome.advisorResult.smart_pick?.size_mismatch, reason: decisionIntent.intent },
             });
             break;
         }
@@ -894,7 +894,7 @@ export default function SearchClient() {
           saveJourneyTask(res.parsed, query.trim()); // ONE TAWVEERI BRAIN: carries to a product-page Waffar question
           track('advisor_result', {
             query_text: query.trim(), category: res.parsed?.category ?? null, source: 'search',
-            meta: { count: res.count, supported: res.supported, has_smart_pick: !!res.smart_pick },
+            meta: { count: res.count, supported: res.supported, has_smart_pick: !!res.smart_pick, mismatch: !!res.smart_pick?.size_mismatch },
           });
         })
         .catch(() => {
@@ -1004,25 +1004,37 @@ export default function SearchClient() {
       setRawProducts(mappedProducts);
       setServerTotal(total);
       setRelaxed(!!((data as unknown) as { relaxed?: boolean }).relaxed);
+      const decisionCard = ((data as unknown) as { decisionCard?: SmartPick }).decisionCard ?? null;
+      const inferredMaxPrice = ((data as unknown) as { inferredMaxPrice?: number | null }).inferredMaxPrice ?? null;
+      const closestOptionsData = ((data as unknown) as { closestOptions?: ClosestOption[] }).closestOptions ?? [];
       // Funnel step 2 — Results (or off-funnel no_answer when the storefront returns nothing).
       if (currentPage === 1) {
         const cat = selectedCategory !== 'all' ? selectedCategory : null;
         if (total > 0) {
           track('results', {
             query_text: query.trim(), category: cat, source: 'web',
-            meta: { count: total, has_smart_pick: !!(((data as unknown) as { decisionCard?: unknown }).decisionCard), stores: data.successfulStores ?? null },
+            meta: { count: total, has_smart_pick: !!decisionCard, mismatch: !!decisionCard?.size_mismatch, stores: data.successfulStores ?? null },
           });
         } else {
           track('no_answer', { query_text: query.trim(), category: cat, source: 'web', meta: { stores: data.successfulStores ?? null } });
+        }
+        // ADR-271 zero-state "closest options" fallback — distinct from no_answer (which
+        // fires for ANY zero-result cause). Fires only when the fallback actually surfaced
+        // candidates, so it measures the ADR-271 path specifically.
+        if (closestOptionsData.length > 0) {
+          track('closest_options_view', {
+            query_text: query.trim(), category: cat, source: 'web',
+            meta: { count: closestOptionsData.length, applied_budget: inferredMaxPrice },
+          });
         }
       }
       // Smart Pick — the decision layer's trustworthy pick. The API gates this
       // server-side (null when the best match is an accessory for a product
       // query), so we render it verbatim without re-judging.
-      setSmartPick(((data as unknown) as { decisionCard?: SmartPick }).decisionCard ?? null);
-      setAppliedBudget(((data as unknown) as { inferredMaxPrice?: number | null }).inferredMaxPrice ?? null);
+      setSmartPick(decisionCard);
+      setAppliedBudget(inferredMaxPrice);
       setCategoryEnforcedZero(!!((data as unknown) as { categoryEnforcedZero?: boolean }).categoryEnforcedZero);
-      setClosestOptions(((data as unknown) as { closestOptions?: ClosestOption[] }).closestOptions ?? []);
+      setClosestOptions(closestOptionsData);
       setCompareRoute(((data as unknown) as { compareRoute?: CompareRoute | null }).compareRoute ?? null);
       setSearchCache(query, selectedCategory || 'all', mappedProducts, total);
       setStoreErrors(data.errors || {});

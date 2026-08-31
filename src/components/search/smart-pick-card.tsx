@@ -1,9 +1,12 @@
 'use client';
 
+import { useEffect } from 'react';
 import Link from 'next/link';
 import { Sparkles, Store, ArrowLeft, ArrowRight, BarChart3, Clock, CircleAlert } from 'lucide-react';
 import { Price } from '@/components/ui/price';
 import { hoursSince, observedAgoLabel } from '@/lib/intelligence/evidence-engine';
+import { track } from '@/lib/analytics/track';
+import { hasSeenDecisionCard, markDecisionCardSeen } from '@/lib/agent/return-to-decision';
 
 /**
  * SmartPickCard — surfaces Tawveeri's decision layer ("Smart Pick") at the top
@@ -28,6 +31,8 @@ export interface SmartPick {
   best_price: number;
   store_name: string;
   product_url: string;
+  /** Instrumentation only — keys recommendation_accept/return_to_decision to this pick. */
+  canonical_id: string;
   store_count: number;
   reason_ar: string;
   is_tps: boolean;
@@ -51,10 +56,33 @@ export interface SmartPick {
   size_mismatch?: { requested: number; actual: number; comparator?: "eq" | "gt" | "gte" | "lt" | "lte" } | null;
 }
 
+/**
+ * Instrumentation (2026-08-31, post-freeze measurement gap fix) — recommendation_accept and
+ * return_to_decision are wired here the same way Path-1's advisor card
+ * (advisor-answer.tsx's SmartPick component) wires them, so the events aggregate across both
+ * surfaces. alternative_view maps to the "Compare N stores" click — the closest existing
+ * affordance to "viewed an alternative" on this card (store-level, not product-level like
+ * Path-1's `chosen_over`; tagged `meta.via` so the two are distinguishable if that matters
+ * later). evidence_expand is deliberately NOT wired: this card has no expand/evidence panel
+ * at all (unlike Path-1's), and firing an "expand" event with nothing that actually expands
+ * would fabricate a signal — Constitution: unknown beats incorrect. Adding that panel is a
+ * design change, out of this fix's scope.
+ */
 export function SmartPickCard({ pick, locale }: { pick: SmartPick; locale: string }) {
   const isRTL = locale === 'ar';
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
   const mismatch = pick.size_mismatch ?? null;
+
+  // return_to_decision — same mechanism and same shared sessionStorage helper as Path-1's
+  // SmartPick (advisor-answer.tsx), just applied to this surface's own canonical_id.
+  useEffect(() => {
+    if (!pick.canonical_id) return;
+    if (hasSeenDecisionCard(pick.canonical_id)) {
+      track('return_to_decision', { canonical_id: pick.canonical_id });
+    } else {
+      markDecisionCardSeen(pick.canonical_id);
+    }
+  }, [pick.canonical_id]);
   // Decision Card v1, ruling B1 — a pick that doesn't match a requested screen size is never
   // labelled "اختيار توفيري" ("Tawveeri's pick"), which asserts a confirmed match.
   const label = mismatch ? (isRTL ? 'أقرب بديل متاح' : 'Closest available match') : (isRTL ? 'اختيار توفيري' : 'Tawveeri Smart Pick');
@@ -130,6 +158,7 @@ export function SmartPickCard({ pick, locale }: { pick: SmartPick; locale: strin
           // that we compared — so "see the comparison" must be the first thing offered.
           <Link
             href={compareUrl!}
+            onClick={() => pick.canonical_id && track('alternative_view', { canonical_id: pick.canonical_id, meta: { via: 'compare_link', store_count: pick.store_count } })}
             className="inline-flex h-9 items-center justify-center gap-1.5 rounded-full bg-primary-600 px-4 text-xs font-bold text-on-primary transition-colors hover:bg-primary-700"
           >
             <BarChart3 className="h-3.5 w-3.5 shrink-0" aria-hidden />
@@ -138,6 +167,7 @@ export function SmartPickCard({ pick, locale }: { pick: SmartPick; locale: strin
         )}
         <Link
           href={pick.product_url}
+          onClick={() => pick.canonical_id && track('recommendation_accept', { canonical_id: pick.canonical_id, meta: { trust_score: pick.trust?.score ?? null, trust_tier: pick.trust?.tier ?? null } })}
           className="inline-flex h-9 items-center justify-center gap-1 rounded-full border border-primary-300 px-4 text-xs font-medium text-primary-700 transition-colors hover:bg-primary-50 dark:border-primary-800 dark:text-primary-300 dark:hover:bg-primary-950/40"
         >
           {claimsComparison ? (isRTL ? `اذهب إلى ${pick.store_name}` : `Go to ${pick.store_name}`) : cta}

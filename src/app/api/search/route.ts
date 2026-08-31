@@ -93,6 +93,13 @@ type DecisionLayer = {
     store_count: number;
     reason_ar: string;
     is_tps: boolean;
+    // Instrumentation only (2026-08-31) — an identifier for this pick so client-side
+    // tracking (recommendation_accept/return_to_decision on SmartPickCard) can key events
+    // to it, the same way Path-1's advisor card keys on `canonical_id`. Not the same ID
+    // space as Path-1 (that's `canonical_products.id`; this is storefront-layer) — prefers
+    // `tps_identity_key` when the pick is TPS-linked, falls back to the storefront
+    // `product_id`. Never read by ranking/matching.
+    canonical_id: string;
     // ADR-136 — the surface that HONOURS the store count this card claims. The Smart Pick
     // used to render "مقارنة موثقة · متوفر في 3 متاجر" whose only link was a single-store
     // `/go/<id>` exit: a comparison claim with no comparison to go to. When this is null the
@@ -1520,6 +1527,7 @@ function buildDecisionLayer(
         best_price: best.best_price,
         store_name: bestStoreEntry?.store_name || '',
         product_url: bestStoreEntry?.product_url || '',
+        canonical_id: best.tps_identity_key || best.product_id || '',
         store_count: best.store_count,
         reason_ar: buildReasonAr(best, best.best_price === priceMin && priceMin > 0),
         is_tps: !!(best.has_tps_comparison || best.tps_compare_url),

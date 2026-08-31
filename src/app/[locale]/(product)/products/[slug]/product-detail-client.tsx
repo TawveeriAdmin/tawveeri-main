@@ -690,7 +690,7 @@ export default function ProductDetailClient() {
  saveJourneyTask(res.parsed, product.name_ar || product.name_en || product.category);
  track('advisor_result', {
  category: product.category, source: 'product_page',
- meta: { count: res.count, supported: res.supported, has_smart_pick: !!res.smart_pick },
+ meta: { count: res.count, supported: res.supported, has_smart_pick: !!res.smart_pick, mismatch: !!res.smart_pick?.size_mismatch },
  });
  }
  } catch {
