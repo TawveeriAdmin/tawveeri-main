@@ -152,7 +152,9 @@ export function StoreComparisonPanel({ product, locale, onClose }: StoreComparis
                       // funnel event is the measurement (meta.measured=false marks it
                       // as a non-ledger exit).
                       track('go_click', {
+                        canonical_id: product.id,
                         store: String(storeSlug ?? ''),
+                        category: product.category ?? null,
                         source: 'search_panel',
                         meta: { measured: false },
                       });

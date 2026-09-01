@@ -444,6 +444,16 @@ export default function SearchClient() {
 
     const qs = params.toString();
     const next = qs ? `${pathname}?${qs}` : pathname;
+    // ADR-282: this effect is the SOLE owner of URL writes for q/category/filters/sort/page —
+    // a sibling effect used to ALSO write `q` to the URL independently (removed, see below), and
+    // this effect never updated urlQueryRef/urlCategoryRef even though it writes `q` too. That
+    // let the "URL → state sync" effect above mistake OUR OWN router.replace echo for a genuine
+    // external URL change and re-apply it, racing this effect's next run — the two effects could
+    // then keep re-triggering each other. Measured in production 2026-08: at least 4 sessions
+    // this way fired an identical `search` track() call 150-242 times in under a minute.
+    // Stamp the refs with what we are ABOUT to write so that echo is inert.
+    urlQueryRef.current = debouncedQuery;
+    urlCategoryRef.current = selectedCategory;
     // Use replace so we don't bloat history on every chip toggle
     router.replace(next, { scroll: false });
   }, [
@@ -702,27 +712,16 @@ export default function SearchClient() {
 
   // Note: debouncedQuery is set explicitly on form submit / handleSearch.
   // No auto-debounce — search only triggers on Enter or button click.
-
-  // Update URL when search changes
-  useEffect(() => {
-    const currentQuery = searchParams.get('q') || '';
-    if (currentQuery === debouncedQuery) return;
-
-    // Update the ref so the sync effect doesn't re-trigger
-    urlQueryRef.current = debouncedQuery;
-
-    const p = new URLSearchParams(searchParams.toString());
-
-    if (debouncedQuery) p.set('q', debouncedQuery);
-    else p.delete('q');
-
-    const newUrl = `/${locale}/search?${p.toString()}`;
-    const currentUrl = `/${locale}/search?${searchParams.toString()}`;
-
-    if (newUrl !== currentUrl) {
-      router.replace(newUrl, { scroll: false });
-    }
-  }, [debouncedQuery, locale, router, searchParams]);
+  //
+  // ADR-282 (2026-09): a second "Update URL when search changes" effect used to live here,
+  // independently calling router.replace to write ONLY `q` to the URL on the exact same
+  // debouncedQuery/searchParams triggers the "state → URL write-back" effect above already
+  // handles (it writes q + category + every filter + sort + page in one place). Two effects
+  // racing separate router.replace calls off overlapping deps, one of them updating
+  // urlQueryRef and the other not, is what let the URL→state sync effect mistake its own
+  // echo for an external change and re-fire — removed; the write-back effect above is now
+  // the SOLE writer of `q` (and everything else) into the URL, and it stamps urlQueryRef/
+  // urlCategoryRef itself before calling router.replace so this class of loop cannot recur.
 
   // Fetch one page from the DB-backed search API. Every page change,
   // filter change, or sort change re-enters this function — the server

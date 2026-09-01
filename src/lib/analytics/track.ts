@@ -66,11 +66,51 @@ export function isTestMode(): boolean {
 // are documented on the contract entries.
 export type EventType = UsageEventType;
 
+// ── Client-side duplicate-fire guard (ADR-282) ──────────────────────────────────────────
+// MEASURED in production, August 2026: at least 4 real sessions each fired the SAME
+// event_type + query_text 150-242 times inside under a minute (root cause: a circular
+// URL<->state sync effect in search-client.tsx, fixed separately) — inflating that
+// session's contribution to category-demand counts by two orders of magnitude. The React
+// effect bug is fixed at its source, but track() is the ONE choke point every event on the
+// site passes through, so a cheap, generic suppression here closes this entire CLASS of bug
+// (a render loop, a duplicated listener, a retry storm) regardless of which future call site
+// causes it — a UI bug must not be able to inflate a founder business metric by 200x again.
+// Deliberately short (1.5s, longer than a single render-loop tick, shorter than any
+// plausible legitimate rapid resubmission) and keyed on the fields that actually identify
+// "the same logical action", not full prop equality (a rerender rarely reproduces every
+// prop byte-for-byte, but query_text/canonical_id/category are stable for a genuine repeat).
+const recentFires = new Map<string, number>();
+const DUPLICATE_SUPPRESS_MS = 1500;
+
+// Deliberately built from the fields that identify WHICH thing this event is about, not full
+// prop equality — a go_click on two DIFFERENT products at the same store within 1.5s (e.g.
+// comparing several results quickly) must never collapse into one row, so `store`/`canonical_id`
+// both participate; a search/advisor_query repeat-fire (no product/store, same query_text) is
+// exactly the pattern this exists to catch.
+function dedupeKey(event_type: EventType, props?: Record<string, unknown>): string {
+  const pick = (k: string) => (typeof props?.[k] === "string" ? (props[k] as string) : "");
+  return [event_type, pick("query_text"), pick("category"), pick("canonical_id"), pick("store"), pick("source")].join("|");
+}
+
+/** True if an event with this exact identity fired within the suppression window — call
+ *  BEFORE sending, and it records this fire for the next call's check. Bounded map: prunes
+ *  stale entries opportunistically so a long browsing session never leaks memory. */
+function isDuplicateFire(key: string): boolean {
+  const now = Date.now();
+  const last = recentFires.get(key);
+  recentFires.set(key, now);
+  if (recentFires.size > 200) {
+    for (const [k, ts] of recentFires) if (now - ts > DUPLICATE_SUPPRESS_MS) recentFires.delete(k);
+  }
+  return last !== undefined && now - last < DUPLICATE_SUPPRESS_MS;
+}
+
 /** Fire-and-forget an event. Safe to call anywhere on the client. Every event carries the
  *  visitor's entry-experiment arm (in meta.variant) so the whole funnel can be compared
  *  advisor-first vs search-first without any per-call plumbing. */
 export function track(event_type: EventType, props?: Record<string, unknown>): void {
   if (typeof window === "undefined") return;
+  if (isDuplicateFire(dedupeKey(event_type, props))) return;
   try {
     let variant: string | undefined;
     try { variant = getEntryVariant(); } catch { /* noop */ }

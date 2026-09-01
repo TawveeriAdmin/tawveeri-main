@@ -203,7 +203,7 @@ export function ProductCard({
     if (product.tps_compare_url) { router.push(product.tps_compare_url); return; }
     if (externalProductUrl) {
       // ADR-244: this retailer exit was unmeasured (no event, no ledger row).
-      track('go_click', { store: String(primaryStoreSlug ?? ''), source: 'search_card', meta: { measured: false } });
+      track('go_click', { canonical_id: product.id, store: String(primaryStoreSlug ?? ''), category: product.category ?? null, source: 'search_card', meta: { measured: false } });
       window.open(externalProductUrl, '_blank', 'noopener');
       return;
     }
@@ -284,7 +284,7 @@ export function ProductCard({
             // ADR-244: previously a completely unmeasured retailer exit. No
             // product_stores ledger row exists for scraped externals, so the
             // affiliate-tagged direct link stays; the event is the measurement.
-            track('go_click', { store: String(primaryStoreSlug ?? ''), source: 'search_card', meta: { measured: false } });
+            track('go_click', { canonical_id: product.id, store: String(primaryStoreSlug ?? ''), category: product.category ?? null, source: 'search_card', meta: { measured: false } });
           }}
         >
           {children}
