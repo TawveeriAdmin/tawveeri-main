@@ -167,6 +167,15 @@ export async function GET(req: NextRequest, props: { params: Promise<{ offerId: 
   // "which session and which piece of content produced this exit."
   const { sessionId, campaign } = readAttribution(req);
 
+  // ADR-282: IP capture only (migration 43) — a pure additive data point for investigating
+  // traffic patterns like the 2026-08-31/09-01 no-session redirect anomalies
+  // (docs/report/AUGUST-2026-FOUNDER-REVIEW.md §12). Does NOT gate, throttle, or alter the
+  // redirect in any way — Railway sits behind a proxy, so the real client IP is the FIRST
+  // hop in x-forwarded-for (subsequent entries are proxy-added); falls back to x-real-ip.
+  const ipAddress = (req.headers.get("x-forwarded-for")?.split(",")[0]?.trim())
+    || req.headers.get("x-real-ip")
+    || null;
+
   // Fire-and-forget click record — never block or fail the exit on the write.
   supabase
     .from("outbound_clicks")
@@ -185,6 +194,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ offerId: 
       is_test: isTest,
       user_agent: ua || null,
       referrer: req.headers.get("referer") ?? null,
+      ip_address: ipAddress,
     })
     .then(({ error: e }) => { if (e) console.error("outbound_clicks insert failed:", e.message); });
 
