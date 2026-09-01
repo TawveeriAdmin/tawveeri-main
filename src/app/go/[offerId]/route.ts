@@ -16,6 +16,7 @@ import { randomUUID } from "crypto";
 import { buildOfferExitLink, getProviderByStoreId } from "@/lib/providers";
 import { normalizeExitUrl, isNonProductionExitUrl } from "@/lib/retailers/exit-url";
 import { getBaseUrl } from "@/lib/seo/metadata";
+import { isKnownBotUserAgent } from "@/lib/analytics/bot-detection";
 
 // A measured exit is per-request and must never be cached (each hit records an
 // outbound click and resolves the current offer URL). Force dynamic + Node runtime.
@@ -152,10 +153,15 @@ export async function GET(req: NextRequest, props: { params: Promise<{ offerId: 
   // `tw_admin` (ADR-216) marks an authenticated admin's own browsing, set only inside the
   // already-role-gated /admin layout — never fabricated from a self-reported flag.
   const ua = req.headers.get("user-agent") ?? "";
+  // ADR-282: bot-UA matching extracted to src/lib/analytics/bot-detection.ts (independently
+  // tested) — widened after the 2026-08-31 anomaly investigation
+  // (docs/report/AUGUST-2026-FOUNDER-REVIEW.md §12) found the old list missed a bot UA that
+  // WAS present that day. A false positive here only mis-labels a redirect as TEST; it never
+  // blocks or alters the actual redirect.
   const isTest = req.cookies.get("tw_test")?.value === "1" ||
     req.cookies.get("tw_admin")?.value === "1" ||
     req.nextUrl.searchParams.get("tw_test") === "1" ||
-    /bot|crawl|spider|slurp|headless|puppeteer|playwright|lighthouse|python-requests|curl|wget/i.test(ua);
+    isKnownBotUserAgent(ua);
 
   // Session + campaign identity (ADR-244) — the ledger itself now answers
   // "which session and which piece of content produced this exit."
