@@ -170,9 +170,20 @@ export async function GET(req: NextRequest, props: { params: Promise<{ offerId: 
   // ADR-282: IP capture only (migration 43) — a pure additive data point for investigating
   // traffic patterns like the 2026-08-31/09-01 no-session redirect anomalies
   // (docs/report/AUGUST-2026-FOUNDER-REVIEW.md §12). Does NOT gate, throttle, or alter the
-  // redirect in any way — Railway sits behind a proxy, so the real client IP is the FIRST
-  // hop in x-forwarded-for (subsequent entries are proxy-added); falls back to x-real-ip.
-  const ipAddress = (req.headers.get("x-forwarded-for")?.split(",")[0]?.trim())
+  // redirect in any way.
+  //
+  // CORRECTED same-day (2026-09-01): the first deploy of this trusted x-forwarded-for's
+  // first hop, on the assumption Railway's own proxy was the only hop. Checking the IPs it
+  // actually captured showed EVERY one falling inside Cloudflare's published edge ranges
+  // (104.16.0.0/13, 172.64.0.0/13, 162.158.0.0/15) — tawveeri.com is proxied through
+  // Cloudflare in front of Railway, so x-forwarded-for's first entry was Cloudflare's OWN
+  // edge-node hop, not the visitor. Cloudflare's own docs are explicit that `CF-Connecting-IP`
+  // (which Cloudflare sets itself, stripping/overwriting any client-supplied value — it cannot
+  // be spoofed by the request) is the authoritative true-client-IP header when Cloudflare
+  // fronts the origin; x-forwarded-for stays as a fallback for any request that somehow
+  // reaches this route without going through Cloudflare (e.g. a direct Railway origin hit).
+  const ipAddress = req.headers.get("cf-connecting-ip")
+    || req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
     || req.headers.get("x-real-ip")
     || null;
 
