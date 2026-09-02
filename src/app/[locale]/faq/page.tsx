@@ -70,6 +70,11 @@ export default async function FaqPage({ params }: { params: Promise<{ locale: st
           a: 'ننقلك إلى صفحة المنتج نفسه في موقع ذلك المتجر لإتمام الشراء هناك مباشرة.',
         },
         {
+          id: 'affiliate',
+          q: 'هل تحصل توفيري على عمولة من Amazon.sa؟',
+          a: 'توفيري مشارك في برنامج Amazon Services LLC Associates Program، وهو برنامج إعلاني تابع مصمم لتوفير وسيلة لمواقع الويب لكسب رسوم إعلانية عبر الربط بموقع Amazon.sa. "As an Amazon Associate I earn from qualifying purchases." قد تحصل توفيري على عمولة عند إتمام شراء مؤهل عبر بعض الروابط، دون أي تكلفة إضافية عليك. هذا لا يؤثر أبدًا على الأسعار المعروضة أو على ترتيب النتائج — المصلحة التجارية لا تدخل أبدًا في الترتيب.',
+        },
+        {
           q: 'من يتولى الدفع والتوصيل والاستبدال والضمان؟',
           a: (
             <>
@@ -139,6 +144,11 @@ export default async function FaqPage({ params }: { params: Promise<{ locale: st
           a: 'We take you to that exact product page on the retailer’s own site to complete the purchase there.',
         },
         {
+          id: 'affiliate',
+          q: 'Does Tawveeri earn a commission from Amazon.sa?',
+          a: 'Tawveeri is a participant in the Amazon Services LLC Associates Program, an affiliate advertising program designed to provide a means for sites to earn advertising fees by linking to Amazon.sa. As an Amazon Associate I earn from qualifying purchases. Tawveeri may earn a commission when you complete a qualifying purchase through some links, at no extra cost to you. This never affects the prices shown or how results are ranked — commercial interest never enters ranking.',
+        },
+        {
           q: 'Who handles payment, delivery, returns and warranty?',
           a: (
             <>
@@ -204,6 +214,7 @@ export default async function FaqPage({ params }: { params: Promise<{ locale: st
             <details
               key={item.q}
               id={item.id}
+              open={item.id === 'affiliate' || undefined}
               style={{
                 background: 'var(--color-surface-container-low)',
                 border: '1px solid var(--color-outline-variant)',
