@@ -47,6 +47,15 @@ export const USAGE_EVENT_TYPES = [
   // fallback found something to show. meta.count = candidates shown.
   "closest_options_view",
   "no_answer", "error",                  // off-funnel signals
+  // Affiliate Campaign Revenue Layer V1 (Phase 1E) — TELEMETRY ONLY, matching the
+  // go_click/outbound_clicks split: campaign_clicks (server-written by
+  // /go/campaign/[id]) is the AUTHORITATIVE click ledger; these two client events are
+  // funnel signal, deduped the same way every other track() call is (track.ts). An
+  // impression/click is NEVER treated as a lead/order — Section 1E's own rule.
+  "campaign_impression",                 // an eligible campaign card rendered. meta.placement,
+                                          // meta.merchant, meta.campaign_id
+  "campaign_click",                      // its CTA was clicked (client-side signal only;
+                                          // campaign_clicks is authoritative for the actual exit)
 ] as const;
 
 export type UsageEventType = (typeof USAGE_EVENT_TYPES)[number];

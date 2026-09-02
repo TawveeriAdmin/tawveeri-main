@@ -106,6 +106,7 @@ import {
 } from '@/lib/scraping/search/store-registry';
 import { SEARCH_STORE_DISPLAY_NAMES } from '@/lib/scraping/product-adapter';
 import { SearchVoiceBarcodeActions } from '@/components/search/search-voice-barcode-actions';
+import { PostSearchCampaignCard } from '@/components/campaigns/post-search-campaign-card';
 
 type Product = ProductCardProduct;
 
@@ -2213,6 +2214,13 @@ export default function SearchClient() {
                         </Pagination>
                       </div>
                     )}
+
+                    {/* Affiliate Campaign Revenue Layer V1 — Phase 1D: renders strictly
+                        AFTER the neutral results above (this branch only mounts when
+                        products.length > 0), never touches `products`/sort/ranking, and
+                        renders nothing when no campaign is eligible. See
+                        src/components/campaigns/post-search-campaign-card.tsx. */}
+                    <PostSearchCampaignCard locale={locale} category={selectedCategory !== 'all' ? selectedCategory : null} />
                   </>
                 )}
               </div>
