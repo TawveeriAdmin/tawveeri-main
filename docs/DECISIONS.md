@@ -6,6 +6,43 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-284 — Affiliate Campaign Revenue Layer V1: Amazon-only launch (tablet, post-search) · Accepted (2026-09-02)
+
+**Context.** Tawveeri's first commercial (non-neutral) inventory: a small, disclosed, admin-authored campaign layer that consumes shopping intent without ever entering ranking/matching/Smart Pick (Constitution Art. VII — commercial interest never enters ranking). Full design/compliance record lives across this session's own audit rounds (Amazon Associates Operating Agreement primary-source review, Noon clause-8.3 brand-consent question, ascsubtag policy audit, direct-link click architecture). This entry is the durable summary.
+
+**Decision — launch Amazon-only; Noon stays fully disabled.**
+
+- **Migration 44** (`scripts/database/44-affiliate-campaigns.sql`) — `affiliate_campaigns`, `campaign_clicks`, `campaign_exposures`. **APPLIED to production, CLOSED BASELINE.** Do not edit or re-run it; any future schema change is a new additive migration (verify the next free number before naming it).
+- **Kill switch:** `AFFILIATE_CAMPAIGNS_ENABLED=1`, `AFFILIATE_CAMPAIGNS_MERCHANTS=amazon` (Railway, production). Setting `AFFILIATE_CAMPAIGNS_ENABLED=0` hides the entire layer instantly, no redeploy.
+- **Click architecture:** direct-link — the card's `href` is the final, server-built, already-tagged merchant URL (impression-time, `src/lib/campaigns/link.ts`). No `/go/campaign` redirect hop exists. `ascsubtag`/session/click/exposure identifiers are never sent to Amazon (third-party docs describe `ascsubtag` as invitation-only, not self-service; no evidence Tawveeri's account has that grant). A best-effort, token-verified beacon (`POST /api/campaigns/click`) records the click for measurement only and can never block navigation.
+- **Site-level Amazon Associate disclosure** — was genuinely missing (the footer linked to `/faq#affiliate`, but that anchor didn't exist; audited directly against live production before assuming otherwise). Added one FAQ entry per locale. English carries the required English statement; Arabic carries the **official Arabic statement from Section 5 of the current Amazon Saudi Operating Agreement** (`affiliate-program.amazon.sa/help/operating/agreement`, verified verbatim via two independent fetches): *"بصفتي مشارك لأمازون، فإنني أكسب من عمليات الشراء المؤهلة."*
+
+**First campaign (Experiment 1).**
+
+| Field | Value |
+|---|---|
+| Campaign ID | `06a84dd6-4c6b-43bd-9677-ee660173d105` |
+| Merchant | Amazon |
+| Category | tablet |
+| Placement | post_search only (not homepage) |
+| Destination | `amazon.sa/s?k=تابلت&rh=n:16966419031` (founder-verified, screenshot-confirmed real browse-node search page) |
+| Campaign-level Tracking ID | `tawveeri0f-tablet-21` (founder-created directly in Associates Central; distinguishes this campaign's traffic from the shared org-wide base tag in Amazon's own reporting) |
+| Base org-wide tag (unchanged, organic exits) | `tawveeri0f-21` |
+| **Launch timestamp (row-level `enabled=true` flip)** | **2026-09-02 16:36:52 +03:00 (Riyadh)** |
+| `end_at` | `2027-03-02` — **not** the founder-approved open-ended (NULL) design. The `affiliate_campaigns.end_at` column is `NOT NULL` with `CHECK (end_at > start_at)`; setting it to NULL is impossible without an ALTER (a schema change), explicitly out of scope for the launch/verification round that requested it. Left as the operational placeholder pending a future founder-approved migration if open-ended campaigns become a real, recurring need. |
+
+**Noon.** Zero Noon campaigns exist in production. `AFFILIATE_CAMPAIGNS_MERCHANTS=amazon` structurally excludes it. Noon-named commercial card stays disabled pending clause-8.3 written consent (unresolved, message drafted not sent).
+
+**Measurement state at launch (read-only production query, minutes after launch).** 0 REAL exposures, 0 REAL clicks — no self-purchase, no self-click, ever. 1 TEST exposure (this session's own verification, correctly tagged `is_test=true` via the `tw_test` cookie). Amazon merchant-reported data: **UNKNOWN / REPORT NOT IMPORTED** (no Associates report has been imported for `tawveeri0f-tablet-21` yet — never shown as zero). Revenue Proof / Repeatability / Sustainability: **PENDING**. Incrementality: **NOT YET TESTED** (no randomized holdout exists).
+
+**Known, accepted, non-blocking limitation.** `campaign_exposures` may over-count under client retries/re-renders (a secondary, non-financial metric). `campaign_clicks` (token-verified, deduped) and Amazon's own reported commission remain the real sources of truth regardless. Explicitly deferred: monitor for 1–2 weeks; build a fix only if it shows clearly implausible over-counting. Not built this round by founder instruction.
+
+**Next real step (founder, not automatable).** ~1 week: check the Tracking ID Summary for `tawveeri0f-tablet-21` in Amazon Associates Central — Clicks → Ordered Items → Shipped Items → Commission (Amazon doesn't credit commission until an item ships). Import the report into the existing `affiliate_reports`/`affiliate_conversions` reconciliation flow when available; the Revenue Proof dashboard (`/admin/campaigns/revenue-proof`) reads it automatically by Tracking ID, no code change needed.
+
+**Not touched.** `decision-engine.ts`, `route-query.ts`, `evidence-engine.ts`, ranking, matching, canonical product rules, the existing `/go` product-exit route (including its rate-limiting decision, still deliberately undecided), Demand Radar, Radar 1, Shadow, Checkpoint 5.1, Cloudflare.
+
+---
+
 ### ADR-283 — Demand Radar scheduling: GitHub Actions external cron retired; the in-process scheduler is confirmed as the actual, intentional production source of truth · Accepted (2026-09-01)
 
 **Context.** ADR-280 (2026-08-31) stated the in-process `setInterval` demand-radar tick in `instrumentation.ts` was removed and replaced by `.github/workflows/demand-radar-poll.yml`, an external GitHub Actions cron intended as the durable, deploy-survivable single source of truth for Radar 1 polling. A Cloudflare Bot Fight Mode toggle enabled 2026-09-01 caused that workflow's next scheduled run to fail, prompting a read-only production audit of the scheduler's actual behavior — not the documented/assumed one — before any fix was attempted.
