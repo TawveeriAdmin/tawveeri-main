@@ -12,9 +12,11 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 import type { HomeVerifiedDeal } from '@/lib/intelligence/home-verified-deals';
+import type { EligibleCampaign } from '@/lib/campaigns/types';
 import { needPhrasings, needPrompt } from '@/lib/agent/need-phrasings';
 import { useNavigableCategories } from '@/lib/intelligence/navigable-categories-context';
 import { track } from '@/lib/analytics/track';
+import { CampaignCard } from '@/components/campaigns/campaign-card';
 
 const T = {
   ar: {
@@ -25,6 +27,7 @@ const T = {
     dealsTitle: 'أفضل العروض',
     dealsAll: 'شوف الكل',
     save: 'وفّر',
+    campaignsTitle: 'عروض المتاجر الآن',
   },
   en: {
     tagline: 'Compare electronics prices across Saudi stores — with evidence, not marketing numbers.',
@@ -34,12 +37,21 @@ const T = {
     dealsTitle: 'Best deals',
     dealsAll: 'See all',
     save: 'Save',
+    campaignsTitle: 'Store offers now',
   },
 };
 
 const S = { section: { marginTop: 34 } as React.CSSProperties };
 
-export function UnifiedHome({ locale, deals = [] }: { locale: string; deals?: HomeVerifiedDeal[] }) {
+export function UnifiedHome({
+  locale,
+  deals = [],
+  campaigns = [],
+}: {
+  locale: string;
+  deals?: HomeVerifiedDeal[];
+  campaigns?: EligibleCampaign[];
+}) {
   const isAr = locale !== 'en';
   const t = T[isAr ? 'ar' : 'en'];
   const router = useRouter();
@@ -156,11 +168,26 @@ export function UnifiedHome({ locale, deals = [] }: { locale: string; deals?: Ho
         </section>
       )}
 
-      {/* 3 — BEST DEALS — VERIFIED drops only. Every card states the evidence: the
-          highest price we ourselves observed, and how many days we watched. This is the
-          product thesis in one line — we publish a SMALLER saving than the merchant,
-          because ours is evidence. Hidden entirely when we have nothing verified. */}
-      {deals.length > 0 && (
+      {/* 3 — SAME SLOT, two mutually-exclusive contents (Affiliate Campaign Revenue Layer
+          V1, Phase 1C: "repurpose the PRESENTATION currently occupied by أفضل العروض
+          into the new commercial campaign area" — not a second competing block).
+          `campaigns` arrives from the server already gated by the global kill switch,
+          per-merchant allowlist, category/window eligibility (getEligibleCampaigns).
+          When AFFILIATE_CAMPAIGNS_ENABLED=0 or no campaign is eligible, `campaigns` is
+          always [] and this falls back EXACTLY to the original verified-deals section —
+          the whole rollback story is "the kill switch is off", no code path removed. */}
+      {campaigns.length > 0 ? (
+        <section style={S.section}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+            <h2 style={{ fontSize: 16, fontWeight: 900, color: 'var(--color-on-surface)', margin: 0 }}>{t.campaignsTitle}</h2>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }}>
+            {campaigns.map((c) => (
+              <CampaignCard key={c.id} campaign={c} locale={locale} surface="homepage" category={null} />
+            ))}
+          </div>
+        </section>
+      ) : deals.length > 0 && (
         <section style={S.section}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
             <h2 style={{ fontSize: 16, fontWeight: 900, color: 'var(--color-on-surface)', margin: 0 }}>{t.dealsTitle}</h2>

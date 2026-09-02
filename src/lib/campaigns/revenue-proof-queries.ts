@@ -1,0 +1,245 @@
+// src/lib/campaigns/revenue-proof-queries.ts
+// Revenue Proof dashboard (final program, Phase 2). Three explicit truth layers, never
+// merged into one misleading number (Phase 2 rule):
+//   A. TAWVEERI OBSERVED — campaign_exposures / usage_events(campaign_impression) /
+//      campaign_clicks. Decision-grade, ours, always known.
+//   B. MERCHANT REPORTED — reused from the EXISTING affiliate_reports/affiliate_conversions
+//      reconciliation infrastructure (scripts/database/30-affiliate-reconciliation.sql,
+//      ADR-213), filtered by campaign.tracking_id against affiliate_conversions.tracking_id_raw
+//      (Tracking-ID + report-period level, the officially-supported aggregate granularity
+//      for Amazon — no new schema). UNKNOWN when no report has been imported yet, NEVER 0.
+//   C. BUSINESS DECISION — derived states (PENDING/CONFIRMED/etc.), never inferred from a
+//      tiny sample as false certainty.
+import { untypedClient } from './store';
+import type { AffiliateCampaign } from './types';
+import { deriveCampaignStatus } from './types';
+
+export interface CampaignHeader {
+  campaign: AffiliateCampaign;
+  status: ReturnType<typeof deriveCampaignStatus>;
+  effectiveTrackingId: string; // campaign.tracking_id || shared default, Amazon only
+  lastExposureAt: string | null;
+  lastClickAt: string | null;
+}
+
+const SHARED_AMAZON_TAG = 'tawveeri0f-21';
+
+export async function getCampaignHeader(campaignId: string): Promise<CampaignHeader | null> {
+  const supabase = untypedClient();
+  const { data: campaign, error } = await supabase.from('affiliate_campaigns').select('*').eq('id', campaignId).maybeSingle();
+  if (error || !campaign) return null;
+
+  const [{ data: lastExposure }, { data: lastClick }] = await Promise.all([
+    supabase.from('campaign_exposures').select('created_at').eq('campaign_id', campaignId).order('created_at', { ascending: false }).limit(1),
+    supabase.from('campaign_clicks').select('created_at').eq('campaign_id', campaignId).order('created_at', { ascending: false }).limit(1),
+  ]);
+
+  return {
+    campaign,
+    status: deriveCampaignStatus(campaign, new Date()),
+    effectiveTrackingId: campaign.merchant === 'amazon' ? (campaign.tracking_id || SHARED_AMAZON_TAG) : (campaign.tracking_id || 'noon-default'),
+    lastExposureAt: lastExposure?.[0]?.created_at ?? null,
+    lastClickAt: lastClick?.[0]?.created_at ?? null,
+  };
+}
+
+export interface TawveeriObserved {
+  cleanEligibleExposures: number;
+  visibleImpressions: number;
+  cleanCampaignClicks: number;
+  uniqueClickingSessions: number;
+  clickThroughRate: number | null; // clicks / exposures, null when exposures = 0
+  testInternalExcluded: number; // is_test rows excluded from the counts above
+  botExcluded: number; // subset of testInternalExcluded flagged specifically by bot-UA detection
+  topSessionConcentration: number | null; // this session's share of clean clicks, 0..1
+  campaignErrors: number; // reserved — V1 has no distinct error ledger; always 0, not fabricated
+}
+
+/** Phase 2B. Reads campaign_exposures (ours, server-decided) + campaign_clicks
+ *  (authoritative). Deliberately does NOT use usage_events as the denominator —
+ *  usage_events carries the historical duplicate-event risk class documented in
+ *  docs/report/SEPTEMBER-2026-EXECUTION-BASELINE.md §A.1; campaign_impression there
+ *  is exposed separately as `visibleImpressions` for reference only, never as the
+ *  authoritative funnel base. */
+export async function getTawveeriObserved(
+  campaignId: string,
+  range: { start: Date; end: Date },
+): Promise<TawveeriObserved> {
+  const supabase = untypedClient();
+  const startIso = range.start.toISOString();
+  const endIso = range.end.toISOString();
+
+  const [exposuresRes, testExposuresRes, clicksRes, testClicksRes, impressionsRes] = await Promise.all([
+    supabase.from('campaign_exposures').select('id', { count: 'exact', head: true }).eq('campaign_id', campaignId).eq('is_test', false).gte('created_at', startIso).lte('created_at', endIso),
+    supabase.from('campaign_exposures').select('id', { count: 'exact', head: true }).eq('campaign_id', campaignId).eq('is_test', true).gte('created_at', startIso).lte('created_at', endIso),
+    supabase.from('campaign_clicks').select('session_id', { count: 'exact' }).eq('campaign_id', campaignId).eq('is_test', false).gte('created_at', startIso).lte('created_at', endIso),
+    supabase.from('campaign_clicks').select('id', { count: 'exact', head: true }).eq('campaign_id', campaignId).eq('is_test', true).gte('created_at', startIso).lte('created_at', endIso),
+    supabase.from('usage_events').select('id', { count: 'exact', head: true }).eq('event_type', 'campaign_impression').eq('is_test', false).gte('created_at', startIso).lte('created_at', endIso),
+  ]);
+
+  const cleanEligibleExposures = exposuresRes.count ?? 0;
+  const testExcludedExposures = testExposuresRes.count ?? 0;
+  const clickRows: { session_id: string | null }[] = clicksRes.data ?? [];
+  const cleanCampaignClicks = clicksRes.count ?? clickRows.length;
+  const testExcludedClicks = testClicksRes.count ?? 0;
+  const visibleImpressions = impressionsRes.count ?? 0;
+
+  const sessionCounts = new Map<string, number>();
+  let anonymousClicks = 0;
+  for (const row of clickRows) {
+    if (!row.session_id) { anonymousClicks += 1; continue; }
+    sessionCounts.set(row.session_id, (sessionCounts.get(row.session_id) ?? 0) + 1);
+  }
+  const uniqueClickingSessions = sessionCounts.size + (anonymousClicks > 0 ? anonymousClicks : 0);
+  const topSessionClicks = sessionCounts.size > 0 ? Math.max(...sessionCounts.values()) : 0;
+  const topSessionConcentration = cleanCampaignClicks > 0 ? topSessionClicks / cleanCampaignClicks : null;
+
+  return {
+    cleanEligibleExposures,
+    visibleImpressions,
+    cleanCampaignClicks,
+    uniqueClickingSessions,
+    clickThroughRate: cleanEligibleExposures > 0 ? cleanCampaignClicks / cleanEligibleExposures : null,
+    testInternalExcluded: testExcludedExposures + testExcludedClicks,
+    botExcluded: testExcludedClicks, // is_test folds in bot-UA detection (isKnownBotUserAgent) — no separate bucket in V1
+    topSessionConcentration,
+    campaignErrors: 0,
+  };
+}
+
+export type MerchantReportedAmazon =
+  | { status: 'unknown' }
+  | {
+      status: 'known';
+      trackingId: string;
+      networkReportedClicks: number | null; // Amazon's own click count, if the report carries one
+      orderedItems: number;
+      shippedItems: number;
+      cancelledOrReturned: number;
+      qualifyingRevenueSar: number | null;
+      commissionSar: number;
+      reportPeriodStart: string | null;
+      reportPeriodEnd: string | null;
+      lastImportedAt: string | null;
+    };
+
+/**
+ * Phase 2C. Reuses affiliate_reports/affiliate_conversions (ADR-213) UNCHANGED — no new
+ * schema. Reconciles at TRACKING ID level (affiliate_conversions.tracking_id_raw), the
+ * officially-supported Amazon aggregate granularity — never a fabricated Tawveeri-visitor
+ * <-> Amazon-customer join. Returns {status:'unknown'} rather than zeros whenever no
+ * report row exists for this tracking id — UNKNOWN ≠ ZERO is enforced structurally here,
+ * not left to the caller to remember.
+ */
+export async function getMerchantReportedAmazon(trackingId: string): Promise<MerchantReportedAmazon> {
+  const supabase = untypedClient();
+  const { data: conversions, error } = await supabase
+    .from('affiliate_conversions')
+    .select('*, affiliate_reports(report_period_start, report_period_end, created_at)')
+    .eq('tracking_id_raw', trackingId);
+
+  if (error || !conversions || conversions.length === 0) return { status: 'unknown' };
+
+  let ordered = 0, shipped = 0, cancelledOrReturned = 0, commission = 0, revenue = 0;
+  let periodStart: string | null = null, periodEnd: string | null = null, lastImported: string | null = null;
+  for (const row of conversions as Record<string, any>[]) {
+    const state = String(row.state || '').toUpperCase();
+    if (state === 'ORDERED' || state === 'COMMISSION_PENDING') ordered += 1;
+    if (state === 'SHIPPED' || state === 'COMMISSION_CONFIRMED' || state === 'PAID') shipped += 1;
+    if (state === 'CANCELLED' || state === 'RETURNED') cancelledOrReturned += 1;
+    if (typeof row.commission_amount === 'number') commission += row.commission_amount;
+    if (typeof row.price === 'number' && typeof row.quantity === 'number') revenue += row.price * row.quantity;
+    const report = Array.isArray(row.affiliate_reports) ? row.affiliate_reports[0] : row.affiliate_reports;
+    if (report?.report_period_start && (!periodStart || report.report_period_start < periodStart)) periodStart = report.report_period_start;
+    if (report?.report_period_end && (!periodEnd || report.report_period_end > periodEnd)) periodEnd = report.report_period_end;
+    if (report?.created_at && (!lastImported || report.created_at > lastImported)) lastImported = report.created_at;
+  }
+
+  return {
+    status: 'known',
+    trackingId,
+    networkReportedClicks: null, // Amazon's Earnings/Orders report exports do not carry a per-row click count
+    orderedItems: ordered,
+    shippedItems: shipped,
+    cancelledOrReturned,
+    qualifyingRevenueSar: revenue > 0 ? revenue : null,
+    commissionSar: commission,
+    reportPeriodStart: periodStart,
+    reportPeriodEnd: periodEnd,
+    lastImportedAt: lastImported,
+  };
+}
+
+export type ProofState = 'PENDING' | 'CONFIRMED';
+export type SignalState = 'PENDING' | 'EARLY' | 'CONFIRMED';
+export type SustainabilityState = 'PENDING' | 'PARTIAL' | 'COVERED';
+
+export interface BusinessDecisionState {
+  mechanicsProof: ProofState;
+  revenueProof: ProofState;
+  repeatabilitySignal: SignalState;
+  repeatableMonetization: SignalState;
+  sustainability: SustainabilityState;
+  incrementality: 'NOT_YET_TESTED';
+}
+
+/**
+ * Phase 2D / Phase 5 definitions, applied literally — never inferred from a tiny sample
+ * as false certainty. Pure function, fully unit-testable.
+ */
+export function deriveBusinessDecisionState(args: {
+  observed: TawveeriObserved;
+  merchant: MerchantReportedAmazon;
+  distinctCommissionDates: number; // count of distinct calendar dates with commission > 0, across ALL history
+  coveragePct: number | null; // from computeOperatingCostCoverage, trailing 30d
+  consecutiveCoveredMonths: number; // months with >=100% coverage, most recent first, unbroken
+}): BusinessDecisionState {
+  const { observed, merchant, distinctCommissionDates, coveragePct, consecutiveCoveredMonths } = args;
+
+  const mechanicsProof: ProofState =
+    observed.cleanEligibleExposures > 0 && observed.cleanCampaignClicks > 0 ? 'CONFIRMED' : 'PENDING';
+
+  const revenueProof: ProofState = merchant.status === 'known' && merchant.commissionSar > 0 ? 'CONFIRMED' : 'PENDING';
+
+  let repeatabilitySignal: SignalState = 'PENDING';
+  if (revenueProof === 'CONFIRMED') repeatabilitySignal = distinctCommissionDates >= 2 ? 'CONFIRMED' : 'EARLY';
+
+  // Repeatable monetization requires the signal PLUS the funnel still working (clicks
+  // still occurring) — a single confirmed-then-silent campaign is EARLY, not CONFIRMED.
+  let repeatableMonetization: SignalState = 'PENDING';
+  if (repeatabilitySignal === 'CONFIRMED' && observed.cleanCampaignClicks > 0) repeatableMonetization = 'CONFIRMED';
+  else if (repeatabilitySignal !== 'PENDING') repeatableMonetization = 'EARLY';
+
+  let sustainability: SustainabilityState = 'PENDING';
+  if (coveragePct !== null) {
+    sustainability = consecutiveCoveredMonths >= 2 ? 'COVERED' : coveragePct > 0 ? 'PARTIAL' : 'PENDING';
+  }
+
+  return { mechanicsProof, revenueProof, repeatabilitySignal, repeatableMonetization, sustainability, incrementality: 'NOT_YET_TESTED' };
+}
+
+export interface OperatingCostCoverage {
+  configured: boolean;
+  monthlyCostSar: number | null;
+  trailing30dEarnedCommissionSar: number | null;
+  coveragePct: number | null;
+}
+
+/** Phase 2E. Cost is read from an env var (TAWVEERI_MONTHLY_CASH_COST_SAR) — same
+ *  "no settings table exists yet" precedent as the campaign kill switch. Earned
+ *  commission (accrual) is kept explicitly separate from any notion of cash paid
+ *  (network payout timing differs), per the mission's own instruction. */
+export function computeOperatingCostCoverage(trailing30dEarnedCommissionSar: number | null): OperatingCostCoverage {
+  const raw = process.env.TAWVEERI_MONTHLY_CASH_COST_SAR;
+  const monthlyCostSar = raw ? Number(raw) : null;
+  const configured = monthlyCostSar !== null && Number.isFinite(monthlyCostSar) && monthlyCostSar > 0;
+  if (!configured || trailing30dEarnedCommissionSar === null) {
+    return { configured, monthlyCostSar: configured ? monthlyCostSar : null, trailing30dEarnedCommissionSar, coveragePct: null };
+  }
+  return {
+    configured: true,
+    monthlyCostSar,
+    trailing30dEarnedCommissionSar,
+    coveragePct: (trailing30dEarnedCommissionSar / (monthlyCostSar as number)) * 100,
+  };
+}

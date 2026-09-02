@@ -238,6 +238,11 @@ export const AUDIT_ACTIONS = {
   COUPON_DELETED: 'coupon_deleted',
   COUPON_COPIED: 'coupon_copied',
 
+  // Affiliate campaigns (Affiliate Campaign Revenue Layer V1)
+  AFFILIATE_CAMPAIGN_CREATED: 'affiliate_campaign_created',
+  AFFILIATE_CAMPAIGN_UPDATED: 'affiliate_campaign_updated',
+  AFFILIATE_CAMPAIGN_DELETED: 'affiliate_campaign_deleted',
+
   // Price Alerts (extended)
   PRICE_ALERT_TOGGLED: 'price_alert_toggled',
   PRICE_DROP_ALERT_SENT: 'price_drop_alert_sent',
