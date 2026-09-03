@@ -12,7 +12,7 @@
 // Sources are governed by docs/METRIC_DEFINITIONS.md.
 
 import Link from 'next/link';
-import { createServerClient } from '@/lib/database';
+import { createServerClient, fetchAllPaginated } from '@/lib/database';
 import { resolveApprovedSlug, retailerDisplayName } from '@/lib/retailers/approved-retailers';
 import { ArrowUpRight, Wallet } from 'lucide-react';
 
@@ -39,28 +39,39 @@ export default async function CommercialSignalsPage({
 
   const iso7d = new Date(Date.now() - 7 * 24 * 3600_000).toISOString();
 
-  const [exits7d, exitsBaseline, attributed, tagged, conversions, recent, byStore] =
+  const [[exits7d, exitsBaseline, attributed, tagged, conversions, recent], byStoreRows] =
     await Promise.all([
-      sb.from('outbound_clicks').select('id', { count: 'exact', head: true })
-        .eq('is_test', false).gte('clicked_at', iso7d),
-      sb.from('outbound_clicks').select('id', { count: 'exact', head: true })
-        .eq('is_test', false).gte('clicked_at', BASELINE_ISO),
-      sb.from('outbound_clicks').select('id', { count: 'exact', head: true })
-        .eq('is_test', false).not('session_id', 'is', null).gte('clicked_at', BASELINE_ISO),
-      sb.from('outbound_clicks').select('id', { count: 'exact', head: true })
-        .eq('is_test', false).neq('affiliate_program', 'direct').gte('clicked_at', BASELINE_ISO),
-      sb.from('affiliate_conversions').select('id', { count: 'exact', head: true }),
-      sb.from('outbound_clicks')
-        .select('clicked_at, store_name, source, affiliate_program, session_id, campaign')
-        .eq('is_test', false)
-        .order('clicked_at', { ascending: false })
-        .limit(25),
-      sb.from('outbound_clicks')
-        .select('store_name')
-        .eq('is_test', false)
-        .gte('clicked_at', BASELINE_ISO)
-        .limit(10000),
+      Promise.all([
+        sb.from('outbound_clicks').select('id', { count: 'exact', head: true })
+          .eq('is_test', false).gte('clicked_at', iso7d),
+        sb.from('outbound_clicks').select('id', { count: 'exact', head: true })
+          .eq('is_test', false).gte('clicked_at', BASELINE_ISO),
+        sb.from('outbound_clicks').select('id', { count: 'exact', head: true })
+          .eq('is_test', false).not('session_id', 'is', null).gte('clicked_at', BASELINE_ISO),
+        sb.from('outbound_clicks').select('id', { count: 'exact', head: true })
+          .eq('is_test', false).neq('affiliate_program', 'direct').gte('clicked_at', BASELINE_ISO),
+        sb.from('affiliate_conversions').select('id', { count: 'exact', head: true }),
+        sb.from('outbound_clicks')
+          .select('clicked_at, store_name, source, affiliate_program, session_id, campaign')
+          .eq('is_test', false)
+          .order('clicked_at', { ascending: false })
+          .limit(25),
+      ]),
+      // ADR-285: this was a single `.limit(10000)` fetch, but PostgREST silently caps any
+      // response at db-max-rows=1000 — measured on production, real outbound_clicks rows
+      // since the baseline total 3,815+, so the "top retailers by confirmed redirects"
+      // breakdown below was built from at most 26% of the real data, silently. Paginated
+      // explicitly, ordered by `id`, so it is always the complete set.
+      fetchAllPaginated<{ store_name: string | null }>((from, to) =>
+        sb.from('outbound_clicks')
+          .select('store_name')
+          .eq('is_test', false)
+          .gte('clicked_at', BASELINE_ISO)
+          .order('id', { ascending: true })
+          .range(from, to)
+      ).catch(() => [] as Array<{ store_name: string | null }>),
     ]);
+  const byStore = { data: byStoreRows, error: null as { message: string } | null };
 
   const cnt = (r: { count: number | null; error: { message: string } | null }) =>
     r.error ? null : (r.count ?? 0);

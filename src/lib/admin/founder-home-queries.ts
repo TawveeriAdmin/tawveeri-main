@@ -11,7 +11,7 @@
 // - value: null    → UNKNOWN / not measured; `reason` says why
 // REAL-only where the source distinguishes test traffic (is_test = false).
 
-import { createServerClient } from '@/lib/database';
+import { createServerClient, fetchAllPaginated } from '@/lib/database';
 import {
   APPROVED_STORE_IDS,
   COMPARISON_DISPLAY_EXCLUDED,
@@ -93,118 +93,140 @@ export async function getFounderHomeData(): Promise<FounderHomeData> {
     .map((id) => resolveApprovedSlug(id))
     .filter((s): s is string => s !== null && !COMPARISON_DISPLAY_EXCLUDED.has(s));
 
-  const [
-    storesCount,
-    runs24h,
-    failedRuns24h,
-    lastEvent,
-    projectionCount,
-    comparableCount,
-    fresh72h,
-    listingsCount,
-    sessions7dRows,
-    searches7d,
-    noAnswer7d,
-    exits7d,
-    exitsBaseline,
-    taggedBaseline,
-    conversions,
-    usersCount,
-    reviewQueue,
-    freshPerStore,
-  ] = await Promise.all([
-    supabase.from('stores').select('id', { count: 'exact', head: true }),
-    supabase
-      .from('scraping_runs')
-      .select('id', { count: 'exact', head: true })
-      .gte('started_at', iso24h),
-    supabase
-      .from('scraping_runs')
-      .select('id', { count: 'exact', head: true })
-      .eq('status', 'failed')
-      .gte('started_at', iso24h),
-    supabase
-      .from('usage_events')
-      .select('created_at')
-      .order('created_at', { ascending: false })
-      .limit(1),
-    supabase.from('tps_product_projection').select('id', { count: 'exact', head: true }),
-    supabase
-      .from('tps_product_projection')
-      .select('id', { count: 'exact', head: true })
-      .eq('has_comparison', true),
-    supabase
-      .from('tps_product_projection')
-      .select('id', { count: 'exact', head: true })
-      .gte('last_observed_at', iso72h),
-    supabase.from('product_stores').select('id', { count: 'exact', head: true }),
+  // ADR-285: a bare `.limit(20000)` on a raw row fetch (as this query used to be) silently
+  // truncates at PostgREST's db-max-rows=1000 once real volume crosses it — exactly the
+  // defect measured in command-center-queries.ts's outbound-click count. Real 7-day session
+  // volume here is currently well under 1000 but grows on the same traffic this file already
+  // tracks elsewhere via safe exact head-counts, so this is fixed pre-emptively via explicit
+  // pagination rather than waiting for it to silently go wrong. Failure stays non-fatal to the
+  // rest of the page (this module's `Metric`/UNKNOWN convention), unlike a thrown pagination
+  // error, which is why it is isolated in its own settled promise instead of joining the
+  // head-count `Promise.all` below directly.
+  const sessions7dSettled = fetchAllPaginated<{ session_id: string | null }>((from, to) =>
     supabase
       .from('usage_events')
       .select('session_id')
       .eq('is_test', false)
       .gte('created_at', iso7d)
-      .limit(20000),
-    supabase
-      .from('usage_events')
-      .select('id', { count: 'exact', head: true })
-      .eq('is_test', false)
-      .in('event_type', ['search', 'advisor_query'])
-      .gte('created_at', iso7d),
-    supabase
-      .from('usage_events')
-      .select('id', { count: 'exact', head: true })
-      .eq('is_test', false)
-      .eq('event_type', 'no_answer')
-      .gte('created_at', iso7d),
-    supabase
-      .from('outbound_clicks')
-      .select('id', { count: 'exact', head: true })
-      .eq('is_test', false)
-      .gte('clicked_at', iso7d),
-    supabase
-      .from('outbound_clicks')
-      .select('id', { count: 'exact', head: true })
-      .eq('is_test', false)
-      .gte('clicked_at', COMMERCIAL_BASELINE_ISO),
-    supabase
-      .from('outbound_clicks')
-      .select('id', { count: 'exact', head: true })
-      .eq('is_test', false)
-      .neq('affiliate_program', 'direct')
-      .gte('clicked_at', COMMERCIAL_BASELINE_ISO),
-    supabase.from('affiliate_conversions').select('id', { count: 'exact', head: true }),
-    supabase.from('users').select('id', { count: 'exact', head: true }),
-    supabase
-      .from('growth_content')
-      .select('content_id', { count: 'exact', head: true })
-      .eq('status', 'ready_for_review'),
-    // Approved sources with a fresh price observation (<24h) — one cheap
-    // head-count per approved source, keyed on canonical store_id.
-    Promise.all(
-      approvedIds.map((id) =>
-        supabase
-          .from('price_history')
-          .select('id', { count: 'exact', head: true })
-          .eq('store_id', id)
-          .gte('observed_at', iso24h)
-          .then((r: { count: number | null; error: { message: string } | null }) => ({
-            id,
-            fresh: !r.error && (r.count ?? 0) > 0,
-            error: r.error,
-          }))
-      )
-    ),
+      .order('id', { ascending: true })
+      .range(from, to)
+  ).then(
+    (rows) => ({ ok: true as const, rows }),
+    (error: unknown) => ({ ok: false as const, error })
+  );
+
+  const [
+    [
+      storesCount,
+      runs24h,
+      failedRuns24h,
+      lastEvent,
+      projectionCount,
+      comparableCount,
+      fresh72h,
+      listingsCount,
+      searches7d,
+      noAnswer7d,
+      exits7d,
+      exitsBaseline,
+      taggedBaseline,
+      conversions,
+      usersCount,
+      reviewQueue,
+      freshPerStore,
+    ],
+    sessions7dResult,
+  ] = await Promise.all([
+    Promise.all([
+      supabase.from('stores').select('id', { count: 'exact', head: true }),
+      supabase
+        .from('scraping_runs')
+        .select('id', { count: 'exact', head: true })
+        .gte('started_at', iso24h),
+      supabase
+        .from('scraping_runs')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'failed')
+        .gte('started_at', iso24h),
+      supabase
+        .from('usage_events')
+        .select('created_at')
+        .order('created_at', { ascending: false })
+        .limit(1),
+      supabase.from('tps_product_projection').select('id', { count: 'exact', head: true }),
+      supabase
+        .from('tps_product_projection')
+        .select('id', { count: 'exact', head: true })
+        .eq('has_comparison', true),
+      supabase
+        .from('tps_product_projection')
+        .select('id', { count: 'exact', head: true })
+        .gte('last_observed_at', iso72h),
+      supabase.from('product_stores').select('id', { count: 'exact', head: true }),
+      supabase
+        .from('usage_events')
+        .select('id', { count: 'exact', head: true })
+        .eq('is_test', false)
+        .in('event_type', ['search', 'advisor_query'])
+        .gte('created_at', iso7d),
+      supabase
+        .from('usage_events')
+        .select('id', { count: 'exact', head: true })
+        .eq('is_test', false)
+        .eq('event_type', 'no_answer')
+        .gte('created_at', iso7d),
+      supabase
+        .from('outbound_clicks')
+        .select('id', { count: 'exact', head: true })
+        .eq('is_test', false)
+        .gte('clicked_at', iso7d),
+      supabase
+        .from('outbound_clicks')
+        .select('id', { count: 'exact', head: true })
+        .eq('is_test', false)
+        .gte('clicked_at', COMMERCIAL_BASELINE_ISO),
+      supabase
+        .from('outbound_clicks')
+        .select('id', { count: 'exact', head: true })
+        .eq('is_test', false)
+        .neq('affiliate_program', 'direct')
+        .gte('clicked_at', COMMERCIAL_BASELINE_ISO),
+      supabase.from('affiliate_conversions').select('id', { count: 'exact', head: true }),
+      supabase.from('users').select('id', { count: 'exact', head: true }),
+      supabase
+        .from('growth_content')
+        .select('content_id', { count: 'exact', head: true })
+        .eq('status', 'ready_for_review'),
+      // Approved sources with a fresh price observation (<24h) — one cheap
+      // head-count per approved source, keyed on canonical store_id.
+      Promise.all(
+        approvedIds.map((id) =>
+          supabase
+            .from('price_history')
+            .select('id', { count: 'exact', head: true })
+            .eq('store_id', id)
+            .gte('observed_at', iso24h)
+            .then((r: { count: number | null; error: { message: string } | null }) => ({
+              id,
+              fresh: !r.error && (r.count ?? 0) > 0,
+              error: r.error,
+            }))
+        )
+      ),
+    ]),
+    sessions7dSettled,
   ]);
 
   // Distinct sessions computed in JS (PostgREST cannot count distinct).
-  const sessions7d: Metric = sessions7dRows.error
-    ? { value: null, reason: sessions7dRows.error.message }
-    : {
+  const sessions7d: Metric = sessions7dResult.ok
+    ? {
         value: new Set(
-          ((sessions7dRows.data ?? []) as Array<{ session_id: string }>).map(
-            (r) => r.session_id
-          )
+          sessions7dResult.rows.map((r) => r.session_id).filter((s): s is string => Boolean(s))
         ).size,
+      }
+    : {
+        value: null,
+        reason: sessions7dResult.error instanceof Error ? sessions7dResult.error.message : String(sessions7dResult.error),
       };
 
   const anyFreshError = freshPerStore.find((r: { error: unknown }) => r.error);

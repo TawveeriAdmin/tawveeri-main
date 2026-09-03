@@ -44,7 +44,7 @@
 // SERVER-ONLY. Direct DB read, never an HTTP call to our own API — a self-fetch is what
 // got the compare page rate-limited into rendering "no comparison available".
 
-import { createServerClient } from '@/lib/database';
+import { createServerClient, fetchAllPaginated } from '@/lib/database';
 
 /** THE RULE. A constant — the derived list below is recomputed live against it. */
 export const MIN_COMPARABLE_FOR_NAVIGATION = 30;
@@ -96,23 +96,43 @@ const PRESENTATION: Record<string, Omit<NavigableCategory, 'key' | 'comparable'>
 interface LooseQuery {
   select(cols: string): LooseQuery;
   eq(col: string, val: unknown): LooseQuery;
-  limit(n: number): Promise<{ data: unknown; error: unknown }>;
+  order(col: string, opts?: { ascending?: boolean }): LooseQuery;
+  range(from: number, to: number): Promise<{ data: unknown; error: { message: string } | null }>;
 }
 
-/** Live comparable count per TPS category. One indexed read; the projection is small. */
+/**
+ * Live comparable count per TPS category.
+ *
+ * ADR-285: this used to be a single `.limit(10000)` fetch with NO `.order()` — PostgREST
+ * silently caps any response at its db-max-rows setting (1000) regardless of the requested
+ * limit, and with no deterministic order the 1000 rows returned are an arbitrary, unstable
+ * slice that can differ between requests. Measured on production: comparable rows total
+ * 1,372 (already past the cap), so this was BOTH under-counting every category AND capable
+ * of making a real category (e.g. `laptop`, `tv`) intermittently disappear from the main
+ * navigation menu depending on which 1000 rows PostgREST happened to return. Same root
+ * cause as ADR-172 and command-center-queries.ts's ADR-285 fix — paginated explicitly here
+ * too, ordered by `id` for a stable, complete read every time.
+ */
 async function measureComparableByCategory(): Promise<Map<string, number>> {
   const counts = new Map<string, number>();
   // `tps_product_projection` is a TPS-layer table and is not in the generated storefront
   // types, so the typed builder rejects its columns. Narrow, explicit loose view — same
   // spirit as the cast in home-verified-deals.ts, without reaching for `any`.
   const db = createServerClient() as unknown as { from(table: string): LooseQuery };
-  const { data, error } = await db
-    .from('tps_product_projection')
-    .select('category')
-    .eq('has_comparison', true)
-    .limit(10000);
-  if (error || !data) return counts;
-  for (const row of data as { category: string | null }[]) {
+  let rows: { category: string | null }[];
+  try {
+    rows = await fetchAllPaginated<{ category: string | null }>((from, to) =>
+      db
+        .from('tps_product_projection')
+        .select('category')
+        .eq('has_comparison', true)
+        .order('id', { ascending: true })
+        .range(from, to) as Promise<{ data: { category: string | null }[] | null; error: { message: string } | null }>
+    );
+  } catch {
+    return counts;
+  }
+  for (const row of rows) {
     const key = row.category;
     if (!key) continue;
     counts.set(key, (counts.get(key) ?? 0) + 1);

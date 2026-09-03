@@ -3,7 +3,7 @@
 // (npm run tps:usage), just with period filtering added, computed live for /admin/command-center.
 // REAL-only for every headline number; TEST volume always computed alongside, never blended in.
 // Metric definitions: docs/METRIC_DEFINITIONS.md. Data-quality rules: docs/DATA_QUALITY_CONTRACT.md.
-import { createServerClient } from '@/lib/database';
+import { createServerClient, fetchAllPaginated } from '@/lib/database';
 import { getAffiliateConfig } from '@/lib/transactions/affiliate-config';
 import { parseShoppingTask } from '@/lib/agent/task-parser';
 
@@ -90,35 +90,45 @@ const EVENT_COLUMNS = 'event_type, session_id, is_test, source, category, query_
 // `clicked_at`, not `created_at`. Verify against production before assuming a column name here.
 const OUTBOUND_COLUMNS = 'is_test, canonical_product_id, affiliate_program, store_name, clicked_at, session_id, campaign, source';
 
-// Bounded: current REAL+TEST volume is a few thousand rows/month. If this ever needs to scale past
-// the row cap, aggregate server-side via a SQL view instead of raising the limit — see ADR-213.
-const ROW_CAP = 20_000;
+// ADR-285: a bare `.limit()` here silently truncated at PostgREST's db-max-rows=1000 the
+// moment real volume passed it — measured on production, "confirmed retailer redirects"
+// read 1000 against a real 3,102+ for the founder's reported window. Paginate explicitly via
+// `fetchAllPaginated()` (ADR-172's fix, generalized) so a query never quietly returns fewer
+// rows than actually match. `maxRows` is a generous safety ceiling, not the operative limit —
+// pagination is what prevents truncation now, not this number.
+const SAFETY_MAX_ROWS = 100_000;
 
 // usage_events/outbound_clicks are added via raw migration SQL and aren't in the generated
 // Database types (same reason src/app/go/[offerId]/route.ts and src/app/api/events/route.ts
 // don't type them) — cast at the call site rather than widening the shared client type.
 export async function fetchUsageEvents(start: Date, end: Date): Promise<UsageEventRow[]> {
   const supabase = createServerClient() as unknown as { from: (table: string) => any };
-  const { data, error } = await supabase
-    .from('usage_events')
-    .select(EVENT_COLUMNS)
-    .gte('created_at', start.toISOString())
-    .lt('created_at', end.toISOString())
-    .limit(ROW_CAP);
-  if (error) throw error;
-  return (data ?? []) as UsageEventRow[];
+  return fetchAllPaginated<UsageEventRow>(
+    (from, to) =>
+      supabase
+        .from('usage_events')
+        .select(EVENT_COLUMNS)
+        .gte('created_at', start.toISOString())
+        .lt('created_at', end.toISOString())
+        .order('id', { ascending: true })
+        .range(from, to),
+    { maxRows: SAFETY_MAX_ROWS }
+  );
 }
 
 export async function fetchOutboundClicks(start: Date, end: Date): Promise<OutboundClickRow[]> {
   const supabase = createServerClient() as unknown as { from: (table: string) => any };
-  const { data, error } = await supabase
-    .from('outbound_clicks')
-    .select(OUTBOUND_COLUMNS)
-    .gte('clicked_at', start.toISOString())
-    .lt('clicked_at', end.toISOString())
-    .limit(ROW_CAP);
-  if (error) throw error;
-  return (data ?? []) as OutboundClickRow[];
+  return fetchAllPaginated<OutboundClickRow>(
+    (from, to) =>
+      supabase
+        .from('outbound_clicks')
+        .select(OUTBOUND_COLUMNS)
+        .gte('clicked_at', start.toISOString())
+        .lt('clicked_at', end.toISOString())
+        .order('id', { ascending: true })
+        .range(from, to),
+    { maxRows: SAFETY_MAX_ROWS }
+  );
 }
 
 export interface Funnel {

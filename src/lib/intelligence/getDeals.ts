@@ -21,6 +21,7 @@ import {
   type DealLabelTier,
 } from "@/lib/intelligence/price-truth-gate";
 import { isFreshObservation } from "@/lib/intelligence/evidence-engine";
+import { fetchAllPaginated } from "@/lib/database";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
@@ -92,19 +93,38 @@ export function selectBestDealOffer(candidates: OfferCandidate[]): OfferCandidat
 export async function getDeals(limit = 20, minDiscountPct = 1): Promise<Deal[]> {
   const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
 
-  const { data, error } = await supabase
-    .from("product_stores")
-    .select(`id, current_price, original_price, store_id, last_checked_at, last_seen_at,
+  // ADR-285: this was a single `.limit(1200)` fetch — but PostgREST silently caps any
+  // response at db-max-rows=1000 regardless of the requested limit, so it was already
+  // quietly returning at most 1000 rows, not the 1200 the code asked for. Measured on
+  // production: real is_deal=true rows total 1,983 — nearly double what a single page ever
+  // returned. `.order("updated_at")` made the truncation deterministic (always the most
+  // recently updated rows) rather than unstable, which is why this shipped without symptoms
+  // that looked like ADR-172's — but the deals feed was still silently missing up to ~half
+  // of the genuinely qualifying rows. Paginated explicitly, with `id` as a tie-break for a
+  // fully stable order across pages.
+  let data: Row[];
+  try {
+    data = await fetchAllPaginated<Row>(
+      (from, to) =>
+        supabase
+          .from("product_stores")
+          .select(`id, current_price, original_price, store_id, last_checked_at, last_seen_at,
       products!inner(id, name_ar, name_en, brand, slug, image_url),
       stores(name_ar, name_en, slug)`)
-    .eq("is_deal", true)
-    .not("original_price", "is", null)
-    // Service-role queries bypass RLS (which already hides quarantined rows from
-    // anon/browser reads) — filter explicitly here too. See price-truth-gate.ts.
-    .is("price_quarantined_at", null)
-    .order("updated_at", { ascending: false })
-    .limit(1200);
-  if (error || !data?.length) return [];
+          .eq("is_deal", true)
+          .not("original_price", "is", null)
+          // Service-role queries bypass RLS (which already hides quarantined rows from
+          // anon/browser reads) — filter explicitly here too. See price-truth-gate.ts.
+          .is("price_quarantined_at", null)
+          .order("updated_at", { ascending: false })
+          .order("id", { ascending: true })
+          .range(from, to) as unknown as PromiseLike<{ data: Row[] | null; error: { message: string } | null }>,
+      { maxRows: 20_000 }
+    );
+  } catch {
+    return [];
+  }
+  if (!data.length) return [];
 
   // Group offers by product; resolve the crowned "best" offer per product via
   // selectBestDealOffer (fresh-preferred, never-drops-coverage fallback) below, not a
@@ -116,7 +136,7 @@ export async function getDeals(limit = 20, minDiscountPct = 1): Promise<Deal[]> 
     stores: Set<number>;
   }
   const byProduct = new Map<string, Agg>();
-  for (const r of data as unknown as Row[]) {
+  for (const r of data) {
     const p = r.products;
     // Approved-27 scope gate: deals only from approved retailers (Founder Directive 2026-07-27).
     if (!isApprovedStoreId(r.store_id)) continue;

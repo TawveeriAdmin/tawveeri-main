@@ -239,6 +239,75 @@ describe("unmetDemand — whitespace normalization (same fix as topSearchTerms)"
 // require() (not the top-level import) is deliberate in this block: each test needs a fresh
 // module instance after jest.resetModules() to pick up that test's own jest.doMock("@/lib/database").
 /* eslint-disable @typescript-eslint/no-require-imports */
+// ADR-285: fetchUsageEvents/fetchOutboundClicks used to fetch with a single, un-paginated
+// `.limit(20000)` — but PostgREST silently caps ANY response at its project's db-max-rows
+// setting (1000) regardless of the requested limit. Measured on production: real REAL
+// outbound_clicks for the founder's reported window was 3,102+, so the live dashboard's
+// "confirmed retailer redirects" read exactly 1000 — a truncation artifact, not a count.
+// These regression tests reproduce that shape against a mock PostgREST client (many more
+// than 1000 matching rows) and assert the fix (explicit `fetchAllPaginated` pagination)
+// returns the COMPLETE set, not a 1000-row slice.
+describe("fetchOutboundClicks / fetchUsageEvents — pagination past PostgREST's 1000-row cap (ADR-285)", () => {
+  afterEach(() => jest.dontMock("@/lib/database"));
+
+  // Mimics a PostgREST-backed Supabase client: `.range(from, to)` returns a genuine slice of
+  // the underlying dataset, exactly like the real project would for a paginated request.
+  function mockPostgrestClient(datasets: Record<string, unknown[]>) {
+    return {
+      from: (table: string) => {
+        const rows = datasets[table] ?? [];
+        const builder = {
+          select: () => builder,
+          gte: () => builder,
+          lt: () => builder,
+          order: () => builder,
+          range: (from: number, to: number) =>
+            Promise.resolve({ data: rows.slice(from, to + 1), error: null }),
+        };
+        return builder;
+      },
+    };
+  }
+
+  it("fetchOutboundClicks returns every real row across pages — not truncated at 1000 (the exact founder-reported defect)", async () => {
+    const total = 3102; // the founder's reported real-world figure, reproduced here as a fixture
+    const rows = Array.from({ length: total }, (_, i) => click({ canonical_product_id: `p${i}` }));
+    jest.doMock("@/lib/database", () => {
+      const actual = jest.requireActual("@/lib/database");
+      return { ...actual, createServerClient: () => mockPostgrestClient({ outbound_clicks: rows }) };
+    });
+    jest.resetModules();
+    const { fetchOutboundClicks: freshFetchOutboundClicks } = require("../../src/lib/admin/command-center-queries");
+    const result = await freshFetchOutboundClicks(new Date("2026-08-30T00:00:00Z"), new Date("2026-09-03T00:00:00Z"));
+    expect(result).toHaveLength(total); // NOT 1000
+  });
+
+  it("fetchUsageEvents returns every real row across pages — not truncated at 1000", async () => {
+    const total = 4545; // the founder's reported real 30-day figure, reproduced here as a fixture
+    const rows = Array.from({ length: total }, (_, i) => ev({ query_text: `q${i}` }));
+    jest.doMock("@/lib/database", () => {
+      const actual = jest.requireActual("@/lib/database");
+      return { ...actual, createServerClient: () => mockPostgrestClient({ usage_events: rows }) };
+    });
+    jest.resetModules();
+    const { fetchUsageEvents: freshFetchUsageEvents } = require("../../src/lib/admin/command-center-queries");
+    const result = await freshFetchUsageEvents(new Date("2026-08-04T00:00:00Z"), new Date("2026-09-03T00:00:00Z"));
+    expect(result).toHaveLength(total); // NOT 1000
+  });
+
+  it("still returns the correct (small) result when real volume is under the cap", async () => {
+    const rows = [click({ canonical_product_id: "p1" }), click({ canonical_product_id: "p2" })];
+    jest.doMock("@/lib/database", () => {
+      const actual = jest.requireActual("@/lib/database");
+      return { ...actual, createServerClient: () => mockPostgrestClient({ outbound_clicks: rows }) };
+    });
+    jest.resetModules();
+    const { fetchOutboundClicks: freshFetchOutboundClicks } = require("../../src/lib/admin/command-center-queries");
+    const result = await freshFetchOutboundClicks(new Date("2026-08-30T00:00:00Z"), new Date("2026-09-03T00:00:00Z"));
+    expect(result).toHaveLength(2);
+  });
+});
+
 describe("retailerBreakdown — merchant-name normalization (word-boundary fallback)", () => {
   afterEach(() => jest.dontMock("@/lib/database"));
 

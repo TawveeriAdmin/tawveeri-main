@@ -11,3 +11,6 @@ export * from './types';
 export const getSupabaseBrowserClient = getBrowserClient;
 export const createServerClient = serverClient;
 export const checkDatabaseConnection = checkDbConnection;
+
+export { fetchAllPaginated } from './paginated-fetch';
+export type { PaginatedPage, PaginatedFetchOptions } from './paginated-fetch';

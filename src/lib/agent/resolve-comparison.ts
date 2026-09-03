@@ -18,6 +18,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { getComparison, isComparisonError } from '@/lib/compare/get-comparison';
 import { detectCompareIntent, normalizeAr, type CompareIntent } from './compare-intent';
 import { SAUDI_SEARCH_SYNONYMS } from '@/lib/search/query-normalize';
+import { fetchAllPaginated } from '@/lib/database';
 
 /**
  * MEASURED, and it is why this exists: `canonical_products.name_ar` holds ENGLISH text —
@@ -71,13 +72,21 @@ const MIN_RETAILERS = 2;
  * if it somehow carries two offers.
  */
 async function comparableCategories(sb: SupabaseClient): Promise<Set<string>> {
-  const { data } = await sb
-    .from('tps_product_projection')
-    .select('category, store_count')
-    .gte('store_count', MIN_RETAILERS)
-    .limit(5000);
+  // ADR-285: a bare `.limit(5000)` with no `.order()` silently truncated to PostgREST's
+  // db-max-rows=1000 (real comparable-row count is 1,372 and climbing) AND was
+  // non-deterministic across calls — the same "which 1000 you get changes every request"
+  // defect ADR-172 found, here meaning a category could flap in and out of comparison
+  // eligibility between one search and the next. Paginated explicitly, ordered by `id`.
+  const rows = await fetchAllPaginated<{ category: string | null }>((from, to) =>
+    sb
+      .from('tps_product_projection')
+      .select('category, id')
+      .gte('store_count', MIN_RETAILERS)
+      .order('id', { ascending: true })
+      .range(from, to)
+  );
   const s = new Set<string>();
-  for (const r of (data ?? []) as Array<{ category: string | null }>) if (r.category) s.add(r.category);
+  for (const r of rows) if (r.category) s.add(r.category);
   return s;
 }
 
