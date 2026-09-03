@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/database";
 import { decide, explainChoice, requiredBtuForRoom, AC_BTU_FIT_TOLERANCE, type ShoppingTask, type CanonicalRow, type Recommendation } from "@/lib/agent/decision-engine";
+import { buildGoUrl } from "@/lib/analytics/build-go-url";
 import { buildPublishedEvidence } from "@/lib/agent/published-evidence";
 import { guardAdvisorPayload } from "@/lib/agent/answer-guard";
 import { parseShoppingTask, sizeSatisfiesComparator } from "@/lib/agent/task-parser";
@@ -232,7 +233,7 @@ export async function POST(req: NextRequest) {
   ]);
   const obs = ((obsRes as { data?: unknown })?.data ?? []) as ObsRaw[];
   for (const o of obs) {
-    if (!goByCanon.has(o.canonical_product_id)) goByCanon.set(o.canonical_product_id, `/go/${o.id}`);
+    if (!goByCanon.has(o.canonical_product_id)) goByCanon.set(o.canonical_product_id, buildGoUrl(o.id));
     // store_id here is a STRING identity (Arabic name / slug / numeric id), not always numeric.
     const raw = o.store_id == null ? "" : String(o.store_id).trim();
     if (raw) {

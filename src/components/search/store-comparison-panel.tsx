@@ -7,6 +7,7 @@ import { Price } from '@/components/ui/price';
 import { CouponBadge } from '@/components/ui/coupon-badge';
 import { cn } from '@/lib/utils';
 import { track } from '@/lib/analytics/track';
+import { recordFirstPartyInteraction } from '@/lib/analytics/interaction';
 import { useTranslations } from '@/lib/simple-intl-provider';
 import type { ProductCardProduct } from '@/components/products/product-card';
 import { selectBestPriceStore } from '@/components/products/product-card';
@@ -158,6 +159,8 @@ export function StoreComparisonPanel({ product, locale, onClose }: StoreComparis
                         source: 'search_panel',
                         meta: { measured: false },
                       });
+                      // ADR-286 — Option A: no /go hop for this scraped-result exit.
+                      recordFirstPartyInteraction({ goId: null, canonicalId: product.id, surface: 'search_panel' });
                     }}
                   >
                     <Button

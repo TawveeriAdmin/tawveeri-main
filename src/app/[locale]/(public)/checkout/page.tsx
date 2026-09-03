@@ -16,6 +16,7 @@ import { ExternalLink, AlertCircle, ShoppingBag, ArrowLeft } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast';
 import { getSupabaseBrowserClient } from '@/lib/database';
 import { track } from '@/lib/analytics/track';
+import { recordFirstPartyInteraction, appendInteractionId } from '@/lib/analytics/interaction';
 import Image from 'next/image';
 
 export default function CheckoutPage() {
@@ -94,7 +95,10 @@ export default function CheckoutPage() {
  const first = productStores.find((ps) => store.items.some((item) => item.productId === ps.product_id)) || productStores[0];
  if (first?.id) {
  track('go_click', { source: 'checkout', store: storeId, meta: { measured: true } });
- window.open(`/go/ps_${first.id}?source=checkout`, '_blank', 'noopener,noreferrer');
+ // ADR-286 — decision-grade interaction evidence, minted synchronously in this real onClick.
+ const goId = `ps_${first.id}`;
+ const interactionId = recordFirstPartyInteraction({ goId, surface: 'checkout' });
+ window.open(appendInteractionId(`/go/${goId}?source=checkout`, interactionId), '_blank', 'noopener,noreferrer');
  toast({
  title: t('common.redirected'),
  description: t('checkout.redirectedDesc'),

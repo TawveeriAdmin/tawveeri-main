@@ -6,6 +6,7 @@ import { Sparkles, Store, ArrowLeft, ArrowRight, BarChart3, Clock, CircleAlert }
 import { Price } from '@/components/ui/price';
 import { hoursSince, observedAgoLabel } from '@/lib/intelligence/evidence-engine';
 import { track } from '@/lib/analytics/track';
+import { recordFirstPartyInteraction } from '@/lib/analytics/interaction';
 import { hasSeenDecisionCard, markDecisionCardSeen } from '@/lib/agent/return-to-decision';
 
 /**
@@ -167,7 +168,13 @@ export function SmartPickCard({ pick, locale }: { pick: SmartPick; locale: strin
         )}
         <Link
           href={pick.product_url}
-          onClick={() => pick.canonical_id && track('recommendation_accept', { canonical_id: pick.canonical_id, meta: { trust_score: pick.trust?.score ?? null, trust_tier: pick.trust?.tier ?? null } })}
+          onClick={() => {
+            if (pick.canonical_id) track('recommendation_accept', { canonical_id: pick.canonical_id, meta: { trust_score: pick.trust?.score ?? null, trust_tier: pick.trust?.tier ?? null } });
+            // ADR-286 — Option A: Smart Pick's product_url is a direct merchant link (no /go
+            // hop — traced to algoliaHitToGrouped's normalizeExitUrl path), so the interaction
+            // record stands alone as evidence.
+            recordFirstPartyInteraction({ goId: null, canonicalId: pick.canonical_id ?? null, surface: 'smart_pick' });
+          }}
           className="inline-flex h-9 items-center justify-center gap-1 rounded-full border border-primary-300 px-4 text-xs font-medium text-primary-700 transition-colors hover:bg-primary-50 dark:border-primary-800 dark:text-primary-300 dark:hover:bg-primary-950/40"
         >
           {claimsComparison ? (isRTL ? `اذهب إلى ${pick.store_name}` : `Go to ${pick.store_name}`) : cta}

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { recordFirstPartyInteraction } from '@/lib/analytics/interaction';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -816,7 +817,9 @@ export default function ComparePage() {
                       ) : (
                         primaryStoreUrl && (
                           <Button asChild variant="default" size="sm" className="h-9 px-5 rounded-md text-sm font-semibold">
-                            <a href={primaryStoreUrl} target="_blank" rel="noopener noreferrer">
+                            <a href={primaryStoreUrl} target="_blank" rel="noopener noreferrer"
+                              onClick={() => recordFirstPartyInteraction({ goId: null, canonicalId: isUuid(product.id) ? product.id : null, surface: 'compare_list' })}
+                            >
                               {t('compare.viewStore')}
                               <ExternalLink className="w-3.5 h-3.5 ms-1.5" />
                             </a>

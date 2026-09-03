@@ -6,6 +6,7 @@ import { normalizeSearchQuery } from '@/lib/search/query-normalize';
 import { resolveApprovedSlug, isDisplayableRetailer, retailerDisplayName } from '@/lib/retailers/approved-retailers';
 import { mapFreeGiftToConditionalOffer, summarizeOffers, type ConditionalOfferEvidence } from '@/lib/tps/v1-search-helpers';
 import { deriveCampaignEligibility, type CampaignEligibilityEvidence } from '@/lib/providers/campaigns/blackbox-riyal-festival';
+import { buildGoUrl } from '@/lib/analytics/build-go-url';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -161,7 +162,7 @@ export async function GET(req: NextRequest) {
       const list = offersByCanon.get(o.canonical_product_id) ?? [];
       list.push({
         offer_id: o.id, store_id: o.store_id ?? '', store_slug: slug, store_name: retailerDisplayName(slug, 'ar') ?? slug,
-        price: priceKey ? latestPrice.get(priceKey) ?? null : null, go_url: `/go/${o.id}`, availability: 'in_stock',
+        price: priceKey ? latestPrice.get(priceKey) ?? null : null, go_url: buildGoUrl(o.id), availability: 'in_stock',
         conditional_offer: (Number.isFinite(rawId) ? conditionalByRawId.get(rawId as number) : undefined) ?? null,
         campaign_eligibility: (Number.isFinite(rawId) ? eligibilityByRawId.get(rawId as number) : undefined) ?? null,
       });

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/database";
 import { decide, type ShoppingTask, type CanonicalRow, type Recommendation } from "@/lib/agent/decision-engine";
+import { buildGoUrl } from "@/lib/analytics/build-go-url";
 import {
   parseHomeMission, buildLegs, eligibleRows, allocateBudget, comparisonClaim,
   tvSizeOf, MISSION_CATEGORIES, QUANTITY_CAP, TOTAL_DISCLOSURE_AR, TOTAL_DISCLOSURE_EN,
@@ -235,7 +236,7 @@ export async function POST(req: NextRequest) {
       .in("canonical_product_id", [...shownIds]).order("observed_at", { ascending: false });
     const obs = ((obsRes as { data?: unknown })?.data ?? []) as { id: string; canonical_product_id: string; store_id: unknown }[];
     for (const o of obs) {
-      if (!goByCanon.has(o.canonical_product_id)) goByCanon.set(o.canonical_product_id, `/go/${o.id}`);
+      if (!goByCanon.has(o.canonical_product_id)) goByCanon.set(o.canonical_product_id, buildGoUrl(o.id));
       const raw = o.store_id == null ? "" : String(o.store_id).trim();
       if (raw) {
         const set = storesByCanon.get(o.canonical_product_id) ?? new Set<string>();

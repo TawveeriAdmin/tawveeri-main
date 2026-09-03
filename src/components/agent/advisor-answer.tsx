@@ -19,6 +19,7 @@ import { ConstraintLedger } from '@/components/agent/constraint-ledger';
 // re-written, so the two surfaces cannot describe the same observation differently.
 import { ageLabel } from '@/lib/agent/home-mission-view';
 import { track, sessionId } from '@/lib/analytics/track';
+import { recordFirstPartyInteraction, appendInteractionId } from '@/lib/analytics/interaction';
 import { hasSeenDecisionCard, markDecisionCardSeen } from '@/lib/agent/return-to-decision';
 import { deriveReferralCode, appendReferralParams } from '@/lib/analytics/referral-link';
 
@@ -371,8 +372,18 @@ function ExitButtons({ rec, loc, t, Arrow, source, id, onAccept }: { rec: Adviso
         href={href}
         target={external ? '_blank' : undefined}
         rel={external ? 'noopener noreferrer' : undefined}
-        onClick={() => {
+        onClick={(e) => {
           track('go_click', { canonical_id: rec.canonical_id, store: rec.stores?.[0] ?? null, category: (rec.dna?.category as string) ?? null, source, meta: { measured: external } });
+          // ADR-286 — decision-grade interaction evidence. Only real /go exits carry a
+          // meaningful goId (the compare-page fallback below is an internal route, not an
+          // exit); mint the interaction_id synchronously in this real onClick, then take over
+          // navigation so the id can be attached to the href the browser actually follows.
+          if (external) {
+            e.preventDefault();
+            const goId = (href.match(/^\/go\/([^?]+)/) || [])[1] ?? null;
+            const interactionId = recordFirstPartyInteraction({ goId, canonicalId: rec.canonical_id ?? null, surface: source });
+            window.open(goId ? appendInteractionId(href, interactionId) : href, '_blank', 'noopener,noreferrer');
+          }
           onAccept?.();
         }}
         className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-primary-600 px-4 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-700"

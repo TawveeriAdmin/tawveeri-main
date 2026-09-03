@@ -16,6 +16,7 @@ import type { EligibleCampaign } from '@/lib/campaigns/types';
 import { needPhrasings, needPrompt } from '@/lib/agent/need-phrasings';
 import { useNavigableCategories } from '@/lib/intelligence/navigable-categories-context';
 import { track } from '@/lib/analytics/track';
+import { recordFirstPartyInteraction, appendInteractionId } from '@/lib/analytics/interaction';
 import { CampaignCard } from '@/components/campaigns/campaign-card';
 
 const T = {
@@ -202,6 +203,15 @@ export function UnifiedHome({
               // An internal compare link stays in the tab; an outbound exit opens a new one.
               <a key={d.url} href={d.href}
                 {...(d.internal ? {} : { target: '_blank', rel: 'noopener noreferrer' })}
+                onClick={d.internal ? undefined : (e) => {
+                  // ADR-286 — decision-grade interaction evidence, minted synchronously in
+                  // this real onClick. Internal (compare-page) links are untouched — they
+                  // never went through /go and stay in-tab exactly as before.
+                  e.preventDefault();
+                  const goId = (d.href.match(/^\/go\/([^?]+)/) || [])[1] ?? null;
+                  const interactionId = recordFirstPartyInteraction({ goId, surface: 'home_verified_deal' });
+                  window.open(goId ? appendInteractionId(d.href, interactionId) : d.href, '_blank', 'noopener,noreferrer');
+                }}
                 style={{ textDecoration: 'none', background: 'var(--color-surface)', border: '1px solid var(--color-outline-variant)', borderRadius: 16, padding: '14px 16px', display: 'block' }}>
                 <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--color-on-surface)', lineHeight: 1.45, marginBottom: 8 }}>{d.name}</div>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>

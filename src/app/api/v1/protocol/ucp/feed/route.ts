@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/database";
 import { productTrust, isFreshObservation } from '@/lib/intelligence/evidence-engine';
 import { ucpAdapter, type TawveeriProduct } from "@/lib/protocol/adapter";
+import { buildGoUrl } from "@/lib/analytics/build-go-url";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -55,7 +56,7 @@ export async function GET(req: NextRequest) {
       const k = `${o.canonical_product_id}|${o.store_id}`;
       if (seen.has(k)) continue; seen.add(k);
       const list = offersByCanon.get(o.canonical_product_id) ?? [];
-      list.push({ store: STORE_SLUG[o.store_id] ?? o.store_id, price: latestPrice.get(k) ?? null, currency: "SAR", availability: "in_stock", measured_exit: `/go/${o.id}` });
+      list.push({ store: STORE_SLUG[o.store_id] ?? o.store_id, price: latestPrice.get(k) ?? null, currency: "SAR", availability: "in_stock", measured_exit: buildGoUrl(o.id) });
       offersByCanon.set(o.canonical_product_id, list);
     }
   }

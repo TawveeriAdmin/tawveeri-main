@@ -218,7 +218,24 @@ export default async function AdminDashboardPage({
           <Card
             label={t('خروج لمتاجر', 'Retailer exits')}
             value={fmt(data.consumer7d.outboundExits)}
-            hint={t('من سجل الخروج المؤكد', 'from the confirmed exit ledger')}
+            hint={t(
+              `[خام] ${fmt(data.consumer7d.outboundExits)} خروج متجر مسجل — [منسوب] ${fmt(data.consumer7d.outboundExitsAttributed)} مرتبط بمعرّف جلسة توفيري؛ والبقية غير منسوبة وقيد التحقيق`,
+              `[RAW] ${fmt(data.consumer7d.outboundExits)} raw retailer redirects — [ATTRIBUTED] ${fmt(data.consumer7d.outboundExitsAttributed)} carried a Tawveeri session ID; the remainder is unattributed and under investigation`
+            )}
+            warn={
+              data.consumer7d.outboundExits.value !== null &&
+              data.consumer7d.outboundExitsAttributed.value !== null &&
+              data.consumer7d.outboundExits.value >= 30 &&
+              data.consumer7d.outboundExitsAttributed.value / data.consumer7d.outboundExits.value < 0.2
+            }
+          />
+          <Card
+            label={t('تفاعلات مؤكدة (دقيقة القرار)', 'Decision-grade interactions')}
+            value={fmt(data.decisionGrade7d.firstPartyInteractions)}
+            hint={t(
+              `${fmt(data.decisionGrade7d.merchantNavigationsCorrelated)} منها مرتبط بخروج فعلي للمتجر — الرقم الوحيد الذي يثبت تفاعلاً صريحاً، وليس مجرد طلب خام`,
+              `${fmt(data.decisionGrade7d.merchantNavigationsCorrelated)} of these correlate to a confirmed merchant exit — the only number here that proves an explicit interaction, not merely a raw request`
+            )}
           />
         </div>
       </Section>

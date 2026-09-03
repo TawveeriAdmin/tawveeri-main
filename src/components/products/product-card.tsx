@@ -18,6 +18,7 @@ import { StoreLogo } from '@/components/ui/store-logo';
 import { bestPrice as bestPriceCopy } from '@/lib/copy';
 import { applyAffiliateTag } from '@/lib/transactions/affiliate-config';
 import { track } from '@/lib/analytics/track';
+import { recordFirstPartyInteraction } from '@/lib/analytics/interaction';
 import { ProductImageFrame, PRODUCT_PLACEHOLDER_IMAGE } from '@/components/products/shared-product-card';
 import { isFreshObservation, hoursSince, observedAgoLabel } from '@/lib/intelligence/evidence-engine';
 
@@ -204,6 +205,11 @@ export function ProductCard({
     if (externalProductUrl) {
       // ADR-244: this retailer exit was unmeasured (no event, no ledger row).
       track('go_click', { canonical_id: product.id, store: String(primaryStoreSlug ?? ''), category: product.category ?? null, source: 'search_card', meta: { measured: false } });
+      // ADR-286 — Option A (direct navigation + explicit interaction evidence only): this
+      // exit bypasses /go entirely (no product_stores row to route through), so there is no
+      // server-confirmed-navigation ledger row to correlate against — the interaction record
+      // itself is the evidence here, standing alone.
+      recordFirstPartyInteraction({ goId: null, canonicalId: product.id, surface: 'search_card' });
       window.open(externalProductUrl, '_blank', 'noopener');
       return;
     }
@@ -285,6 +291,9 @@ export function ProductCard({
             // product_stores ledger row exists for scraped externals, so the
             // affiliate-tagged direct link stays; the event is the measurement.
             track('go_click', { canonical_id: product.id, store: String(primaryStoreSlug ?? ''), category: product.category ?? null, source: 'search_card', meta: { measured: false } });
+            // ADR-286 — Option A: no /go hop exists for this exit; the interaction record
+            // stands alone as evidence (no server-confirmed-navigation row to join against).
+            recordFirstPartyInteraction({ goId: null, canonicalId: product.id, surface: 'search_card' });
           }}
         >
           {children}

@@ -22,6 +22,7 @@ import {
   Package,
 } from 'lucide-react';
 import type { ProductCardProduct } from '@/components/products/product-card';
+import { recordFirstPartyInteraction } from '@/lib/analytics/interaction';
 
 const PLACEHOLDER_IMAGE =
   'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtc2l6ZT0iMTgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIiBmaWxsPSIjOTk5Ij5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=';
@@ -240,7 +241,12 @@ export function ProductDetailSheet({
                         target="_blank"
                         rel="noopener noreferrer"
                         className="shrink-0"
-                        onClick={(e) => e.stopPropagation()}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          // ADR-286 — Option A: no /go hop for this exit (direct product_url/
+                          // affiliate_url), so the interaction record stands alone as evidence.
+                          recordFirstPartyInteraction({ goId: null, canonicalId: product?.id ?? null, surface: 'product_detail_sheet' });
+                        }}
                       >
                         <Button variant="default" size="sm" className="text-xs gap-1.5 shrink-0">
                           <ExternalLink className="h-3.5 w-3.5" />

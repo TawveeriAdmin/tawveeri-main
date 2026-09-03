@@ -2,6 +2,7 @@
 
 import { Store, ArrowLeft, ArrowRight, CircleAlert } from 'lucide-react';
 import { Price } from '@/components/ui/price';
+import { recordFirstPartyInteraction } from '@/lib/analytics/interaction';
 
 /**
  * ClosestOptions — ADR-270 Fix 4 (2026-08-22). "Tawveeri never shows an empty result": when a
@@ -56,6 +57,7 @@ export function ClosestOptions({ options, locale }: { options: ClosestOption[]; 
                 href={o.product_url}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={() => recordFirstPartyInteraction({ goId: null, canonicalId: o.product_id ?? null, surface: 'closest_options' })}
                 className="inline-flex h-8 items-center gap-1 rounded-full border border-[color:var(--color-outline-variant)] px-3 text-xs font-medium text-on-surface-variant transition-colors hover:text-on-surface"
               >
                 {isRTL ? 'عرض في المتجر' : 'View at store'}<Arrow className="h-3.5 w-3.5" aria-hidden />

@@ -23,6 +23,7 @@ import { ProductRatingDisplay } from '@/components/products/product-rating-displ
 import { ProductSpecifications } from '@/components/products/product-specifications';
 import { ComparisonTable } from '@/components/products/comparison-table';
 import { track, initTestModeFromUrl } from '@/lib/analytics/track';
+import { recordFirstPartyInteraction, appendInteractionId } from '@/lib/analytics/interaction';
 import { initCampaignFromUrl } from '@/lib/analytics/campaign';
 import { BestPriceCard } from '@/components/products/best-price-card';
 import { ProductImageFrame, PRODUCT_PLACEHOLDER_IMAGE } from '@/components/products/shared-product-card';
@@ -716,7 +717,13 @@ export default function ProductDetailClient() {
  // Mobile Safari blocks window.open() called AFTER an await (the user-gesture is lost).
  // /go is a same-origin GET that 302s to the retailer — synchronous open, no await.
  if (!productStore.product_url && !productStore.affiliate_url) return;
- window.open(`/go/ps_${productStore.id}?source=product_page`, '_blank', 'noopener,noreferrer');
+ // ADR-286 — decision-grade interaction evidence: mint the interaction_id HERE, in this
+ // real onClick, and attach it to the /go href. recordFirstPartyInteraction never awaits
+ // the network call, so this stays synchronous with the user gesture (same reason
+ // window.open below is never called after an await).
+ const goId = `ps_${productStore.id}`;
+ const interactionId = recordFirstPartyInteraction({ goId, canonicalId: product?.id ?? null, surface: 'product_page' });
+ window.open(appendInteractionId(`/go/${goId}?source=product_page`, interactionId), '_blank', 'noopener,noreferrer');
  };
 
  const handleAddRelatedToCart = (relatedProduct: ProductCardProduct) => {

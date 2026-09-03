@@ -8,6 +8,7 @@
 import { randomBytes } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/database";
+import { buildGoUrl } from "@/lib/analytics/build-go-url";
 import { sanitizeShareRequest, assembleSnapshot, type CanonicalFact } from "@/lib/agent/home-mission-share";
 import { deriveReferralCode, appendReferralParams } from "@/lib/analytics/referral-link";
 
@@ -35,7 +36,7 @@ export async function POST(request: NextRequest) {
   const obsRows = (obsRes?.data ?? []) as Array<{ id: string; canonical_product_id: string }>;
   const goByCanon = new Map<string, string>();
   for (const o of obsRows) {
-    if (!goByCanon.has(o.canonical_product_id)) goByCanon.set(o.canonical_product_id, `/go/${o.id}`);
+    if (!goByCanon.has(o.canonical_product_id)) goByCanon.set(o.canonical_product_id, buildGoUrl(o.id));
   }
 
   const facts = new Map<string, CanonicalFact>();

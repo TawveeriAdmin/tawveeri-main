@@ -18,6 +18,7 @@
 
 import { createServerClient } from '@/lib/database';
 import { resolveApprovedSlug, retailerDisplayName } from '@/lib/retailers/approved-retailers';
+import { buildGoUrl } from '@/lib/analytics/build-go-url';
 
 export interface HomeVerifiedDeal {
   name: string;
@@ -107,7 +108,7 @@ async function resolveDestinations(
     out.set(url, key
       ? { href: `/${locale}/compare/${encodeURIComponent(key)}`, internal: true }
       // `source=home_deal` so this surface is separable in `outbound_clicks` from every other exit.
-      : { href: `/go/${o.id}?source=home_deal`, internal: false });
+      : { href: buildGoUrl(o.id, { source: 'home_deal' }), internal: false });
   }
   return out;
 }

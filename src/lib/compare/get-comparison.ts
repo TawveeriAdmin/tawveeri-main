@@ -28,6 +28,7 @@ import { resolveApprovedSlug, retailerDisplayName, isDisplayableRetailer } from 
 import { displayedObservedAt } from '@/lib/intelligence/observed-freshness';
 import { STALE_CAVEAT_HOURS, isFreshObservation } from '@/lib/intelligence/evidence-engine';
 import { deriveCampaignEligibility, type CampaignEligibilityEvidence } from '@/lib/providers/campaigns/blackbox-riyal-festival';
+import { buildGoUrl } from '@/lib/analytics/build-go-url';
 
 interface PriceRow {
   store_name: string;
@@ -297,7 +298,7 @@ export async function getComparison(params: {
         raw_name: listing?.rawName ?? (locale === 'en' ? canonical.name_en : canonical.name_ar),
         price: p.price,
         availability: p.availability,
-        product_url: exitId ? `/go/${exitId}` : listing?.url ?? null,
+        product_url: exitId ? buildGoUrl(exitId) : listing?.url ?? null,
         observed_at: observedAt,
         // P0 stale-price safety (2026-08-07): "current price" must never be presented as
         // freshly verified when it isn't. Reuses evidence-engine's single caveat threshold

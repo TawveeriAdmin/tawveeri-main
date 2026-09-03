@@ -17,6 +17,7 @@ import {
   COMPARISON_DISPLAY_EXCLUDED,
   resolveApprovedSlug,
 } from '@/lib/retailers/approved-retailers';
+import { getDecisionGradeOutboundStats } from './decision-grade-queries';
 
 export interface Metric {
   value: number | null;
@@ -54,7 +55,28 @@ export interface FounderHomeData {
     sessions: Metric; // REAL distinct session_id
     searches: Metric; // REAL search + advisor_query events (raw, not deduped)
     noAnswer: Metric;
-    outboundExits: Metric; // REAL outbound_clicks ledger rows
+    outboundExits: Metric; // REAL outbound_clicks ledger rows — raw volume, NOT all attributable to a browsing session (see outboundExitsAttributed)
+    // 2026-09-03 founder mission finding: a live, growing, unattributed redirect flood
+    // (docs/report/SEPTEMBER-2026-EXECUTION-BASELINE.md §A.3, ADR-282) means most ledger
+    // rows in an active window can carry no session_id at all — outboundExits alone reads
+    // as customer demand when it may be almost entirely non-customer traffic. This is the
+    // subset of outboundExits that DOES carry a session_id (stamped by /go from tw_sid) —
+    // the only slice attributable to an actual browsing session, however small.
+    //
+    // LEGACY, NOT DECISION-GRADE (ADR-286): a session_id is a correlation signal from a
+    // cookie, not proof a specific redirect was a deliberate click — kept only as a weaker,
+    // always-available fallback for periods before decisionGrade below has real data (e.g.
+    // pre-cutover, or before migrations 45/46 are applied). Prefer decisionGrade for any
+    // founder-facing claim about real customer interaction volume.
+    outboundExitsAttributed: Metric;
+  };
+  /** ADR-286 (third pass) — the actual decision-grade contract. Every count here required a
+   *  real onClick to fire client-side (src/lib/analytics/interaction.ts) — never merely a
+   *  rendered page, a valid render-token, a session cookie, or a browser-looking UA. Gracefully
+   *  UNKNOWN (not zero) until migrations 45/46 are applied — see decision-grade-queries.ts. */
+  decisionGrade7d: {
+    firstPartyInteractions: Metric;
+    merchantNavigationsCorrelated: Metric;
   };
   commercial: {
     exitsSinceBaseline: Metric; // REAL ledger rows since COMMERCIAL_BASELINE
@@ -115,6 +137,14 @@ export async function getFounderHomeData(): Promise<FounderHomeData> {
     (error: unknown) => ({ ok: false as const, error })
   );
 
+  // ADR-286 (third pass): isolated in its own settled promise, same rationale as
+  // sessions7dSettled above — this queries a table (first_party_interactions) that does not
+  // exist in production until migration 46 ships, and must not throw the whole page down with it.
+  const decisionGrade7dSettled = getDecisionGradeOutboundStats(new Date(iso7d), new Date()).then(
+    (stats) => ({ ok: true as const, stats }),
+    (error: unknown) => ({ ok: false as const, error })
+  );
+
   const [
     [
       storesCount,
@@ -128,6 +158,7 @@ export async function getFounderHomeData(): Promise<FounderHomeData> {
       searches7d,
       noAnswer7d,
       exits7d,
+      exitsAttributed7d,
       exitsBaseline,
       taggedBaseline,
       conversions,
@@ -136,6 +167,7 @@ export async function getFounderHomeData(): Promise<FounderHomeData> {
       freshPerStore,
     ],
     sessions7dResult,
+    decisionGrade7dResult,
   ] = await Promise.all([
     Promise.all([
       supabase.from('stores').select('id', { count: 'exact', head: true }),
@@ -184,6 +216,12 @@ export async function getFounderHomeData(): Promise<FounderHomeData> {
         .from('outbound_clicks')
         .select('id', { count: 'exact', head: true })
         .eq('is_test', false)
+        .not('session_id', 'is', null)
+        .gte('clicked_at', iso7d),
+      supabase
+        .from('outbound_clicks')
+        .select('id', { count: 'exact', head: true })
+        .eq('is_test', false)
         .gte('clicked_at', COMMERCIAL_BASELINE_ISO),
       supabase
         .from('outbound_clicks')
@@ -215,6 +253,7 @@ export async function getFounderHomeData(): Promise<FounderHomeData> {
       ),
     ]),
     sessions7dSettled,
+    decisionGrade7dSettled,
   ]);
 
   // Distinct sessions computed in JS (PostgREST cannot count distinct).
@@ -227,6 +266,19 @@ export async function getFounderHomeData(): Promise<FounderHomeData> {
     : {
         value: null,
         reason: sessions7dResult.error instanceof Error ? sessions7dResult.error.message : String(sessions7dResult.error),
+      };
+
+  const decisionGrade7d = decisionGrade7dResult.ok
+    ? decisionGrade7dResult.stats
+    : {
+        firstPartyInteractions: {
+          value: null,
+          reason: decisionGrade7dResult.error instanceof Error ? decisionGrade7dResult.error.message : String(decisionGrade7dResult.error),
+        },
+        merchantNavigationsCorrelated: {
+          value: null,
+          reason: decisionGrade7dResult.error instanceof Error ? decisionGrade7dResult.error.message : String(decisionGrade7dResult.error),
+        },
       };
 
   const anyFreshError = freshPerStore.find((r: { error: unknown }) => r.error);
@@ -266,7 +318,9 @@ export async function getFounderHomeData(): Promise<FounderHomeData> {
       searches: metric(searches7d.count, searches7d.error),
       noAnswer: metric(noAnswer7d.count, noAnswer7d.error),
       outboundExits: metric(exits7d.count, exits7d.error),
+      outboundExitsAttributed: metric(exitsAttributed7d.count, exitsAttributed7d.error),
     },
+    decisionGrade7d,
     commercial: {
       exitsSinceBaseline: metric(exitsBaseline.count, exitsBaseline.error),
       affiliateTaggedExits: metric(taggedBaseline.count, taggedBaseline.error),
@@ -317,6 +371,24 @@ export async function getFounderHomeData(): Promise<FounderHomeData> {
       titleAr: `${data.system.failedRuns24h.value} تشغيل استيعاب فاشل خلال 24 ساعة`,
       titleEn: `${data.system.failedRuns24h.value} failed ingestion runs in 24h`,
       href: '/admin/scraping/runs',
+    });
+  }
+  // 2026-09-03 founder mission finding: measured via npm run tps:sanity against production the
+  // same day — a growing share of outbound_clicks rows carry no session_id (210 → 982 → 1888
+  // such rows/day since 2026-08-31, still climbing as of this check). ROOT CAUSE NOT YET
+  // CONFIRMED — see docs/report/SEPTEMBER-2026-EXECUTION-BASELINE.md §A.3/N.1 and the
+  // 2026-09-03 containment investigation. Deliberately neutral wording: this counts what is
+  // PROVEN (session-attributed vs not) and does not characterize the unattributed share as
+  // bots, fraud, or "not customer traffic" — that determination is not yet established.
+  // Never blocks or alters any redirect — detection/disclosure only.
+  const rawExits = data.consumer7d.outboundExits.value;
+  const attributedExits = data.consumer7d.outboundExitsAttributed.value;
+  if (rawExits !== null && attributedExits !== null && rawExits >= 30 && attributedExits / rawExits < 0.2) {
+    att.push({
+      severity: 'critical',
+      titleAr: `[خام] ${rawExits} خروج متجر مسجل — [منسوب] ${attributedExits} فقط مرتبط بمعرّف جلسة توفيري؛ والبقية غير منسوبة وقيد التحقيق`,
+      titleEn: `[RAW] ${rawExits} raw retailer redirects — [ATTRIBUTED] ${attributedExits} carried a Tawveeri session ID; the remainder is unattributed and under investigation`,
+      href: '/admin/command-center',
     });
   }
   if (!reviewQueue.error && (reviewQueue.count ?? 0) > 0) {

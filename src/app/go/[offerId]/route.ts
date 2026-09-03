@@ -17,6 +17,7 @@ import { buildOfferExitLink, getProviderByStoreId } from "@/lib/providers";
 import { normalizeExitUrl, isNonProductionExitUrl } from "@/lib/retailers/exit-url";
 import { getBaseUrl } from "@/lib/seo/metadata";
 import { isKnownBotUserAgent } from "@/lib/analytics/bot-detection";
+import { verifyGoToken } from "@/lib/analytics/go-token";
 
 // A measured exit is per-request and must never be cached (each hit records an
 // outbound click and resolves the current offer URL). Force dynamic + Node runtime.
@@ -120,6 +121,48 @@ export async function GET(req: NextRequest, props: { params: Promise<{ offerId: 
   const rawSource = req.nextUrl.searchParams.get("source") || "product_page";
   const source = /^[a-z_]{1,32}$/.test(rawSource) ? rawSource : "product_page";
 
+  // ADR-286, CORRECTED 2026-09-03 (adversarial-test gate found the original label overclaimed
+  // what this evidence proves): `gt` is minted server-side by issueGoToken() wherever we
+  // render this exact `/go/<offerId>` href in a real page/API response — but ANY client that
+  // fetches the same public API/page response (a crawler, curl, a scraper — no click, no JS,
+  // no session required) receives an identically valid token. A valid `gt` therefore proves
+  // ONLY that our own server minted this specific link recently (ORIGIN/AUTHENTICITY — rules
+  // out ID-guessing and stale/copied links) — it does NOT prove a deliberate interaction
+  // occurred (INTERACTION/INTENT), which is why the classification below is named
+  // `render_token_valid`, not `first_party_ui_interaction`. The only interaction-adjacent
+  // signal that actually requires a real onClick to fire is the existing `track('go_click',
+  // …)` POST every current handler already sends (advisor-answer.tsx, store-comparison-
+  // panel.tsx, product-card.tsx) — but it lands in `usage_events`, uncorrelated with this
+  // table today. A true `first_party_ui_interaction` classification requires a read-time join
+  // between `outbound_clicks` and a matching `usage_events.go_click` row (same session_id,
+  // close timestamps — the same shape as the existing ADR-214 campaign-attribution join) —
+  // NOT implemented this pass; scoped as explicit follow-up, not silently assumed. A missing/
+  // expired/mismatched token NEVER blocks or alters the redirect — navigation stays fail-open
+  // — it only changes how the resulting ledger row is CLASSIFIED. Gated behind
+  // ENABLE_GO_INTERACTION_PROVENANCE (default off) so this can deploy independently of migration
+  // 45 (scripts/database/45-outbound-clicks-interaction-provenance.sql) actually being applied —
+  // when the flag is off, the field is omitted from the insert entirely, so an unapplied
+  // migration can never turn into a broken/rejected insert on every real redirect.
+  const provenanceEnabled = process.env.ENABLE_GO_INTERACTION_PROVENANCE === "1";
+  const goTokenValid = provenanceEnabled
+    ? verifyGoToken(offerId, req.nextUrl.searchParams.get("gt")).valid
+    : null;
+  const interactionProvenance: "render_token_valid" | "raw_request" | null =
+    provenanceEnabled ? (goTokenValid ? "render_token_valid" : "raw_request") : null;
+
+  // ADR-286 (second correction pass) — `iid`, if present, is the client-generated id from
+  // src/lib/analytics/interaction.ts. Stored VERBATIM, UNVALIDATED — this route does not look
+  // it up or use it to classify anything. "Was this navigation tied to a proven interaction"
+  // is answered later, at READ time, by an exact join against first_party_interactions
+  // (migration 46) — never by trusting mere possession of an id string here. Gated behind the
+  // SAME provenanceEnabled flag as the token above (both migration 45's and 46's columns ship
+  // in the same deploy) so an unapplied migration can never turn into a broken insert.
+  const rawInteractionId = req.nextUrl.searchParams.get("iid");
+  const interactionId =
+    provenanceEnabled && rawInteractionId && /^[A-Za-z0-9_-]{8,64}$/.test(rawInteractionId)
+      ? rawInteractionId
+      : null;
+
   // ADR-259 — MERCHANT-DESTINATION TRUTH, enforced at the single exit boundary.
   //
   // Every consumer exit (storefront card, Home purchase checklist, retailer CTA, agent)
@@ -206,6 +249,10 @@ export async function GET(req: NextRequest, props: { params: Promise<{ offerId: 
       user_agent: ua || null,
       referrer: req.headers.get("referer") ?? null,
       ip_address: ipAddress,
+      // Omitted entirely (not even `null`) unless the flag is on — see the ADR-286 comments
+      // above. Fields only exist in the schema after migrations 45/46 are applied.
+      ...(interactionProvenance ? { interaction_provenance: interactionProvenance } : {}),
+      ...(interactionId ? { interaction_id: interactionId } : {}),
     })
     .then(({ error: e }) => { if (e) console.error("outbound_clicks insert failed:", e.message); });
 

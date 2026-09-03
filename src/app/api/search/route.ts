@@ -8,6 +8,7 @@ import { extractSpecsFromTitle } from '@/lib/scraping/config/spec-configs';
 import { searchAlgolia, isAlgoliaConfigured, type AlgoliaHit } from '@/lib/algolia/search';
 import { identityKeyToSlug } from '@/lib/catalog/getProductComparison';
 import { isApprovedStore, isDisplayableRetailer, resolveApprovedSlug, retailerDisplayName } from '@/lib/retailers/approved-retailers';
+import { buildGoUrl } from '@/lib/analytics/build-go-url';
 import { normalizeExitUrl } from '@/lib/retailers/exit-url';
 import { routeQuery } from '@/lib/agent/route-query';
 import type { CompareIntent } from '@/lib/agent/compare-intent';
@@ -1921,7 +1922,7 @@ async function searchTPSCanonical(
         // are not currently observing. Keep the true latest price, omit the exit. This mirrors
         // src/lib/compare/get-comparison.ts:183, which already got this right, and the compare
         // page's honest «رابط المتجر غير متاح لهذا العرض».
-        product_url: v.obsId ? `/go/${v.obsId}` : '',
+        product_url: v.obsId ? buildGoUrl(v.obsId) : '',
         // The observation's own time, carried to the surface: Master Book §31.5 — the
         // observation time is visible, or the claim is not made (ADR-193). The newest
         // TRUE observation (ADR-194) wins over the price-change date; the price-change

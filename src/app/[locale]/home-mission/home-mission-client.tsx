@@ -11,9 +11,10 @@
 //   · calm premium density: Amazon-level, generous Arabic line-height.
 // The client remains a THIN edit-interface over the server's guarded payload: it
 // renders sentences verbatim, mutates a typed mission object, and re-asks the server.
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import Link from "next/link";
 import { track } from "@/lib/analytics/track";
+import { recordFirstPartyInteraction, appendInteractionId } from "@/lib/analytics/interaction";
 import {
   groupLegs, groupByStore, storeProgress, nextExit, groupFeedback, budgetBar, fitChip, evidenceChip, energyChip, ageLabel, diffLabel, fmt, parseDelta, setQuantity,
   type LegOut, type RecOut, type Mission, type Chip, type LegGroup, type StoreGroup,
@@ -555,9 +556,18 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
     if (changed) { setPinnedIds(nextPinned); rePlan(mission, "purchased_pin", { pinned: nextPinned }); }
   }, [mission, purchased, pinnedIds, rePlan]);
 
-  const onGoExit = useCallback((leg: LegOut, r: RecOut, source: string) => {
+  const onGoExit = useCallback((e: MouseEvent<HTMLAnchorElement>, leg: LegOut, r: RecOut, source: string) => {
     setExitMarker({ store: r.stores[0] ?? "—", ts: Date.now() });
     track("go_click", { canonical_id: r.canonical_id, store: r.stores[0] ?? null, category: leg.category, source });
+    // ADR-286 — decision-grade interaction evidence, minted synchronously in this real onClick.
+    // The original anchors carry no `target` (same-tab navigation) — preserved here via
+    // location.href rather than window.open, which would have silently switched these to a
+    // new tab.
+    if (!r.go_url) return;
+    e.preventDefault();
+    const goId = (r.go_url.match(/^\/go\/([^?]+)/) || [])[1] ?? null;
+    const interactionId = recordFirstPartyInteraction({ goId, canonicalId: r.canonical_id ?? null, surface: source });
+    window.location.href = goId ? appendInteractionId(r.go_url, interactionId) : r.go_url;
   }, []);
 
   // ── «شارك الخطة» (ADR-257): create a server-fact snapshot, then the native share
@@ -793,7 +803,7 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
         <div className="mt-2 flex items-center gap-2">
           {r.go_url && (
             <a href={r.go_url} rel="noopener nofollow"
-              onClick={() => onGoExit(leg, r, "home_mission")}
+              onClick={(e) => onGoExit(e, leg, r, "home_mission")}
               className="min-h-[44px] min-w-0 flex-1 rounded-lg bg-primary-600 px-3 py-2.5 text-center text-[13px] font-bold text-white">
               {t.go}
             </a>
@@ -1200,7 +1210,7 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
                               {ageLabel(r.data_age_hours, locale) && <span className="text-[10px] text-on-surface-variant">{ageLabel(r.data_age_hours, locale)}</span>}
                               {r.go_url && !isDone && (
                                 <a href={r.go_url} rel="noopener nofollow"
-                                  onClick={() => onGoExit(leg, r, "home_mission_checklist")}
+                                  onClick={(e) => onGoExit(e, leg, r, "home_mission_checklist")}
                                   className="text-[11px] font-semibold text-primary-700 underline dark:text-primary-300">
                                   {t.go}
                                 </a>
@@ -1218,7 +1228,7 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
                   </div>
                   {next?.picked?.go_url && (
                     <a href={next.picked.go_url} rel="noopener nofollow"
-                      onClick={() => onGoExit(next, next.picked!, "home_mission_retailer_cta")}
+                      onClick={(e) => onGoExit(e, next, next.picked!, "home_mission_retailer_cta")}
                       className="mt-2 block min-h-[44px] w-full truncate rounded-xl bg-primary-600 px-4 py-3 text-center text-[13px] font-bold text-white">
                       {t.storeCta(g.store)}
                     </a>

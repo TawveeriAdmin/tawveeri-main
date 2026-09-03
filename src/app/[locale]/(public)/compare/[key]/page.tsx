@@ -16,6 +16,7 @@ import { retailerDisplayName, resolveApprovedSlug } from '@/lib/retailers/approv
 import { CompareStateSync } from '@/components/agent/compare-state-sync';
 import { readCategoryAttribution } from '@/lib/catalog/category-link';
 import { CategoryExitLink } from '@/components/catalog/category-exit-link';
+import { ExitLink } from '@/components/catalog/exit-link';
 
 interface CampaignEligibility {
   eligible: true;
@@ -472,15 +473,16 @@ export default async function TpsComparePage({
                   <ExternalLink className="h-4 w-4" />
                 </CategoryExitLink>
               ) : (
-                <a
+                <ExitLink
                   href={cheapestOffer.product_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
                   className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-[var(--brand-green)] px-5 text-sm font-semibold text-white shadow-[var(--elevation-1)] transition-colors hover:bg-[var(--brand-green-dark)]"
+                  store={cheapestOffer.store_name}
+                  canonicalId={canonical.id}
+                  surface="compare_featured"
                 >
                   <span>{isAr ? `اذهب إلى ${cheapestOffer.store_name}` : `Go to ${cheapestOffer.store_name}`}</span>
                   <ExternalLink className="h-4 w-4" />
-                </a>
+                </ExitLink>
               )
             ) : (
               // No exit URL for this listing. Say exactly that — the old copy read
@@ -563,15 +565,16 @@ export default async function TpsComparePage({
                           <ExternalLink className="h-3 w-3" />
                         </CategoryExitLink>
                       ) : (
-                        <a
+                        <ExitLink
                           href={offer.product_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
                           className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface)] px-3 text-xs font-semibold text-on-surface transition-colors hover:border-[var(--brand-green)]/50 hover:bg-[var(--brand-bg-green)]"
+                          store={offer.store_name}
+                          canonicalId={canonical.id}
+                          surface="compare_all_offers"
                         >
                           {isAr ? `اذهب إلى ${offer.store_name}` : `Go to ${offer.store_name}`}
                           <ExternalLink className="h-3 w-3" />
-                        </a>
+                        </ExitLink>
                       )
                     ) : (
                       // "في المتاجر" looked like a link and ran a search. If we have no exit
