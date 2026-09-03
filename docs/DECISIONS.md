@@ -45,6 +45,23 @@ No unexplained discrepancy: "2 immediately affected" (rows 1-2) + "5 more" (rows
 
 **What this does NOT change.** No ranking, matching, identity, ingestion, or Demand Radar logic touched. No new feature. `getDeals()`'s public `limit` parameter (how many grouped deals to return) is unchanged — only the internal raw-candidate-row fetch was fixed to be complete rather than silently short. Committed as `2e1285deec6f5e55750f03dc6199975cbc215cfa`, cherry-picked onto latest `origin/main` alongside ADR-284 (Affiliate Campaign V1) — both preserved, no renumbering collision.
 
+**STATUS: VERIFIED IN PRODUCTION — CLOSED (2026-09-03, appended in place — history never disappears).** Merged to `origin/main` as `37607ccf1ac071232d84497bfb0d72fe2838159e` via a clean fast-forward (`fe912ff..37607cc`, no force-push, no merge commit needed — the approved fix's only parent was already `origin/main`'s tip). Railway auto-deployed on push; `GET /api/health` → 200 with a fresh process (`uptime` reset from 56,240s to 14s, confirming the new code is actually running, not just merged); homepage (`/ar`) → 200; `/ar/admin/command-center` → 307 (correctly redirects an unauthenticated request — not a 500, confirms the route itself is healthy).
+
+Final production verification, fixed start/end timestamps shared identically between the REST call and the direct-SQL call (so events arriving mid-check cannot create a false mismatch):
+
+| Window | Metric | Dashboard/REST | Direct SQL | Match |
+|---|---|--:|--:|:--:|
+| 7d (2026-08-27T05:34:25Z → 2026-09-03T05:34:25Z) | `outbound_clicks` (REAL) | 3,186 | 3,186 | ✅ |
+| 7d | `usage_events` (REAL) | 539 | 539 | ✅ |
+| 30d (2026-08-04T05:34:25Z → 2026-09-03T05:34:25Z) | `outbound_clicks` (REAL) | 3,864 | 3,864 | ✅ |
+| 30d | `usage_events` (REAL) | 4,547 | 4,547 | ✅ |
+
+`npm run tps:postgrest-cap-check` (production, read-only): **OK** on every check — all 6 previously-fixed call sites match SQL exactly, `getNavigableCategories()` is deterministic across live calls, and all 3 measured-safe-today tables remain comfortably under the 1000-row cap (`demand_opportunities`=91, `tps_offer_delist_signals`=8, `tps_price_implausibility_signals`=29).
+
+**The originally-reported signature is confirmed gone**: no founder-facing metric derived from these queries sticks at exactly 1000 due to `db-max-rows` truncation; a later-page failure fails closed (throws, discards accumulated rows, never returns a partial result as complete — verified in ADR-285's own test suite, not re-tested against production since it requires inducing a real mid-pagination failure); no partial dataset is silently returned as if it were the complete one, at any of the 6 confirmed-risk sites or the 1 pre-emptive one.
+
+**Explicitly out of scope for this closure, by founder instruction.** This ADR proves DATA RETRIEVAL COMPLETENESS only — that the founder-facing numbers now equal the true row counts in the database. It does **not** assess, and must not be read as evidence toward, the separate business-quality question of how much of `outbound_clicks` volume represents decision-grade human customer activity versus bot/test/other non-representative traffic. That question belongs to a future, separate Founder Command Center 360° investigation and is deliberately not mixed into this closure.
+
 ---
 
 ### ADR-284 — Affiliate Campaign Revenue Layer V1: Amazon-only launch (tablet, post-search) · Accepted (2026-09-02)
