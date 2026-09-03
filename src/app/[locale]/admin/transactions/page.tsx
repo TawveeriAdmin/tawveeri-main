@@ -7,8 +7,9 @@
 // merchant checkout, so a transactions ledger it cannot observe is a
 // fabricated certainty. This page is restructured around the events Tawveeri
 // CAN observe, in the order of the commercial chain:
-//   confirmed retailer exits (ledger) → attributed exits → affiliate
-//   conversions (network reports only) → confirmed commission (same).
+//   recorded retailer exits (ledger, raw — not proof of customer interaction) → attributed
+//   exits → affiliate conversions (network reports only) → confirmed commission (same;
+//   "confirmed" is legitimate here — it names actual network-reported data, not a ledger row).
 // Sources are governed by docs/METRIC_DEFINITIONS.md.
 
 import Link from 'next/link';
@@ -98,20 +99,22 @@ export default async function CommercialSignalsPage({
         </h1>
         <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
           {t(
-            'توفيري لا يعالج الشراء لدى المتاجر، لذلك لا توجد «معاملات» يمكنه رصدها مباشرة. هذه الصفحة تعرض السلسلة التجارية القابلة للقياس فعلاً: خروج مؤكد → خروج منسوب → تحويلات الشبكات → عمولة مؤكدة.',
-            'Tawveeri does not process merchant checkout, so there are no directly observable "transactions." This page shows the commercial chain that IS measurable: confirmed exits → attributed exits → network conversions → confirmed commission.'
+            'توفيري لا يعالج الشراء لدى المتاجر، لذلك لا توجد «معاملات» يمكنه رصدها مباشرة. هذه الصفحة تعرض السلسلة التجارية القابلة للقياس فعلاً: خروج مسجّل → خروج منسوب → تحويلات الشبكات → عمولة مؤكدة.',
+            'Tawveeri does not process merchant checkout, so there are no directly observable "transactions." This page shows the commercial chain that IS measurable: recorded exits → attributed exits → network conversions → confirmed commission.'
           )}
         </p>
       </div>
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        {/* ADR-286 wording fix: both cards below are raw outbound_clicks row counts — "مسجّل"/
+            "Recorded", not "مؤكد"/"Confirmed" (no interaction proof at this layer). */}
         <Card
-          label={t('خروج مؤكد (7 أيام)', 'Confirmed exits (7d)')}
+          label={t('خروج مسجّل (7 أيام)', 'Recorded exits (7d)')}
           value={fmt(cnt(exits7d))}
-          hint={t('سجل /go — حقيقي فقط', '/go ledger — REAL only')}
+          hint={t('سجل /go — حقيقي فقط، قياس تشغيلي', '/go ledger — REAL only, operational metric')}
         />
         <Card
-          label={t('خروج مؤكد منذ الأساس', 'Exits since baseline')}
+          label={t('خروج مسجّل منذ الأساس', 'Recorded exits since baseline')}
           value={fmt(cnt(exitsBaseline))}
           hint={t('منذ 2026-08-06', 'since 2026-08-06')}
         />

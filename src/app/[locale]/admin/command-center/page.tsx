@@ -180,7 +180,26 @@ export default async function CommandCenterPage({
           { icon: Users, label: isRTL ? 'الجلسات الحقيقية' : 'Real sessions', value: real.sessions, prev: prevReal.sessions, confidenceKey: 'sessions' },
           { icon: Search, label: isRTL ? 'عمليات البحث' : 'Searches', value: real.search, prev: prevReal.search, confidenceKey: 'search' },
           { icon: TrendingUp, label: isRTL ? 'زيارات مؤهلة مُحالة' : 'Qualified visits referred', value: commercial.qualifiedVisitsReferred, prev: undefined, confidenceKey: 'qualifiedVisitsReferred' },
-          { icon: ExternalLink, label: isRTL ? 'تحويلات مؤكدة للمتاجر' : 'Confirmed retailer redirects', value: commercial.confirmedRetailerRedirects, prev: undefined, confidenceKey: 'outbound' },
+          {
+            // ADR-286 wording fix: this used to be "تحويلات مؤكدة للمتاجر" / "Confirmed retailer
+            // redirects" bound to a RAW outbound_clicks row count — a bare /go request/redirect
+            // row, never proof a customer actually interacted. Now shows the decision-grade
+            // explicit-interaction count instead; the old raw count is demoted to a secondary
+            // diagnostic note on this same card, explicitly labeled operational/non-proof.
+            icon: ExternalLink,
+            label: isRTL ? 'تفاعلات متجر صريحة' : 'Explicit retailer interactions',
+            value: commercial.explicitRetailerInteractions,
+            prev: undefined,
+            confidenceKey: 'explicitInteractions',
+            notes: [
+              isRTL
+                ? `${commercial.correlatedMerchantNavigations} منها مرتبطة بخروج فعلي للمتجر عبر /go`
+                : `${commercial.correlatedMerchantNavigations} correlate to a server-recorded merchant navigation via /go`,
+              isRTL
+                ? `طلبات /go مسجّلة: ${commercial.confirmedRetailerRedirects} — قياس تشغيلي، لا يثبت تفاعل عميل`
+                : `Recorded /go requests: ${commercial.confirmedRetailerRedirects} — operational metric, not proof of customer interaction`,
+            ],
+          },
         ].map((h) => {
           const tr = h.prev !== undefined ? trend(h.value, h.prev) : null;
           const conf = confidence[h.confidenceKey];
@@ -199,6 +218,9 @@ export default async function CommandCenterPage({
               {baseline.previousIsPreLaunch && !tr && period === 'today' && (
                 <p className="mt-1 text-[11px] font-bold text-blue-600 dark:text-blue-300">{isRTL ? 'أمس: اختبار ما قبل الإطلاق' : 'Yesterday: pre-launch testing'}</p>
               )}
+              {'notes' in h && h.notes?.map((n) => (
+                <p key={n} className="mt-1 text-[11px] leading-snug text-on-surface-variant dark:text-white/40">{n}</p>
+              ))}
             </Card>
           );
         })}

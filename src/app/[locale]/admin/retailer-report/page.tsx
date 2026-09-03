@@ -118,7 +118,9 @@ export default async function RetailerReportPage({
           <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             {[
               { label: isRTL ? 'زيارات مؤهلة' : 'Qualified visits', value: report.qualifiedSessions },
-              { label: isRTL ? 'تحويلات مؤكدة' : 'Confirmed redirects', value: report.confirmedRedirects },
+              // ADR-286 wording fix: this is a RAW /go request count (server-recorded), never
+              // proof of a customer interaction — "confirmed" was retired from this label.
+              { label: isRTL ? 'عمليات انتقال مسجّلة إلى المتجر' : 'Recorded retailer redirects', value: report.confirmedRedirects },
               { label: isRTL ? 'منتجات فريدة' : 'Unique products', value: report.uniqueProducts },
               { label: isRTL ? 'حملة معروفة' : 'Known campaign', value: `${report.acquisition.withKnownCampaign}/${report.acquisition.withKnownCampaign + report.acquisition.unknownCampaign}` },
             ].map((s) => (

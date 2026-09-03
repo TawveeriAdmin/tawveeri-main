@@ -6,6 +6,7 @@
 import { createServerClient, fetchAllPaginated } from '@/lib/database';
 import { getAffiliateConfig } from '@/lib/transactions/affiliate-config';
 import { parseShoppingTask } from '@/lib/agent/task-parser';
+import { getDecisionGradeOutboundStats } from './decision-grade-queries';
 
 export type Period = 'today' | 'yesterday' | '7d' | '30d' | 'custom';
 
@@ -710,7 +711,19 @@ export interface CommandCenterData {
   // Commercial-proof headline vocabulary (ADR-216) — what the founder/retailer report actually says.
   commercial: {
     qualifiedVisitsReferred: number;
+    /** RAW server-recorded /go request/redirect rows (is_test=false) — operational volume only.
+     *  Renamed usage note (ADR-286 wording fix): this proves a redirect ROW was written, never a
+     *  proven customer interaction. Demoted to secondary/diagnostic display — see
+     *  explicitRetailerInteractions for the founder-facing headline number. */
     confirmedRetailerRedirects: number;
+    /** ADR-286 decision-grade: first_party_interactions rows requiring a real onClick to have
+     *  fired (src/lib/analytics/interaction.ts) in the selected period, REAL only. This — not
+     *  confirmedRetailerRedirects — is the number that actually proves an explicit interaction. */
+    explicitRetailerInteractions: number;
+    /** Subset of explicitRetailerInteractions exact-joined (by interaction_id) to a real
+     *  outbound_clicks row — i.e. an explicit interaction that also produced a server-recorded
+     *  /go merchant navigation. Never larger than explicitRetailerInteractions. */
+    correlatedMerchantNavigations: number;
     referredProductInterest: number;
     referredCategoryDemand: Array<{ category: string; count: number }>;
     topSearchTerms: Array<{ query: string; count: number }>;
@@ -736,7 +749,8 @@ const METRIC_CONFIDENCE: Record<string, MetricConfidence> = {
   sessions: { state: 'CONFIRMED', note: 'Exact distinct session_id count from usage_events.' },
   search: { state: 'ESTIMATED', note: 'Deduped: the unified search page can fire both a storefront and an advisor event for one action (ADR-214) — collapsed to one action per query within a 3s window.' },
   results: { state: 'ESTIMATED', note: 'Same dedup as Search — see ADR-214.' },
-  outbound: { state: 'CONFIRMED', note: 'Exit-ledger rows (outbound_clicks) in period — server-recorded on every /go redirect (ADR-244). Client-only exits from scraped search results are additionally visible as go_click events but are not in this count.' },
+  outbound: { state: 'CONFIRMED', note: 'Exit-ledger rows (outbound_clicks) in period — server-recorded on every /go redirect (ADR-244). Client-only exits from scraped search results are additionally visible as go_click events but are not in this count. Operational volume, not proof of customer interaction — see explicitInteractions for the decision-grade number (ADR-286).' },
+  explicitInteractions: { state: 'CONFIRMED', note: 'ADR-286 decision-grade: first_party_interactions rows requiring a real onClick to have fired (src/lib/analytics/interaction.ts) in the selected period, REAL only. The correlated subset exact-joins outbound_clicks.interaction_id — a raw /go request with no matching interaction is never counted here.' },
   qualifiedVisitsReferred: { state: 'CONFIRMED', note: 'Distinct REAL sessions with ≥1 measured retailer exit — union of ledger rows carrying session_id (stamped by /go since ADR-244) and go_click events. Ledger rows from before the cutover have no session identity and are honestly excluded.' },
   comparisonView: { state: 'CONFIRMED', note: 'Exact comparison_view event count from usage_events — no proven duplication on this step.' },
   answerRate: { state: 'ESTIMATED', note: 'Derived from deduped Search/Results — precision depends on sample size; below 100 real sessions this is a directional signal, not a verdict.' },
@@ -974,12 +988,16 @@ export async function getCommandCenterData(
     ? prev
     : { start: new Date(Math.max(prev.start.getTime(), COMMERCIAL_BASELINE.getTime())), end: prev.end };
 
-  const [events, prevEvents, outboundRows, lastEvent] = await Promise.all([
+  const [events, prevEvents, outboundRows, lastEvent, decisionGrade] = await Promise.all([
     fetchUsageEvents(fetchRange.start, fetchRange.end),
     fetchUsageEvents(fetchPrev.start, fetchPrev.end),
     fetchOutboundClicks(fetchRange.start, fetchRange.end),
     (createServerClient() as unknown as { from: (table: string) => any })
       .from('usage_events').select('created_at').order('created_at', { ascending: false }).limit(1).maybeSingle(),
+    // ADR-286 wording fix: same selected-period window as everything else above. Never throws
+    // (see decision-grade-queries.ts) — degrades to {value: null} on any error, which the
+    // commercial block below coalesces to 0 rather than crashing the page.
+    getDecisionGradeOutboundStats(fetchRange.start, fetchRange.end),
   ]);
 
   const realEvents = events.filter((e) => !e.is_test);
@@ -1058,6 +1076,8 @@ export async function getCommandCenterData(
     commercial: {
       qualifiedVisitsReferred: qualifiedReferredSessions(realEvents, outboundRows.filter((r) => !r.is_test)),
       confirmedRetailerRedirects: outboundReal.clicks,
+      explicitRetailerInteractions: decisionGrade.firstPartyInteractions.value ?? 0,
+      correlatedMerchantNavigations: decisionGrade.merchantNavigationsCorrelated.value ?? 0,
       referredProductInterest: outboundReal.distinctProducts,
       referredCategoryDemand: categoryDemand,
       topSearchTerms: topSearchTerms(realEvents),

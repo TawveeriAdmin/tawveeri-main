@@ -133,7 +133,10 @@ export async function getRetailerReport(
   const provider = getProviderByStoreId(storeId);
   const limitations: string[] = [
     'Qualified sessions are approximated via product-level correlation, not a direct session→retailer join (outbound_clicks.session_id is not populated — see ADR-207).',
-    'Confirmed redirects count clicks through /go only; some legacy storefront exits are not routed through /go and are not included here.',
+    // ADR-286 wording fix: this is a RAW server-recorded /go request count, not proof any
+    // customer actually interacted — "confirmed" language was retired from this report (see
+    // buildRetailerNarrative and the on-screen headline card).
+    'Recorded retailer redirects count /go requests only (server-recorded, operational evidence — not proof of customer interaction); some legacy storefront exits are not routed through /go and are not included here.',
     'No order, shipment, or commission data is included — this report contains no affiliate-network-reported figures.',
   ];
 
@@ -155,15 +158,19 @@ export async function getRetailerReport(
 }
 
 // Deterministic narrative — no LLM, no invented causation (ADR-216 section 8 rule reused here).
+// ADR-286 wording fix: "confirmed"/"مؤكدة" retired from this narrative — confirmedRedirects is
+// a RAW outbound_clicks row count (a server-recorded /go request), never proof a merchant
+// actually received a proven customer interaction. "Recorded"/"مسجّلة" states exactly what the
+// evidence supports and nothing more.
 export function buildRetailerNarrative(report: RetailerReport, isRTL: boolean): string {
   const name = report.retailer ? (isRTL ? report.retailer.displayNameAr : report.retailer.displayName) : (isRTL ? 'هذا المتجر' : 'this retailer');
   if (report.confirmedRedirects === 0) {
     return isRTL
-      ? `خلال الفترة المحددة، لم تُسجَّل أي إحالة مؤكدة إلى ${name}.`
-      : `During the selected period, no confirmed redirects to ${name} were recorded.`;
+      ? `خلال الفترة المحددة، لم تُسجَّل أي عملية انتقال إلى ${name}.`
+      : `During the selected period, no retailer redirects to ${name} were recorded.`;
   }
   const topCats = report.topCategories.slice(0, 3).map((c) => c.category).join(isRTL ? '، ' : ', ');
   return isRTL
-    ? `خلال الفترة المحددة، أحال توفيري ${report.qualifiedSessions} زيارة مؤهلة إلى ${name} عبر ${report.uniqueProducts} منتجاً (${report.confirmedRedirects} تحويلة مؤكدة). أعلى الفئات اهتماماً: ${topCats || 'غير محدد'}.`
-    : `During the selected period, Tawveeri referred ${report.qualifiedSessions} qualified visits to ${name} across ${report.uniqueProducts} products (${report.confirmedRedirects} confirmed redirects). The highest-interest categories were ${topCats || 'not yet clear'}.`;
+    ? `خلال الفترة المحددة، أحال توفيري ${report.qualifiedSessions} زيارة مؤهلة إلى ${name} عبر ${report.uniqueProducts} منتجاً (${report.confirmedRedirects} عملية انتقال مسجّلة إلى المتجر). أعلى الفئات اهتماماً: ${topCats || 'غير محدد'}.`
+    : `During the selected period, Tawveeri referred ${report.qualifiedSessions} qualified visits to ${name} across ${report.uniqueProducts} products (${report.confirmedRedirects} recorded retailer redirects). The highest-interest categories were ${topCats || 'not yet clear'}.`;
 }

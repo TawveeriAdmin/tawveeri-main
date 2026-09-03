@@ -146,7 +146,8 @@ export async function generateDailyFounderReport(): Promise<DailyReportResult> {
     briefParts.push(`لا توجد بيانات كافية لمقارنة الجلسات مع اليوم السابق (${baseline.previousIsPreLaunch ? 'اليوم السابق كان اختبار ما قبل الإطلاق' : 'العدد كان صفراً'}).`);
   }
   if (topRetailer) {
-    briefParts.push(`أكثر متجر استقبل إحالات: ${retailerName(topRetailer.storeSlug)} (${topRetailer.confirmedRedirects} تحويلة مؤكدة).`);
+    // ADR-286 wording fix: raw /go request count — "مسجّلة" (recorded), not "مؤكدة" (confirmed).
+    briefParts.push(`أكثر متجر استقبل إحالات: ${retailerName(topRetailer.storeSlug)} (${topRetailer.confirmedRedirects} تحويلة مسجّلة).`);
   }
   if (topCategory) {
     briefParts.push(`أعلى فئة اهتماماً في الإحالات: ${topCategory.category} (${topCategory.count}).`);
@@ -168,12 +169,19 @@ export async function generateDailyFounderReport(): Promise<DailyReportResult> {
     ${focusTodayBlock}
     ${reviewBlock}
 
-    <table style="width:100%;border-collapse:collapse;margin-bottom:20px" role="presentation">
+    <table style="width:100%;border-collapse:collapse;margin-bottom:4px" role="presentation">
       ${statRow('الجلسات الحقيقية', String(real.sessions), sessionsDelta !== null ? `${sessionsDelta >= 0 ? '▲' : '▼'} ${Math.abs(sessionsDelta)}%` : 'جديد')}
       ${statRow('عمليات البحث', String(real.search), searchDelta !== null ? `${searchDelta >= 0 ? '▲' : '▼'} ${Math.abs(searchDelta)}%` : 'جديد')}
       ${statRow('زيارات مؤهلة مُحالة', String(commercial.qualifiedVisitsReferred), '')}
-      ${statRow('تحويلات مؤكدة للمتاجر', String(commercial.confirmedRetailerRedirects), '')}
+      ${statRow('تفاعلات متجر صريحة (دقيقة القرار)', String(commercial.explicitRetailerInteractions), '')}
+      ${statRow('طلبات /go مسجّلة (تشغيلي)', String(commercial.confirmedRetailerRedirects), '')}
     </table>
+    <!-- ADR-286 wording fix: "تفاعلات متجر صريحة" requires a real onClick to have fired
+         (first_party_interactions, REAL only); "طلبات /go مسجّلة" is a raw server-recorded
+         request count — operational evidence, never proof of customer interaction. -->
+    <p style="margin:0 0 20px;font-size:11px;color:#5b6b63">
+      ${commercial.correlatedMerchantNavigations} من التفاعلات الصريحة مرتبطة بخروج فعلي للمتجر عبر /go — طلبات /go المسجّلة قياس تشغيلي فقط ولا تثبت تفاعل عميل.
+    </p>
 
     ${commercial.retailers.length > 0 ? `
     <h3 style="font-size:14px;margin:0 0 8px">التحويلات حسب المتجر</h3>

@@ -95,8 +95,10 @@ export function computeOpportunities(data: CommandCenterData): Opportunity[] {
       kind: 'no_agreement_retailer',
       titleAr: `${nameArWithPrefix} يستقبل إحالات حقيقية بدون برنامج عمولة معروف`,
       titleEn: `Retailer ${nameEn} is receiving real referrals with no known affiliate program`,
-      evidenceAr: `${r.confirmedRedirects} تحويلة مؤكدة عبر ${r.distinctProducts} منتجاً خلال الفترة المحددة.`,
-      evidenceEn: `${r.confirmedRedirects} confirmed redirects across ${r.distinctProducts} products in the selected period.`,
+      // ADR-286 wording fix: r.confirmedRedirects is a RAW server-recorded /go request count —
+      // "مسجّلة"/"recorded", never "مؤكدة"/"confirmed" (no interaction proof at this layer).
+      evidenceAr: `${r.confirmedRedirects} تحويلة مسجّلة عبر ${r.distinctProducts} منتجاً خلال الفترة المحددة.`,
+      evidenceEn: `${r.confirmedRedirects} recorded redirects across ${r.distinctProducts} products in the selected period.`,
       sampleSize: r.confirmedRedirects,
       earlySignal: r.confirmedRedirects < EARLY_SIGNAL_THRESHOLD,
       evidenceConfidence,
@@ -123,10 +125,11 @@ export function computeOpportunities(data: CommandCenterData): Opportunity[] {
     opportunities.push({
       kind: 'high_demand_low_coverage',
       category: c.category,
-      titleAr: `طلب مرتفع على فئة "${c.category}" بدون تحويلات مؤكدة`,
-      titleEn: `High demand for "${c.category}" with zero confirmed referrals`,
-      evidenceAr: `${c.searchCount} عملية بحث في هذه الفئة، و0 تحويلة مؤكدة خلال نفس الفترة.`,
-      evidenceEn: `${c.searchCount} searches in this category, 0 confirmed referrals in the same period.`,
+      // ADR-286 wording fix: same raw-count basis as above — "مسجّلة"/"recorded", not "مؤكدة"/"confirmed".
+      titleAr: `طلب مرتفع على فئة "${c.category}" بدون تحويلات مسجّلة`,
+      titleEn: `High demand for "${c.category}" with zero recorded referrals`,
+      evidenceAr: `${c.searchCount} عملية بحث في هذه الفئة، و0 تحويلة مسجّلة خلال نفس الفترة.`,
+      evidenceEn: `${c.searchCount} searches in this category, 0 recorded referrals in the same period.`,
       sampleSize: c.searchCount,
       earlySignal: c.searchCount < EARLY_SIGNAL_THRESHOLD,
       evidenceConfidence,

@@ -248,7 +248,9 @@ export default async function AdminDashboardPage({
       >
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <Card
-            label={t('خروج مؤكد منذ الأساس', 'Exits since baseline')}
+            // ADR-286 wording fix: raw outbound_clicks row count since baseline — "مسجّل"
+            // (recorded), not "مؤكد" (confirmed); no interaction proof at this layer.
+            label={t('خروج مسجّل منذ الأساس', 'Exits since baseline')}
             value={fmt(data.commercial.exitsSinceBaseline)}
             hint={t('منذ 2026-08-06', 'since 2026-08-06')}
           />
