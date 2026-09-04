@@ -20,8 +20,8 @@ export function buildWebSiteJsonLd(locale: string) {
     url: `${baseUrl}/${locale}`,
     description:
       locale === 'ar'
-        ? 'منصة مقارنة أسعار الإلكترونيات في السعودية'
-        : 'Electronics price comparison platform in Saudi Arabia',
+        ? 'منصة سعودية لمقارنة أسعار الإلكترونيات والأجهزة المنزلية — أسعار مرصودة، دون بيع.'
+        : 'Saudi platform for comparing observed electronics and home-appliance prices — we do not sell.',
     potentialAction: {
       '@type': 'SearchAction',
       target: {
@@ -60,6 +60,7 @@ export function buildOrganizationJsonLd(locale: string) {
         : 'Tawveeri is a Saudi platform comparing electronics and home-appliance prices across Saudi retailers. It does not sell, ship, or stock any product — it compares observed prices only.',
     areaServed: { '@type': 'Country', name: 'Saudi Arabia' },
     knowsLanguage: ['ar', 'en'],
+    sameAs: ['https://x.com/Tawveeri', 'https://twitter.com/Tawveeri'],
   };
 }
 

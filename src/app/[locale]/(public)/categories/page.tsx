@@ -1,3 +1,27 @@
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { PublicPageShell } from '@/components/public/public-page-shell';
+import { getNavigableCategories } from '@/lib/intelligence/navigable-categories';
+import { buildPageMetadata } from '@/lib/seo/metadata';
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  return buildPageMetadata({
+    titleAr: 'تصفّح الفئات | توفيري',
+    titleEn: 'Browse categories | Tawveeri',
+    descriptionAr:
+      'تصفّح فئات الإلكترونيات والأجهزة وقارن الأسعار المرصودة بين متاجر سعودية — توفيري. ما نبيع.',
+    descriptionEn:
+      'Browse electronics and appliance categories and compare observed prices across Saudi stores — Tawveeri. We do not sell.',
+    locale,
+    path: '/categories',
+  });
+}
+
 // Dedicated "categories only" destination (Founder UX directive). Large, equal, comfortable cards —
 // one question per screen: "what type of product?" Server-rendered (just links), no client JS needed.
 //

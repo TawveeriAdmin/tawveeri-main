@@ -32,6 +32,7 @@ export type Campaign = {
   utm_medium?: string;
   utm_campaign?: string;
   utm_content?: string;
+  utm_term?: string;
 };
 
 /** Capture utm_* from the current URL into sessionStorage (call once on mount, alongside
@@ -54,6 +55,7 @@ export function initCampaignFromUrl(): void {
       utm_medium: p.get("utm_medium")?.slice(0, 32) || undefined,
       utm_campaign: p.get("utm_campaign")?.slice(0, 64) || undefined,
       utm_content: p.get("utm_content")?.slice(0, 64) || undefined,
+      utm_term: p.get("utm_term")?.slice(0, 64) || undefined,
     };
     sessionStorage.setItem(KEY, JSON.stringify(c));
     try { document.cookie = `tw_campaign=${encodeURIComponent(JSON.stringify(c))}; path=/; samesite=lax`; } catch { /* noop */ }

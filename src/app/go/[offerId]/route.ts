@@ -44,6 +44,7 @@ function readAttribution(req: NextRequest): { sessionId: string | null; campaign
       const c = {
         utm_source: pick("utm_source", 32), utm_medium: pick("utm_medium", 32),
         utm_campaign: pick("utm_campaign", 64), utm_content: pick("utm_content", 64),
+        utm_term: pick("utm_term", 64),
       };
       if (c.utm_source) campaign = Object.fromEntries(Object.entries(c).filter(([, v]) => v)) as Record<string, string>;
     }

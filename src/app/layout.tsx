@@ -49,13 +49,13 @@ export const metadata: Metadata = {
     apple: '/logos/Tawveeri.png',
   },
   title: {
-    default: 'توفيري - Tawveeri | منصة مقارنة الأسعار',
+    default: 'توفيري | Tawveeri — مساعد قرار الشراء',
     template: '%s | توفيري Tawveeri',
   },
   description:
-    'أفضل الأسعار للإلكترونيات في السعودية - Find the best deals on electronics in Saudi Arabia',
+    'توفيري — مساعد قرار الشراء ومقارنة أسعار مرصودة في السعودية. ما نبيع. | Tawveeri — Saudi shopping decision helper. Observed prices. We do not sell.',
   keywords:
-    'price comparison, saudi arabia, electronics, deals, توفيري, مقارنة أسعار, السعودية, إلكترونيات',
+    'توفيري, Tawveeri, مقارنة أسعار, مساعد قرار الشراء, السعودية, إلكترونيات, أجهزة منزلية, observed prices, price comparison, Saudi Arabia',
   openGraph: {
     type: 'website',
     siteName: 'توفيري Tawveeri',

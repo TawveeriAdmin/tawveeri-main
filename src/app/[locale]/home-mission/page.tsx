@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { HomeMissionClient } from "./home-mission-client";
+import { buildPageMetadata } from "@/lib/seo/metadata";
 
 /**
  * «جهّز بيتك بذكاء» — Home Decision Intelligence PILOT (ADR-249; Mobile Experience
@@ -11,13 +12,31 @@ import { HomeMissionClient } from "./home-mission-client";
  * the first viewport of an active mission. Escape back to Tawveeri is one tap
  * (the header's back control). This is a mission surface, not a search entry point
  * (P2-8 unified-search rule untouched).
+ *
+ * 2026-09-04: generateMetadata so canonical/og:url are /{locale}/home-mission —
+ * previously inherited locale-layout homepage canonical (/ar), which polluted share cards.
  */
-export const metadata: Metadata = {
-  title: "جهّز بيتك بذكاء — توفيري",
-  description:
-    "صف بيتك وميزانيتك، ونحوّلها إلى خطة أجهزة مدروسة بأدلة أسعار حقيقية من متاجر السعودية.",
-  robots: { index: false, follow: false },
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const base = buildPageMetadata({
+    titleAr: "جهّز بيتك بذكاء — توفيري",
+    titleEn: "Smart home setup — Tawveeri",
+    descriptionAr:
+      "صف بيتك وميزانيتك، ونحوّلها إلى خطة أجهزة مدروسة بأدلة أسعار حقيقية من متاجر السعودية.",
+    descriptionEn:
+      "Describe your home and budget — we turn it into an appliance plan with real observed prices from Saudi stores.",
+    locale,
+    path: "/home-mission",
+  });
+  return {
+    ...base,
+    robots: { index: false, follow: false },
+  };
+}
 
 export default async function HomeMissionPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
