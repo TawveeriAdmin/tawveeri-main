@@ -83,6 +83,16 @@ describe('amazon-evidence.ts — trust boundary', () => {
     expect(evidenceSource).toMatch(/AMAZON_STORE_ID = '2'/);
   });
 
+  // Regression (found live in production 2026-09-04): product_stores.store_id comes
+  // back as a JS number from PostgREST despite database/types.ts claiming `string` — a
+  // bare `r.store_id === AMAZON_STORE_ID` silently matched nothing for every real
+  // product, blocking EXACT_PRODUCT entirely with no error. Must always coerce with
+  // String(...) before comparing.
+  it('compares store_id with String(...) coercion, never a bare strict-equals that assumes a JS type', () => {
+    expect(evidenceSource).toMatch(/String\(r\.store_id\) === AMAZON_STORE_ID/);
+    expect(evidenceSource).not.toMatch(/r\.store_id === AMAZON_STORE_ID/);
+  });
+
   it('never throws — wrapped in try/catch, degrading to EMPTY_EVIDENCE', () => {
     const fnStart = evidenceSource.indexOf('export async function getAmazonExactProductEvidence');
     const fnBody = evidenceSource.slice(fnStart);

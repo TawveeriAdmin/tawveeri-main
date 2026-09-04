@@ -10,9 +10,15 @@
 // the app treats as authoritative (never price_history — SEV-1 Disk IO lesson: the hot
 // path never reads history).
 //
-// Amazon's numeric store id in product_stores.store_id is '2' — an established fact
+// Amazon's numeric store id in product_stores.store_id is 2 — an established fact
 // already relied on elsewhere (src/app/api/search/route.ts: "both store_id=2 →
-// resolveApprovedSlug='amazon'"), not re-derived here.
+// resolveApprovedSlug='amazon'"), not re-derived here. IMPORTANT: despite
+// src/lib/database/types.ts declaring product_stores.store_id as `string`, the live
+// column is a Postgres integer — PostgREST (the Supabase JS client) returns it as a
+// JS number, not a string. Found via production verification (2026-09-04): a strict
+// `=== '2'` string compare silently matched nothing, blocking EXACT_PRODUCT for every
+// real candidate. Compared with String(...) below so it's correct regardless of which
+// JS type actually comes back.
 import { createServerClient } from '@/lib/database';
 import { isFreshObservation, hoursSince } from '@/lib/intelligence/evidence-engine';
 
@@ -52,8 +58,8 @@ export async function getAmazonExactProductEvidence(productId: string | null): P
       .eq('product_id', productId);
     if (error || !rows || rows.length === 0) return EMPTY_EVIDENCE;
 
-    const distinctStoreCount = new Set(rows.map((r: { store_id: string }) => r.store_id)).size;
-    const amazonRow = rows.find((r: { store_id: string }) => r.store_id === AMAZON_STORE_ID) as
+    const distinctStoreCount = new Set(rows.map((r: { store_id: string | number }) => String(r.store_id))).size;
+    const amazonRow = rows.find((r: { store_id: string | number }) => String(r.store_id) === AMAZON_STORE_ID) as
       | { product_url: string; availability: string; last_checked_at: string | null; last_scraped_at: string | null }
       | undefined;
     if (!amazonRow || !amazonRow.product_url) return { ...EMPTY_EVIDENCE, distinctStoreCount };
