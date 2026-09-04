@@ -200,6 +200,22 @@ export function shouldSuppressTrendingRail(categoryEnforcedZero: boolean, applie
   return categoryEnforcedZero && appliedBudget !== null;
 }
 
+// Category precedence (Amazon Campaign V1 delivery-gap fix — investigation traced a category
+// resolved correctly server-side that never reached usage_events/campaign eligibility because
+// the client only ever knew about an EXPLICIT category-filter click, never the query's own
+// resolved category): an explicit user filter selection always wins; when the shopper has not
+// picked one, fall back to the server's query-resolved category for this same response
+// (`resolvedCategory` in the /api/search response, already mapped to the storefront taxonomy —
+// src/lib/search/canonical-category.ts). Returns null when neither is known — unknown beats
+// incorrect, never a fabricated category. Used ONLY for usage_events telemetry and campaign
+// eligibility; never fed back into the search/ranking request itself.
+export function resolveEffectiveCategory(
+  selectedCategory: string,
+  resolvedCategoryFromApi: string | null,
+): string | null {
+  return selectedCategory !== 'all' ? selectedCategory : resolvedCategoryFromApi;
+}
+
 export default function SearchClient() {
   const params = useParams();
   const searchParams = useSearchParams();
@@ -254,6 +270,14 @@ export default function SearchClient() {
   // an answer to a 250 SAR ask. This flag lets the empty-state render suppress that rail
   // ONLY when the zero was budget-caused, never for a plain no-budget empty search.
   const [categoryEnforcedZero, setCategoryEnforcedZero] = useState(false);
+  // Amazon Campaign V1 delivery-gap fix (category-resolution wiring): explicit user category
+  // selection (selectedCategory) always wins; when the shopper has NOT picked a filter, this
+  // falls back to the server's own query-resolved category (API's `resolvedCategory`, already
+  // mapped to the storefront taxonomy — src/lib/search/canonical-category.ts). Used ONLY for
+  // usage_events telemetry and campaign eligibility — never fed back into the search/ranking
+  // request itself, and never overrides an explicit filter. null when neither is known —
+  // unknown beats incorrect, no fabricated category.
+  const [effectiveCategory, setEffectiveCategory] = useState<string | null>(null);
   // ADR-270 Fix 4 (2026-08-22) — "Tawveeri never shows an empty result": when a stated/
   // inferred budget zeroed retrieval, the API's `closestOptions` names the 1-3 cheapest
   // still-relevant candidates with why each missed. Never rendered as "اختيار توفيري".
@@ -1008,8 +1032,14 @@ export default function SearchClient() {
       const inferredMaxPrice = ((data as unknown) as { inferredMaxPrice?: number | null }).inferredMaxPrice ?? null;
       const closestOptionsData = ((data as unknown) as { closestOptions?: ClosestOption[] }).closestOptions ?? [];
       // Funnel step 2 — Results (or off-funnel no_answer when the storefront returns nothing).
+      // Category precedence (Amazon Campaign V1 delivery-gap fix): an explicit user filter
+      // always wins; otherwise fall back to the server's query-resolved category for this
+      // same response. Persisted to state so the campaign card (rendered outside this async
+      // handler) can use the same value.
+      const resolvedCategoryFromApi = ((data as unknown) as { resolvedCategory?: string | null }).resolvedCategory ?? null;
+      const cat = resolveEffectiveCategory(selectedCategory, resolvedCategoryFromApi);
       if (currentPage === 1) {
-        const cat = selectedCategory !== 'all' ? selectedCategory : null;
+        setEffectiveCategory(cat);
         if (total > 0) {
           track('results', {
             query_text: query.trim(), category: cat, source: 'web',
@@ -2219,8 +2249,11 @@ export default function SearchClient() {
                         AFTER the neutral results above (this branch only mounts when
                         products.length > 0), never touches `products`/sort/ranking, and
                         renders nothing when no campaign is eligible. See
-                        src/components/campaigns/post-search-campaign-card.tsx. */}
-                    <PostSearchCampaignCard locale={locale} category={selectedCategory !== 'all' ? selectedCategory : null} />
+                        src/components/campaigns/post-search-campaign-card.tsx.
+                        `effectiveCategory`: explicit selectedCategory filter, else the
+                        server's query-resolved category (delivery-gap fix) — never a
+                        fabricated guess when neither is known. */}
+                    <PostSearchCampaignCard locale={locale} category={effectiveCategory} />
                   </>
                 )}
               </div>

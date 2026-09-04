@@ -14,6 +14,7 @@ import { routeQuery } from '@/lib/agent/route-query';
 import type { CompareIntent } from '@/lib/agent/compare-intent';
 import { parseShoppingTask, isPriorityDescriptorWord, parseScreenSizeComparator, sizeSatisfiesComparator } from '@/lib/agent/task-parser';
 import { resolveComparisonRoute } from '@/lib/agent/resolve-comparison';
+import { toStorefrontCategory } from '@/lib/search/canonical-category';
 import { hoursSince, PICK_FRESHNESS_MAX_HOURS, productTrust, isFreshObservation, type TrustAssessment } from '@/lib/intelligence/evidence-engine';
 
 export const maxDuration = 30;
@@ -2611,6 +2612,7 @@ export async function POST(request: NextRequest) {
     inferredMaxPrice: number | null;
     cheapestIntentApplied: boolean;
     closestOptions: ClosestOption[];
+    resolvedCategory: string | null;
   } = {
     products:          enrichedProducts,
     count:             enrichedProducts.length,
@@ -2620,6 +2622,13 @@ export async function POST(request: NextRequest) {
     // Observability for the honest-zero path (never silent): true when an explicit-category
     // need query matched nothing and unrelated results were withheld rather than shown.
     categoryEnforcedZero,
+    // Amazon Campaign V1 delivery-gap fix: the query's category, already resolved by the
+    // SAME shared classifier (`constraintTask`) used for ranking/gating above, mapped to the
+    // storefront taxonomy (see canonical-category.ts). The client uses this ONLY as a
+    // fallback signal for telemetry/campaign eligibility when the shopper has not explicitly
+    // picked a category filter — it is NEVER fed back into the product search/ranking
+    // request itself (that stays explicit-filter-only, unchanged from before this fix).
+    resolvedCategory:  toStorefrontCategory(constraintTask?.category ?? null),
     // Never silent (2026-08-09): a budget PARSED FROM THE SENTENCE, not chosen via the
     // filter sidebar, that is now acting as a real retrieval ceiling. The client must
     // disclose this ("طبّقنا ميزانيتك ≤ N ريال"), never apply it invisibly.
