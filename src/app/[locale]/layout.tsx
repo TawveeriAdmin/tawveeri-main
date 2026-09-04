@@ -46,12 +46,10 @@ export async function generateMetadata({
     description: copy.description,
     alternates: buildAlternates('', locale),
     openGraph: {
-      title: copy.title,
-      description: copy.description,
+      // Do NOT set title/description here. Next merges parent openGraph over child pages
+      // that only set top-level description (About/Deals/FAQ). Keep images+locale+url only.
       locale: locale === 'ar' ? 'ar_SA' : 'en_US',
       url: `${baseUrl}/${locale}`,
-      // Site-wide default. Without this the homepage — the most-shared URL we have — rendered
-      // a blank card everywhere. See BRAND_OG_IMAGE for why the dimensions are stated exactly.
       images: [{
         url: `${baseUrl}${BRAND_OG_IMAGE.path}`,
         width: BRAND_OG_IMAGE.width,
@@ -60,11 +58,8 @@ export async function generateMetadata({
       }],
     },
     twitter: {
-      // `summary`, not `summary_large_image`: the brand mark is square. Declaring the large
-      // card for a square image is the mismatch that produced blank previews.
+      // summary for square brand mark; title/description inherit from page metadata.
       card: 'summary',
-      title: copy.title,
-      description: copy.description,
       images: [`${baseUrl}${BRAND_OG_IMAGE.path}`],
     },
   };
