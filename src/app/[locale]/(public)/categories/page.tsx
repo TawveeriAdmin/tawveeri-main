@@ -34,10 +34,6 @@ export async function generateMetadata({
 // The old hardcoded CATS list promoted `cameras` (3 comparable) and `gaming` (no such category in
 // production at all) — tiles that could not deliver a comparison. `./categories.ts` is retained
 // only for the /categories/<slug> alias routing it also serves.
-import { PublicPageShell } from '@/components/public/public-page-shell';
-import Link from 'next/link';
-
-import { getNavigableCategories } from '@/lib/intelligence/navigable-categories';
 
 // Recompute hourly. The measurement is one small indexed read, and the list must track
 // production rather than the deploy.
