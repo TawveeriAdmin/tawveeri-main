@@ -168,7 +168,18 @@ function parseBooleanParam(...values: Array<string | null>): boolean {
 // Session-storage helpers for persisting search results across navigation.
 // `total` is the server's exact match count so pagination can render
 // correctly after a cache-restored back-nav without a refetch.
-function getSearchCache(): { query: string; category: string; products: Product[]; total: number; timestamp: number } | null {
+//
+// `resolvedCategory` (search-cache category-delivery fix): a cache HIT used to restore
+// `rawProducts`/`serverTotal` and return early — skipping the exact code path
+// (resolveEffectiveCategory + setEffectiveCategory, see above) that computes the value
+// usage_events telemetry and campaign eligibility read. Products/ranking were always
+// correctly restored; only this side-channel metadata was lost, silently starving a
+// category-gated campaign (e.g. Amazon Campaign V1) on a repeat search within the same
+// tab. Storing the server's ORIGINAL resolved category (not the already-merged
+// effectiveCategory) lets a cache hit re-run the SAME precedence rule against whatever
+// selectedCategory applies at restore time, rather than re-classifying the query text
+// locally — the cached response is already the authoritative source.
+export function getSearchCache(): { query: string; category: string; resolvedCategory: string | null; products: Product[]; total: number; timestamp: number } | null {
   try {
     const raw = sessionStorage.getItem(SEARCH_CACHE_KEY);
     if (!raw) return null;
@@ -178,13 +189,20 @@ function getSearchCache(): { query: string; category: string; products: Product[
       sessionStorage.removeItem(SEARCH_CACHE_KEY);
       return null;
     }
-    return { ...parsed, total: typeof parsed.total === 'number' ? parsed.total : (parsed.products?.length ?? 0) };
+    return {
+      ...parsed,
+      total: typeof parsed.total === 'number' ? parsed.total : (parsed.products?.length ?? 0),
+      // Legacy entries (written before this fix, or by an older cached client bundle)
+      // never carried this field — never fabricate a category for them; restore as
+      // unknown (null), the same safe value a genuinely unresolved query already gets.
+      resolvedCategory: typeof parsed.resolvedCategory === 'string' ? parsed.resolvedCategory : null,
+    };
   } catch { return null; }
 }
 
-function setSearchCache(query: string, category: string, products: Product[], total: number) {
+export function setSearchCache(query: string, category: string, resolvedCategory: string | null, products: Product[], total: number) {
   try {
-    sessionStorage.setItem(SEARCH_CACHE_KEY, JSON.stringify({ query, category, products, total, timestamp: Date.now() }));
+    sessionStorage.setItem(SEARCH_CACHE_KEY, JSON.stringify({ query, category, resolvedCategory, products, total, timestamp: Date.now() }));
   } catch { /* quota exceeded — ignore */ }
 }
 
@@ -1066,7 +1084,7 @@ export default function SearchClient() {
       setCategoryEnforcedZero(!!((data as unknown) as { categoryEnforcedZero?: boolean }).categoryEnforcedZero);
       setClosestOptions(closestOptionsData);
       setCompareRoute(((data as unknown) as { compareRoute?: CompareRoute | null }).compareRoute ?? null);
-      setSearchCache(query, selectedCategory || 'all', mappedProducts, total);
+      setSearchCache(query, selectedCategory || 'all', resolvedCategoryFromApi, mappedProducts, total);
       setStoreErrors(data.errors || {});
       // searchTime from API is in seconds; convert to ms
       if (typeof data.searchTime === 'number') {
@@ -1161,12 +1179,19 @@ export default function SearchClient() {
         if (q && cached.query === q && cached.category === selectedCategory) {
           setRawProducts(cached.products);
           setServerTotal(cached.total);
+          // Search-cache category-delivery fix: re-run the SAME explicit>resolved>null
+          // precedence a fresh fetch would, against the cached server-resolved category —
+          // never re-classify the query text locally.
+          setEffectiveCategory(resolveEffectiveCategory(selectedCategory, cached.resolvedCategory));
           setLoading(false);
           return;
         }
         if (!q && cached.query) {
           setRawProducts(cached.products);
           setServerTotal(cached.total);
+          // selectedCategory is about to become cached.category below — compute the
+          // precedence against that restored value, not the (about-to-be-stale) current one.
+          setEffectiveCategory(resolveEffectiveCategory(cached.category, cached.resolvedCategory));
           cacheSkipRef.current = true;
           setSearchQuery(cached.query);
           setDebouncedQuery(cached.query);
