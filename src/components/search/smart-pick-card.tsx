@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import Link from 'next/link';
 import { Sparkles, Store, ArrowLeft, ArrowRight, BarChart3, Clock, CircleAlert } from 'lucide-react';
 import { Price } from '@/components/ui/price';
-import { hoursSince, observedAgoLabel } from '@/lib/intelligence/evidence-engine';
+import { hoursSince, observedAgoLabel, pickCardDisclosure, type TrustFactor } from '@/lib/intelligence/evidence-engine';
 import { track } from '@/lib/analytics/track';
 import { recordFirstPartyInteraction } from '@/lib/analytics/interaction';
 import { hasSeenDecisionCard, markDecisionCardSeen } from '@/lib/agent/return-to-decision';
@@ -51,7 +51,15 @@ export interface SmartPick {
    * corroboration); kept as data for now rather than adding a second trust badge
    * without a considered design pass.
    */
-  trust?: { score: number; tier: 'high' | 'medium' | 'low' | string } | null;
+  /** Founder Differentiation Mission (2026-09-04): factors/conditionWarning added so
+   *  pickCardDisclosure() can select the one most useful decision-confidence line —
+   *  score/tier stay data only (ADR-163: no raw number reaches the customer). */
+  trust?: {
+    score: number;
+    tier: 'high' | 'medium' | 'low' | string;
+    factors?: TrustFactor[];
+    conditionWarning?: { ar: string; en: string } | null;
+  } | null;
   /** Decision Card v1, ruling B1 (2026-08-22) — TV only. Present when a requested screen size
    *  doesn't match this pick's own. Disclosure only; never changes which product this is. */
   size_mismatch?: { requested: number; actual: number; comparator?: "eq" | "gt" | "gte" | "lt" | "lte" } | null;
@@ -95,6 +103,10 @@ export function SmartPickCard({ pick, locale }: { pick: SmartPick; locale: strin
   // claim. No timestamp is invented (T2): when there is no stored observation (live-scraped
   // pick), the line does not render.
   const observedAge = hoursSince(pick.last_observed_at);
+  // Founder Differentiation Mission (2026-09-04) — the ONE most useful decision-confidence
+  // line for this pick, or null when there's nothing new to say beyond the existing
+  // badge/timestamp. See pickCardDisclosure()'s own doc for why it's one line, not a list.
+  const disclosure = pick.trust ? pickCardDisclosure({ conditionWarning: pick.trust.conditionWarning ?? null, factors: pick.trust.factors ?? [] }) : null;
 
   return (
     <div
@@ -134,6 +146,12 @@ export function SmartPickCard({ pick, locale }: { pick: SmartPick; locale: strin
             </p>
           )}
           <p className="mt-0.5 text-sm text-on-surface-variant">{pick.reason_ar}</p>
+          {disclosure && (
+            <p className="mt-0.5 flex items-center gap-1 text-xs font-medium text-warning-700 dark:text-warning-400" data-testid="pick-disclosure-line" data-disclosure-kind={disclosure.kind}>
+              <CircleAlert className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              {isRTL ? disclosure.ar : disclosure.en}
+            </p>
+          )}
           <p className="mt-1 inline-flex items-center gap-1 text-xs text-on-surface-variant">
             <Store className="h-3.5 w-3.5" aria-hidden />
             {/* `reason_ar` already carries the store count when it can be honoured — saying it
@@ -159,7 +177,7 @@ export function SmartPickCard({ pick, locale }: { pick: SmartPick; locale: strin
           // that we compared — so "see the comparison" must be the first thing offered.
           <Link
             href={compareUrl!}
-            onClick={() => pick.canonical_id && track('alternative_view', { canonical_id: pick.canonical_id, meta: { via: 'compare_link', store_count: pick.store_count } })}
+            onClick={() => pick.canonical_id && track('alternative_view', { canonical_id: pick.canonical_id, meta: { via: 'compare_link', store_count: pick.store_count, disclosure_kind: disclosure?.kind ?? null } })}
             className="inline-flex h-9 items-center justify-center gap-1.5 rounded-full bg-primary-600 px-4 text-xs font-bold text-on-primary transition-colors hover:bg-primary-700"
           >
             <BarChart3 className="h-3.5 w-3.5 shrink-0" aria-hidden />
@@ -169,7 +187,7 @@ export function SmartPickCard({ pick, locale }: { pick: SmartPick; locale: strin
         <Link
           href={pick.product_url}
           onClick={() => {
-            if (pick.canonical_id) track('recommendation_accept', { canonical_id: pick.canonical_id, meta: { trust_score: pick.trust?.score ?? null, trust_tier: pick.trust?.tier ?? null } });
+            if (pick.canonical_id) track('recommendation_accept', { canonical_id: pick.canonical_id, meta: { trust_score: pick.trust?.score ?? null, trust_tier: pick.trust?.tier ?? null, disclosure_kind: disclosure?.kind ?? null } });
             // ADR-286 — Option A: Smart Pick's product_url is a direct merchant link (no /go
             // hop — traced to algoliaHitToGrouped's normalizeExitUrl path), so the interaction
             // record stands alone as evidence.

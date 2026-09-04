@@ -1537,11 +1537,20 @@ function buildDecisionLayer(
         last_observed_at: pickObservedAt,
         // Shared evidence source (see DecisionLayer type comment) — computed from signals
         // already available on the winning card; never changes which product is `best`.
+        // `condition` (Founder Differentiation Mission, 2026-09-04): the SAME
+        // extractSpecsFromTitle() regex the filter sidebar already uses, applied to the
+        // pick's own title — a disclosure, never a re-ranking signal (Amazon Decision
+        // Layer's conditionMismatch flag was a stub; this is the real detector it referenced).
         trust: productTrust({
           store_count: best.store_count,
           has_comparison: best.has_tps_comparison ?? (best.store_count >= 2),
           tps_identity_key: best.tps_identity_key ?? null,
           last_observed_at: pickObservedAt,
+        }, {
+          condition: (() => {
+            const c = extractSpecsFromTitle(`${best.name_ar || ''} ${best.name_en || ''}`).condition;
+            return c === 'renewed' || c === 'used' ? c : null;
+          })(),
         }),
         size_mismatch: sizeMismatch,
       }

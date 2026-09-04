@@ -43,6 +43,11 @@ export interface TrustAssessment {
   factors: TrustFactor[];
   caveats_ar: string[];
   caveats_en: string[];
+  /** Founder Differentiation Mission (2026-09-04) — "جديد مقابل مجدد" (new vs renewed).
+   *  Purely additive, never affects score/tier/factors: a disclosure, not a penalty —
+   *  the exact same offer can still be the best available price, it just isn't new.
+   *  Null when the evidence doesn't say the offer is anything but new. */
+  conditionWarning: { ar: string; en: string } | null;
   version: string;
 }
 
@@ -63,6 +68,10 @@ export interface EvidenceInput {
   discount_honest?: boolean | null;
   /** Whether a discount is even being claimed (so we don't penalize its absence). */
   discount_claimed?: boolean | null;
+  /** Founder Differentiation Mission (2026-09-04) — derived from the offer's OWN title via
+   *  the existing extractSpecsFromTitle() condition regex (src/lib/scraping/config/spec-configs.ts),
+   *  never a new detector. Undefined/null/'new' all mean "nothing to disclose". */
+  condition?: 'new' | 'renewed' | 'used' | null;
 }
 
 export const EVIDENCE_ENGINE_VERSION = "trust-v1";
@@ -215,7 +224,47 @@ export function assessTrust(e: EvidenceInput): TrustAssessment {
 
   const score = Math.max(0, Math.min(100, factors.reduce((a, f) => a + f.contribution, 0)));
   const tier: TrustTier = score >= 72 ? "high" : score >= 50 ? "medium" : "low";
-  return { score, tier, factors, caveats_ar, caveats_en, version: EVIDENCE_ENGINE_VERSION };
+
+  // ── Condition disclosure — additive, never scored (see field doc above). ──
+  const conditionWarning: TrustAssessment["conditionWarning"] =
+    e.condition === "renewed" ? { ar: "هذا العرض مُجدَّد وليس جديدًا", en: "This offer is renewed, not new" }
+    : e.condition === "used" ? { ar: "هذا العرض مستعمل وليس جديدًا", en: "This offer is used, not new" }
+    : null;
+
+  return { score, tier, factors, caveats_ar, caveats_en, conditionWarning, version: EVIDENCE_ENGINE_VERSION };
+}
+
+export interface PickDisclosure {
+  ar: string;
+  en: string;
+  /** Which evidence produced this — for measurement (track()'s `meta.disclosure`), never
+   *  rendered to the customer. */
+  kind: "condition" | "identity" | "price_consistency";
+}
+
+/**
+ * Founder Differentiation Mission (2026-09-04) — ONE most-useful disclosure line for a
+ * decision surface (Smart Pick card today; any single-product decision card tomorrow),
+ * not a wall of every caveat the engine can produce. Deliberately excludes the
+ * corroboration/freshness caveats here: those are already communicated elsewhere on the
+ * card (the "Verified comparison"/"Verified price" badge, and the always-visible
+ * observed-time line) — repeating them as a second warning would be redundant, not
+ * informative. Priority (most decision-critical first): is this actually NEW →
+ * is the identity itself uncertain (e.g. unknown storage) → do the compared prices
+ * plausibly belong to the exact same item. Returns null when none apply — the card
+ * shows no extra line rather than inventing one (unknown beats incorrect).
+ */
+export function pickCardDisclosure(trust: Pick<TrustAssessment, "conditionWarning" | "factors">): PickDisclosure | null {
+  if (trust.conditionWarning) return { ...trust.conditionWarning, kind: "condition" };
+  const identity = trust.factors.find((f) => f.key === "identity");
+  if (identity && identity.status === "weak") {
+    return { ar: "لم يُحدَّد وصف مؤثر على السعر لهذا العرض (مثل السعة)", en: "A price-determining spec (like storage) isn't confirmed for this offer", kind: "identity" };
+  }
+  const consistency = trust.factors.find((f) => f.key === "price_consistency");
+  if (consistency && consistency.status === "weak") {
+    return { ar: "فارق السعر بين المتاجر كبير — تأكد أن العروض لنفس المنتج قبل الشراء", en: "The price gap between stores is large — confirm the offers match before buying", kind: "price_consistency" };
+  }
+  return null;
 }
 
 /** Detects an unstated price-determining spec (NO_STORAGE/NO_TECH/…) from the key. */

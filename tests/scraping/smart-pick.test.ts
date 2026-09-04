@@ -96,3 +96,30 @@ describe('ADR-193: the pick label is conditioned on the age of its price evidenc
     expect(decideSrc).toMatch(/r\.is_smart_pick && !\(data_age_hours != null && data_age_hours > PICK_FRESHNESS_MAX_HOURS\)/);
   });
 });
+
+// Founder Differentiation Mission (2026-09-04) — decision-confidence disclosure wiring.
+describe('Founder Differentiation Mission: the Smart Pick trust source feeds a real disclosure', () => {
+  const cardSrc = fs.readFileSync(path.join(process.cwd(), 'src', 'components', 'search', 'smart-pick-card.tsx'), 'utf8');
+
+  it('the pick\'s OWN condition is derived from its title via the existing extractSpecsFromTitle detector, never a new one', () => {
+    const decisionCardIdx = routeSrc.indexOf('const decisionCard = trustworthyPick');
+    const trustCallIdx = routeSrc.indexOf('trust: productTrust(', decisionCardIdx);
+    expect(trustCallIdx).toBeGreaterThan(-1);
+    const trustCallBody = routeSrc.slice(trustCallIdx, trustCallIdx + 600);
+    expect(trustCallBody).toMatch(/extractSpecsFromTitle\(`\$\{best\.name_ar/);
+    expect(trustCallBody).toMatch(/condition/);
+  });
+
+  it('the card imports pickCardDisclosure from the shared evidence engine, never re-deriving the priority logic locally', () => {
+    expect(cardSrc).toMatch(/import\s*\{[^}]*pickCardDisclosure[^}]*\}\s*from\s*['"]@\/lib\/intelligence\/evidence-engine['"]/);
+  });
+
+  it('the disclosure line is wired into both existing measurement events (recommendation_accept, alternative_view), not a brand-new unmeasured event', () => {
+    expect(cardSrc).toMatch(/recommendation_accept'[\s\S]{0,150}disclosure_kind/);
+    expect(cardSrc).toMatch(/alternative_view'[\s\S]{0,150}disclosure_kind/);
+  });
+
+  it('the disclosure line never blocks or replaces the pick — it renders alongside it, gated by presence only', () => {
+    expect(cardSrc).toMatch(/\{disclosure && \(/);
+  });
+});

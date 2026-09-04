@@ -1,5 +1,5 @@
 // tests/intelligence/evidence-engine.test.ts — Trust & Evidence Engine (ADR-087).
-import { assessTrust, observedAgoLabel, PICK_FRESHNESS_MAX_HOURS, isFreshObservation } from "../../src/lib/intelligence/evidence-engine";
+import { assessTrust, observedAgoLabel, PICK_FRESHNESS_MAX_HOURS, isFreshObservation, pickCardDisclosure } from "../../src/lib/intelligence/evidence-engine";
 
 describe("assessTrust — evidence-grounded, deterministic, honest", () => {
   it("high trust: multi-store, precise identity, confident price history", () => {
@@ -74,6 +74,67 @@ describe("assessTrust — evidence-grounded, deterministic, honest", () => {
   it("is deterministic (same input → same output)", () => {
     const inp = { store_count: 3, identity_confidence: 88, has_comparison: true, price_confident: true, price_distinct_days: 9 };
     expect(assessTrust(inp)).toEqual(assessTrust(inp));
+  });
+});
+
+// Founder Differentiation Mission (2026-09-04) — "new vs renewed" disclosure.
+describe("assessTrust — condition disclosure (new vs renewed/used)", () => {
+  it("is null when the offer's own title says nothing but new (the common case)", () => {
+    const t = assessTrust({ store_count: 2, identity_confidence: 90, condition: "new" });
+    expect(t.conditionWarning).toBeNull();
+    const tUnset = assessTrust({ store_count: 2, identity_confidence: 90 });
+    expect(tUnset.conditionWarning).toBeNull();
+  });
+
+  it("discloses when the offer is renewed, in worded (never numeric) language", () => {
+    const t = assessTrust({ store_count: 2, identity_confidence: 90, condition: "renewed" });
+    expect(t.conditionWarning).toEqual({ ar: "هذا العرض مُجدَّد وليس جديدًا", en: "This offer is renewed, not new" });
+  });
+
+  it("discloses when the offer is used", () => {
+    const t = assessTrust({ store_count: 2, identity_confidence: 90, condition: "used" });
+    expect(t.conditionWarning?.en).toMatch(/used, not new/i);
+  });
+
+  it("a condition disclosure NEVER changes the score/tier — it is a disclosure, not a penalty", () => {
+    const withoutCondition = assessTrust({ store_count: 3, identity_confidence: 90, price_confident: true, price_distinct_days: 10, data_age_hours: 5 });
+    const withCondition = assessTrust({ store_count: 3, identity_confidence: 90, price_confident: true, price_distinct_days: 10, data_age_hours: 5, condition: "renewed" });
+    expect(withCondition.score).toBe(withoutCondition.score);
+    expect(withCondition.tier).toBe(withoutCondition.tier);
+    expect(withCondition.factors).toEqual(withoutCondition.factors);
+  });
+});
+
+describe("pickCardDisclosure — ONE most-useful decision-confidence line, never a wall of caveats", () => {
+  it("returns null when there is nothing worth disclosing", () => {
+    const t = assessTrust({ store_count: 4, identity_confidence: 95, has_comparison: true, price_spread_pct: 8, price_confident: true, price_distinct_days: 12, data_age_hours: 3 });
+    expect(pickCardDisclosure(t)).toBeNull();
+  });
+
+  it("condition wins priority over every other signal", () => {
+    const t = assessTrust({ store_count: 2, identity_confidence: 40, has_comparison: true, price_spread_pct: 220, condition: "renewed" });
+    expect(pickCardDisclosure(t)?.kind).toBe("condition");
+  });
+
+  it("falls back to identity when the identity factor is weak and there's no condition issue", () => {
+    // specs_incomplete caps identity value at min(idc, 0.55); status is "weak" strictly
+    // below 0.55, so a low identity_confidence is needed to actually cross into "weak"
+    // (0.55 itself lands on "ok" — the boundary is inclusive on the "ok" side).
+    const t = assessTrust({ store_count: 2, identity_confidence: 40, specs_incomplete: true });
+    expect(pickCardDisclosure(t)?.kind).toBe("identity");
+  });
+
+  it("falls back to price_consistency when only the cross-store spread is weak", () => {
+    const t = assessTrust({ store_count: 2, identity_confidence: 90, has_comparison: true, price_spread_pct: 220 });
+    expect(pickCardDisclosure(t)?.kind).toBe("price_consistency");
+  });
+
+  it("never surfaces the single-store or staleness caveats — those are already communicated elsewhere on the card", () => {
+    const t = assessTrust({ store_count: 1, identity_confidence: 90, data_age_hours: 300 });
+    // single-store (corroboration weak) and staleness (freshness weak) are both true here,
+    // but pickCardDisclosure only recognizes condition/identity/price_consistency.
+    const result = pickCardDisclosure(t);
+    expect(result === null || (result.kind !== ("corroboration" as never) && result.kind !== ("freshness" as never))).toBe(true);
   });
 });
 
