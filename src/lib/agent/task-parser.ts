@@ -46,7 +46,10 @@ function parseCategory(x: string): string | null {
   if (/مكيف|تكييف|air ?condition|\bac\b|split ac/.test(x)) return "air_conditioner";
   // Plural/ه-spelling stems (measured 2026-08-04): «شاشات», «ثلاجات», «غسالات» classified
   // as NO category, so plural browse queries lost routing while their singulars worked.
-  if (/تلفزيون|تليفزيون|شاش[ةه]|شاشات|television|\btv\b|smart tv/.test(x)) return "tv";
+  // «تي في» (2026-09, multi-category Amazon expansion): the Arabic phonetic transliteration
+  // of "TV" — «smart tv»/«\btv\b» above only matched LATIN-script "tv", not this common
+  // Arabic spelling («سمارت تي في» etc.). Unambiguous — "تي في" names television only.
+  if (/تلفزيون|تليفزيون|شاش[ةه]|شاشات|television|\btv\b|smart tv|تي في/.test(x)) return "tv";
   if (/تابلت|ايباد|آيباد|ipad|tablet|جالكسي تاب|galaxy tab|matepad/.test(x)) return "tablet";
   // «حاسوب»/«حاسوب محمول» (formal "computer"/"portable computer") and «كمبيوتر» added
   // 2026-08-10 (reopened mission, found via my own adversarial follow-up to case 3): these
@@ -79,19 +82,48 @@ function parseCategory(x: string): string | null {
   // than a feature adjective. The Arabic side never had this collision ("تصويره" — its
   // camera/photography, possessive form — never matches the "كاميرا" category regex at all),
   // which is exactly what made this an ENGLISH-ONLY bilingual-parity bug, not a general one.
-  if (/جوال|هاتف|ايفون|iphone|smartphone|galaxy s|\bphone\b/.test(x)) return "mobile";
+  // «آيفون» (madda-alef spelling) added alongside «ايفون» (2026-09, multi-category Amazon
+  // expansion — smartphone is now an approved campaign category): MEASURED during the
+  // Amazon Campaign V1 delivery-gap investigation as a real, common gap — this file's own
+  // tablet regex two lines above already lists both «ايباد»/«آيباد»; mobile never got the
+  // matching madda-alef variant. Narrow, additive, same pattern already proven safe here.
+  if (/جوال|هاتف|ايفون|آيفون|iphone|smartphone|galaxy s|\bphone\b/.test(x)) return "mobile";
   if (/كاميرا|camera|dslr|mirrorless|eos/.test(x)) return "camera";
   // Appliances — ORDER MATTERS: dishwasher (غسالة صحون) before washing_machine (غسالة);
   // air_fryer (قلاية) and coffee_maker (specific) before generic checks.
   if (/غسال[ةه] صحون|غسالات صحون|غسالة أطباق|dishwasher|dish washer/.test(x)) return "dishwasher";
   if (/مايكرويف|ميكروويف|ميكرويف|microwave/.test(x)) return "microwave";
-  if (/قلاية هوائية|قلايه هوائية|air ?fryer|قلاية بدون زيت/.test(x)) return "air_fryer";
+  // «اير فراير»/«ايرفراير» (2026-09, multi-category Amazon expansion): the Arabic phonetic
+  // transliteration of "air fryer" (spaced and unspaced) — `air ?fryer` above only matched
+  // LATIN script. Bare «قلاية» is deliberately NOT added here: Amazon.sa's own taxonomy files
+  // «قلاية»/«مقالي» primarily under cookware FRYING PANS, not the air-fryer appliance
+  // (verified live against amazon.sa during the multi-category destination-node audit) — a
+  // bare "قلاية" query is genuinely ambiguous pan-vs-appliance, so it stays unclassified
+  // rather than risk a wrong-category match. A brand alone appended to bare «قلاية» («قلاية
+  // نينجا»/«قلاية فيليبس») does not resolve that same ambiguity, so those stay unclassified too.
+  if (/قلاية هوائية|قلايه هوائية|air ?fryer|اير فراير|ايرفراير|قلاية بدون زيت/.test(x)) return "air_fryer";
   if (/منقي هواء|منقّي هواء|air purifier|air cleaner/.test(x)) return "air_purifier";
-  if (/مكنسة|مكنسه|vacuum|hoover/.test(x)) return "vacuum";
-  if (/ماكينة قهوة|صانعة قهوة|coffee maker|coffee machine|espresso|اسبريسو|إسبريسو|nespresso/.test(x)) return "coffee_maker";
-  if (/غلاية|غلايه|electric kettle|\bkettle\b/.test(x)) return "kettle";
+  // «روبوت تنظيف» (2026-09): a bare "cleaning robot" description is, in Saudi retail usage,
+  // overwhelmingly a robot vacuum — unlike a bare BRAND name (see «دايسون» below), a
+  // functional description naming the cleaning task stays in the floor-care family. «دايسون»
+  // (Dyson) is deliberately NOT added: Dyson sells vacuums, hair dryers/stylers, air
+  // purifiers and fans — a bare brand mention cannot safely resolve to one device category,
+  // exactly the ambiguity this classifier must never guess through.
+  if (/مكنسة|مكنسه|vacuum|hoover|روبوت تنظيف/.test(x)) return "vacuum";
+  // «مكينة قهوة» (common dialect spelling, missing alef after م), «آلة قهوة» (formal
+  // synonym), «نسبريسو»/«دولتشي قوستو» (2026-09): Nespresso and Dolce Gusto are single-
+  // category capsule-coffee-machine brands (unlike Dyson/Ninja, they sell nothing outside
+  // coffee machines/pods) — a bare brand mention safely resolves to coffee_maker here.
+  if (/ماكينة قهوة|مكينة قهوة|آلة قهوة|صانعة قهوة|coffee maker|coffee machine|espresso|اسبريسو|إسبريسو|nespresso|نسبريسو|دولتشي قوستو/.test(x)) return "coffee_maker";
+  // «كاتل» (2026-09): the Arabic phonetic transliteration of "kettle" — unambiguous, names
+  // only the electric kettle.
+  if (/غلاية|غلايه|electric kettle|\bkettle\b|كاتل/.test(x)) return "kettle";
   if (/محمصة|محمصه|toaster/.test(x)) return "toaster";
-  if (/خلاط|blender/.test(x)) return "blender";
+  // «نيوتربوليت» (NutriBullet, 2026-09): a single-category personal-blender brand (unlike
+  // Dyson/Ninja) — a bare brand mention safely resolves to blender here. «سموثي» ("smoothie")
+  // is deliberately NOT added: it names a drink/use-case, not a device, and could equally
+  // resolve to grocery/ready-made-drink or cup/bottle listings — not a safe device signal.
+  if (/خلاط|blender|نيوتربوليت/.test(x)) return "blender";
   // COOKER, checked BEFORE oven (2026-08-19, founder taxonomy audit, multi-retailer research —
   // Noon/Amazon.sa/Almanea/Shaker/LG all confirmed): a full-size freestanding cooker/range
   // (cooktop + oven cavity in one floor-standing unit) is a PHYSICALLY DIFFERENT product from a

@@ -140,4 +140,15 @@ describe('search cache — campaign eligibility on cache hit (item C)', () => {
     expect(effectiveCategory).toBeNull();
     expect(isCampaignEligible(campaign, ctx(effectiveCategory))).toBe(false);
   });
+
+  it('multi-category expansion: the cache mechanism generalizes to a NEW approved category (air_fryer), not just tablet', () => {
+    setSearchCache('قلاية هوائية', 'all', 'air_fryer', [product('1')], 12);
+    const cached = getSearchCache()!;
+    const effectiveCategory = resolveEffectiveCategory('all', cached.resolvedCategory);
+    expect(effectiveCategory).toBe('air_fryer');
+    const airFryerCampaign: AffiliateCampaign = { ...campaign, id: 'test-air-fryer-campaign', categories: ['air_fryer'] };
+    expect(isCampaignEligible(airFryerCampaign, ctx(effectiveCategory))).toBe(true);
+    // and it correctly stays ineligible for the tablet campaign — no cross-category leak via cache.
+    expect(isCampaignEligible(campaign, ctx(effectiveCategory))).toBe(false);
+  });
 });

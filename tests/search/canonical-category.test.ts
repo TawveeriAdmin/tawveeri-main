@@ -15,16 +15,31 @@ describe('toStorefrontCategory', () => {
     }
   });
 
-  it('buckets large-appliance subcategories under the storefront "appliance" bucket', () => {
-    for (const cat of ['refrigerator', 'washing_machine', 'dishwasher', 'vacuum']) {
+  it('buckets NOT-YET-APPROVED-campaign large-appliance subcategories under the storefront "appliance" bucket', () => {
+    for (const cat of ['refrigerator', 'washing_machine', 'dishwasher']) {
       expect(toStorefrontCategory(cat)).toBe('appliance');
     }
   });
 
-  it('buckets kitchen-appliance subcategories under the storefront "kitchen" bucket', () => {
-    for (const cat of ['microwave', 'oven', 'air_fryer', 'coffee_maker', 'kettle', 'toaster', 'blender', 'cooker']) {
+  it('buckets NOT-YET-APPROVED-campaign kitchen-appliance subcategories under the storefront "kitchen" bucket', () => {
+    for (const cat of ['microwave', 'oven', 'toaster', 'cooker']) {
       expect(toStorefrontCategory(cat)).toBe('kitchen');
     }
+  });
+
+  it('multi-category expansion: approved first-wave campaign categories stay distinct (identity/renamed), never bucketed', () => {
+    expect(toStorefrontCategory('vacuum')).toBe('vacuum');
+    expect(toStorefrontCategory('air_fryer')).toBe('air_fryer');
+    expect(toStorefrontCategory('coffee_maker')).toBe('coffee_machine');
+    expect(toStorefrontCategory('kettle')).toBe('electric_kettle');
+    expect(toStorefrontCategory('blender')).toBe('blender');
+  });
+
+  it('one category never collapses into another — every approved first-wave value is unique', () => {
+    const approved = ['tablet', 'tv', 'smartphone', 'air_fryer', 'coffee_machine', 'vacuum', 'electric_kettle', 'blender'];
+    const resolved = ['tablet', 'tv', 'mobile', 'air_fryer', 'coffee_maker', 'vacuum', 'kettle', 'blender'].map(toStorefrontCategory);
+    expect(resolved).toEqual(approved);
+    expect(new Set(resolved).size).toBe(approved.length);
   });
 
   it('returns null for null/undefined/empty input — never fabricates a category', () => {

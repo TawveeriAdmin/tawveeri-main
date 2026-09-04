@@ -7,6 +7,7 @@ import type { AffiliateCampaign, CampaignPlacement, EligibleCampaign } from './t
 import { isCampaignsGloballyEnabled, parseAllowedMerchants, selectEligibleCampaigns } from './eligibility';
 import { buildCampaignMerchantUrl } from './link';
 import { issueClickToken } from './click-token';
+import { checkClaimGuard } from './claim-guard';
 
 // affiliate_campaigns/campaign_clicks are new tables (scripts/database/44-affiliate-campaigns.sql)
 // not yet present in the generated Database type (src/lib/database/types.ts). Same escape hatch
@@ -87,6 +88,17 @@ export async function getEligibleCampaigns(
     for (const c of eligible) {
       const link = buildCampaignMerchantUrl(c);
       if (!link) continue; // unresolvable destination — drop rather than render broken
+      // Small-appliance claim-guard (multi-category expansion, Sept 2026): affiliate_campaigns
+      // has no column yet for "fresh, confirmed Amazon offer evidence" — until one exists,
+      // every campaign is checked as if none exists (the safe default), so a card can never
+      // present "best price"/"cheapest"/"verified price" it cannot back. A campaign whose
+      // copy fails this is dropped, never rendered non-compliant — same fail-closed pattern
+      // as the unresolvable-destination check just above.
+      const claimCheck = checkClaimGuard([c.title_ar, c.title_en, c.cta_ar, c.cta_en], false);
+      if (!claimCheck.compliant) {
+        console.error('campaign dropped: claim guard violation', c.id, claimCheck.violations);
+        continue;
+      }
       logExposure(c, placement, category, ctx);
       withLinks.push({ ...c, merchantUrl: link.url, clickToken: issueClickToken(c.id) });
     }

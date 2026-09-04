@@ -363,6 +363,16 @@ describe("Task parser — 10-journey acceptance sweep (2026-08-09)", () => {
     // \bphone\b ever runs — but confirm the end result is still never "mobile".
     expect(parseShoppingTask("wireless headphones under 500").category).not.toBe("mobile");
   });
+
+  // MEASURED (Amazon multi-category expansion investigation, 2026-09): «آيفون» (madda-alef
+  // spelling) was not recognized as mobile — only «ايفون» was — even though this file's own
+  // tablet regex two lines above already lists both «ايباد»/«آيباد». Fixed now that
+  // smartphone is an approved Amazon campaign category (previously deliberately left as a
+  // documented, out-of-scope gap during the delivery-wiring fix).
+  it('recognizes «آيفون» (madda-alef) the same as «ايفون»', () => {
+    expect(parseShoppingTask("آيفون").category).toBe("mobile");
+    expect(parseShoppingTask("آيفون 16").category).toBe("mobile");
+  });
   it("household size («لعائلة 6 أشخاص») is a soft «large» preference, never an invented exact capacity", () => {
     // Governing rule (founder direction): household size is USE CONTEXT, not a fabricated
     // liters/kg requirement — the parser must not invent a numeric capacity target from it.

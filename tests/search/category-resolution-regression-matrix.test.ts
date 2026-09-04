@@ -22,22 +22,16 @@ describe('category resolution regression matrix', () => {
 
   describe('SMARTPHONE (classifier resolves "mobile", mapped to storefront "smartphone")', () => {
     it.each([
-      'جوال', 'ايفون', 'سامسونج جوال', 'جوال بميزانية 2000',
+      'جوال', 'ايفون', 'آيفون', 'سامسونج جوال', 'جوال بميزانية 2000',
     ])('"%s" resolves to smartphone', (q) => {
+      // "آيفون" (madda-alef spelling): FIXED in the multi-category Amazon expansion patch
+      // (Sept 2026) — this test previously pinned it as a known NULL gap, explicitly
+      // deliberately left unfixed while the delivery-wiring patch stayed narrow. Now that
+      // smartphone is an approved first-wave campaign category, the founder authorized
+      // fixing task-parser.ts's mobile regex (added "آيفون" alongside "ايفون", same pattern
+      // its own tablet regex already used for ايباد/آيباد). Flipping this from NULL to PASS
+      // here is exactly the "visible, not silent" transition the original pin intended.
       expect(resolve(q)).toBe('smartphone');
-    });
-
-    it('"آيفون" (madda-alef spelling) is a KNOWN, PRE-EXISTING classifier gap, deliberately NOT fixed by this patch', () => {
-      // task-parser.ts's mobile regex lists "ايفون" but not the madda-alef variant "آيفون"
-      // (unlike its OWN tablet regex two lines above, which lists both ايباد/آيباد) — found
-      // during the read-only delivery-gap investigation. Fixing task-parser.ts's shared
-      // parseCategory() is explicitly out of scope here: that function also drives
-      // ranking/gating in /api/search/route.ts (categoryEnforcedZero, needShapedWithCategory),
-      // so touching it is a classifier-behavior change, not a delivery-wiring fix — exactly
-      // the "search ranking/matching not otherwise changed" boundary this patch respects.
-      // Stays null, never wrong — pinned here so a future, separately-scoped classifier fix
-      // shows as this test flipping from NULL to PASS, not a silent behavior change.
-      expect(resolve('آيفون')).toBeNull();
     });
   });
 
