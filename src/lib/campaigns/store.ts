@@ -50,6 +50,10 @@ function logExposure(c: AffiliateCampaign, placement: CampaignPlacement, categor
         category,
         session_id: ctx.sessionId ?? null,
         is_test: c.is_test || !!ctx.isTest,
+        // Amazon Decision Layer V2 §6 — getEligibleCampaigns() only ever resolves the
+        // CATEGORY mode today (resolveAmazonDestination()'s other modes are built but
+        // not wired here yet), so this is a stated fact, not a guess.
+        destination_mode: 'category',
       })
       .then(({ error }: { error: unknown }) => { if (error) console.error('campaign_exposures insert failed:', error); });
   } catch { /* measurement must never break the page */ }

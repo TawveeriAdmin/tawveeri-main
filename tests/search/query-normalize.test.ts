@@ -93,4 +93,15 @@ describe("Saudi shopping vocabulary", () => {
       expect(groupFor(misspelling)).toEqual(expect.arrayContaining(["honor"]));
     }
   });
+
+  // Amazon Decision Layer V2 (2026-09-04) §10: "كاتل" sits one edit from "كابل"
+  // (cable) so Algolia's default typo tolerance pulled cable-accessory noise into an
+  // electric-kettle query. "غلاية"/"غلاية كهربائية" themselves already return genuine
+  // catalog results (confirmed live) — the gap is purely that "كاتل" never reached
+  // them. An explicit synonym (not a typo-tolerance change) is additive and specific:
+  // it does not touch how any OTHER word's fuzzy matching behaves.
+  it("links كاتل to the electric-kettle vocabulary, not left to typo tolerance alone", () => {
+    const groupFor = (w: string) => SAUDI_SEARCH_SYNONYMS.find((g) => g.includes(w)) ?? [];
+    expect(groupFor("كاتل")).toEqual(expect.arrayContaining(["غلاية", "kettle"]));
+  });
 });

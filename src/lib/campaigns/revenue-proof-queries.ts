@@ -53,6 +53,25 @@ export interface TawveeriObserved {
   botExcluded: number; // subset of testInternalExcluded flagged specifically by bot-UA detection
   topSessionConcentration: number | null; // this session's share of clean clicks, 0..1
   campaignErrors: number; // reserved — V1 has no distinct error ledger; always 0, not fabricated
+  /** Amazon Decision Layer V2 §1D — clicks whose tw_campaign cookie carries a paid-medium
+   *  utm_medium (see PAID_UTM_MEDIA). Excluded from cleanCampaignClicks/clickThroughRate:
+   *  Amazon's paid-search policy status for Tawveeri is POLICY-AMBIGUOUS (V2 compliance
+   *  audit), so a paid-origin session must never be silently folded into an "organic
+   *  affiliate performance" claim either way, without blocking navigation for the
+   *  shopper — segmentation happens only here, in the reporting layer. */
+  paidOriginExcluded: number;
+}
+
+/** utm_medium values treated as paid acquisition for segmentation purposes — matches the
+ *  vocabulary already used by the existing acquisition-attribution cookie (tw_campaign),
+ *  not a new taxonomy. */
+const PAID_UTM_MEDIA = new Set(['cpc', 'ppc', 'paid', 'paid_social', 'paidsocial', 'ads']);
+
+/** Pure — true when an acquisition_campaign JSON value indicates paid-origin traffic. */
+export function isPaidOriginAcquisition(acquisitionCampaign: Record<string, unknown> | null | undefined): boolean {
+  if (!acquisitionCampaign) return false;
+  const medium = String(acquisitionCampaign.utm_medium ?? '').toLowerCase();
+  return PAID_UTM_MEDIA.has(medium);
 }
 
 /** Phase 2B. Reads campaign_exposures (ours, server-decided) + campaign_clicks
@@ -72,15 +91,19 @@ export async function getTawveeriObserved(
   const [exposuresRes, testExposuresRes, clicksRes, testClicksRes, impressionsRes] = await Promise.all([
     supabase.from('campaign_exposures').select('id', { count: 'exact', head: true }).eq('campaign_id', campaignId).eq('is_test', false).gte('created_at', startIso).lte('created_at', endIso),
     supabase.from('campaign_exposures').select('id', { count: 'exact', head: true }).eq('campaign_id', campaignId).eq('is_test', true).gte('created_at', startIso).lte('created_at', endIso),
-    supabase.from('campaign_clicks').select('session_id', { count: 'exact' }).eq('campaign_id', campaignId).eq('is_test', false).gte('created_at', startIso).lte('created_at', endIso),
+    supabase.from('campaign_clicks').select('session_id, acquisition_campaign').eq('campaign_id', campaignId).eq('is_test', false).gte('created_at', startIso).lte('created_at', endIso),
     supabase.from('campaign_clicks').select('id', { count: 'exact', head: true }).eq('campaign_id', campaignId).eq('is_test', true).gte('created_at', startIso).lte('created_at', endIso),
     supabase.from('usage_events').select('id', { count: 'exact', head: true }).eq('event_type', 'campaign_impression').eq('is_test', false).gte('created_at', startIso).lte('created_at', endIso),
   ]);
 
   const cleanEligibleExposures = exposuresRes.count ?? 0;
   const testExcludedExposures = testExposuresRes.count ?? 0;
-  const clickRows: { session_id: string | null }[] = clicksRes.data ?? [];
-  const cleanCampaignClicks = clicksRes.count ?? clickRows.length;
+  const allClickRows: { session_id: string | null; acquisition_campaign: Record<string, unknown> | null }[] = clicksRes.data ?? [];
+  // §1D paid-search segmentation: a paid-origin click is excluded from the "clean"
+  // organic count entirely, never silently folded into affiliate-performance claims.
+  const paidOriginExcluded = allClickRows.filter((r) => isPaidOriginAcquisition(r.acquisition_campaign)).length;
+  const clickRows = allClickRows.filter((r) => !isPaidOriginAcquisition(r.acquisition_campaign));
+  const cleanCampaignClicks = clickRows.length;
   const testExcludedClicks = testClicksRes.count ?? 0;
   const visibleImpressions = impressionsRes.count ?? 0;
 
@@ -104,6 +127,7 @@ export async function getTawveeriObserved(
     botExcluded: testExcludedClicks, // is_test folds in bot-UA detection (isKnownBotUserAgent) — no separate bucket in V1
     topSessionConcentration,
     campaignErrors: 0,
+    paidOriginExcluded,
   };
 }
 
@@ -216,6 +240,78 @@ export function deriveBusinessDecisionState(args: {
   }
 
   return { mechanicsProof, revenueProof, repeatabilitySignal, repeatableMonetization, sustainability, incrementality: 'NOT_YET_TESTED' };
+}
+
+export type ReconciliationStatus = 'CONFIRMED' | 'PARTIAL' | 'NOT_YET_AVAILABLE' | 'UNKNOWN';
+
+export interface PortfolioRow {
+  campaignId: string;
+  category: string; // categories[0] || '(untargeted)'
+  trackingId: string;
+  enabled: boolean;
+  tawveeriClicks30d: number;
+  tawveeriExposures30d: number;
+  merchantStatus: MerchantReportedAmazon['status'];
+  merchantOrderedItems: number | null;
+  merchantCommissionSar: number | null;
+  merchantReportPeriodEnd: string | null;
+  reconciliation: ReconciliationStatus;
+}
+
+/** Pure — never calls an unimported report "0 revenue". Extracted so the rule itself is
+ *  directly unit-testable without a live Supabase client (deriveBusinessDecisionState's
+ *  own precedent). */
+export function deriveReconciliationStatus(merchant: MerchantReportedAmazon): ReconciliationStatus {
+  if (merchant.status === 'unknown') return 'NOT_YET_AVAILABLE';
+  if ((merchant.orderedItems ?? 0) > 0 || (merchant.shippedItems ?? 0) > 0) return 'CONFIRMED';
+  return 'PARTIAL';
+}
+
+/**
+ * Amazon Decision Layer V2 §8 — one row per LIVE campaign, reusing getTawveeriObserved
+ * and getMerchantReportedAmazon exactly as the single-campaign view does (no new query
+ * logic, no new attribution join). `reconciliation` never calls an unimported report "0
+ * revenue": NOT_YET_AVAILABLE when no report has been imported for that Tracking ID at
+ * all, PARTIAL when a report exists but shows no ordered/shipped items yet for this
+ * specific tracking id, CONFIRMED when at least one ordered/shipped item is reported.
+ */
+export async function getPortfolioSummary(): Promise<PortfolioRow[]> {
+  const supabase = untypedClient();
+  const { data: campaigns } = await supabase
+    .from('affiliate_campaigns')
+    .select('id, categories, tracking_id, merchant, enabled, start_at, end_at')
+    .eq('merchant', 'amazon')
+    .order('created_at', { ascending: true });
+
+  const now = new Date();
+  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const rows: PortfolioRow[] = [];
+
+  for (const c of (campaigns || []) as AffiliateCampaign[]) {
+    if (deriveCampaignStatus(c, now) !== 'live' && !c.enabled) continue; // skip only truly inert rows, keep scheduled/expired-but-enabled visible
+    const effectiveTrackingId = c.tracking_id || SHARED_AMAZON_TAG;
+    const [observed, merchant] = await Promise.all([
+      getTawveeriObserved(c.id, { start: thirtyDaysAgo, end: now }),
+      getMerchantReportedAmazon(effectiveTrackingId),
+    ]);
+
+    const reconciliation = deriveReconciliationStatus(merchant);
+
+    rows.push({
+      campaignId: c.id,
+      category: c.categories[0] || '(untargeted)',
+      trackingId: effectiveTrackingId,
+      enabled: c.enabled,
+      tawveeriClicks30d: observed.cleanCampaignClicks,
+      tawveeriExposures30d: observed.cleanEligibleExposures,
+      merchantStatus: merchant.status,
+      merchantOrderedItems: merchant.status === 'known' ? merchant.orderedItems : null,
+      merchantCommissionSar: merchant.status === 'known' ? merchant.commissionSar : null,
+      merchantReportPeriodEnd: merchant.status === 'known' ? merchant.reportPeriodEnd : null,
+      reconciliation,
+    });
+  }
+  return rows;
 }
 
 export interface OperatingCostCoverage {

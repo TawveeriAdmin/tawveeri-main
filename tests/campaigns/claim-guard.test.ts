@@ -37,4 +37,24 @@ describe('checkClaimGuard', () => {
     expect(checkClaimGuard(['استكشف خيارات إضافية على Amazon.sa'], false).compliant).toBe(true);
     expect(checkClaimGuard(['استكشف خيارات إضافية على Amazon.sa'], true).compliant).toBe(true);
   });
+
+  // Amazon Decision Layer V2 (2026-09-04) §3 — expanded forbidden-claims list: none of
+  // these are true of a generic category-discovery card, evidence or not.
+  it('rejects an "Amazon-endorsed"/"best seller"/"sale" claim even WITH fresh offer evidence — these are never true of a discovery card', () => {
+    for (const evidence of [false, true]) {
+      expect(checkClaimGuard(['موصى به من امازون'], evidence).compliant).toBe(false);
+      expect(checkClaimGuard(['أفضل منتج في امازون'], evidence).compliant).toBe(false);
+      expect(checkClaimGuard(['الأكثر مبيعا على Amazon.sa'], evidence).compliant).toBe(false);
+      expect(checkClaimGuard(['عروض اليوم الوطني'], evidence).compliant).toBe(false);
+      expect(checkClaimGuard(['Recommended by Amazon'], evidence).compliant).toBe(false);
+      expect(checkClaimGuard(["Amazon's best product"], evidence).compliant).toBe(false);
+      expect(checkClaimGuard(['Best seller on Amazon.sa'], evidence).compliant).toBe(false);
+      expect(checkClaimGuard(['National Day Sale'], evidence).compliant).toBe(false);
+      expect(checkClaimGuard(['National Day discount'], evidence).compliant).toBe(false);
+    }
+  });
+
+  it('the approved generic discovery copy still passes with the expanded pattern list (no false positive)', () => {
+    expect(checkClaimGuard([GENERIC_DISCOVERY_COPY_AR, GENERIC_DISCOVERY_COPY_EN], false).compliant).toBe(true);
+  });
 });

@@ -59,6 +59,12 @@ export async function POST(request: NextRequest) {
     const file = form.get('file');
     const source = String(form.get('source') || '').trim();
     const mappingRaw = String(form.get('mapping') || '{}');
+    // Amazon Decision Layer V2 §7 — dry-run preview: parse/normalize/match exactly as a
+    // real import would, but never write affiliate_reports/affiliate_conversions. Lets
+    // the founder verify the column mapping and match-tier mix against a real Amazon
+    // export before committing it, without needing a second (different) file to test
+    // the idempotency no-op path.
+    const dryRun = String(form.get('dryRun') || '') === '1' || String(form.get('dryRun') || '').toLowerCase() === 'true';
     if (!(file instanceof File) || !source) {
       return NextResponse.json({ error: 'file and source are required' }, { status: 400 });
     }
@@ -69,14 +75,18 @@ export async function POST(request: NextRequest) {
     const checksum = sha256(text);
 
     // Idempotency: re-uploading the same file for the same source is a no-op, not a duplicate insert.
-    const { data: existing } = await supabase
-      .from('affiliate_reports')
-      .select('id, created_at, row_count, imported_rows, rejected_rows')
-      .eq('source', source)
-      .eq('file_checksum', checksum)
-      .maybeSingle();
-    if (existing) {
-      return NextResponse.json({ alreadyImported: true, report: existing });
+    // Skipped in dry-run — a preview must never report "already imported" for a file that
+    // was only ever previewed, and must never block re-previewing the same file twice.
+    if (!dryRun) {
+      const { data: existing } = await supabase
+        .from('affiliate_reports')
+        .select('id, created_at, row_count, imported_rows, rejected_rows')
+        .eq('source', source)
+        .eq('file_checksum', checksum)
+        .maybeSingle();
+      if (existing) {
+        return NextResponse.json({ alreadyImported: true, report: existing });
+      }
     }
 
     const { headers, rows } = parseCsv(text);
@@ -87,6 +97,41 @@ export async function POST(request: NextRequest) {
     const normalized = rows.map((r) => normalizeRow(r, mapping));
     const accepted = normalized.filter((r) => !r.rejected);
     const rejectedCount = normalized.length - accepted.length;
+
+    // Amazon Decision Layer V2 §7 — Tracking ID validation: cross-check the report's own
+    // tracking_id_raw values against the tracking IDs Tawveeri actually issued (every
+    // affiliate_campaigns row, live or disabled, plus the shared org-wide default tag).
+    // NON-BLOCKING by design — an unrecognized tracking ID is very likely a real Amazon
+    // program tag we simply haven't wired a campaign for yet (or the shared default),
+    // not a corrupt row; "unknown beats incorrect" means we surface it, never reject a
+    // financial row on a guess.
+    const { data: knownCampaigns } = await supabase.from('affiliate_campaigns').select('tracking_id');
+    const knownTrackingIds = new Set<string>(['tawveeri0f-21']);
+    for (const c of (knownCampaigns || []) as Array<{ tracking_id: string | null }>) {
+      if (c.tracking_id) knownTrackingIds.add(c.tracking_id);
+    }
+    const unknownTrackingIds = Array.from(new Set(
+      accepted.map((r) => r.tracking_id_raw).filter((t): t is string => !!t && !knownTrackingIds.has(t)),
+    ));
+
+    if (dryRun) {
+      const previewMatchSummary = accepted.reduce((acc: Record<string, number>, r) => {
+        // Preview tier: same AGGREGATE_ONLY rule as the real pass; EXACT/PROBABLE require
+        // a live outbound_clicks lookup, which a preview intentionally skips (read cost
+        // scoped to what's needed to validate the mapping, not a full dry-run of matching).
+        const tier = (!r.item_name && !r.asin_or_sku && !r.order_date) ? 'AGGREGATE_ONLY' : 'PENDING_MATCH_ON_IMPORT';
+        acc[tier] = (acc[tier] || 0) + 1;
+        return acc;
+      }, {});
+      return NextResponse.json({
+        dryRun: true,
+        rowCount: rows.length,
+        wouldImportRows: accepted.length,
+        wouldRejectRows: rejectedCount,
+        unknownTrackingIds,
+        previewMatchSummary,
+      });
+    }
 
     const { data: report, error: reportError } = await supabase
       .from('affiliate_reports')
@@ -169,6 +214,7 @@ export async function POST(request: NextRequest) {
       rowCount: rows.length,
       importedRows: accepted.length,
       rejectedRows: rejectedCount,
+      unknownTrackingIds,
       matchSummary: conversionRows.reduce((acc: Record<string, number>, r) => {
         acc[r.match_tier] = (acc[r.match_tier] || 0) + 1;
         return acc;

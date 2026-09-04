@@ -9,7 +9,9 @@
 // against that rule before it can ever reach production; it is not wired into any write path
 // itself (no campaign rows are created by this patch) — it exists so the founder's review
 // package can be validated against the rule, not just described by it.
-const FORBIDDEN_CLAIM_PATTERNS: RegExp[] = [
+// Claims that are only wrong because we cannot currently BACK them — allowed once
+// `hasFreshOfferEvidence` proves a real, dated, Tawveeri-matched Amazon offer exists.
+const PRICE_CLAIM_PATTERNS: RegExp[] = [
   /افضل سعر|أفضل سعر/i, // "best price"
   /السعر الحالي|سعر مؤكد|سعر موثق/i, // "current/verified/confirmed price"
   /الأرخص|ارخص سعر|اقل سعر|أقل سعر/i, // "cheapest / lowest price"
@@ -20,6 +22,23 @@ const FORBIDDEN_CLAIM_PATTERNS: RegExp[] = [
   /current price/i,
 ];
 
+// Amazon Decision Layer V2 (2026-09-04) §3 — claims that are wrong regardless of any
+// price evidence: Tawveeri has no editorial endorsement from Amazon, does not display
+// Best Sellers/Movers & Shakers rank to customers, and runs no promotion of its own to
+// call a "sale"/"discount". A fresh Amazon offer price does not make any of these true,
+// so — unlike PRICE_CLAIM_PATTERNS — hasFreshOfferEvidence never waives these.
+const ABSOLUTE_FORBIDDEN_PATTERNS: RegExp[] = [
+  /موصى به من امازون|موصى به من أمازون|يوصي به امازون|يوصي به أمازون/i, // "recommended by Amazon"
+  /أفضل منتج في امازون|افضل منتج في امازون|أفضل منتج في أمازون/i, // "Amazon's best product"
+  /الأكثر مبيعا|الاكثر مبيعا|الأكثر مبيعاً/i, // "best seller"
+  /تخفيضات اليوم الوطني|عروض اليوم الوطني/i, // "National Day discount/deal"
+  /recommended by amazon/i,
+  /amazon'?s best/i,
+  /best ?seller/i,
+  /\bsale\b/i,
+  /national day discount/i,
+];
+
 export interface ClaimGuardResult {
   compliant: boolean;
   violations: string[];
@@ -27,16 +46,22 @@ export interface ClaimGuardResult {
 
 /**
  * Checks campaign copy (title/CTA/disclosure, any locale, any number of strings) for a
- * forbidden price/verification claim. `hasFreshOfferEvidence` must be true — a real, dated,
- * Tawveeri-matched Amazon offer confirmed for this exact campaign — for such a claim to ever
- * be allowed. Defaults to non-compliant scanning; never assume evidence exists.
+ * forbidden claim. `hasFreshOfferEvidence` must be true — a real, dated, Tawveeri-matched
+ * Amazon offer confirmed for this exact campaign — for a PRICE claim to ever be allowed;
+ * it never waives the ABSOLUTE set (editorial-endorsement/best-seller/sale claims Tawveeri
+ * has no authority to make regardless of price data). Defaults to non-compliant scanning;
+ * never assume evidence exists.
  */
 export function checkClaimGuard(texts: string[], hasFreshOfferEvidence: boolean): ClaimGuardResult {
-  if (hasFreshOfferEvidence) return { compliant: true, violations: [] };
   const violations: string[] = [];
   for (const text of texts) {
-    for (const pattern of FORBIDDEN_CLAIM_PATTERNS) {
+    for (const pattern of ABSOLUTE_FORBIDDEN_PATTERNS) {
       if (pattern.test(text)) violations.push(`"${text}" matches forbidden claim pattern ${pattern}`);
+    }
+    if (!hasFreshOfferEvidence) {
+      for (const pattern of PRICE_CLAIM_PATTERNS) {
+        if (pattern.test(text)) violations.push(`"${text}" matches forbidden claim pattern ${pattern}`);
+      }
     }
   }
   return { compliant: violations.length === 0, violations };

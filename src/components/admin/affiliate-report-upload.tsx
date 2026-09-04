@@ -33,6 +33,7 @@ export function AffiliateReportUpload({ locale }: { locale: string }) {
   const [headers, setHeaders] = useState<string[]>([]);
   const [mapping, setMapping] = useState<Partial<Record<CanonicalField, string>>>({});
   const [source, setSource] = useState('amazon_associates');
+  const [dryRun, setDryRun] = useState(true);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<Record<string, unknown> | null>(null);
   const [reports, setReports] = useState<ReportSummary[]>([]);
@@ -60,10 +61,11 @@ export function AffiliateReportUpload({ locale }: { locale: string }) {
       fd.set('file', file);
       fd.set('source', source);
       fd.set('mapping', JSON.stringify(mapping));
+      if (dryRun) fd.set('dryRun', '1');
       const res = await fetch('/api/admin/affiliate/reports', { method: 'POST', body: fd });
       const data = await res.json();
       setResult(res.ok ? data : { error: data.error || 'Import failed' });
-      if (res.ok) loadReports();
+      if (res.ok && !dryRun) loadReports();
     } catch (e) {
       setResult({ error: e instanceof Error ? e.message : 'Import failed' });
     } finally {
@@ -98,6 +100,10 @@ export function AffiliateReportUpload({ locale }: { locale: string }) {
           {headers.length > 0 && (
             <datalist id="csv-headers">{headers.map((h) => <option key={h} value={h} />)}</datalist>
           )}
+          <label className="flex items-center gap-2 text-xs font-bold text-on-surface-variant dark:text-white/50">
+            <input type="checkbox" checked={dryRun} onChange={(e) => setDryRun(e.target.checked)} />
+            {isRTL ? 'معاينة فقط (بدون حفظ)' : 'Preview only (no write)'}
+          </label>
         </div>
 
         <div className="space-y-2">
@@ -137,12 +143,31 @@ export function AffiliateReportUpload({ locale }: { locale: string }) {
             <span className="flex items-center gap-2"><AlertTriangle className="h-4 w-4" />{String(result.error)}</span>
           ) : result.alreadyImported ? (
             <span className="flex items-center gap-2"><FileCheck2 className="h-4 w-4" />{isRTL ? 'تم استيراد هذا الملف مسبقاً.' : 'This file was already imported.'}</span>
+          ) : result.dryRun ? (
+            <span className="flex flex-col gap-1">
+              <span className="flex items-center gap-2 font-bold"><FileCheck2 className="h-4 w-4" />{isRTL ? 'معاينة فقط — لم يتم الحفظ' : 'Preview only — nothing was saved'}</span>
+              <span>{isRTL ? 'سيتم استيراد' : 'Would import'} {String(result.wouldImportRows)} / {String(result.rowCount)}
+                {Number(result.wouldRejectRows) > 0 && ` · ${isRTL ? 'سيُرفض' : 'would reject'}: ${result.wouldRejectRows}`}
+              </span>
+              {Array.isArray(result.unknownTrackingIds) && result.unknownTrackingIds.length > 0 && (
+                <span className="text-amber-700 dark:text-amber-300">
+                  {isRTL ? 'أرقام تتبع غير معروفة:' : 'Unrecognized tracking IDs:'} {(result.unknownTrackingIds as string[]).join(', ')}
+                </span>
+              )}
+            </span>
           ) : (
-            <span className="flex items-center gap-2">
-              <FileCheck2 className="h-4 w-4" />
-              {isRTL ? 'تم' : 'Imported'} {String(result.importedRows)} / {String(result.rowCount)}
-              {Number(result.rejectedRows) > 0 && ` · ${isRTL ? 'مرفوض' : 'rejected'}: ${result.rejectedRows}`}
-              {' · '}{JSON.stringify(result.matchSummary)}
+            <span className="flex flex-col gap-1">
+              <span className="flex items-center gap-2">
+                <FileCheck2 className="h-4 w-4" />
+                {isRTL ? 'تم' : 'Imported'} {String(result.importedRows)} / {String(result.rowCount)}
+                {Number(result.rejectedRows) > 0 && ` · ${isRTL ? 'مرفوض' : 'rejected'}: ${result.rejectedRows}`}
+                {' · '}{JSON.stringify(result.matchSummary)}
+              </span>
+              {Array.isArray(result.unknownTrackingIds) && result.unknownTrackingIds.length > 0 && (
+                <span className="text-amber-700 dark:text-amber-300">
+                  {isRTL ? 'أرقام تتبع غير معروفة:' : 'Unrecognized tracking IDs:'} {(result.unknownTrackingIds as string[]).join(', ')}
+                </span>
+              )}
             </span>
           )}
         </div>

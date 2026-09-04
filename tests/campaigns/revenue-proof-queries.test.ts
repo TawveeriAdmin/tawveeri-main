@@ -5,13 +5,13 @@
 // these pure functions' explicit inputs, matching this codebase's existing
 // convention of not mocking a live NextRequest/route handler (see
 // tests/campaigns/click-route-contract.test.ts).
-import { deriveBusinessDecisionState, computeOperatingCostCoverage } from '@/lib/campaigns/revenue-proof-queries';
+import { deriveBusinessDecisionState, computeOperatingCostCoverage, deriveReconciliationStatus, isPaidOriginAcquisition } from '@/lib/campaigns/revenue-proof-queries';
 import type { TawveeriObserved, MerchantReportedAmazon } from '@/lib/campaigns/revenue-proof-queries';
 
 const ZERO_OBSERVED: TawveeriObserved = {
   cleanEligibleExposures: 0, visibleImpressions: 0, cleanCampaignClicks: 0,
   uniqueClickingSessions: 0, clickThroughRate: null, testInternalExcluded: 0,
-  botExcluded: 0, topSessionConcentration: null, campaignErrors: 0,
+  botExcluded: 0, topSessionConcentration: null, campaignErrors: 0, paidOriginExcluded: 0,
 };
 const LIVE_OBSERVED: TawveeriObserved = { ...ZERO_OBSERVED, cleanEligibleExposures: 50, cleanCampaignClicks: 5, clickThroughRate: 0.1 };
 
@@ -97,6 +97,43 @@ describe('deriveBusinessDecisionState', () => {
       observed: LIVE_OBSERVED, merchant: knownMerchant(999999), distinctCommissionDates: 99, coveragePct: 500, consecutiveCoveredMonths: 12,
     });
     expect(state.incrementality).toBe('NOT_YET_TESTED');
+  });
+});
+
+describe('deriveReconciliationStatus — Amazon Decision Layer V2 §8 founder portfolio view', () => {
+  it('is NOT_YET_AVAILABLE, never a fabricated zero, when no report has been imported for this tracking id', () => {
+    expect(deriveReconciliationStatus(UNKNOWN_MERCHANT)).toBe('NOT_YET_AVAILABLE');
+  });
+
+  it('is CONFIRMED once at least one item has been ordered or shipped', () => {
+    expect(deriveReconciliationStatus(knownMerchant(25.5))).toBe('CONFIRMED');
+  });
+
+  it('is PARTIAL when a report exists for this tracking id but shows zero ordered/shipped items', () => {
+    const noItems: MerchantReportedAmazon = {
+      status: 'known', trackingId: 'tawveeri0f-tablet-21', networkReportedClicks: null,
+      orderedItems: 0, shippedItems: 0, cancelledOrReturned: 0, qualifyingRevenueSar: null,
+      commissionSar: 0, reportPeriodStart: '2026-09-01', reportPeriodEnd: '2026-09-30', lastImportedAt: '2026-10-01T00:00:00Z',
+    };
+    expect(deriveReconciliationStatus(noItems)).toBe('PARTIAL');
+  });
+});
+
+describe('isPaidOriginAcquisition — Amazon Decision Layer V2 §1D paid-search segmentation', () => {
+  it('is false when no acquisition cookie exists (organic, the common case)', () => {
+    expect(isPaidOriginAcquisition(null)).toBe(false);
+    expect(isPaidOriginAcquisition(undefined)).toBe(false);
+  });
+
+  it('is false for an organic/referral utm_medium', () => {
+    expect(isPaidOriginAcquisition({ utm_source: 'google', utm_medium: 'organic' })).toBe(false);
+    expect(isPaidOriginAcquisition({ utm_source: 'tiktok', utm_medium: 'social' })).toBe(false);
+  });
+
+  it('is true for a recognized paid-medium value, case-insensitively', () => {
+    expect(isPaidOriginAcquisition({ utm_source: 'google', utm_medium: 'cpc' })).toBe(true);
+    expect(isPaidOriginAcquisition({ utm_source: 'google', utm_medium: 'CPC' })).toBe(true);
+    expect(isPaidOriginAcquisition({ utm_source: 'meta', utm_medium: 'paid_social' })).toBe(true);
   });
 });
 

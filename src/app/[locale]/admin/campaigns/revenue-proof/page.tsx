@@ -5,7 +5,7 @@
 // Three explicit, never-merged truth layers (A/B/C) per the mission's own rule.
 import { untypedClient } from '@/lib/campaigns/store';
 import {
-  getCampaignHeader, getTawveeriObserved, getMerchantReportedAmazon,
+  getCampaignHeader, getTawveeriObserved, getMerchantReportedAmazon, getPortfolioSummary,
   deriveBusinessDecisionState, computeOperatingCostCoverage,
 } from '@/lib/campaigns/revenue-proof-queries';
 
@@ -51,6 +51,11 @@ export default async function RevenueProofPage({
   const header = await getCampaignHeader(campaignId);
   if (!header) return <div style={{ padding: 24 }}>Campaign not found.</div>;
 
+  const portfolio = await getPortfolioSummary();
+  const RECON_TONE: Record<string, 'ok' | 'pending' | 'warn'> = {
+    CONFIRMED: 'ok', PARTIAL: 'pending', NOT_YET_AVAILABLE: 'pending', UNKNOWN: 'warn',
+  };
+
   const now = new Date();
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   const allTime = new Date('2020-01-01');
@@ -78,6 +83,45 @@ export default async function RevenueProofPage({
     <div style={{ padding: 24, maxWidth: 900, fontFamily: 'sans-serif', fontSize: 14, lineHeight: 1.7 }}>
       <h1 style={{ fontSize: 20, fontWeight: 900, marginBottom: 4 }}>Revenue Proof — Affiliate Campaigns</h1>
       <p style={{ color: '#666', marginBottom: 20 }}>Three separate truth layers. Never combined into one number.</p>
+
+      {/* Amazon Decision Layer V2 §8 — portfolio-wide summary across every live/scheduled
+          Amazon campaign, additive to (never replacing) the per-campaign detail below. */}
+      <section style={{ border: '1px solid #ccc', borderRadius: 10, padding: 16, marginBottom: 24 }}>
+        <h2 style={{ fontWeight: 900, marginBottom: 8 }}>Portfolio — All Amazon Campaigns <span style={{ fontWeight: 400, fontSize: 12 }}>(clicks/exposures: trailing 30 days)</span></h2>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+            <thead>
+              <tr style={{ textAlign: 'left', borderBottom: '1px solid #ddd' }}>
+                <th style={{ padding: '4px 8px' }}>Category</th>
+                <th style={{ padding: '4px 8px' }}>Tracking ID</th>
+                <th style={{ padding: '4px 8px' }}>Exposures</th>
+                <th style={{ padding: '4px 8px' }}>Clicks</th>
+                <th style={{ padding: '4px 8px' }}>Merchant status</th>
+                <th style={{ padding: '4px 8px' }}>Ordered items</th>
+                <th style={{ padding: '4px 8px' }}>Commission (SAR)</th>
+                <th style={{ padding: '4px 8px' }}>Reconciliation</th>
+              </tr>
+            </thead>
+            <tbody>
+              {portfolio.map((row) => (
+                <tr key={row.campaignId} style={{ borderBottom: '1px solid #eee' }}>
+                  <td style={{ padding: '4px 8px' }}><a href={`?campaign=${row.campaignId}`}>{row.category}</a></td>
+                  <td style={{ padding: '4px 8px', fontFamily: 'monospace', fontSize: 11 }}>{row.trackingId}</td>
+                  <td style={{ padding: '4px 8px' }}>{fmt(row.tawveeriExposures30d)}</td>
+                  <td style={{ padding: '4px 8px' }}>{fmt(row.tawveeriClicks30d)}</td>
+                  <td style={{ padding: '4px 8px' }}>{row.merchantStatus === 'known' ? 'imported' : 'not imported'}</td>
+                  <td style={{ padding: '4px 8px' }}>{row.merchantOrderedItems === null ? '—' : fmt(row.merchantOrderedItems)}</td>
+                  <td style={{ padding: '4px 8px' }}>{row.merchantCommissionSar === null ? '—' : fmt(row.merchantCommissionSar, 2)}</td>
+                  <td style={{ padding: '4px 8px' }}><Badge tone={RECON_TONE[row.reconciliation]}>{row.reconciliation.replace(/_/g, ' ')}</Badge></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p style={{ marginTop: 10, fontSize: 11, color: '#888' }}>
+          NOT YET AVAILABLE = no Amazon Associates report imported for that Tracking ID yet — never treated as zero revenue.
+        </p>
+      </section>
 
       {allCampaigns && allCampaigns.length > 1 && (
         <div style={{ marginBottom: 16 }}>
@@ -123,6 +167,7 @@ export default async function RevenueProofPage({
             <tr><td>Click-through rate</td><td>{observed30d.clickThroughRate !== null ? `${(observed30d.clickThroughRate * 100).toFixed(1)}%` : '—'}</td></tr>
             <tr><td>Test/internal excluded</td><td>{fmt(observed30d.testInternalExcluded)}</td></tr>
             <tr><td>Bot/suspicious excluded</td><td>{fmt(observed30d.botExcluded)}</td></tr>
+            <tr><td>Paid-origin excluded <span style={{ fontSize: 11, color: '#888' }}>(§1D — Amazon paid-search policy is ambiguous; never mixed into organic figures)</span></td><td>{fmt(observed30d.paidOriginExcluded)}</td></tr>
             <tr><td>Top-session concentration</td><td>{observed30d.topSessionConcentration !== null ? `${(observed30d.topSessionConcentration * 100).toFixed(0)}%` : '—'}</td></tr>
             <tr><td>Campaign errors</td><td>{observed30d.campaignErrors} <span style={{ fontSize: 11, color: '#888' }}>(not separately tracked in V1)</span></td></tr>
           </tbody>

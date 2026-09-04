@@ -91,6 +91,18 @@ export const SAUDI_SEARCH_SYNONYMS: string[][] = [
   ["فرن", "افران", "oven"],
   ["مايكرويف", "ميكروويف", "microwave"],
   ["مكنسة", "مكانس", "vacuum", "vacuum cleaner"],
+  // Electric kettle — Amazon Decision Layer V2 (2026-09-04) §10 finding: "كاتل" (a
+  // colloquial/mistyped rendering of "kettle") sits one Arabic character from "كابل"
+  // (cable) in the catalogue, so Algolia's default typo tolerance was resolving it to
+  // cable-accessory noise instead of the genuine electric_kettle listings that DO exist
+  // under "غلاية"/"غلاية كهربائية" (confirmed via a direct, non-production Algolia query —
+  // see the read-only Wave-1 kettle delivery sanity check). Adding "كاتل" here as an
+  // explicit SYNONYM of the kettle family is additive only: it does not touch
+  // typoTolerance or disableTypoToleranceOnWords anywhere, so no other word's fuzzy
+  // matching is affected. Algolia ranks an exact synonym hit above a typo-distance hit,
+  // so this pulls real kettles above the pre-existing cable noise rather than removing
+  // typo tolerance for "كابل" itself.
+  ["غلاية", "غلايه", "غلاية كهربائية", "كاتل", "electric kettle", "kettle"],
   // common intent words shoppers append — grouped so they never zero a query
   ["رخيص", "ارخص", "عرض", "عروض", "خصم", "تخفيض", "cheap", "offer", "deal", "discount"],
   ["اتوماتيك", "اوتوماتيك", "automatic", "ذكي", "smart"],

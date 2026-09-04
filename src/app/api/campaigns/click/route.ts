@@ -111,6 +111,10 @@ export async function POST(req: NextRequest) {
       affiliate_tag: link.tag,
       sub_id: null, // never generated in V1 — see src/lib/campaigns/link.ts
       source,
+      // Amazon Decision Layer V2 §6 — same fact as campaign_exposures: every click
+      // this endpoint can currently receive came from the CATEGORY-mode link the card
+      // was built with (getEligibleCampaigns() resolves no other mode yet).
+      destination_mode: 'category',
       session_id: sessionId,
       acquisition_campaign: acquisitionCampaign,
       is_test: isTest,
