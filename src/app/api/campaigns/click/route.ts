@@ -20,6 +20,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const VALID_DESTINATION_MODES = new Set(['exact_product', 'model_search', 'category']);
 
 function untypedClient() {
   return createServerClient() as unknown as { from: (table: string) => any };
@@ -78,6 +79,14 @@ export async function POST(req: NextRequest) {
     const placement = typeof body.placement === 'string' ? body.placement.slice(0, 20) : 'campaign';
     const category = typeof body.category === 'string' ? body.category.slice(0, 40) : null;
     const source = typeof body.source === 'string' ? body.source.slice(0, 32) : placement;
+    // Amazon Decision Layer V2.1 §9 — echoed back from the eligible-campaigns response
+    // the card was built from (never re-decided here). Whitelisted against the exact 3
+    // resolveAmazonDestination() modes — an unrecognized value is dropped to null rather
+    // than trusted verbatim, since this is client-supplied text on an otherwise-open POST.
+    const destinationModeRaw = typeof body.destinationMode === 'string' ? body.destinationMode : null;
+    const destinationMode = destinationModeRaw && VALID_DESTINATION_MODES.has(destinationModeRaw) ? destinationModeRaw : 'category';
+    const canonicalProductId = typeof body.canonicalProductId === 'string' && UUID_RE.test(body.canonicalProductId) ? body.canonicalProductId : null;
+    const reasonCode = typeof body.reasonCode === 'string' ? body.reasonCode.slice(0, 64) : null;
 
     const supabase = untypedClient();
 
@@ -111,10 +120,9 @@ export async function POST(req: NextRequest) {
       affiliate_tag: link.tag,
       sub_id: null, // never generated in V1 — see src/lib/campaigns/link.ts
       source,
-      // Amazon Decision Layer V2 §6 — same fact as campaign_exposures: every click
-      // this endpoint can currently receive came from the CATEGORY-mode link the card
-      // was built with (getEligibleCampaigns() resolves no other mode yet).
-      destination_mode: 'category',
+      destination_mode: destinationMode,
+      canonical_product_id: canonicalProductId,
+      reason_code: reasonCode,
       session_id: sessionId,
       acquisition_campaign: acquisitionCampaign,
       is_test: isTest,

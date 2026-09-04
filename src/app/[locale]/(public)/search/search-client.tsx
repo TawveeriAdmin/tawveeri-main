@@ -2277,8 +2277,16 @@ export default function SearchClient() {
                         src/components/campaigns/post-search-campaign-card.tsx.
                         `effectiveCategory`: explicit selectedCategory filter, else the
                         server's query-resolved category (delivery-gap fix) — never a
-                        fabricated guess when neither is known. */}
-                    <PostSearchCampaignCard locale={locale} category={effectiveCategory} />
+                        fabricated guess when neither is known. `topProductId`: the
+                        first rendered result's own id, offered as EXACT_PRODUCT
+                        evidence (Amazon Decision Layer V2.1) — read-only, never used
+                        to reorder/filter `products` itself. */}
+                    <PostSearchCampaignCard
+                      locale={locale}
+                      category={effectiveCategory}
+                      topProductId={products[0]?.id ?? null}
+                      queryText={searchQuery}
+                    />
                   </>
                 )}
               </div>

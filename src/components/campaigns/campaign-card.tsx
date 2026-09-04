@@ -17,6 +17,7 @@
 import { useEffect, useRef } from 'react';
 import type { EligibleCampaign, CampaignSurface } from '@/lib/campaigns/types';
 import { track } from '@/lib/analytics/track';
+import { buildModeInsightAr, buildModeInsightEn } from '@/lib/campaigns/original-value';
 
 function sendClickBeacon(campaign: EligibleCampaign, surface: CampaignSurface, category?: string | null) {
   const payload = JSON.stringify({
@@ -25,6 +26,11 @@ function sendClickBeacon(campaign: EligibleCampaign, surface: CampaignSurface, c
     placement: surface,
     category: category ?? null,
     source: surface,
+    // Amazon Decision Layer V2.1 §9 — echoes back exactly what this card was built
+    // with; the click endpoint whitelist-validates rather than trusting it verbatim.
+    destinationMode: campaign.destinationMode,
+    canonicalProductId: campaign.canonicalProductId,
+    reasonCode: campaign.reasonCode,
   });
   try {
     // A plain string body (not a Blob) keeps this trivially testable and still
@@ -73,6 +79,12 @@ export function CampaignCard({
   const title = isAr ? campaign.title_ar : campaign.title_en;
   const cta = isAr ? campaign.cta_ar : campaign.cta_en;
   const disclosure = isAr ? campaign.disclosure_ar : campaign.disclosure_en;
+  // Amazon Decision Layer V2.1 §8 — the original-Tawveeri-value line. null when no
+  // meaningful insight exists (e.g. category unrecognized) — the card just omits it
+  // rather than inventing intelligence.
+  const insight = isAr
+    ? buildModeInsightAr(campaign.destinationMode, category ?? null)
+    : buildModeInsightEn(campaign.destinationMode, category ?? null);
 
   return (
     <div
@@ -98,9 +110,14 @@ export function CampaignCard({
           {disclosure}
         </span>
       </div>
-      <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--color-on-surface)', marginBottom: 10, lineHeight: 1.5 }}>
+      <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--color-on-surface)', marginBottom: insight ? 4 : 10, lineHeight: 1.5 }}>
         {title}
       </div>
+      {insight && (
+        <div style={{ fontSize: 12, color: 'var(--color-on-surface-variant)', marginBottom: 10, lineHeight: 1.5 }}>
+          {insight}
+        </div>
+      )}
       <a
         href={campaign.merchantUrl}
         target="_blank"

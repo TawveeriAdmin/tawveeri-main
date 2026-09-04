@@ -5,7 +5,7 @@
 // these pure functions' explicit inputs, matching this codebase's existing
 // convention of not mocking a live NextRequest/route handler (see
 // tests/campaigns/click-route-contract.test.ts).
-import { deriveBusinessDecisionState, computeOperatingCostCoverage, deriveReconciliationStatus, isPaidOriginAcquisition } from '@/lib/campaigns/revenue-proof-queries';
+import { deriveBusinessDecisionState, computeOperatingCostCoverage, deriveReconciliationStatus, isPaidOriginAcquisition, deriveDifferentiationBreakdown } from '@/lib/campaigns/revenue-proof-queries';
 import type { TawveeriObserved, MerchantReportedAmazon } from '@/lib/campaigns/revenue-proof-queries';
 
 const ZERO_OBSERVED: TawveeriObserved = {
@@ -134,6 +134,51 @@ describe('isPaidOriginAcquisition — Amazon Decision Layer V2 §1D paid-search 
     expect(isPaidOriginAcquisition({ utm_source: 'google', utm_medium: 'cpc' })).toBe(true);
     expect(isPaidOriginAcquisition({ utm_source: 'google', utm_medium: 'CPC' })).toBe(true);
     expect(isPaidOriginAcquisition({ utm_source: 'meta', utm_medium: 'paid_social' })).toBe(true);
+  });
+});
+
+describe('deriveDifferentiationBreakdown — Amazon Decision Layer V2.1 §10', () => {
+  it('groups exposures/clicks by mode and computes CTR per mode', () => {
+    const result = deriveDifferentiationBreakdown(
+      ['exact_product', 'exact_product', 'model_search', 'category', 'category', 'category'],
+      ['exact_product', 'category'],
+      [],
+    );
+    const byMode = Object.fromEntries(result.byMode.map((s) => [s.mode, s]));
+    expect(byMode.exact_product).toEqual({ mode: 'exact_product', exposures: 2, clicks: 1, ctr: 0.5 });
+    expect(byMode.model_search).toEqual({ mode: 'model_search', exposures: 1, clicks: 0, ctr: 0 });
+    expect(byMode.category).toEqual({ mode: 'category', exposures: 3, clicks: 1, ctr: 1 / 3 });
+  });
+
+  it('omits a mode entirely from byMode when it has zero exposures AND zero clicks', () => {
+    const result = deriveDifferentiationBreakdown(['category'], [], []);
+    expect(result.byMode.map((s) => s.mode)).not.toContain('exact_product');
+    expect(result.byMode.map((s) => s.mode)).not.toContain('model_search');
+  });
+
+  it('computes categoryOnlyPct as the share of exposures that were plain category routing', () => {
+    const result = deriveDifferentiationBreakdown(
+      ['exact_product', 'category', 'category', 'category'],
+      [],
+      [],
+    );
+    expect(result.categoryOnlyPct).toBe(75);
+  });
+
+  it('categoryOnlyPct is null with zero exposures — never a fabricated 0%', () => {
+    const result = deriveDifferentiationBreakdown([], [], []);
+    expect(result.categoryOnlyPct).toBeNull();
+  });
+
+  it('counts and ranks reason codes, most frequent first, ignoring nulls', () => {
+    const result = deriveDifferentiationBreakdown(
+      [],
+      [],
+      ['exact_product_verified', 'exact_product_blocked:offer_stale_or_unknown', 'exact_product_blocked:offer_stale_or_unknown', null, 'no_model_search_term'],
+    );
+    expect(result.reasonCodeCounts[0]).toEqual({ reasonCode: 'exact_product_blocked:offer_stale_or_unknown', count: 2 });
+    expect(result.reasonCodeCounts.some((r) => r.reasonCode === 'exact_product_verified')).toBe(true);
+    expect(result.reasonCodeCounts.reduce((sum, r) => sum + r.count, 0)).toBe(4); // null excluded
   });
 });
 

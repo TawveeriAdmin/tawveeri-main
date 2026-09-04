@@ -57,4 +57,13 @@ export type CampaignSurface = 'homepage' | 'post_search';
 export interface EligibleCampaign extends AffiliateCampaign {
   merchantUrl: string;
   clickToken: string;
+  /** Amazon Decision Layer V2.1 — which resolveAmazonDestination() mode produced
+   *  merchantUrl. Always 'category' for a non-amazon merchant (Noon has no exact/model
+   *  routing in V2.1) or when no evidence was supplied. */
+  destinationMode: import('./destination-resolver').DestinationMode;
+  canonicalProductId: string | null;
+  /** Why this mode was chosen (or the prior mode was rejected) — see
+   *  resolveAmazonDestination()'s reasonCode. Not persisted verbatim to the DB in V2.1
+   *  beyond the reason_code column added for exactly this (migration 48). */
+  reasonCode: string;
 }

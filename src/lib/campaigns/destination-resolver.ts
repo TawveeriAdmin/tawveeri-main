@@ -82,7 +82,11 @@ export interface AmazonDestinationResolution {
 }
 
 export const EXACT_IDENTITY_CONFIDENCE_THRESHOLD = 0.85;
-export const MAX_OFFER_FRESHNESS_HOURS = 72;
+// V2.1: aligned to PICK_FRESHNESS_MAX_HOURS (src/lib/intelligence/evidence-engine.ts,
+// ADR-193) — the SAME floor the search page itself already uses before making any price
+// claim on a product card. A practical, already-established threshold, not a new
+// invented number, per the founder's "practical high-confidence threshold" instruction.
+export const MAX_OFFER_FRESHNESS_HOURS = 168;
 
 /**
  * Strip a raw query down to a safe Amazon search token: letters (Latin + Arabic),

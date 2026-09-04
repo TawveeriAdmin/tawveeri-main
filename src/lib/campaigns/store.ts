@@ -8,6 +8,8 @@ import { isCampaignsGloballyEnabled, parseAllowedMerchants, selectEligibleCampai
 import { buildCampaignMerchantUrl } from './link';
 import { issueClickToken } from './click-token';
 import { checkClaimGuard } from './claim-guard';
+import { resolveAmazonDestination, EXACT_IDENTITY_CONFIDENCE_THRESHOLD, type LiveCategoryDestination } from './destination-resolver';
+import { getAmazonExactProductEvidence } from './amazon-evidence';
 
 // affiliate_campaigns/campaign_clicks are new tables (scripts/database/44-affiliate-campaigns.sql)
 // not yet present in the generated Database type (src/lib/database/types.ts). Same escape hatch
@@ -35,10 +37,30 @@ export interface ExposureContext {
   isTest?: boolean;
 }
 
+/** Amazon Decision Layer V2.1 §3/§6 — real signals the caller can supply about the
+ *  shopping context, used ONLY to inform resolveAmazonDestination()'s amazon-merchant
+ *  routing. Never trusted blindly: `productId` is re-verified against product_stores
+ *  server-side (amazon-evidence.ts) before it can ever produce an exact_product link. */
+export interface RoutingEvidence {
+  /** Tawveeri's own internal product row id for the top/most relevant search result —
+   *  never a client-asserted URL or confidence score. */
+  productId?: string | null;
+  /** The shopper's raw query — sanitized before ever reaching an Amazon URL
+   *  (destination-resolver.ts's sanitizeModelSearchTerm). */
+  queryText?: string | null;
+}
+
 /** Fire-and-forget write to campaign_exposures (Revenue Proof dashboard, Phase 2B) —
  *  SERVER-side decision-grade evidence that an eligible campaign was resolved/served
  *  for an eligible context. Never awaited by the caller, never throws into it. */
-function logExposure(c: AffiliateCampaign, placement: CampaignPlacement, category: string | null, ctx: ExposureContext) {
+function logExposure(
+  c: AffiliateCampaign,
+  placement: CampaignPlacement,
+  category: string | null,
+  ctx: ExposureContext,
+  destinationMode: EligibleCampaign['destinationMode'],
+  reasonCode: string,
+) {
   try {
     const supabase = untypedClient();
     supabase
@@ -50,10 +72,8 @@ function logExposure(c: AffiliateCampaign, placement: CampaignPlacement, categor
         category,
         session_id: ctx.sessionId ?? null,
         is_test: c.is_test || !!ctx.isTest,
-        // Amazon Decision Layer V2 §6 — getEligibleCampaigns() only ever resolves the
-        // CATEGORY mode today (resolveAmazonDestination()'s other modes are built but
-        // not wired here yet), so this is a stated fact, not a guess.
-        destination_mode: 'category',
+        destination_mode: destinationMode,
+        reason_code: reasonCode,
       })
       .then(({ error }: { error: unknown }) => { if (error) console.error('campaign_exposures insert failed:', error); });
   } catch { /* measurement must never break the page */ }
@@ -70,11 +90,18 @@ function logExposure(c: AffiliateCampaign, placement: CampaignPlacement, categor
  * `ctx` is optional purely so existing call sites keep compiling without it; pass a
  * real session id / is_test flag when the caller has one (see src/app/[locale]/page.tsx
  * and src/app/api/campaigns/eligible/route.ts) so campaign_exposures carries it.
+ *
+ * `evidence` (V2.1) is where resolveAmazonDestination() actually gets wired into the
+ * live serving path — ONLY for merchant === 'amazon'. Noon keeps the unchanged V1
+ * category-only link build (buildCampaignMerchantUrl on the raw campaign row); Amazon's
+ * final URL/mode is decided by resolveAmazonDestination() using evidence re-verified
+ * server-side (amazon-evidence.ts), never a client-asserted destination.
  */
 export async function getEligibleCampaigns(
   placement: Exclude<CampaignPlacement, 'both'>,
   category: string | null,
   ctx: ExposureContext = {},
+  evidence: RoutingEvidence = {},
 ): Promise<EligibleCampaign[]> {
   if (!isCampaignsGloballyEnabled()) return [];
   const allowedMerchants = parseAllowedMerchants(process.env.AFFILIATE_CAMPAIGNS_MERCHANTS);
@@ -90,21 +117,85 @@ export async function getEligibleCampaigns(
     });
     const withLinks: EligibleCampaign[] = [];
     for (const c of eligible) {
-      const link = buildCampaignMerchantUrl(c);
-      if (!link) continue; // unresolvable destination — drop rather than render broken
       // Small-appliance claim-guard (multi-category expansion, Sept 2026): affiliate_campaigns
       // has no column yet for "fresh, confirmed Amazon offer evidence" — until one exists,
       // every campaign is checked as if none exists (the safe default), so a card can never
       // present "best price"/"cheapest"/"verified price" it cannot back. A campaign whose
       // copy fails this is dropped, never rendered non-compliant — same fail-closed pattern
-      // as the unresolvable-destination check just above.
+      // as the unresolvable-destination check below.
       const claimCheck = checkClaimGuard([c.title_ar, c.title_en, c.cta_ar, c.cta_en], false);
       if (!claimCheck.compliant) {
         console.error('campaign dropped: claim guard violation', c.id, claimCheck.violations);
         continue;
       }
-      logExposure(c, placement, category, ctx);
-      withLinks.push({ ...c, merchantUrl: link.url, clickToken: issueClickToken(c.id) });
+
+      if (c.merchant === 'amazon' && category) {
+        const liveMap: ReadonlyMap<string, LiveCategoryDestination> = new Map([
+          [category, { destinationUrl: c.destination_url, trackingId: c.tracking_id }],
+        ]);
+        const amazonEvidence = await getAmazonExactProductEvidence(evidence.productId ?? null);
+        // Practical confidence proxy (founder's "do not demand impossible perfection"):
+        // ≥2 distinct approved stores is the SAME "corroborate before asserting identity"
+        // bar CLAUDE.md already applies everywhere else in this codebase — a single-store
+        // match hasn't been cross-verified by Tawveeri's own pipeline the way a ≥2-store
+        // match has, so it stays below EXACT_IDENTITY_CONFIDENCE_THRESHOLD.
+        const canonicalIdentityConfidence = amazonEvidence.distinctStoreCount >= 2
+          ? EXACT_IDENTITY_CONFIDENCE_THRESHOLD + 0.1
+          : amazonEvidence.distinctStoreCount === 1 ? 0.5 : null;
+        // Out-of-stock is treated as "no exact offer to send a shopper to" — falls
+        // through to model_search/category rather than an exact link to a dead listing.
+        const exactAmazonProductUrl = amazonEvidence.inStock ? amazonEvidence.amazonProductUrl : null;
+
+        const decision = resolveAmazonDestination({
+          category,
+          queryText: evidence.queryText ?? null,
+          canonicalProductId: evidence.productId ?? null,
+          canonicalIdentityConfidence,
+          exactAmazonProductUrl,
+          offerFreshnessHours: amazonEvidence.offerFreshnessHours,
+          // Upstream (Tawveeri's own search/corroboration pipeline) already excludes
+          // accessory queries from canonical matching and never merges different
+          // storage/model/condition into one identity — see search/route.ts's own
+          // "Accessory queries get no TPS canonical" contract. A productId reaching
+          // here is therefore already identity-safe on those dimensions; re-deriving
+          // that check here would duplicate a decision this codebase's own rules say
+          // to trust once made (CLAUDE.md: "Deterministic engines decide... never
+          // re-derive them").
+          accessoryLeakageRisk: false,
+          conditionMismatch: false,
+          storageOrModelMismatch: false,
+          openQualityIncident: false,
+          liveCategoryCampaigns: liveMap,
+        });
+
+        if (decision.mode === 'unavailable' || !decision.destination) continue; // structurally shouldn't happen (category is always the map's only key) — fail closed anyway
+        const link = buildCampaignMerchantUrl({ merchant: 'amazon', destination_url: decision.destination, tracking_id: decision.trackingId });
+        if (!link) continue;
+
+        logExposure(c, placement, category, ctx, decision.mode, decision.reasonCode);
+        withLinks.push({
+          ...c,
+          merchantUrl: link.url,
+          clickToken: issueClickToken(c.id),
+          destinationMode: decision.mode,
+          canonicalProductId: decision.canonicalProductId,
+          reasonCode: decision.reasonCode,
+        });
+        continue;
+      }
+
+      // Non-amazon (Noon) or no category context — unchanged V1 behavior.
+      const link = buildCampaignMerchantUrl(c);
+      if (!link) continue; // unresolvable destination — drop rather than render broken
+      logExposure(c, placement, category, ctx, 'category', c.merchant === 'amazon' ? 'no_category_context' : 'non_amazon_merchant');
+      withLinks.push({
+        ...c,
+        merchantUrl: link.url,
+        clickToken: issueClickToken(c.id),
+        destinationMode: 'category',
+        canonicalProductId: null,
+        reasonCode: c.merchant === 'amazon' ? 'no_category_context' : 'non_amazon_merchant',
+      });
     }
     return withLinks;
   } catch {

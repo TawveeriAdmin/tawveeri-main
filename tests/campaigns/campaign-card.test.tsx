@@ -36,6 +36,9 @@ const campaign: EligibleCampaign = {
   updated_at: '2026-09-01T00:00:00Z',
   merchantUrl: 'https://www.amazon.sa/gp/browse.html?node=123&tag=tawveeri0f-21',
   clickToken: '1756800000000.deadbeef',
+  destinationMode: 'category',
+  canonicalProductId: null,
+  reasonCode: 'no_model_search_term',
 };
 
 let sendBeaconMock: jest.Mock;

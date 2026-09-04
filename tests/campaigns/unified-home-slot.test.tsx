@@ -57,6 +57,9 @@ const campaign: EligibleCampaign = {
   updated_at: '2026-09-01T00:00:00Z',
   merchantUrl: 'https://www.noon.com/saudi-en/electronics/?utm_source=C1000264L',
   clickToken: '1756800000000.deadbeef',
+  destinationMode: 'category',
+  canonicalProductId: null,
+  reasonCode: 'non_amazon_merchant',
 };
 
 describe('UnifiedHome — campaign/deals slot', () => {

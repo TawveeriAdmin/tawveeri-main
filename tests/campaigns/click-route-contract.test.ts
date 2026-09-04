@@ -52,4 +52,20 @@ describe('POST /api/campaigns/click — contract', () => {
   it('the whole handler body is wrapped in try/catch so a thrown error still resolves 204, never a hung request', () => {
     expect(source).toMatch(/try \{[\s\S]*catch \{[\s\S]*return new NextResponse\(null, \{ status: 204 \}\);[\s\S]*\}/);
   });
+
+  // Amazon Decision Layer V2.1 §9 — destinationMode is client-echoed, never
+  // server-re-decided here, so it MUST be whitelisted before ever reaching the insert.
+  it('whitelists destinationMode against exactly the 3 resolver modes before storing it', () => {
+    expect(source).toMatch(/VALID_DESTINATION_MODES/);
+    expect(source).toMatch(/new Set\(\['exact_product', 'model_search', 'category'\]\)/);
+    const destModeIdx = source.indexOf('const destinationMode =');
+    expect(destModeIdx).toBeGreaterThan(-1);
+    expect(source.slice(destModeIdx, destModeIdx + 200)).toMatch(/VALID_DESTINATION_MODES\.has/);
+  });
+
+  it('validates canonicalProductId as a UUID before storing it — never an arbitrary client string', () => {
+    const idx = source.indexOf('const canonicalProductId =');
+    expect(idx).toBeGreaterThan(-1);
+    expect(source.slice(idx, idx + 150)).toMatch(/UUID_RE\.test/);
+  });
 });

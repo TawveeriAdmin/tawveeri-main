@@ -5,7 +5,7 @@
 // Three explicit, never-merged truth layers (A/B/C) per the mission's own rule.
 import { untypedClient } from '@/lib/campaigns/store';
 import {
-  getCampaignHeader, getTawveeriObserved, getMerchantReportedAmazon, getPortfolioSummary,
+  getCampaignHeader, getTawveeriObserved, getMerchantReportedAmazon, getPortfolioSummary, getDifferentiationBreakdown,
   deriveBusinessDecisionState, computeOperatingCostCoverage,
 } from '@/lib/campaigns/revenue-proof-queries';
 
@@ -60,11 +60,12 @@ export default async function RevenueProofPage({
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   const allTime = new Date('2020-01-01');
 
-  const [observed30d, observedAllTime, merchant, distinctDates] = await Promise.all([
+  const [observed30d, observedAllTime, merchant, distinctDates, differentiation] = await Promise.all([
     getTawveeriObserved(campaignId, { start: thirtyDaysAgo, end: now }),
     getTawveeriObserved(campaignId, { start: allTime, end: now }),
     getMerchantReportedAmazon(header.effectiveTrackingId),
     getDistinctCommissionDates(header.effectiveTrackingId),
+    getDifferentiationBreakdown(campaignId, { start: allTime, end: now }),
   ]);
 
   const trailing30dCommission = merchant.status === 'known' ? merchant.commissionSar : null;
@@ -173,6 +174,46 @@ export default async function RevenueProofPage({
           </tbody>
         </table>
       </section>
+
+      {/* Amazon Decision Layer V2.1 §10 — Differentiation Metrics: does smarter routing
+          outperform generic category routing? All-time, this campaign only. */}
+      {header.campaign.merchant === 'amazon' && (
+        <section style={{ border: '1px solid #ccc', borderRadius: 10, padding: 16, marginBottom: 20 }}>
+          <h2 style={{ fontWeight: 900, marginBottom: 8 }}>Differentiation — Routing Mode Breakdown <span style={{ fontWeight: 400, fontSize: 12 }}>(all time)</span></h2>
+          <table style={{ width: '100%' }}>
+            <thead>
+              <tr style={{ textAlign: 'left', borderBottom: '1px solid #ddd' }}>
+                <th>Mode</th><th>Exposures</th><th>Clicks</th><th>CTR</th>
+              </tr>
+            </thead>
+            <tbody>
+              {differentiation.byMode.length === 0 && <tr><td colSpan={4} style={{ color: '#888' }}>No exposures recorded yet.</td></tr>}
+              {differentiation.byMode.map((s) => (
+                <tr key={s.mode}>
+                  <td>{s.mode}</td>
+                  <td>{fmt(s.exposures)}</td>
+                  <td>{fmt(s.clicks)}</td>
+                  <td>{s.ctr !== null ? `${(s.ctr * 100).toFixed(1)}%` : '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p style={{ marginTop: 8, fontSize: 12, color: '#888' }}>
+            Category-only routing: {differentiation.categoryOnlyPct !== null ? `${differentiation.categoryOnlyPct.toFixed(0)}%` : '—'} of exposures
+            {' '}(the lower this is, the more often exact_product/model_search added real differentiation over a plain category link).
+          </p>
+          {differentiation.reasonCodeCounts.length > 0 && (
+            <div style={{ marginTop: 10 }}>
+              <p style={{ fontSize: 12, fontWeight: 700 }}>Reason codes (fallback reasons / rejected unsafe matches / identity outcomes):</p>
+              <ul style={{ fontSize: 12, color: '#666', paddingInlineStart: 18 }}>
+                {differentiation.reasonCodeCounts.map((r) => (
+                  <li key={r.reasonCode}>{r.reasonCode} — {r.count}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </section>
+      )}
 
       {/* Phase 2C — Merchant Reported */}
       <section style={{ border: '1px solid #ccc', borderRadius: 10, padding: 16, marginBottom: 20 }}>

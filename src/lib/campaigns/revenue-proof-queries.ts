@@ -131,6 +131,80 @@ export async function getTawveeriObserved(
   };
 }
 
+export interface DestinationModeStat {
+  mode: 'exact_product' | 'model_search' | 'category' | 'unknown';
+  exposures: number;
+  clicks: number;
+  ctr: number | null;
+}
+
+export interface DifferentiationBreakdown {
+  byMode: DestinationModeStat[];
+  /** Share of exposures that fell back to plain category routing — the number the
+   *  founder view needs to answer "does smarter routing outperform generic category
+   *  routing," per Amazon Decision Layer V2.1 §10. Null when there are no exposures. */
+  categoryOnlyPct: number | null;
+  /** reason_code → count, across both exposures and clicks, most-frequent first. Surfaces
+   *  fallback reasons / rejected unsafe exact matches / identity failures as real data,
+   *  not just an inferred mode count. */
+  reasonCodeCounts: { reasonCode: string; count: number }[];
+}
+
+/** Pure — the actual grouping/CTR/percentage math, split out from the DB read so it is
+ *  directly unit-testable (same precedent as deriveBusinessDecisionState). */
+export function deriveDifferentiationBreakdown(
+  exposureModes: string[],
+  clickModes: string[],
+  reasonCodes: (string | null)[],
+): DifferentiationBreakdown {
+  const modes: DestinationModeStat['mode'][] = ['exact_product', 'model_search', 'category', 'unknown'];
+  const countBy = (arr: string[], m: string) => arr.filter((x) => (x || 'unknown') === m).length;
+  const byMode = modes.map((mode) => {
+    const exposures = countBy(exposureModes, mode);
+    const clicks = countBy(clickModes, mode);
+    return { mode, exposures, clicks, ctr: exposures > 0 ? clicks / exposures : null };
+  }).filter((s) => s.exposures > 0 || s.clicks > 0);
+
+  const totalExposures = exposureModes.length;
+  const categoryExposures = countBy(exposureModes, 'category');
+  const categoryOnlyPct = totalExposures > 0 ? (categoryExposures / totalExposures) * 100 : null;
+
+  const reasonCounts = new Map<string, number>();
+  for (const r of reasonCodes) {
+    if (!r) continue;
+    reasonCounts.set(r, (reasonCounts.get(r) ?? 0) + 1);
+  }
+  const reasonCodeCounts = Array.from(reasonCounts.entries())
+    .map(([reasonCode, count]) => ({ reasonCode, count }))
+    .sort((a, b) => b.count - a.count);
+
+  return { byMode, categoryOnlyPct, reasonCodeCounts };
+}
+
+/** Amazon Decision Layer V2.1 §10 — reads campaign_exposures/campaign_clicks'
+ *  destination_mode + reason_code (migrations 47/48), groups in JS (same convention as
+ *  getDistinctCommissionDates in the revenue-proof page — small, campaign-scoped row
+ *  counts, no need for a DB-side GROUP BY). */
+export async function getDifferentiationBreakdown(
+  campaignId: string,
+  range: { start: Date; end: Date },
+): Promise<DifferentiationBreakdown> {
+  const supabase = untypedClient();
+  const startIso = range.start.toISOString();
+  const endIso = range.end.toISOString();
+  const [exposuresRes, clicksRes] = await Promise.all([
+    supabase.from('campaign_exposures').select('destination_mode, reason_code').eq('campaign_id', campaignId).eq('is_test', false).gte('created_at', startIso).lte('created_at', endIso),
+    supabase.from('campaign_clicks').select('destination_mode, reason_code').eq('campaign_id', campaignId).eq('is_test', false).gte('created_at', startIso).lte('created_at', endIso),
+  ]);
+  const exposureRows: { destination_mode: string | null; reason_code: string | null }[] = exposuresRes.data ?? [];
+  const clickRows: { destination_mode: string | null; reason_code: string | null }[] = clicksRes.data ?? [];
+  return deriveDifferentiationBreakdown(
+    exposureRows.map((r) => r.destination_mode || 'unknown'),
+    clickRows.map((r) => r.destination_mode || 'unknown'),
+    [...exposureRows.map((r) => r.reason_code), ...clickRows.map((r) => r.reason_code)],
+  );
+}
+
 export type MerchantReportedAmazon =
   | { status: 'unknown' }
   | {
