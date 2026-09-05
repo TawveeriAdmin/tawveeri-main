@@ -147,7 +147,9 @@ export async function generateDailyFounderReport(): Promise<DailyReportResult> {
   }
   if (topRetailer) {
     // ADR-286 wording fix: raw /go request count — "مسجّلة" (recorded), not "مؤكدة" (confirmed).
-    briefParts.push(`أكثر متجر استقبل إحالات: ${retailerName(topRetailer.storeSlug)} (${topRetailer.confirmedRedirects} تحويلة مسجّلة).`);
+    // ADR-292: "تحويلة" → "نقرة خروج" (exit click) — one term across every founder surface;
+    // see opportunities.ts's sibling fix for the live-confirmed misreading this corrects.
+    briefParts.push(`أكثر متجر استقبل إحالات: ${retailerName(topRetailer.storeSlug)} (${topRetailer.confirmedRedirects} نقرة خروج مسجّلة).`);
   }
   if (topCategory) {
     briefParts.push(`أعلى فئة اهتماماً في الإحالات: ${topCategory.category} (${topCategory.count}).`);
@@ -184,7 +186,7 @@ export async function generateDailyFounderReport(): Promise<DailyReportResult> {
     </p>
 
     ${commercial.retailers.length > 0 ? `
-    <h3 style="font-size:14px;margin:0 0 8px">التحويلات حسب المتجر</h3>
+    <h3 style="font-size:14px;margin:0 0 8px">نقرات الخروج حسب المتجر</h3>
     <ul style="margin:0 0 20px;padding-inline-start:20px">
       ${commercial.retailers.slice(0, 5).map((r) => `<li>${retailerName(r.storeSlug)}: ${r.confirmedRedirects}</li>`).join('')}
     </ul>` : ''}
@@ -226,7 +228,7 @@ export async function generateDailyFounderReport(): Promise<DailyReportResult> {
     </a>
   `);
 
-  return { subjectAr: `توفيري — ملخص يوم ${dateStr}: ${real.sessions} جلسة، ${commercial.confirmedRetailerRedirects} تحويلة`, html, hasActivity: true };
+  return { subjectAr: `توفيري — ملخص يوم ${dateStr}: ${real.sessions} جلسة، ${commercial.confirmedRetailerRedirects} نقرة خروج`, html, hasActivity: true };
 }
 
 function statRow(label: string, value: string, delta: string): string {

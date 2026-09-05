@@ -40,7 +40,13 @@ describe("2 — the daily founder report cannot label raw /go rows 'confirmed'",
 
   it("uses neutral 'مسجّلة' (recorded) wording for the raw commercial.confirmedRetailerRedirects figure", () => {
     expect(dailyReport).toMatch(/طلبات \/go مسجّلة \(تشغيلي\)/);
-    expect(dailyReport).toMatch(/تحويلة مسجّلة/);
+    // ADR-292: "تحويلة" ("transfer") retired — live-confirmed a founder reading "X تحويلة
+    // مسجّلة عبر Y منتجاً" (opportunities.ts) as "conversion" despite the correct "مسجّلة"
+    // qualifier, because the word itself is linguistically adjacent to "تحويل" (financial
+    // conversion). "نقرة خروج" ("exit click") is the same term command-center/page.tsx
+    // already uses for this identical concept — one word across every founder surface.
+    expect(dailyReport).toMatch(/نقرة خروج مسجّلة/);
+    expect(dailyReport).not.toMatch(/تحويلة مسجّلة/);
   });
 
   it("wires the decision-grade explicitRetailerInteractions figure into the same report, when available for the window (getCommandCenterData computes it for every period, including 'yesterday')", () => {
@@ -93,9 +99,12 @@ describe("4 — raw /go evidence remains available where operationally useful (n
   });
 
   it("opportunities.ts still surfaces the raw redirect count as evidence, worded as recorded not confirmed", () => {
-    expect(opportunities).toMatch(/\$\{r\.confirmedRedirects\} تحويلة مسجّلة/);
+    // ADR-292: "تحويلة" → "نقرة خروج" — see the daily-report.ts test above for the live-
+    // confirmed misreading this corrects (a founder read "255 تحويلة مسجّلة" as "conversion").
+    expect(opportunities).toMatch(/\$\{r\.confirmedRedirects\} نقرة خروج مسجّلة/);
     expect(opportunities).toMatch(/\$\{r\.confirmedRedirects\} recorded redirects/);
     expect(opportunities).not.toMatch(/تحويلة مؤكدة/);
+    expect(opportunities).not.toMatch(/تحويلة مسجّلة/);
     expect(opportunities).not.toMatch(/confirmed redirects/);
     expect(opportunities).not.toMatch(/confirmed referrals/);
   });

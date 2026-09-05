@@ -110,7 +110,7 @@ export default async function RetailerReportPage({
             <p className="text-sm leading-7 text-on-surface dark:text-white">{narrative}</p>
             <p className="mt-2 text-xs text-on-surface-variant dark:text-white/40">
               {isRTL ? 'تم الإنشاء' : 'Generated'}: {new Date(report.generatedAt).toLocaleString(isRTL ? 'ar-SA' : 'en-US')} ·{' '}
-              {isRTL ? 'حجم العينة' : 'Sample size'}: {report.sampleSize} {isRTL ? 'تحويلة' : 'redirects'}
+              {isRTL ? 'حجم العينة' : 'Sample size'}: {report.sampleSize} {isRTL ? 'نقرة خروج' : 'redirects'}
               {report.sampleSize < 30 && <span className="ms-2 font-black text-amber-600 dark:text-amber-400">{isRTL ? 'إشارة مبكرة' : 'EARLY SIGNAL'}</span>}
             </p>
           </Card>
@@ -165,7 +165,7 @@ export default async function RetailerReportPage({
                 <thead>
                   <tr className="text-start text-xs font-bold text-on-surface-variant dark:text-white/50">
                     <th className="pb-2 text-start">{isRTL ? 'التاريخ' : 'Date'}</th>
-                    <th className="pb-2 text-end">{isRTL ? 'تحويلات' : 'Redirects'}</th>
+                    <th className="pb-2 text-end">{isRTL ? 'نقرات خروج' : 'Redirects'}</th>
                     <th className="pb-2 text-end">{isRTL ? 'زيارات مؤهلة' : 'Qualified sessions'}</th>
                   </tr>
                 </thead>

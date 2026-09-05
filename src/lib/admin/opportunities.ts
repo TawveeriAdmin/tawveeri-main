@@ -97,7 +97,13 @@ export function computeOpportunities(data: CommandCenterData): Opportunity[] {
       titleEn: `Retailer ${nameEn} is receiving real referrals with no known affiliate program`,
       // ADR-286 wording fix: r.confirmedRedirects is a RAW server-recorded /go request count —
       // "مسجّلة"/"recorded", never "مؤكدة"/"confirmed" (no interaction proof at this layer).
-      evidenceAr: `${r.confirmedRedirects} تحويلة مسجّلة عبر ${r.distinctProducts} منتجاً خلال الفترة المحددة.`,
+      // ADR-292 wording fix: the old noun here ("transfer", paired with "مسجّلة"/recorded) was
+      // live-confirmed reaching a founder as this exact evidence line and being read as
+      // "conversion" despite the correct qualifier — the word is linguistically adjacent to
+      // the unrelated "financial/currency conversion" sense. Replaced with "exit click" — the
+      // SAME term command-center/page.tsx already uses for this identical RAW_OPERATIONAL
+      // concept ("نقرات خروج مقاسة"/"Measured exits") — one term across founder surfaces.
+      evidenceAr: `${r.confirmedRedirects} نقرة خروج مسجّلة عبر ${r.distinctProducts} منتجاً خلال الفترة المحددة.`,
       evidenceEn: `${r.confirmedRedirects} recorded redirects across ${r.distinctProducts} products in the selected period.`,
       sampleSize: r.confirmedRedirects,
       earlySignal: r.confirmedRedirects < EARLY_SIGNAL_THRESHOLD,
@@ -126,9 +132,10 @@ export function computeOpportunities(data: CommandCenterData): Opportunity[] {
       kind: 'high_demand_low_coverage',
       category: c.category,
       // ADR-286 wording fix: same raw-count basis as above — "مسجّلة"/"recorded", not "مؤكدة"/"confirmed".
-      titleAr: `طلب مرتفع على فئة "${c.category}" بدون تحويلات مسجّلة`,
+      // ADR-292: "تحويلة" → "نقرة خروج" (exit click) — see the sibling fix above for why.
+      titleAr: `طلب مرتفع على فئة "${c.category}" بدون نقرات خروج مسجّلة`,
       titleEn: `High demand for "${c.category}" with zero recorded referrals`,
-      evidenceAr: `${c.searchCount} عملية بحث في هذه الفئة، و0 تحويلة مسجّلة خلال نفس الفترة.`,
+      evidenceAr: `${c.searchCount} عملية بحث في هذه الفئة، و0 نقرة خروج مسجّلة خلال نفس الفترة.`,
       evidenceEn: `${c.searchCount} searches in this category, 0 recorded referrals in the same period.`,
       sampleSize: c.searchCount,
       earlySignal: c.searchCount < EARLY_SIGNAL_THRESHOLD,

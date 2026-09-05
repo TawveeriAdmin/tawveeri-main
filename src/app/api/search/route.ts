@@ -13,6 +13,7 @@ import { normalizeExitUrl } from '@/lib/retailers/exit-url';
 import { routeQuery } from '@/lib/agent/route-query';
 import type { CompareIntent } from '@/lib/agent/compare-intent';
 import { parseShoppingTask, isPriorityDescriptorWord, parseScreenSizeComparator, sizeSatisfiesComparator } from '@/lib/agent/task-parser';
+import { assessRecoveryEligibility } from '@/lib/agent/recovery-eligibility';
 import { resolveComparisonRoute } from '@/lib/agent/resolve-comparison';
 import { toStorefrontCategory } from '@/lib/search/canonical-category';
 import { hoursSince, PICK_FRESHNESS_MAX_HOURS, productTrust, isFreshObservation, type TrustAssessment } from '@/lib/intelligence/evidence-engine';
@@ -601,7 +602,7 @@ export function detectCanonicalCategories(raw: string): string[] | null {
 // when the DEVICE's own wording ("Titanium Case", "with … Band") would otherwise misclassify it.
 const DEVICE_SIGNAL_EN = /\bgps\s*\+\s*cellular\b|\(gps\b|\bwi-?fi\s*\+\s*cellular\b/;
 
-function hasAccessoryHint(nameAr: string, nameEn: string): boolean {
+export function hasAccessoryHint(nameAr: string, nameEn: string): boolean {
   const ar = normalizeArabic(nameAr);
   const en = (nameEn || '').toLowerCase();
   const isCompat = ACCESSORY_COMPAT_AR.test(ar) || ACCESSORY_COMPAT_EN.test(en);
@@ -2790,6 +2791,42 @@ export async function POST(request: NextRequest) {
       compareRoute = await resolveComparisonRoute(createServerClient(), typedQuery, compareIntent, identityKeys);
     } catch {
       compareRoute = null;
+    }
+  }
+
+  // ASYNC DEMAND-DRIVEN CATALOG RECOVERY (Truth Hardening Final Closure mission, 2026-09-05,
+  // ADR-292). Fire-and-forget: never awaited into the response, never allowed to affect
+  // latency or fail the customer's search (Part 6 — "customer search must remain usable").
+  // The customer receives the SAME honest current-state answer either way; only a durable,
+  // deduplicated request row is queued for the async worker (POST /api/cron/product-recovery,
+  // driven by scripts/scheduler.js the same way every other background loop already is).
+  if (typedQuery) {
+    const isTestRequest = request.cookies.get('tw_test')?.value === '1' || request.nextUrl.searchParams.get('tw_test') === '1';
+    const eligibility = assessRecoveryEligibility({
+      rawQuery: typedQuery,
+      resolvedCategory: constraintTask?.category ?? null,
+      categoryEnforcedZero,
+      count: enrichedProducts.length,
+      isTest: isTestRequest,
+    });
+    if (eligibility.eligible && eligibility.dedupKey) {
+      // product_recovery_requests is not yet in the generated Supabase types (migration 49) —
+      // same untyped-table cast pattern already used throughout command-center-queries.ts.
+      (createServerClient() as unknown as { from: (table: string) => any })
+        .from('product_recovery_requests')
+        .insert({
+          dedup_key: eligibility.dedupKey,
+          category: constraintTask?.category ?? 'unknown',
+          raw_query: typedQuery,
+          normalized_query: eligibility.dedupKey,
+          is_test: false,
+        })
+        // The unique index on dedup_key IS the idempotency contract (Part 8) — a duplicate
+        // insert returns a 23505 error, which is expected and silent here, never logged as a
+        // failure.
+        .then(({ error }: { error: { code?: string; message: string } | null }) => {
+          if (error && error.code !== '23505') console.error('[product-recovery] queue insert failed:', error.message);
+        });
     }
   }
 

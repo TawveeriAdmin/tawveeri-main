@@ -495,6 +495,33 @@ if (DISPATCH_ENABLED && INGEST_STORES.length) {
   setInterval(runPriceUpdate, INGEST_PRICE_MS);
 }
 
+// ── Demand-driven catalog recovery loop (Truth Hardening Final Closure mission, 2026-09-05,
+//    ADR-292) ─────────────────────────────────────────────────────────────────────────────
+// Async worker half of query-triggered recovery: POST /api/search/route.ts queues a durable
+// product_recovery_requests row on a real, exact-model CATALOG_MISSING zero-result; THIS loop
+// drains it, exactly like every other background job here — pressure-gated, mutually exclusive
+// with the other heavy loops, small bounded batch (5, enforced server-side in the route
+// itself). Reversible: PRODUCT_RECOVERY_MS=0 disables it.
+const PRODUCT_RECOVERY_MS = parseInt(process.env.PRODUCT_RECOVERY_MS || String(10 * 60 * 1000), 10); // 10m
+let productRecoveryRunning = false;
+async function runProductRecovery() {
+  if (PRODUCT_RECOVERY_MS <= 0) return;
+  if (!(await pressureOk('product_recovery'))) return;
+  if (productRecoveryRunning) { console.log('[recovery] previous run still in progress — skipping'); return; }
+  if (ingestRunning || feedIngestRunning || refreshRunning) { console.log('[recovery] busy — deferring product-recovery'); return; }
+  productRecoveryRunning = true;
+  try {
+    const r = await cronPost('/api/cron/product-recovery', {});
+    if (r) console.log(`[recovery] processed ${r.processed ?? 0} recovery request(s)`);
+    jobDone('product_recovery', 'ok');
+  } finally { productRecoveryRunning = false; }
+}
+if (DISPATCH_ENABLED && PRODUCT_RECOVERY_MS > 0) {
+  console.log(`[recovery] product recovery enabled — every ${(PRODUCT_RECOVERY_MS / 60000).toFixed(0)}m`);
+  setTimeout(async () => { if (await jobDue('product_recovery', PRODUCT_RECOVERY_MS)) runProductRecovery(); else console.log('[governor] boot product-recovery kick skipped'); }, INGEST_FIRST_DELAY_MS + 4 * 60 * 1000 + jitterMs(5));
+  setInterval(runProductRecovery, PRODUCT_RECOVERY_MS);
+}
+
 // ── Feed ingestion loop (ADR-089) ─────────────────────────────────────────────
 // Providers whose sourcing is a structured feed (WooCommerce Store API) ingest
 // through the provider framework instead of the HTML-scraper cron routes — cleaner,
