@@ -61,8 +61,8 @@ export default async function RevenueProofPage({
   const allTime = new Date('2020-01-01');
 
   const [observed30d, observedAllTime, merchant, distinctDates, differentiation] = await Promise.all([
-    getTawveeriObserved(campaignId, { start: thirtyDaysAgo, end: now }),
-    getTawveeriObserved(campaignId, { start: allTime, end: now }),
+    getTawveeriObserved(campaignId, { start: thirtyDaysAgo, end: now }, header.campaign.merchant),
+    getTawveeriObserved(campaignId, { start: allTime, end: now }, header.campaign.merchant),
     getMerchantReportedAmazon(header.effectiveTrackingId),
     getDistinctCommissionDates(header.effectiveTrackingId),
     getDifferentiationBreakdown(campaignId, { start: allTime, end: now }),

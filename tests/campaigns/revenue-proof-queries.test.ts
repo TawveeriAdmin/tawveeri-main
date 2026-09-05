@@ -5,13 +5,14 @@
 // these pure functions' explicit inputs, matching this codebase's existing
 // convention of not mocking a live NextRequest/route handler (see
 // tests/campaigns/click-route-contract.test.ts).
-import { deriveBusinessDecisionState, computeOperatingCostCoverage, deriveReconciliationStatus, isPaidOriginAcquisition, deriveDifferentiationBreakdown, summarizeByMerchant, compareByCategory } from '@/lib/campaigns/revenue-proof-queries';
+import { deriveBusinessDecisionState, computeOperatingCostCoverage, deriveReconciliationStatus, isPaidOriginAcquisition, deriveDifferentiationBreakdown, summarizeByMerchant, compareByCategory, filterEligibleClicks } from '@/lib/campaigns/revenue-proof-queries';
 import type { TawveeriObserved, MerchantReportedAmazon, PortfolioRow } from '@/lib/campaigns/revenue-proof-queries';
 
 const ZERO_OBSERVED: TawveeriObserved = {
   cleanEligibleExposures: 0, visibleImpressions: 0, cleanCampaignClicks: 0,
   uniqueClickingSessions: 0, clickThroughRate: null, testInternalExcluded: 0,
   botExcluded: 0, topSessionConcentration: null, campaignErrors: 0, paidOriginExcluded: 0,
+  unknownOriginExcluded: 0,
 };
 const LIVE_OBSERVED: TawveeriObserved = { ...ZERO_OBSERVED, cleanEligibleExposures: 50, cleanCampaignClicks: 5, clickThroughRate: 0.1 };
 
@@ -134,6 +135,38 @@ describe('isPaidOriginAcquisition — Amazon Decision Layer V2 §1D paid-search 
     expect(isPaidOriginAcquisition({ utm_source: 'google', utm_medium: 'cpc' })).toBe(true);
     expect(isPaidOriginAcquisition({ utm_source: 'google', utm_medium: 'CPC' })).toBe(true);
     expect(isPaidOriginAcquisition({ utm_source: 'meta', utm_medium: 'paid_social' })).toBe(true);
+  });
+});
+
+describe('filterEligibleClicks — founder mission §4/§5 correction (2026-09-05)', () => {
+  const organic = { session_id: 's1', acquisition_campaign: null };
+  const paid = { session_id: 's2', acquisition_campaign: { utm_source: 'google', utm_medium: 'cpc' } };
+  const unknownSource = { session_id: 's3', acquisition_campaign: { utm_source: 'mystery_network', utm_medium: 'banner' } };
+
+  it('without a merchant, preserves the original paid-only exclusion unchanged', () => {
+    const result = filterEligibleClicks([organic, paid, unknownSource]);
+    // Backward-compatible branch: only the paid row is excluded; "unknown" is NOT excluded
+    // here (that is exactly the gap this correction closes when a merchant IS passed).
+    expect(result.clickRows).toEqual([organic, unknownSource]);
+    expect(result.paidOriginExcluded).toBe(1);
+    expect(result.unknownOriginExcluded).toBe(0);
+  });
+
+  it('with a merchant, excludes BOTH paid and genuinely unknown provenance, counted separately', () => {
+    const result = filterEligibleClicks([organic, paid, unknownSource], 'amazon');
+    expect(result.clickRows).toEqual([organic]);
+    expect(result.paidOriginExcluded).toBe(1);
+    expect(result.unknownOriginExcluded).toBe(1);
+  });
+
+  it('never treats unknown as eligible for either merchant', () => {
+    expect(filterEligibleClicks([unknownSource], 'amazon').clickRows).toHaveLength(0);
+    expect(filterEligibleClicks([unknownSource], 'noon').clickRows).toHaveLength(0);
+  });
+
+  it('keeps organic_direct (no campaign cookie at all) eligible for both merchants', () => {
+    expect(filterEligibleClicks([organic], 'amazon').clickRows).toEqual([organic]);
+    expect(filterEligibleClicks([organic], 'noon').clickRows).toEqual([organic]);
   });
 });
 

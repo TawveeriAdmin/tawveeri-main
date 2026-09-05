@@ -13,6 +13,7 @@
 import { untypedClient } from './store';
 import type { AffiliateCampaign, CampaignMerchant } from './types';
 import { deriveCampaignStatus } from './types';
+import { classifyTrafficSource, isTrafficEligibleForMerchant } from './traffic-eligibility';
 
 export interface CampaignHeader {
   campaign: AffiliateCampaign;
@@ -60,6 +61,14 @@ export interface TawveeriObserved {
    *  affiliate performance" claim either way, without blocking navigation for the
    *  shopper — segmentation happens only here, in the reporting layer. */
   paidOriginExcluded: number;
+  /** Founder mission §4/§5 correction (2026-09-05): a click whose tw_campaign utm pair
+   *  doesn't match ANY recognized channel (organic, paid, referral, email...) is genuinely
+   *  ambiguous provenance — "unknown must never be treated as eligible." Excluded from
+   *  cleanCampaignClicks/clickThroughRate exactly like paidOriginExcluded, tracked
+   *  separately so the two exclusion reasons are never conflated. Populated only when
+   *  `merchant` is passed to getTawveeriObserved (every real caller does); 0 when omitted,
+   *  never a fabricated non-zero count for a caller that opted out of the classification. */
+  unknownOriginExcluded: number;
 }
 
 /** utm_medium values treated as paid acquisition for segmentation purposes — matches the
@@ -74,6 +83,47 @@ export function isPaidOriginAcquisition(acquisitionCampaign: Record<string, unkn
   return PAID_UTM_MEDIA.has(medium);
 }
 
+export interface ClickAcquisitionRow {
+  session_id: string | null;
+  acquisition_campaign: Record<string, unknown> | null;
+}
+
+/**
+ * Founder mission §4/§5 correction (2026-09-05) — pure, directly unit-testable (same
+ * precedent as deriveBusinessDecisionState/deriveReconciliationStatus above). Decides
+ * which raw campaign_clicks rows count as "clean" affiliate-eligible evidence.
+ *
+ * Without a `merchant`, preserves the original, narrower paid-only exclusion
+ * (`isPaidOriginAcquisition`) unchanged — every real caller now passes `merchant`, so this
+ * branch exists only for backward compatibility with any caller that predates this change.
+ *
+ * With a `merchant`, applies the full per-merchant traffic-eligibility contract
+ * (`traffic-eligibility.ts`, mission §4), which is a strict superset of the paid-only
+ * check: it also excludes genuinely unclassifiable ("unknown") utm combinations, per the
+ * mission's own explicit rule that unknown provenance must never be treated as eligible.
+ * `paidOriginExcluded` and `unknownOriginExcluded` are mutually exclusive counts (a row is
+ * classified as exactly one or neither), so they can be summed without double-counting.
+ */
+export function filterEligibleClicks(
+  rows: ClickAcquisitionRow[],
+  merchant?: CampaignMerchant,
+): { clickRows: ClickAcquisitionRow[]; paidOriginExcluded: number; unknownOriginExcluded: number } {
+  if (!merchant) {
+    const clickRows = rows.filter((r) => !isPaidOriginAcquisition(r.acquisition_campaign));
+    return { clickRows, paidOriginExcluded: rows.length - clickRows.length, unknownOriginExcluded: 0 };
+  }
+  const clickRows: ClickAcquisitionRow[] = [];
+  let paidOriginExcluded = 0;
+  let unknownOriginExcluded = 0;
+  for (const r of rows) {
+    const { eligibility, sourceClass } = isTrafficEligibleForMerchant(merchant, classifyTrafficSource(r.acquisition_campaign, false));
+    if (eligibility === 'eligible') { clickRows.push(r); continue; }
+    if (sourceClass === 'google_paid_search' || sourceClass === 'other_paid_social') paidOriginExcluded += 1;
+    else unknownOriginExcluded += 1;
+  }
+  return { clickRows, paidOriginExcluded, unknownOriginExcluded };
+}
+
 /** Phase 2B. Reads campaign_exposures (ours, server-decided) + campaign_clicks
  *  (authoritative). Deliberately does NOT use usage_events as the denominator —
  *  usage_events carries the historical duplicate-event risk class documented in
@@ -83,6 +133,7 @@ export function isPaidOriginAcquisition(acquisitionCampaign: Record<string, unkn
 export async function getTawveeriObserved(
   campaignId: string,
   range: { start: Date; end: Date },
+  merchant?: CampaignMerchant,
 ): Promise<TawveeriObserved> {
   const supabase = untypedClient();
   const startIso = range.start.toISOString();
@@ -99,10 +150,7 @@ export async function getTawveeriObserved(
   const cleanEligibleExposures = exposuresRes.count ?? 0;
   const testExcludedExposures = testExposuresRes.count ?? 0;
   const allClickRows: { session_id: string | null; acquisition_campaign: Record<string, unknown> | null }[] = clicksRes.data ?? [];
-  // §1D paid-search segmentation: a paid-origin click is excluded from the "clean"
-  // organic count entirely, never silently folded into affiliate-performance claims.
-  const paidOriginExcluded = allClickRows.filter((r) => isPaidOriginAcquisition(r.acquisition_campaign)).length;
-  const clickRows = allClickRows.filter((r) => !isPaidOriginAcquisition(r.acquisition_campaign));
+  const { clickRows, paidOriginExcluded, unknownOriginExcluded } = filterEligibleClicks(allClickRows, merchant);
   const cleanCampaignClicks = clickRows.length;
   const testExcludedClicks = testClicksRes.count ?? 0;
   const visibleImpressions = impressionsRes.count ?? 0;
@@ -128,6 +176,7 @@ export async function getTawveeriObserved(
     topSessionConcentration,
     campaignErrors: 0,
     paidOriginExcluded,
+    unknownOriginExcluded,
   };
 }
 
@@ -388,7 +437,7 @@ export async function getPortfolioSummary(): Promise<PortfolioRow[]> {
     if (deriveCampaignStatus(c, now) !== 'live' && !c.enabled) continue; // skip only truly inert rows, keep scheduled/expired-but-enabled visible
     const effectiveTrackingId = c.tracking_id || (c.merchant === 'amazon' ? SHARED_AMAZON_TAG : NOON_TRACKING_PLACEHOLDER);
     const [observed, merchant] = await Promise.all([
-      getTawveeriObserved(c.id, { start: thirtyDaysAgo, end: now }),
+      getTawveeriObserved(c.id, { start: thirtyDaysAgo, end: now }, c.merchant),
       getMerchantReportedByTrackingId(effectiveTrackingId),
     ]);
 

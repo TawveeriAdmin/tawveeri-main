@@ -10,6 +10,7 @@
 // rollup revenue-proof was never meant to be.
 import { getPortfolioSummary, summarizeByMerchant, compareByCategory } from '@/lib/campaigns/revenue-proof-queries';
 import { getTiebreakSummary } from '@/lib/campaigns/commercial-tiebreak';
+import { getCategoryCoverageMatrix, type CategoryCoverageRow } from '@/lib/campaigns/category-coverage';
 
 function fmt(n: number | null | undefined, digits = 0) {
   if (n === null || n === undefined) return '—';
@@ -23,6 +24,10 @@ function Badge({ children, tone }: { children: React.ReactNode; tone: 'ok' | 'pe
 
 const WINNER_TONE: Record<string, 'ok' | 'pending' | 'warn' | 'neutral'> = {
   AMAZON: 'ok', NOON: 'ok', NO_EVIDENCE: 'neutral', NOT_COMPARABLE: 'pending',
+};
+
+const STATE_TONE: Record<CategoryCoverageRow['proposedState'], 'ok' | 'pending' | 'warn' | 'neutral'> = {
+  ACTIVE_CAPABLE: 'ok', INITIAL_COHORT: 'ok', ELIGIBLE: 'pending', HOLD: 'pending', INSUFFICIENT_EVIDENCE: 'neutral',
 };
 
 export default async function AffiliateCommercePage({ params, searchParams }: {
@@ -40,6 +45,7 @@ export default async function AffiliateCommercePage({ params, searchParams }: {
   const byMerchant = summarizeByMerchant(portfolio);
   const byCategory = compareByCategory(portfolio);
   const tiebreaks = await getTiebreakSummary({ start: rangeStart, end: now });
+  const allCategoryCoverage = await getCategoryCoverageMatrix();
 
   const amazon = byMerchant.find((m) => m.merchant === 'amazon')!;
   const noon = byMerchant.find((m) => m.merchant === 'noon')!;
@@ -139,9 +145,10 @@ export default async function AffiliateCommercePage({ params, searchParams }: {
         )}
       </section>
 
-      {/* §11E — category table */}
+      {/* §11E — category table (campaign-having categories only) */}
       <section style={{ border: '1px solid #ccc', borderRadius: 10, padding: 16, marginBottom: 24 }}>
-        <h2 style={{ fontWeight: 900, marginBottom: 8 }}>By Category</h2>
+        <h2 style={{ fontWeight: 900, marginBottom: 8 }}>By Category — Live Campaigns</h2>
+        <p style={{ fontSize: 11, color: '#888', marginBottom: 8 }}>Only categories with an existing affiliate_campaigns row. For every Tawveeri category regardless of campaign status, see "All-Category Coverage" below.</p>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
@@ -166,13 +173,59 @@ export default async function AffiliateCommercePage({ params, searchParams }: {
         </div>
       </section>
 
+      {/* Founder correction #2 (2026-09-05): "Noon must not be architecturally limited to
+          TV + laptop" — every Tawveeri category, not only categories with a live campaign. */}
+      <section style={{ border: '1px solid #ccc', borderRadius: 10, padding: 16, marginBottom: 24 }}>
+        <h2 style={{ fontWeight: 900, marginBottom: 8 }}>All-Category Coverage <span style={{ fontWeight: 400, fontSize: 12 }}>(all {allCategoryCoverage.length} active categories, not just live campaigns)</span></h2>
+        <p style={{ fontSize: 11, color: '#888', marginBottom: 8 }}>
+          "Proposed state" is computed from real evidence — it is a proposal for founder judgment, not a decision. Only TV and laptop carry an actual founder-approved decision
+          (ADR-294's initial cohort); every other row's state below is this page's own honest read of overlap/demand, and activates nothing by itself.
+        </p>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+            <thead>
+              <tr style={{ textAlign: 'left', borderBottom: '1px solid #ddd' }}>
+                <th style={{ padding: '4px 6px' }}>Category</th>
+                <th style={{ padding: '4px 6px' }}>Active</th>
+                <th style={{ padding: '4px 6px' }}>Noon offers (valid/fresh)</th>
+                <th style={{ padding: '4px 6px' }}>Amazon offers</th>
+                <th style={{ padding: '4px 6px' }}>Overlap</th>
+                <th style={{ padding: '4px 6px' }}>Noon-only</th>
+                <th style={{ padding: '4px 6px' }}>Amazon-only</th>
+                <th style={{ padding: '4px 6px' }}>Demand 30d</th>
+                <th style={{ padding: '4px 6px' }}>Explicit interactions 30d</th>
+                <th style={{ padding: '4px 6px' }}>Cheaper (Noon/Amazon/tie)</th>
+                <th style={{ padding: '4px 6px' }}>Proposed state</th>
+              </tr>
+            </thead>
+            <tbody>
+              {allCategoryCoverage.map((r) => (
+                <tr key={r.category} style={{ borderBottom: '1px solid #eee' }}>
+                  <td style={{ padding: '4px 6px', fontWeight: 700 }}>{r.category}</td>
+                  <td style={{ padding: '4px 6px' }}>{fmt(r.activeProducts)}</td>
+                  <td style={{ padding: '4px 6px' }}>{fmt(r.validNoonOffers)} / {fmt(r.freshNoonOffers)}</td>
+                  <td style={{ padding: '4px 6px' }}>{fmt(r.validAmazonOffers)}</td>
+                  <td style={{ padding: '4px 6px' }}>{fmt(r.overlapProducts)}</td>
+                  <td style={{ padding: '4px 6px' }}>{fmt(r.noonOnlyProducts)}</td>
+                  <td style={{ padding: '4px 6px' }}>{fmt(r.amazonOnlyProducts)}</td>
+                  <td style={{ padding: '4px 6px' }}>{fmt(r.demand30d)}</td>
+                  <td style={{ padding: '4px 6px' }}>{fmt(r.explicitInteractions30d)}</td>
+                  <td style={{ padding: '4px 6px' }}>{r.overlapProducts > 0 ? `${fmt(r.noonCheaperProducts)}/${fmt(r.amazonCheaperProducts)}/${fmt(r.tiedProducts)}` : '—'}</td>
+                  <td style={{ padding: '4px 6px' }}><Badge tone={STATE_TONE[r.proposedState]}>{r.proposedState.replace(/_/g, ' ')}</Badge></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
       {/* §11F — data quality */}
       <section style={{ border: '1px solid #ccc', borderRadius: 10, padding: 16 }}>
         <h2 style={{ fontWeight: 900, marginBottom: 8 }}>Data Quality</h2>
         <ul style={{ fontSize: 12, color: '#666', paddingInlineStart: 18 }}>
-          <li><b>RAW_OPERATIONAL</b> — every `/go` outbound_clicks row. Never treated as a conversion by itself.</li>
-          <li><b>SESSION_ATTRIBUTED</b> — campaign_exposures/campaign_clicks (this page's "Exposures"/"Clicks" columns). Ours, decision-grade, always known.</li>
-          <li><b>EXPLICIT_CUSTOMER_INTERACTION</b> — first_party_interactions (ADR-286). Partial surface coverage disclosed in that ADR; not yet joined into this page's per-merchant rollup.</li>
+          <li><b>RAW_OPERATIONAL</b> — every `/go` outbound_clicks row, ANY merchant, regardless of interaction_provenance. This page never shows or sums this figure directly — a raw cross-merchant outbound_clicks count is dominated (92%+) by `unknown` provenance (bots, prefetches, scanners) and must never be quoted as "real clicks" for any one merchant. Never treated as a conversion by itself.</li>
+          <li><b>SESSION_ATTRIBUTED</b> — campaign_exposures/campaign_clicks (this page's "Exposures"/"Clicks" columns), filtered through the traffic-eligibility contract (unknown/paid-origin excluded). Ours, decision-grade, always known.</li>
+          <li><b>EXPLICIT_CUSTOMER_INTERACTION</b> — first_party_interactions (ADR-286, live in production) joined by exact interaction_id, or outbound_clicks.interaction_provenance = 'render_token_valid'. The strictest tier; currently a very small number for both merchants — not yet joined into this page's per-merchant rollup, so check first_party_interactions directly for the current count rather than assuming it tracks Exposures/Clicks above.</li>
           <li><b>NETWORK_REPORTED</b> — affiliate_conversions (imported CSV report). UNKNOWN, never 0, until a report is imported for that merchant/tracking id.</li>
         </ul>
         <p style={{ fontSize: 11, color: '#888', marginTop: 8 }}>See revenue-proof's per-campaign page for the full three-layer (A/B/C) proof on any single campaign.</p>
