@@ -73,6 +73,42 @@ async function lookupStoreId(storeSlug: string): Promise<number | null> {
   return (data as { id?: number } | null)?.id ?? null;
 }
 
+/**
+ * ADR-292 POST-DEPLOYMENT PROOF CLOSURE (2026-09-05), Part 1/4/7 — Product Truth outcome
+ * labeling. LIVE-PROVEN DEFECT: the original "Samsung Galaxy Tab S11 Ultra" recovery labeled
+ * itself RECOVERED, but the exact matching identity (`canonical_products` id d3a4fc66,
+ * identity_key "samsung|galaxy tab s11 ultra|NO_GEN|256|wifi|14.6") already existed with 2 real
+ * offers (jarir+noon) since 2026-08-08 — a month before this "recovery". The zero-result that
+ * triggered it was a SEARCH_RELEVANCE_FAILURE (the product was already known to Tawveeri's TPS
+ * layer, just not surfaced to this exact query), not a genuine CATALOG_MISSING case — but the
+ * worker had no way to tell the difference, because it never checked whether a matching
+ * canonical identity already existed before declaring victory. This check closes that gap: a
+ * plausible candidate whose brand+model tokens already match an ACTIVE canonical product is
+ * truthfully MATCH_EXISTING_CANONICAL, never RECOVERED (the schema already reserved this status
+ * — migration 49 — the worker simply never implemented the check that would produce it).
+ */
+/** Pure token-match half — kept separate from the DB fetch so it is unit-testable without
+ *  mocking Supabase, matching this codebase's existing pure-function-test preference. */
+export function matchesAnyCanonicalName(canonicalRows: Array<{ name_ar: string; name_en: string }>, queryTokens: string[]): boolean {
+  return canonicalRows.some((row) => {
+    const hay = normalizeArabic(`${row.name_ar || ''} ${row.name_en || ''}`).toLowerCase();
+    return queryTokens.every((t) => hay.includes(t));
+  });
+}
+
+async function findExistingCanonicalMatch(category: string, candidate: SearchProduct, queryTokens: string[]): Promise<boolean> {
+  const supabase = createServerClient() as unknown as UntypedClient;
+  const { data, error } = await supabase
+    .from('canonical_products')
+    .select('name_ar, name_en')
+    .eq('category', category)
+    .eq('is_active', true)
+    .ilike('brand', `%${candidate.brand || ''}%`)
+    .limit(50);
+  if (error || !data) return false;
+  return matchesAnyCanonicalName(data as Array<{ name_ar: string; name_en: string }>, queryTokens);
+}
+
 interface RecoveryRow {
   id: string;
   dedup_key: string;
@@ -110,17 +146,26 @@ async function processOne(supabase: UntypedClient, row: RecoveryRow) {
       const storeId = await lookupStoreId(store);
       if (storeId == null) { attempts.push({ store, outcome: 'store_id_unresolved', at }); continue; }
 
+      // Product Truth check BEFORE labeling success (Part 1/4/7) — an already-known identity
+      // is a truthful non-recovery outcome (MATCH_EXISTING_CANONICAL), not RECOVERED. Still
+      // ingested either way: a fresh observation of a real listing is never harmful to write
+      // (raw_observations is append-only by design), only the STATUS LABEL must be honest.
+      const alreadyKnown = await findExistingCanonicalMatch(row.category, candidate, queryTokens);
       const ingestion = new IngestionService();
       const saved = await ingestion.ingestBatch(store, [candidate], storeId, null);
-      attempts.push({ store, outcome: saved > 0 ? 'candidate_ingested' : 'ingest_failed', at });
-      if (saved > 0) { finalStatus = 'RECOVERED'; break; }
+      attempts.push({ store, outcome: saved > 0 ? (alreadyKnown ? 'candidate_ingested_already_known' : 'candidate_ingested') : 'ingest_failed', at });
+      if (saved > 0) { finalStatus = alreadyKnown ? 'MATCH_EXISTING_CANONICAL' : 'RECOVERED'; break; }
     } catch (e) {
       lastError = e instanceof Error ? e.message : String(e);
       attempts.push({ store, outcome: `exception:${lastError}`, at });
     }
   }
 
-  if (finalStatus !== 'RECOVERED' && lastError) {
+  // Both terminal success statuses must survive a stale lastError from an EARLIER provider
+  // attempt in the same cascade (e.g. jarir threw, extra then found+ingested a match) — the
+  // loop already `break`s on success, so lastError here can only ever describe an attempt that
+  // did NOT determine the final outcome.
+  if (finalStatus !== 'RECOVERED' && finalStatus !== 'MATCH_EXISTING_CANONICAL' && lastError) {
     finalStatus = row.attempt_count + 1 >= MAX_ATTEMPTS_BEFORE_PERMANENT_FAILURE ? 'PERMANENT_FAILURE' : 'RETRYABLE_FAILURE';
   }
 

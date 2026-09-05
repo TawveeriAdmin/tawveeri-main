@@ -2810,22 +2810,45 @@ export async function POST(request: NextRequest) {
       isTest: isTestRequest,
     });
     if (eligibility.eligible && eligibility.dedupKey) {
-      // product_recovery_requests is not yet in the generated Supabase types (migration 49) —
-      // same untyped-table cast pattern already used throughout command-center-queries.ts.
-      (createServerClient() as unknown as { from: (table: string) => any })
+      // ADR-292 POST-DEPLOYMENT PROOF CLOSURE (2026-09-05), Part 10/11 — queue admission bound.
+      // namesASpecificModel() matches ANY known-series word followed by ANY digit ("iphone
+      // 99999"), so a caller can enumerate an effectively unbounded number of DISTINCT
+      // dedup_key values — the unique index (Part 8) only collapses IDENTICAL text, it does
+      // not cap total table growth. The per-IP /api/search rate limit (middleware.ts, 60-120/
+      // min) already bounds enqueue VELOCITY but not total BACKLOG size. This is the smallest
+      // safe guard: a global pending+retryable ceiling, checked with the same cheap head-count
+      // query pattern already used elsewhere in this codebase — no new IP-tracking
+      // infrastructure (explicitly avoided per mission instruction). 200 is sized against the
+      // worker's own measured throughput (batch size 5 every 10m ≈ 30/hour) — a queue this
+      // deep already indicates abnormal admission, not a real product-truth backlog, and is
+      // worth halting rather than growing further while the founder investigates.
+      const untypedClient = createServerClient() as unknown as { from: (table: string) => any };
+      const PENDING_QUEUE_CEILING = 200;
+      untypedClient
         .from('product_recovery_requests')
-        .insert({
-          dedup_key: eligibility.dedupKey,
-          category: constraintTask?.category ?? 'unknown',
-          raw_query: typedQuery,
-          normalized_query: eligibility.dedupKey,
-          is_test: false,
-        })
-        // The unique index on dedup_key IS the idempotency contract (Part 8) — a duplicate
-        // insert returns a 23505 error, which is expected and silent here, never logged as a
-        // failure.
-        .then(({ error }: { error: { code?: string; message: string } | null }) => {
-          if (error && error.code !== '23505') console.error('[product-recovery] queue insert failed:', error.message);
+        .select('id', { count: 'exact', head: true })
+        .in('status', ['PENDING', 'RETRYABLE_FAILURE'])
+        .then(({ count, error: countError }: { count: number | null; error: { message: string } | null }) => {
+          if (countError) { console.error('[product-recovery] queue-depth check failed:', countError.message); return; }
+          if ((count ?? 0) >= PENDING_QUEUE_CEILING) {
+            console.error(`[product-recovery] admission paused — pending+retryable backlog at ${count}, ceiling ${PENDING_QUEUE_CEILING}`);
+            return;
+          }
+          untypedClient
+            .from('product_recovery_requests')
+            .insert({
+              dedup_key: eligibility.dedupKey,
+              category: constraintTask?.category ?? 'unknown',
+              raw_query: typedQuery,
+              normalized_query: eligibility.dedupKey,
+              is_test: false,
+            })
+            // The unique index on dedup_key IS the idempotency contract (Part 8) — a duplicate
+            // insert returns a 23505 error, which is expected and silent here, never logged as
+            // a failure.
+            .then(({ error }: { error: { code?: string; message: string } | null }) => {
+              if (error && error.code !== '23505') console.error('[product-recovery] queue insert failed:', error.message);
+            });
         });
     }
   }
