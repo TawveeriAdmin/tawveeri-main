@@ -358,43 +358,84 @@ async function main() {
   ] as const;
   const CHUNK = 500;
   let written = 0;
+  const poisoned: { tps_identity_key: unknown; error: string }[] = [];
   const t2 = Date.now();
+
+  const UPSERT_SQL = (n: number) =>
+    `insert into tps_product_projection (${COLS.join(",")}, updated_at)
+     values ${Array.from({ length: n }, (_, j) => `(${COLS.map((_, k) => `$${j * COLS.length + k + 1}`).join(",")}, now())`).join(",")}
+     on conflict (tps_identity_key) do update set
+       canonical_id = excluded.canonical_id,
+       display_name_ar = excluded.display_name_ar,
+       display_name_en = excluded.display_name_en,
+       brand = excluded.brand,
+       category = excluded.category,
+       lowest_price = excluded.lowest_price,
+       highest_price = excluded.highest_price,
+       saving = excluded.saving,
+       price_spread_pct = excluded.price_spread_pct,
+       cheapest_store = excluded.cheapest_store,
+       store_count = excluded.store_count,
+       has_comparison = excluded.has_comparison,
+       compare_url = excluded.compare_url,
+       identity_confidence = excluded.identity_confidence,
+       text_for_search = excluded.text_for_search,
+       last_observed_at = excluded.last_observed_at,
+       updated_at = now()`;
+
+  // Root-cause fix (Health Watch recurring-incident closure, 2026-09-05): a chunk was one
+  // giant statement with NO error isolation — ADR-200 (2026-08-03) proved a SINGLE row with
+  // an out-of-range value (there: price_spread_pct's numeric(5,2) overflow, since clamped)
+  // can throw a constraint violation that aborts not just that row but the ENTIRE chunk's
+  // INSERT, and since the surrounding `for` loop had no try/catch, every chunk AFTER the
+  // failing one was also silently never attempted — a single poisoned row (any future
+  // out-of-range value, not only the one column ADR-200 clamped) could still take down the
+  // WHOLE platform refresh, exactly the "one absurd row took down the platform's hourly
+  // refresh" failure class ADR-200 already named but did not generalize. Bad data being
+  // transient (the next scrape typically supersedes it) is exactly why this failure mode is
+  // intermittent and hard to reproduce on demand — by the time anyone re-runs the chain
+  // manually, the poisoned row has often already been overwritten by a fresh observation.
+  //
+  // Fix: a chunk that fails falls back to inserting ITS rows one at a time, so only the
+  // truly bad row(s) are skipped — every good row in that chunk, and every later chunk,
+  // still lands. Never silently drops a row: every skip is logged with its identity_key and
+  // the real driver error, surfaced in this step's own summary line (never scrolls out of
+  // the scheduler's tail-truncated buffer, since STEPS' run() detail becomes the printed
+  // ↳ line either way).
   for (let i = 0; i < projected.length; i += CHUNK) {
     const chunk = projected.slice(i, i + CHUNK);
-    const values: string[] = [];
     const params: unknown[] = [];
-    chunk.forEach((p, j) => {
-      const b = j * COLS.length;
-      values.push(`(${COLS.map((_, k) => `$${b + k + 1}`).join(",")}, now())`);
-      params.push(...COLS.map((c) => (p as Record<string, unknown>)[c]));
-    });
-    const res = await pg.query(
-      `insert into tps_product_projection (${COLS.join(",")}, updated_at)
-       values ${values.join(",")}
-       on conflict (tps_identity_key) do update set
-         canonical_id = excluded.canonical_id,
-         display_name_ar = excluded.display_name_ar,
-         display_name_en = excluded.display_name_en,
-         brand = excluded.brand,
-         category = excluded.category,
-         lowest_price = excluded.lowest_price,
-         highest_price = excluded.highest_price,
-         saving = excluded.saving,
-         price_spread_pct = excluded.price_spread_pct,
-         cheapest_store = excluded.cheapest_store,
-         store_count = excluded.store_count,
-         has_comparison = excluded.has_comparison,
-         compare_url = excluded.compare_url,
-         identity_confidence = excluded.identity_confidence,
-         text_for_search = excluded.text_for_search,
-         last_observed_at = excluded.last_observed_at,
-         updated_at = now()`,
-      params
-    );
-    queries++;
-    written += res.rowCount ?? 0;
+    chunk.forEach((p) => { params.push(...COLS.map((c) => (p as Record<string, unknown>)[c])); });
+    try {
+      const res = await pg.query(UPSERT_SQL(chunk.length), params);
+      queries++;
+      written += res.rowCount ?? 0;
+    } catch (chunkErr) {
+      queries++;
+      for (const row of chunk) {
+        const rowParams = COLS.map((c) => (row as Record<string, unknown>)[c]);
+        try {
+          const res = await pg.query(UPSERT_SQL(1), rowParams);
+          queries++;
+          written += res.rowCount ?? 0;
+        } catch (rowErr) {
+          queries++;
+          poisoned.push({
+            tps_identity_key: (row as Record<string, unknown>).tps_identity_key,
+            error: rowErr instanceof Error ? rowErr.message : String(rowErr),
+          });
+        }
+      }
+      console.error(
+        `[projection] chunk ${i / CHUNK} fell back to per-row insert after: ${chunkErr instanceof Error ? chunkErr.message : chunkErr}`
+      );
+    }
   }
   const writeMs = Date.now() - t2;
+  if (poisoned.length > 0) {
+    console.error(`[projection] ${poisoned.length} row(s) skipped (never written), each independently invalid:`);
+    for (const p of poisoned) console.error(`  ${p.tps_identity_key}: ${p.error}`);
+  }
 
   // ── PHASE 4: prune rows whose canonical is gone or deactivated ────────────
   // Scoped to exactly that: a row is removed only when NO active canonical claims
@@ -415,6 +456,7 @@ async function main() {
     console.log(`  rows written    : ${written}       (${writeMs} ms, ${queries - 2} statements)`);
     console.log(`  rows PRUNED     : ${pruned.rowCount ?? 0}   (canonical inactive or gone)`);
     console.log(`  comparable      : ${comparable} (>=2 stores)`);
+    console.log(`  rows SKIPPED    : ${poisoned.length}   (independently invalid — see stderr for identity_key + error)`);
     console.log(`  TOTAL           : ${(totalMs / 1000).toFixed(1)}s across ${queries} queries`);
   }
   await pg.end();
