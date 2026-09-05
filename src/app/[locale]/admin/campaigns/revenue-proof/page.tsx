@@ -85,14 +85,17 @@ export default async function RevenueProofPage({
       <h1 style={{ fontSize: 20, fontWeight: 900, marginBottom: 4 }}>Revenue Proof — Affiliate Campaigns</h1>
       <p style={{ color: '#666', marginBottom: 20 }}>Three separate truth layers. Never combined into one number.</p>
 
-      {/* Amazon Decision Layer V2 §8 — portfolio-wide summary across every live/scheduled
-          Amazon campaign, additive to (never replacing) the per-campaign detail below. */}
+      {/* Amazon Decision Layer V2 §8 / Noon Wave 1 — portfolio-wide summary across every
+          live/scheduled campaign of ANY merchant, additive to (never replacing) the
+          per-campaign detail below. See /admin/campaigns/commerce for the dedicated
+          Amazon × Noon side-by-side comparison view. */}
       <section style={{ border: '1px solid #ccc', borderRadius: 10, padding: 16, marginBottom: 24 }}>
-        <h2 style={{ fontWeight: 900, marginBottom: 8 }}>Portfolio — All Amazon Campaigns <span style={{ fontWeight: 400, fontSize: 12 }}>(clicks/exposures: trailing 30 days)</span></h2>
+        <h2 style={{ fontWeight: 900, marginBottom: 8 }}>Portfolio — All Campaigns <span style={{ fontWeight: 400, fontSize: 12 }}>(clicks/exposures: trailing 30 days)</span></h2>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr style={{ textAlign: 'left', borderBottom: '1px solid #ddd' }}>
+                <th style={{ padding: '4px 8px' }}>Merchant</th>
                 <th style={{ padding: '4px 8px' }}>Category</th>
                 <th style={{ padding: '4px 8px' }}>Tracking ID</th>
                 <th style={{ padding: '4px 8px' }}>Exposures</th>
@@ -106,6 +109,7 @@ export default async function RevenueProofPage({
             <tbody>
               {portfolio.map((row) => (
                 <tr key={row.campaignId} style={{ borderBottom: '1px solid #eee' }}>
+                  <td style={{ padding: '4px 8px', textTransform: 'capitalize' }}>{row.merchant}</td>
                   <td style={{ padding: '4px 8px' }}><a href={`?campaign=${row.campaignId}`}>{row.category}</a></td>
                   <td style={{ padding: '4px 8px', fontFamily: 'monospace', fontSize: 11 }}>{row.trackingId}</td>
                   <td style={{ padding: '4px 8px' }}>{fmt(row.tawveeriExposures30d)}</td>

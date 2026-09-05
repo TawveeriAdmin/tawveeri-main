@@ -5,8 +5,8 @@
 // these pure functions' explicit inputs, matching this codebase's existing
 // convention of not mocking a live NextRequest/route handler (see
 // tests/campaigns/click-route-contract.test.ts).
-import { deriveBusinessDecisionState, computeOperatingCostCoverage, deriveReconciliationStatus, isPaidOriginAcquisition, deriveDifferentiationBreakdown } from '@/lib/campaigns/revenue-proof-queries';
-import type { TawveeriObserved, MerchantReportedAmazon } from '@/lib/campaigns/revenue-proof-queries';
+import { deriveBusinessDecisionState, computeOperatingCostCoverage, deriveReconciliationStatus, isPaidOriginAcquisition, deriveDifferentiationBreakdown, summarizeByMerchant, compareByCategory } from '@/lib/campaigns/revenue-proof-queries';
+import type { TawveeriObserved, MerchantReportedAmazon, PortfolioRow } from '@/lib/campaigns/revenue-proof-queries';
 
 const ZERO_OBSERVED: TawveeriObserved = {
   cleanEligibleExposures: 0, visibleImpressions: 0, cleanCampaignClicks: 0,
@@ -211,5 +211,90 @@ describe('computeOperatingCostCoverage', () => {
     process.env.TAWVEERI_MONTHLY_CASH_COST_SAR = '0';
     const result = computeOperatingCostCoverage(100);
     expect(result.configured).toBe(false);
+  });
+});
+
+// Noon Wave 1 (2026-09-05) — Amazon × Noon comparison aggregation, pure over
+// getPortfolioSummary()'s already-generalized output (no live DB needed).
+function row(overrides: Partial<PortfolioRow>): PortfolioRow {
+  return {
+    campaignId: 'c1', merchant: 'amazon', category: 'tablet', trackingId: 'x', enabled: true,
+    tawveeriClicks30d: 0, tawveeriExposures30d: 0, merchantStatus: 'unknown',
+    merchantOrderedItems: null, merchantCommissionSar: null, merchantReportPeriodEnd: null,
+    reconciliation: 'NOT_YET_AVAILABLE', ...overrides,
+  };
+}
+
+describe('summarizeByMerchant', () => {
+  it('always returns exactly one row per merchant, in amazon-then-noon order, even with zero campaigns', () => {
+    const result = summarizeByMerchant([]);
+    expect(result.map((r) => r.merchant)).toEqual(['amazon', 'noon']);
+    expect(result[0].campaignCount).toBe(0);
+    expect(result[0].anyReportImported).toBe(false);
+  });
+
+  it('sums exposures/clicks per merchant and computes CTR', () => {
+    const rows = [
+      row({ campaignId: 'a1', merchant: 'amazon', tawveeriExposures30d: 100, tawveeriClicks30d: 10 }),
+      row({ campaignId: 'a2', merchant: 'amazon', tawveeriExposures30d: 50, tawveeriClicks30d: 5 }),
+      row({ campaignId: 'n1', merchant: 'noon', tawveeriExposures30d: 20, tawveeriClicks30d: 4 }),
+    ];
+    const [amazon, noon] = summarizeByMerchant(rows);
+    expect(amazon.eligibleExposures30d).toBe(150);
+    expect(amazon.cleanClicks30d).toBe(15);
+    expect(amazon.clickThroughRate).toBeCloseTo(0.1);
+    expect(noon.eligibleExposures30d).toBe(20);
+    expect(noon.clickThroughRate).toBeCloseTo(0.2);
+  });
+
+  it('an unimported report (merchantStatus unknown) never contributes a fabricated 0 commission — stays null, not 0', () => {
+    const rows = [row({ merchant: 'noon', merchantStatus: 'unknown', merchantCommissionSar: null })];
+    const [, noon] = summarizeByMerchant(rows);
+    expect(noon.anyReportImported).toBe(false);
+    expect(noon.commissionSarKnown).toBeNull();
+    expect(noon.revenuePer100Exposures).toBeNull();
+  });
+
+  it('a known report contributes real commission and a computed revenue-per-100-exposures rate', () => {
+    const rows = [row({ merchant: 'amazon', merchantStatus: 'known', merchantCommissionSar: 50, tawveeriExposures30d: 200 })];
+    const [amazon] = summarizeByMerchant(rows);
+    expect(amazon.anyReportImported).toBe(true);
+    expect(amazon.commissionSarKnown).toBe(50);
+    expect(amazon.revenuePer100Exposures).toBeCloseTo(25); // 50 / 200 * 100
+  });
+});
+
+describe('compareByCategory', () => {
+  it('NO_EVIDENCE when neither merchant has ever had commission/clicks for a category', () => {
+    const rows = [row({ merchant: 'amazon', category: 'laptop', merchantCommissionSar: null, tawveeriClicks30d: 0 })];
+    const result = compareByCategory(rows);
+    expect(result[0].winner).toBe('NO_EVIDENCE');
+  });
+
+  it('NOT_COMPARABLE when both merchants have a campaign but neither has a known commission figure', () => {
+    const rows = [
+      row({ merchant: 'amazon', category: 'tv', merchantStatus: 'unknown', merchantCommissionSar: null }),
+      row({ merchant: 'noon', category: 'tv', merchantStatus: 'unknown', merchantCommissionSar: null }),
+    ];
+    const result = compareByCategory(rows);
+    expect(result[0].winner).toBe('NOT_COMPARABLE');
+  });
+
+  it('picks the merchant with strictly higher reported commission for that category', () => {
+    const rows = [
+      row({ merchant: 'amazon', category: 'tv', merchantStatus: 'known', merchantCommissionSar: 10 }),
+      row({ merchant: 'noon', category: 'tv', merchantStatus: 'known', merchantCommissionSar: 40 }),
+    ];
+    const result = compareByCategory(rows);
+    expect(result[0].winner).toBe('NOON');
+  });
+
+  it('equal known commission on both sides → NOT_COMPARABLE, never an arbitrary tie-break here', () => {
+    const rows = [
+      row({ merchant: 'amazon', category: 'tv', merchantStatus: 'known', merchantCommissionSar: 25 }),
+      row({ merchant: 'noon', category: 'tv', merchantStatus: 'known', merchantCommissionSar: 25 }),
+    ];
+    const result = compareByCategory(rows);
+    expect(result[0].winner).toBe('NOT_COMPARABLE');
   });
 });

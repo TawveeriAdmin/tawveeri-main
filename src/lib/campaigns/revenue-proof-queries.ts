@@ -11,7 +11,7 @@
 //   C. BUSINESS DECISION — derived states (PENDING/CONFIRMED/etc.), never inferred from a
 //      tiny sample as false certainty.
 import { untypedClient } from './store';
-import type { AffiliateCampaign } from './types';
+import type { AffiliateCampaign, CampaignMerchant } from './types';
 import { deriveCampaignStatus } from './types';
 
 export interface CampaignHeader {
@@ -210,7 +210,7 @@ export type MerchantReportedAmazon =
   | {
       status: 'known';
       trackingId: string;
-      networkReportedClicks: number | null; // Amazon's own click count, if the report carries one
+      networkReportedClicks: number | null; // the network's own click count, if the report carries one
       orderedItems: number;
       shippedItems: number;
       cancelledOrReturned: number;
@@ -225,11 +225,19 @@ export type MerchantReportedAmazon =
  * Phase 2C. Reuses affiliate_reports/affiliate_conversions (ADR-213) UNCHANGED — no new
  * schema. Reconciles at TRACKING ID level (affiliate_conversions.tracking_id_raw), the
  * officially-supported Amazon aggregate granularity — never a fabricated Tawveeri-visitor
- * <-> Amazon-customer join. Returns {status:'unknown'} rather than zeros whenever no
+ * <-> merchant-customer join. Returns {status:'unknown'} rather than zeros whenever no
  * report row exists for this tracking id — UNKNOWN ≠ ZERO is enforced structurally here,
  * not left to the caller to remember.
+ *
+ * Noon Wave 1 (2026-09-05): AFFILIATE_RECONCILIATION_CONTRACT.md's own design intent
+ * ("This generalizes to Noon or any future retailer's export for free") is exercised here
+ * literally — this function was never Amazon-specific in its query, only in its name and
+ * the `state` vocabulary in its doc comment (ORDERED/SHIPPED/etc. — the actual mapping to
+ * those states happens at CSV-import column-mapping time, per report, already generic).
+ * Renamed to `getMerchantReportedByTrackingId`; `getMerchantReportedAmazon` kept as an
+ * unchanged-signature alias so no existing caller/test needs to change.
  */
-export async function getMerchantReportedAmazon(trackingId: string): Promise<MerchantReportedAmazon> {
+export async function getMerchantReportedByTrackingId(trackingId: string): Promise<MerchantReportedAmazon> {
   const supabase = untypedClient();
   const { data: conversions, error } = await supabase
     .from('affiliate_conversions')
@@ -267,6 +275,10 @@ export async function getMerchantReportedAmazon(trackingId: string): Promise<Mer
     lastImportedAt: lastImported,
   };
 }
+
+/** Unchanged-signature alias — every existing caller/test keeps working. Not
+ *  Amazon-specific despite the name; see getMerchantReportedByTrackingId's doc comment. */
+export const getMerchantReportedAmazon = getMerchantReportedByTrackingId;
 
 export type ProofState = 'PENDING' | 'CONFIRMED';
 export type SignalState = 'PENDING' | 'EARLY' | 'CONFIRMED';
@@ -320,6 +332,7 @@ export type ReconciliationStatus = 'CONFIRMED' | 'PARTIAL' | 'NOT_YET_AVAILABLE'
 
 export interface PortfolioRow {
   campaignId: string;
+  merchant: 'amazon' | 'noon';
   category: string; // categories[0] || '(untargeted)'
   trackingId: string;
   enabled: boolean;
@@ -341,20 +354,30 @@ export function deriveReconciliationStatus(merchant: MerchantReportedAmazon): Re
   return 'PARTIAL';
 }
 
+/** Noon has no per-campaign Tracking ID concept today (link.ts's own doc comment: its
+ *  attribution is a fixed program-level UTM parameter set, not a per-campaign string) —
+ *  this placeholder mirrors getCampaignHeader()'s existing 'noon-default' value so a Noon
+ *  portfolio row has SOME reconciliation key to query by, honestly labeled as unconfirmed
+ *  until a real Noon report is ever imported (AFFILIATE_RECONCILIATION_CONTRACT.md: no
+ *  confirmed live Noon-equivalent report access exists yet). */
+const NOON_TRACKING_PLACEHOLDER = 'noon-default';
+
 /**
- * Amazon Decision Layer V2 §8 — one row per LIVE campaign, reusing getTawveeriObserved
- * and getMerchantReportedAmazon exactly as the single-campaign view does (no new query
- * logic, no new attribution join). `reconciliation` never calls an unimported report "0
- * revenue": NOT_YET_AVAILABLE when no report has been imported for that Tracking ID at
- * all, PARTIAL when a report exists but shows no ordered/shipped items yet for this
- * specific tracking id, CONFIRMED when at least one ordered/shipped item is reported.
+ * Amazon Decision Layer V2 §8 / Noon Wave 1 (2026-09-05) — one row per LIVE campaign,
+ * ANY merchant, reusing getTawveeriObserved and getMerchantReportedByTrackingId exactly
+ * as the single-campaign view does (no new query logic, no new attribution join). Was
+ * Amazon-only (`.eq('merchant', 'amazon')`); the query and the per-row logic were already
+ * merchant-agnostic, so removing that filter is the entire change. `reconciliation` never
+ * calls an unimported report "0 revenue": NOT_YET_AVAILABLE when no report has been
+ * imported for that Tracking ID at all, PARTIAL when a report exists but shows no
+ * ordered/shipped items yet for this specific tracking id, CONFIRMED when at least one
+ * ordered/shipped item is reported.
  */
 export async function getPortfolioSummary(): Promise<PortfolioRow[]> {
   const supabase = untypedClient();
   const { data: campaigns } = await supabase
     .from('affiliate_campaigns')
     .select('id, categories, tracking_id, merchant, enabled, start_at, end_at')
-    .eq('merchant', 'amazon')
     .order('created_at', { ascending: true });
 
   const now = new Date();
@@ -363,16 +386,17 @@ export async function getPortfolioSummary(): Promise<PortfolioRow[]> {
 
   for (const c of (campaigns || []) as AffiliateCampaign[]) {
     if (deriveCampaignStatus(c, now) !== 'live' && !c.enabled) continue; // skip only truly inert rows, keep scheduled/expired-but-enabled visible
-    const effectiveTrackingId = c.tracking_id || SHARED_AMAZON_TAG;
+    const effectiveTrackingId = c.tracking_id || (c.merchant === 'amazon' ? SHARED_AMAZON_TAG : NOON_TRACKING_PLACEHOLDER);
     const [observed, merchant] = await Promise.all([
       getTawveeriObserved(c.id, { start: thirtyDaysAgo, end: now }),
-      getMerchantReportedAmazon(effectiveTrackingId),
+      getMerchantReportedByTrackingId(effectiveTrackingId),
     ]);
 
     const reconciliation = deriveReconciliationStatus(merchant);
 
     rows.push({
       campaignId: c.id,
+      merchant: c.merchant,
       category: c.categories[0] || '(untargeted)',
       trackingId: effectiveTrackingId,
       enabled: c.enabled,
@@ -386,6 +410,89 @@ export async function getPortfolioSummary(): Promise<PortfolioRow[]> {
     });
   }
   return rows;
+}
+
+// ── Amazon × Noon comparison (founder mission §11B/§11C/§11E, 2026-09-05) ──────────────
+// Pure aggregation over PortfolioRow[] — no new query, directly unit-testable without a
+// live Supabase client (same precedent as deriveBusinessDecisionState/
+// deriveReconciliationStatus above).
+
+export interface MerchantSummary {
+  merchant: CampaignMerchant;
+  campaignCount: number;
+  enabledCampaignCount: number;
+  categories: string[];
+  eligibleExposures30d: number;
+  cleanClicks30d: number;
+  clickThroughRate: number | null;
+  /** null when NO campaign for this merchant has an imported report yet — never 0. */
+  ordersKnown: number | null;
+  commissionSarKnown: number | null;
+  revenuePer100Exposures: number | null;
+  anyReportImported: boolean;
+}
+
+/** One row per merchant (fixed order: amazon, noon — same convention as
+ *  selectEligibleCampaigns()'s output order) summarizing getPortfolioSummary()'s rows. */
+export function summarizeByMerchant(rows: PortfolioRow[]): MerchantSummary[] {
+  const merchants: CampaignMerchant[] = ['amazon', 'noon'];
+  return merchants.map((merchant) => {
+    const mine = rows.filter((r) => r.merchant === merchant);
+    const categories = Array.from(new Set(mine.map((r) => r.category)));
+    const eligibleExposures30d = mine.reduce((s, r) => s + r.tawveeriExposures30d, 0);
+    const cleanClicks30d = mine.reduce((s, r) => s + r.tawveeriClicks30d, 0);
+    const knownRows = mine.filter((r) => r.merchantStatus === 'known');
+    const anyReportImported = knownRows.length > 0;
+    const ordersKnown = anyReportImported ? knownRows.reduce((s, r) => s + (r.merchantOrderedItems ?? 0), 0) : null;
+    const commissionSarKnown = anyReportImported ? knownRows.reduce((s, r) => s + (r.merchantCommissionSar ?? 0), 0) : null;
+    return {
+      merchant,
+      campaignCount: mine.length,
+      enabledCampaignCount: mine.filter((r) => r.enabled).length,
+      categories,
+      eligibleExposures30d,
+      cleanClicks30d,
+      clickThroughRate: eligibleExposures30d > 0 ? cleanClicks30d / eligibleExposures30d : null,
+      ordersKnown,
+      commissionSarKnown,
+      revenuePer100Exposures: commissionSarKnown !== null && eligibleExposures30d > 0 ? (commissionSarKnown / eligibleExposures30d) * 100 : null,
+      anyReportImported,
+    };
+  });
+}
+
+export type CategoryWinner = 'AMAZON' | 'NOON' | 'NO_EVIDENCE' | 'NOT_COMPARABLE';
+
+export interface CategoryComparisonRow {
+  category: string;
+  amazon: PortfolioRow | null;
+  noon: PortfolioRow | null;
+  winner: CategoryWinner;
+}
+
+/** Pure — decides a category's "winner" ONLY from real reported commission (never from
+ *  exposures/clicks alone, which measure attention, not revenue). NOT_COMPARABLE when
+ *  both merchants have a campaign but neither/both have equal known commission — a real
+ *  tie or unmeasured state is never resolved into a fabricated winner. */
+function decideWinner(amazon: PortfolioRow | null, noon: PortfolioRow | null): CategoryWinner {
+  if (!amazon && !noon) return 'NO_EVIDENCE';
+  if (amazon && !noon) return amazon.merchantCommissionSar !== null && amazon.merchantCommissionSar > 0 ? 'AMAZON' : 'NO_EVIDENCE';
+  if (noon && !amazon) return noon.merchantCommissionSar !== null && noon.merchantCommissionSar > 0 ? 'NOON' : 'NO_EVIDENCE';
+  const a = amazon!.merchantCommissionSar;
+  const n = noon!.merchantCommissionSar;
+  if (a === null && n === null) return 'NOT_COMPARABLE';
+  if ((a ?? 0) === (n ?? 0)) return 'NOT_COMPARABLE';
+  return (a ?? 0) > (n ?? 0) ? 'AMAZON' : 'NOON';
+}
+
+/** One row per category present in either merchant's portfolio. */
+export function compareByCategory(rows: PortfolioRow[]): CategoryComparisonRow[] {
+  const categories = Array.from(new Set(rows.map((r) => r.category))).sort();
+  return categories.map((category) => {
+    const amazon = rows.find((r) => r.category === category && r.merchant === 'amazon') ?? null;
+    const noon = rows.find((r) => r.category === category && r.merchant === 'noon') ?? null;
+    return { category, amazon, noon, winner: decideWinner(amazon, noon) };
+  });
 }
 
 export interface OperatingCostCoverage {

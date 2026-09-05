@@ -71,8 +71,8 @@ export default async function FaqPage({ params }: { params: Promise<{ locale: st
         },
         {
           id: 'affiliate',
-          q: 'هل تحصل توفيري على عمولة من Amazon.sa؟',
-          a: 'توفيري مشارك في برنامج Amazon Services LLC Associates Program، وهو برنامج إعلاني تابع مصمم لتوفير وسيلة لمواقع الويب لكسب رسوم إعلانية عبر الربط بموقع Amazon.sa. بصفتي مشارك لأمازون، فإنني أكسب من عمليات الشراء المؤهلة. قد تحصل توفيري على عمولة عند إتمام شراء مؤهل عبر بعض الروابط، دون أي تكلفة إضافية عليك. هذا لا يؤثر أبدًا على الأسعار المعروضة أو على ترتيب النتائج — المصلحة التجارية لا تدخل أبدًا في الترتيب.',
+          q: 'هل تحصل توفيري على عمولة من المتاجر؟',
+          a: 'توفيري مشارك في برنامج Amazon Services LLC Associates Program، وهو برنامج إعلاني تابع مصمم لتوفير وسيلة لمواقع الويب لكسب رسوم إعلانية عبر الربط بموقع Amazon.sa. بصفتي مشارك لأمازون، فإنني أكسب من عمليات الشراء المؤهلة. قد نحصل أيضًا على عمولة من متاجر أخرى مثل Noon عند إتمام شراء مؤهل عبر روابطها، بنفس الطريقة. في الحالتين، هذا لا يكلفك أي شيء إضافي، ولا يعني رعاية أو شراكة حصرية من أي متجر لتوفيري. الأهم: هذا لا يؤثر أبدًا على الأسعار المعروضة أو على ترتيب النتائج — المصلحة التجارية لا تدخل أبدًا في الترتيب.',
         },
         {
           q: 'من يتولى الدفع والتوصيل والاستبدال والضمان؟',
@@ -145,8 +145,8 @@ export default async function FaqPage({ params }: { params: Promise<{ locale: st
         },
         {
           id: 'affiliate',
-          q: 'Does Tawveeri earn a commission from Amazon.sa?',
-          a: 'Tawveeri is a participant in the Amazon Services LLC Associates Program, an affiliate advertising program designed to provide a means for sites to earn advertising fees by linking to Amazon.sa. As an Amazon Associate I earn from qualifying purchases. Tawveeri may earn a commission when you complete a qualifying purchase through some links, at no extra cost to you. This never affects the prices shown or how results are ranked — commercial interest never enters ranking.',
+          q: 'Does Tawveeri earn a commission from retailers?',
+          a: 'Tawveeri is a participant in the Amazon Services LLC Associates Program, an affiliate advertising program designed to provide a means for sites to earn advertising fees by linking to Amazon.sa. As an Amazon Associate I earn from qualifying purchases. We may also earn a commission from other retailers such as Noon when you complete a qualifying purchase through their links, in the same way. Either way, this never costs you anything extra, and does not mean any retailer sponsors or exclusively partners with Tawveeri. Most importantly: this never affects the prices shown or how results are ranked — commercial interest never enters ranking.',
         },
         {
           q: 'Who handles payment, delivery, returns and warranty?',

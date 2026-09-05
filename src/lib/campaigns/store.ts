@@ -9,7 +9,8 @@ import { buildCampaignMerchantUrl } from './link';
 import { issueClickToken } from './click-token';
 import { checkClaimGuard } from './claim-guard';
 import { resolveAmazonDestination, EXACT_IDENTITY_CONFIDENCE_THRESHOLD, type LiveCategoryDestination } from './destination-resolver';
-import { getAmazonExactProductEvidence } from './amazon-evidence';
+import { getAmazonExactProductEvidence, getNoonExactProductEvidence } from './amazon-evidence';
+import { logTiebreakEvent } from './commercial-tiebreak';
 
 // affiliate_campaigns/campaign_clicks are new tables (scripts/database/44-affiliate-campaigns.sql)
 // not yet present in the generated Database type (src/lib/database/types.ts). Same escape hatch
@@ -116,6 +117,16 @@ export async function getEligibleCampaigns(
       allowedMerchants,
     });
     const withLinks: EligibleCampaign[] = [];
+    // Commercial tie-break logging (2026-09-05): when BOTH an Amazon and a Noon exact_product
+    // decision land in the SAME call (same request, same evidence.productId, so the same
+    // canonical product by construction), that is exactly the "shopper-equivalent offer on two
+    // merchants" situation the founder's commercial tie-break policy governs. Captured here so
+    // it can be logged once, after the loop, WITHOUT changing which cards render — both cards
+    // still render exactly as their own branch decides (Constitution Art. VII: this layer may
+    // measure a commercial signal, it may never let that signal decide what's shown to whom).
+    let amazonExactDecision: { priceSar: number | null; offerFreshnessHours: number | null; inStock: boolean } | null = null;
+    let noonExactDecision: { priceSar: number | null; offerFreshnessHours: number | null; inStock: boolean } | null = null;
+
     for (const c of eligible) {
       // Small-appliance claim-guard (multi-category expansion, Sept 2026): affiliate_campaigns
       // has no column yet for "fresh, confirmed Amazon offer evidence" — until one exists,
@@ -172,6 +183,9 @@ export async function getEligibleCampaigns(
         const link = buildCampaignMerchantUrl({ merchant: 'amazon', destination_url: decision.destination, tracking_id: decision.trackingId });
         if (!link) continue;
 
+        if (decision.mode === 'exact_product') {
+          amazonExactDecision = { priceSar: amazonEvidence.priceSar, offerFreshnessHours: amazonEvidence.offerFreshnessHours, inStock: amazonEvidence.inStock };
+        }
         logExposure(c, placement, category, ctx, decision.mode, decision.reasonCode);
         withLinks.push({
           ...c,
@@ -184,7 +198,58 @@ export async function getEligibleCampaigns(
         continue;
       }
 
-      // Non-amazon (Noon) or no category context — unchanged V1 behavior.
+      // Noon Wave 1 (2026-09-05) — the SAME resolver/gates as Amazon's, reused unchanged
+      // (resolveAmazonDestination() has no Amazon-specific logic, only Amazon-specific
+      // naming — see destination-resolver.ts's header). Gated behind its OWN independent
+      // flag (NOON_EXACT_PRODUCT_ENABLED, default off) so Noon can launch in the same
+      // category-only V1 shape Amazon itself launched in (ADR-284) before opting into
+      // this richer routing later — same rollout precedent, same rollback lever, never
+      // forced to move in lockstep with Amazon's.
+      if (c.merchant === 'noon' && category && process.env.NOON_EXACT_PRODUCT_ENABLED === '1') {
+        const liveMap: ReadonlyMap<string, LiveCategoryDestination> = new Map([
+          [category, { destinationUrl: c.destination_url, trackingId: c.tracking_id }],
+        ]);
+        const noonEvidence = await getNoonExactProductEvidence(evidence.productId ?? null);
+        const canonicalIdentityConfidence = noonEvidence.distinctStoreCount >= 2
+          ? EXACT_IDENTITY_CONFIDENCE_THRESHOLD + 0.1
+          : noonEvidence.distinctStoreCount === 1 ? 0.5 : null;
+        const exactNoonProductUrl = noonEvidence.inStock ? noonEvidence.productUrl : null;
+
+        const decision = resolveAmazonDestination({
+          category,
+          queryText: evidence.queryText ?? null,
+          canonicalProductId: evidence.productId ?? null,
+          canonicalIdentityConfidence,
+          exactAmazonProductUrl: exactNoonProductUrl,
+          offerFreshnessHours: noonEvidence.offerFreshnessHours,
+          accessoryLeakageRisk: false,
+          conditionMismatch: false,
+          storageOrModelMismatch: false,
+          openQualityIncident: false,
+          liveCategoryCampaigns: liveMap,
+        });
+
+        if (decision.mode === 'unavailable' || !decision.destination) continue;
+        const link = buildCampaignMerchantUrl({ merchant: 'noon', destination_url: decision.destination, tracking_id: decision.trackingId });
+        if (!link) continue;
+
+        if (decision.mode === 'exact_product') {
+          noonExactDecision = { priceSar: noonEvidence.priceSar, offerFreshnessHours: noonEvidence.offerFreshnessHours, inStock: noonEvidence.inStock };
+        }
+        logExposure(c, placement, category, ctx, decision.mode, decision.reasonCode);
+        withLinks.push({
+          ...c,
+          merchantUrl: link.url,
+          clickToken: issueClickToken(c.id),
+          destinationMode: decision.mode,
+          canonicalProductId: decision.canonicalProductId,
+          reasonCode: decision.reasonCode,
+        });
+        continue;
+      }
+
+      // Non-amazon (Noon, without the exact-product flag) or no category context —
+      // unchanged V1 behavior.
       const link = buildCampaignMerchantUrl(c);
       if (!link) continue; // unresolvable destination — drop rather than render broken
       logExposure(c, placement, category, ctx, 'category', c.merchant === 'amazon' ? 'no_category_context' : 'non_amazon_merchant');
@@ -197,6 +262,18 @@ export async function getEligibleCampaigns(
         reasonCode: c.merchant === 'amazon' ? 'no_category_context' : 'non_amazon_merchant',
       });
     }
+
+    if (amazonExactDecision && noonExactDecision && evidence.productId && category) {
+      logTiebreakEvent({
+        canonicalProductId: evidence.productId,
+        category,
+        sessionId: ctx.sessionId ?? null,
+        isTest: !!ctx.isTest,
+        amazon: amazonExactDecision,
+        noon: noonExactDecision,
+      });
+    }
+
     return withLinks;
   } catch {
     return []; // a lookup failure hides the commercial layer, never breaks the page

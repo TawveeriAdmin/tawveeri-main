@@ -53,12 +53,33 @@ describe('getEligibleCampaigns — amazon routing wiring', () => {
     expect(fnBody).toMatch(/logExposure\(c, placement, category, ctx, decision\.mode, decision\.reasonCode\)/);
   });
 
-  it('a non-amazon (Noon) campaign never calls resolveAmazonDestination or the Amazon evidence lookup', () => {
-    // The non-amazon fallback branch is textually AFTER the amazon-only branch's `continue`,
-    // so it never falls through into the amazon-specific resolver call.
-    const nonAmazonComment = fnBody.indexOf('Non-amazon (Noon) or no category context');
-    const resolverCallIdx = fnBody.indexOf('resolveAmazonDestination(');
-    expect(nonAmazonComment).toBeGreaterThan(resolverCallIdx);
+  it('Noon Wave 1: a Noon campaign only reaches the resolver behind its own explicit, independent flag (never unconditionally, never coupled to Amazon\'s gate)', () => {
+    // Noon Wave 1 (2026-09-05) — the exact_product/model_search resolver is now reused for
+    // Noon too, but ONLY behind NOON_EXACT_PRODUCT_ENABLED, checked in the Noon branch's own
+    // condition — distinct from the unconditional Amazon branch above it.
+    const noonBranchIdx = fnBody.indexOf("c.merchant === 'noon' && category && process.env.NOON_EXACT_PRODUCT_ENABLED === '1'");
+    expect(noonBranchIdx).toBeGreaterThan(-1);
+  });
+
+  it('the final true fallback (no category, or Noon without its flag) is textually after BOTH the amazon and the noon exact-product branches', () => {
+    const fallbackComment = fnBody.indexOf('Non-amazon (Noon, without the exact-product flag) or no category context');
+    const amazonResolverCallIdx = fnBody.indexOf('resolveAmazonDestination(');
+    const noonResolverCallIdx = fnBody.lastIndexOf('resolveAmazonDestination(');
+    expect(fallbackComment).toBeGreaterThan(amazonResolverCallIdx);
+    expect(fallbackComment).toBeGreaterThan(noonResolverCallIdx);
+  });
+
+  it('the Noon branch has the SAME safety flags/out-of-stock/decision-field wiring as the Amazon branch, not a stripped-down copy', () => {
+    const noonBranchIdx = fnBody.indexOf("c.merchant === 'noon' && category && process.env.NOON_EXACT_PRODUCT_ENABLED === '1'");
+    const noonBranchBody = fnBody.slice(noonBranchIdx, fnBody.indexOf('Non-amazon (Noon, without the exact-product flag)', noonBranchIdx));
+    for (const flag of ['accessoryLeakageRisk: false', 'conditionMismatch: false', 'storageOrModelMismatch: false', 'openQualityIncident: false']) {
+      expect(noonBranchBody).toContain(flag);
+    }
+    expect(noonBranchBody).toMatch(/noonEvidence\.inStock \? noonEvidence\.productUrl : null/);
+    expect(noonBranchBody).toMatch(/decision\.mode === 'unavailable' \|\| !decision\.destination\) continue/);
+    expect(noonBranchBody).toMatch(/destinationMode: decision\.mode/);
+    expect(noonBranchBody).toMatch(/canonicalProductId: decision\.canonicalProductId/);
+    expect(noonBranchBody).toMatch(/reasonCode: decision\.reasonCode/);
   });
 
   it('claim-guard still runs before ANY campaign (amazon or not) can be pushed', () => {
@@ -79,25 +100,35 @@ describe('amazon-evidence.ts — trust boundary', () => {
     expect(evidenceSource).not.toMatch(/\.from\('price_history'\)/);
   });
 
-  it('Amazon is matched by the established store_id, never a guessed slug/name match', () => {
+  it('Amazon and Noon are matched by their established store_id constants, never a guessed slug/name match', () => {
     expect(evidenceSource).toMatch(/AMAZON_STORE_ID = '2'/);
+    expect(evidenceSource).toMatch(/NOON_STORE_ID = '3'/);
   });
 
   // Regression (found live in production 2026-09-04): product_stores.store_id comes
   // back as a JS number from PostgREST despite database/types.ts claiming `string` — a
-  // bare `r.store_id === AMAZON_STORE_ID` silently matched nothing for every real
-  // product, blocking EXACT_PRODUCT entirely with no error. Must always coerce with
-  // String(...) before comparing.
+  // bare `r.store_id === storeId` silently matched nothing for every real product,
+  // blocking EXACT_PRODUCT entirely with no error. Must always coerce with String(...)
+  // before comparing. Noon Wave 1 (2026-09-05) moved this comparison into the shared
+  // getExactProductEvidenceForStore() (parametrized by storeId, called by both the
+  // Amazon and Noon wrappers) — the coercion rule itself is unchanged, only the constant
+  // being compared against is now a parameter instead of the Amazon-only literal.
   it('compares store_id with String(...) coercion, never a bare strict-equals that assumes a JS type', () => {
-    expect(evidenceSource).toMatch(/String\(r\.store_id\) === AMAZON_STORE_ID/);
-    expect(evidenceSource).not.toMatch(/r\.store_id === AMAZON_STORE_ID/);
+    expect(evidenceSource).toMatch(/String\(r\.store_id\) === storeId/);
+    expect(evidenceSource).not.toMatch(/r\.store_id === storeId(?!\))/); // no bare (uncoerced) comparison anywhere
   });
 
-  it('never throws — wrapped in try/catch, degrading to EMPTY_EVIDENCE', () => {
-    const fnStart = evidenceSource.indexOf('export async function getAmazonExactProductEvidence');
-    const fnBody = evidenceSource.slice(fnStart);
+  it('never throws — wrapped in try/catch, degrading to EMPTY_EVIDENCE (shared getExactProductEvidenceForStore, used by both merchant wrappers)', () => {
+    const fnStart = evidenceSource.indexOf('export async function getExactProductEvidenceForStore');
+    const fnEnd = evidenceSource.indexOf('\nexport async function getAmazonExactProductEvidence', fnStart);
+    const fnBody = evidenceSource.slice(fnStart, fnEnd);
     expect(fnBody).toMatch(/try \{/);
     expect(fnBody).toMatch(/catch \{\s*return EMPTY_EVIDENCE;\s*\}/);
+  });
+
+  it('both merchant wrappers (Amazon, Noon) delegate to the same shared lookup — no duplicated query logic', () => {
+    expect(evidenceSource).toMatch(/getExactProductEvidenceForStore\(productId, AMAZON_STORE_ID\)/);
+    expect(evidenceSource).toMatch(/getExactProductEvidenceForStore\(productId, NOON_STORE_ID\)/);
   });
 });
 

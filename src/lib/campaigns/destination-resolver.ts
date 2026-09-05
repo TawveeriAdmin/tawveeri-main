@@ -28,12 +28,14 @@
 // or any future category cannot reach this resolver's CATEGORY/MODEL_SEARCH branches
 // without a separate, explicit founder activation of that category's campaign row first.
 //
-// NOT YET WIRED into src/lib/campaigns/store.ts's getEligibleCampaigns() — the live
-// serving path remains CATEGORY-only via the existing, already-verified mechanism
-// (destination_url stamped straight from the campaign row). This file is a tested,
-// ready-to-wire utility, deliberately not forced into the live request path in the same
-// pass as its own review, per the founder's "do NOT change the current live campaign
-// portfolio" instruction.
+// WIRED into src/lib/campaigns/store.ts's getEligibleCampaigns() since the V2.1 pass
+// (2026-09-04, commit 386574c3) — despite this file's own earlier header claiming
+// otherwise (stale comment, corrected 2026-09-05: verified live by reading store.ts
+// directly before relying on the old claim). The function itself was already merchant-
+// agnostic — nothing here ever referenced "Amazon" in the actual logic, only in naming/
+// comments — so Noon Wave 1 (2026-09-05) reuses this exact function unchanged for Noon's
+// exact_product/model_search routing too (see store.ts). The name `resolveAmazonDestination`
+// is kept for backward compatibility with existing tests/callers; it is not Amazon-specific.
 
 export type DestinationMode = 'exact_product' | 'model_search' | 'category';
 

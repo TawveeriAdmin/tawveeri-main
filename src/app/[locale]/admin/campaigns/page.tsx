@@ -132,6 +132,9 @@ export default function AdminCampaignsPage() {
           <Button variant="outline" asChild>
             <a href="revenue-proof">Revenue Proof</a>
           </Button>
+          <Button variant="outline" asChild>
+            <a href="commerce">Amazon × Noon</a>
+          </Button>
           <Button onClick={() => setShowForm((s) => !s)}>
             <Plus className="h-4 w-4 me-1" /> New campaign
           </Button>

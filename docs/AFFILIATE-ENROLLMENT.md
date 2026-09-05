@@ -30,20 +30,35 @@ does the rest; `/go` immediately builds monetized links. No schema change, no ne
 - Hand back: your **Associate tag** (e.g. `yourname-21`).
 - Status: framework already wired with a **placeholder** tag `tawveeri-21` — replace with your real tag. Until then, Amazon exits carry a tag that is **not yours** (no revenue) — swap ASAP.
 
-### 2. Noon — second priority
-- Enroll: Noon's affiliate program via **Admitad**, **Boostiny**, or **ArabClicks (ArabyAds)** (whichever accepts you).
-- Hand back: the tracking params they assign (campaign/publisher id).
-- **RESOLVED 2026-08-02 from a real dashboard-generated link.** noon attribution is
+### 2. Noon — ALREADY ENROLLED (superseded 2026-08-07, ADR-224/225 — corrected here 2026-09-05)
+This section previously described the ADR-181 (2026-08-02) values as current. They were
+superseded five weeks ago and this file was never updated — corrected now while auditing
+the codebase for the Amazon × Noon Affiliate Commerce mission. **Do not use the values
+below the strikethrough line; they are historical only.**
+- **Current, live values (ADR-224/225, verified against two independently-generated
+  "Everyday Campaign" dashboard links):** `utm_source=C1000264L`, `utm_medium=AFFfbc721aa80c8`,
+  `utm_campaign=CMP2ce0b63a6a1anoon`, `adjust_deeplink_js=1` — an Adjust-network campaign,
+  not the bare `utm_source=<publisher id>&utm_medium=referral` shape ADR-181 assumed. Live
+  in `src/lib/providers/registry.ts`'s `noon` entry today; already applied to every organic
+  Noon exit via `/go` and `buildOfferExitLink()` — no further founder action needed for
+  this part.
+- ~~RESOLVED 2026-08-02 from a real dashboard-generated link. noon attribution is
   `utm_source=<publisher id>&utm_medium=referral` — ours is **C1000094L**. There is no
-  `aff_code` and no `utm_campaign` in a genuine noon partner link.
+  `aff_code` and no `utm_campaign` in a genuine noon partner link.~~ (superseded)
 - **DNC160 is NOT a tracking parameter.** It is a customer COUPON code (10% cashback, capped
   25 SAR) typed at checkout — a separate system in the same dashboard. It belongs on the
-  coupons surface, never on an outbound link. We sent it as `utm_campaign` for weeks and it
-  matched no mechanism, so those clicks earned nothing.
+  coupons surface, never on an outbound link. (This finding is still current — unrelated to
+  the C1000094L→C1000264L correction above.)
 - **`o=` is not ours and is not required.** Every organic product link on noon's own listing
   pages carries `?o=` (50/50 measured); it has no effect on product, price or seller (a
   bogus value renders identically). It is noon's internal link token — preserved when the
-  source URL has one, never synthesized by us.
+  source URL has one, never synthesized by us. (Still current.)
+- **What's actually still open for Noon:** (1) a signed written consent for using the
+  "Noon" brand name on a promotional campaign CARD specifically (ADR-284's "clause-8.3"
+  question — organic exit attribution above is unaffected and unblocked); (2) confirmed
+  Noon-side report/reconciliation access equivalent to Amazon's Associates Central export
+  (AFFILIATE_RECONCILIATION_CONTRACT.md: none confirmed yet). See DECISIONS.md's Amazon ×
+  Noon Affiliate Commerce Engine entry (2026-09-05) for the full current state.
 
 ### 3. KSA multi-advertiser networks — covers Jarir, eXtra, Almanea, Samsung, etc.
 - Enroll in **one** aggregator that carries these advertisers: **ArabClicks (ArabyAds)**, **Admitad**, or **Boostiny/Ecomz**.
