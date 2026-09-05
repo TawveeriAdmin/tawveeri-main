@@ -258,6 +258,34 @@ function parseFridgeType(x: string): string | undefined {
 }
 
 /**
+ * LOCK/KEY REQUIREMENT (Shopper Constraint Truth mission, 2026-09-05 — real incident:
+ * «أبي ثلاجة صغيرة وقفلها مهم»). Deliberately NOT a structured, filterable product attribute:
+ * a live production audit (`raw_observations.raw_name`, 484 real refrigerators) found
+ * "Lock & Key" phrasing genuinely present in real listing titles, but overwhelmingly on ONE
+ * provider (Amazon) with low, uneven coverage across the catalog, and absence of the phrase
+ * in a title is NOT proof a fridge has no lock (titles are marketing text, not exhaustive spec
+ * sheets) — exactly the "unknown beats incorrect" case CLAUDE.md governs. Promoting this to a
+ * canonical `attributes.has_lock` boolean would require low-confidence NLP over incomplete,
+ * single-provider-skewed text and a new ingestion field — the "do not force it, ship the
+ * honest unsupported/verify-yourself behavior first" instruction this mission's own Section 25
+ * anticipates for exactly this shape of evidence. So this stays a REQUEST-side signal only:
+ * `decideRefrigerator` reads it to disclose, via the existing `reasons.caution()` mechanism
+ * (ADR-187 — cautions are NEVER dropped for space, always reach the customer), that Tawveeri
+ * cannot verify lock availability — never to filter, never to silently imply satisfaction.
+ * Same negative-before-positive check order as `parseAcInverterPref` above, but the negation
+ * here is Arabic SUBJECT-FIRST ("القفل مو ضروري" — lock, [is] not necessary), the mirror image
+ * of `polarityBeforeMatch`'s before-only window (built for "مو مهم القفل"-shaped sentences) —
+ * so this is a small dedicated check rather than a forced fit into the shared priority-negation
+ * system, same reasoning `parseAcInverterPref` already uses for its own local negation check.
+ */
+function parseLockRequirement(x: string): boolean | undefined {
+  const LOCK_TERM = /قفل|مفتاح|قابل\s*للقفل|lockable|door\s*lock|key\s*lock/;
+  if (!LOCK_TERM.test(x)) return undefined;
+  if (/(?:قفل|مفتاح)\S{0,3}\s*(?:مو|مب|مش|غير)\s*(?:ضروري|ضرورية|مهم|مهمة|لازم)|بدون\s*قفل|no\s*lock|without\s*(?:a\s*)?lock/.test(x)) return false;
+  return true;
+}
+
+/**
  * Washer loading configuration, stated explicitly ("أمامية"/"علوية" or English equivalents).
  * SAME canonical vocabulary `scripts/tps-plugins/washing_machine/parser.ts`'s own
  * `extractType` writes to `attributes.washer_type`.
@@ -617,6 +645,20 @@ const PRIORITY_KEYWORDS: [string, RegExp][] = [
   // «عائلة» had the same ة-only gap «جامعة» did above (found in the same audit pass) — «عائله»
   // is the equally common ه-ending typed form.
   ["large", /كبير|كبيرة|عائلة|عائله|عائلية|عائليه|large|family|big/],
+  // MEASURED REAL-SHOPPER DEFECT (2026-09-05, Shopper Constraint Truth mission — «أبي ثلاجة
+  // صغيرة وقفلها مهم»): «صغيرة»/«صغير» had no landing spot anywhere in this list — the exact
+  // same gap class as every other missing priority documented above, just never hit until a
+  // real shopper's own words exposed it. Live-verified: `canonical_products` for
+  // `category=refrigerator` has 100% `capacity_liters` coverage (484/484) with a real,
+  // measurable compact cluster (77/484, ~16%, under 200L) distinct from the 350L+ majority
+  // (318/484, ~66%) — real production data, not a guessed threshold, justifies treating
+  // "small" as a genuine, scoreable signal for this category (see `decideRefrigerator`'s own
+  // wantSmall branch). Kept in PRIORITY_KEYWORDS (not fridge_type — see that field's own
+  // comment above on why a size adjective must never become a hard type restriction).
+  // `(?!\s*-?\s*led)`/negative lookahead on «ميني»: TV_PANEL_PATTERNS' `mini_led` ("mini LED",
+  // a panel TECHNOLOGY, not a size preference) shares the same substring — "تلفزيون mini led"
+  // must never also register a fabricated "small" size priority.
+  ["small", /صغير|صغيرة|صغيره|ميني(?!\s*ليد)|مصغر|mini(?!\s*-?\s*led)|compact|\bsmall\b/],
   // MEASURED STRUCTURAL GAP (2026-08-11, Saudi Shopper Language & Demand Discovery mission —
   // repo audit + a new evaluation corpus, scripts/shopper-demand-eval/): "quality/reasonable
   // price" ("رخيص وجودته عاليه", "سعره كويس/مناسب") appeared in a majority of the founder's
@@ -917,6 +959,7 @@ export function parseShoppingTask(text: string): ParsedTask {
   // inert, not a leak.
   const wants_inverter = parseAcInverterPref(x);
   const fridge_type = parseFridgeType(x);
+  const wants_lock = parseLockRequirement(x);
   const washer_type = parseWasherType(x);
   const tv_panel = parseTvPanel(x);
   const room_size_m2 = parseRoomSize(x);
@@ -942,7 +985,7 @@ export function parseShoppingTask(text: string): ParsedTask {
 
   const task: ParsedTask = {
     category: category ?? "",
-    fuel_type, ac_type, wants_inverter, fridge_type, washer_type, tv_panel,
+    fuel_type, ac_type, wants_inverter, fridge_type, wants_lock, washer_type, tv_panel,
     room_size_m2, city, priorities: priorities.length ? priorities : undefined,
     budget_total: budget_total ?? undefined,
     budget_min: budget_min ?? undefined,

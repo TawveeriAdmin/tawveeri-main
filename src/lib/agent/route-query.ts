@@ -106,6 +106,14 @@ function needSignals(task: ParsedTask): string[] {
   // signal (same mechanism as `wants_recommendation`, never a ranking input).
   if (task.indecision_signal) signals.push('indecision_signal');
   if (task.replacement_timing_signal) signals.push('replacement_timing_signal');
+  // Shopper Constraint Truth mission (2026-09-05): «أبي ثلاجة صغيرة وقفلها مهم» named a real
+  // category with an explicit, important condition, but "قفل" itself is not a describable
+  // structured field the way budget/room_size are — only `wants_lock === true` (the shopper
+  // actively wants it) earns a seat at the advisory table, so `decideRefrigerator` gets the
+  // chance to disclose that Tawveeri cannot verify it (never silently drop it to a bare
+  // browse). `wants_lock === false` (explicitly not required) correctly earns nothing here —
+  // there is nothing to disclose.
+  if (task.wants_lock === true) signals.push('wants_lock');
   return signals;
 }
 

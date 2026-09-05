@@ -60,9 +60,14 @@ export interface SmartPick {
     factors?: TrustFactor[];
     conditionWarning?: { ar: string; en: string } | null;
   } | null;
-  /** Decision Card v1, ruling B1 (2026-08-22) — TV only. Present when a requested screen size
-   *  doesn't match this pick's own. Disclosure only; never changes which product this is. */
-  size_mismatch?: { requested: number; actual: number; comparator?: "eq" | "gt" | "gte" | "lt" | "lte" } | null;
+  /** Decision Card v1, ruling B1 (2026-08-22) — originally TV only; extended (Shopper
+   *  Constraint Truth mission, 2026-09-05) to refrigerator capacity (`unit: 'liter'`).
+   *  Present when a requested size/capacity doesn't match this pick's own. Disclosure only;
+   *  never changes which product this is. `unit` defaults to inch (TV) when absent. */
+  size_mismatch?: { requested: number; actual: number; comparator?: "eq" | "gt" | "gte" | "lt" | "lte"; unit?: "inch" | "liter" } | null;
+  /** Shopper Constraint Truth mission (2026-09-05) — refrigerator only. True when the shopper
+   *  asked for a lock and Tawveeri cannot verify it for this pick. Disclosure only. */
+  lock_unverifiable?: boolean;
 }
 
 /**
@@ -140,9 +145,21 @@ export function SmartPickCard({ pick, locale }: { pick: SmartPick; locale: strin
           {mismatch && (
             <p className="mt-0.5 flex items-center gap-1 text-xs font-medium text-warning-700 dark:text-warning-400" data-testid="size-mismatch-line">
               <CircleAlert className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              {mismatch.unit === 'liter'
+                ? (isRTL
+                    ? `طلبت سعة حول ${mismatch.requested} لتر — هذه الثلاجة ${mismatch.actual} لتر`
+                    : `You asked for around ${mismatch.requested}L — this refrigerator is ${mismatch.actual}L`)
+                : (isRTL
+                    ? `طلبت ${mismatch.requested} بوصة — هذا المنتج ${mismatch.actual} بوصة`
+                    : `You asked for ${mismatch.requested}" — this is a ${mismatch.actual}" TV`)}
+            </p>
+          )}
+          {pick.lock_unverifiable && (
+            <p className="mt-0.5 flex items-center gap-1 text-xs font-medium text-warning-700 dark:text-warning-400" data-testid="lock-unverifiable-line">
+              <CircleAlert className="h-3.5 w-3.5 shrink-0" aria-hidden />
               {isRTL
-                ? `طلبت ${mismatch.requested} بوصة — هذا المنتج ${mismatch.actual} بوصة`
-                : `You asked for ${mismatch.requested}" — this is a ${mismatch.actual}" TV`}
+                ? 'لا تتوفر لدينا بيانات موثوقة عن وجود قفل — تحقق من مواصفات المنتج مباشرة'
+                : 'We cannot verify lock availability for this refrigerator — check the product specs directly'}
             </p>
           )}
           <p className="mt-0.5 text-sm text-on-surface-variant">{pick.reason_ar}</p>

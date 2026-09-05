@@ -65,6 +65,30 @@ describe('routeQuery — indecision and replacement-timing route to advisory, no
   });
 });
 
+// Shopper Constraint Truth mission (2026-09-05) — real incident: «أبي ثلاجة صغيرة وقفلها مهم».
+// Before this fix, this exact query fell to rule 5 ("category only — a browse") because
+// neither "صغيرة" nor "قفل" registered as any need signal at all. See ADR-290.
+describe('routeQuery — refrigerator size/lock constraints route to advisory, not a bare browse (ADR-290)', () => {
+  it('«أبي ثلاجة صغيرة وقفلها مهم» routes to advisory carrying both signals', () => {
+    const route = routeQuery('أبي ثلاجة صغيرة وقفلها مهم');
+    expect(route.mode).toBe('advisory');
+    expect(route.reason).toContain('wants_lock');
+    expect(route.reason).toMatch(/priorities:.*small/);
+  });
+  it('«ثلاجة صغيرة» alone (no lock) still routes to advisory via the "small" priority', () => {
+    const route = routeQuery('ثلاجة صغيرة');
+    expect(route.mode).toBe('advisory');
+  });
+  it('«القفل مو ضروري» (explicitly not required) does not force advisory routing by itself', () => {
+    // wants_lock=false carries no signal — only real, still-open questions earn a seat.
+    const route = routeQuery('ثلاجة رخيصة والقفل مو ضروري');
+    expect(route.reason).not.toContain('wants_lock');
+  });
+  it('does not affect an ordinary bare refrigerator browse (no regression)', () => {
+    expect(routeQuery('ثلاجة').mode).toBe('retrieval');
+  });
+});
+
 describe('routeQuery — need-based queries reach the reasoning engine', () => {
   const advisory: Array<[string, string]> = [
     ['مكيف لغرفة 30 متر هادئ وموفر للكهرباء تحت 4000', 'AC with room size, priorities and budget'],

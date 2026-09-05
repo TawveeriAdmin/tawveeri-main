@@ -556,6 +556,70 @@ describe("Task parser — refrigerator type regression", () => {
   });
 });
 
+// Shopper Constraint Truth mission (2026-09-05) — real incident: «أبي ثلاجة صغيرة وقفلها مهم».
+// The CORE PRODUCT INVARIANT this corpus proves: category, size, and lock survive parsing for
+// every real Saudi phrasing variant of the incident, with correct strength/negation handling.
+// See ADR-290 for the full incident record.
+describe("Task parser — refrigerator constraint-truth corpus (real shopper phrasing, 2026-09-05)", () => {
+  it("A: «أبي ثلاجة صغيرة وقفلها مهم» — category, small, and lock=true all survive together", () => {
+    const t = parseShoppingTask("أبي ثلاجة صغيرة وقفلها مهم");
+    expect(t.category).toBe("refrigerator");
+    expect(t.priorities).toContain("small");
+    expect(t.wants_lock).toBe(true);
+  });
+
+  it("B: «أحتاج ثلاجة صغيرة فيها مفتاح» — «مفتاح» alone is recognized as the lock signal", () => {
+    const t = parseShoppingTask("أحتاج ثلاجة صغيرة فيها مفتاح");
+    expect(t.category).toBe("refrigerator");
+    expect(t.priorities).toContain("small");
+    expect(t.wants_lock).toBe(true);
+  });
+
+  it("C: «أبي ثلاجة صغيرة للغرفة وأهم شيء تكون بقفل» — room_type, small, and lock all survive", () => {
+    const t = parseShoppingTask("أبي ثلاجة صغيرة للغرفة وأهم شيء تكون بقفل");
+    expect(t.category).toBe("refrigerator");
+    expect(t.priorities).toContain("small");
+    expect(t.wants_lock).toBe(true);
+  });
+
+  it("D: «أبي ثلاجة 50 لتر تقريباً وفيها قفل» — explicit liters AND lock both survive", () => {
+    const t = parseShoppingTask("أبي ثلاجة 50 لتر تقريباً وفيها قفل");
+    expect(t.category).toBe("refrigerator");
+    expect(t.capacity_liters_requested).toBe(50);
+    expect(t.wants_lock).toBe(true);
+  });
+
+  it("E: «ثلاجة صغيرة وقفلها ضروري» — «ضروري» (stronger register) still resolves lock=true", () => {
+    const t = parseShoppingTask("ثلاجة صغيرة وقفلها ضروري");
+    expect(t.priorities).toContain("small");
+    expect(t.wants_lock).toBe(true);
+  });
+
+  it("F: «أبي ثلاجة صغيرة بس القفل مو ضروري» — explicit negation resolves lock=false, small still survives", () => {
+    const t = parseShoppingTask("أبي ثلاجة صغيرة بس القفل مو ضروري");
+    expect(t.priorities).toContain("small");
+    expect(t.wants_lock).toBe(false);
+  });
+
+  it("G: «أبي ثلاجة صغيرة ورخيصة» — no lock mentioned at all stays undefined, never fabricated", () => {
+    const t = parseShoppingTask("أبي ثلاجة صغيرة ورخيصة");
+    expect(t.priorities).toContain("small");
+    expect(t.wants_lock).toBeUndefined();
+  });
+
+  it("H: «أبي ثلاجة بقفل» — lock alone, with no size word, still resolves without requiring size", () => {
+    const t = parseShoppingTask("أبي ثلاجة بقفل");
+    expect(t.category).toBe("refrigerator");
+    expect(t.wants_lock).toBe(true);
+    expect(t.priorities ?? []).not.toContain("small");
+  });
+
+  it('does not fabricate "small" from an unrelated mini-LED TV mention', () => {
+    const t = parseShoppingTask("تلفزيون mini led رخيص");
+    expect(t.priorities ?? []).not.toContain("small");
+  });
+});
+
 describe("Task parser — washing machine type regression", () => {
   it("extracts washer_type for front/top load, Arabic and English", () => {
     expect(parseShoppingTask("غسالة أمامية رخيصة").washer_type).toBe("front_load");

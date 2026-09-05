@@ -118,10 +118,18 @@ type DecisionLayer = {
     // than implicit. See buildDecisionLayer().
     trust: TrustAssessment;
     // Decision Card v1, ruling B1 (2026-08-22) — "apply the same patch to the currently-live
-    // card". TV only, disclosure-only: present when a requested screen size (parsed from the
-    // raw query) doesn't match this pick's own screen size (parsed from its title). Never
-    // changes which product is `best` — see buildDecisionLayer().
-    size_mismatch?: { requested: number; actual: number; comparator?: "eq" | "gt" | "gte" | "lt" | "lte" } | null;
+    // card". Originally TV-only (screen inches); extended (Shopper Constraint Truth mission,
+    // 2026-09-05) to refrigerator capacity in liters — `unit` tells the client which label to
+    // render (defaults to "inch" when absent, so every existing TV response is byte-for-byte
+    // unchanged). Disclosure-only: present when a requested size/capacity (parsed from the raw
+    // query) doesn't match this pick's own. Never changes which product is `best` — see
+    // buildDecisionLayer().
+    size_mismatch?: { requested: number; actual: number; comparator?: "eq" | "gt" | "gte" | "lt" | "lte"; unit?: "inch" | "liter" } | null;
+    // LOCK/KEY DISCLOSURE (Shopper Constraint Truth mission, 2026-09-05) — refrigerator only.
+    // true when the shopper asked for a lock and Tawveeri cannot verify it for this pick (see
+    // `wants_lock`'s own doc comment, decision-engine.ts, for why this can never be a
+    // structured/filterable attribute). Never changes which product is `best`.
+    lock_unverifiable?: boolean;
   } | null;
   topMatches: DecisionTopMatch[];
 };
@@ -1124,15 +1132,72 @@ const PREFERENCE_WRAPPER = new Set<string>([
   'portable', 'lightweight', 'travel', 'large', 'family', 'big', 'powerful', 'strong',
   'study', 'studying', 'programming', 'coding', 'drawing', 'sketching', 'photography', 'excellent', 'great',
   'people', 'person', 'members',
+  // MEASURED REAL-SHOPPER DEFECT (2026-09-05, Shopper Constraint Truth mission — «أبي ثلاجة
+  // صغيرة وقفلها مهم»): same class of collapse as every entry above, live-verified on
+  // production before this fix — «ثلاجة» alone → 48 results, «ثلاجة صغيرة» → 1, «ثلاجة
+  // وقفلها مهم» → 0 with `categoryEnforcedZero`. «صغير»/«صغيره» is `parsePriorities`'s new
+  // "small" key (task-parser.ts — kept in sync per this Set's own governing comment above);
+  // «قفل»/«مفتاح» is not a `parsePriorities` key at all (see `parseLockRequirement`'s own doc
+  // comment — deliberately a disclosure-only signal, never a ranking/filter input), but the
+  // SAME "constraint language is not product language" rule applies: no refrigerator title
+  // says «قفل», so the word must never become a REQUIRED literal relevance group either way.
+  'صغير', 'صغيره', 'ميني', 'مصغر', 'مصغره', 'mini', 'compact', 'small',
+  'قفل', 'مفتاح', 'lock', 'lockable', 'key',
+  // «بقفل» ("with a lock") LIVE-VERIFIED (2026-09-05, local pre-deploy check): the possessive-
+  // suffix and و-proclitic generalizations already handled «قفلها»/«وقفلها» correctly (they
+  // reduce to the bare «قفل» entry above), but this file deliberately does NOT generalize
+  // ب-stripping the way it generalizes و/ل/لل/ال (see `isWrapperWord`'s own comment on why —
+  // «ب» prefixes far too unpredictably, e.g. it is the FIRST LETTER of real product words, not
+  // just a preposition, so a blind strip risks false matches) — same reasoning
+  // BUDGET_WRAPPER's own «بميزانيه» takes as an explicit compound entry rather than stripped
+  // from «ميزانيه». Followed here identically for exactly the same class of word.
+  'بقفل',
+  // «مهم»/«ضروري»/«لازم» (important/necessary/mandatory — the STRENGTH words this mission's
+  // own examples use: «قفلها مهم», «قفلها ضروري») LIVE-VERIFIED collapsing on their own, even
+  // paired with an otherwise-fine query («ثلاجة مهم» → 0, «ثلاجة ضروري» → 0): generic
+  // importance/necessity qualifiers, exactly the same class as «مميز»/«ممتاز» above — no
+  // product title states its own importance.
+  'مهم', 'مهمه', 'اهم', 'ضروري', 'ضروريه', 'لازم', 'important', 'necessary', 'required', 'essential',
+  // «تقريباً»/«تقريبا» ("approximately" — regression case D: «أبي ثلاجة 50 لتر تقريباً وفيها
+  // قفل») LIVE-VERIFIED collapsing a query on its own: a hedge/approximation qualifier on a
+  // NUMBER, same class as BUDGET_WRAPPER's «تحت»/«اقل» qualifiers on a budget number — never
+  // product-title text.
+  'تقريبا', 'تقريباً', 'approximately', 'roughly', 'about',
+  // «فيها»/«بها» ("in it"/"has it" — an existential-predicate construction used to attach ANY
+  // stated feature to a category noun: «ثلاجة فيها قفل», and just as easily «جوال فيها كاميرا
+  // كبيرة» for an unrelated category) LIVE-VERIFIED collapsing on its own (2026-09-05): a
+  // GENERAL sentence-structure gap, not specific to refrigerators or locks. Deliberately placed
+  // in THIS Set, not STOPWORDS: `isWrapperWord`'s STOPWORDS check runs on the raw word only
+  // (no و-proclitic stripping), while BUDGET_WRAPPER/PREFERENCE_WRAPPER are the two sets its
+  // `bases` (original + و-stripped) are checked against — «في» alone is already a STOPWORD,
+  // but «فيها» is 4 characters, one short of `possessiveSuffixCandidates`'s own length guard
+  // (`w.length > suf.length + 2`), so the possessive «ها» is never stripped off it either way —
+  // an explicit compound entry here, matching «بميزانيه»'s own precedent, is the correct fix,
+  // not a widened length guard (which risks other short words stripping unsafely).
+  'فيها', 'بها',
 ]);
 
 const STOPWORDS = new Set<string>([
   'افضل', 'احسن', 'ارخص', 'اغلى', 'رخيص', 'غالي', 'الافضل', 'الارخص',
   'جديد', 'الجديد', 'قديم', 'عرض', 'عروض', 'سعر', 'اسعار', 'الاسعار',
   'بكم', 'كم', 'في', 'من', 'على', 'مع', 'الى', 'او', 'و', 'ابي', 'ابغى', 'اريد', 'ودي',
+  // «أحتاج»/«احتاج» ("I need") LIVE-VERIFIED collapsing on its own (2026-09-05, Shopper
+  // Constraint Truth mission — «أحتاج ثلاجة صغيرة فيها مفتاح»): `task-parser.ts`'s own
+  // `DECLARATIVE_WANT` list already recognizes this exact want-verb alongside «ابي»/«ابغى»/
+  // «اريد»/«ودي» above — it was simply never added here when those were.
+  'احتاج',
   // Question/negation particles («وش يبي», «ما يتعدى» — MEASURED 2026-08-09: «وش افضل
   // مكيف لغرفة 30 متر وميزانيتي 4000» still collapsed with «وش» unstripped).
   'وش', 'ما', 'لا',
+  // «شيء»/«شي» ("thing") and «تكون» ("be"/"is" — a copula verb, e.g. «أهم شيء تكون بقفل»)
+  // LIVE-VERIFIED collapsing on their own (2026-09-05, Shopper Constraint Truth mission):
+  // generic filler noun/verb, never product-title text — same class as «وش»/«ما» above.
+  'شيء', 'شي', 'تكون',
+  // «بس» ("but"/"only" — a contrast/discourse particle, e.g. «أبي ثلاجة صغيرة بس القفل مو
+  // ضروري») LIVE-VERIFIED collapsing a query on its own (2026-09-05, Shopper Constraint Truth
+  // mission pre-deploy check) — same class as «وش»/«ما» above, a sentence-structure word, never
+  // product-title text.
+  'بس',
   'best', 'cheapest', 'cheap', 'price', 'prices', 'new', 'offer', 'offers', 'deal', 'deals',
   'the', 'a', 'an', 'in', 'of', 'for', 'with', 'and', 'or', 'want',
   ...BUDGET_WRAPPER,
@@ -1503,7 +1568,7 @@ function buildDecisionLayer(
   // purely on the query itself naming a screen size — reusing `extractSpecsFromTitle`'s
   // existing inch regex (the SAME one every product title is already parsed with) is why
   // this only ever fires for a size-shaped query, with no separate "is this a TV" check.
-  let sizeMismatch: { requested: number; actual: number; comparator?: "eq" | "gt" | "gte" | "lt" | "lte" } | null = null;
+  let sizeMismatch: { requested: number; actual: number; comparator?: "eq" | "gt" | "gte" | "lt" | "lte"; unit?: "inch" | "liter" } | null = null;
   let sizeUnverifiable = false;
   if (best) {
     const requestedSizeRaw = extractSpecsFromTitle(rawQuery).screen_size;
@@ -1519,6 +1584,36 @@ function buildDecisionLayer(
       if (actualSize == null) sizeUnverifiable = true; // fail closed — see B1
       else if (!sizeSatisfiesComparator(actualSize, comparator, requestedSize)) {
         sizeMismatch = { requested: requestedSize, actual: actualSize, comparator };
+      }
+    }
+  }
+
+  // REFRIGERATOR SIZE-MISMATCH DISCLOSURE (Shopper Constraint Truth mission, 2026-09-05 — real
+  // incident: «أبي ثلاجة صغيرة وقفلها مهم»). SAME B1 pattern as TV screen-size above, applied to
+  // the ONE decision surface that fix did not reach: `decideRefrigerator` (the rich advisory
+  // engine) already handles this, but `buildDecisionLayer`'s OWN separate "Smart Pick" — built
+  // straight from ranked search results, never routed through `decideRefrigerator` — confidently
+  // recommended a live 510L side_by_side unit for exactly this query with zero disclosure,
+  // LIVE-VERIFIED before this fix (local pre-deploy check). Reuses REAL structured data, not new
+  // title-regex NLP: `tps_identity_key` for this category is generated at ingest as the literal
+  // string `brand|fridge_type|capacity_liters|inverter` (`scripts/tps-plugins/refrigerator/
+  // identity.ts`'s own `buildIdentityKey`) — capacity is parsed from the KEY, not guessed from
+  // title text, so this is exactly as reliable as the canonical data itself (100% coverage,
+  // live-verified: 484/484 refrigerators in `canonical_products`).
+  const parsedForConstraintChecks = rawQuery ? parseShoppingTask(rawQuery) : null;
+  if (best && best.tps_identity_key && !sizeMismatch && !sizeUnverifiable && parsedForConstraintChecks?.category === 'refrigerator') {
+    const parsed = parsedForConstraintChecks;
+    const wantsSmallFridge = (parsed.priorities ?? []).includes('small');
+    const requestedLiters = parsed.capacity_liters_requested ?? (wantsSmallFridge ? 200 : null);
+    if (requestedLiters != null) {
+      const keyParts = best.tps_identity_key.split('|');
+      const actualLiters = keyParts.length === 4 ? Number(keyParts[2]) : NaN;
+      if (!Number.isFinite(actualLiters)) {
+        sizeUnverifiable = true; // fail closed — same rule as B1: unknown beats a confident pick
+      } else {
+        const diff = Math.abs(actualLiters - requestedLiters);
+        const mismatched = parsed.capacity_liters_requested != null ? diff > 100 : actualLiters >= 350;
+        if (mismatched) sizeMismatch = { requested: requestedLiters, actual: actualLiters, comparator: wantsSmallFridge && parsed.capacity_liters_requested == null ? 'lte' : 'eq', unit: 'liter' };
       }
     }
   }
@@ -1553,6 +1648,11 @@ function buildDecisionLayer(
           })(),
         }),
         size_mismatch: sizeMismatch,
+        // LOCK/KEY DISCLOSURE (Shopper Constraint Truth mission, 2026-09-05) — same evidence
+        // and reasoning as `decideRefrigerator`'s own disclosure (`wants_lock`'s doc comment,
+        // decision-engine.ts): never a structured/filterable attribute, so this is a plain
+        // disclosure flag the client renders its own copy for — same pattern as `size_mismatch`.
+        lock_unverifiable: parsedForConstraintChecks?.category === 'refrigerator' && parsedForConstraintChecks.wants_lock === true,
       }
     : null;
   if (sizeUnverifiable && best) {

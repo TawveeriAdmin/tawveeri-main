@@ -96,3 +96,49 @@ describe('SmartPickCard — decision-confidence disclosure', () => {
     expect(screen.getByTestId('pick-disclosure-line')).toHaveTextContent('renewed, not new');
   });
 });
+
+// Shopper Constraint Truth mission (2026-09-05) — real incident: «أبي ثلاجة صغيرة وقفلها مهم».
+// This surface (`/api/search`'s own Smart Pick, built straight from ranked results, never
+// routed through `decideRefrigerator`) is the ONE decision surface size/lock silently reached
+// a confident pick with zero disclosure before this fix — live-verified: a 510L side_by_side
+// unit was recommended for exactly this query, no caveat rendered. See ADR-290.
+describe('SmartPickCard — refrigerator size/lock disclosure (ADR-290)', () => {
+  it('renders the liter-unit size-mismatch line, distinct from the TV inch phrasing', () => {
+    render(<SmartPickCard locale="ar" pick={{
+      ...basePick,
+      title: 'ثلاجة midea side by side 510 لتر',
+      size_mismatch: { requested: 200, actual: 510, comparator: 'lte', unit: 'liter' },
+    }} />);
+    const line = screen.getByTestId('size-mismatch-line');
+    expect(line).toHaveTextContent('لتر');
+    expect(line).not.toHaveTextContent('بوصة');
+  });
+
+  it('TV size-mismatch (no unit field) keeps the original inch phrasing — no regression', () => {
+    render(<SmartPickCard locale="ar" pick={{
+      ...basePick,
+      size_mismatch: { requested: 120, actual: 55, comparator: 'eq' },
+    }} />);
+    expect(screen.getByTestId('size-mismatch-line')).toHaveTextContent('بوصة');
+  });
+
+  it('renders the lock-unverifiable line when the shopper asked for a lock', () => {
+    render(<SmartPickCard locale="ar" pick={{ ...basePick, lock_unverifiable: true }} />);
+    expect(screen.getByTestId('lock-unverifiable-line')).toHaveTextContent('قفل');
+  });
+
+  it('renders no lock line at all when lock was never asked about', () => {
+    render(<SmartPickCard locale="ar" pick={basePick} />);
+    expect(screen.queryByTestId('lock-unverifiable-line')).not.toBeInTheDocument();
+  });
+
+  it('both the size-mismatch and lock lines render together — a shopper never sees only one of two lost constraints', () => {
+    render(<SmartPickCard locale="ar" pick={{
+      ...basePick,
+      size_mismatch: { requested: 200, actual: 510, comparator: 'lte', unit: 'liter' },
+      lock_unverifiable: true,
+    }} />);
+    expect(screen.getByTestId('size-mismatch-line')).toBeInTheDocument();
+    expect(screen.getByTestId('lock-unverifiable-line')).toBeInTheDocument();
+  });
+});

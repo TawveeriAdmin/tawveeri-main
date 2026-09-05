@@ -588,6 +588,95 @@ describe("Refrigerator type gate — explicit configuration must restrict, never
   });
 });
 
+// Shopper Constraint Truth mission (2026-09-05) — real incident: «أبي ثلاجة صغيرة وقفلها مهم».
+// This is the CORE PRODUCT INVARIANT regression: an explicit shopper constraint must never
+// silently disappear, and an obviously-wrong candidate (a huge side_by_side for "small") must
+// never rank as if it satisfied the request. See ADR-290 for the full incident/root-cause/fix
+// record.
+describe("Refrigerator size truth — «صغيرة» must never be silently dropped or satisfied by a large unit (regression)", () => {
+  const mixedRows = [
+    fridge({ type: "single_door", liters: 90, inverter: true, price: 900, stores: 2, id: "compact-90" }),
+    fridge({ type: "single_door", liters: 138, inverter: true, price: 1100, stores: 2, id: "compact-138" }),
+    fridge({ type: "top_mount", liters: 410, inverter: true, price: 1900, stores: 2, id: "midsize-410" }),
+    fridge({ type: "side_by_side", liters: 620, inverter: true, price: 5200, stores: 2, id: "huge-620" }),
+  ];
+
+  it('"small" priority ranks a genuinely compact unit first, never the obviously large side_by_side', () => {
+    const task: ShoppingTask = { category: "refrigerator", priorities: ["small"] };
+    const recs = decideRefrigerator(task, mixedRows);
+    expect(recs[0].canonical_id).not.toBe("huge-620");
+    expect(["compact-90", "compact-138"]).toContain(recs[0].canonical_id);
+  });
+
+  it('the 620L unit carries an explicit, visible caution when "small" was requested — never silent, never implied as satisfying it', () => {
+    const task: ShoppingTask = { category: "refrigerator", priorities: ["small"] };
+    const recs = decideRefrigerator(task, mixedRows);
+    const huge = recs.find((r) => r.canonical_id === "huge-620")!;
+    expect(huge.reason_kinds).toContain("caution");
+    const cautionText = huge.reasons_ar[huge.reason_kinds.indexOf("caution")];
+    expect(cautionText).toMatch(/كبيرة|لا تناسب/);
+    // ADR-187: a caution is NEVER dropped from the headline the shopper actually reads.
+    expect(huge.headline_reasons.some((i) => huge.reason_kinds[i] === "caution")).toBe(true);
+  });
+
+  it('without "small", the same rows do not carry a small-mismatch caution (no fabricated concern)', () => {
+    const task: ShoppingTask = { category: "refrigerator" };
+    const recs = decideRefrigerator(task, mixedRows);
+    const huge = recs.find((r) => r.canonical_id === "huge-620")!;
+    expect(huge.reasons_ar.some((t) => t.includes("لا تناسب طلبك بثلاجة صغيرة"))).toBe(false);
+  });
+
+  it('explicit liters ("50 لتر تقريباً") ranks the closest real capacity first — a stated number is more specific than the "small" word', () => {
+    const task: ShoppingTask = { category: "refrigerator", capacity_liters_requested: 90 };
+    const recs = decideRefrigerator(task, mixedRows);
+    expect(recs[0].canonical_id).toBe("compact-90");
+    expect(recs[0].reasons_ar.some((t) => t.includes("قريبة من السعة التي طلبتها"))).toBe(true);
+  });
+
+  it('a far-off explicit liter request against only large units produces an honest caution, never an implied match', () => {
+    const task: ShoppingTask = { category: "refrigerator", capacity_liters_requested: 90 };
+    const recs = decideRefrigerator(task, [mixedRows[2], mixedRows[3]]);
+    expect(recs.every((r) => r.reason_kinds.includes("caution"))).toBe(true);
+  });
+});
+
+describe("Refrigerator lock/key requirement — unsupported attribute must be disclosed, never silently satisfied (regression)", () => {
+  const rows = [
+    fridge({ type: "single_door", liters: 90, inverter: true, price: 900, stores: 2, id: "f1" }),
+    fridge({ type: "top_mount", liters: 410, inverter: true, price: 1900, stores: 2, id: "f2" }),
+  ];
+
+  it('wants_lock=true discloses inability to verify on EVERY row — an unsupported attribute is never converted into a positive claim', () => {
+    const task: ShoppingTask = { category: "refrigerator", wants_lock: true };
+    const recs = decideRefrigerator(task, rows);
+    expect(recs.every((r) => r.reasons_ar.some((t) => t.includes("لا تتوفر لدينا بيانات موثوقة عن وجود قفل")))).toBe(true);
+    // Never a filter: both rows still returned.
+    expect(recs.length).toBe(rows.length);
+  });
+
+  it('the lock disclosure is a headline caution — surfaced to the shopper, never buried', () => {
+    const task: ShoppingTask = { category: "refrigerator", wants_lock: true };
+    const recs = decideRefrigerator(task, rows);
+    for (const r of recs) {
+      const idx = r.reasons_ar.findIndex((t) => t.includes("لا تتوفر لدينا بيانات موثوقة عن وجود قفل"));
+      expect(r.reason_kinds[idx]).toBe("caution");
+      expect(r.headline_reasons).toContain(idx);
+    }
+  });
+
+  it('wants_lock=false ("القفل مو ضروري") shows no disclosure at all — an explicitly irrelevant constraint must not clutter the result', () => {
+    const task: ShoppingTask = { category: "refrigerator", wants_lock: false };
+    const recs = decideRefrigerator(task, rows);
+    expect(recs.every((r) => !r.reasons_ar.some((t) => t.includes("قفل")))).toBe(true);
+  });
+
+  it('wants_lock undefined (never mentioned) shows no disclosure — this is not a universal caveat', () => {
+    const task: ShoppingTask = { category: "refrigerator" };
+    const recs = decideRefrigerator(task, rows);
+    expect(recs.every((r) => !r.reasons_ar.some((t) => t.includes("قفل")))).toBe(true);
+  });
+});
+
 describe("Washing machine type gate — explicit loading configuration must restrict, never be silently ignored (regression)", () => {
   const rows = [
     washer({ type: "front_load", kg: 8, inverter: true, dryer: false, price: 1500, stores: 2, id: "front-1" }),

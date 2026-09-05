@@ -62,6 +62,19 @@ export interface ShoppingTask {
    */
   fridge_type?: string;
   /**
+   * Lock/key requirement, stated explicitly ("قفلها مهم"/"بقفل"/"lock") and parsed by
+   * `task-parser.ts`'s `parseLockRequirement`. `true` = the shopper wants it (any strength —
+   * "مهم" and "ضروري" both resolve here, since Tawveeri's disclosure behavior is identical
+   * either way: it cannot verify this attribute, so it says so, regardless of how strongly the
+   * shopper asked). `false` = explicitly stated as NOT required ("مو ضروري") — suppresses the
+   * disclosure entirely rather than showing an irrelevant caution. `undefined` = never
+   * mentioned. Deliberately NOT a structured/filterable product attribute — see
+   * `parseLockRequirement`'s own doc comment for the evidence (real but low-coverage,
+   * single-provider-skewed title text; absence of the word is not proof of absence of a lock).
+   * Only meaningful for `refrigerator` — see `decideRefrigerator`'s disclosure.
+   */
+  wants_lock?: boolean;
+  /**
    * Washer loading configuration, stated explicitly ("أمامية"/"علوية" or English
    * equivalents), parsed by `task-parser.ts`'s `parseWasherType` into the SAME vocabulary
    * `scripts/tps-plugins/washing_machine/parser.ts` writes to `attributes.washer_type`
@@ -723,6 +736,15 @@ const fridgeTypeLabel = (t: string) => FRIDGE_TYPE_LABELS_AR[t] ?? t;
 export function decideRefrigerator(task: ShoppingTask, rows: CanonicalRow[]): Recommendation[] {
   const pr = task.priorities ?? [];
   const wantLowElec = pr.includes("low_electricity"), wantLarge = pr.includes("large") || /كبير|عائلة|large|family/.test((task as { parsed_from_text?: string }).parsed_from_text ?? "");
+  // MEASURED REAL-SHOPPER DEFECT (2026-09-05, Shopper Constraint Truth mission — «أبي ثلاجة
+  // صغيرة وقفلها مهم»): no `wantSmall` existed at all — an explicit "small" request scored
+  // IDENTICALLY to no size preference, so an obvious 500L+ side_by_side could rank at or above
+  // a genuinely compact unit with nothing telling the shopper their stated size was ignored.
+  // Threshold is evidence-based, not guessed (Section 8): live `canonical_products` audit,
+  // category=refrigerator, 484/484 rows with real `capacity_liters` — a real compact cluster
+  // (77/484, ~16%, <200L) distinct from the 350L+ majority (318/484, ~66%) justifies <=200L as
+  // "small" and >=350L as "clearly not small" for THIS catalog's actual distribution.
+  const wantSmall = pr.includes("small");
   // FRIDGE TYPE GATE — the shopper named a specific configuration ("ثلاجة باب واحد رخيصة"),
   // parsed by `task-parser.ts`'s `parseFridgeType` into `task.fridge_type`. Same
   // restrict-or-honest-fallback rule as `ac_type` in `decideAc` — MEASURED DEFECT this fixes:
@@ -740,10 +762,43 @@ export function decideRefrigerator(task: ShoppingTask, rows: CanonicalRow[]): Re
       if (type === task.fridge_type) { score += 0.25; reasons.fit(`ثلاجة ${fridgeTypeLabel(task.fridge_type)} — يطابق ما طلبته`); }
       else { score -= 0.25; reasons.caution(`⚠️ لا تتوفر ثلاجة ${fridgeTypeLabel(task.fridge_type)} ضمن النتائج الحالية — هذه ${type ? `ثلاجة ${fridgeTypeLabel(type)}` : "ثلاجة من نوع غير محدد"}`); }
     }
-    if (liters != null) { reasons.identity(`${row.brand ?? ""} ${type ? type.replace(/_/g, " ") : ""} ${liters} لتر`.replace(/\s+/g, " ").trim()); if (wantLarge) { if (liters >= 500) { score += 0.12; reasons.fit(`سعة ${liters} لتر — واسعة للعائلات`); } else reasons.caution(`سعة ${liters} لتر — متوسطة`); } }
+    if (liters != null) {
+      reasons.identity(`${row.brand ?? ""} ${type ? type.replace(/_/g, " ") : ""} ${liters} لتر`.replace(/\s+/g, " ").trim());
+      if (wantLarge) { if (liters >= 500) { score += 0.12; reasons.fit(`سعة ${liters} لتر — واسعة للعائلات`); } else reasons.caution(`سعة ${liters} لتر — متوسطة`); }
+      else if (wantSmall) {
+        if (liters <= 200) { score += 0.12; reasons.fit(`سعة ${liters} لتر — ثلاجة صغيرة كما طلبت`); }
+        else if (liters >= 350) { score -= 0.15; reasons.caution(`⚠️ سعة ${liters} لتر — كبيرة نسبياً ولا تناسب طلبك بثلاجة صغيرة`); }
+        else reasons.caution(`سعة ${liters} لتر — متوسطة، أكبر من ثلاجة صغيرة نموذجية`);
+      }
+      // MEASURED REAL-SHOPPER DEFECT (2026-09-05, same mission, regression case D — «أبي ثلاجة
+      // 50 لتر تقريباً وفيها قفل»): `capacity_liters_requested` (task-parser.ts's
+      // `parseCapacityLiters`) was already parsed AND already earned this query a seat at the
+      // advisory table (route-query.ts's `needSignals()`, unchanged), but nothing in this
+      // function ever READ it — the exact same "parsed then silently dropped" defect class as
+      // `wantSmall`/`wants_lock` above, just for an explicit number instead of an adjective. An
+      // explicit stated liter figure is more specific than the vaguer small/large priority
+      // words, so this is additive rather than folded into the wantSmall branch above.
+      if (task.capacity_liters_requested) {
+        const diff = Math.abs(liters - task.capacity_liters_requested);
+        if (diff <= 30) { score += 0.15; reasons.fit(`سعة ${liters} لتر — قريبة من السعة التي طلبتها (${task.capacity_liters_requested} لتر)`); }
+        else if (diff > 100) { score -= 0.15; reasons.caution(`⚠️ سعة ${liters} لتر — بعيدة عن السعة التي طلبتها (${task.capacity_liters_requested} لتر)`); }
+        else reasons.caution(`سعة ${liters} لتر — تختلف عن السعة التي طلبتها (${task.capacity_liters_requested} لتر)`);
+      }
+    }
     if (inverter) { score += wantLowElec ? 0.15 : 0.05; if (wantLowElec) reasons.fit("إنفرتر — أوفر في الكهرباء (يعمل ٢٤ ساعة)"); else reasons.spec("إنفرتر — كفاءة أعلى"); }
     else if (wantLowElec) { score -= 0.08; reasons.caution("عادي (غير إنفرتر) — استهلاك أعلى على مدار الساعة"); }
     if (type === "french_door" || type === "side_by_side") reasons.spec(`${type.replace(/_/g, " ")} — تصميم واسع`);
+    // LOCK/KEY DISCLOSURE (Shopper Constraint Truth mission, 2026-09-05) — see `wants_lock`'s
+    // own doc comment on `ShoppingTask` for why this is a disclosure, never a filter. Fires for
+    // EVERY scored row identically (Tawveeri cannot verify this for ANY refrigerator in the
+    // catalog today) — the constraint is preserved and disclosed, never silently dropped, and
+    // never converted into an implied "yes" for whichever row happens to rank first. `false`
+    // (explicitly "not required") intentionally shows nothing — the shopper said it doesn't
+    // matter, so disclosing an irrelevant caution would be the "كثير ومشتته" (too much, and
+    // scattered) failure ADR-187 already exists to prevent.
+    if (task.wants_lock === true) {
+      reasons.caution("⚠️ لا تتوفر لدينا بيانات موثوقة عن وجود قفل لهذه الثلاجة — تحقق من مواصفات المنتج مباشرة قبل الشراء إذا كان القفل مهماً لك");
+    }
     if ((row.store_count ?? 0) >= 2) { score += 0.08; reasons.evidence(`سعر موثوق — متوفر في ${row.store_count} متاجر`); } else reasons.evidence("متوفر في متجر واحد — المقارنة غير متاحة");
     const unit = row.lowest_price; const annual = fridgeAnnualElectricity(liters, inverter);
     const total = unit != null ? Math.round(unit + annual) : null;
