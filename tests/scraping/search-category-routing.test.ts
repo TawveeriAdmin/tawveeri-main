@@ -65,6 +65,8 @@ function detectCanonicalCategories(raw: string): string[] | null {
   ) return null;
   const words = norm.split(/\s+/).filter(Boolean);
   if (words.some((w) => AC_QUERY_WORDS.has(w))) return ['air_conditioner'];
+  // ADR-293: whole-word "tab" (Samsung's own "Galaxy Tab" naming) — mirrors route.ts.
+  if (words.includes('tab')) return ['tablet'];
   for (const entry of CATEGORY_QUERY_TERMS) {
     if (entry.terms.some((t) => norm.includes(normalizeArabic(t)))) return entry.cats;
   }
@@ -97,6 +99,23 @@ describe('category-aware canonical routing', () => {
     expect(detectCanonicalCategories('ثلاجة')).toEqual(['refrigerator']);
     expect(detectCanonicalCategories('طابعة')).toEqual(['printer']);
     expect(detectCanonicalCategories('ميكروويف')).toEqual(['microwave']);
+  });
+
+  // ADR-293 POST-DEPLOYMENT PROOF CLOSURE — LIVE-PROVEN DEFECT: replaying the exact query
+  // "Samsung Galaxy Tab S11 Ultra" against production returned ZERO results even though a
+  // real, active, comparison_eligible canonical_products row already existed for it — because
+  // this function never recognized the English word "tab" (Samsung's own actual product-line
+  // name) as a tablet signal, only "tablet"/"ipad". Silently affected every Galaxy Tab
+  // canonical row, not just this one query.
+  it('recognizes Samsung\'s own "Galaxy Tab" naming as a whole word (ADR-293)', () => {
+    expect(detectCanonicalCategories('Samsung Galaxy Tab S11 Ultra')).toEqual(['tablet']);
+    expect(detectCanonicalCategories('galaxy tab s9')).toEqual(['tablet']);
+  });
+
+  it('does not let bare "tab" false-positive as a substring of unrelated words', () => {
+    // "tab" must only trigger as its own whole word — "table"/"portable" must not match.
+    expect(detectCanonicalCategories('dining table')).not.toEqual(['tablet']);
+    expect(detectCanonicalCategories('portable speaker')).toEqual(['audio']);
   });
   it('prefers the more specific phrase (dishwasher is not a washing machine)', () => {
     expect(detectCanonicalCategories('غسالة صحون')).toEqual(['dishwasher']);

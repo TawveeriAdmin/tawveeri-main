@@ -562,6 +562,19 @@ export function detectCanonicalCategories(raw: string): string[] | null {
   const words = norm.split(/\s+/).filter(Boolean);
   if (words.some((w) => AC_QUERY_WORDS.has(w))) return ['air_conditioner'];
 
+  // ADR-293 POST-DEPLOYMENT PROOF CLOSURE (2026-09-05) — LIVE-PROVEN DEFECT: replaying
+  // "Samsung Galaxy Tab S11 Ultra" (the exact product this mission traced end-to-end; a real,
+  // active, comparison_eligible canonical_products row already existed for it) returned ZERO
+  // results even after the row was confirmed present — because CATEGORY_QUERY_TERMS's tablet
+  // entry only recognizes "tablet"/"ipad" in English and "تابلت"/"تاب"/"ايباد" in Arabic; the
+  // ENGLISH word "tab" — Samsung's own actual product-line name ("Galaxy Tab") — was never in
+  // it, so searchTPSCanonical() was never even called for any query phrased the way Samsung
+  // itself names the product. This silently affected every Galaxy Tab canonical row (10 active
+  // rows confirmed), not just the traced fixture. Whole-word-only, same AC_QUERY_WORDS
+  // precedent above — a bare substring "tab" would false-positive on "table", "portable",
+  // "establish", etc.
+  if (words.includes('tab')) return ['tablet'];
+
   // Cooker's disambiguating signal is a NUMBER ("4 عيون", "5 burners") — not expressible as a
   // literal substring term the generic loop below matches — so, like AC_QUERY_WORDS above, it
   // is checked first. Otherwise "فرن كهربائي 4 عيون" would match oven's own broader "فرن
