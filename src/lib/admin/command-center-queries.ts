@@ -516,6 +516,41 @@ function bySurface(events: UsageEventRow[]): SurfaceRow[] {
 // Fixed at the source of truth: `parseShoppingTask` is the ONE canonical category-derivation
 // function (task-parser.ts, also used by /api/search and the CLI tool) — never re-derive
 // category with a second parser here or anywhere else.
+/**
+ * CANONICAL ANALYTICS CATEGORY (Truth Hardening mission, 2026-09-05). `e.category` (when
+ * recorded) is stamped from `/api/search`'s own `resolvedCategory` field — a SEARCH/FILTER-UI
+ * concept, not the same taxonomy `canonical_products.category` (the TPS layer, joined by
+ * `referredCategoryDemand()` below) uses. PROVEN on live production (read-only join, 2026-09-05):
+ * `canonical_products.category` for phones is `mobile` (249 real rows; ZERO rows are literally
+ * `smartphone`), while `/api/search` returns `resolvedCategory: "smartphone"` for the exact same
+ * shopper intent — and a live 30-day join confirmed 94 real referred clicks correctly landing
+ * under `mobile`. A `topDemand()` row recorded directly as `smartphone` would therefore look up
+ * `referredCategoryDemand`'s `mobile` key and find nothing — a false "0 referred" for a category
+ * that has real referred demand under its OTHER name. Same proven mechanism for `appliance`: the
+ * search route collapses refrigerator/washing_machine/dishwasher/oven/etc. into one coarse
+ * `appliance` bucket for filter-UI purposes, but `canonical_products.category` keeps them
+ * distinct (confirmed: `appliance` IS also a real, separate canonical category for genuinely
+ * miscellaneous small appliances — never a synonym for the specific ones). Never a full alias
+ * table: only these two PROVEN, measured mismatches are corrected here; every other recorded
+ * category value already matches `canonical_products.category` 1:1 (verified against the live
+ * distinct-value list) and is passed through unchanged — do not extend this without the same
+ * proof-first discipline (Section 16: "map only proven equivalents").
+ */
+const RECORDED_CATEGORY_TO_CANONICAL: Record<string, string> = {
+  smartphone: 'mobile',
+};
+// Recorded values that are structurally too coarse to trust at all — always prefer the
+// derived (parseShoppingTask) category instead, which already resolves to the SAME fine-grained
+// vocabulary canonical_products.category uses (refrigerator/washing_machine/dishwasher/…).
+const LOSSY_RECORDED_CATEGORIES = new Set(['appliance']);
+/** Exported so every founder-facing category aggregation (need-signals.ts's `deriveCategory`,
+ *  emerging-language.ts, any future one) applies the SAME two proven mappings — never a second,
+ *  independently-drifting copy of this list. */
+export function canonicalAnalyticsCategory(recorded: string): string | null {
+  if (LOSSY_RECORDED_CATEGORIES.has(recorded)) return null; // signal "don't trust this, re-derive"
+  return RECORDED_CATEGORY_TO_CANONICAL[recorded] ?? recorded;
+}
+
 export function topDemand(
   events: UsageEventRow[],
   limit = 12
@@ -529,7 +564,8 @@ export function topDemand(
   };
   for (const e of events) {
     if (!SEARCH_TYPES.has(e.event_type) && !RESULTS_TYPES.has(e.event_type)) continue;
-    if (e.category) { bump(e.category, 'recorded'); continue; }
+    const canonicalRecorded = e.category ? canonicalAnalyticsCategory(e.category) : null;
+    if (canonicalRecorded) { bump(canonicalRecorded, 'recorded'); continue; }
     let derived: string | null = null;
     try {
       derived = e.query_text ? parseShoppingTask(e.query_text).category || null : null;
@@ -537,6 +573,7 @@ export function topDemand(
       derived = null; // parser failure is never fatal to a founder-facing report — stays uncategorized
     }
     if (derived) bump(derived, 'derived');
+    else if (e.category) bump(e.category, 'recorded'); // lossy recorded value, but no query text to re-derive from — better than dropping it
     else uncategorized++;
   }
   const rows = Array.from(agg.entries()).map(([category, v]) => ({ category, count: v.recorded + v.derived, recorded: v.recorded, derived: v.derived }));

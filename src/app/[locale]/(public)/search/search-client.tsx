@@ -17,6 +17,7 @@ import { askAdvisor, type AdvisorResponse } from '@/lib/agent/advisor-api';
 import { saveJourneyTask } from '@/lib/agent/journey-context';
 import { classifyDecisionIntent } from '@/lib/agent/decision-intent';
 import { isAmbiguousBareOvenQuery } from '@/lib/agent/task-parser';
+import { classifyZeroResult } from '@/lib/agent/catalog-gap';
 import {
   readDecisionState, clearDecisionState, createDecisionState, applyParsedTask,
   applyDecisionResult, saveDecisionState, decisionStateToAdvisorBody, removeConstraint,
@@ -1064,7 +1065,11 @@ export default function SearchClient() {
             meta: { count: total, has_smart_pick: !!decisionCard, mismatch: !!decisionCard?.size_mismatch, stores: data.successfulStores ?? null },
           });
         } else {
-          track('no_answer', { query_text: query.trim(), category: cat, source: 'web', meta: { stores: data.successfulStores ?? null } });
+          // Product Gap connection (ADR-291) — classify WHY, signal only: never a provider call,
+          // never an insert. See classifyZeroResult()'s own doc comment.
+          const categoryEnforcedZero = ((data as unknown) as { categoryEnforcedZero?: boolean }).categoryEnforcedZero ?? false;
+          const zeroReason = classifyZeroResult({ rawQuery: query.trim(), resolvedCategory: resolvedCategoryFromApi, categoryEnforcedZero });
+          track('no_answer', { query_text: query.trim(), category: cat, source: 'web', meta: { stores: data.successfulStores ?? null, zero_reason: zeroReason } });
         }
         // ADR-271 zero-state "closest options" fallback — distinct from no_answer (which
         // fires for ANY zero-result cause). Fires only when the fallback actually surfaced

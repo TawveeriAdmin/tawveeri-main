@@ -195,6 +195,43 @@ describe("topDemand — category derivation (fixes the live-dashboard (unparsed)
   });
 });
 
+// Truth Hardening mission (2026-09-05) — real production defect: canonical_products.category for
+// phones is "mobile" (249 real rows, zero "smartphone"), but /api/search's own resolvedCategory
+// stamps "smartphone" onto usage_events.category. Before this fix, a recorded "smartphone" row
+// would form its OWN separate topDemand bucket that referredCategoryDemand's "mobile" key (94 real
+// referred clicks, live-verified) could never match — a false "0 referred" for a category that has
+// real referred demand under its OTHER name. Same proven mechanism for the coarse "appliance"
+// bucket the search route collapses refrigerator/washing_machine/etc. into. See ADR-291.
+describe("topDemand — canonical analytics category (fixes the smartphone/mobile join gap, ADR-291)", () => {
+  it('a recorded "smartphone" row is folded into "mobile" — never a separate bucket', () => {
+    const events = [ev({ event_type: "search", category: "smartphone", query_text: "ايفون 16" })];
+    expect(topDemand(events)).toEqual([{ category: "mobile", count: 1, recorded: 1, derived: 0 }]);
+  });
+
+  it('a recorded "smartphone" row and a derived "mobile" row (from a null-category event) merge into ONE bucket', () => {
+    const events = [
+      ev({ event_type: "search", category: "smartphone", query_text: "ايفون 16" }),
+      ev({ event_type: "results", category: null, query_text: "جوال سامسونج" }),
+    ];
+    expect(topDemand(events)).toEqual([{ category: "mobile", count: 2, recorded: 1, derived: 1 }]);
+  });
+
+  it('a recorded "appliance" row (search-route\'s coarse filter bucket) re-derives the fine-grained category from the query text instead of trusting the coarse label', () => {
+    const events = [ev({ event_type: "search", category: "appliance", query_text: "ثلاجة صغيرة" })];
+    expect(topDemand(events)).toEqual([{ category: "refrigerator", count: 1, recorded: 0, derived: 1 }]);
+  });
+
+  it('an "appliance"-recorded row with no query text to re-derive from falls back honestly to the recorded value rather than being dropped', () => {
+    const events = [ev({ event_type: "search", category: "appliance", query_text: null })];
+    expect(topDemand(events)).toEqual([{ category: "appliance", count: 1, recorded: 1, derived: 0 }]);
+  });
+
+  it("every OTHER recorded category value is unaffected — no broad alias rewrite", () => {
+    const events = [ev({ event_type: "search", category: "laptop", query_text: "لابتوب" })];
+    expect(topDemand(events)).toEqual([{ category: "laptop", count: 1, recorded: 1, derived: 0 }]);
+  });
+});
+
 // Integrity review (2026-08-30): found auditing real production output that internal-whitespace
 // variants of the exact same query ("تابلت هونر" vs "تابلت  هونر", double space) were counted as
 // two different search terms, understating each one's real count and fragmenting what looked to

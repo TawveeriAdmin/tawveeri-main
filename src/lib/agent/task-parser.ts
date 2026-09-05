@@ -367,7 +367,20 @@ function parseBudget(x: string): number | null | undefined {
   // «(?:الى|إلى|to)?» bridge only handled an absolute-target phrasing («ميزانية إلى 4000»),
   // not an approximator between the marker and the number. «حول»/«تقريبا»/"around"/"about"
   // is the same class of gap, added as a second optional bridge word.
-  const m = x.match(/(?:تحت|أقل من|اقل من|ميزانية|ميزانيتي|في حدود|بحدود|حدود|يتعدى|under|below|budget|max)\s*(?:الى|إلى|to|حول|تقريبا|تقريباً|around|about)?\s*([\d,]{3,7})/) ||
+  //
+  // MEASURED REAL-SHOPPER DEFECT (2026-09-05, Truth Hardening mission — «أبي جوال بحد أقصى
+  // 2000»): «بحد أقصى»/«بحد اقصى» ("at a maximum of") is arguably the single most standard
+  // MSA/Gulf ceiling phrasing — more explicit than «بحدود» ("in the vicinity of", already
+  // handled) — yet was never in this list at all. Live-verified cross-category before this
+  // fix: mobile/laptop/TV/AC/tablet all collapsed to a hard zero identically (a parsing gap,
+  // not a category-specific one). «ما يتجاوز»/«لا يتجاوز» ("does not exceed") is a real
+  // synonym of the already-handled «يتعدى» — same meaning, different verb, never added
+  // alongside it. Deliberately NOT adding bare «إلى»/«حول» as standalone budget triggers
+  // (live-verified: real Saudi usage of these words alone, with no ميزانية/حد/budget marker
+  // present, is genuinely ambiguous — could be a destination/approximation about ANYTHING, not
+  // necessarily price; "unknown beats incorrect" argues for leaving them unrecognized rather
+  // than risking a false budget extraction from an unrelated number elsewhere in the sentence).
+  const m = x.match(/(?:تحت|أقل من|اقل من|ميزانية|ميزانيتي|في حدود|بحدود|بحد أقصى|بحد اقصى|حد أقصى|حد اقصى|حدود|يتعدى|يتجاوز|under|below|budget|max)\s*(?:الى|إلى|to|حول|تقريبا|تقريباً|around|about)?\s*([\d,]{3,7})/) ||
             x.match(/([\d,]{3,7})\s*(?:ريال|sar\b|sr\b)/);
   if (m) { const n = Number(m[1].replace(/,/g, "")); if (n >= 100 && n <= 500000) return n; }
   return undefined;

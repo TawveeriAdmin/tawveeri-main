@@ -24,6 +24,7 @@ import { parseShoppingTask } from '@/lib/agent/task-parser';
 import { hasDecisionEvidence, detectDecisionEvidence } from '@/lib/language/decision-evidence';
 import { assessAnswerability } from '@/lib/growth/demand-radar/answerability';
 import type { UsageEventRow } from './command-center-queries';
+import { canonicalAnalyticsCategory } from './command-center-queries';
 
 const SEARCH_TYPES = new Set(['search', 'advisor_query']);
 const RESULTS_TYPES = new Set(['results', 'advisor_result']);
@@ -90,17 +91,20 @@ export interface CategoryNeedSignal {
   belowConfidenceFloor: boolean;
 }
 
-/** Derive a category the same way topDemand() does: recorded column first,
- *  else parseShoppingTask on the query text, else null (genuinely
- *  unparseable — surfaced separately by emerging-language.ts, never
+/** Derive a category the same way topDemand() does: recorded column first (mapped through
+ *  `canonicalAnalyticsCategory` — Truth Hardening mission, 2026-09-05 — so a `smartphone`/
+ *  `appliance` recorded value can never fragment away from `canonical_products.category`'s
+ *  own `mobile`/fine-grained-appliance vocabulary), else parseShoppingTask on the query text,
+ *  else null (genuinely unparseable — surfaced separately by emerging-language.ts, never
  *  silently dropped here). */
 function deriveCategory(e: UsageEventRow): string | null {
-  if (e.category) return e.category;
-  if (!e.query_text) return null;
+  const canonicalRecorded = e.category ? canonicalAnalyticsCategory(e.category) : null;
+  if (canonicalRecorded) return canonicalRecorded;
+  if (!e.query_text) return e.category || null; // lossy recorded value, no text to re-derive from
   try {
     return parseShoppingTask(e.query_text).category || null;
   } catch {
-    return null;
+    return e.category || null;
   }
 }
 
@@ -108,10 +112,10 @@ function categoryVolumes(events: UsageEventRow[]): Map<string, { recorded: numbe
   const agg = new Map<string, { recorded: number; derived: number }>();
   for (const e of events) {
     if (!DEMAND_TYPES.has(e.event_type)) continue;
-    const cat = e.category ?? deriveCategory(e);
+    const cat = deriveCategory(e);
     if (!cat) continue;
     const cur = agg.get(cat) ?? { recorded: 0, derived: 0 };
-    if (e.category) cur.recorded++; else cur.derived++;
+    if (e.category && canonicalAnalyticsCategory(e.category)) cur.recorded++; else cur.derived++;
     agg.set(cat, cur);
   }
   return agg;
@@ -122,7 +126,7 @@ function topSessionShareForCategory(events: UsageEventRow[], category: string): 
   let total = 0;
   for (const e of events) {
     if (!DEMAND_TYPES.has(e.event_type) || !e.session_id) continue;
-    if ((e.category ?? deriveCategory(e)) !== category) continue;
+    if (deriveCategory(e) !== category) continue;
     total++;
     perSession.set(e.session_id, (perSession.get(e.session_id) ?? 0) + 1);
   }
@@ -143,7 +147,7 @@ function decisionEvidenceForCategory(
   };
   for (const e of events) {
     if (!DEMAND_TYPES.has(e.event_type) || !e.query_text) continue;
-    if ((e.category ?? deriveCategory(e)) !== category) continue;
+    if (deriveCategory(e) !== category) continue;
     total++;
     if (hasDecisionEvidence(e.query_text)) withEvidence++;
     const s = detectDecisionEvidence(e.query_text);

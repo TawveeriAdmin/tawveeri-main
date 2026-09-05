@@ -1092,6 +1092,15 @@ const BUDGET_WRAPPER = new Set<string>([
   // «يتعدي»). Same folding trap as the ة/ى class documented elsewhere in this file.
   'تحت', 'اقل', 'أقل', 'حدود', 'بحدود', 'يتعدي', 'دون', 'حد', 'اكثر', 'أكثر',
   'under', 'below', 'max', 'less', 'exceed', 'exceeds',
+  // «بحد أقصى» ("at a maximum of") LIVE-VERIFIED collapsing to a hard zero identically across
+  // mobile/laptop/TV/AC/tablet (2026-09-05, Truth Hardening mission) — the single most
+  // standard MSA/Gulf ceiling phrasing, never in this Set at all. «بحد» is its own token (ب
+  // fuses onto «حد» in Arabic orthography, same as «بميزانيه» above — never a bare-«ب»
+  // generalization); «أقصى» folds to «اقصي» via `normalizeArabic` (آأإٱ→ا, ى→ي) before this
+  // Set is ever checked — «حد» alone is already covered by the pre-existing entry above.
+  // «يتجاوز» ("exceed") is a real synonym of the already-handled «يتعدي», never added
+  // alongside it.
+  'بحد', 'اقصي', 'يتجاوز',
 ]);
 
 // Soft-preference trigger words `parsePriorities` (task-parser.ts) already classifies
