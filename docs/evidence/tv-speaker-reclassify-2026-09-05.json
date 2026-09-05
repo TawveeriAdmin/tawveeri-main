@@ -1,0 +1,11 @@
+{
+  "reason": "Noon Internal Commerce Expansion (Track 2) data-quality audit found this canonical product miscategorized as tv - the underlying Noon listing is a replacement TV speaker component (Ciglow Full Range Smart TV Speaker, 129.34 SAR), not a television. isAccessoryTitle() would not have caught it (no \"speaker\" keyword in ACCESSORY_INDICATORS) - a genuine gap, not a re-derivation of an existing check.",
+  "before": {
+    "id": "65beba4b-f3f8-4260-8621-aae38667b783",
+    "name_en": "Generic 200HZ-20KH TV",
+    "name_ar": "تلفزيون generic 200HZ-20KH",
+    "category": "tv",
+    "is_active": true
+  },
+  "rollback": "update canonical_products set is_active = true where id = '65beba4b-f3f8-4260-8621-aae38667b783'"
+}
