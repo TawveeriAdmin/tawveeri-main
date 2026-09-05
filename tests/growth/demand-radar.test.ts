@@ -17,8 +17,9 @@ import {
 import { heuristicClassification, extractBudget } from '@/lib/growth/demand-radar/classify';
 import { rankOpportunity } from '@/lib/growth/demand-radar/rank';
 import { violatesClaimSafety } from '@/lib/growth/demand-radar/draft';
-import { MockAdapter } from '@/lib/growth/demand-radar/adapters';
+import { MockAdapter, buildXQueries } from '@/lib/growth/demand-radar/adapters';
 import { CATEGORY_LEXICONS, RADAR_CATEGORY_KEYS } from '@/lib/growth/demand-radar/saudi-lexicon';
+import * as saudiLexicon from '@/lib/growth/demand-radar/saudi-lexicon';
 import type { RadarCandidate } from '@/lib/growth/demand-radar/types';
 
 const mk = (text: string, minsAgo = 10): RadarCandidate => ({
@@ -98,13 +99,21 @@ describe('ranking gates (precision > volume)', () => {
     const r = rankOpportunity(mk('ابي غسالة وش تنصحون؟', 60 * 72), { ...strongCls, category: 'washing_machine' }, 'yes', 'ok');
     expect(r.tier).toBe('ignore');
   });
-  it('a strong, answerable, confirmed-KSA, budgeted, fresh question is HIGH with decomposed reasons', () => {
+  it('a recommendation-phrased, budgeted, answerable, fresh question is HIGH with decomposed reasons (redesigned 2026-08-31, ADR-280: decision-evidence scoring, not the old want-verb points formula)', () => {
     const cls = { ...strongCls, category: 'washing_machine' as const, intentStrength: 'strong' as const, ksaRelevance: 'confirmed' as const, isDirectQuestion: true, budgetSar: 3000, confidence: 0.9 };
-    const r = rankOpportunity(mk('ابي غسالة لعائلة 6 وميزانيتي 3000 وش تنصحون؟'), cls, 'yes', '385 منتجًا');
+    // "وش تنصحون" (recommendation_request, +2) + "3000 ريال" (budget_stated, +1) = score 3 -> HIGH.
+    const r = rankOpportunity(mk('ابي غسالة لعائلة 6 بميزانية 3000 ريال وش تنصحون؟'), cls, 'yes', '385 منتجًا');
     expect(r.tier).toBe('high');
     expect(r.reasons.length).toBeGreaterThanOrEqual(4); // explainable, never a bare score
     expect(r.suggestedQuery).toContain('غسالة');
     expect(r.suggestedQuery).toContain('3000');
+  });
+
+  it('the SAME text without recommendation/comparison/budget language is only MEDIUM, even with a strong want-verb (ADR-280: this is the exact old-formula gap the redesign closes)', () => {
+    const cls = { ...strongCls, category: 'washing_machine' as const, intentStrength: 'strong' as const, ksaRelevance: 'confirmed' as const, isDirectQuestion: true, budgetSar: 3000, confidence: 0.9 };
+    const r = rankOpportunity(mk('ابي غسالة لعائلة 6 وميزانيتي 3000 وش تنصحون؟'), cls, 'yes', '385 منتجًا');
+    // "وش تنصحون" alone (no "ريال" adjacent to the number in THIS text) = score 2 -> medium, not high.
+    expect(r.tier).toBe('medium');
   });
   it('low classifier confidence pulls HIGH down', () => {
     const cls = { ...strongCls, category: 'washing_machine' as const, intentStrength: 'strong' as const, ksaRelevance: 'unknown' as const, isDirectQuestion: false, budgetSar: null, confidence: 0.3 };
@@ -255,6 +264,28 @@ describe('lexicon narrowed to direct purchase-need phrasing (founder decision 20
 
   it('home-furnishing was never added — no matching production category exists', () => {
     expect(CATEGORY_LEXICONS.some((c) => c.nameAr.includes('تأثيث'))).toBe(false);
+  });
+});
+
+describe('Radar 1 retrieval stays undoubled with Shadow (ADR-289 reconciliation, 2026-09-05)', () => {
+  // ADR-280 (2026-08-31) drafted RECOMMENDATION_QUERIES (recommendation-phrase × {mobile,
+  // laptop, air_conditioner}) directly into saudi-lexicon.ts/adapters.ts, but that draft was
+  // NEVER actually committed — only decision-evidence scoring was (ADR-289 corrects the record).
+  // Reconciliation research (2026-09-05) found this would have been BYTE-IDENTICAL in category
+  // scope and query construction to shadow-vocabulary.ts's own PRODUCT_RECOMMENDATION_QUERIES,
+  // which already runs as an isolated, already-paying, founder-gated Shadow experiment
+  // (Checkpoint 5.1, temporal validation ongoing, evidence floor ≥30 not yet reached per
+  // DEMAND-RADAR-RUNBOOK.md's own still-standing "No Checkpoint 6. No widening" rule). Wiring
+  // the same query family into Radar 1's own live 10-minute ticker would pay X twice for the
+  // same posts and bypass that gate through a side door instead of graduating it. This guard
+  // exists so a future session doesn't reintroduce that widening as a "restore the old patch"
+  // reflex without re-deriving this reasoning — see ADR-289 for the full record.
+  it('saudi-lexicon.ts exports no RECOMMENDATION_QUERIES — that widening lives in Shadow only, pending its own evidence floor', () => {
+    expect((saudiLexicon as Record<string, unknown>).RECOMMENDATION_QUERIES).toBeUndefined();
+  });
+
+  it('buildXQueries() still returns exactly one query per CATEGORY_LEXICONS entry — no undocumented widening', () => {
+    expect(buildXQueries().length).toBe(CATEGORY_LEXICONS.length);
   });
 });
 

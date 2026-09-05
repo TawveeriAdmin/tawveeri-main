@@ -38,9 +38,27 @@ email the founder on HIGH. **Human-in-the-loop: nothing ever auto-publishes.**
   `/r/` link (utm stamped). Similar searches without the link are at most
   CORRELATED_POSSIBLE — never claimed as radar results.
 
+## Scoring (live, ADR-280 → ADR-289, 2026-09-05)
+`rankOpportunity()` scores tier via `scoreDecisionEvidence()`
+(`decision-evidence-score.ts`) — recommendation request, explicit comparison,
+budget stated, use-case stated, named competing products, urgency, replacement,
+and availability-question language, NOT a bare want-verb. Backtested on 59 real
+founder-labeled texts: 77.8% precision / 82.4% recall / 18 surfaced (was 27.5%
+precision / 51 surfaced under the old points formula, same recall). Hard gates
+(intent none, KSA not-relevant, unanswerable, unsupported category, stale/self
+post, accessory question) are unchanged. Retrieval (`CATEGORY_LEXICONS`, 10
+direct-want queries) is UNCHANGED and deliberately NOT widened to
+recommendation-phrase language — that widening already exists, isolated, as
+Shadow's `PRODUCT_RECOMMENDATION_QUERIES` experiment (see Checkpoint 5.1 below);
+duplicating it into Radar 1's own live ticker would pay X twice for the same
+posts before that experiment's own evidence floor is reached. See ADR-289 for
+the full reconciliation record.
+
 ## Quality gates
-- `tests/growth/demand-radar.test.ts` — 19 deterministic tests (prefilters, rank
-  gates, claim safety, injection containment, dedup).
+- `tests/growth/demand-radar.test.ts` — deterministic tests (prefilters, rank
+  gates, claim safety, injection containment, dedup, retrieval-scope guards).
+- `tests/growth/rank-redesign-backtest.test.ts` — the real 59-item backtest
+  above (live DB read; run explicitly, excluded from the fast gate).
 - `npx tsx scripts/growth/demand-radar-eval.ts` — 28-case category-balanced eval
   against the REAL classifier. Ship bar: **0 tier-ceiling violations** (verified
   2026-08-15: 0 violations, 75% category accuracy, 50% intended-tier recall —

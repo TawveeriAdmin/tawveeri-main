@@ -29,6 +29,10 @@ const customJestConfig = {
     '<rootDir>/tests/auth/profile.test.ts',
     '<rootDir>/tests/auth/phone-otp.test.ts',
     '<rootDir>/tests/growth/home-mission-integration.test.ts',
+    // ADR-280/ADR-289: replays rankOpportunity() with a real, live assessAnswerability() DB read
+    // so the old-vs-new backtest compares against real catalog capability, not a guessed constant.
+    // Same reproducibility caveat as the suites above — run explicitly, not part of the fast gate.
+    '<rootDir>/tests/growth/rank-redesign-backtest.test.ts',
   ],
   modulePathIgnorePatterns: [
     '<rootDir>/.next/',

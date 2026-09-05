@@ -1,17 +1,16 @@
 /**
- * Radar 2.0 Phase 1 — behavioral no-op test (founder requirement: "current
- * tier decisions exactly," "current email behavior exactly"). Pins the exact
- * tier rankOpportunity() produces for a fixed set of representative
- * candidates, INCLUDING the two new founder-reviewed false-positive examples
- * (contest, post-purchase story) that motivated this whole phase.
+ * Radar 2.0 — rankOpportunity() regression pins (ADR-280, 2026-08-31).
  *
- * rankOpportunity() itself was not edited in Phase 1 — only a new, separate
- * function (computeOpportunityScore) was added alongside it in rank.ts. This
- * test is the proof: it demonstrates that even though Classification now
- * carries an `exclusion` field naming these as contest/post_purchase_story,
- * rankOpportunity()'s signature and logic are unchanged, so it cannot have
- * used that field — and pins today's actual (pre-existing) tier outcome for
- * each, whatever it happens to be, as a golden value that must not drift.
+ * This file used to pin rankOpportunity() as BYTE-BEHAVIORALLY UNCHANGED (Phase 1's founder
+ * requirement). That constraint no longer holds: the founder authorized an end-to-end redesign
+ * of Radar 1 on real evidence, and rankOpportunity() is now the promoted decision-evidence
+ * scoring (decision-evidence-score.ts) instead of the old points formula. The golden values below
+ * are the NEW, intentional, backtested behavior — not accidental drift. See rank.ts's own header
+ * note on rankOpportunity() for the real backtest numbers (n=59 real founder-labeled texts:
+ * 27.5% -> 77.8% precision, same 82.4% recall).
+ *
+ * computeOpportunityScore() (a separate, parallel, measurement-only function) is genuinely
+ * untouched by this redesign — its own pins stay unchanged below.
  */
 import { heuristicClassification } from '@/lib/growth/demand-radar/classify';
 import { rankOpportunity, computeOpportunityScore } from '@/lib/growth/demand-radar/rank';
@@ -28,49 +27,38 @@ const mk = (text: string, minsAgo = 10): RadarCandidate => ({
   postedAt: new Date(Date.now() - minsAgo * 60000).toISOString(),
 });
 
-describe('rank.ts no-op regression — rankOpportunity() is byte-behaviorally unchanged', () => {
-  it('a strong, answerable, confirmed-KSA, budgeted, fresh question is still HIGH (pre-existing golden case)', () => {
-    const base = heuristicClassification(mk('ابي غسالة لعائلة كبيرة وميزانيتي 3000 وش تنصحون؟ الرياض'));
-    const cls = {
-      ...base, category: 'washing_machine', intentStrength: 'strong' as const,
-      ksaRelevance: 'confirmed' as const, isDirectQuestion: true, budgetSar: 3000, confidence: 0.9,
-    };
-    const r = rankOpportunity(mk('ابي غسالة لعائلة 6 وميزانيتي 3000 وش تنصحون؟'), cls, 'yes', '385 منتجًا');
-    expect(r.tier).toBe('high');
-  });
-
-  it('unsupported category is still a hard IGNORE regardless of intent (pre-existing golden case)', () => {
+describe('rank.ts golden pins — post-redesign (ADR-280)', () => {
+  it('unsupported category is still a hard IGNORE regardless of intent (hard gates unchanged by the redesign)', () => {
     const cls = { ...heuristicClassification(mk('ابي غسالة')), category: 'washing_machine' };
     const r = rankOpportunity(mk('ابي غسالة'), cls, 'no', 'فئة غير مدعومة');
     expect(r.tier).toBe('ignore');
   });
 
-  it('the founder-reviewed contest example: rankOpportunity is unaffected by the NEW exclusion field', () => {
+  it('the founder-reviewed contest example now correctly reaches IGNORE (was medium under the old points formula — a bare want-verb with no decision evidence now scores below the medium floor)', () => {
     const text = 'يارب افوز في القرعة وابي جوال جديد يكفيني';
     const cls = heuristicClassification(mk(text));
-    expect(cls.exclusion).toBe('contest'); // the NEW field correctly identifies it...
-    const r = rankOpportunity(mk(text), cls, 'yes', 'test-stub'); // ...but rankOpportunity never reads cls.exclusion
-    // Golden value = today's REAL, unchanged production behavior (verified,
-    // not assumed): the hamza-variant duplicate markers in lexicalIntent()
-    // (ابي/أبي both present in INTENT_MARKERS) push this to intentStrength
-    // 'strong', and it scores MEDIUM via the pre-existing evidence-stacking
-    // path — proving two things at once: (1) rankOpportunity truly ignores
-    // the new `exclusion` field (a real fix would need to consume it, which
-    // Phase 1 deliberately does not do), and (2) this is exactly the kind of
-    // real gap the new diagnostic in demand-radar-eval.ts now measures.
-    expect(r.tier).toBe('medium');
+    expect(cls.exclusion).toBe('contest'); // classify.ts's own field still names it correctly...
+    const r = rankOpportunity(mk(text), cls, 'yes', 'test-stub'); // ...rankOpportunity still never reads cls.exclusion directly
+    expect(r.tier).toBe('ignore');
   });
 
-  it('the founder-reviewed post-purchase example: same proof, "اشتريت لي جوال جديد"', () => {
+  it('the founder-reviewed post-purchase example now correctly reaches IGNORE (was medium under the old points formula)', () => {
     const text = 'اشتريت لي جوال جديد';
     const cls = heuristicClassification(mk(text));
     expect(cls.exclusion).toBe('post_purchase_story');
     expect(cls.buyingStage).toBe('post_purchase');
     const r = rankOpportunity(mk(text), cls, 'yes', 'test-stub');
-    expect(r.tier).toBe('medium'); // same reasoning as the contest case above
+    expect(r.tier).toBe('ignore');
   });
 
-  it('computeOpportunityScore is a genuinely separate code path — its signature proves it cannot consume answerability', () => {
+  it('a genuine recommendation-request question reaches MEDIUM at minimum, unlike the two noise examples above with the exact same "want-verb" surface shape', () => {
+    const text = 'وش تنصحوني بغسالة توفر كهرباء لعائلة كبيرة؟';
+    const cls = { ...heuristicClassification(mk(text)), category: 'washing_machine' };
+    const r = rankOpportunity(mk(text), cls, 'yes', 'test-stub');
+    expect(['medium', 'high']).toContain(r.tier);
+  });
+
+  it('computeOpportunityScore is a genuinely separate code path, untouched by this redesign — its signature proves it cannot consume answerability', () => {
     // rankOpportunity(candidate, classification, answerability, reason) — 4 args
     expect(rankOpportunity.length).toBe(4);
     // computeOpportunityScore(candidate, classification) — 2 args, structurally

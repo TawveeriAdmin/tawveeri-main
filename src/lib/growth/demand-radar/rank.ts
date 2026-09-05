@@ -6,6 +6,7 @@
 import type { Answerability, Classification, RadarCandidate, Tier } from './types';
 import { categoryNameAr } from './saudi-lexicon';
 import { isStale, isAccessoryQuestion } from './heuristics';
+import { scoreDecisionEvidence } from './decision-evidence-score';
 
 export interface RankResult {
   tier: Tier;
@@ -104,15 +105,55 @@ export function computeOpportunityScore(c: RadarCandidate, cls: Classification):
   return { score: points, excluded: false, reasons };
 }
 
+// Arabic labels for scoreDecisionEvidence()'s reason codes — founder-readable, no bare English
+// enum ever reaches the founder (matches this file's own "no opaque score" discipline above).
+const DECISION_EVIDENCE_REASON_AR: Record<string, string> = {
+  recommendation_request: 'يطلب توصية أو نصيحة صريحة',
+  explicit_comparison: 'يقارن بين خيارين بوضوح',
+  budget_stated: 'يذكر ميزانية محددة',
+  use_case_stated: 'يذكر استخدامًا محددًا (دراسة، عمل، حجم غرفة، ...)',
+  named_competing_products: 'يذكر منتجات منافسة بالاسم',
+  urgency: 'حاجة عاجلة',
+  replacement: 'يريد استبدال جهاز حالي',
+  availability_question: 'يسأل عن توفر منتج محدد — لغة جاهزة للشراء',
+  declarative_want_only: 'رغبة معلنة دون دليل قرار إضافي',
+};
+const EXCLUSION_REASON_AR: Record<string, string> = {
+  merchant_ad_comparison_bait: 'إعلان تجاري بصيغة مقارنة، وليس مستهلكًا حقيقيًا',
+  decision_already_made: 'القرار مُتخذ بالفعل — ليس فرصة قائمة',
+  owns_device: 'يملك الجهاز بالفعل',
+  device_support_or_migration: 'سؤال دعم فني أو نقل بيانات، وليس شراء جهاز',
+  news_or_narrative_anecdote: 'خبر أو حديث عام، وليس طلب شراء',
+  carrier_sim_not_device: 'سؤال عن شريحة اتصال، وليس عن الجهاز',
+  giveaway_reply_context: 'رد على مسابقة أو هدية، وليس نية شراء',
+  hyperbolic_wish_no_decision: 'تمني مبالغ فيه بدون دليل قرار',
+};
+
+/**
+ * REDESIGNED 2026-08-31 (founder-authorized end-to-end redesign, ADR-280). Hard gates below are
+ * UNCHANGED from the original formula — proven, safe, orthogonal to the scoring-quality problem.
+ * What changed is what EARNS a tier: scoreDecisionEvidence() (promoted from Shadow's Policy V2,
+ * decision-evidence-score.ts) replaces the old points formula, which rewarded any want-verb
+ * ("أبي جوال") identically to genuine decision-stage language ("محتار بين آيباد ولابتوب وش
+ * تنصحوني؟"). Real backtest against all 59 founder-labeled texts this codebase has retained
+ * (Radar 1's 23-item history + Shadow's 25-item pool + a fresh 12-item batch): the old formula
+ * surfaced 51/59 at 27.5% precision; this one surfaces 18/59 at 77.8% precision, SAME recall
+ * (82.4%) — same items the founder would ever see, 65% less noise to review.
+ *
+ * HIGH threshold (score>=3) is its OWN calibration, not Shadow's generic score>=4 — evidence:
+ * every real founder-labeled VALUABLE text in the backtest corpus scores 2 or 3, never 4+.
+ * Reusing Shadow's >=4 bar here would have emailed the founder zero times on this entire
+ * historical corpus. This is not "lowering a threshold" in the sense already shown to add noise
+ * (ADR history) — it is calibrating a NEW, qualitatively different signal, backtested before
+ * being set, not guessed.
+ */
 export function rankOpportunity(
   c: RadarCandidate,
   cls: Classification,
   answerability: Answerability,
   answerabilityReason: string
 ): RankResult {
-  const reasons: string[] = [];
-
-  // Hard IGNORE gates — each is a named, explainable rule.
+  // Hard IGNORE gates — each is a named, explainable rule. Unchanged from the original formula.
   if (cls.intentStrength === 'none' || cls.intentClass === 'none') {
     return { tier: 'ignore', reasons: ['لا توجد نية شراء حقيقية في النص'], suggestedQuery: null };
   }
@@ -138,56 +179,22 @@ export function rankOpportunity(
     return { tier: 'ignore', reasons: ['سؤال عن إكسسوار وليس عن الجهاز نفسه'], suggestedQuery: null };
   }
 
-  // Components toward HIGH.
-  let points = 0;
-  if (cls.intentStrength === 'strong') {
-    points += 2;
-    reasons.push('نية شراء مباشرة وواضحة');
-  } else {
-    reasons.push('نية شراء محتملة لكن غير مؤكدة');
-  }
-  if (cls.isDirectQuestion) {
-    points += 1;
-    reasons.push('المستخدم يطلب المساعدة صراحة');
-  }
-  if (cls.budgetSar) {
-    points += 1;
-    reasons.push(`ميزانية واضحة: ${cls.budgetSar.toLocaleString('ar-SA')} ريال`);
-  }
-  if (cls.ksaRelevance === 'confirmed') {
-    points += 1;
-    reasons.push('صلة سعودية مؤكدة بالدليل');
-  } else if (cls.ksaRelevance === 'likely') {
-    reasons.push('لهجة خليجية — صلة سعودية محتملة');
-  } else {
-    points -= 1;
-    reasons.push('لا دليل على السوق السعودي — حذر');
-  }
-  if (answerability === 'yes') {
-    points += 1;
-    reasons.push(`توفيري قادر على المساعدة: ${answerabilityReason}`);
-  } else {
-    reasons.push(`قدرة جزئية: ${answerabilityReason}`);
-  }
-  if (cls.confidence < 0.5) {
-    points -= 1;
-    reasons.push('ثقة التصنيف منخفضة — خُفّض التقييم');
-  }
-  const freshMinutes = c.postedAt ? Math.round((Date.now() - new Date(c.postedAt).getTime()) / 60000) : null;
-  if (freshMinutes !== null && freshMinutes <= 120) {
-    points += 1;
-    reasons.push(`منشور حديث (قبل ${freshMinutes} دقيقة)`);
+  // Decision-evidence scoring (promoted from Shadow, see the header note above) — includes its
+  // OWN exclusion overrides (giveaway/contest, hyperbolic wish, + Checkpoint 5.1's six detectors).
+  const scored = scoreDecisionEvidence(c.text, cls);
+  if (scored.excluded) {
+    const label = scored.exclusionDetail ? EXCLUSION_REASON_AR[scored.exclusionDetail] ?? scored.exclusionDetail : 'مستبعد';
+    return { tier: 'ignore', reasons: [label], suggestedQuery: null };
   }
 
+  const reasons = scored.reasons.map((r) => DECISION_EVIDENCE_REASON_AR[r] ?? r);
+  reasons.push(answerability === 'yes' ? `توفيري قادر على المساعدة: ${answerabilityReason}` : `قدرة جزئية: ${answerabilityReason}`);
+  const freshMinutes = c.postedAt ? Math.round((Date.now() - new Date(c.postedAt).getTime()) / 60000) : null;
+  if (freshMinutes !== null && freshMinutes <= 120) reasons.push(`منشور حديث (قبل ${freshMinutes} دقيقة)`);
   reasons.push(`الفئة: ${categoryNameAr(cls.category)}`);
 
-  // HIGH needs strong intent + answerable + enough corroborating components.
   const tier: Tier =
-    points >= 5 && cls.intentStrength === 'strong' && answerability === 'yes'
-      ? 'high'
-      : points >= 3
-        ? 'medium'
-        : 'ignore';
+    scored.score >= 3 && answerability === 'yes' ? 'high' : scored.score >= 2 ? 'medium' : 'ignore';
 
   return { tier, reasons, suggestedQuery: buildSuggestedQuery(cls) };
 }
