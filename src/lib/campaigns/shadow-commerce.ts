@@ -169,20 +169,29 @@ export async function runShadowEvaluationForProductView(
     const supabase = createServerClient() as unknown as { from: (table: string) => any };
     const { data: product, error } = await supabase
       .from('products')
-      .select('category, canonical_product_id, is_active')
+      .select('canonical_product_id, is_active')
       .eq('id', productId)
       .maybeSingle();
-    if (error || !product || !product.category) return;
+    if (error || !product || !product.canonical_product_id) return;
 
-    let identityConfidence: number | null = null;
-    if (product.canonical_product_id) {
-      const { data: cp } = await supabase
-        .from('canonical_products')
-        .select('identity_confidence')
-        .eq('id', product.canonical_product_id)
-        .maybeSingle();
-      identityConfidence = cp?.identity_confidence ?? null;
-    }
+    // Truth check (founder-directed, 2026-09-05): `products.category` (the legacy
+    // storefront layer) is NOT an alias of `canonical_products.category` — it is a
+    // genuinely different, coarser taxonomy (proven: products.category has no 'mobile'
+    // value at all, only 'smartphone'/'appliance'/'kitchen'/etc.). The All-Category
+    // Coverage table (category-coverage.ts) already reads canonical_products.category
+    // exclusively; using products.category here would silently split/mislabel the SAME
+    // real category across the two dashboard sections. Read canonical_products.category
+    // directly instead — the one true "canonical analytics category" for this codebase
+    // (src/lib/admin/command-center-queries.ts's own naming). A product with no
+    // canonical_product_id (already returned above) or no resolvable canonical row is
+    // skipped entirely rather than falling back to the legacy taxonomy.
+    const { data: cp } = await supabase
+      .from('canonical_products')
+      .select('category, identity_confidence')
+      .eq('id', product.canonical_product_id)
+      .maybeSingle();
+    if (!cp || !cp.category) return;
+    const identityConfidence: number | null = cp.identity_confidence ?? null;
 
     if (!product.is_active) return; // "subject to Product Truth and normal quality gates" — mission §1
 
@@ -193,8 +202,8 @@ export async function runShadowEvaluationForProductView(
 
     const result = evaluateShadowOpportunity({
       productId,
-      category: product.category,
-      canonicalProductId: product.canonical_product_id ?? null,
+      category: cp.category,
+      canonicalProductId: product.canonical_product_id,
       isActive: product.is_active,
       identityConfidence,
       amazon,
