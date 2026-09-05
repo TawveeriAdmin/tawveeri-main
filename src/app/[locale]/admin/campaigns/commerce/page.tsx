@@ -11,6 +11,7 @@
 import { getPortfolioSummary, summarizeByMerchant, compareByCategory } from '@/lib/campaigns/revenue-proof-queries';
 import { getTiebreakSummary } from '@/lib/campaigns/commercial-tiebreak';
 import { getCategoryCoverageMatrix, type CategoryCoverageRow } from '@/lib/campaigns/category-coverage';
+import { getShadowSummary } from '@/lib/campaigns/shadow-commerce';
 
 function fmt(n: number | null | undefined, digits = 0) {
   if (n === null || n === undefined) return '—';
@@ -26,8 +27,9 @@ const WINNER_TONE: Record<string, 'ok' | 'pending' | 'warn' | 'neutral'> = {
   AMAZON: 'ok', NOON: 'ok', NO_EVIDENCE: 'neutral', NOT_COMPARABLE: 'pending',
 };
 
-const STATE_TONE: Record<CategoryCoverageRow['proposedState'], 'ok' | 'pending' | 'warn' | 'neutral'> = {
-  ACTIVE_CAPABLE: 'ok', INITIAL_COHORT: 'ok', ELIGIBLE: 'pending', HOLD: 'pending', INSUFFICIENT_EVIDENCE: 'neutral',
+const STRENGTH_TONE: Record<CategoryCoverageRow['strength'], 'ok' | 'pending' | 'warn' | 'neutral'> = {
+  NOON_STRONG: 'ok', AMAZON_STRONG: 'ok', BALANCED: 'pending',
+  NOON_ONLY_OPPORTUNITY: 'pending', AMAZON_ONLY_OPPORTUNITY: 'pending', INSUFFICIENT_EVIDENCE: 'neutral',
 };
 
 export default async function AffiliateCommercePage({ params, searchParams }: {
@@ -46,6 +48,7 @@ export default async function AffiliateCommercePage({ params, searchParams }: {
   const byCategory = compareByCategory(portfolio);
   const tiebreaks = await getTiebreakSummary({ start: rangeStart, end: now });
   const allCategoryCoverage = await getCategoryCoverageMatrix();
+  const shadow = await getShadowSummary({ start: rangeStart, end: now });
 
   const amazon = byMerchant.find((m) => m.merchant === 'amazon')!;
   const noon = byMerchant.find((m) => m.merchant === 'noon')!;
@@ -173,13 +176,14 @@ export default async function AffiliateCommercePage({ params, searchParams }: {
         </div>
       </section>
 
-      {/* Founder correction #2 (2026-09-05): "Noon must not be architecturally limited to
-          TV + laptop" — every Tawveeri category, not only categories with a live campaign. */}
+      {/* Noon Internal Commerce Expansion (2026-09-05, §5): every Tawveeri category, not
+          only categories with a live campaign — Noon's real scope, not TV+laptop only. */}
       <section style={{ border: '1px solid #ccc', borderRadius: 10, padding: 16, marginBottom: 24 }}>
         <h2 style={{ fontWeight: 900, marginBottom: 8 }}>All-Category Coverage <span style={{ fontWeight: 400, fontSize: 12 }}>(all {allCategoryCoverage.length} active categories, not just live campaigns)</span></h2>
         <p style={{ fontSize: 11, color: '#888', marginBottom: 8 }}>
-          "Proposed state" is computed from real evidence — it is a proposal for founder judgment, not a decision. Only TV and laptop carry an actual founder-approved decision
-          (ADR-294's initial cohort); every other row's state below is this page's own honest read of overlap/demand, and activates nothing by itself.
+          "Strength" is computed from real evidence only (min {2} overlapping products + {5} demand events/30d to claim NOON_STRONG/AMAZON_STRONG/BALANCED — below that,
+          INSUFFICIENT_EVIDENCE, never forced into a comparative claim). It is a proposal for founder judgment, not a decision or an activation of anything — TV and laptop's
+          actual founder-approved status is recorded in ADR-294/295's prose, not by this classifier.
         </p>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
@@ -190,12 +194,13 @@ export default async function AffiliateCommercePage({ params, searchParams }: {
                 <th style={{ padding: '4px 6px' }}>Noon offers (valid/fresh)</th>
                 <th style={{ padding: '4px 6px' }}>Amazon offers</th>
                 <th style={{ padding: '4px 6px' }}>Overlap</th>
+                <th style={{ padding: '4px 6px' }}>Shopper-equivalent</th>
                 <th style={{ padding: '4px 6px' }}>Noon-only</th>
                 <th style={{ padding: '4px 6px' }}>Amazon-only</th>
                 <th style={{ padding: '4px 6px' }}>Demand 30d</th>
                 <th style={{ padding: '4px 6px' }}>Explicit interactions 30d</th>
                 <th style={{ padding: '4px 6px' }}>Cheaper (Noon/Amazon/tie)</th>
-                <th style={{ padding: '4px 6px' }}>Proposed state</th>
+                <th style={{ padding: '4px 6px' }}>Strength</th>
               </tr>
             </thead>
             <tbody>
@@ -206,17 +211,59 @@ export default async function AffiliateCommercePage({ params, searchParams }: {
                   <td style={{ padding: '4px 6px' }}>{fmt(r.validNoonOffers)} / {fmt(r.freshNoonOffers)}</td>
                   <td style={{ padding: '4px 6px' }}>{fmt(r.validAmazonOffers)}</td>
                   <td style={{ padding: '4px 6px' }}>{fmt(r.overlapProducts)}</td>
+                  <td style={{ padding: '4px 6px' }}>{fmt(r.shopperEquivalentProducts)}</td>
                   <td style={{ padding: '4px 6px' }}>{fmt(r.noonOnlyProducts)}</td>
                   <td style={{ padding: '4px 6px' }}>{fmt(r.amazonOnlyProducts)}</td>
                   <td style={{ padding: '4px 6px' }}>{fmt(r.demand30d)}</td>
                   <td style={{ padding: '4px 6px' }}>{fmt(r.explicitInteractions30d)}</td>
                   <td style={{ padding: '4px 6px' }}>{r.overlapProducts > 0 ? `${fmt(r.noonCheaperProducts)}/${fmt(r.amazonCheaperProducts)}/${fmt(r.tiedProducts)}` : '—'}</td>
-                  <td style={{ padding: '4px 6px' }}><Badge tone={STATE_TONE[r.proposedState]}>{r.proposedState.replace(/_/g, ' ')}</Badge></td>
+                  <td style={{ padding: '4px 6px' }}><Badge tone={STRENGTH_TONE[r.strength]}>{r.strength.replace(/_/g, ' ')}</Badge></td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+      </section>
+
+      {/* Noon Internal Commerce Expansion (2026-09-05, §2/§6/§7): the internal shadow
+          decision loop — real shopper journeys, hypothetical merchant selection, logged,
+          never customer-visible. Decoupled entirely from campaign/clause-8.3 status. */}
+      <section style={{ border: '1px solid #ccc', borderRadius: 10, padding: 16, marginBottom: 24 }}>
+        <h2 style={{ fontWeight: 900, marginBottom: 8 }}>Shadow Opportunities <span style={{ fontWeight: 400, fontSize: 12 }}>(last {days}d, real product views only, mode=SHADOW — no customer-visible effect)</span></h2>
+        <p style={{ marginBottom: 8 }}>
+          Total real comparison opportunities logged: <b>{fmt(shadow.totalEvents)}</b> · Hypothetical Amazon selections: <b>{fmt(shadow.amazonSelected)}</b> · Hypothetical Noon
+          selections: <b>{fmt(shadow.noonSelected)}</b> · No commercial signal (real price gap or missing data): <b>{fmt(shadow.noSelection)}</b>
+        </p>
+        {shadow.totalEvents === 0 ? (
+          <p style={{ color: '#888', fontSize: 13 }}>
+            None yet — this logs on every real product-detail view where at least one of Amazon/Noon has a real offer (src/lib/campaigns/shadow-commerce.ts, wired into the
+            existing <code>POST /api/products/[id]/view</code> route). Requires real shopper traffic to a product with Amazon and/or Noon coverage; never fabricated as a
+            projected number.
+          </p>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+              <thead>
+                <tr style={{ textAlign: 'left', borderBottom: '1px solid #ddd' }}>
+                  <th>Category</th><th>Events</th><th>Hypothetical Amazon</th><th>Hypothetical Noon</th><th>No selection</th><th>Noon-only views</th><th>Amazon-only views</th>
+                </tr>
+              </thead>
+              <tbody>
+                {shadow.byCategory.map((c) => (
+                  <tr key={c.category}>
+                    <td>{c.category}</td>
+                    <td>{fmt(c.totalEvents)}</td>
+                    <td>{fmt(c.amazonSelected)}</td>
+                    <td>{fmt(c.noonSelected)}</td>
+                    <td>{fmt(c.noSelection)}</td>
+                    <td>{fmt(c.noonOnly)}</td>
+                    <td>{fmt(c.amazonOnly)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
 
       {/* §11F — data quality */}

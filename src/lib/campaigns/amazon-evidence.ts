@@ -27,8 +27,11 @@ import { isFreshObservation, hoursSince } from '@/lib/intelligence/evidence-engi
 // `=== '2'` string compare silently matched nothing, blocking EXACT_PRODUCT for every
 // real candidate. Compared with String(...) below so it's correct regardless of which
 // JS type actually comes back.
-const AMAZON_STORE_ID = '2';
-const NOON_STORE_ID = '3';
+// Exported so other callers needing BOTH merchants' evidence in the merchant-neutral
+// shape (e.g. shadow-commerce.ts) can call getExactProductEvidenceForStore() directly
+// instead of going through the Amazon-named wrapper's differently-shaped return type.
+export const AMAZON_STORE_ID = '2';
+export const NOON_STORE_ID = '3';
 
 export interface AmazonExactProductEvidence {
   amazonProductUrl: string | null;
