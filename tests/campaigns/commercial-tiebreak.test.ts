@@ -107,3 +107,70 @@ describe('resolveCommercialTiebreak', () => {
     expect(decision.reasonCode).toBe('INSUFFICIENT_EQUIVALENCE');
   });
 });
+
+// Condition gate — founder mission 2026-09-05, "RENEWED IS NOT NEW". Real regression
+// case: HP EliteBook canonical product, Amazon offer literally titled "...(Renewed)",
+// Noon offer titled "Renewed - ...", at 991.38 SAR vs 1497 SAR — a price-only comparison
+// would have called this a real (NOT_EQUIVALENT) price gap and picked Amazon on
+// LOWEST_TOTAL_PRICE, silently treating a used-vs-used (or, in other real cases, a
+// new-vs-used) pair as an ordinary price comparison.
+describe('classifyShopperEquivalence / resolveCommercialTiebreak — condition gate', () => {
+  it('NEW vs NEW at the same price → still SHOPPER_EQUIVALENT (condition gate never blocks a genuine match)', () => {
+    const a = offer('amazon', { priceSar: 1699, condition: 'NEW' });
+    const b = offer('noon', { priceSar: 1699, condition: 'NEW' });
+    expect(classifyShopperEquivalence(a, b)).toBe('SHOPPER_EQUIVALENT');
+  });
+
+  it('NEW vs RENEWED at ANY price → NOT_EQUIVALENT, never a price-based winner', () => {
+    const a = offer('amazon', { priceSar: 991.38, condition: 'NEW' });
+    const b = offer('noon', { priceSar: 1497, condition: 'RENEWED' });
+    expect(classifyShopperEquivalence(a, b)).toBe('NOT_EQUIVALENT');
+    const decision = resolveCommercialTiebreak(a, b);
+    expect(decision.selectedMerchant).toBeNull();
+    expect(decision.reasonCode).toBe('CONDITION_MISMATCH');
+  });
+
+  it('RENEWED vs RENEWED at the same price → SHOPPER_EQUIVALENT — same condition, real match', () => {
+    const a = offer('amazon', { priceSar: 1497, condition: 'RENEWED' });
+    const b = offer('noon', { priceSar: 1497, condition: 'RENEWED' });
+    expect(classifyShopperEquivalence(a, b)).toBe('SHOPPER_EQUIVALENT');
+  });
+
+  it('NEW vs USED → NOT_EQUIVALENT / CONDITION_MISMATCH', () => {
+    const a = offer('amazon', { condition: 'NEW' });
+    const b = offer('noon', { condition: 'USED' });
+    const decision = resolveCommercialTiebreak(a, b);
+    expect(decision.reasonCode).toBe('CONDITION_MISMATCH');
+    expect(decision.selectedMerchant).toBeNull();
+  });
+
+  it('known condition vs UNKNOWN condition → CONDITION_UNKNOWN, never assumed equal', () => {
+    const a = offer('amazon', { condition: 'NEW' });
+    const b = offer('noon', { condition: 'UNKNOWN' });
+    expect(classifyShopperEquivalence(a, b)).toBe('UNKNOWN');
+    const decision = resolveCommercialTiebreak(a, b);
+    expect(decision.reasonCode).toBe('CONDITION_UNKNOWN');
+    expect(decision.selectedMerchant).toBeNull();
+  });
+
+  it('UNKNOWN vs UNKNOWN → still CONDITION_UNKNOWN, never promoted to equivalent merely because both are unknown', () => {
+    const a = offer('amazon', { condition: 'UNKNOWN' });
+    const b = offer('noon', { condition: 'UNKNOWN' });
+    expect(classifyShopperEquivalence(a, b)).toBe('UNKNOWN');
+    expect(resolveCommercialTiebreak(a, b).reasonCode).toBe('CONDITION_UNKNOWN');
+  });
+
+  it('omitted condition on both sides defaults to NEW vs NEW — fully backward compatible with every existing caller', () => {
+    const a = offer('amazon', { priceSar: 1699 });
+    const b = offer('noon', { priceSar: 1699 });
+    expect(classifyShopperEquivalence(a, b)).toBe('SHOPPER_EQUIVALENT');
+  });
+
+  it('availability is still checked before condition — an out-of-stock renewed offer does not get a CONDITION_MISMATCH reason', () => {
+    const a = offer('amazon', { inStock: false, condition: 'RENEWED' });
+    const b = offer('noon', { inStock: true, condition: 'NEW' });
+    const decision = resolveCommercialTiebreak(a, b);
+    expect(decision.selectedMerchant).toBe('noon');
+    expect(decision.reasonCode).toBe('BETTER_AVAILABILITY');
+  });
+});

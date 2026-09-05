@@ -1,20 +1,21 @@
-// tests/campaigns/shadow-commerce.test.ts — Noon Internal Commerce Expansion
-// (2026-09-05, §2/§3/§7). Pure-function coverage; DB-backed logShadowEvent()/
-// runShadowEvaluationForProductView() are exercised indirectly (same convention as
-// getTawveeriObserved — see revenue-proof-queries.test.ts's header comment).
+// tests/campaigns/shadow-commerce.test.ts — Amazon × Noon internal commerce
+// (2026-09-05, §2/§3/§7/§8, "RENEWED IS NOT NEW"). Pure-function coverage; DB-backed
+// logShadowEvent()/runShadowEvaluationForProductView()/getMerchantOfferEvidenceForCanonical()
+// are exercised indirectly (same convention as getTawveeriObserved — see
+// revenue-proof-queries.test.ts's header comment).
 import {
   evaluateShadowOpportunity,
   classifyProductTruthState,
   classifyFreshnessState,
   type ShadowEvaluationInput,
+  type MerchantOfferEvidence,
 } from '@/lib/campaigns/shadow-commerce';
-import type { MerchantExactProductEvidence } from '@/lib/campaigns/amazon-evidence';
 import { PICK_FRESHNESS_MAX_HOURS } from '@/lib/intelligence/evidence-engine';
 
-const NO_OFFER: MerchantExactProductEvidence = { productUrl: null, priceSar: null, offerFreshnessHours: null, inStock: false, distinctStoreCount: 0 };
+const NO_OFFER: MerchantOfferEvidence = { title: null, productUrl: null, priceSar: null, offerFreshnessHours: null, inStock: false };
 
-function offer(overrides: Partial<MerchantExactProductEvidence>): MerchantExactProductEvidence {
-  return { productUrl: 'https://example.com/p', priceSar: 100, offerFreshnessHours: 10, inStock: true, distinctStoreCount: 2, ...overrides };
+function offer(overrides: Partial<MerchantOfferEvidence>): MerchantOfferEvidence {
+  return { title: 'Generic Product 128GB', productUrl: 'https://example.com/p', priceSar: 100, offerFreshnessHours: 10, inStock: true, ...overrides };
 }
 
 function input(overrides: Partial<ShadowEvaluationInput>): ShadowEvaluationInput {
@@ -69,7 +70,7 @@ describe('evaluateShadowOpportunity', () => {
     expect(evaluateShadowOpportunity(input({ amazon: NO_OFFER, noon: NO_OFFER }))).toBeNull();
   });
 
-  it('logs a NOON_ONLY_OPPORTUNITY-shaped result when only Noon has an offer', () => {
+  it('logs a result when only Noon has an offer, hypothetically selecting it on availability', () => {
     const result = evaluateShadowOpportunity(input({ amazon: NO_OFFER, noon: offer({ priceSar: 500 }) }));
     expect(result).not.toBeNull();
     expect(result!.amazonProductUrl).toBeNull();
@@ -104,5 +105,69 @@ describe('evaluateShadowOpportunity', () => {
     const result = evaluateShadowOpportunity(input({ amazon: offer({}), isActive: true, identityConfidence: 40 }));
     expect(result!.productTruthState).toBe('ACTIVE_LOW_CONFIDENCE');
     expect(result!.freshnessState).toBe('FRESH');
+  });
+
+  // Condition gate — founder mission 2026-09-05, "RENEWED IS NOT NEW". Real regression
+  // case, reproduced verbatim: HP EliteBook canonical product, Amazon titled
+  // "...(Renewed)", Noon titled "Renewed - ...", 991.38 SAR vs 1497 SAR.
+  describe('condition gate (RENEWED IS NOT NEW)', () => {
+    it('the real HP EliteBook regression case: both renewed at different prices → CONDITION-safe (same condition, real price comparison)', () => {
+      const result = evaluateShadowOpportunity(input({
+        amazon: offer({ title: 'HP Elitebook 840 G8 Laptop... Silver(336G5Ea)(Renewed)', priceSar: 991.38 }),
+        noon: offer({ title: 'Renewed -  EliteBook 840 G8 Notebook With 14 Inch Display', priceSar: 1497 }),
+      }));
+      expect(result!.amazonCondition).toBe('RENEWED');
+      expect(result!.noonCondition).toBe('RENEWED');
+      expect(result!.hypotheticalSelectedMerchant).toBe('amazon'); // same condition, real price gap — Amazon genuinely cheaper
+      expect(result!.selectionReason).toBe('LOWEST_TOTAL_PRICE');
+    });
+
+    it('the ORIGINAL (incorrect) prior assumption — a NEW listing vs a RENEWED listing at a similar price — is now blocked, not silently compared', () => {
+      const result = evaluateShadowOpportunity(input({
+        amazon: offer({ title: 'HP EliteBook 840 G8 Laptop 14" Intel i5 8GB 256GB', priceSar: 1450 }), // no condition marker -> NEW
+        noon: offer({ title: 'Renewed - EliteBook 840 G8 Notebook 14" Intel i5 8GB 256GB', priceSar: 1497 }),
+      }));
+      expect(result!.amazonCondition).toBe('NEW');
+      expect(result!.noonCondition).toBe('RENEWED');
+      expect(result!.hypotheticalSelectedMerchant).toBeNull();
+      expect(result!.selectionReason).toBe('CONDITION_MISMATCH');
+      expect(result!.shopperEquivalenceState).toBe('NOT_EQUIVALENT');
+    });
+
+    it('a missing title on one side → CONDITION_UNKNOWN, never assumed NEW or equal', () => {
+      const result = evaluateShadowOpportunity(input({
+        amazon: offer({ title: null }),
+        noon: offer({ title: 'Generic Product 128GB' }),
+      }));
+      expect(result!.amazonCondition).toBe('UNKNOWN');
+      expect(result!.selectionReason).toBe('CONDITION_UNKNOWN');
+      expect(result!.hypotheticalSelectedMerchant).toBeNull();
+    });
+  });
+
+  // Product-type/category guard — ADR-298's TV-speaker case, generalized.
+  describe('category/product-type mismatch gate', () => {
+    it('a title that looks like an accessory on either side blocks the tie-break entirely, never guesses a winner', () => {
+      const result = evaluateShadowOpportunity(input({
+        category: 'tv',
+        amazon: offer({ title: 'Samsung 65" QLED 4K Smart TV', priceSar: 2999 }),
+        noon: offer({ title: 'Ciglow Full Range Smart TV Speaker 2Pcs 8 Ohm 10W Television LCD TV 200HZ-20KH', priceSar: 129.34 }),
+      }));
+      expect(result!.categoryMismatch).toBe(true);
+      expect(result!.hypotheticalSelectedMerchant).toBeNull();
+      expect(result!.selectionReason).toBe('CATEGORY_MISMATCH');
+      // Category mismatch is checked BEFORE condition/price — never a price-based reason here.
+      expect(result!.shopperEquivalenceState).toBe('UNKNOWN');
+    });
+
+    it('two genuine main products in the same category are never flagged', () => {
+      const result = evaluateShadowOpportunity(input({
+        category: 'tv',
+        amazon: offer({ title: 'Samsung 65" QLED 4K Smart TV', priceSar: 2999 }),
+        noon: offer({ title: 'LG 55" OLED 4K TV', priceSar: 2799 }),
+      }));
+      expect(result!.categoryMismatch).toBe(false);
+      expect(result!.selectionReason).not.toBe('CATEGORY_MISMATCH');
+    });
   });
 });

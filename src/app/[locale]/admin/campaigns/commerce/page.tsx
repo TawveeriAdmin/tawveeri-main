@@ -232,7 +232,12 @@ export default async function AffiliateCommercePage({ params, searchParams }: {
         <h2 style={{ fontWeight: 900, marginBottom: 8 }}>Shadow Opportunities <span style={{ fontWeight: 400, fontSize: 12 }}>(last {days}d, real product views only, mode=SHADOW — no customer-visible effect)</span></h2>
         <p style={{ marginBottom: 8 }}>
           Total real comparison opportunities logged: <b>{fmt(shadow.totalEvents)}</b> · Hypothetical Amazon selections: <b>{fmt(shadow.amazonSelected)}</b> · Hypothetical Noon
-          selections: <b>{fmt(shadow.noonSelected)}</b> · No commercial signal (real price gap or missing data): <b>{fmt(shadow.noSelection)}</b>
+          selections: <b>{fmt(shadow.noonSelected)}</b> · No commercial signal: <b>{fmt(shadow.noSelection)}</b>
+        </p>
+        <p style={{ marginBottom: 8, fontSize: 12, color: '#555' }}>
+          Product Truth gates (2026-09-05, "RENEWED IS NOT NEW"/"OVERLAP ≠ SHOPPER-EQUIVALENCE") — blocked BEFORE any price/commercial comparison,
+          never a guessed winner: condition mismatch or unknown blocked <b>{fmt(shadow.conditionBlocked)}</b> · category/product-type mismatch
+          blocked <b>{fmt(shadow.categoryBlocked)}</b>.
         </p>
         {shadow.totalEvents === 0 ? (
           <p style={{ color: '#888', fontSize: 13 }}>
@@ -245,7 +250,7 @@ export default async function AffiliateCommercePage({ params, searchParams }: {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
               <thead>
                 <tr style={{ textAlign: 'left', borderBottom: '1px solid #ddd' }}>
-                  <th>Category</th><th>Events</th><th>Hypothetical Amazon</th><th>Hypothetical Noon</th><th>No selection</th><th>Noon-only views</th><th>Amazon-only views</th>
+                  <th>Category</th><th>Events</th><th>Hypothetical Amazon</th><th>Hypothetical Noon</th><th>No selection</th><th>Condition-blocked</th><th>Category-blocked</th><th>Noon-only views</th><th>Amazon-only views</th>
                 </tr>
               </thead>
               <tbody>
@@ -256,6 +261,8 @@ export default async function AffiliateCommercePage({ params, searchParams }: {
                     <td>{fmt(c.amazonSelected)}</td>
                     <td>{fmt(c.noonSelected)}</td>
                     <td>{fmt(c.noSelection)}</td>
+                    <td>{fmt(c.conditionBlocked)}</td>
+                    <td>{fmt(c.categoryBlocked)}</td>
                     <td>{fmt(c.noonOnly)}</td>
                     <td>{fmt(c.amazonOnly)}</td>
                   </tr>
@@ -276,6 +283,12 @@ export default async function AffiliateCommercePage({ params, searchParams }: {
           <li><b>NETWORK_REPORTED</b> — affiliate_conversions (imported CSV report). UNKNOWN, never 0, until a report is imported for that merchant/tracking id.</li>
         </ul>
         <p style={{ fontSize: 11, color: '#888', marginTop: 8 }}>See revenue-proof's per-campaign page for the full three-layer (A/B/C) proof on any single campaign.</p>
+        <p style={{ fontSize: 11, color: '#888', marginTop: 8 }}>
+          <b>OVERLAP ≠ SHOPPER-EQUIVALENCE.</b> The All-Category Coverage table's "Overlap"/"Shopper-equivalent" columns count canonical products where BOTH merchants have a
+          valid offer — that is comparability, not proof the two offers are the same condition or genuinely the same product. The Shadow Opportunities table above shows how
+          many of those real comparisons were actually blocked by the condition or category/product-type gate before any price comparison happened.
+          <b> 0 ≠ UNKNOWN</b> throughout this page — a genuine zero (e.g. 0 condition-blocked events) is always distinguished from "not yet measured."
+        </p>
       </section>
     </div>
   );

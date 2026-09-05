@@ -19,6 +19,7 @@
 // this function has independently classified as SHOPPER_EQUIVALENT.
 import { createServerClient } from '@/lib/database';
 import type { CampaignMerchant } from './types';
+import type { MerchantCondition } from './condition';
 
 export type ShopperEquivalenceState = 'SHOPPER_EQUIVALENT' | 'SHOPPER_NEAR_EQUIVALENT' | 'NOT_EQUIVALENT' | 'UNKNOWN';
 
@@ -32,6 +33,12 @@ export interface MerchantOfferSnapshot {
    *  evidence is too sparse, do NOT invent probabilities"). Null when no commission rate
    *  is on file for this merchant/category; a null value can never win a tie-break. */
   expectedCommissionSar?: number | null;
+  /** Product Truth gate (2026-09-05 mission, "RENEWED IS NOT NEW"): this offer's condition,
+   *  from classifyCondition() (condition.ts) applied to the offer's OWN raw title. Omitted
+   *  is treated identically to 'NEW' by classifyShopperEquivalence() below — every existing
+   *  caller that predates this field is unaffected; only a caller that explicitly supplies
+   *  a DIFFERING condition on the two sides can ever trigger the new gate. */
+  condition?: MerchantCondition;
 }
 
 /** A price difference at or below this is treated as immaterial — small enough that
@@ -52,6 +59,19 @@ export function materialPriceDifferenceThresholdSar(lowerPrice: number): number 
  */
 export function classifyShopperEquivalence(a: MerchantOfferSnapshot, b: MerchantOfferSnapshot): ShopperEquivalenceState {
   if (!a.inStock || !b.inStock) return 'NOT_EQUIVALENT'; // no offer to send a shopper to is never "equivalent" to one that exists
+
+  // Condition gate (2026-09-05 mission, "RENEWED IS NOT NEW") — checked BEFORE price, since
+  // a price comparison between materially different conditions is itself misleading, not
+  // merely a tie-break input. Omitted condition defaults to 'NEW' (see condition.ts's own
+  // documented reasoning for why absence-of-disclosure is NEW, not UNKNOWN) so every
+  // existing caller of this function is unaffected unless it explicitly supplies a
+  // DIFFERING condition. 'UNKNOWN' (a genuinely missing/empty title) on either side means
+  // this function cannot prove the two offers are the same condition — never assumed equal.
+  const condA = a.condition ?? 'NEW';
+  const condB = b.condition ?? 'NEW';
+  if (condA === 'UNKNOWN' || condB === 'UNKNOWN') return 'UNKNOWN';
+  if (condA !== condB) return 'NOT_EQUIVALENT'; // NEW vs RENEWED, NEW vs USED, RENEWED vs USED — never equivalent regardless of price
+
   if (a.priceSar === null || b.priceSar === null) return 'UNKNOWN'; // cannot compare price at all — never assume a tie
   if (a.priceSar === b.priceSar) return 'SHOPPER_EQUIVALENT';
   const lower = Math.min(a.priceSar, b.priceSar);
@@ -66,6 +86,9 @@ export type TiebreakReasonCode =
   | 'AFFILIATE_ONLY_TIEBREAK'
   | 'EXPECTED_VALUE_TIEBREAK'
   | 'INSUFFICIENT_EQUIVALENCE'
+  | 'CONDITION_MISMATCH'
+  | 'CONDITION_UNKNOWN'
+  | 'CATEGORY_MISMATCH'
   | 'UNKNOWN';
 
 export interface TiebreakDecision {
@@ -93,6 +116,19 @@ export function resolveCommercialTiebreak(a: MerchantOfferSnapshot, b: MerchantO
     if (a.inStock && !b.inStock) return { selectedMerchant: a.merchant, reasonCode: 'BETTER_AVAILABILITY', equivalence };
     if (b.inStock && !a.inStock) return { selectedMerchant: b.merchant, reasonCode: 'BETTER_AVAILABILITY', equivalence };
     return { selectedMerchant: null, reasonCode: 'INSUFFICIENT_EQUIVALENCE', equivalence }; // both out of stock
+  }
+
+  // Condition gate (2026-09-05 mission) — checked next, before price, so the REASON CODE
+  // truthfully says why a price comparison did not happen, rather than the generic
+  // price-based reasons below. Mirrors classifyShopperEquivalence()'s own condition logic
+  // exactly (never a second, independently-drifting copy of the "NEW"-default rule).
+  const condA = a.condition ?? 'NEW';
+  const condB = b.condition ?? 'NEW';
+  if (condA === 'UNKNOWN' || condB === 'UNKNOWN') {
+    return { selectedMerchant: null, reasonCode: 'CONDITION_UNKNOWN', equivalence };
+  }
+  if (condA !== condB) {
+    return { selectedMerchant: null, reasonCode: 'CONDITION_MISMATCH', equivalence };
   }
 
   if (equivalence === 'NOT_EQUIVALENT') {
