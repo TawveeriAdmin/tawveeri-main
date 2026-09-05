@@ -580,3 +580,38 @@ describe("Task parser — TV panel regression", () => {
     expect(parseShoppingTask("تلفزيون 65 بوصة رخيص").tv_panel).toBeUndefined();
   });
 });
+
+describe("Task parser — indecision & replacement-timing signals (Product Truth mission, 2026-09-05)", () => {
+  it("recognizes indecision phrasing with no named model and no other signal", () => {
+    const t = parseShoppingTask("محتار بين جوالين");
+    expect(t.category).toBe("mobile");
+    expect(t.indecision_signal).toBe(true);
+    expect(t.replacement_timing_signal).toBeUndefined();
+  });
+  it("recognizes English indecision phrasing", () => {
+    expect(parseShoppingTask("laptop, can't decide which one to get").indecision_signal).toBe(true);
+  });
+  it("recognizes replacement-timing phrasing (now-vs-wait framing)", () => {
+    const t = parseShoppingTask("أغير جوالي الحين ولا استنى");
+    expect(t.category).toBe("mobile");
+    expect(t.replacement_timing_signal).toBe(true);
+    expect(t.indecision_signal).toBeUndefined();
+  });
+  it("recognizes English replacement-timing phrasing", () => {
+    expect(parseShoppingTask("should I upgrade my laptop now or wait").replacement_timing_signal).toBe(true);
+  });
+  it("does NOT fire on an ordinary bare category browse (no regression)", () => {
+    const t = parseShoppingTask("جوال");
+    expect(t.indecision_signal).toBeUndefined();
+    expect(t.replacement_timing_signal).toBeUndefined();
+  });
+  it("does NOT fire merely because the sentence contains \"الآن\"/\"now\" without the wait framing", () => {
+    const t = parseShoppingTask("أبي جوال الآن بميزانية 2000");
+    expect(t.replacement_timing_signal).toBeUndefined();
+  });
+  it("a named-model query is unaffected (still no indecision/timing signal)", () => {
+    const t = parseShoppingTask("iphone 15 pro");
+    expect(t.indecision_signal).toBeUndefined();
+    expect(t.replacement_timing_signal).toBeUndefined();
+  });
+});

@@ -98,6 +98,14 @@ function needSignals(task: ParsedTask): string[] {
   // whole mission («تلفزيون 43 بوصة للمطبخ»): a stated room type is a real situational
   // constraint, category-agnostic, same rule as use_case_referenced above.
   if (task.room_type) signals.push(`room_type:${task.room_type}`);
+  // Product Truth & Decision Quality mission (2026-09-05): «محتار بين جوالين» and «أغير
+  // جوالي الآن أو أنتظر» each named a real category but carried none of the signals above —
+  // they fell to rule 5 ("category only — a browse") despite the shopper explicitly signalling
+  // a decision they need help with. See task-parser.ts's own doc comments on
+  // `indecision_signal`/`replacement_timing_signal` for why each is safe to treat as a need
+  // signal (same mechanism as `wants_recommendation`, never a ranking input).
+  if (task.indecision_signal) signals.push('indecision_signal');
+  if (task.replacement_timing_signal) signals.push('replacement_timing_signal');
   return signals;
 }
 

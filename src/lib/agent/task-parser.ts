@@ -379,6 +379,42 @@ function parseBudget(x: string): number | null | undefined {
 const RECOMMENDATION_MARKERS = /افضل|أفضل|انصحني|أنصحني|تنصحني|توصيتك|توصيك|نصيحتك|اقترح لي|إقترح لي|الانسب لي|الأنسب لي|وش تنصح|ايش تنصح|recommend|suggest.{0,20}me|what should i (get|buy|choose|pick)|which (one )?(is|to) (best|choose|get|buy)|help me choose|help me pick|best.{0,20}for me|(?:what(?:'s| is)|is there) (?:a |the |any )?(?:good|best|great)\b/;
 
 /**
+ * INDECISION SIGNAL (Product Truth & Decision Quality mission, 2026-09-05 — measured production
+ * gap: «محتار بين جوالين» ["torn between two phones"] names no specific model and states no
+ * budget/priority, so it carried ZERO need signals and ZERO comparison markers — `routeQuery`
+ * sent it to a bare, unfiltered "mobile" category browse (route-query.ts rule 5, "a browse, not
+ * a described need"), and `detectCompareIntent` (compare-intent.ts) never fires either, since the
+ * shopper named no nameable subjects to split into a pair. The shopper's own words already say
+ * exactly what they need — help choosing, not a product list — but nothing existing could hear
+ * it. This is NOT the same shopper as a plain "جوال" browse: a bare category name is silence,
+ * "محتار"/"حائر" is the shopper explicitly signalling they are stuck between options and want
+ * help resolving it (same class of signal as `wants_recommendation` above, distinct wording).
+ * Routes through the identical `needSignals()` mechanism (route-query.ts) into `advisory` mode,
+ * which already asks the category's own use-case clarify question (e.g. `MOBILE_USE_CASE_Q`,
+ * clarify.ts) instead of showing an undifferentiated grid — zero new UI, zero new engine logic,
+ * only a wider front door into a pipeline that already exists and is already tested.
+ */
+const INDECISION_MARKERS = /محتار|محتاره|حائر|حايره|حايرة|مو عارف اي|مو عارف ايش|ما ادري اي|ما اعرف اي|مادري ايش|مب قادر اقرر|ما قدر اقرر|ماقدر اقرر|can'?t decide|torn between|don'?t know which (?:one|to)|which one should i (?:get|choose|pick|buy)/;
+
+/**
+ * REPLACEMENT-TIMING SIGNAL (same mission, same measured gap class): «أغير جوالي الآن أو
+ * أنتظر» ["should I change my phone now or wait"] is not a product query at all — it is a
+ * timing question. Tawveeri has no reliable price-forecast evidence (no model predicts future
+ * price movement), so this deliberately does NOT attempt to answer "now or later" — inventing a
+ * wait/buy verdict with no supporting evidence is exactly the fabrication CLAUDE.md forbids
+ * ("unknown beats incorrect"). What it DOES do, honestly: recognizes the shopper is evaluating a
+ * REPLACEMENT decision and routes them into the same advisory/clarify pipeline used for an
+ * explicit recommendation ask, so they get real help picking what they would replace it WITH —
+ * the one part of their question Tawveeri can actually answer today. Narrow by construction
+ * (requires the "now vs. wait" framing, not just the word "الآن") to avoid firing on unrelated
+ * sentences that merely mention "now".
+ */
+const REPLACEMENT_TIMING_MARKERS = /الحين ولا (?:اصبر|أصبر|استنى|أستنى|انتظر|أنتظر)|الآن (?:او|أو) (?:انتظر|أنتظر)|الان (?:او|أو) (?:انتظر|أنتظر)|اشتري(?:ه|ها)? الحين ولا|ابدل(?:ها|ه)? الحين ولا|now or (?:wait|later)\b|buy now or wait|upgrade now or (?:wait|later)/i;
+
+function wantsIndecisionHelp(x: string): boolean { return INDECISION_MARKERS.test(x); }
+function wantsReplacementTimingHelp(x: string): boolean { return REPLACEMENT_TIMING_MARKERS.test(x); }
+
+/**
  * DEAL/DISCOUNT-SEEKING SIGNAL (2026-08-11, Saudi Shopper Language & Demand Discovery mission
  * — measured gap: this exact structure appeared in the founder's own illustrative examples
  * «ابي ايباد جديد وعليه تخفيض» and had NO field to land in anywhere in the FIRST-turn parse).
@@ -815,6 +851,12 @@ export interface ParsedTask extends ShoppingTask {
   wants_recommendation?: boolean;
   budget_referenced?: boolean;
   use_case_referenced?: boolean;
+  /** Product Truth & Decision Quality mission (2026-09-05) — see the detectors' own doc
+   *  comments above `INDECISION_MARKERS`/`REPLACEMENT_TIMING_MARKERS`. Routing-only signals,
+   *  never read by ranking/eligibility: they only decide whether the advisory pipeline gets a
+   *  chance to help, never which product wins inside it. */
+  indecision_signal?: boolean;
+  replacement_timing_signal?: boolean;
   /**
    * FINAL SEMANTIC INTELLIGENCE mission (2026-08-10) — NEVER set by `parseShoppingTask`
    * itself (this function stays pure keyword/number extraction, unchanged). Populated only by
@@ -911,6 +953,8 @@ export function parseShoppingTask(text: string): ParsedTask {
     wants_discount: wantsDiscount(x) || undefined,
     budget_referenced: budget_referenced || undefined,
     use_case_referenced: use_case_referenced || undefined,
+    indecision_signal: wantsIndecisionHelp(x) || undefined,
+    replacement_timing_signal: wantsReplacementTimingHelp(x) || undefined,
     parsed_from_text: text, unresolved: unresolved.length ? unresolved : undefined,
     deprioritized_priorities: priorityParse.deprioritized.length ? priorityParse.deprioritized : undefined,
     excluded_priorities: priorityParse.excluded.length ? priorityParse.excluded : undefined,

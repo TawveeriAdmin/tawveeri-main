@@ -3,7 +3,7 @@
 // no production dependency. Real production numbers behind this fix: docs/DECISIONS.md ADR-214.
 import {
   buildFunnel, topSessionSearchShare, computeCampaignAttribution, topDemand,
-  topSearchTerms, unmetDemand,
+  topSearchTerms, unmetDemand, decisionHelpIntentStats,
   type UsageEventRow, type OutboundClickRow,
 } from "../../src/lib/admin/command-center-queries";
 
@@ -227,6 +227,29 @@ describe("unmetDemand — whitespace normalization (same fix as topSearchTerms)"
       ev({ event_type: "no_answer", session_id: "s2", query_text: "مكيف  رخيص", created_at: "2026-08-05T10:01:00.000Z" }),
     ];
     expect(unmetDemand(events)).toEqual([{ query: "مكيف رخيص", count: 2 }]);
+  });
+});
+
+describe("decisionHelpIntentStats — Product Truth & Decision Quality mission (2026-09-05)", () => {
+  it("counts an indecision query as served when advisor_result follows within the window", () => {
+    const events = [
+      ev({ event_type: "advisor_query", session_id: "s1", query_text: "محتار بين جوالين", meta: { reason: "need signals: indecision_signal" }, created_at: "2026-08-05T10:00:00.000Z" }),
+      ev({ event_type: "advisor_result", session_id: "s1", query_text: "محتار بين جوالين", created_at: "2026-08-05T10:00:02.000Z" }),
+    ];
+    expect(decisionHelpIntentStats(events)).toEqual({ indecisionQueries: 1, indecisionServed: 1, replacementTimingQueries: 0, replacementTimingServed: 0 });
+  });
+  it("counts a replacement-timing query as NOT served when no advisor_result follows", () => {
+    const events = [
+      ev({ event_type: "advisor_query", session_id: "s2", query_text: "أغير جوالي الحين ولا استنى", meta: { reason: "need signals: replacement_timing_signal" }, created_at: "2026-08-05T10:00:00.000Z" }),
+    ];
+    expect(decisionHelpIntentStats(events)).toEqual({ indecisionQueries: 0, indecisionServed: 0, replacementTimingQueries: 1, replacementTimingServed: 0 });
+  });
+  it("ignores an ordinary advisor_query with no decision-help signal (no regression)", () => {
+    const events = [
+      ev({ event_type: "advisor_query", session_id: "s3", query_text: "تابلت للجامعة بميزانية 1500", meta: { reason: "need signals: budget, use_case_referenced" }, created_at: "2026-08-05T10:00:00.000Z" }),
+      ev({ event_type: "advisor_result", session_id: "s3", query_text: "تابلت للجامعة بميزانية 1500", created_at: "2026-08-05T10:00:02.000Z" }),
+    ];
+    expect(decisionHelpIntentStats(events)).toEqual({ indecisionQueries: 0, indecisionServed: 0, replacementTimingQueries: 0, replacementTimingServed: 0 });
   });
 });
 

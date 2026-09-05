@@ -38,6 +38,33 @@ describe('routeQuery — comparison intent is classified explicitly, checked bef
   });
 });
 
+// Product Truth & Decision Quality mission (2026-09-05): «محتار بين جوالين» and «أغير جوالي
+// الآن أو أنتظر» each measured on real production evidence — a real category, ZERO comparison
+// markers (no nameable subjects to split into a pair) and ZERO other need signal, so both fell
+// to rule 5 ("category only — a browse") before this fix. See task-parser.ts's own doc comments
+// on `indecision_signal`/`replacement_timing_signal`.
+describe('routeQuery — indecision and replacement-timing route to advisory, not a bare browse', () => {
+  it('«محتار بين جوالين» (torn between two phones, no model named) routes to advisory', () => {
+    const route = routeQuery('محتار بين جوالين');
+    expect(route.mode).toBe('advisory');
+    expect(route.reason).toContain('indecision_signal');
+  });
+  it('«أغير جوالي الحين ولا استنى» (replace now or wait) routes to advisory, not a timing verdict', () => {
+    const route = routeQuery('أغير جوالي الحين ولا استنى');
+    expect(route.mode).toBe('advisory');
+    expect(route.reason).toContain('replacement_timing_signal');
+  });
+  it('does not affect an ordinary bare category browse (no regression)', () => {
+    expect(routeQuery('جوال').mode).toBe('retrieval');
+  });
+  it('a genuine pair comparison with named models still wins over indecision-shaped wording', () => {
+    // Contains no indecision marker at all — this only confirms comparison detection (checked
+    // FIRST in routeQuery) is untouched by this change, not a new precedence rule.
+    const route = routeQuery('ايهما افضل ايفون 17 برو ولا S25 الترا');
+    expect(route.mode).toBe('comparison');
+  });
+});
+
 describe('routeQuery — need-based queries reach the reasoning engine', () => {
   const advisory: Array<[string, string]> = [
     ['مكيف لغرفة 30 متر هادئ وموفر للكهرباء تحت 4000', 'AC with room size, priorities and budget'],

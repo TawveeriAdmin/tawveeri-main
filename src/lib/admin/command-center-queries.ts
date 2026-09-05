@@ -609,6 +609,43 @@ export function unmetDemand(events: UsageEventRow[], limit = 10): Array<{ query:
   return Array.from(map.entries()).map(([query, count]) => ({ query, count })).sort((a, b) => b.count - a.count).slice(0, limit);
 }
 
+/**
+ * DECISION-HELP INTENT (Product Truth & Decision Quality mission, 2026-09-05). Measures whether
+ * `route-query.ts`'s `indecision_signal`/`replacement_timing_signal` routing actually reaches
+ * shoppers and gets served — not just that the code path exists. Needs NO new event or column:
+ * `advisor_query`'s `meta.reason` already carries `routeQuery`'s own reason string verbatim
+ * (search-client.tsx's existing `track('advisor_query', { meta: { reason: route.reason } })`),
+ * and `needSignals()` names each signal literally in that string
+ * (`` `need signals: ${signals.join(', ')}` ``) — so this is a read of data already recorded,
+ * the same discipline `unmetDemand`/`wasAnsweredElsewhere` above already use for pairing a query
+ * event to its answer. "Served" reuses the identical same-session/same-query/10s-window pairing
+ * ADR-260 established for exactly this purpose — never a second, differently-tuned definition of
+ * "answered".
+ */
+export interface DecisionHelpIntentStats {
+  indecisionQueries: number;
+  indecisionServed: number;
+  replacementTimingQueries: number;
+  replacementTimingServed: number;
+}
+
+export function decisionHelpIntentStats(events: UsageEventRow[]): DecisionHelpIntentStats {
+  const stats: DecisionHelpIntentStats = {
+    indecisionQueries: 0, indecisionServed: 0, replacementTimingQueries: 0, replacementTimingServed: 0,
+  };
+  for (const e of events) {
+    if (e.event_type !== 'advisor_query') continue;
+    const reason = typeof e.meta?.reason === 'string' ? e.meta.reason : '';
+    const isIndecision = reason.includes('indecision_signal');
+    const isTiming = reason.includes('replacement_timing_signal');
+    if (!isIndecision && !isTiming) continue;
+    const served = wasAnsweredElsewhere(e, events);
+    if (isIndecision) { stats.indecisionQueries++; if (served) stats.indecisionServed++; }
+    if (isTiming) { stats.replacementTimingQueries++; if (served) stats.replacementTimingServed++; }
+  }
+  return stats;
+}
+
 const pct = (num: number, den: number) => (den > 0 ? num / den : 0);
 
 // Same thresholds as scripts/tps-analysis/usage-report.ts — one governed definition, not re-picked here.
@@ -692,6 +729,7 @@ export interface CommandCenterData {
   surfaces: SurfaceRow[];
   topDemand: Array<{ category: string; count: number; recorded: number; derived: number }>;
   unmetDemand: Array<{ query: string; count: number }>;
+  decisionHelpIntent: DecisionHelpIntentStats;
   outboundReal: { clicks: number; distinctProducts: number; monetized: number };
   outboundTest: { clicks: number; distinctProducts: number; monetized: number };
   kpis: {
@@ -1060,6 +1098,7 @@ export async function getCommandCenterData(
     surfaces: bySurface(realEvents),
     topDemand: topDemand(realEvents),
     unmetDemand: unmetDemand(realEvents),
+    decisionHelpIntent: decisionHelpIntentStats(realEvents),
     outboundReal,
     outboundTest,
     kpis,

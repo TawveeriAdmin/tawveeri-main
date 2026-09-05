@@ -91,7 +91,12 @@ const strip = (s: string) =>
  * exercised this fallback with this shape of input, so tightening it here regresses nothing
  * already proven.
  */
-const NOT_A_PRODUCT_NAME = /احتياجي|احتياجك|استخدامي|يناسبني|ميزانيتي|my (needs|budget|use ?case)/;
+// Timing/wait verbs (استنى/انتظر/اصبر) added for the Product Truth & Decision Quality mission
+// (2026-09-05): «أغير جوالي الحين ولا استنى» ["replace it now or wait"] structurally matches
+// the bare «X ولا Y» pair shape below («أغير جوالي الحين» / «استنى») even though "استنى" is a
+// verb, never a product — the exact same class of false split this constant already exists to
+// reject.
+const NOT_A_PRODUCT_NAME = /احتياجي|احتياجك|استخدامي|يناسبني|ميزانيتي|استني|انتظر|اصبر|my (needs|budget|use ?case)/;
 
 /**
  * Split a phrase into exactly two subjects, or return null.
@@ -164,7 +169,9 @@ export function detectCompareIntent(text: string): CompareIntent {
   // containing it are a single request with two conjoined qualities («لابتوب ألعاب
   // وشاشة كبيرة»), not a comparison of two things.
   const bare = splitPair(x);
-  if (bare && /\bvs\b|\bversus\b|مقابل|ولا/.test(x)) return { kind: 'pair', subjects: bare, marker: /ولا/.test(x) ? 'ولا' : 'vs' };
+  if (bare && !NOT_A_PRODUCT_NAME.test(x) && /\bvs\b|\bversus\b|مقابل|ولا/.test(x)) {
+    return { kind: 'pair', subjects: bare, marker: /ولا/.test(x) ? 'ولا' : 'vs' };
+  }
 
   return { kind: 'none', reason: 'no comparison marker' };
 }

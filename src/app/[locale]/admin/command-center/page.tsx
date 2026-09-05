@@ -63,7 +63,7 @@ export default async function CommandCenterPage({
 
   const data = await getCommandCenterData(period, sp.start, sp.end, includeHistorical);
   const {
-    real, test, prevReal, kpis, gate, surfaces, topDemand, unmetDemand, outboundReal, outboundTest,
+    real, test, prevReal, kpis, gate, surfaces, topDemand, unmetDemand, decisionHelpIntent, outboundReal, outboundTest,
     quality, campaignAttribution, confidence, commercial, baseline, homeMission,
   } = data;
 
@@ -341,6 +341,33 @@ export default async function CommandCenterPage({
                 <span className="shrink-0 font-bold tabular-nums text-on-surface dark:text-white">{d.count}×</span>
               </div>
             ))}
+          </div>
+        </Card>
+      )}
+
+      {(decisionHelpIntent.indecisionQueries > 0 || decisionHelpIntent.replacementTimingQueries > 0) && (
+        <Card>
+          <h2 className="text-sm font-black uppercase tracking-wide text-on-surface dark:text-white">{isRTL ? 'مساعدة القرار' : 'Decision help'}</h2>
+          <p className="mt-1 text-xs text-on-surface-variant dark:text-white/50">
+            {isRTL ? 'عملاء محتارون بين خيارات أو يسألون عن توقيت الشراء — وهل حصلوا على إجابة' : 'Shoppers torn between options or asking about purchase timing — and whether they got an answer'}
+          </p>
+          <div className="mt-3 space-y-1.5 text-sm">
+            {decisionHelpIntent.indecisionQueries > 0 && (
+              <div className="flex items-center justify-between gap-3">
+                <span className="truncate text-on-surface-variant dark:text-white/60">{isRTL ? 'محتار بين خيارات' : 'Torn between options'}</span>
+                <span className="shrink-0 font-bold tabular-nums text-on-surface dark:text-white">
+                  {decisionHelpIntent.indecisionServed}/{decisionHelpIntent.indecisionQueries} {isRTL ? 'تمت الإجابة' : 'answered'}
+                </span>
+              </div>
+            )}
+            {decisionHelpIntent.replacementTimingQueries > 0 && (
+              <div className="flex items-center justify-between gap-3">
+                <span className="truncate text-on-surface-variant dark:text-white/60">{isRTL ? 'الشراء الآن أم الانتظار' : 'Buy now vs. wait'}</span>
+                <span className="shrink-0 font-bold tabular-nums text-on-surface dark:text-white">
+                  {decisionHelpIntent.replacementTimingServed}/{decisionHelpIntent.replacementTimingQueries} {isRTL ? 'تمت الإجابة' : 'answered'}
+                </span>
+              </div>
+            )}
           </div>
         </Card>
       )}
