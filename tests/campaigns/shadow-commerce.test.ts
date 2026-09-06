@@ -79,11 +79,13 @@ describe('evaluateShadowOpportunity', () => {
     expect(result!.hypotheticalSelectedMerchant).toBe('noon');
   });
 
-  it('reuses commercial-tiebreak.ts exactly — a real, material price gap picks the cheaper merchant, never a coin flip', () => {
+  it('reuses commercial-tiebreak.ts exactly — a real, material price gap picks the cheaper merchant, never a coin flip (both sides same DETERMINABLE condition, since an undisclosed title is UNKNOWN, not NEW — see the condition-gate safety tests below)', () => {
     const result = evaluateShadowOpportunity(input({
-      amazon: offer({ priceSar: 1649 }),
-      noon: offer({ priceSar: 1699 }),
+      amazon: offer({ title: 'Renewed - Generic Product 128GB', priceSar: 1649 }),
+      noon: offer({ title: 'Renewed - Generic Product 128GB', priceSar: 1699 }),
     }));
+    expect(result!.amazonCondition).toBe('RENEWED');
+    expect(result!.noonCondition).toBe('RENEWED');
     expect(result!.hypotheticalSelectedMerchant).toBe('amazon');
     expect(result!.selectionReason).toBe('LOWEST_TOTAL_PRICE');
   });
@@ -122,16 +124,27 @@ describe('evaluateShadowOpportunity', () => {
       expect(result!.selectionReason).toBe('LOWEST_TOTAL_PRICE');
     });
 
-    it('the ORIGINAL (incorrect) prior assumption — a NEW listing vs a RENEWED listing at a similar price — is now blocked, not silently compared', () => {
+    it('a REAL, determinable condition mismatch (REFURBISHED vs RENEWED) is blocked, never silently compared — real production evidence class, not a hypothetical', () => {
       const result = evaluateShadowOpportunity(input({
-        amazon: offer({ title: 'HP EliteBook 840 G8 Laptop 14" Intel i5 8GB 256GB', priceSar: 1450 }), // no condition marker -> NEW
-        noon: offer({ title: 'Renewed - EliteBook 840 G8 Notebook 14" Intel i5 8GB 256GB', priceSar: 1497 }),
+        amazon: offer({ title: 'Apple (Refurbished) iPhone 15 Pro Max (256 GB) - Natural Titanium', priceSar: 3450 }),
+        noon: offer({ title: 'Renewed - iPhone 15 Pro Max 256GB Natural Titanium', priceSar: 3497 }),
       }));
-      expect(result!.amazonCondition).toBe('NEW');
+      expect(result!.amazonCondition).toBe('REFURBISHED');
       expect(result!.noonCondition).toBe('RENEWED');
       expect(result!.hypotheticalSelectedMerchant).toBeNull();
       expect(result!.selectionReason).toBe('CONDITION_MISMATCH');
       expect(result!.shopperEquivalenceState).toBe('NOT_EQUIVALENT');
+    });
+
+    it('SAFETY (closure-proof 2026-09-06): the ORIGINAL prior-pass scenario — an undisclosed title next to a RENEWED title — is now CONDITION_UNKNOWN, not CONDITION_MISMATCH, because an undisclosed title can never safely be assumed NEW', () => {
+      const result = evaluateShadowOpportunity(input({
+        amazon: offer({ title: 'HP EliteBook 840 G8 Laptop 14" Intel i5 8GB 256GB', priceSar: 1450 }), // no condition marker -> UNKNOWN, not NEW
+        noon: offer({ title: 'Renewed - EliteBook 840 G8 Notebook 14" Intel i5 8GB 256GB', priceSar: 1497 }),
+      }));
+      expect(result!.amazonCondition).toBe('UNKNOWN');
+      expect(result!.noonCondition).toBe('RENEWED');
+      expect(result!.hypotheticalSelectedMerchant).toBeNull();
+      expect(result!.selectionReason).toBe('CONDITION_UNKNOWN');
     });
 
     it('a missing title on one side → CONDITION_UNKNOWN, never assumed NEW or equal', () => {
