@@ -70,10 +70,127 @@ export type MerchantCondition = 'NEW' | 'RENEWED' | 'REFURBISHED' | 'USED' | 'UN
  * decision is more conservative.
  */
 export function classifyCondition(title: string | null | undefined): MerchantCondition {
-  if (!title || !title.trim()) return 'UNKNOWN';
-  if (/\brefurbished\b/i.test(title)) return 'REFURBISHED';
-  const detected = extractSpecsFromTitle(title).condition;
-  if (detected === 'renewed') return 'RENEWED';
-  if (detected === 'used') return 'USED';
-  return 'UNKNOWN';
+  return resolveCondition({ title }).condition;
+}
+
+// ── Evidence-hierarchy contract (Merchant Condition Evidence Recovery, 2026-09-06) ─────
+//
+// Audited all 8 currently-relevant providers (Amazon, Noon, Jarir, Extra, Almanea,
+// Samsung KSA, Shaker, SWSG/others) for a source of condition evidence beyond title text,
+// without building any new scraper:
+//
+// - Jarir: EXPLICIT_TEXT_CONDITION, already handled — 62 real listings found using the
+//   SAME vocabulary this module already detects ("Renewed Grade A/B ..."), confirming
+//   classifyCondition() is already merchant-agnostic and needs no Jarir-specific code.
+// - Extra, Almanea, Shaker, LuLu, SharafDG, Samsung KSA: NO_RELIABLE_CONDITION_EVIDENCE —
+//   a live count found ZERO condition-disclosing titles for any of them today. Already
+//   correctly UNKNOWN by the same generic rule; nothing to recover.
+// - Noon: a real STRUCTURED field exists (schema.org `offers.itemCondition` in the
+//   product page's own JSON-LD, already fetched by the existing scraper for price/name —
+//   see noon-scraper.ts's parseProductJsonLd(), which does not currently read this field)
+//   — but two independent live checks (2026-09-06) of confirmed-RENEWED titles both
+//   returned `itemCondition: "https://schema.org/NewCondition"`, i.e. the field is WRONG /
+//   defaulted, not a reliable per-offer fact. Classified PARTIAL_EVIDENCE: real evidence
+//   exists in principle, proven UNRELIABLE in practice for the specific claim "NEW" —
+//   never wired as a source of NEW. (A non-NEW structured claim, e.g. explicitly
+//   RefurbishedCondition/UsedCondition, was not observed in this sample and is treated
+//   more cautiously below — see STRUCTURED_FIELD's asymmetric trust rule.)
+// - Amazon: STRUCTURED_CONDITION exists and IS reliable — the product page renders a
+//   `#conditionGuideFeature_feature_div` element ("الحالة / مُجدّد - ممتاز" = "Condition:
+//   Renewed - Excellent") for Amazon Renewed listings, confirmed live and consistent
+//   across both a listing's English and Arabic page variants. NOT wired: for every real
+//   case checked, Tawveeri's already-stored `products.name_en` already discloses the same
+//   condition via title text, making the additional extraction redundant for currently
+//   observed data, and reading it would require modifying the live, unattended production
+//   Amazon scraper (Puppeteer product-page fetch) — a real production-reliability risk not
+//   justified by a redundant benefit. Documented as a viable FUTURE improvement if a case
+//   is ever found where Tawveeri's stored English title lacks the marker but the
+//   structured element would have caught it.
+// - No merchant/source contract found anywhere in this codebase or its docs guaranteeing
+//   "every offer through this path is new" — SOURCE_CONTRACT_BACKED_NEW has zero current
+//   instances; the contract below supports it for a future source that does make this
+//   guarantee, verified independently before being trusted.
+//
+// CONCLUSION: no code-safe, reliable evidence beyond title text is available TODAY for any
+// of the 8 audited merchants. The contract below is real, tested, and ready to accept
+// structured/source-contract evidence the moment a reliable one is integrated — it is not
+// exercised with real non-title evidence in production today, and this is disclosed
+// honestly rather than wired against unproven signals (Noon's disproven NewCondition
+// above being the concrete cautionary example of exactly that mistake).
+
+export type ConditionEvidenceSource = 'EXPLICIT_TITLE' | 'STRUCTURED_FIELD' | 'SOURCE_CONTRACT' | 'NONE';
+export type ConditionEvidenceStrength = 'HIGH' | 'MEDIUM' | 'LOW' | 'NONE';
+
+export interface ConditionEvidence {
+  title: string | null | undefined;
+  /** A merchant-supplied structured condition value (e.g. schema.org itemCondition). A
+   *  non-NEW value (renewed/refurbished/used) is trusted even unverified, per the
+   *  asymmetric-incentive rule below — only a 'new' value additionally requires
+   *  `structuredSourceVerifiedForNew`. */
+  structuredCondition?: 'new' | 'renewed' | 'refurbished' | 'used' | null;
+  /** Set true ONLY after independently verifying, for THIS SPECIFIC source, that its
+   *  structured field reliably reports NEW and is not a lazy default. Deliberately
+   *  DEFENSIVE, deviating from a literal reading of the founder's own hypothetical
+   *  example ("structured condition = new → NEW") because this module found a REAL
+   *  counter-example: two independent live checks of Noon's own `offers.itemCondition`
+   *  (schema.org JSON-LD, 2026-09-06) both returned "NewCondition" for titles that
+   *  EXPLICITLY say "Renewed" — proving that specific structured field is an unreliable
+   *  default, not a trustworthy per-offer fact. No source has been verified reliable for
+   *  a NEW claim as of this writing; this flag exists so a FUTURE source can be, without
+   *  ever silently trusting an unverified one. */
+  structuredSourceVerifiedForNew?: boolean;
+  /** True only when the caller has independently verified that EVERY offer reaching this
+   *  specific ingestion path is contractually guaranteed new by the source/program —
+   *  never a general "this merchant mostly sells new items" assumption (mission's own
+   *  explicit distinction). No current source qualifies; this exists for a future one
+   *  that is verified to. */
+  sourceContractGuaranteesNew?: boolean;
+}
+
+export interface ConditionResolution {
+  condition: MerchantCondition;
+  evidenceSource: ConditionEvidenceSource;
+  evidenceStrength: ConditionEvidenceStrength;
+}
+
+/**
+ * Evidence-hierarchy resolver. Precedence (highest first), each checked only if the
+ * previous yields nothing:
+ *   1. EXPLICIT TITLE TEXT (renewed/refurbished/used) — HIGH strength. A seller
+ *      disclosing a WORSE-than-new condition in the title has no incentive to fabricate
+ *      it, and it is the only signal proven consistent across every source audited.
+ *   2. STRUCTURED FIELD claiming a NON-NEW condition — MEDIUM strength. Asymmetric trust:
+ *      a structured claim of RENEWED/REFURBISHED/USED is accepted (a source has no
+ *      incentive to wrongly claim worse-than-actual condition), but a structured claim of
+ *      NEW is NEVER accepted here (proven unreliable/defaulted for the one real source
+ *      checked, Noon) — callers must not pass `structuredCondition: 'new'` expecting it to
+ *      promote to NEW; it is intentionally ignored below.
+ *   3. VERIFIED SOURCE CONTRACT guaranteeing NEW — MEDIUM strength, NEW only. Requires the
+ *      caller to have already independently verified this guarantee; never inferred from
+ *      "this merchant mostly sells new products" (mission's own explicit distinction).
+ *   4. No evidence at all — UNKNOWN, NONE/NONE. Never guessed.
+ */
+export function resolveCondition(evidence: ConditionEvidence): ConditionResolution {
+  const { title, structuredCondition, structuredSourceVerifiedForNew, sourceContractGuaranteesNew } = evidence;
+
+  if (title && title.trim()) {
+    if (/\brefurbished\b/i.test(title)) return { condition: 'REFURBISHED', evidenceSource: 'EXPLICIT_TITLE', evidenceStrength: 'HIGH' };
+    const detected = extractSpecsFromTitle(title).condition;
+    if (detected === 'renewed') return { condition: 'RENEWED', evidenceSource: 'EXPLICIT_TITLE', evidenceStrength: 'HIGH' };
+    if (detected === 'used') return { condition: 'USED', evidenceSource: 'EXPLICIT_TITLE', evidenceStrength: 'HIGH' };
+  }
+
+  if (structuredCondition === 'renewed') return { condition: 'RENEWED', evidenceSource: 'STRUCTURED_FIELD', evidenceStrength: 'MEDIUM' };
+  if (structuredCondition === 'refurbished') return { condition: 'REFURBISHED', evidenceSource: 'STRUCTURED_FIELD', evidenceStrength: 'MEDIUM' };
+  if (structuredCondition === 'used') return { condition: 'USED', evidenceSource: 'STRUCTURED_FIELD', evidenceStrength: 'MEDIUM' };
+  // A bare structuredCondition === 'new' is NOT trusted — only if the caller has proven
+  // THIS source reliable for a NEW claim specifically (see the field's own doc comment;
+  // Noon's real itemCondition field is the proven counter-example of an unverified one).
+  if (structuredCondition === 'new' && structuredSourceVerifiedForNew === true) {
+    return { condition: 'NEW', evidenceSource: 'STRUCTURED_FIELD', evidenceStrength: 'MEDIUM' };
+  }
+
+  if (sourceContractGuaranteesNew === true) return { condition: 'NEW', evidenceSource: 'SOURCE_CONTRACT', evidenceStrength: 'MEDIUM' };
+
+  return { condition: 'UNKNOWN', evidenceSource: 'NONE', evidenceStrength: 'NONE' };
 }
