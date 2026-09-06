@@ -18,6 +18,8 @@ A Saudi price-decision platform: describe your need and budget in Arabic or Engl
 8. Real, working merchant exit links carrying the correct affiliate tag.
 9. Honest zero-confident-match fallback, clearly labeled as sponsored/affiliate content.
 10. Cross-merchant storage/spec ambiguity disclosure (phones).
+11. Natural-language follow-up questions ("what if my budget were higher?", "cheaper?") — confirmed working live 2026-09-06: each returns an honest, explicit answer (a real before/after comparison, or an explicit "no change" verdict), not a silent no-op. **Correction:** an earlier same-day test reported these as broken (GAP-1 in `PRODUCT_GAPS_FOR_SOCIAL.md`); that observation was invalidated by a later, more reliable reproduction — root cause was a browser-automation click-coordinate mismatch in the test tooling, not product behavior. See `docs/report/TAWVEERI-CURRENT-STATE-2026-09-06.md`.
+12. Home Mission's full intake → review → build-plan flow — confirmed working end-to-end live 2026-09-06 (real multi-category plan, real budget allocation, real per-room AC matching, honest evidence disclosures). **Correction:** an earlier same-day test reported the submit step as stuck; invalidated by the same later reproduction as item 11 — same root cause (test-tooling click mismatch), not a product defect. Real-world shopper completion RATE for this flow was not re-measured and remains a separate, open question (see item 7 below).
 
 ## Top RED / do-not-promise capabilities
 1. Verifying a refrigerator (or anything) has a lock/key — disclosed, not filtered.
@@ -26,8 +28,7 @@ A Saudi price-decision platform: describe your need and budget in Arabic or Engl
 4. Automatic discovery/addition of a product not already in the catalog.
 5. Official partnership with any merchant (Noon explicitly legally unresolved).
 6. "Noon is usually cheaper" — the opposite is true for TVs.
-7. The "raise my budget / cheaper / why is this better" follow-up quick-action buttons — they render but do nothing (real defect found live 2026-09-06, see `PRODUCT_GAPS_FOR_SOCIAL.md` GAP-1).
-8. Any live Grok/AI-agent integration with the product — none exists (ADR-297); this very pack is manually maintained, not a live feed.
+7. Any live Grok/AI-agent integration with the product — none exists (ADR-297); this very pack is manually maintained, not a live feed.
 
 ## Top 10 real shopper journeys to use in content (in order of evidence strength)
 1. Small fridge + lock matters (honesty differentiator — the flagship story).
@@ -36,7 +37,8 @@ A Saudi price-decision platform: describe your need and budget in Arabic or Engl
 4. Any journey showing the fake-discount catch on a real product.
 5. Any journey showing the merchant exit link landing on a real product page.
 6. The honest "couldn't find a confident match" fallback with its affiliate label.
-7-10. TV, laptop, tablet, washer, Home Mission journeys — **do a fresh live check before using these**, they were not tested this pass.
+7. Home Mission's full plan-building flow — confirmed working end-to-end 2026-09-06, but do not claim or imply a proven high shopper completion rate; that data point is separately still an open question (last known figure: August 2026, real engagement with zero completions — not re-measured since).
+8-10. TV, laptop, tablet, washer journeys — all live-tested 2026-09-06 and confirmed GREEN (see `docs/report/TAWVEERI-CAPABILITY-TRUTH-2026-09-06.md`); re-check freshness if using more than ~2 weeks after that date.
 
 ## Top 5 content formats
 1. Screen-recorded real search with the honesty disclosure visible (crop out the unrelated "Hot Deals" grid below — see `SOCIAL_ASSET_MANIFEST.md`).
@@ -59,3 +61,5 @@ Never call correlation attribution. A view or click is not a confirmed conversio
 
 ## Where to read the full Product Truth
 `PRODUCT_TRUTH_SOCIAL_PACK_AR.md` / `_EN.md` (this folder) for the full narrative, `SOCIAL_CLAIMS_LEDGER.md` for every citation, `SOCIAL_CAPABILITY_CONTRACT.json` for the machine-readable version, `PRODUCT_GAPS_FOR_SOCIAL.md` for known defects, `SOCIAL_GOVERNANCE.md` for what never to publish.
+
+**Final current-truth documents (supersede any conflicting detail above or in the older files):** `docs/report/TAWVEERI-CURRENT-STATE-2026-09-06.md` (full corrected founder audit), `docs/report/TAWVEERI-FOUNDER-SCORECARD-2026-09-06.md` (concise decision view), `docs/report/TAWVEERI-CAPABILITY-TRUTH-2026-09-06.md` (per-category capability truth, including Home Mission's final verified state). These three were written after a final, more reliable re-verification and are the authoritative reference — read them first if anything here seems to conflict.
