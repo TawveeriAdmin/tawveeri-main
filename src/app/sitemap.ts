@@ -36,6 +36,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     '/how-it-works',
     '/stores',
     '/categories',
+    // ADR-301 (2026-09-07): Home Mission promoted from the ADR-249 pilot gate (noindexed,
+    // unlisted) to a public, indexable strategic capability — now advertised here like any
+    // other real content page.
+    '/home-mission',
     '/contact',
     '/faq',
     '/privacy',

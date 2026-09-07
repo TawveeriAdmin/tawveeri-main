@@ -6,6 +6,29 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-301 — Home Mission public indexing promotion: ADR-249 pilot gate lifted, now a public strategic capability · Accepted (2026-09-07)
+
+**Context.** ADR-249 (2026-08-15) launched Home Mission ("جهّز بيتك بذكاء") deliberately noindexed, unlisted, and reachable only by direct URL — a controlled-exposure gate for a genuinely unproven capability (multi-category, shared-budget home purchase planning). That mandate's own research found no comparable product globally had shipped this successfully (OpenAI's Instant Checkout was killed; Walmart's agent-checkout measured ~3× worse than plain click-through). The gate was the right call for an unproven flow, not a permanent judgment on the feature.
+
+**Founder decision (2026-09-07).** Home Mission is no longer a pilot. It is a public, strategic Tawveeri capability, and `/ar/home-mission` / `/en/home-mission` should be discoverable and indexable. This mission is narrowly scoped to that promotion — no broader SEO changes, no change to product-page indexability policy (see the separate, still-open GSC indexing incident audit for that), no mass-indexing request.
+
+**Why the reversal is safe now, not just desired.** In this same working session, a prior mission ("TAWVEERI 1.0 BLOCKER CLOSURE") independently reproduced Home Mission's full submit flow end-to-end against live production with a reliable, event-driven click method (after an earlier coordinate-based test had wrongly flagged it as broken — a test-tooling artifact, corrected same-day): example intake → mission-card review → "ابنِ الخطة" → a real generated plan with real budget allocation, real per-room AC capacity matches, real prices, and honest per-item evidence disclosures. The capability the pilot gate was protecting against exposing prematurely is now production-verified.
+
+**Implementation.**
+- `src/app/[locale]/home-mission/page.tsx` — `generateMetadata`'s `robots` flipped from `{ index: false, follow: false }` to `{ index: true, follow: true }`. Canonical/hreflang were already correct (self-canonical per locale, reciprocal ar/en/x-default via the shared `buildAlternates()`/`buildPageMetadata()` builders — confirmed unchanged by this mission, not re-derived). Description copy for both locales lightly extended to name comparison explicitly ("بمقارنة أسعار حقيقية بين متاجر السعودية" / "comparing real observed prices across Saudi stores"), matching the capability accurately without keyword-stuffing.
+- `src/app/sitemap.ts` — `/home-mission` added to the existing `staticPages` array (same architecture as `/about`, `/deals`, etc.) — no separate sitemap built.
+- `src/components/layout/footer.tsx` — added a permanent, always-server-rendered link to Home Mission in the "اكتشف"/"Discover" column. **Real gap found and fixed**: the homepage's own Home Mission entry card (`unified-home.tsx`) is `'use client'` with `useState(false)` initial visibility, deliberately SSR-hidden to avoid a localStorage-driven hydration mismatch (ADR-257) — meaning it never appears in the server-rendered HTML at all, and until this fix Home Mission had **no crawlable internal link** anywhere in the site's initial HTML (confirmed live: the homepage's raw HTML contained only the static footer/nav links). The footer link is unrelated to that dismissible card and does not touch ADR-257's fix.
+
+**Explicitly not touched (regression guard).** The `compare/[key]` "nothing to compare" noindex gate (ADR-189), the non-canonical-host `X-Robots-Tag: noindex, follow` guard, and every existing `robots.txt` disallow rule — all confirmed unchanged, with a dedicated regression test (see below) pinning each one so a future change cannot silently widen this promotion into those surfaces.
+
+**Tests.** New `tests/seo/home-mission-indexability.test.ts` (9 tests): both locales resolve to `{ index: true, follow: true }`; self-canonical and reciprocal ar/en/x-default hreflang are correct; the sitemap and footer changes are present; three regression assertions pin the compare/[key] gate, the non-canonical-host tag, and the absence of any new `robots.txt` rule for this path. Full relevant suites re-run clean (`tests/seo/*`, `tests/agent/home-mission*.test.ts`) — 99/99 passing, zero regressions. `tsc --noEmit`: zero new errors on the changed files.
+
+**Not an SEO regression.** The ADR-249 noindex was correct when written (an unproven flow, deliberately controlled); this ADR is a deliberate, evidence-backed reversal now that the flow is proven, not a correction of a mistake.
+
+**Founder action remaining, outside this ADR's scope.** No GSC API access this session — indexing status in Search Console cannot be confirmed directly. Once production is verified live (below), the founder may optionally use GSC's URL Inspection tool to request indexing for the two URLs; this ADR does not perform or require mass submission.
+
+---
+
 ### ADR-300 — Merchant Condition Evidence Recovery: audited all 8 active merchants for condition evidence beyond title text; none qualifies today; evidence-hierarchy contract built and tested, ADR-299's UNKNOWN-default left untouched · Accepted (2026-09-06)
 
 **Context.** ADR-299 (CLOSED_FINAL, not reopened here) made the condition gate default to UNKNOWN whenever no title marker is detected, because "no marker" is a dataset-backed heuristic, not a source-contract guarantee. Real consequence: of 46 real Amazon×Noon overlap pairs across laptop/tablet/tv/monitor/audio, only 3 reach a price comparison — 43 gate to CONDITION_UNKNOWN. This mission's mandate: find out whether any TRUSTWORTHY condition evidence exists beyond title text — a structured API/feed field, an embedded JSON blob, a source contract — that could safely recover some of that 43, WITHOUT reverting to "no marker = NEW" and without building a new scraper.

@@ -44,9 +44,14 @@ export function Footer() {
             {
               title: 'اكتشف',
               links: [
-                { href: `/${locale}/categories`, label: 'الفئات'   },
-                { href: `/${locale}/stores`,     label: 'المتاجر' },
-                { href: `/${locale}/deals`,      label: 'العروض'  },
+                { href: `/${locale}/categories`,    label: 'الفئات'         },
+                { href: `/${locale}/stores`,        label: 'المتاجر'       },
+                { href: `/${locale}/deals`,         label: 'العروض'        },
+                // ADR-301 (2026-09-07): Home Mission is now a public strategic capability, not
+                // an unlisted pilot — the homepage's own entry card is client-only and
+                // dismiss-gated (never in the server-rendered HTML, ADR-257), so this footer
+                // link is the one always-crawlable, always-visible path to it.
+                { href: `/${locale}/home-mission`,  label: 'جهّز بيتك بذكاء' },
               ],
             },
             {
@@ -81,9 +86,11 @@ export function Footer() {
             {
               title: 'Discover',
               links: [
-                { href: `/${locale}/categories`, label: 'Categories' },
-                { href: `/${locale}/stores`,     label: 'Stores'     },
-                { href: `/${locale}/deals`,      label: 'Deals'      },
+                { href: `/${locale}/categories`,   label: 'Categories'  },
+                { href: `/${locale}/stores`,       label: 'Stores'      },
+                { href: `/${locale}/deals`,        label: 'Deals'       },
+                // ADR-301 (2026-09-07): see the Arabic column above for why this is here.
+                { href: `/${locale}/home-mission`, label: 'Home setup'  },
               ],
             },
             {
