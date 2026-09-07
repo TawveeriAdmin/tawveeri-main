@@ -99,6 +99,21 @@ const BRAND_ALIASES: Record<string, string> = {
   "mtc": "mtc", "إم تي سي": "mtc", "ام تي سي": "mtc",
   "class pro": "classpro", "classpro": "classpro", "كلاس برو": "classpro",
   "crafft": "crafft", "كرافت": "crafft",
+  // Evidence-backed 2026-09-07 (Amazon AC brand-detection mission) — real brands measured
+  // directly on current Amazon.sa AC listings and/or already-observed TPS-layer canonicals.
+  // "super general" listed BEFORE "general" is checked (detectBrandFromText below sorts by
+  // key length, longest first) so the distinct real brand "Super General" is never
+  // shortened to "General".
+  "super general": "supergeneral",
+  "enviro": "enviro",
+  "impex": "impex",
+  "cooline": "cooline",
+  "star vision": "starvision", "star-vision": "starvision",
+  "aston": "aston",
+  "danssat": "dansat", // double-s spelling variant; "dansat"/"دانسات" already mapped below
+  "mando": "mando",
+  "ugine": "ugine",
+  "york": "york",
   "haam": "haam", "هام": "haam",
 
   // ── Laptop brands (bilingual). Evidence-backed transliterations only; unknown
@@ -207,6 +222,46 @@ export function canonicalizeBrand(raw: string | null | undefined): string {
 export function isKnownBrand(raw: string | null | undefined): boolean {
   if (!raw || raw.trim().length === 0) return false;
   return raw.trim().toLowerCase() in BRAND_ALIASES;
+}
+
+// Excluded from FREE-TEXT scanning only (detectBrandFromText below) — never from exact-match
+// normalization (canonicalizeBrand/isKnownBrand, unaffected). These keys are common English
+// words ("general", "york" — also a place name, "aux" — also an audio-jack term) that a
+// structured brand field can safely equal exactly, but that a free-text TITLE scan would
+// false-positive on across unrelated Amazon categories (e.g. "AUX cable" for headphones,
+// "arrow keys" for a keyboard). "Unknown beats incorrect": these stay undetected from title
+// text rather than risk a wrong brand.
+const FREE_TEXT_SCAN_EXCLUDE = new Set(["general", "جنرال", "york", "aux", "أوكس", "اوكس"]);
+
+/**
+ * Detects a known brand WITHIN a longer free-text title — for sources with no structured
+ * brand field at all (measured 2026-09-07: Amazon.sa's search-result markup has none; only
+ * the free-text title, which often names the brand inline, e.g. "Split Air Conditioner, LG,
+ * Jet Cool 2 Ton Cool"). Checks longer alias keys first so a more specific brand ("super
+ * general") wins over a shorter one it contains ("general"). Word-boundary matched for Latin
+ * keys (so "lg" never matches inside "flag"/"blog"); Arabic keys use substring matching,
+ * the same convention `category-utils.ts` already uses (Arabic compounds attach, no clean
+ * \b semantics). Returns the ORIGINAL matched substring — preserving the source's own casing,
+ * never an invented brand; `canonicalizeBrand()` normalizes it as usual afterward. Returns
+ * null, never a guess, when no known brand appears — the caller decides the "Unknown"
+ * fallback, exactly as it already does when a structured field is simply absent.
+ */
+export function detectBrandFromText(text: string | null | undefined): string | null {
+  if (!text) return null;
+  const keys = Object.keys(BRAND_ALIASES)
+    .filter((k) => !FREE_TEXT_SCAN_EXCLUDE.has(k))
+    .sort((a, b) => b.length - a.length);
+  for (const key of keys) {
+    const isLatin = /^[a-z0-9 .+]+$/i.test(key);
+    if (isLatin) {
+      const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const m = text.match(new RegExp(`\\b${escaped}\\b`, "i"));
+      if (m) return m[0];
+    } else if (text.includes(key)) {
+      return key;
+    }
+  }
+  return null;
 }
 
 /** يُصدّر الخريطة للقراءة فقط (لأغراض الاختبار والتوثيق) */

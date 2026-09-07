@@ -1,6 +1,7 @@
 import { BaseSearchScraper, formatScrapeError } from './base-search-scraper';
 import type { StoreSearchOptions, StoreSearchResult, SearchProduct } from './types';
 import { getBrowserHeaders } from './user-agents';
+import { detectBrandFromText } from '../../../../scripts/tps-core/brand-map';
 
 const BASE_URL = 'https://www.amazon.sa';
 
@@ -143,8 +144,16 @@ export class AmazonSearchScraper extends BaseSearchScraper {
 
     // Badges
     const isPrime = el.find('i.a-icon-prime').length > 0;
-    const brand = 'Unknown';
-    const model = this.extractModel(title, null);
+    // Brand. MEASURED (2026-09-07): Amazon.sa's search-result markup carries no dedicated
+    // brand element at all — every field (h2, aria-label, img alt) repeats the same free-text
+    // title, which nonetheless often names the brand inline ("Split Air Conditioner, LG, Jet
+    // Cool 2 Ton Cool"). detectBrandFromText() matches only against the curated, evidence-
+    // backed brand list (never invents one), word-boundary safe, so it can't match "LG" inside
+    // "flag" or misread a seller/generic word as a manufacturer. Falls back to the existing
+    // 'Unknown' sentinel — unchanged downstream behavior — when no known brand appears in the
+    // title, which is the honest, frequent case (many listings state brand/type/BTU only).
+    const brand = detectBrandFromText(title) ?? 'Unknown';
+    const model = this.extractModel(title, brand !== 'Unknown' ? brand : null);
     const category = this.determineCategory(title);
 
     return {
