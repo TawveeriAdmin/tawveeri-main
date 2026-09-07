@@ -21,6 +21,8 @@
 // engine starts lying about what it found.
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { normalizeArabic } from "./arabic-normalize";
+
 /** Arabic-Indic (٠-٩) and Eastern Arabic-Indic (۰-۹) digits → ASCII. */
 const DIGITS: Record<string, string> = {
   "٠": "0", "١": "1", "٢": "2", "٣": "3", "٤": "4", "٥": "5", "٦": "6", "٧": "7", "٨": "8", "٩": "9",
@@ -107,3 +109,59 @@ export const SAUDI_SEARCH_SYNONYMS: string[][] = [
   ["رخيص", "ارخص", "عرض", "عروض", "خصم", "تخفيض", "cheap", "offer", "deal", "discount"],
   ["اتوماتيك", "اوتوماتيك", "automatic", "ذكي", "smart"],
 ];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ONE VOCABULARY AUTHORITY (2026-09-07 — search relevance gate / synonym
+// consistency closure). SAUDI_SEARCH_SYNONYMS above is published to Algolia
+// (governs RETRIEVAL) by scripts/sync-products-synonyms.ts, and ALSO consumed
+// here by `expandViaApprovedSynonyms` (governs the route's own POST-retrieval
+// relevance verification, src/app/api/search/route.ts's `expandWordTerms`).
+// Before this, the route re-derived its own word-expansion from a completely
+// separate, hand-maintained dictionary (`ARABIC_TO_ENGLISH`) that never learned
+// the Honor misspelling fold (or `تكييف`, `قلاكسي`, …) added here — so Algolia
+// would correctly RETRIEVE a genuine "هونر"-titled product for a "هونور" query,
+// and the route's own gate would then REJECT it anyway, because "هونور" never
+// literally appears in any real title and the gate had no OTHER path to know
+// the two are the same word. One authority, consumed by both sides, closes
+// that gap for every current AND future entry in the list above — not a
+// Honor-only patch.
+//
+// SAFE_PRODUCT_SYNONYM_GROUPS excludes two bare, live-proven-unsafe terms
+// (see scripts/sync-products-synonyms.ts's own doc comment for the live
+// evidence: "screen" pulled a smartwatch/kids-tablets/air-fryer into every TV
+// search; singular "عرض" collides with the ordinary Arabic word for a
+// product's width). Both the Algolia publish and this relevance-gate
+// expansion consume the SAME corrected list — an uncorrected copy here would
+// silently reopen the exact leak the publish step fixed, one layer deeper.
+export const SAFE_PRODUCT_SYNONYM_GROUPS: string[][] = SAUDI_SEARCH_SYNONYMS
+  .map((group) => group.filter((term) => term !== "screen" && term !== "عرض"))
+  .filter((group) => group.length >= 2);
+
+/** Both the map's keys AND its stored members go through this — SAUDI_SEARCH_SYNONYMS
+ *  entries are written in plain, unfolded Arabic (some groups list a folded spelling
+ *  as a separate entry, some don't — "شاشة" has no separate "شاشه" entry, unlike
+ *  "غلاية"/"غلايه"). Folding both sides here makes every group reachable and every
+ *  returned term directly comparable to `hay` (itself always normalizeArabic-folded
+ *  in route.ts) regardless of which spelling the source list happens to spell out. */
+const foldTerm = (t: string) => normalizeArabic(t).toLowerCase();
+
+const SYNONYM_GROUP_BY_TERM: Map<string, Set<string>> = (() => {
+  const map = new Map<string, Set<string>>();
+  for (const group of SAFE_PRODUCT_SYNONYM_GROUPS) {
+    const normalized = new Set(group.map(foldTerm));
+    for (const key of normalized) map.set(key, normalized);
+  }
+  return map;
+})();
+
+/**
+ * Every term the approved vocabulary treats as interchangeable with `term`
+ * (always includes `term`'s own folded form, even when it belongs to no group).
+ * Accepts a raw OR already-folded input — folds it again either way, so the
+ * caller does not need to know or duplicate this module's folding rule.
+ */
+export function expandViaApprovedSynonyms(term: string): string[] {
+  const key = foldTerm(term);
+  const group = SYNONYM_GROUP_BY_TERM.get(key);
+  return group ? [...group] : [key];
+}

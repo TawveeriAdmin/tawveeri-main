@@ -55,21 +55,23 @@ import { resolve } from 'path';
 config({ path: resolve(process.cwd(), '.env.local') });
 
 import { algoliasearch } from 'algoliasearch';
-import { SAUDI_SEARCH_SYNONYMS } from '../src/lib/search/query-normalize';
+import { SAFE_PRODUCT_SYNONYM_GROUPS } from '../src/lib/search/query-normalize';
 
 const APP_ID = process.env.ALGOLIA_APP_ID || process.env.NEXT_PUBLIC_ALGOLIA_APP_ID || '';
 const ADMIN_KEY = process.env.ALGOLIA_ADMIN_KEY || '';
 export const INDEX = process.env.ALGOLIA_INDEX_NAME || 'products';
 
 /**
- * The approved vocabulary, minus the two live-proven-unsafe bare words. Everything
- * else is published byte-identical to SAUDI_SEARCH_SYNONYMS — no new vocabulary,
- * no rewrite of any existing term.
+ * The approved vocabulary, minus the two live-proven-unsafe bare words. Sourced from
+ * query-normalize.ts's SAFE_PRODUCT_SYNONYM_GROUPS — the SAME corrected list the
+ * search route's relevance gate now consumes (search-relevance-gate closure,
+ * 2026-09-07), so Algolia's retrieval and the route's post-retrieval verification can
+ * never drift onto two different ideas of "safe". Kept as a named export here (rather
+ * than importing SAFE_PRODUCT_SYNONYM_GROUPS directly at each call site) only for
+ * backward compatibility with this script's existing test/CLI usage.
  */
 export function getSafeProductsSynonymGroups(): string[][] {
-  return SAUDI_SEARCH_SYNONYMS
-    .map((group) => group.filter((term) => term !== 'screen' && term !== 'عرض'))
-    .filter((group) => group.length >= 2); // a group must still have ≥2 interchangeable terms
+  return SAFE_PRODUCT_SYNONYM_GROUPS;
 }
 
 export async function syncProductsSynonyms(): Promise<{ index: string; synonymGroups: number }> {

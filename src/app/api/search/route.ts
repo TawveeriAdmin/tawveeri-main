@@ -137,6 +137,7 @@ type DecisionLayer = {
 
 import { normalizeArabic } from '@/lib/search/arabic-normalize';
 import { expandQueriesForRetailSearch } from '@/lib/scraping/search/search-query-bilingual';
+import { expandViaApprovedSynonyms } from '@/lib/search/query-normalize';
 
 const ARABIC_TO_ENGLISH: Record<string, string[]> = {
   'جوال': ['phone', 'smartphone', 'mobile'],
@@ -1323,7 +1324,7 @@ function isPossessiveQualityDescriptor(w: string): boolean {
   return false;
 }
 
-function expandWordTerms(word: string): string[] {
+export function expandWordTerms(word: string): string[] {
   const norm = normalizeArabic(word).toLowerCase();
   const terms = new Set<string>();
   if (norm) terms.add(norm);
@@ -1341,6 +1342,26 @@ function expandWordTerms(word: string): string[] {
         if (tok.length >= 2) terms.add(tok.toLowerCase());
       }
     }
+  }
+  // SEARCH RELEVANCE GATE / SYNONYM CONSISTENCY CLOSURE (2026-09-07): this gate used
+  // to know NOTHING about SAUDI_SEARCH_SYNONYMS — a completely separate, hand-
+  // maintained dictionary (ARABIC_TO_ENGLISH, above) drove it instead. Algolia would
+  // correctly RETRIEVE a genuine "هونر"-titled product for a "هونور" query (once
+  // published, see scripts/sync-products-synonyms.ts), and this gate would then
+  // REJECT it anyway, because "هونور" never literally appears in any real title and
+  // this gate had no other way to know the two words mean the same thing. Root cause
+  // was duplicated vocabulary authority, not a missing Honor alias specifically —
+  // proven live before this fix for "قلاكسي"/"تكييف" too, not just Honor's spellings.
+  // `expandViaApprovedSynonyms` is the SAME 16-group vocabulary the Algolia publish
+  // step uses (query-normalize.ts's SAFE_PRODUCT_SYNONYM_GROUPS) — one authority, two
+  // consumers, so the two can never silently drift onto different ideas of "the same
+  // word" again. Whole-phrase entries ("air conditioner", "washing machine") are
+  // added UNSPLIT (unlike the `mapped` loop above) — splitting them into bare words
+  // is exactly the historical "washer"/"machine" false-positive class this file's own
+  // ARABIC_TO_ENGLISH/GENERIC_EXPANSION_STOPWORDS comments already document; an OR-
+  // group member that only ever matches as a full phrase costs nothing when absent.
+  for (const t of expandViaApprovedSynonyms(norm)) {
+    if (t.length >= 2) terms.add(t);
   }
   return [...terms];
 }
