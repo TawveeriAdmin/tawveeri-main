@@ -407,14 +407,27 @@ export async function corroboratePass(sb: SupabaseClient, def: CategoryDef, touc
     // is this sweep's ONLY explicit signal that a founding price event is still owed.
     const isNewCanonical = !existing;
     const canonicalId = existing?.id ?? stableUuid(def.canonSeed(key)); canonicalIds.push(canonicalId);
-    for (const rej of rejectedPriceTransitions) {
-      if (rej.key !== key) continue;
-      const storeName = TPS_STORES.find((s) => s.id === rej.storeId)?.name ?? String(rej.storeId);
-      implausibilitySignalRows.push({
-        canonical_product_id: canonicalId, store_display_name: storeName,
-        observed_price: rej.price, plausible_floor: rej.priorPrice,
-        reason: `${rej.reason} (price-transition-guard)`, source: "price-transition-guard",
-      });
+    // MEASURED DEFECT (2026-09-07, Amazon AC normalization-drop mission): a rejected price
+    // transition's signal references `canonicalId` — for a brand-new (isNewCanonical) key
+    // that id has not been written to `canonical_products` yet (that happens later, in
+    // write_ac_batch below), so this insert violates the table's FK constraint on a genuine
+    // founding event. Unreachable in ordinary live sweeps (a truly new key has no prior
+    // `tps_current_offers` price to reject a transition against), but a real, reachable bug
+    // for exactly this mission's kind of historical recovery, where `tps_current_offers` can
+    // legitimately be pre-seeded ahead of the canonical's first write. Skipping the signal for
+    // a not-yet-existing canonical is safe: the underlying protection (the offer is still
+    // excluded from `newByKeyStore`/this write) is unaffected, only the founder-review
+    // dashboard entry is deferred to the key's next natural rejection, if any, once it exists.
+    if (!isNewCanonical) {
+      for (const rej of rejectedPriceTransitions) {
+        if (rej.key !== key) continue;
+        const storeName = TPS_STORES.find((s) => s.id === rej.storeId)?.name ?? String(rej.storeId);
+        implausibilitySignalRows.push({
+          canonical_product_id: canonicalId, store_display_name: storeName,
+          observed_price: rej.price, plausible_floor: rej.priorPrice,
+          reason: `${rej.reason} (price-transition-guard)`, source: "price-transition-guard",
+        });
+      }
     }
     const rep = offers[0].payload || {};
     const { nameAr, nameEn } = def.names(key, rep);

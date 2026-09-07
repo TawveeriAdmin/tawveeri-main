@@ -20,6 +20,8 @@ import { toPoolerDbUrl } from "../tps-core/pooler-url";
 const SENTINELS = [
   "NO_STORAGE", "NO_TECH", "NO_SERIES", "NO_GEN", "NO_RES", "NO_PANEL", "NO_HZ",
   "NO_CONN", "NO_SIZE", "NO_FAMILY", "NO_SCREEN", "NO_STORE", "NO_CPU",
+  // ADR-306 (2026-09-07): cooling_mode joined technology as an optional AC discriminator.
+  "NO_MODE",
 ];
 
 (async () => {

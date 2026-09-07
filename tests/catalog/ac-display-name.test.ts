@@ -38,4 +38,25 @@ describe("AC buildNames — sentinel stripping (ADR-109)", () => {
       expect(nameEn).not.toContain(s);
     }
   });
+
+  // ADR-306 (2026-09-07, Amazon AC normalization-drop mission): cooling_mode is now
+  // ALSO optional in the identity (NO_MODE sentinel), so buildNames must strip it the
+  // same way it already strips NO_TECH — verified BEFORE this shipped, since a raw
+  // "NO_MODE" string reaching a customer-facing product name would be exactly the
+  // Product Truth violation this whole platform exists to prevent.
+  it("omits the NO_MODE sentinel from the customer-facing name", () => {
+    const { nameAr, nameEn } = buildNames("gree|split|NO_SERIES|18000|NO_TECH|NO_MODE");
+    expect(nameAr).not.toContain("NO_MODE");
+    expect(nameEn).not.toContain("NO_MODE");
+    expect(nameAr).toBe("مكيف سبليت جري، 18000 وحدة");
+    expect(nameEn).toBe("Gree Split AC 18000 BTU");
+  });
+
+  it("never leaks any of the identity sentinels, NO_MODE included", () => {
+    const { nameAr, nameEn } = buildNames("gree|split|NO_SERIES|24000|NO_TECH|NO_MODE");
+    for (const s of ["NO_TECH", "NO_SERIES", "NO_MODE", "NA"]) {
+      expect(nameAr).not.toContain(s);
+      expect(nameEn).not.toContain(s);
+    }
+  });
 });

@@ -215,6 +215,29 @@ describe("progressive-engine price-transition guard (2026-08-27, P0-B §8.12 fol
     expect(canonicals.length).toBe(1);
   });
 
+  // MEASURED DEFECT (2026-09-07, Amazon AC normalization-drop mission): a rejected price
+  // transition for a genuinely NEW (not-yet-existing) canonical referenced a canonical_id
+  // that had not been written to `canonical_products` yet, violating
+  // `tps_price_implausibility_signals`'s FK constraint in production — reachable whenever
+  // `tps_current_offers` already holds a price for a (key, store) that has no
+  // `canonical_products` row yet (ordinarily impossible in a live sweep, but a real,
+  // reachable state during historical recovery, where current-offers can legitimately be
+  // pre-seeded ahead of the canonical's first write).
+  it("a rejected transition for a brand-new (not-yet-existing) canonical does not attempt a signal write", async () => {
+    const log = newLog();
+    const rpcCalls: Record<string, unknown>[][] = [];
+    const key = "sample|founding|1";
+    // tps_current_offers already has a prior price for this key/store, but
+    // canonical_products does NOT have a row for it yet (isNewCanonical = true).
+    const prev = [offerRow(1, 5, key, 1000, "Founding Widget")];
+    const sb = fakeSupabase({ current_offers: prev, canonical_products: [] }, rpcCalls, log) as never;
+    const R = await corroboratePass(sb, audioDef, [key], { singleStore: true, sweepRows: [offerRow(2, 5, key, 50, "Founding Widget")] });
+    expect(R.priceTransitionsRejected).toBe(1);
+    // The whole point: no signal write is attempted for a canonical that doesn't exist yet
+    // (this would have thrown a foreign-key violation against the real table in production).
+    expect(log.signalUpserts.flat().length).toBe(0);
+  });
+
   it("dry mode computes rejections without writing anything", async () => {
     const log = newLog();
     const rpcCalls: Record<string, unknown>[][] = [];

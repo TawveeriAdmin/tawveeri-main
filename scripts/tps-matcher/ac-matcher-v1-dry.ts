@@ -65,13 +65,17 @@ export function buildNames(key: string) {
   // NO_TECH sentinel then. Like NO_SERIES/NO_STORAGE, it must NEVER reach the customer —
   // omit the segment entirely rather than render "NO_TECH". (NA guarded defensively.)
   const techKnown = !!tech && tech !== "NO_TECH" && tech !== "NA";
-  const coolSafe = cool ?? "";
+  // ADR-306: cooling_mode gets the IDENTICAL sentinel guard as technology above — the
+  // identity now carries a NO_MODE sentinel when unstated (same reason: many genuine
+  // listings never disclose it), and it must NEVER reach the customer either.
+  const coolKnown = !!cool && cool !== "NO_MODE" && cool !== "NA";
+  const coolSafe = coolKnown ? cool : "";
   const acTypeAr = acType ? (ACTYPE_AR[acType] ?? acType) : "";
   const acTypeEn = acType ? (ACTYPE_EN[acType] ?? acType) : "";
   // Build from non-empty segments so dropping tech/brand never leaves a dangling "، ،" / double space.
-  const nameAr = [`مكيف ${acTypeAr}${seriesAr} ${bAr}`.trim(), cap ? `${cap} وحدة` : "", techKnown ? (TECH_AR[tech] ?? tech) : "", COOL_AR[coolSafe] ?? coolSafe]
+  const nameAr = [`مكيف ${acTypeAr}${seriesAr} ${bAr}`.trim(), cap ? `${cap} وحدة` : "", techKnown ? (TECH_AR[tech] ?? tech) : "", coolKnown ? (COOL_AR[coolSafe] ?? coolSafe) : ""]
     .filter((s) => s && s.trim()).join("، ").replace(/\s+/g, " ").trim();
-  const nameEn = [`${bEn}${seriesEn} ${acTypeEn} ${cap ? cap + " BTU" : ""}`.trim(), techKnown ? tech : "", coolSafe.replace("_", " ")]
+  const nameEn = [`${bEn}${seriesEn} ${acTypeEn} ${cap ? cap + " BTU" : ""}`.trim(), techKnown ? tech : "", coolKnown ? coolSafe.replace("_", " ") : ""]
     .filter((s) => s && s.trim()).join(" ").replace(/\s+/g, " ").trim();
   return { nameAr, nameEn };
 }

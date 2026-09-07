@@ -26,8 +26,16 @@ export function normalize(nameAr: string, nameEn: string, _rawBrand: string | nu
   else if (combined.includes("مخفي")||combined.includes("ducted")||combined.includes("ceiling")) ac_type="ducted";
   else if (combined.includes("سبليت")||combined.includes("جداري")||combined.includes("split")) ac_type="split";
 
-  const btu = fullText.match(/(\d[\d\s,]*)\s*(?:BTU|وحدة\s*حرارية|وحدة\s*تبريد|وحدة)/i);
-  if (btu) capacity_btu = parseInt(btu[1].replace(/[\s,]/g, ""));
+  // MEASURED DEFECT (2026-09-07, Amazon AC normalization-drop mission): the digit class used
+  // to include `\s` (a bare space), so it could cross a WORD boundary and swallow a model
+  // number's trailing digit into the real BTU value — "TCL CW-TW18HW1 24000 BTU..." matched
+  // starting at the lone "1" in "HW1", then the space before "24000" kept the match alive,
+  // producing capacity_btu=124000 (an impossible residential capacity) instead of the real
+  // 24000 stated two words later. A legitimately comma-grouped number ("19,448 BTU") still
+  // works unchanged — only a bare space inside the digit run is no longer allowed, and a
+  // trailing space before "BTU"/"وحدة" is still matched by the `\s*` outside the group.
+  const btu = fullText.match(/\b(\d[\d,]*)\s*(?:BTU|وحدة\s*حرارية|وحدة\s*تبريد|وحدة)/i);
+  if (btu) capacity_btu = parseInt(btu[1].replace(/,/g, ""));
   if (!capacity_btu) {
     const short = fullText.match(/\b(\d{2})\s*(?:وحدة\s*حرارية|وحدة\s*تبريد)/);
     if (short) { const v = parseInt(short[1]); if (v >= 9 && v <= 36) capacity_btu = v * 1000; }
@@ -76,7 +84,12 @@ export function normalize(nameAr: string, nameEn: string, _rawBrand: string | nu
     combined.includes("hot and cool")||combined.includes("hot and cold")||
     combined.includes("hot & cold")||combined.includes("heat & cool")||
     combined.includes("heat&cool")||combined.includes("hot/cold")||
-    combined.includes("heating and cooling")||combined.includes("heat cool")
+    combined.includes("heating and cooling")||combined.includes("heat cool")||
+    // ── Patch 3 (2026-09-07): "Hot&Cold" no-space ampersand form. MEASURED on a
+    // real current Amazon listing ("...Hot&Cold Portable Air Conditioner...") —
+    // the spaced "hot & cold" variant above did not match it, and no other
+    // pattern here covers "hot" (vs "heat") without spaces around "&".
+    combined.includes("hot&cold")
   ) cooling_mode = "hot_cold";
   else if (
     combined.includes("بارد فقط")||combined.includes("تبريد فقط")||
