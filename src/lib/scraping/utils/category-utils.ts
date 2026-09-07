@@ -266,6 +266,36 @@ function containsKeyword(text: string, keywords: string[]): boolean {
 }
 
 /**
+ * AC-SCOPED part/accessory detector (2026-09-07, Amazon AC depth audit). Amazon's AC-category
+ * storefront rows were measured 88% accessories (drain trays, cleaning brushes, ice packs,
+ * installation hoists, pipe expanders, chemical cleaners) — every one classified `air_conditioner`
+ * because the general `ACCESSORY_INDICATORS` vocabulary above (case/cover/charger/cable/stand/
+ * strap/…) is phone- and camera-oriented and contains none of these AC-part terms, and
+ * `determineCategory`'s existing accessory veto (below) was scoped to smartphone/audio only —
+ * third-party AC parts stuff "Air Conditioner" into their titles for Amazon SEO/compatibility,
+ * the exact same mechanism ADR-243 already fixed for phone cases mentioning "iPhone 16".
+ * Full-title (not head-anchored like `isAccessoryTitleHead`): a genuine split/window/portable AC's
+ * OWN title is brand/model/BTU/cooling-mode only and never contains this vocabulary anywhere,
+ * unlike a phone that ships bundled with an accessory — so there is no "ships with" case to protect.
+ */
+const AC_PART_INDICATORS = [
+  'drain tray', 'drain pan', 'drip pan', 'drainage pan', 'drain hose', 'condensate',
+  'cleaning brush', 'cleaner brush', 'fin cleaning', 'crevice cleaning', 'coil cleaning',
+  'conditioner cleaner', 'ac chemical cleaner', 'ac filter cleaner', 'clima-net',
+  'ice pack', 'ice cube', 'freezer block',
+  'installation hoist', 'installation lift', 'manual lift',
+  'pipe expander', 'swaging tool', 'swaging tools',
+  'floor pallet', 'floor rack',
+  'water draining machine',
+];
+
+function isAcPartTitle(title: string | null | undefined): boolean {
+  if (!title) return false;
+  const t = title.toLowerCase();
+  return AC_PART_INDICATORS.some((kw) => t.includes(kw));
+}
+
+/**
  * Bare English "speaker" — deliberately NOT in `CATEGORY_KEYWORDS.audio`'s general
  * full-title list, unlike "bluetooth speaker"/"soundbar"/every other audio keyword there
  * (and unlike Arabic "سبيكر", already present and full-title — English was the measured gap).
@@ -321,6 +351,9 @@ export function determineCategory(title: string): ProductCategory {
     const matchesAudioByBareSpeaker = category === 'audio' && isBareSpeakerTitleHead(title);
     if (containsKeyword(t, CATEGORY_KEYWORDS[category] ?? []) || matchesAudioByBareSpeaker) {
       if ((category === 'smartphone' || category === 'audio') && isAccessoryTitleHead(title)) {
+        continue;
+      }
+      if (category === 'air_conditioner' && isAcPartTitle(title)) {
         continue;
       }
       return category as ProductCategory;

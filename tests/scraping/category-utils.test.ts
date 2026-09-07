@@ -196,3 +196,47 @@ describe("isAccessoryOnlyAudioTitle — accessory-vs-device disambiguation (2026
     expect(isAccessoryOnlyAudioTitle(undefined)).toBe(false);
   });
 });
+
+/**
+ * MEASURED DEFECT (2026-09-07, Amazon AC depth audit): Amazon's `products.category =
+ * 'air_conditioner'` storefront rows were 15/17 (88%) genuine AC PARTS/ACCESSORIES (drain
+ * trays, cleaning brushes, ice packs, installation hoists, pipe expanders, chemical cleaners) —
+ * every one stuffs "Air Conditioner" into its title for Amazon SEO/compatibility, the exact
+ * same mechanism ADR-243 already fixed for phone cases mentioning "iPhone 16". `determineCategory`'s
+ * accessory veto was scoped to smartphone/audio only, and the general `ACCESSORY_INDICATORS`
+ * vocabulary (case/cover/charger/cable/stand/strap/…) contains none of these AC-part terms. This
+ * pins the fix: real, measured Amazon titles for all 15 accessory rows found in production.
+ */
+describe("determineCategory — AC parts/accessories must not be classified as air_conditioner", () => {
+  const realAmazonAcAccessoryTitles = [
+    "2 Pack Air Conditioner Fin Cleaning Brush,Double Sided Stainless Steel Cleaner Brush for Deep Into HVAC Coil Fins to Effectively Removing Dirt and Debris Without Damaging",
+    "6Pcs/Set Electric Drill Pipe Expander Air Conditioner Swaging Tools Repairing Kit",
+    "8 Pcs Hand-held Groove Gap Cleaning Tools - Door Window Track Crevice Cleaning Brushes Blind Cleaner Duster, Window Magic Cleaning Brush for Shower Door, Car Vents, Air Conditioner, Keyboard, Shutter",
+    "Air Conditioner Base Stainless Steel Floor Pallet Rack Raised for Warehouses Garage Kitchens Shops",
+    "Air Conditioner Condensate Drain Tray Outdoor AC Support Tray Plastic Drainage Pan for AC Units Size 81x33x3cm Color 200cm & Easy to Install",
+    "DiversiTech (6-2424L) A/C Secondary Condensate Drain Pan, Air Conditioner Drip Pan with Rolled Edges, 24 x 24 Plastic Tray, Black",
+    "DOITOOL Reusable Ice Packs for Air Conditioner Fan, 4 Pack for Cooler, Lunch Cooler Bag Freezer Blocks",
+    "Ice Cube Molds Trays Ice Packs 4Pcs Long Lasting Freezer Blocks Reusable Portable Cooler Freezer Ice Packs Keep Cool for Refrigerator Air Conditioner Fan (Pack of 4)",
+    "Reusable Ice Packs Freezer Cube Mold Tray, 4 Packs for Air Conditioner Fan Ice Block Portable Cooler Freezer",
+    "Errecom Clima-Net, Air Conditioner Cleaner for A/C Filters, Coils and Outdoor Units, 6 x 1 L bottle",
+    "Heavy-Duty Manual Lift for Air Conditioner Installation 100kg Load Capacity Ideal for Positioning and Maneuvering Outdoor Units",
+    "High Capacity Air Conditioner Installation Hoist - 100KG Load 10-25m Reach Manual Lift for Outdoor Use Perfect for HVAC Professionals and DIY Projects",
+    "ISTOVO AC Water Draining Machine Air Conditioner Water Pump 400ml Household Size of 3 Lift with 10M Pump| WG-6",
+    "Outdoor Air Conditioner Condensate Drain Tray 93x45x3cm Plastic Support for AC Units Condensation Recovery Pan Essential for Efficient Cooling System Maintenance",
+    "Universal Air Conditioner with Drain Hose Plastic Condensate Tray PP5 Indoor Outdoor Unit Window Kit for Efficient Water Collection & Drainage.",
+  ];
+
+  it("classifies every measured production AC-accessory title as NOT air_conditioner", () => {
+    for (const title of realAmazonAcAccessoryTitles) {
+      expect(determineCategory(title)).not.toBe("air_conditioner");
+    }
+  });
+
+  it("a genuine split/window/portable AC is still classified air_conditioner (no regression)", () => {
+    expect(determineCategory("GWH18AGDXF-D3NTA1G-I 18000 BTU, 1.5 Ton Split Air Conditioner, White")).toBe("air_conditioner");
+    expect(determineCategory("Star vision 16000 BTU Hot&Cold Portable Air Conditioner, Auto Fan, Self Diagnostic")).toBe("air_conditioner");
+    expect(determineCategory("Split AC 11100 BTU Standard cool only")).toBe("air_conditioner");
+    expect(determineCategory("Window AC 17200 BTU cool only")).toBe("air_conditioner");
+    expect(determineCategory("مكيف سبليت ال جي 18000 وحدة انفرتر بارد فقط")).toBe("air_conditioner");
+  });
+});
