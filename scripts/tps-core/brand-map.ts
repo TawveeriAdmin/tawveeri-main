@@ -252,14 +252,22 @@ export function detectBrandFromText(text: string | null | undefined): string | n
     .filter((k) => !FREE_TEXT_SCAN_EXCLUDE.has(k))
     .sort((a, b) => b.length - a.length);
   for (const key of keys) {
-    const isLatin = /^[a-z0-9 .+]+$/i.test(key);
-    if (isLatin) {
-      const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      const m = text.match(new RegExp(`\\b${escaped}\\b`, "i"));
-      if (m) return m[0];
-    } else if (text.includes(key)) {
-      return key;
-    }
+    const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    // MEASURED FALSE POSITIVES (2026-09-07, live Amazon.sa AC re-scrape):
+    // (1) a plain `\b` only recognizes ASCII word characters, so a substring-only check for
+    //     short Arabic keys (e.g. "ابل" → Apple, 3 letters) matched INSIDE an unrelated
+    //     Arabic word ("قابل" = "adjustable") on a genuine AC-deflector accessory.
+    // (2) a short brand abbreviation ("hp") matched the tail of an unrelated alphanumeric
+    //     model code ("...TN24HP...") — the digit "4" right before "H" is not a *letter*,
+    //     so a letter-only boundary let it through even though the code is clearly one token.
+    // Lookaround on Unicode letter+number classes \p{L}\p{N} (needs the u/Unicode flag) gives
+    // a real boundary check for ANY script and rejects an alphanumeric-adjacent match — the
+    // match must not be directly adjacent to another letter OR digit on either side. A
+    // trailing space inside a multi-word key ("super general") is neither, so it is matched
+    // literally, unaffected.
+    const re = new RegExp(`(?<![\\p{L}\\p{N}])${escaped}(?![\\p{L}\\p{N}])`, "iu");
+    const m = text.match(re);
+    if (m) return m[0];
   }
   return null;
 }

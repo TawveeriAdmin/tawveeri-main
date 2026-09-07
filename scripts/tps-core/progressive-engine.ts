@@ -421,6 +421,13 @@ export async function corroboratePass(sb: SupabaseClient, def: CategoryDef, touc
     if (!isNewCanonical) {
       for (const rej of rejectedPriceTransitions) {
         if (rej.key !== key) continue;
+        // MEASURED (2026-09-07, same mission, same class of gap): `plausible_floor` is
+        // NOT NULL on `tps_price_implausibility_signals` — a rejection with no numeric
+        // priorPrice to report (e.g. a stale/non-numeric prior value read back from
+        // `tps_current_offers`) must not attempt this optional dashboard write either. Same
+        // safety property as the isNewCanonical guard above: the core protection (the offer
+        // stays excluded from `newByKeyStore`) is already applied regardless.
+        if (rej.priorPrice == null || !Number.isFinite(rej.priorPrice)) continue;
         const storeName = TPS_STORES.find((s) => s.id === rej.storeId)?.name ?? String(rej.storeId);
         implausibilitySignalRows.push({
           canonical_product_id: canonicalId, store_display_name: storeName,

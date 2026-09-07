@@ -68,6 +68,24 @@ describe('detectBrandFromText — curated, evidence-backed brand detection from 
     expect(detectBrandFromText('Apple Airpods Pro 2')).toBe('Apple');
   });
 
+  it('MEASURED FALSE POSITIVE (2026-09-07, live re-scrape): a short Arabic brand key does not match inside an unrelated Arabic word', () => {
+    // "قابل" (adjustable/capable) contains "ابل" (an Apple alias) as a raw substring — a
+    // genuine AC-deflector accessory was tagged brand=Apple by the pre-fix substring-only
+    // Arabic matching. \p{L}-based lookaround boundaries must reject this.
+    expect(detectBrandFromText('AC Deflector Adjustable Split – موزع هواء مكيف قابل للتعديل مع دوران 360')).toBeNull();
+  });
+
+  it('MEASURED FALSE POSITIVE (2026-09-07, live re-scrape): a short brand key does not match the tail of an unrelated alphanumeric model code', () => {
+    // Model code "TN24HP" ends in "HP" — a digit is not a *letter*, so a letter-only boundary
+    // let "HP" (Hewlett-Packard, a real alias elsewhere) match here. Must reject it.
+    expect(detectBrandFromText('General Supreme GS TN24HP Titanium Plus Cold Split Air Conditioner, 22000 BTU')).toBeNull();
+  });
+
+  it('a real Arabic brand mention is still detected once correctly boundaried', () => {
+    expect(canonicalizeBrand(detectBrandFromText('جري مكيف فريون متنقل، حار بارد ، قدرة 16000 واط'))).toBe('gree');
+    expect(canonicalizeBrand(detectBrandFromText('دانسات مكيف سبليت جداري بارد، 18000 وحدة'))).toBe('dansat');
+  });
+
   it('empty/null input returns null', () => {
     expect(detectBrandFromText('')).toBeNull();
     expect(detectBrandFromText(null)).toBeNull();
