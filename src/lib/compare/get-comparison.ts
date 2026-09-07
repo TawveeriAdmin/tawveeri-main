@@ -29,6 +29,7 @@ import { displayedObservedAt } from '@/lib/intelligence/observed-freshness';
 import { STALE_CAVEAT_HOURS, isFreshObservation } from '@/lib/intelligence/evidence-engine';
 import { deriveCampaignEligibility, type CampaignEligibilityEvidence } from '@/lib/providers/campaigns/blackbox-riyal-festival';
 import { buildGoUrl } from '@/lib/analytics/build-go-url';
+import { applyAffiliateTrueTieOrder } from '@/lib/compare/affiliate-true-tie';
 
 interface PriceRow {
   store_name: string;
@@ -270,7 +271,13 @@ export async function getComparison(params: {
   }
 
   // ── 4. offers ────────────────────────────────────────────────
-  const offers: CompareOffer[] = [...latestBySlug.entries()]
+  // Price truth is decided HERE, by price alone, and never again — the sort below is the
+  // single source `summary.lowest_price`/`summary.highest_price` and every SEO/AggregateOffer
+  // figure ultimately derive from. AFFILIATE_TRUE_TIE_POLICY (ADR-304), applied immediately
+  // after, ONLY ever reorders positions WITHIN a group already proven price-tied — it cannot
+  // change which price is lowest, cannot drop/add an offer, and cannot promote anything ahead
+  // of a genuinely cheaper offer.
+  const priceOrdered: CompareOffer[] = [...latestBySlug.entries()]
     .map(([slug, p]) => {
       const listing = listingBySlug.get(slug);
       // Prefer the measured /go exit (attributed) and fall back to the observed listing URL.
@@ -319,6 +326,12 @@ export async function getComparison(params: {
     })
     .sort((a, b) => a.price - b.price);
 
+  // AFFILIATE_TRUE_TIE_POLICY (Founder decision, 2026-09-07 — ADR-304): an affiliate
+  // merchant may lead a group of offers already proven genuinely tied on price and every
+  // shopper-relevant dimension this codebase can verify — never otherwise. See
+  // src/lib/compare/affiliate-true-tie.ts for the full definition and safety proof.
+  const offers: CompareOffer[] = applyAffiliateTrueTieOrder(priceOrdered);
+
   // ── 5. summary ───────────────────────────────────────────────
   const { summary, message } = deriveComparisonSummary(offers);
   return { canonical: canonicalOut, summary, offers, ...(message ? { message } : {}) };
@@ -344,8 +357,12 @@ export function deriveComparisonSummary(offers: CompareOffer[]): {
 } {
   // Sorted defensively rather than trusting the caller's ordering (the SAME discipline
   // summarizeOffers in v1-search-helpers.ts already applies) — this is a standalone,
-  // independently-testable function now.
-  const freshOffers = offers.filter((o) => isFreshObservation(o.observed_at)).sort((a, b) => a.price - b.price);
+  // independently-testable function now. AFFILIATE_TRUE_TIE_POLICY (ADR-304) is re-applied
+  // here too (not just in getComparison's own `offers` build) so `cheapest_store` always
+  // names whichever offer actually leads the rendered list — never a different store than
+  // the one the customer sees first, even when the fresh subset differs from the full one.
+  const priceSortedFresh = offers.filter((o) => isFreshObservation(o.observed_at)).sort((a, b) => a.price - b.price);
+  const freshOffers = applyAffiliateTrueTieOrder(priceSortedFresh);
   const noFreshEvidence = offers.length > 0 && freshOffers.length === 0;
 
   const cheapest = freshOffers[0] ?? null;
