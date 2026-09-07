@@ -6,6 +6,41 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-302 — Operational alert closure: Health Watch, GSC noindex email, soft-404, bare-brand compare links · Accepted (2026-09-07)
+
+**Mandate.** Close every open item traceable to the GitHub Health Watch alerts and the Google Search Console indexing/noindex email before starting a separate, unrelated global competitive-research session. Narrowly scoped: proven technical defects only, no broad SEO policy, no mass-noindex, no forced indexing of low-quality pages, no product redesign.
+
+**A. Health Watch — CLOSED_PROVEN.** Live `/api/health/deep`: `healthy: true`, zero degraded/failed checks, `freshest_observation_age_hours: 2` (normal per ADR-296's baseline). `/api/debug/scheduler` correctly returns 404 in production (expected — not a public surface). ADR-296's per-row-isolation fix (`build-tps-projection.ts`, chunk-level fallback to per-row insert) confirmed still in place; no later commit touched or weakened it. No code change made — nothing to fix.
+
+**B. GSC noindex email / Home Mission — CLOSED_PROVEN, verified twice now.** `/ar/home-mission` and `/en/home-mission` re-confirmed live: HTTP 200, `index, follow`, correct self-canonical, correct reciprocal hreflang (ar/en/x-default), present in `sitemap.xml`, and reachable via the footer's always-server-rendered link — all as landed by ADR-301 the same day. Separately, the founder's terminal showed the Arabic title in visually reversed order; the raw response bytes were hex-dumped and decoded by hand: the UTF-8 encoding is correct and reads "جهّز بيتك بذكاء — توفيري | توفيري" exactly as intended. **This was terminal bidi-rendering only, not corrupted metadata** — no code or content change was needed or made for this specific concern.
+
+**C. Soft 404 on `/products/[slug]` — ALREADY_FIXED, comment was stale.** The route's own `(product)/layout.tsx` already documents the real fix in full: this route group was deliberately built with no `loading.tsx`, because a Suspense boundary in that position flushes HTTP 200 before a later `notFound()` can change the status — "measured on a production build, decisively" per that file's own comment, with a standing rule never to add `loading.tsx` back. Confirmed empirically this session: 4/4 synthetic nonexistent-product requests across both locales returned real HTTP 404. The only real problem was that `products/[slug]/page.tsx`'s own comment (dated 2026-07-30) still described this as an unresolved "KNOWN LIMIT... not claimed as fixed" — a documentation-drift artifact from before the `(product)` route-group fix landed. Corrected that comment to state the resolved status and point at the actual fix and its standing guard rule. Added `tests/seo/product-soft-404.test.ts` (3 tests) pinning the structural invariant (no `loading.tsx` in that group) so it can never silently regress. No behavior changed — the fix already existed; only the stale comment did not reflect it.
+
+**D. Bare-brand `/compare/{brand}` dead-end links — ALREADY_CORRECT; the original diagnosis was a false positive in this project's own audit tooling, not a site defect.** Re-fetched the live laptop category page and grepped precisely for `href="..."` attributes this time (the prior pass used a character class that does not include `%`, so it silently truncated real, fully-encoded compare keys like `/compare/dell%7CMODEL...` at the first `%` and misread the truncated fragment as a bare `/compare/dell` link). All 60 real `href` occurrences on the live page are genuine, fully-encoded, resolvable comparison keys with `?src=category&category=...` attribution params — zero bare-brand-only compare hrefs exist. `overview.brands` (the actual brand list on category pages) renders as plain, non-linked `<Badge>` elements, not anchors. No code change made — there was nothing to fix; the earlier finding is retracted here, on the record, rather than silently dropped.
+
+**E. Arabic/English near-duplicate product names — DATA/CONTENT DEPTH gap, not a technical bug; deferred to the global study.** `getProductSeoData()` correctly selects and passes through both `name_ar` and `name_en` verbatim from `products`; `products/[slug]/page.tsx` correctly reads the locale-appropriate field. A sampled TV product's `name_ar` column itself holds the same English string as `name_en` in the database — a normalization/ingestion content gap for that listing, not a code defect reading the wrong field. No fix implemented; recording this for the global UX/SEO study rather than attempting a translation mechanism here, which would be exactly the "broad SEO rewrite" this mandate excludes.
+
+**F. GSC 241 crawled-not-indexed ground truth — FOUNDER_EXPORT_REQUIRED.** No GSC export file was provided this session and no GSC API access exists. The prior session's hypothesis (thin, single-store product pages) remains an inference from code + the standing ~89% single-store catalog fact, not a verified cluster of the actual 241 URLs. **STRATEGIC_DECISION_DEFERRED_TO_GLOBAL_STUDY** — no single-store-to-noindex policy or any other broad catalog gate was implemented; that is the founder's call to make, informed by the upcoming benchmark, not an engineering default.
+
+**G. Robots/canonical/sitemap regression check — HEALTHY.** Re-verified live: `robots.txt` unchanged (no product/category/compare route newly blocked); `compare/dell`-style unresolvable keys still correctly `noindex, follow`; the non-canonical Railway host still emits `X-Robots-Tag: noindex, follow`; canonical host (`tawveeri.com`) still fully indexable; sitemap still serves and still carries the Home Mission entries from ADR-301; ordinary search unaffected.
+
+**Tests.** New `tests/seo/product-soft-404.test.ts` (3 tests, structural regression guard). Full `tests/seo/*` suite re-run: 30/30 passing (5 suites). No suite touching Health Watch, Home Mission, or compare/category logic was modified — none needed to be, since B and D required no behavior change.
+
+**Commit.** Two files changed: `src/app/[locale]/(product)/products/[slug]/page.tsx` (comment correction only, zero logic change) and the new test file.
+
+**Ledger — operational alerts, final status.**
+
+| Alert | Status | Root cause | Fix | Production proof |
+|---|---|---|---|---|
+| GitHub Health Watch | CLOSED_PROVEN | N/A — already resolved by ADR-296 | None needed this pass | `/api/health/deep`: healthy, 2h freshness |
+| GSC "Excluded by noindex" (Home Mission) | CLOSED_PROVEN | ADR-249 pilot gate (intentional, by design) | ADR-301 (same day, prior mission) | Live index/follow + sitemap + footer link, re-confirmed |
+| GSC "Excluded by noindex" (bare-brand compare) | CLOSED — retracted, not a real defect | Truncated-URL artifact in prior audit's own grep regex | None (nothing to fix) | Precise `href=` grep on live page: 0 bare-brand links found |
+| Soft 404 (`/products/[slug]`) | CLOSED_PROVEN (comment corrected) | Historical `loading.tsx` Suspense-flush; fixed pre-existing via the `(product)` route-group split | Stale comment corrected; regression test added | 4/4 synthetic 404 checks, both locales |
+| EN/AR product-name duplication | OPEN, DEFERRED (content/data, not technical) | Ingestion-time Arabic-name gap for some listings | Not attempted — out of this mandate's scope | N/A |
+| GSC "Crawled — currently not indexed" (241) | OPEN, EXTERNAL_DATA_REQUIRED | Unconfirmed without a GSC export | Not attempted | N/A |
+
+---
+
 ### ADR-301 — Home Mission public indexing promotion: ADR-249 pilot gate lifted, now a public strategic capability · Accepted (2026-09-07)
 
 **Context.** ADR-249 (2026-08-15) launched Home Mission ("جهّز بيتك بذكاء") deliberately noindexed, unlisted, and reachable only by direct URL — a controlled-exposure gate for a genuinely unproven capability (multi-category, shared-budget home purchase planning). That mandate's own research found no comparable product globally had shipped this successfully (OpenAI's Instant Checkout was killed; Walmart's agent-checkout measured ~3× worse than plain click-through). The gate was the right call for an unproven flow, not a permanent judgment on the feature.

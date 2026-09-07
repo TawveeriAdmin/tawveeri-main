@@ -79,10 +79,13 @@ export default async function ProductPage({
   // we fall through to the client rather than telling a shopper that a product which probably
   // exists does not — asserting absence from a fault is the mistake that created this bug.
   //
-  // KNOWN LIMIT, measured 2026-07-30 on a production build: notFound() here renders the
-  // not-found UI but the response still carries HTTP 200, because Next commits the status
-  // before this component throws. A routing miss (/ar/no-such-route) does return 404. Not
-  // claimed as fixed; tracked separately.
+  // RESOLVED (originally a KNOWN LIMIT measured 2026-07-30): this `notFound()` used to render
+  // the not-found UI while the response still carried HTTP 200, because a `loading.tsx`
+  // Suspense boundary flushed the status before this component could throw. Fixed by moving
+  // this route into its own `(product)` route group with NO `loading.tsx` — see
+  // `../layout.tsx` for the full root cause and the standing rule never to add one back here.
+  // Re-verified live 2026-09-07 (operational alert closure pass): a genuinely nonexistent
+  // product slug now returns a real HTTP 404 on both locales, confirmed on multiple slugs.
   if (product === null) notFound();
 
   return (
