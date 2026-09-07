@@ -4,6 +4,7 @@ import { getEnabledAdapters, getAdapterBySlug } from '@/lib/scraping/adapters';
 import type { StoreAdapter, NormalizedOffer } from '@/lib/scraping/adapters';
 import { startRun, finishRun, hasActiveRun } from '@/lib/scraping/services/run-logger';
 import { resolveStoreId } from '@/lib/scraping/store-identity';
+import { slugCandidates } from '@/lib/scraping/services/slugify';
 
 export const runtime = 'nodejs';
 export const maxDuration = 900;
@@ -146,10 +147,27 @@ async function saveProducts(offers: NormalizedOffer[], storeName: string, storeI
       const { data: existing } = await sb.from('products').select('id').eq('name_ar', nameAr).maybeSingle();
       let productId = existing?.id;
       if (!productId) {
-        const { data: inserted, error: insertErr } = await sb.from('products')
-          .insert({ name_ar: nameAr, name_en: p.name_en || nameAr, brand: p.brand || 'Unknown', category: p.category || 'accessories' })
-          .select('id').single();
-        if (insertErr || !inserted?.id) { failed++; errors.push({ step: 'insert_product', error: insertErr }); continue; }
+        // PROVEN DEFECT (2026-09-07, product-creation architecture audit): products.slug
+        // is NOT NULL with no DB default — this insert never set it, so EVERY scheduled
+        // run of this route (every 6h, all 4 adapters: almanea/extra/jarir/amazon) has
+        // created zero net-new products since the pg_cron mechanism's inception
+        // (ADR-009, 2026-07-21) — 739/739 runs, silently, because the per-item error below
+        // was only counted, never surfaced. Reuses the SAME shared slug authority
+        // ProductService.createProduct() already uses (extracted to slugify.ts so neither
+        // caller duplicates the other) rather than inventing a second algorithm here.
+        let inserted: { id: string } | null = null;
+        let insertErr: { message: string } | null = null;
+        for (const slug of slugCandidates(p.name_en || nameAr, p.external_id)) {
+          const res = await sb.from('products')
+            .insert({ name_ar: nameAr, name_en: p.name_en || nameAr, slug, brand: p.brand || 'Unknown', category: p.category || 'accessories' })
+            .select('id').single();
+          if (!res.error && res.data) { inserted = res.data; insertErr = null; break; }
+          insertErr = res.error;
+          // Only retry the next slug candidate on a slug collision; any other error
+          // (e.g. a genuine data problem) should fail this item immediately, same as before.
+          if (!/products_slug_key|duplicate key/i.test(res.error?.message || '')) break;
+        }
+        if (!inserted) { failed++; errors.push({ step: 'insert_product', error: insertErr }); continue; }
         productId = inserted.id; savedProducts++;
       }
       const { error: storeErr } = await sb.from('product_stores').upsert({

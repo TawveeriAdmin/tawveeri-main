@@ -5,6 +5,7 @@ import { extractSpecsFromTitle } from '../config/spec-configs';
 import { classifyFromTitle } from '../utils/category-utils';
 import type { Database } from '@/lib/database/types';
 import { assessPriceTransition } from '@/lib/intelligence/price-truth-gate';
+import { slugCandidates } from './slugify';
 
 type ProductStoreRow = Database['public']['Tables']['product_stores']['Row'];
 
@@ -153,13 +154,7 @@ export class ProductService {
 
   async createProduct(scrapedProduct: ScrapedProduct): Promise<string> {
     const mergedSpecs = this.mergeSpecsWithTitle(scrapedProduct);
-    const baseSlug = this.generateSlug(scrapedProduct.name_en);
-
-    const candidates = [
-      baseSlug,
-      scrapedProduct.sku ? `${baseSlug}-${this.slugSuffixFromSku(scrapedProduct.sku)}` : null,
-      `${baseSlug}-${Math.random().toString(36).slice(2, 8)}`,
-    ].filter((s): s is string => !!s);
+    const candidates = slugCandidates(scrapedProduct.name_en, scrapedProduct.sku);
 
     const trunc = (s: string | null | undefined, max: number) =>
       s == null ? s : (s.length > max ? s.slice(0, max) : s);
@@ -208,10 +203,6 @@ export class ProductService {
     }
 
     throw new Error(`Failed to create product after slug retries: ${lastError}`);
-  }
-
-  private slugSuffixFromSku(sku: string): string {
-    return sku.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 10);
   }
 
   async linkProductToStore(
@@ -651,14 +642,5 @@ export class ProductService {
     if (error) {
       throw new Error(`Failed to update enriched fields: ${error.message}`);
     }
-  }
-
-  private generateSlug(name: string): string {
-    return name
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '');
   }
 }
