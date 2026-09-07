@@ -14,6 +14,7 @@ import { Client } from 'pg';
 const { toPoolerDbUrl } = require('../tps-core/pooler-url');
 import { isApprovedStore } from '../../src/lib/retailers/approved-retailers';
 import { isInScope } from '../../src/lib/scraping/utils/category-scope';
+import { syncProductsSynonyms } from '../sync-products-synonyms';
 
 const APP_ID = process.env.ALGOLIA_APP_ID || process.env.NEXT_PUBLIC_ALGOLIA_APP_ID || '';
 const ADMIN_KEY = process.env.ALGOLIA_ADMIN_KEY || '';
@@ -101,7 +102,15 @@ const INDEX = process.env.ALGOLIA_INDEX_NAME || 'products';
   });
 
   await client.replaceAllObjects({ indexName: INDEX, objects, batchSize: 1000 });
-  console.log(JSON.stringify({ index: INDEX, products: objects.length, offers: rows.length }));
+
+  // SYNONYM SYSTEM CLOSURE (2026-09-07): this object rebuild and the approved
+  // vocabulary's synonym publish must never drift apart again the way they did
+  // when this script and configure-tps-algolia-index.ts silently targeted two
+  // different indexes. Same function scripts/sync-products-synonyms.ts's own CLI
+  // entrypoint calls — one publish path, reused, not duplicated.
+  const { synonymGroups } = await syncProductsSynonyms();
+
+  console.log(JSON.stringify({ index: INDEX, products: objects.length, offers: rows.length, synonymGroups }));
   await pg.end();
   process.exit(0);
 })().catch((e) => { console.error(e instanceof Error ? e.message : e); process.exit(1); });
