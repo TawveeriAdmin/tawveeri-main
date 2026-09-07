@@ -5,9 +5,9 @@
 **Status:** Engineering work on the issues below is closed. Tawveeri is now entering the **distribution / market-use phase**. This document is the definitive external-safe source of truth for anything Grok drafts, posts, or recommends about Tawveeri. If anything you read elsewhere (an older file, a cached memory, a prior draft) conflicts with this document, **this document wins** — it reflects the latest verified state as of 2026-09-07.
 
 **Three corrections you should know before reading further**, because earlier material may say otherwise:
-- **Home Mission (جهّز بيتك) works.** An earlier internal note said its "build my plan" step looked stuck. That was a testing-tool artifact, not a real product problem — it has been re-verified working end-to-end.
+- **Home Mission (جهّز بيتك بذكاء) works.** An earlier internal note said its "build my plan" step looked stuck. That was a testing-tool artifact, not a real product problem — it has been re-verified working end-to-end.
 - **The natural-language follow-up buttons work** (e.g., "what if my budget were higher?", "cheaper?"). Same correction as above — an earlier note calling them broken was wrong and has been retracted.
-- **Search correctly understands common misspellings and colloquial spellings** of brand and product names, in both Arabic and English. This was specifically re-tested and confirmed.
+- **Search correctly handles a verified set of common Saudi/Arabic colloquial spellings and known brand-name spelling variants**, in both Arabic and English. This was specifically re-tested and confirmed — it is not a general typo/fuzzy-search capability, and not every misspelling of every word is supported.
 
 ---
 
@@ -39,16 +39,16 @@ Only capabilities confirmed working in live testing are listed here. Do not add 
 | 2 | **Budget understanding, any category** | State a budget in plain Arabic or English ("بميزانية 2000", "under 500 SAR") and get only options within it | *"Tell Tawveeri your budget in plain Arabic or English and it will only show options within it."* | Tested phrasings, not every possible colloquial variant | Screen recording of a real budget-constrained search |
 | 3 | **Room-size-to-AC-capacity matching** | State a room size in square meters and get an AC recommendation matched to the right cooling capacity, with the reasoning shown | *"Tell Tawveeri your room size and budget for an AC and it will match the right cooling capacity for you."* | AC merchant coverage is currently thin | Screen recording: room size in, BTU match + reason out |
 | 4 | **Camera-priority phone search with budget** | Ask for a phone with a great camera under a budget and get a pick with a written camera-relevant reason | *"Tell Tawveeri camera matters most and give a budget — it explains why it picked what it picked."* | — | Screen recording of the query and the written reason |
-| 5 | **Fake-discount detection** | See an explicit flag when a listed "before" price was never actually observed by Tawveeri | *"If a discount looks fake, Tawveeri tells you — it checks against the price history it actually recorded."* | Only works for products with enough price history; brand-new listings have none to compare | Before/after screenshot of the flagged discount |
+| 5 | **Observed-price discount verification** | See an explicit note when a listed "before" price does not match what Tawveeri has actually observed in its own price history | *"Tawveeri checks a merchant's displayed discount against the prices it has actually observed — and tells you plainly when the reference price shown wasn't one it recorded."* Never claim Tawveeri proves a discount is fake, fraudulent, illegal, or deceptive — only that it states what its own observed price history supports. | Only works for products with enough price history; brand-new listings have none to compare | Before/after screenshot of the observed-price note |
 | 6 | **Neutral ranking, always disclosed** | See a standing statement on every results page that commercial interest never affects order | *"Tawveeri's ranking is never for sale."* | — | Screenshot of the ranking-neutrality line on a live results page |
 | 7 | **Working merchant checkout hand-off** | Click through from a Tawveeri result and land on the real, correct merchant product page | *"When you click through, you land on the real store page for that exact product."* | Not exhaustively tested across every merchant | Screen recording of the click-through |
 | 8 | **Natural-language follow-up questions** | Ask a real follow-up like "what if my budget were higher?" or "cheaper?" after a search and get an honest, explicit answer (a real before/after comparison, or an explicit "no change" verdict) — not a dead button | *"Ask Tawveeri a natural follow-up and it answers honestly — a real comparison, or a plain 'the pick doesn't change.'"* | Only tested for "raise the budget" and "show me cheaper" phrasings so far | Screen recording of the click and the resulting answer |
-| 9 | **Natural Saudi phrasing, including misspellings** | Type category words the way people actually say them (e.g., colloquial words for "phone" or "TV"), or a common misspelling/phonetic spelling of a brand name, and still get the right results | *"Tawveeri understands how Saudis actually type — including common misspellings of brand names."* A concrete, vivid example: searching a well-known Chinese phone/tablet brand with a common misspelling still correctly returns that brand's real products. | Not every possible misspelling of every brand is guaranteed to work | Side-by-side screen recording: correct spelling and common misspelling returning the same real products |
+| 9 | **Natural Saudi phrasing, verified spelling variants** | Type category words the way people actually say them (e.g., colloquial words for "phone" or "TV"), or one of a verified set of known spelling variants of a brand name, and still get the right results | *"Tawveeri supports a verified set of common Saudi/Arabic phrasings and known brand-name spelling variants — not just the formal spelling."* A concrete, vivid example: searching a well-known Chinese phone/tablet brand with one of its known common misspellings still correctly returns that brand's real products. This is NOT general typo/fuzzy search — do not imply arbitrary misspellings will work. | Only a verified, specific set of variants is supported; an arbitrary or untested misspelling may not work | Side-by-side screen recording: correct spelling and one verified known variant returning the same real products |
 | 10 | **Home Mission — full home purchase planning** | Describe a whole home's needs in free text (rooms, family size, budget, priorities) and get a real, multi-category purchase plan with real prices and honest disclosures | See Section D below — do not market this beyond what Section D allows | Real-world shopper completion of the full flow is not yet proven at scale (see Section D) | Screen recording of the full intake → plan flow |
 
 ---
 
-## D. Home Mission — "جهّز بيتك"
+## D. Home Mission — "جهّز بيتك بذكاء"
 
 **What it does:** A shopper describes their whole home's needs in free text — how many rooms, family size, total budget, what matters most to them (or picks a ready-made scenario like "apartment for a family"). Tawveeri builds a real, itemized purchase plan spanning multiple appliance categories (AC per room, refrigerator, washing machine, TV, etc.), allocates the stated budget across them, and shows real prices for each item with an honest note wherever its confidence in a specific evidence point is limited.
 
@@ -87,7 +87,7 @@ This is Tawveeri's single strongest, most defensible brand claim, because it is 
 
 - **Unverified-attribute disclosure:** when a shopper asks for something Tawveeri can't confirm (like a lock on a fridge), it says so honestly on every result instead of silently filtering or guessing.
 - **Observed-price evidence:** every price shown is tied to when Tawveeri actually last checked it — not presented as "live this second."
-- **Discount recalculation where supported:** when a "before" price a merchant displays doesn't match what Tawveeri actually observed historically, Tawveeri flags it plainly, framed as *"we check against what we actually recorded"* — never as an accusation that a specific merchant lied. Merchants should never be framed as dishonest or fraudulent; the framing is always about Tawveeri's own verification standard, not merchant intent.
+- **Discount integrity, where supported:** when a "before" price a merchant displays doesn't match what Tawveeri actually observed historically, Tawveeri states that plainly, framed only as *"the reference price shown wasn't one we observed"* — never as a claim that the discount is fake, fraudulent, illegal, deceptive, or that a specific merchant lied. Merchants are never framed as dishonest; the framing is always about what Tawveeri's own observed-price evidence does or does not support.
 - **Unknown-constraint disclosure:** when a stated need can't be verified against real listing data, Tawveeri never invents an answer — it says plainly what it doesn't know.
 
 ---
@@ -98,7 +98,7 @@ Tawveeri is built to understand how Saudi shoppers actually type and speak, not 
 
 - Colloquial words for common categories (e.g., the everyday word for "phone" or the everyday way people ask for a "TV") return the right results, not zero.
 - Budget and constraint phrasing in natural Saudi Arabic (e.g., "under X riyals", "with a budget of X", a stated room size) is understood correctly.
-- Common misspellings and phonetic spellings of popular brand and product names still return the right, real products — including brand names people commonly write more than one way.
+- A verified set of common misspellings and phonetic spellings of popular brand and product names still return the right, real products — including brand names people commonly write more than one way. This is a supported set of known variants, not a general typo/fuzzy-search guarantee — do not imply arbitrary misspellings always work.
 
 Do not describe *how* any of this works internally. Describe only what the shopper can type and what they get back.
 
@@ -107,9 +107,9 @@ Do not describe *how* any of this works internally. Describe only what the shopp
 ## H. Content Pillars for Grok (priority order)
 
 1. **Decision proof** — real query in, real written reason out. The single most differentiating content type.
-2. **Price/discount truth** — the fake-discount catch, the "we check what we actually observed" story.
+2. **Price/discount truth** — the observed-price discount verification, the "we state what we actually observed" story.
 3. **Home Mission** — the whole-home planning capability (per Section D's limits).
-4. **Saudi shopping questions** — content showing Tawveeri understands real, colloquial Saudi phrasing (including misspellings).
+4. **Saudi shopping questions** — content showing Tawveeri understands real, colloquial Saudi phrasing and a verified set of known brand-spelling variants (not general typo tolerance).
 5. **Comparison/explanation** — showing a real multi-merchant price comparison with the neutrality disclosure visible.
 6. **Real shopper intent from X** — genuine purchase-uncertainty posts from real Saudi shoppers as a source of content ideas and reply opportunities (subject to Section I's approval rule for any public reply).
 
@@ -164,10 +164,16 @@ Same approval gate as Section I applies — nothing publishes without the founde
 
 ## K. Claim Rules
 
+**Authority boundary — read this before drafting anything.**
+
+- **A. Product-capability claims** (what Tawveeri can do — a feature, a behavior, an understanding) must come only from this handoff document and the current Product Truth it reflects. Do not add a capability claim from memory, assumption, or general AI-search expectations.
+- **B. Commercial facts** (a specific price, discount percentage, merchant name, offer/store count, freshness statement, or availability status) are never sourced from this document — they change constantly and must be **revalidated live, immediately before publication**, every time.
+- **Grok must never infer a new Tawveeri capability merely because it observed something once on the public site.** A single live observation is evidence to report, not a license to market. If a live behavior is not already represented in this document's Section C, do not describe it as a capability — classify it instead as `PRODUCT_GAP`, `DATA_GAP`, or `CONTENT_RISK` per Section N and escalate.
+
 **ALLOWED** (safe to use as-is, subject to the approval gate for the exact artifact):
 - "We don't guess — we disclose."
 - Tawveeri's ranking is never influenced by commercial/merchant interest.
-- Tawveeri understands plain Saudi Arabic and English, including budgets, room sizes, and common misspellings.
+- Tawveeri understands plain Saudi Arabic and English, including budgets, room sizes, and a verified set of common brand-spelling variants.
 - Tawveeri explains why it recommends what it recommends.
 - Tawveeri flags a discount that doesn't match what it actually observed.
 - Tawveeri sends you to the merchant's own site to complete your purchase.
@@ -193,6 +199,8 @@ Same approval gate as Section I applies — nothing publishes without the founde
 - Claiming a live AI/Grok-to-product integration exists — it does not; Grok works from this document and public information only.
 - Claiming a proven high completion rate for Home Mission (see Section D).
 - Naming a specific competitor in a comparison post without founder sign-off (escalate instead, per Section N).
+- Claiming Tawveeri proves a discount, promotion, or reference price is fake, fraudulent, illegal, misleading, or deceptive — only state what Tawveeri's own observed price history does or does not support (see Section F).
+- Implying general typo/fuzzy-search capability ("Tawveeri understands any misspelling") — only a verified, specific set of spelling variants is supported (see Section C, item 9, and Section G).
 
 ---
 
