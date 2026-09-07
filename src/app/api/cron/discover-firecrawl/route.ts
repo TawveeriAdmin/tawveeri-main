@@ -251,7 +251,15 @@ async function runAdapterSync(adapter: StoreAdapter, triggeredBy: 'schedule' | '
     // A run that fetched nothing is 'success' only if the adapter says it is
     // finished; otherwise it is a zero-result run and must be visible as such.
     const zeroResult = result.offers.length === 0 && !result.done;
-    const status = result.lastError ? 'partial' : zeroResult ? 'partial' : 'success';
+    // OBSERVABILITY GAP (2026-09-07, discovery/product-creation architecture study):
+    // this status calculation never looked at saveResult.failed at all — it is exactly
+    // the reason the products.slug defect went unnoticed for 739 consecutive scheduled
+    // runs (every one reported 'success' while creating zero products). discover-products
+    // (the healthy path, discover-products/route.ts) already guards this correctly
+    // (`result.errors > 0 ? 'partial' : 'success'`); this brings the same check here so a
+    // future per-item persistence failure of any kind is visible the same way, not just
+    // the slug case this pass happened to fix.
+    const status = result.lastError ? 'partial' : zeroResult ? 'partial' : saveResult.failed > 0 ? 'partial' : 'success';
 
     if (runId !== null) {
       await finishRun({
@@ -262,12 +270,14 @@ async function runAdapterSync(adapter: StoreAdapter, triggeredBy: 'schedule' | '
         products_updated: saveResult.updated,
         products_failed: saveResult.failed,
         price_changes_detected: saveResult.priceRows,
-        errors_count: result.lastError ? 1 : 0,
+        errors_count: (result.lastError ? 1 : 0) + saveResult.failed,
         error_summary: result.lastError
           ? { message: String(result.lastError) }
           : zeroResult
             ? { message: 'zero-result run: adapter returned no offers and did not report completion' }
-            : null,
+            : saveResult.failed > 0
+              ? { message: `${saveResult.failed} of ${saveResult.fetched} offers failed to persist`, sample: saveResult.errors }
+              : null,
       });
     }
 

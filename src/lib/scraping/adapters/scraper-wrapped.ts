@@ -68,8 +68,24 @@ function wrap(cfg: { slug: string; dbName: string; nameEn: string; enabled: bool
   };
 }
 
-// Data-bearing stores — enabled (Jarir: ~50k obs, Amazon: ~2k obs).
-export const jarirAdapter = wrap({ slug: 'jarir', dbName: 'جرير', nameEn: 'Jarir', enabled: true, source: 'jarir-search' }, () => new JarirSearchScraper());
+// PROVEN REDUNDANCY (2026-09-07, discovery/product-creation architecture study): Jarir
+// already has its own dedicated, SCHEDULED, healthy discovery path — GitHub Actions
+// (.github/workflows/tps-heartbeat.yml, every 6h) → POST /api/cron/discover-products
+// {store_slug:"jarir"} → ScrapingOrchestrator → JarirScraper (cron class) →
+// ProductService.createOrUpdateProduct() — which is where Jarir's real catalog (7,255+
+// products with proper slugs) actually comes from. This adapter wraps a SEPARATE
+// scraper (JarirSearchScraper, the live-customer-search one, independently instantiated
+// by search-orchestrator.ts and unaffected by this flag) through discover-firecrawl's
+// own, separate, duplicate saveProducts() path — running on the SAME 6-hour cadence via
+// pg_cron, discovering the SAME merchant twice through two different code paths with no
+// added coverage. Disabled here; Jarir's discovery is unaffected (it never used this
+// adapter) — only this route's redundant second pass over Jarir stops.
+export const jarirAdapter = wrap({ slug: 'jarir', dbName: 'جرير', nameEn: 'Jarir', enabled: false, source: 'jarir-search' }, () => new JarirSearchScraper());
+// Amazon has an equivalent standalone healthy path (AmazonScraper cron class via
+// discover-products), but — unlike Jarir — that path has no active schedule of its own
+// (manual-trigger only). This adapter remains Amazon's ONLY currently-scheduled
+// discovery mechanism; disabling it would stop Amazon's automated catalog growth
+// entirely, not remove a redundancy. Left enabled.
 export const amazonAdapter = wrap({ slug: 'amazon', dbName: 'أمازون', nameEn: 'Amazon', enabled: true, source: 'amazon-search' }, () => new AmazonSearchScraper());
 
 // No-data stores — registered for contract completeness, disabled pending a

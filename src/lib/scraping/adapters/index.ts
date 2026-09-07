@@ -13,10 +13,11 @@ import {
 // All 8 stores registered on the adapter contract (E12). enabled=false ones are
 // registered for completeness but await a validated ingestion run before use.
 export const STORE_ADAPTERS: StoreAdapter[] = [
-  almaneaAdapter,   // enabled — bespoke Algolia adapter
-  extraAdapter,     // enabled — bespoke UNBXD adapter
-  jarirAdapter,     // enabled — wraps JarirSearchScraper (~50k obs)
-  amazonAdapter,    // enabled — wraps AmazonSearchScraper (~2k obs)
+  almaneaAdapter,   // enabled — bespoke Algolia adapter; only scheduled discovery Almanea has
+  extraAdapter,     // enabled — bespoke UNBXD adapter; only scheduled discovery Extra has
+  jarirAdapter,     // disabled (2026-09-07) — redundant with Jarir's own dedicated, scheduled
+                     // GitHub Actions -> discover-products -> ProductService path (see scraper-wrapped.ts)
+  amazonAdapter,    // enabled — wraps AmazonSearchScraper; only scheduled discovery Amazon has
   noonAdapter,      // disabled — no pipeline data yet
   samsungKsaAdapter,// disabled — no pipeline data yet
   shakerAdapter,    // disabled — no pipeline data yet
