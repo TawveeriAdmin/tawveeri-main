@@ -1,0 +1,97 @@
+{
+  "date": "2026-09-07",
+  "reason": "Amazon storefront air_conditioner rows that are genuine AC parts/accessories, per fixed determineCategory() (category-utils.ts, AC_PART_INDICATORS)",
+  "rollback": "UPDATE products SET category = 'air_conditioner' WHERE id IN (<ids below>);",
+  "rows": [
+    {
+      "id": "2b4daf0a-49a6-4f1f-bece-ad44f6dd3028",
+      "name_en": "2 Pack Air Conditioner Fin Cleaning Brush,Double Sided Stainless Steel Cleaner Brush for Deep Into HVAC Coil Fins to Effectively Removing Dirt and Debris Without Damaging",
+      "prior_category": "air_conditioner",
+      "new_category": "accessories"
+    },
+    {
+      "id": "152a96ec-91e3-4cce-b308-9ea291d5af2a",
+      "name_en": "6Pcs/Set Electric Drill Pipe Expander Air Conditioner Swaging Tools Repairing Kit",
+      "prior_category": "air_conditioner",
+      "new_category": "accessories"
+    },
+    {
+      "id": "75542dd1-de8e-4fe0-971c-e7a865ca9828",
+      "name_en": "8 Pcs Hand-held Groove Gap Cleaning Tools - Door Window Track Crevice Cleaning Brushes Blind Cleaner Duster, Window Magic Cleaning Brush for Shower Door, Car Vents, Air Conditioner, Keyboard, Shutter",
+      "prior_category": "air_conditioner",
+      "new_category": "accessories"
+    },
+    {
+      "id": "0ac501cf-f4ee-4dc6-900a-2fa6f41e826a",
+      "name_en": "Air Conditioner Base Stainless Steel Floor Pallet Rack Raised for Warehouses Garage Kitchens Shops",
+      "prior_category": "air_conditioner",
+      "new_category": "accessories"
+    },
+    {
+      "id": "11f5f5ff-ca4b-4ec3-8410-ec6f4eb7a8e2",
+      "name_en": "Air Conditioner Condensate Drain Tray Outdoor AC Support Tray Plastic Drainage Pan for AC Units Size 81x33x3cm Color 200cm & Easy to Install",
+      "prior_category": "air_conditioner",
+      "new_category": "accessories"
+    },
+    {
+      "id": "0de7ff92-0474-4c2b-a872-736b51d08810",
+      "name_en": "DiversiTech (6-2424L) A/C Secondary Condensate Drain Pan, Air Conditioner Drip Pan with Rolled Edges, 24 x 24 Plastic Tray, Black",
+      "prior_category": "air_conditioner",
+      "new_category": "accessories"
+    },
+    {
+      "id": "73e59ee6-50f6-403e-85be-a034a6ee67b6",
+      "name_en": "DOITOOL Reusable Ice Packs for Air Conditioner Fan, 4 Pack for Cooler, Lunch Cooler Bag Freezer Blocks",
+      "prior_category": "air_conditioner",
+      "new_category": "appliance"
+    },
+    {
+      "id": "3ba9ceed-c4a8-459b-bacd-ab471a59e82e",
+      "name_en": "Errecom Clima-Net, Air Conditioner Cleaner for A/C Filters, Coils and Outdoor Units, 6 x 1 L bottle",
+      "prior_category": "air_conditioner",
+      "new_category": "accessories"
+    },
+    {
+      "id": "435241de-743b-4cbb-8e2f-789f93ec0c6c",
+      "name_en": "Heavy-Duty Manual Lift for Air Conditioner Installation 100kg Load Capacity Ideal for Positioning and Maneuvering Outdoor Units",
+      "prior_category": "air_conditioner",
+      "new_category": "accessories"
+    },
+    {
+      "id": "793866e3-8a17-483b-90c7-3047a9383f92",
+      "name_en": "High Capacity Air Conditioner Installation Hoist - 100KG Load 10-25m Reach Manual Lift for Outdoor Use Perfect for HVAC Professionals and DIY Projects",
+      "prior_category": "air_conditioner",
+      "new_category": "accessories"
+    },
+    {
+      "id": "0e9d4cc0-ad94-494a-bcc3-c37d8305a2ad",
+      "name_en": "Ice Cube Molds Trays Ice Packs 4Pcs Long Lasting Freezer Blocks Reusable Portable Cooler Freezer Ice Packs Keep Cool for Refrigerator Air Conditioner Fan (Pack of 4)",
+      "prior_category": "air_conditioner",
+      "new_category": "appliance"
+    },
+    {
+      "id": "717243f7-10dc-4063-9a31-8ddae778cbea",
+      "name_en": "ISTOVO AC Water Draining Machine Air Conditioner Water Pump 400ml Household Size of 3 Lift with 10M Pump| WG-6",
+      "prior_category": "air_conditioner",
+      "new_category": "accessories"
+    },
+    {
+      "id": "e55f2ad1-eafb-4b11-aa13-b9d21ed0994a",
+      "name_en": "Outdoor Air Conditioner Condensate Drain Tray 93x45x3cm Plastic Support for AC Units Condensation Recovery Pan Essential for Efficient Cooling System Maintenance",
+      "prior_category": "air_conditioner",
+      "new_category": "accessories"
+    },
+    {
+      "id": "2093467a-9031-45ef-b5c3-7c1be70353b7",
+      "name_en": "Reusable Ice Packs Freezer Cube Mold Tray, 4 Packs for Air Conditioner Fan Ice Block Portable Cooler Freezer",
+      "prior_category": "air_conditioner",
+      "new_category": "appliance"
+    },
+    {
+      "id": "131c57c4-d012-4e8d-a1f5-41235440ef7a",
+      "name_en": "Universal Air Conditioner with Drain Hose Plastic Condensate Tray PP5 Indoor Outdoor Unit Window Kit for Efficient Water Collection & Drainage.",
+      "prior_category": "air_conditioner",
+      "new_category": "accessories"
+    }
+  ]
+}
