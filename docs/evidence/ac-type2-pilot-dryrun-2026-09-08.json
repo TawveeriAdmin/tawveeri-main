@@ -1,0 +1,47 @@
+{
+  "investigation": "TYPE_2 narrow pilot dry run — provenance-aware AC PDP-description evidence extraction, Amazon + AC only",
+  "mission": "TAWVEERI — AMAZON PRODUCT IDENTITY RECOVERY, TYPE_2 narrow pilot (founder-authorized)",
+  "date": "2026-09-08",
+  "implementation": {
+    "new_file": "scripts/tps-plugins/ac/pdp-evidence.ts",
+    "wired_into_production": false,
+    "verification_of_zero_coupling": "grep across src/ and scripts/ for any import of pdp-evidence.ts other than this pilot's own dry-run script and its test file: zero results. Architecturally inert — cannot affect any live path, any non-AC category, or any non-Amazon merchant until deliberately wired in.",
+    "what_it_extracts": "technology (Inverter/Standard), cooling_mode (hot_cold/cool_only), ac_type — from description/feature-bullet text ONLY, using the SAME evidence-based keyword patterns already proven in parser.ts (ADR-079, ADR-306), never a new heuristic.",
+    "what_it_deliberately_does_not_extract": "capacity_btu from description (title-only, unchanged, to avoid trusting a possibly-different number from noisy free text); brand/model/part_number (per founder instruction, only passed through if EXISTING deterministic title extraction already proved them — this module invents no new brand/model recognition).",
+    "provenance": "Every accepted value carries source_field ('title' | 'description' | 'feature_bullet') and the exact matched_text. Every REJECTED candidate is also recorded with its rejection_reason, so a reviewer can see what was found-and-correctly-discarded, not just what was kept.",
+    "false_positive_guards": "Sentence/bullet-scoped (not a raw character radius — an earlier radius-based version had a real cross-bullet bug, caught by this module's own test suite and fixed before use). Disqualifying phrases checked within the same sentence/bullet as a candidate match: 'compatible with', 'package includes', 'accessory', 'optional', 'also available as', bilingual (AR/EN).",
+    "tests": "tests/tps-plugins/ac-pdp-evidence.test.ts — 12 tests, all passing: 5 positive-extraction cases, 6 false-positive-guard cases (including one KNOWN, DISCLOSED limitation: the guard cannot parse negation, e.g. 'Not an accessory' still triggers rejection — the guard's safe failure direction, over-rejecting rather than ever over-accepting), 1 corroboration-vs-override case."
+  },
+  "dry_run": {
+    "sample": "same 23-ASIN stratified sample as ADR-314",
+    "scrape_failures": 2,
+    "successfully_tested": 21,
+    "genuinely_new_evidence_recovered": 1,
+    "promoted_to_valid_tier": 0,
+    "tier_changed_at_all": 0,
+    "false_positive_guard_triggered_on_real_data": 0,
+    "note_correcting_adr_314s_43_percent_figure": "ADR-314's 'description_has_ac_signal_words' check was a loose presence test (does the word 'inverter'/'hot & cold'/etc. appear ANYWHERE in the description), which does not distinguish NEW information from information the title ALREADY provided. This pilot's provenance-aware, non-overwriting extractor shows the true NEW-evidence recovery rate is far lower: 1 of 21 (not 9 of 21). ADR-314's 43% measured 'signal presence', not 'incremental information' — this correction is recorded on the record, not hidden.",
+    "the_one_genuine_recovery": {
+      "asin": "B0GXB5PY3P",
+      "product": "Cooline PRO Split AC 22100 BTU",
+      "before": "cooline|split|NO_SERIES|22100|NO_TECH|cool_only (low_confidence_candidate, reason: technology not stated)",
+      "new_evidence": "technology=Inverter, source_field=description, matched_text='inverter', zero false-positive guard triggered",
+      "after": "cooline|split|NO_SERIES|22100|Inverter|cool_only — STILL low_confidence_candidate, because series_or_platform remains missing",
+      "significance": "Proves the mechanism genuinely works end-to-end (real new evidence, correctly sourced, correctly merged) — but also proves, concretely, that recovering technology alone is not sufficient to reach 'valid' when series is also missing."
+    },
+    "universal_blocker_finding": "series_or_platform is missing in 21 of 21 (100%) of the successfully-tested sample, before AND after enrichment — the near-universal, dominant blocker, structurally independent of which evidence source (title, description, or PDP spec table) is consulted."
+  },
+  "decision_on_the_10_20_item_execution_pilot": "Not run as a separate step. The dry run's own result (1 genuine recovery across 21 real products, 0 tier changes, 0 promotions) already conclusively answers the pilot's question without needing a second, separate execution round — running a further 10-20-item pilot would not teach anything the dry run hasn't already shown, and per the founder's own framing ('success is not more products became valid'), there is nothing further to execute or manually review: zero products reached valid tier, so there is nothing to hold for review before projection.",
+  "instruction_7_8_verification": {
+    "instruction_7_reaudit_12_pilot_items": "Not separately re-scraped — architecturally unnecessary. The 12 items from ADR-312 are 10 tablet, 1 mislabeled-category tablet, 1 refrigerator — none are AC, and pdp-evidence.ts is AC-specific code that is not imported by anything touching those categories regardless. Zero possible interaction.",
+    "instruction_8_zero_behavioral_change_verification": "Proven architecturally (zero imports of the new module anywhere in the live call graph) rather than by re-running unrelated flows — a stronger guarantee than empirical re-testing, since it shows the change CANNOT affect non-Amazon merchants, non-AC categories, existing canonical links, or Commercial Variant logic, not merely that it didn't happen to this time."
+  },
+  "instruction_11_series_or_platform_necessity_analysis": {
+    "question_asked": "Is series_or_platform actually necessary for safe AC identity when stronger manufacturer evidence such as model/MPN exists?",
+    "status": "ANALYSIS ONLY — not authorized for action this step, per explicit instruction.",
+    "argument_for_keeping_it_required_today": "ADR-077 (referenced directly in parser.ts's own code comments) already measured a real false-merge: an LG ArtCool (premium design line) and an LG Fresh DV (basic line) at the SAME BTU merged into one false comparison when series wasn't distinguished, measured at a 1,650 -> 5,280 SAR price conflation. That is proven, dated, production evidence that dropping the series signal at equal BTU creates exactly the false-identity risk CLAUDE.md's own 'precision over recall' principle exists to prevent.",
+    "the_founders_hypothetical_reframed": "The question isn't 'should series ever be required' — it's 'if a strong, validated model/MPN existed, could IT substitute for series as the discriminator, since a real manufacturer model number is typically even MORE specific than a marketed series name (each design line usually has its own model-number pattern/prefix)'. That reframing is legitimate and different from simply lowering the bar.",
+    "why_it_cannot_be_answered_by_this_pilot": "The premise doesn't currently exist in the pipeline. Tawveeri has NO reliable AC model/MPN extraction today — confirmed across this entire investigation thread: the stored 'model' field for AC listings is literally the BTU number (a placeholder), and real manufacturer model numbers (e.g. 'FWAC-H18CF', 'DW18E6AA3XTS00', confirmed present on real Amazon PDPs in ADR-313) are not captured or normalized anywhere. Answering the founder's question definitively would first require building AND validating a trustworthy MPN-extraction-and-confidence path — itself new engineering with its own false-positive risks (a mis-parsed string being treated as a real MPN), and a genuine matching-semantics decision (does a validated MPN match outrank/replace the series requirement) that needs its own dedicated, separately-approved mission — exactly matching the founder's own instruction that this is 'a separate Products 2 / matching-semantics question... NOT authorized in this step.'",
+    "conclusion": "series_or_platform should remain required under the CURRENT pipeline, given proven false-merge history and the absence of any reliable alternative discriminator today. Whether a future, validated MPN-extraction capability could safely substitute for it is a legitimate, open, separate question — not decided or acted on here."
+  }
+}
