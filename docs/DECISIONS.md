@@ -4,6 +4,79 @@
 
 Status legend: **Accepted** · **Superseded** · **Proposed**.
 
+### ADR-327 — AC Rescue Lab closure: cross-merchant comparison proven live, a pre-existing storefront-reconciliation defect found and safely fixed for exactly 2 products, final status CONTROLLED_MANUAL_CAPABILITY · Accepted (2026-09-08)
+
+**Context.** Founder gave broad authority to take AC Rescue from a successful technical experiment (ADR-326: identity association proven, but each product showed only one Amazon offer) to an independently justified, complete outcome — explicitly not assuming Extra must be linked, not assuming V1 must productionize, and requiring genuine artifact-by-artifact justification before any cleanup. Governing principle: "a pilot is not success merely because it writes... a rescue is useful only if it improves a real buying decision."
+
+**Truth reconstructed first, not assumed.** Both pilot links (ledger ids 4, 5) confirmed still active, zero drift, target canonicals unchanged and still active. One unexpected discovery surfaced immediately on independently locating Extra's own listings for these products: Extra's storefront rows were **already linked — to a different, legacy, key-less stub canonical**, not the real TPS canonical this mission's earlier pilot targeted. Not caused by this mission; a pre-existing artifact of the original `005_link_products` (2026-06-26) naive text-match migration that ADR-242's whole convergence effort exists to correct.
+
+**Extra's counterpart independently investigated, not assumed.** Both Extra listings classified `EXACT_SAME_PRODUCT` — not newly proven, but *already* proven: their exact raw titles are literally embedded in the target canonicals' own founding TPS evidence (visible in ADR-320's review packet), meaning Extra's knowledge-layer observation was correct all along; only the storefront-layer foreign key was stuck on an unrelated stub. This reframed the task from "make a new identity decision" to "reconcile an already-proven one" — a materially stronger, more certain case than the original Amazon rescue itself.
+
+**Correct mechanism chosen, not the pilot ledger.** Per the mission's explicit instruction not to abuse the AC Rescue pilot ledger for a write type it wasn't designed for, this used `project-storefront-identity.ts --repoint-legacy` (ADR-243's existing, already-audited URL-exact reconciliation tool) instead. Its default scoping (`--stores`) would have made all 162 Extra low-confidence-tier candidates eligible in one run — far beyond this mission's 2-product authorization — so a narrow, additive, backward-compatible `--products <uuid,...>` filter was added (undefined by default, zero behavior change when omitted) to scope the run to exactly the hand-verified cohort.
+
+**A real, disclosed trade-off surfaced and judged before writing.** The tool's own chart-continuity check flagged `partial_loss` for both products: the legacy stub canonicals carry real historical `price_history` depth (TCL 67 points over ~7 weeks; Haier 63 points over ~6 weeks) that would become orphaned on repoint. Investigated rather than ignored: both legacy charts were already frozen (no updates in 5+ weeks — nothing writes to an orphaned canonical), while the target canonicals are the ones the live TPS pipeline actively refreshes today. Repointing trades a dead, frozen chart for a live, currently-tracked one; the customer-visible *current* price was unaffected either way (confirmed independent of `price_history`). Judged acceptable and stated plainly, not hidden.
+
+**Executed one product at a time, exactly as required.** TCL repointed first (`storefront_identity_links` id `2865`, `prior_canonical_product_id` recorded for exact rollback), independently verified (correct new offer count, correct provenance, legacy canonical preserved not deleted, zero unrelated rows touched), **then** Haier (id `2866`), same verification. Platform-wide `legacy-repoint-v1` active-link count moved from 47 (ADR-243's pre-existing work) to 49 — precisely 47+2, confirmed, not a surprise.
+
+**Cross-merchant comparison is now genuinely live.** TCL: Amazon 4,199 SAR + Extra 4,299 SAR. Haier: Amazon 3,049 SAR + Extra 3,399 SAR — a real, material 11.5% price-spread signal, exactly the kind of thing that improves a real buying decision. `CROSS_STORE_COMPARISON_PROOF = YES`, for the first time in this entire 9-ADR program. Verified at the database level (the layer the page actually reads) in multiple independent ways; the client-rendered offer list itself remained unobservable to `WebFetch` in three separate attempts (direct fetch, comparison API — `405`, structured-data probe) — a disclosed tooling limit present before this mission's writes too, not a defect introduced by them.
+
+**V1 reassessed on real evidence, not flattered.** `V1_TECHNICAL_VALUE`: sound — 0 false merges across 8 ADRs of adversarial review. `V1_USER_VALUE`: proven for the first time this mission (real live comparison, real price-spread). `V1_OPERATIONAL_COST`: high per case — 8 ADRs of manual rigor were needed to responsibly clear 2 products. `V1_FALSE_MERGE_RISK`: low but conditional — the trusted-reference universe still carries the documented, unfixed GREE-collapse and brand-corruption defects (ADR-320/321/322), so V1's safety currently depends on continued human review, not clean data by default. `V1_COVERAGE_POTENTIAL`: low without a prerequisite fix — true novel-rescue yield across the whole population is 2/270 (0.74%); the binding lever remains `series_or_platform` extraction coverage (identified in ADR-315, never acted on), not more matching logic.
+
+**Future decision: `AC_RESCUE_FUTURE = B — KEEP_AS_MANUAL_RESCUE_TOOL`.** Not A (close entirely) — the mechanism works and just produced real value; discarding it would be wasteful. Not C (controlled expansion) — operational cost and known reference defects mean each further candidate needs the same order of manual rigor applied here, with no evidence yet that this scales cheaply. Not D (productionize) — 0.74% yield does not justify a permanent automated service before the extraction-coverage lever is pulled, which is separate, unstarted work. Not E (reject/rollback) — nothing undermines the two live links' safety. No expansion beyond the originally-authorized 2 products (and their 2 Extra counterparts) was pursued, per the mission's explicit stop rule.
+
+**Products 2 boundary held.** GREE series-collapse and brand-token corruption remain confirmed unrelated to TCL/Haier and were not touched — left documented for their own future mission. A **third**, distinct, pre-existing defect class was found in the course of this investigation (1,414 products platform-wide still point at legacy key-less stub canonicals) — exactly 2 of the 1,414 were touched, under this mission's specific 2-product authorization; the other 1,412 are left exactly as found, not generalized into a broader remediation.
+
+**Business value measured honestly, not fabricated.** The Extra links went live minutes before this report — there has been no real observation window for actual user traffic. What's measurable now: 2 rescued identities, 2 newly-live multi-store comparisons, 1 material price-spread signal (Haier, 11.5%). Qualified views, outbound intent, and merchant-distribution-at-scale are **not yet measurable** — stated plainly rather than guessed. Technical stability (achieved, verified this session) is explicitly separated from longer-term commercial performance (not yet achievable within one continuous session).
+
+**Artifact inventory and cleanup — the honest result was zero deletions.** All 34 files/entities created across ADR-319 through this closure were inspected individually (real references, not filename pattern-matching): every one is either **live-production-required** (the pilot ledger CLI and its logic module — rollback mechanism for 2 active links; the `030_ac_rescue_pilot_links.sql` migration — schema for a table holding those links; `tests/tps-plugins/ac-rescue-pilot-ledger.test.ts` — 25 passing tests protecting that same live logic), **durable evidence** (9 `docs/evidence/ac-rescue-lab-*.json` files, `V1_SPEC.md`, `README.md`, ADR-319 through this one), or **historical/reproducible audit record** (the 7 frozen V1 lab scripts, cited by name throughout the Decision Register). The 22 intermediate `out/*.json` working files were never committed (gitignored from creation) and are not a repository-hygiene concern. `EXPERIMENT_ARTIFACTS_DELETED = 0`. Per the mission's own principle — "do not optimize for completing the checklist" — forcing an artificial deletion where every file has a positive reason to stay would have been worse than an honest zero. **`PILOT_LEDGER = KEEP`** — 2 live links depend on it for rollback; none of the mission's own retirement conditions are met.
+
+**Final report.**
+```
+CURRENT_PILOT_HEALTH = STABLE, zero drift, zero degradation
+TCL_IDENTITY_CORRECT = YES              HAIER_IDENTITY_CORRECT = YES
+TCL_MULTI_STORE_COMPARISON = YES        HAIER_MULTI_STORE_COMPARISON = YES
+CROSS_STORE_COMPARISON_PROVEN = YES
+FALSE_MERGES = 0                        UNRELATED_PRODUCTION_CHANGES = 0
+V1_FINAL_VERDICT = sound architecture, proven value, high per-case operational cost, coverage
+                    gated by extraction quality — see part10 in docs/evidence/ac-rescue-lab-closure.json
+AC_RESCUE_FINAL_STATUS = CONTROLLED_MANUAL_CAPABILITY
+PRODUCTION_MECHANISM = ac_rescue_pilot_links (Amazon rescues) + storefront_identity_links
+                        legacy-repoint-v1 (storefront reconciliation) — two separate,
+                        correctly-scoped mechanisms, neither reused for the other's job
+ROLLBACK_STATUS = READY for all 4 writes (2 pilot-ledger, 2 storefront_identity_links),
+                   commands recorded in docs/evidence/ac-rescue-lab-closure.json
+PRODUCTS_2_ARCHITECTURE_CHANGED = NO — matching semantics, product_matches, canonical
+                   identity logic all untouched; 4 total FK-column writes across 2 products,
+                   2 tables, both provenance-ledgered and reversible
+ADDITIONAL_PRODUCTS_RESCUED = 0 beyond the originally-authorized TCL/Haier (2 Amazon links)
+                   + their 2 Extra counterparts (a reconciliation, not a new rescue)
+CUSTOMER_VALUE_PROVEN = PARTIAL — DB-level comparison data proven correct and live; live
+                   browser-rendered confirmation not independently observable this session
+                   (disclosed tooling limit)
+COMMERCIAL_VALUE_SIGNAL = 1 material price-spread (Haier, 11.5%); no traffic data yet (0
+                   elapsed observation time — stated honestly, not fabricated)
+EXPERIMENT_ARTIFACTS_FOUND = 34          EXPERIMENT_ARTIFACTS_DELETED = 0
+EXPERIMENT_ARTIFACTS_PRESERVED = 34, each with a positive, specific reason (see closure JSON)
+FILES_NOT_DELETED_DUE_TO_UNCERTAINTY = none — every kept file is positively justified, not
+                   merely undeleted out of caution
+PILOT_LEDGER_STATUS = KEEP — 2 live links depend on it; no retirement condition met
+DELETION_VERIFICATION = PASS (nothing deleted, so nothing to verify broke)
+TESTS = 25/25 passing                    BUILD = not rebuilt this mission (no app-code path touched beyond one additive CLI flag)
+PRODUCTION_VERIFICATION = PASS (with the disclosed client-render limitation)
+DURABLE_EVIDENCE_SAVED = YES — docs/evidence/ac-rescue-lab-closure.json plus this ADR
+FINAL_CLOSURE_ADR = this entry (ADR-327)
+REPOSITORY_CLEAN = YES — no scratch scripts, no accidental credentials, no duplicate rescue
+                   implementations, no unreferenced temporary commands
+SAFE_TO_CLOSE_AC_RESCUE_MISSION = YES
+NEXT_TAWVEERI_PRIORITY = raise series_or_platform extraction coverage for AC (currently 1.1%,
+                   the actual binding constraint on any future AC Rescue yield) — a separate,
+                   not-yet-authorized piece of work, not started here
+```
+
+**Consequences.** AC Rescue is closed as a mission but not as a capability: it graduates to `CONTROLLED_MANUAL_CAPABILITY` — safe, tested, reusable by hand for a future high-value case, deliberately not automated or expanded. Two real, live, correct, price-comparing AC products now exist on Tawveeri that did not before this program began. A third, previously-unknown Products 2 defect class (1,414 legacy-stub-linked storefront rows) was found and left properly scoped for its own future mission, exactly 2 of them fixed under explicit authorization, none of the rest touched.
+
+**Products 2 status:** 4 total writes across this mission and ADR-326 combined (2 `ac_rescue_pilot_links`-mediated, 2 `storefront_identity_links`-mediated), all provenance-ledgered, all reversible, all independently verified. No matching semantics, thresholds, canonical merges/splits, or series definitions were changed. `PRODUCTS_2_ARCHITECTURE_CHANGED = NO`.
+
 ### ADR-326 — AC Rescue Lab: first 2 real production associations executed — TCL and Haier, SUCCESS · Accepted (2026-09-08)
 
 **Context.** Founder gave final, explicit authorization to execute exactly the 2 links approved in ADR-324 through the mechanism built and tested in ADR-325 — TCL and Haier only, sequenced (TCL first, Haier only if TCL's post-write verification passes), with mandatory pre-write drift re-checks, post-write DB and customer-facing verification, a full blast-radius accounting, and an explicit no-expansion stop rule.

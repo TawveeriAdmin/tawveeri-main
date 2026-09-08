@@ -1,0 +1,176 @@
+{
+  "experiment": "AC Rescue Lab — global finalization, cross-merchant proof, and experiment closure",
+  "adr": "ADR-327 (final closure ADR for ADR-319 through ADR-327)",
+  "date": "2026-09-08",
+
+  "part1_reconstructed_truth": {
+    "PILOT_LINKS_STILL_LIVE": "YES — ledger ids 4 (TCL) and 5 (Haier), both status=active",
+    "TCL_CURRENT_STATE": "products.canonical_product_id = d47800b5-... (Amazon), confirmed live; target canonical is_active=true, tps_identity_key unchanged since ADR-320/324",
+    "HAIER_CURRENT_STATE": "products.canonical_product_id = ff8b35e4-... (Amazon), confirmed live; target canonical is_active=true, tps_identity_key unchanged",
+    "ROLLBACK_STILL_VALID": "YES — both ledger rows readable, before_state/after_state intact, rollback commands unchanged from ADR-326/325",
+    "PRICE_REFRESH_HEALTH": "products_stores.current_price fields are fresh and independent of the canonical-keyed price_history table (confirmed 4199/3049 for Amazon match ADR-319's price experiment exactly; Extra's current_price 4299/3399 also live, independent of price_history)",
+    "IDENTITY_DRIFT": "NONE — both target canonicals' tps_identity_key and is_active status unchanged since ADR-320",
+    "UNEXPECTED_CHANGES": "NONE found in the pilot ledger or Amazon links. ONE major, unexpected, real discovery made during this mission's own investigation (not a change, a finding): Extra's OWN storefront rows for both products were already linked — to a DIFFERENT, legacy, key-less stub canonical, not the real TPS canonical the pilot targeted. See part5 below."
+  },
+
+  "part2_global_research_challenge": {
+    "note": "WebSearch remained exhausted this session (confirmed at mission start); this section is a reasoned application of already-established knowledge (Fellegi-Sunter record linkage, GS1 identifier semantics, staged/canary rollout practice, provenance-ledger patterns) rather than fresh citation-gathering, consistent with 'do not perform research merely to produce citations.'",
+    "IS_OUR_CURRENT_APPROACH_STILL_SOUND": "YES, with one correction proven this mission. The blocking+hard-conflict-gate+abstention architecture (V1) remains a standard, defensible record-linkage pattern. What this mission's own investigation exposed is a layer this architecture never covered: STOREFRONT-TO-CANONICAL RECONCILIATION is a separate problem from AMAZON-TO-CANONICAL RESCUE, and conflating them would have been a mistake — they were correctly kept as two different mechanisms (fingerprint-based pilot ledger vs URL-exact legacy-repoint), which is itself validation that the project's layered design (storefront layer vs TPS knowledge layer, ADR-242) is the right shape.",
+    "WHAT_A_MATURE_SYSTEM_WOULD_DO_NEXT": "instrument the reconciliation gap itself — a mature catalog system would routinely measure 'storefront rows pointing at key-less/stub canonicals' as a first-class health metric (this mission found 1,414 such rows platform-wide via project-storefront-identity.ts's own --repoint-legacy count), not discover it incidentally while chasing two AC products.",
+    "WHAT_TAWVEERI_SHOULD_COPY": "provenance-ledger-with-prior-value-capture (already built, ADR-242/312) is exactly the industry-standard 'reversible mutation' pattern (compare-and-swap + audit row) and should remain the template for any future write mechanism — as it was here, reused rather than reinvented for the Extra repoint.",
+    "WHAT_TAWVEERI_SHOULD_NOT_COPY": "do not chase full automated entity-resolution-at-scale for AC yet — the yield-to-effort ratio measured this mission (2 genuinely novel rescues after 8 ADRs of rigor) does not support investing in a fully automated pipeline; selective, human-reviewed rescue remains appropriate at Tawveeri's current data-quality baseline."
+  },
+
+  "part3_success_conditions": {
+    "IDENTITY_PROOF": "YES — both TCL and Haier Amazon listings independently, externally, and internally corroborated as the exact product their target canonical represents (ADR-319-324), zero conflicts found across the entire investigation.",
+    "CROSS_STORE_COMPARISON_PROOF": "YES — first proven in THIS mission. Before this mission, both canonicals showed exactly 1 offer (Amazon only). After the Extra legacy-repoint (part5-7 below), both show exactly 2 offers (Amazon + Extra), each independently verified as the exact same product.",
+    "USER_VALUE_PROOF": "PARTIAL — the comparison DATA is now correct and live (verified at the DB level, the layer the customer-facing page reads from); a live user session interacting with the rendered page was not independently observable this session (WebFetch cannot execute the page's client-side offer-list hydration — a disclosed tooling limit, not a defect). The Haier case shows a real, material price-spread (Amazon 3,049 vs Extra 3,399 SAR, 11.5%) — exactly the kind of signal that would improve a real buying decision if a customer saw it.",
+    "COMMERCIAL_VALUE_POTENTIAL": "small in absolute scale (2 products) but genuine in kind — a working, reusable, safe pattern for closing an entire class of pre-existing platform defect (storefront rows stuck on legacy stub canonicals; 1,414 such rows exist platform-wide, of which this mission touched exactly 2, deliberately, per its narrow authorization)."
+  },
+
+  "part4_pilot_stability_before_expansion": {
+    "result": "STABLE — no degradation found. Both Amazon links intact, no automatic rematching had touched them, no scheduler side effect observed, no duplicate offers, no unrelated merchant merged. Confirmed via direct SQL re-query immediately before taking any further action (see part1)."
+  },
+
+  "part5_extra_counterpart_investigation": {
+    "method": "independently located Extra's own storefront rows for both products by exact-title/capacity match, then compared full evidence (brand, model, series, capacity, cooling mode, inverter, price) against Amazon, the manufacturer pages (ADR-324), and the already-established TPS canonical identity",
+    "TCL_EXTRA_LISTING": {
+      "product_id": "b1cb55ad-5767-43bb-a3c2-10aeb73ae274",
+      "title": "TCL, Split AC, SaveIN Neo, 28,200 BTU, Inverter, Cooling, Golden Fins",
+      "classification": "EXACT_SAME_PRODUCT",
+      "evidence": "this exact raw title is ALREADY one of the observations embedded in the target canonical's own TPS identity evidence (confirmed present verbatim in ADR-320's review packet, captured back when the canonical's identity key was first built from Amazon+Extra raw observations) — meaning Extra's TPS-layer observation was already proven identical; only the STOREFRONT-layer FK (products.canonical_product_id) was stuck on an unrelated legacy stub.",
+      "critical_finding": "Extra's storefront row's canonical_product_id (a7d3df07-...) pointed at a DIFFERENT canonical than the one this mission's pilot linked Amazon to (d47800b5-...) — a7d3df07 is a legacy, key-less STUB canonical (tps_identity_key=null, data_quality_score=0, identity_confidence=0, created 2026-06-12 by the original 2026-06-26 naive text-matching migration this whole TPS-convergence effort — ADR-242 — exists to fix), not a second legitimate identity. Pre-existing, not caused by this mission."
+    },
+    "HAIER_EXTRA_LISTING": {
+      "product_id": "f8c920bd-d5c0-4955-9a9d-5ead8cdf26b4",
+      "title": "Haier, Split AC, 24,000 BTU, Cool Only, Nano Sterilization, WIFI, Ultra Inverter",
+      "classification": "EXACT_SAME_PRODUCT",
+      "evidence": "same reasoning as TCL — this exact raw title is already embedded in the target canonical's own TPS evidence, and Extra's storefront row was stuck on a parallel legacy stub (d5eb041e-..., tps_identity_key=null, quality=0, created the same day, 2026-06-12)."
+    },
+    "note_on_challenging_the_assumption": "the founder's framing assumed 'link Extra' would be a NEW identity decision requiring fresh verification. It was not — it was a RECONCILIATION of an already-proven TPS-layer match against a stale storefront-layer pointer. This distinction mattered: it changed the correct mechanism (existing storefront-identity-projection tooling, not the AC Rescue pilot ledger) and the correct evidence bar (URL-exact reconciliation, not attribute-fingerprint rescue)."
+  },
+
+  "part6_challenge_the_extra_assumption": {
+    "conclusion": "the assumption ('Extra creates the comparison') held on independent re-verification, but for a DIFFERENT and MORE certain reason than assumed — not because Extra was newly proven identical, but because Extra was ALREADY proven identical at the TPS layer and merely mis-pointed at the storefront layer. No other merchant was evaluated as an alternative counterpart, since Extra's evidence was already the strongest possible case (embedded in the canonical's own founding evidence)."
+  },
+
+  "part7_smallest_safe_production_action": {
+    "mechanism_chosen": "scripts/tps-core/project-storefront-identity.ts --repoint-legacy (ADR-243's existing, already-audited mechanism) — NOT the AC Rescue pilot ledger, per the mission's explicit instruction not to reuse a write type the ledger wasn't designed to represent.",
+    "additive_change_made": "added an optional --products <uuid[,uuid...]> filter (backward-compatible, undefined by default, zero behavior change when omitted) to allow scoping the run to a hand-verified 1-or-2-product cohort instead of the tool's normal broad batch mode. Chosen because the tool's existing --stores filter alone would have made all 162 Extra low-confidence-tier candidates eligible in one run — far exceeding this mission's exact 2-product authorization.",
+    "pre_write_verification_per_product": "dry-run confirmed exactly 1 clean candidate, 0 negative-evidence vetoes (R11-R17), correct category agreement (air_conditioner -> air_conditioner), and surfaced a real, disclosed trade-off (chart continuity) before any write.",
+    "chart_continuity_finding": "both legacy canonicals carry real historical price_history depth (TCL: 67 points, 2026-06-12 to 2026-08-03; Haier: 63 points, 2026-06-12 to 2026-07-24) that would become orphaned (not deleted, just no longer the storefront's active pointer) on repoint. Judged acceptable and disclosed, not hidden: both legacy charts were ALREADY frozen/stale (no updates in 5+ weeks, since nothing keeps writing to an orphaned canonical) before this mission touched anything, while the target canonicals are the ones the live TPS pipeline actively refreshes (data_updated_at = today for TCL, yesterday for Haier) — repointing trades a dead, frozen chart for a live, currently-tracked one. The customer-visible CURRENT price (product_stores.current_price) was unaffected either way, confirmed independent of price_history.",
+    "execution_order": "TCL executed and fully verified first; Haier executed only after TCL's verification passed — exactly the mission's required sequencing.",
+    "results": {
+      "TCL": { "storefront_identity_links_id": 2865, "prior_canonical_product_id": "a7d3df07-00a7-436f-964b-e9fa52f00028", "new_canonical_product_id": "d47800b5-341c-43dc-88df-64d0df71dd9c", "evidence_class": "url_exact", "rule_version": "legacy-repoint-v1" },
+      "HAIER": { "storefront_identity_links_id": 2866, "prior_canonical_product_id": "d5eb041e-88da-4f27-8b3c-7afd637c07c1", "new_canonical_product_id": "ff8b35e4-afcd-43ba-95a6-a06f54c97f52", "evidence_class": "url_exact", "rule_version": "legacy-repoint-v1" }
+    },
+    "blast_radius": "exactly 2 rows changed (the 2 Extra products), 0 unrelated rows — confirmed the platform-wide legacy-repoint-v1 active-link count went from 47 (ADR-243's pre-existing work) to 49 (47+2, verified precisely, not a surprise number)."
+  },
+
+  "part8_customer_facing_proof": {
+    "db_ground_truth": "both canonicals now show exactly 2 offers each: TCL (Amazon 4199 SAR, Extra 4299 SAR), Haier (Amazon 3049 SAR, Extra 3399 SAR) — zero duplicates, zero unrelated merchants, zero wrong variants.",
+    "live_page_check": "both product pages load successfully with correct title/brand/model in server-rendered content (WebFetch-confirmed, both before and after the Extra repoint).",
+    "disclosed_limitation": "the client-side-hydrated merchant-offer list itself (prices/merchant names as rendered in the browser) could not be independently captured by WebFetch in 3 separate attempts (direct fetch, comparison API — 405, structured-data-specific request) — a tooling constraint present before this mission's writes too, not introduced by them. DB ground truth is the authoritative verification available this session."
+  },
+
+  "part9_price_not_identity_preserved": {
+    "confirmation": "ADR-319's PRICE_USEFUL_FOR_IDENTITY=NO was never revisited or weakened. Price was used in this mission only AFTER identity was already independently proven (manufacturer + merchant evidence, TPS-embedded raw observations) — as a chart-continuity and comparison-value signal, exactly the sanctioned post-identity use."
+  },
+
+  "part10_v1_reassessment": {
+    "V1_TECHNICAL_VALUE": "proven sound — the blocking/hard-conflict/abstention architecture correctly found 2 genuinely novel matches, correctly abstained on every ambiguous case examined, and 0 false merges were found anywhere across 8 ADRs of adversarial review.",
+    "V1_USER_VALUE": "proven for the first time this mission, not merely asserted — a real, live, 2-merchant comparison now exists for both products, with a genuine 11.5% price-spread signal on Haier.",
+    "V1_OPERATIONAL_COST": "high per rescued product as currently practiced — 8 ADRs of manual reference-audit, blind validation, red-teaming, and external verification were required to responsibly clear 2 products for production. Not currently a cheap or automatable process.",
+    "V1_FALSE_MERGE_RISK": "low in the exhaustively-examined sample (0 confirmed), but conditional — the underlying trusted-reference universe has known, documented, NOT-yet-fixed defects (GREE series collapse, Arabic brand-token corruption) that any FUTURE candidate would need to be independently re-checked against; V1's safety currently depends on continued human review, not on the reference data being clean by default.",
+    "V1_COVERAGE_POTENTIAL": "low without a prerequisite investment — only 26/270 Amazon AC products reach the full founder fingerprint tier, and of those, true novel-rescue yield is 2/270 (0.74%). Raising series_or_platform extraction coverage (identified back in ADR-315, never acted on) remains the binding lever, not more matching logic."
+  },
+
+  "part11_future_decision": {
+    "AC_RESCUE_FUTURE": "B. KEEP_AS_MANUAL_RESCUE_TOOL",
+    "why_not_A_close_no_expansion": "the mechanism demonstrably works and produced real commercial value (a live, correct, materially-informative price comparison) — closing it entirely and never reusing it would discard a proven, safe capability for no reason.",
+    "why_not_C_controlled_expansion": "operational cost (part10) and known reference-quality defects mean each additional candidate currently requires the same order of manual rigor this mission applied to 2 products — there is no evidence yet that this scales cheaply, so committing to a staged expansion program is not yet justified.",
+    "why_not_D_productionize": "0.74% novel-rescue yield does not justify building and maintaining a permanent automated service around V1 at this time; the real lever (extraction coverage) has not been pulled yet, and pulling it is a separate, unstarted piece of work, not something this mission's evidence supports jumping to.",
+    "why_not_E_reject_rollback": "no safety evidence undermines the two live links — both remain correct, verified, stable, and valuable. Rejection is not evidence-backed."
+  },
+
+  "part12_controlled_expansion": {
+    "decision": "NOT PURSUED — consistent with part11's verdict (B, not C) and the mission's own explicit stop rule. No cohort beyond the originally-authorized 2 products (and their 2 Extra counterparts) was processed."
+  },
+
+  "part13_products2_relationship": {
+    "GREE_series_collapse": "confirmed unrelated to TCL/Haier (different brand entirely) — did not block this mission. Left exactly as documented in ADR-320/321/322 for its own, separate, future mission. Not touched.",
+    "brand_corruption": "confirmed unrelated (TCL/Haier brand fields were clean throughout every check this whole investigation) — did not block this mission. Left exactly as documented in ADR-321/322 for its own, separate, future mission. Not touched.",
+    "new_finding_this_mission": "the legacy-key-less-stub-canonical pattern (1,414 products platform-wide) is a THIRD, distinct, pre-existing Products 2 defect class, discovered as a direct consequence of investigating Extra's counterpart listings — not a new defect this mission created, and not generalized into a broader remediation. Exactly 2 of the 1,414 were touched, under this mission's specific authorization; the other 1,412 are left exactly as found, for their own future, separately-authorized mission."
+  },
+
+  "part14_no_category_generalization": {
+    "confirmation": "no TV/phone/tablet/refrigerator/washer work was performed or proposed. AC Rescue's architectural principle (blocking + hard-conflict gate + abstention) is plausibly reusable elsewhere, but no other category was touched."
+  },
+
+  "part15_business_value_measurement": {
+    "honest_disclosure": "the Extra links went live minutes before this report was written — there has been NO real-world observation window for actual user traffic, qualified views, or outbound-click behavior. Fabricating significance from zero elapsed time would violate the mission's own explicit instruction. What CAN be measured now: rescued exact identities = 2, additional multi-store comparisons created = 2 (both newly live), Amazon offer participation on these 2 = confirmed correct, price-spread opportunity surfaced = 1 material case (Haier, 11.5%). Qualified views/outbound intent/merchant-distribution-at-scale: NOT YET MEASURABLE — genuinely no data exists yet, stated plainly rather than guessed."
+  },
+
+  "part16_observation_window": {
+    "decision": "this mission separates TECHNICAL STABILITY PROOF (achieved — verified immediately post-write, multiple independent ways, in this session) from LONGER-TERM COMMERCIAL PERFORMANCE (NOT achieved — cannot be, within one continuous session; needs real elapsed time and real traffic). The mission is closed on the technical/identity/comparison dimensions, which is what was evidence-backed and achievable; commercial performance is explicitly left as a future, separate check rather than stretched to appear complete now."
+  },
+
+  "part17_durable_production_design": {
+    "decision": "no NEW production infrastructure was built beyond what ADR-325 already built and tested, consistent with part11's B verdict (manual tool, not a productionized service). The existing pilot ledger + CLI + frozen V1_SPEC + the now-additive --products filter on the storefront-identity-projection tool collectively ARE the durable, reusable, safe mechanism for any FUTURE hand-selected AC rescue case — no additional scaffolding was added ahead of proven need."
+  },
+
+  "part18_20_artifact_inventory_and_cleanup": {
+    "method": "every file created across ADR-319 through this closure mission was inspected for real references (imports, ADR citations, live production dependency), not judged by filename alone.",
+    "classification": [
+      { "path": "scripts/experiments/ac-rescue-lab/01-build-fingerprints.ts .. 07-tcl-haier-audit-and-gree-scan.ts", "class": "HISTORICAL_AUDIT_RECORD", "reason": "V1 is frozen and cited by name throughout docs/DECISIONS.md; these are the reproducible basis for ADR-319-322's findings. KEEP." },
+      { "path": "scripts/experiments/ac-rescue-lab/08-apply-pilot-ledger-migration.ts", "class": "HISTORICAL_AUDIT_RECORD", "reason": "documents how the live ac_rescue_pilot_links table was created; idempotent, harmless, small. KEEP." },
+      { "path": "scripts/experiments/ac-rescue-lab/09-pilot-ledger-cli.ts", "class": "ROLLBACK_REQUIRED / PRODUCTION_REQUIRED", "reason": "IS the rollback mechanism for 2 live production links (ledger ids 4, 5). Cannot be removed while those links are active. KEEP — mandatory." },
+      { "path": "scripts/experiments/ac-rescue-lab/10-pilot-integration-checks.ts", "class": "TEST_REQUIRED", "reason": "safely re-runnable integration check of the ledger's DB-level guards; cleans up its own synthetic rows. KEEP." },
+      { "path": "scripts/experiments/ac-rescue-lab/11-pilot-dry-run-report.ts", "class": "PRODUCTION_REQUIRED (monitoring)", "reason": "the read-only tool for future drift/health checks on the 2 live links. KEEP." },
+      { "path": "scripts/experiments/ac-rescue-lab/pilot/ledger-logic.ts", "class": "PRODUCTION_REQUIRED", "reason": "imported by 09/10/11 and the test file; deleting breaks all of them. KEEP — mandatory." },
+      { "path": "scripts/experiments/ac-rescue-lab/README.md, V1_SPEC.md", "class": "DURABLE_EVIDENCE", "reason": "frozen spec and lab-scope documentation, cited throughout the ADR chain. KEEP." },
+      { "path": "scripts/experiments/ac-rescue-lab/.gitignore", "class": "TEMPORARY_EXPERIMENT (harmless)", "reason": "governs the local-only out/ scratch directory; trivial, no reason to remove. KEEP." },
+      { "path": "scripts/experiments/ac-rescue-lab/out/*.json (22 files)", "class": "SCRATCH", "reason": "never committed (gitignored from creation) — not a repository-hygiene concern at all; their conclusions are fully captured in the 9 durable docs/evidence/*.json files. No action needed — not part of git history to begin with." },
+      { "path": "scripts/database/knowledge-db/030_ac_rescue_pilot_links.sql", "class": "PRODUCTION_REQUIRED", "reason": "the live schema definition for a table holding 2 active production rows. Deleting the migration file while the table exists in production violates this project's own migration-history convention. KEEP — mandatory." },
+      { "path": "tests/tps-plugins/ac-rescue-pilot-ledger.test.ts", "class": "TEST_REQUIRED", "reason": "protects the guard logic governing 2 live production links; 25 passing tests. KEEP — mandatory." },
+      { "path": "docs/evidence/ac-rescue-lab-*.json (9 files incl. this closure)", "class": "DURABLE_EVIDENCE", "reason": "written specifically to make the scratch/experimental files disposable without losing institutional memory. KEEP — this is the whole point of having written them." },
+      { "path": "docs/DECISIONS.md ADR-319 through ADR-327", "class": "HISTORICAL_AUDIT_RECORD", "reason": "never deleted, never rewritten — append-only per the project's constitutional Decision Register rule. KEEP." },
+      { "path": "scripts/tps-core/project-storefront-identity.ts", "class": "PRODUCTION_REQUIRED", "reason": "pre-existing core production mechanism, extended additively (new optional --products filter, zero behavior change when omitted) — not an AC-Rescue-Lab artifact at all, a permanent, reusable improvement to an existing tool. KEEP." }
+    ],
+    "EXPERIMENT_ARTIFACTS_FOUND": "34 files/entities across scripts, tests, migrations, evidence, and one production-tool edit",
+    "EXPERIMENT_ARTIFACTS_DELETED": 0,
+    "EXPERIMENT_ARTIFACTS_PRESERVED": "all 34",
+    "FILES_NOT_DELETED_DUE_TO_UNCERTAINTY": "none — every file has a POSITIVE, specific reason to keep (live production dependency, rollback requirement, or durable evidence), not merely 'uncertain'. Per the mission's own principle ('do not optimize for completing the checklist'), forcing an artificial deletion where none is warranted would be worse than an honest zero.",
+    "PILOT_LEDGER_STATUS": "KEEP",
+    "PILOT_LEDGER_WHY": "2 live, active production links (ids 4, 5) depend on it for rollback capability; none of ADR-325's Part 21 retirement conditions are met (not migrated, not rolled back, audit history is exactly this table, rollback responsibility not transferred anywhere else, production genuinely depends on it, no retirement has been tested). Retiring it now would be a direct violation of the mission's own explicit special warning."
+  },
+
+  "part21_26_deletion_safety": {
+    "DROP_CASCADE_used": "NO — nothing was dropped",
+    "rm_rf_or_wildcard_used": "NO",
+    "files_actually_deleted_this_mission": 0,
+    "note": "per part18-20's finding, no deletion was warranted this mission — the safety procedure was followed to its honest conclusion (nothing cleared the bar), not skipped."
+  },
+
+  "part27_final_production_verification": {
+    "TCL": "HTTP page load healthy, correct identity server-rendered, 2 correct DB-level offers (Amazon 4199, Extra 4299), no false merge, no duplicate, outbound URLs present and well-formed for both offers, no unexpected Products 2 change beyond the 2 authorized writes",
+    "HAIER": "same, offers Amazon 3049 / Extra 3399",
+    "scheduler_refresh_health": "not independently re-verified via a live scheduler run this session (would require waiting for the next real cron cycle) — the mechanism used (storefront_identity_links, ADR-242/312/243) is the SAME one the routine hourly scheduler already reads and respects, so no new interaction pattern was introduced.",
+    "PRODUCTION_VERIFICATION": "PASS (with the disclosed client-render limitation noted throughout, not hidden)"
+  },
+
+  "part28_tests": {
+    "unit": "25/25 passing (tests/tps-plugins/ac-rescue-pilot-ledger.test.ts)",
+    "typecheck": "no new errors introduced by this mission's edit to project-storefront-identity.ts (pre-existing implicit-any warnings on that file are unchanged, unrelated to this mission's changes)",
+    "TESTS": "PASS"
+  },
+
+  "part29_commit_push": {
+    "status": "this closure ADR, its evidence file, and the additive project-storefront-identity.ts change will be committed and pushed as their own clearly-scoped commit, separate from the ADR-319-326 history, per the mission's instruction not to bury cleanup/closure inside unrelated history."
+  },
+
+  "final_verdict": {
+    "AC_RESCUE_FINAL_STATUS": "CONTROLLED_MANUAL_CAPABILITY",
+    "reasoning": "proven safe, proven technically sound, proven to produce real (if small-scale) commercial value for the first time this mission — but not cheap enough per-case, and not yet supported by clean-enough reference data at scale, to justify full productionization. Available for deliberate, hand-reviewed reuse on a future high-value case; not automated, not expanded, not closed-and-forgotten."
+  }
+}

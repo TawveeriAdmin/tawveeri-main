@@ -79,6 +79,21 @@ const argNum = (name: string, dflt: number) => {
     : undefined;
   if (onlyStores && !onlyStores.length) throw new Error("--stores given but empty");
 
+  // --products <uuid[,uuid...]> — additive, narrow scoping for a hand-verified cohort
+  // (e.g. a founder-authorized 2-product pilot). Undefined by default: omitting the
+  // flag leaves every existing behavior, including the default bulk run, unchanged.
+  // Every value is validated as a UUID before being interpolated into SQL — this is a
+  // locally-run operator CLI, not a web-facing endpoint, but the same discipline applies.
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const pi = process.argv.indexOf("--products");
+  const onlyProducts = pi >= 0
+    ? String(process.argv[pi + 1] ?? "").split(",").map((s) => s.trim()).filter((s) => s.length > 0)
+    : undefined;
+  if (onlyProducts) {
+    if (!onlyProducts.length) throw new Error("--products given but empty");
+    for (const id of onlyProducts) if (!UUID_RE.test(id)) throw new Error(`--products contains a non-UUID value: ${id}`);
+  }
+
   const pg = new Client({ connectionString: toPoolerDbUrl(process.env.SUPABASE_DB_URL || ""), ssl: { rejectUnauthorized: false } });
   await pg.connect();
   await pg.query(`SET statement_timeout = '180s'`);
@@ -190,6 +205,7 @@ const argNum = (name: string, dflt: number) => {
     // All clean candidates, with the names both sides carry, so the R11
     // contradiction veto and every aggregate below run over ONE fetched set.
     const storeFilter = onlyStores ? `and p.store_id in (${onlyStores.join(",")})` : "";
+    const productFilter = onlyProducts ? `and p.product_id in (${onlyProducts.map((id) => `'${id}'`).join(",")})` : "";
     type Picked = {
       product_id: string; cid: string; store_id: number; lane: string;
       matched_value: string; product_url: string; tps_raw_url: string | null; npo_id: string;
@@ -218,7 +234,7 @@ const argNum = (name: string, dflt: number) => {
       ${targetJoin}
       join canonical_products cp on cp.id = p.cid
       join stores s on s.id = p.store_id
-      where true ${storeFilter}`)) as Picked[];
+      where true ${storeFilter} ${productFilter}`)) as Picked[];
 
     // Deterministic NEGATIVE-evidence vetoes (identity-projection-guards.ts).
     // Each is a refusal, never a link: R11 storage contradiction, R12
@@ -276,7 +292,7 @@ const argNum = (name: string, dflt: number) => {
     console.log(`  R2 ambiguous URLs excluded (multi-canonical)      ${base.ambiguous_urls}`);
     console.log(`  R2 ambiguous ASINs excluded                       ${base.ambiguous_asins}`);
     if (!repointLegacy) console.log(`  evidence-bearing unlinked products: clean=${cand.clean} conflict(R1)=${cand.conflicting}`);
-    console.log(`  clean candidates fetched${onlyStores ? ` [stores ${onlyStores.join(",")}]` : ""}      ${picked.length}`);
+    console.log(`  clean candidates fetched${onlyStores ? ` [stores ${onlyStores.join(",")}]` : ""}${onlyProducts ? ` [products ${onlyProducts.join(",")}]` : ""}      ${picked.length}`);
     console.log(`  negative-evidence vetoes                          ${vetoTotal}  (R11 storage=${vetoCounts.R11_storage} · R12 params=${vetoCounts.R12_params} · R13 suffix=${vetoCounts.R13_suffix} · R14 device=${vetoCounts.R14_device} · R15 wordnum=${vetoCounts.R15_wordnum} · R16 brand=${vetoCounts.R16_brand} · R17 accessory=${vetoCounts.R17_accessory})`);
     for (const v of vetoSamples) console.log(`    VETO ${v}`);
     console.log(`  tier split of surviving candidates:`);
