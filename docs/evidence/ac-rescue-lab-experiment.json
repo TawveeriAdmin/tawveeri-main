@@ -1,0 +1,218 @@
+{
+  "experiment": "AC Rescue Lab — isolated second-stage candidate-generation lane for unresolved Amazon AC products",
+  "adr": "ADR-319",
+  "date": "2026-09-08",
+  "isolation": {
+    "products_2_architecture_changed": false,
+    "production_isolation_proven": true,
+    "evidence": "scripts/experiments/ac-rescue-lab/*.ts issue SELECT-only queries against production (asserted via a hard project-id check on the DB URL before any query runs); 02/03/04 read only local JSON files written by prior steps and touch the database not at all (04 makes read-only SELECTs against tps_listing_price_facts and price_history, both derived/append-only tables, never an identity table); no file outside scripts/experiments/ac-rescue-lab/ imports anything from it; no scheduled job, API route, or UI references it."
+  },
+  "literature_check": {
+    "framework": "Fellegi-Sunter (1969) record linkage: comparison vector -> match/non-match/possible-match-for-review, with blocking as a standard pre-filter for candidate generation.",
+    "verdict": "The founder's proposed architecture (attribute-fingerprint blocking + hard-conflict gate + abstention) is a legitimate, well-established entity-resolution pattern, not a novel or risky invention. Abstention ('no candidate' / 'ambiguous') maps directly to Tawveeri's own 'unknown beats incorrect' principle."
+  },
+  "population": {
+    "total_amazon_ac_products": 270,
+    "trusted_non_amazon_ac_canonicals": 990,
+    "trusted_valid_tier_only": 20,
+    "trusted_low_confidence_tier": 970
+  },
+  "amazon_side_fingerprint_coverage": {
+    "brand_safe_only": "141/270 (52.2%)",
+    "ac_type": "258/270 (95.6%)",
+    "capacity_btu": "202/270 (74.8%)",
+    "cooling_mode": "173/270 (64.1%)",
+    "inverter_technology": "71/270 (26.3%)",
+    "series_or_platform": "3/270 (1.1%)",
+    "model_number": "0/270 (0.0%) — known join limitation, see limitations",
+    "mpn": "0/270 (0.0%) — same limitation",
+    "full_founder_fingerprint_brand_type_capacity_mode_inverter": "26/270 (9.6%)",
+    "minimal_blocking_fingerprint_brand_type_capacity": "116/270 (43.0%)"
+  },
+  "candidate_generation": {
+    "run_A_full_fingerprint": {
+      "eligible": 26,
+      "zero_candidate": 15,
+      "one_candidate_raw": 4,
+      "multi_candidate_2plus": 7,
+      "very_large_block_10plus": 0
+    },
+    "run_B_minimal_fingerprint": {
+      "eligible": 116,
+      "zero_candidate": 56,
+      "one_candidate_raw": 16,
+      "multi_candidate_2plus": 44,
+      "very_large_block_10plus": 3,
+      "note": "used only to characterize blocking-key looseness; not carried into ranking/classification — the founder full fingerprint is the trustworthy tier."
+    }
+  },
+  "exactly_one_candidate_hypothesis": {
+    "tested_on": "Run A (n=26 eligible)",
+    "raw_one_candidate_rate": "4/26 (15.4%)",
+    "verdict": "FALSE as a general property of raw blocking — most eligible products land on 0 or 2+ raw candidates, not exactly 1. However, a RANKING step (score = matching_attributes - missing_attributes) recovers a de-facto unique best candidate in several multi-candidate cases when one candidate has a clear, unambiguous lead — see ranking_results."
+  },
+  "hard_conflict_gate": {
+    "purpose": "reject any raw candidate with a PROVEN disagreement (both sides stated, values differ) on cooling_mode, technology, series_or_platform, or model_number — regardless of how many other attributes agree.",
+    "fired_on_real_data": 3,
+    "cases": [
+      {
+        "amazon": "Haier Ultra Inverter 24000 BTU Cool Only Split AC | R32 | HSU-24LQ13/R32(T3DB-B) ...",
+        "rejected_candidate": "a trusted Haier 24000 BTU candidate stated 'hot cold'",
+        "conflict_attribute": "cooling_mode",
+        "amazon_value": "cool_only",
+        "trusted_value": "hot_cold",
+        "significance": "genuine near-miss caught by the gate — brand/type/capacity/technology all agreed, only cooling_mode disagreed, and the gate correctly rejected it rather than accepting on majority attribute agreement."
+      },
+      {
+        "amazon": "GREE - GWH24AGE-S3DTA1F Split Air Conditioner - Pular Pro Inverter 22000 BTU Hot/Cold",
+        "rejected_candidates": 2,
+        "note": "both raw candidates eliminated by conflicting attributes; product classified NO_CANDIDATE / HARD_CONFLICT, not forced into a wrong match."
+      },
+      {
+        "amazon": "Super General 1 Ton Split AC 12000 BTU / 12100 BTU (two separate Amazon listings)",
+        "rejected_candidates": 1,
+        "note": "both listings independently hit a hard conflict and were correctly rejected."
+      }
+    ]
+  },
+  "ranking_and_classification": {
+    "method": "within a surviving candidate set, rank by (matching_attributes.length - missing_attributes.length); classify by whether the top candidate is unique, has full agreement (0 missing), and holds a clear score lead over the runner-up.",
+    "run_A_tally_n26": {
+      "RESCUE_PROVEN": 0,
+      "RESCUE_HIGH_CONFIDENCE": 4,
+      "RESCUE_REVIEW": 4,
+      "AMBIGUOUS": 3,
+      "HARD_CONFLICT": 3,
+      "NO_CANDIDATE": 12
+    },
+    "rescue_high_confidence_cases": [
+      {
+        "amazon": "TCL SaveIN NEO T4 Split AC 28200 BTU cooling only, WiFi, Inverter - TAC-30CSU/ZIM",
+        "trusted": "Tcl Split AC 28200 BTU Inverter cool only",
+        "matching": ["brand", "ac_type", "capacity_class", "cooling_mode", "technology"],
+        "missing": ["series_or_platform"],
+        "price_corroboration": "amazon=4199 SAR, trusted=4199 SAR (exact match)"
+      },
+      {
+        "amazon": "Haier Ultra Inverter 24000 BTU Cool Only Split AC | R32 | HSU-24LQ13/R32(T3DB-B)",
+        "trusted": "Haier Split AC 24000 BTU Inverter cool only",
+        "matching": ["brand", "ac_type", "capacity_class", "cooling_mode", "technology"],
+        "missing": ["series_or_platform"],
+        "price_corroboration": "amazon=3049 SAR, trusted=3049 SAR (exact match)",
+        "note": "the correctly-surviving candidate after the hot/cold hard-negative above was rejected from the same raw candidate pool."
+      },
+      {
+        "amazon": "Lg Split Air Conditioner 18000 Btu Heat & Cool – Fresh Dv, Inverter, Rating (B)",
+        "trusted": "Lg FreshDV Split AC 18000 BTU Inverter hot cold",
+        "matching": ["brand", "ac_type", "capacity_class", "cooling_mode", "technology", "series_or_platform"],
+        "missing": [],
+        "raw_candidate_pool_size": 7,
+        "significance": "FULL 6/6 attribute agreement including series, correctly selected as the clear top-ranked candidate out of 7 raw candidates for the same brand+capacity block — this is a live re-run of the historical ADR-077 LG FreshDV/ArtCool/AirFit confusion, and the ranking layer resolves it correctly.",
+        "price_corroboration": "amazon price recorded as 0 (scraper stock/price-capture artifact, not a real signal) — excluded from price analysis."
+      },
+      {
+        "amazon": "LG - ArtCool Split Air Conditioner, 18,000 BTU, Cooling Only, Auto Clean, Dual Inverter, Wi-Fi, Pre-cooling - AM182C0.UK1",
+        "trusted": "Lg ArtCool Split AC 18000 BTU Inverter cool only",
+        "matching": ["brand", "ac_type", "capacity_class", "cooling_mode", "technology", "series_or_platform"],
+        "missing": [],
+        "raw_candidate_pool_size": 9,
+        "significance": "second, independent live re-run of the ADR-077 scenario (the ArtCool side this time), also correctly resolved.",
+        "price_corroboration": "amazon=2948 SAR, trusted=2948 SAR (exact match)"
+      }
+    ],
+    "ambiguous_cases_correctly_abstained": [
+      "MIDEA Wall Split AC 22000 BTU cool only Infinity — 2 weak candidates (Midea 22400 BTU, Midea 22000 BTU trusted), neither confirmed by technology or series; system correctly refuses to pick one.",
+      "TCL Inverter Split AC 12400BTU cold/hot T-SUPER — 4 candidates spanning 11900-12400 BTU trusted listings, none distinguishable by stated attributes.",
+      "TCL SaveIN NEO T4 12100 BTU — same pattern, 4 candidates."
+    ]
+  },
+  "price_experiment": {
+    "hypothesis_tested": "does price add real discriminating signal beyond attribute matching?",
+    "starting_assumption": "price must NEVER be a primary identity key — this experiment can only confirm 'weak corroborator at best' or 'drop entirely', never promote price to a primary key.",
+    "true_match_pairs": {
+      "n": 4,
+      "usable_n": 3,
+      "excluded": "1 pair (LG FreshDV) had amazon_price=0, a scraper stock/price-capture artifact, not a real price — excluded rather than treated as a mismatch.",
+      "ratios": [1.0, 1.0, 1.0],
+      "finding": "all 3 usable true-match pairs show EXACT price equality (ratio = 1.000)."
+    },
+    "weak_or_ambiguous_pairs": {
+      "n": 17,
+      "usable_n": 17,
+      "ratios_range": "0.857 - 1.432",
+      "ratios_at_exact_1_000": 2,
+      "finding": "2 of 17 weak/ambiguous (unconfirmed, NOT proven-same) pairs ALSO show exact ratio=1.000, and several more cluster tightly around 1.0 (0.955, 0.988, 0.992, 1.008) — indistinguishable from the true-match cluster by price alone."
+    },
+    "verdict": "PRICE_USEFUL = NO as a standalone or primary discriminator. Exact price equality is consistent with a true match (all 3 usable true pairs hit it) but is NOT SUFFICIENT on its own — a meaningful fraction of unconfirmed/ambiguous candidates hit the identical exact-equality signal by coincidence (same brand+capacity tier retail prices cluster together in this market). Price was correctly excluded from the confidence-classification logic in this experiment (Step 3) and should stay excluded from any production-facing scoring; it may be retained only as a non-decisive footnote a human reviewer can see, never as an input to an automated decision.",
+    "sample_size_caveat": "n=3/17 is small; this is a directional finding, not a statistically powered one. It corroborates rather than overturns the mission's own starting assumption."
+  },
+  "gold_validation_set": {
+    "disclosure": "Built from cases organically surfaced by the real candidate-generation run on the full 270-product population, not from an independently blind-sampled set. Small (9 new cases + 2 historical ties) but fully real, traceable, and provenance-tagged — no synthetic or fabricated cases.",
+    "true_matches": [
+      "TCL 28200 BTU (RESCUE_HIGH_CONFIDENCE, exact price match)",
+      "Haier 24000 BTU cool_only (RESCUE_HIGH_CONFIDENCE, exact price match, survived after a hard-conflict sibling was correctly rejected)",
+      "LG FreshDV 18000 BTU (RESCUE_HIGH_CONFIDENCE, full 6/6 attribute match, resolved out of 7 raw candidates — live ADR-077 re-run)",
+      "LG ArtCool 18000 BTU (RESCUE_HIGH_CONFIDENCE, full 6/6 attribute match, resolved out of 9 raw candidates, exact price match — second live ADR-077 re-run)"
+    ],
+    "hard_negatives_correctly_rejected": [
+      "Haier 24000 BTU cool_only vs trusted Haier 24000 BTU hot_cold — cooling_mode conflict",
+      "GREE 22000 BTU Hot/Cold — 2 raw candidates, both eliminated by conflict",
+      "Super General 12000 BTU and 12100 BTU (2 listings) — both eliminated by conflict"
+    ],
+    "ambiguous_correctly_abstained": [
+      "MIDEA 22000 BTU cool_only Infinity — 2 indistinguishable weak candidates",
+      "TCL 12400 BTU T-SUPER — 4 indistinguishable candidates",
+      "TCL SaveIN NEO T4 12100 BTU — 4 indistinguishable candidates"
+    ],
+    "insufficient_evidence_not_falsely_elevated": [
+      "Fisher 18000 BTU — sole surviving candidate but only brand/type/capacity confirmed (technology, cooling_mode, series all unconfirmed on trusted side); classified RESCUE_REVIEW, not RESCUE_HIGH_CONFIDENCE, despite being the ONLY candidate."
+    ],
+    "historical_reference_ties": [
+      "ADR-077 (LG ArtCool/FreshDV/AirFit false-merge, pre-dates this lab) — both distinct LG series now independently and correctly resolved by the rescue lane's ranking step in this experiment.",
+      "ADR-318 ('Generic' MPN placeholder collision) — motivated the UNSAFE_BRAND_PLACEHOLDERS denylist used throughout this lab's fingerprints; not itself reproduced in this population since brand_safe filtering excludes it by construction."
+    ]
+  },
+  "red_team": {
+    "organically_found": "the Haier hot/cold hard-conflict rejection above is a genuine, real red-team result — not constructed — found by running real candidate generation, not by design.",
+    "systematically_untested_failure_modes": [
+      "Wi-Fi vs non-Wi-Fi variant collapse (fingerprint does not encode connectivity as a discriminator)",
+      "T1/T3 climate-rating variant collapse (not extracted at all currently)",
+      "voltage/phase variants (110V vs 220V, single vs three-phase) — not extracted",
+      "indoor-unit-only or outdoor-unit-only listings vs full split-system listings — ac_type does not currently distinguish these",
+      "'compatible with' / accessory listings masquerading as the appliance itself",
+      "renewed/refurbished condition mismatched against a new-condition trusted listing",
+      "stale trusted-side specifications (a trusted canonical's identity_key computed long ago, since-superseded)",
+      "nominal vs actual BTU divergence beyond the ±1000 rounding this lab already tolerates via capacity_class"
+    ],
+    "disclosure": "These modes were NOT exercised against the real candidate set this session — time/scope did not permit constructing or locating real examples of each. This is an honest gap in the red-team coverage, not a claim that the system was tested against them and passed."
+  },
+  "ai_llm_role_assessment": {
+    "method": "analytical, not a live pipeline — no LLM or vision model was actually invoked against candidate pairs this session.",
+    "reasoning": "the deterministic blocking + hard-conflict-gate baseline already achieves what the mission asks an AI layer to justify: zero known false positives in the RESCUE_HIGH_CONFIDENCE tier (n=4, all now exact-price-corroborated), full explainability per candidate (matching/missing attribute list), and a real abstention behavior (AMBIGUOUS/NO_CANDIDATE/HARD_CONFLICT) that costs nothing in false-merge risk. An LLM asked to adjudicate the same 26 candidates would be reasoning over the same title text the deterministic parser already reads — it could not see anything the parser missed (extraction coverage is the real bottleneck, evidenced by the 1.1% series_or_platform coverage), and unlike the deterministic gate, an LLM's mistakes are neither reproducible nor free (latency, cost, and a non-zero false-merge rate on ambiguous cases where 'sounds plausible' is not the same as 'proven'). A multimodal (image) pass could plausibly help on genuinely visual attributes (unit form factor, indoor/outdoor split) that text never states — but none of the AMBIGUOUS or REVIEW cases in this run were blocked by a visual-only gap; they were blocked by attributes (technology, series) that are textual and simply absent from the trusted-side source data, which an image would not supply either.",
+    "verdict": "AI/LLM_ROLE = NOT WARRANTED for this narrow rescue lane as currently scoped. Deterministic extraction-coverage improvement (more of the founder fingerprint stated per product) is the higher-value lever than adding a probabilistic adjudication layer on top of an already-small candidate set."
+  },
+  "metrics": {
+    "candidate_recall_note": "cannot be computed without a true, independently-sampled gold set of ALL true matches in the population (unknown ground truth) — only candidate PRECISION-adjacent signals are computable from this lab's organic gold set.",
+    "rescue_high_confidence_precision_on_gold_set": "4/4 (100%) of the RESCUE_HIGH_CONFIDENCE class's gold-set members are corroborated by full attribute agreement and, where price was usable, exact price match — but n=4 is too small to generalize a false-merge rate.",
+    "hard_negative_catch_rate_on_gold_set": "3/3 (100%) of known real hard-negative cases in this run were correctly rejected by the hard-conflict gate.",
+    "coverage_gain_over_270_product_population": {
+      "RESCUE_HIGH_CONFIDENCE_only": "4/270 (1.5%)",
+      "RESCUE_HIGH_CONFIDENCE_plus_REVIEW_needs_human": "8/270 (3.0%)",
+      "verdict": "this is a narrow, precision-safe rescue path, NOT a volume solution — the mission's own instruction not to judge by 'links more products' is honored: the yield is small and is reported as small."
+    },
+    "false_merge_cost_vs_abstention_cost": "the hard-conflict gate and the 3-way (PROVEN/REVIEW/AMBIGUOUS) split are explicitly designed so abstention (NO_CANDIDATE/AMBIGUOUS/HARD_CONFLICT — 18/26 = 69% of the eligible population) is the default outcome, and only 4/26 (15%) reach a tier that would even be eligible for any downstream trust — consistent with false-merge cost >> abstention cost."
+  },
+  "verdict": {
+    "AC_RESCUE_LANE_VERDICT": "PROMISING",
+    "reasoning": "The core mechanism (attribute-fingerprint blocking + hard-conflict gate + ranked classification + mandatory abstention) is architecturally sound (matches established record-linkage literature), demonstrably safe on real data (hard-conflict gate correctly caught 3/3 real near-misses, zero known false positives in the top tier), and solves a real, previously-documented problem (it independently and correctly re-resolves the ADR-077 LG ArtCool/FreshDV confusion twice). It is NOT strong enough for unattended production adoption because: (1) the founder full-fingerprint coverage that makes RESCUE_HIGH_CONFIDENCE trustworthy is only 9.6% of the Amazon AC catalog, so the reachable population is inherently small (yield 1.5-3.0%); (2) the gold validation set is small and organically-surfaced, not independently sampled, so the measured 100% precision figures are directional, not statistically powered; (3) several real failure modes (Wi-Fi variants, T1/T3 rating, voltage, indoor/outdoor-only listings) were identified but not empirically red-teamed against real cases this session. It is NOT weak/unsafe — every gate that exists worked correctly every time it was tested against real data. It IS needed as a concept (it rescues real, otherwise-unresolvable cases) but not yet ready to ship.",
+    "products_2_architecture_changed": false,
+    "wired_into_production": false
+  },
+  "productionization_proposal_status": "NOT PREPARED — results are PROMISING, not 'exceptionally strong' by the mission's own bar for triggering a productionization proposal (small reachable population, small unpowered gold set, incomplete red-team). If the founder wants to pursue this further, the recommended next step is enlarging fingerprint coverage (series_or_platform extraction is the single biggest lever, currently 1.1%) BEFORE proposing any production wiring, since coverage — not matching logic — is the binding constraint on this lane's reachable population.",
+  "limitations_disclosed": [
+    "MODEL_NUMBER_COVERAGE and MPN_COVERAGE both show 0.0% in this lab due to an imprecise raw_observations join (exact raw_name = products.name_en string match, which silently fails on any scrape-session title drift) — ADR-318 already established the true, more carefully-verified figure is 2/270 (0.7%), which does not change any conclusion here given how small it is either way. Disclosed rather than silently left inconsistent with ADR-318.",
+    "the gold validation set (11 cases total) is organically surfaced, not independently/blindly sampled — a genuine limitation the mission asked to avoid; time/scope this session did not permit building a larger blind-sampled set.",
+    "systematic red-teaming against the mission's named failure modes (Wi-Fi, T1/T3, voltage, indoor/outdoor-only, renewed condition, stale specs) was not performed — only the organically-found Haier hot/cold case constitutes real red-team evidence.",
+    "AI/LLM and multimodal value was assessed analytically from the deterministic baseline's own measured behavior, not via an actually-invoked LLM/vision pipeline this session."
+  ]
+}
