@@ -1,0 +1,155 @@
+{
+  "experiment": "AC Rescue Lab — Final Pre-Pilot Gate: TCL/Haier reference classification, rollback design, GREE scope, brand-corruption scope",
+  "adr": "ADR-322",
+  "date": "2026-09-08",
+  "v1_frozen": { "V1_CHANGED": false, "files_touched": ["07-tcl-haier-audit-and-gree-scan.ts (new, additive, read-only)"], "01_through_06_unchanged": true },
+
+  "part1_tcl_haier_reference_classification": {
+    "standard_applied": "the SAME standard used throughout Phase 3: a canonical needs 2+ INDEPENDENT, non-Amazon merchant observations to earn REFERENCE_CLEAN. A single non-Amazon merchant, however internally consistent, is INSUFFICIENT_EVIDENCE — this is the exact bar that classified 5 of the 20 valid-tier canonicals as INSUFFICIENT_EVIDENCE in Phase 3 (ADR-321), applied here without relaxation.",
+    "TCL_28200_BTU": {
+      "canonical_id": "d47800b5-341c-43dc-88df-64d0df71dd9c",
+      "total_observations": 2,
+      "stores": ["2 (Amazon — the product being evaluated)", "4 (Extra — the only independent third-party merchant)"],
+      "independent_non_amazon_merchants": 1,
+      "internal_consistency": "clean — both observations independently state the same 'SaveIN Neo' series name and 28200 BTU, no conflicting evidence found",
+      "brand_series_capacity_mode_tech_model_variant_all_checked": "brand=tcl (consistent), series='SaveIN Neo' stated in both raw titles but NOT captured into the structured tps_identity_key (NO_SERIES) — an extraction gap already known from Phase 2, AC type=split (consistent), capacity=28200 (consistent), cooling_mode=cool_only (consistent), technology=Inverter (consistent), model_number=null on both sides (Amazon states 'TAC-30CSU/ZIM' in raw text but it was never extracted structurally), no commercial-variant conflict found, no stale-observation risk (both observations dated within 24 hours of each other, 2026-09-07/08), no component/full-system risk (both describe a complete split unit)",
+      "TCL_REFERENCE": "INSUFFICIENT_EVIDENCE — NOT REFERENCE_CLEAN",
+      "why_not_clean": "only 1 independent non-Amazon merchant corroborates this canonical. No contradicting evidence was found (unlike the GREE contamination cases), so this is a data-THINNESS finding, not a data-CORRECTNESS finding — but the mission's own bar for 'REFERENCE_CLEAN' requires more than one independent source, and this canonical does not clear it."
+    },
+    "HAIER_24000_BTU": {
+      "canonical_id": "ff8b35e4-afcd-43ba-95a6-a06f54c97f52",
+      "total_observations": 2,
+      "stores": ["2 (Amazon)", "4 (Extra — the only independent third-party merchant)"],
+      "independent_non_amazon_merchants": 1,
+      "internal_consistency": "clean — both observations independently repeat 'Nano Sterilization' and 'Ultra Inverter', matching marketing terms, no conflicting evidence found",
+      "brand_series_capacity_mode_tech_model_variant_all_checked": "brand=haier (consistent), series not stated on either side (NO_SERIES, structurally absent rather than conflicting), ac_type=split (consistent), capacity=24000 (consistent), cooling_mode=cool_only (consistent), technology=Inverter (consistent, both say 'Ultra Inverter'), model_number=null on both sides (Amazon states 'HSU-24LQ13/R32(T3DB-B)' in raw text but never extracted structurally), no commercial-variant conflict found, no stale-observation risk (both dated 2026-09-07), no component/full-system risk",
+      "HAIER_REFERENCE": "INSUFFICIENT_EVIDENCE — NOT REFERENCE_CLEAN",
+      "why_not_clean": "same reasoning as TCL — exactly 1 independent non-Amazon merchant."
+    },
+    "MISSION_RULE_TRIGGERED": "the mission's own instruction states: 'If either is not REFERENCE_CLEAN: STOP the production-pilot proposal.' Both are INSUFFICIENT_EVIDENCE, not REFERENCE_CLEAN — the production-pilot proposal is stopped per this explicit rule, not by discretionary judgment."
+  },
+
+  "part2_four_high_confidence_reverified": [
+    {
+      "AMAZON_PRODUCT": "TCL SaveIN NEO T4 Split AC 28200 BTU cooling only, WiFi, Inverter - TAC-30CSU/ZIM",
+      "REFERENCE_CANONICAL": "d47800b5 (Tcl Split AC 28200 BTU Inverter cool only)",
+      "REFERENCE_STATUS": "INSUFFICIENT_EVIDENCE (see Part 1)",
+      "WHY_EXACT_SAME_PRODUCT": "exact 'SaveIN Neo' series name match in raw text (not structurally extracted), exact 28200 BTU match, exact price match (4199=4199 SAR, ADR-319)",
+      "ALL_HARD_CONFLICTS_CHECKED": "cooling_mode, technology, series_or_platform, model_number — zero conflicts found on any checked attribute",
+      "UNKNOWN_FIELDS": "series_or_platform (present in raw text, not structurally extracted), model_number/MPN (present in raw text on the Amazon side, not extracted on either side)",
+      "CUSTOMER_RISK": "would be a correct link if written, but rests on thin (1-merchant) reference corroboration — classification: GENUINELY_NEW_RESCUE, reference not yet REFERENCE_CLEAN"
+    },
+    {
+      "AMAZON_PRODUCT": "Haier Ultra Inverter 24000 BTU Cool Only Split AC - HSU-24LQ13/R32(T3DB-B)",
+      "REFERENCE_CANONICAL": "ff8b35e4 (Haier Split AC 24000 BTU Inverter cool only)",
+      "REFERENCE_STATUS": "INSUFFICIENT_EVIDENCE (see Part 1)",
+      "WHY_EXACT_SAME_PRODUCT": "shared verbatim marketing terms ('Nano Sterilization', 'Ultra Inverter') across independently-scraped listings, exact 24000 BTU match, exact price match (3049=3049 SAR, ADR-319); note the candidate pool for this Amazon product ALSO contained a genuine hard-negative (a same-brand/capacity 'hot cold' candidate, correctly rejected by the hard-conflict gate, ADR-320) — reinforcing that this specific surviving candidate was not a coincidental sole survivor but one that passed a real conflict check",
+      "ALL_HARD_CONFLICTS_CHECKED": "cooling_mode, technology, series_or_platform, model_number — zero conflicts on the surviving candidate (one sibling candidate WAS rejected on cooling_mode, see ADR-320)",
+      "UNKNOWN_FIELDS": "series_or_platform, model_number/MPN — same extraction gaps as TCL",
+      "CUSTOMER_RISK": "same as TCL — correct-looking link, reference not yet REFERENCE_CLEAN. GENUINELY_NEW_RESCUE."
+    },
+    {
+      "AMAZON_PRODUCT": "Lg Split Air Conditioner 18000 Btu Heat & Cool – Fresh Dv, Inverter, Rating (B)",
+      "REFERENCE_CANONICAL": "f3840d3b (Lg FreshDV Split AC 18000 BTU Inverter hot cold)",
+      "REFERENCE_STATUS": "REFERENCE_CLEAN (Phase 3, ADR-321 — 3 independent merchants: stores 2/4/7, including the Amazon observation itself)",
+      "WHY_EXACT_SAME_PRODUCT": "store 7's raw title is NEAR-VERBATIM identical to the Amazon title; full 6/6 attribute agreement including series ('FreshDV'); this Amazon product's storefront row was ALREADY canonical-linked to this exact canonical BEFORE the Rescue Lab ever ran",
+      "ALL_HARD_CONFLICTS_CHECKED": "cooling_mode, technology, series_or_platform, model_number — zero conflicts, and this agreement predates and is independent of V1 entirely",
+      "UNKNOWN_FIELDS": "none material — this is the most fully-specified case in the dataset",
+      "CUSTOMER_RISK": "none — this link already exists in production, independent of this lab. Classification: PREVIOUSLY_PROVEN, not a novel rescue. V1 re-derived an existing correct answer, which is validation evidence for V1's logic, not evidence of new rescue capability."
+    },
+    {
+      "AMAZON_PRODUCT": "LG - ArtCool Split Air Conditioner, 18,000 BTU, Cooling Only - AM182C0.UK1",
+      "REFERENCE_CANONICAL": "610b44af (Lg ArtCool Split AC 18000 BTU Inverter cool only)",
+      "REFERENCE_STATUS": "REFERENCE_CLEAN (Phase 3, ADR-321 — 5 independent merchants: stores 2/3/4/7/18)",
+      "WHY_EXACT_SAME_PRODUCT": "exact model code 'AM182C0' repeated across 4 independent merchant listings; this Amazon product's storefront row was ALREADY canonical-linked to this exact canonical BEFORE the Rescue Lab ever ran",
+      "ALL_HARD_CONFLICTS_CHECKED": "cooling_mode, technology, series_or_platform, model_number — zero conflicts; a sibling variant (AM182C0.UK2-NK2) exists in the same candidate pool and was correctly NOT selected",
+      "UNKNOWN_FIELDS": "none material",
+      "CUSTOMER_RISK": "none — pre-existing production link. Classification: PREVIOUSLY_PROVEN, not a novel rescue."
+    }
+  ],
+
+  "part3_rollback_design_not_executed": {
+    "existing_mechanism_reviewed": "storefront_identity_links (scripts/database/knowledge-db/025_storefront_identity_links.sql, ADR-242/312) already implements a proven, rollback-safe write pattern for storefront canonical-linking: UPDATE products SET canonical_product_id=<new> WHERE id=<product> AND canonical_product_id=<prior> (optimistic lock — the update only applies if the row is still in the exact state expected, preventing a race with any other write), with the prior value and full context recorded in a ledger row (status: active/drift/rolled_back), and a --rollback flag that restores canonical_product_id to the ledger's own recorded prior value.",
+    "critical_incompatibility_found": "storefront_identity_links.evidence_class has a CHECK constraint restricted to ('url_exact','asin_exact') only — it was built for the ADR-312 URL/ASIN-exact-match pilot, not for attribute-fingerprint-based candidates like the Rescue Lab produces. Writing a Rescue Lab pilot link through this exact table, unmodified, is not possible without either altering its CHECK constraint (itself a Products 2 schema change requiring separate approval) or conflating fingerprint-based provenance with exact-match provenance in the same audit trail.",
+    "RECOMMENDED_DESIGN_not_created_this_phase": {
+      "approach": "a NEW, separate, purpose-built table (e.g. ac_rescue_lab_pilot_links) mirroring storefront_identity_links' safe-write pattern exactly, but physically distinct — so a pilot write/rollback can never touch, be confused with, or accidentally revert an ADR-312 exact-match link.",
+      "WHAT_TABLE_RECORD_WOULD_CHANGE": "products.canonical_product_id for exactly the pilot's Amazon storefront row(s) — the same single-column write the existing mechanism already uses, nothing else",
+      "WHAT_VALUE_EXISTS_BEFORE": "NULL (every candidate examined in this lab is currently unlinked at the storefront layer — confirmed via provenance_note in the fingerprint data for every non-'already-linked' case)",
+      "WHAT_VALUE_WOULD_EXIST_AFTER": "the specific canonical_product_id of the verified rescue candidate",
+      "HOW_THE_PILOT_RECORD_IS_IDENTIFIED": "a dedicated pilot ledger row keyed by (product_id, canonical_product_id, pilot_batch_id) with an explicit rule_version tag distinguishing it from any other write path (e.g. 'ac-rescue-lab-pilot-v1'), so every pilot-origin link is queryable and filterable independent of any other linking mechanism",
+      "HOW_TO_REVERSE_ONLY_THE_PILOT": "UPDATE products SET canonical_product_id = NULL WHERE id = ANY(<pilot product_ids>) AND canonical_product_id = ANY(<pilot canonical_ids the pilot itself wrote>) — scoped by the pilot's own ledger, an optimistic-lock guard identical to the existing mechanism's, touching only rows the pilot itself created",
+      "HOW_TO_VERIFY_REVERSAL": "after rollback, re-query products.canonical_product_id for the exact pilot product_ids and assert NULL; separately assert the pilot ledger's status column reads 'rolled_back' for every pilot row and that no non-pilot storefront_identity_links row was touched (a simple row-count-unchanged check on that table)",
+      "HOW_TO_PREVENT_OVERWRITING_PRE_EXISTING_LINKS": "the write must be gated exactly like the existing mechanism — WHERE canonical_product_id = NULL (or the specific prior value recorded before the pilot ran) — so a pilot write can NEVER fire against a product that already has ANY canonical_product_id set (pre-existing or otherwise); this is directly informed by this phase's own finding that 2 of the 4 candidates were ALREADY linked — a pilot targeting only genuinely NULL rows structurally cannot repeat that confusion",
+      "HOW_TO_HANDLE_DRIFT": "reuse the existing mechanism's own drift concept (a scheduled recheck comparing the pilot-linked canonical's current identity_key against the value recorded at link time; a mismatch flips the pilot ledger row to 'drift' status, exactly mirroring storefront_identity_links' own drift column, without touching the products table until a human reviews it)",
+      "HOW_TO_PRESERVE_AUDIT_HISTORY": "never delete or overwrite a pilot ledger row — status transitions only (active -> rolled_back or active -> drift), append-only, matching the project's constitutional rule that identity/provenance records are never destructively modified",
+      "properties_confirmed": ["deterministic (single WHERE-guarded UPDATE)", "narrowly scoped (pilot-only table + pilot-only product_id list)", "independently verifiable (re-query + row-count-unchanged check)", "incapable of reverting unrelated Products 2 work (physically separate table from storefront_identity_links, separate rule_version tag, guarded by the pilot's own prior-value ledger)"]
+    },
+    "NOT_EXECUTED": true,
+    "NOT_EVEN_THE_NEW_TABLE_WAS_CREATED": true
+  },
+
+  "part4_low_confidence_gree_scan_scope_only": {
+    "ROWS_SCANNED": 14456,
+    "DISTINCT_GREE_AC_CANONICALS_SCANNED": 86,
+    "AFFECTED_CANONICALS": 8,
+    "affected_canonical_list": [
+      "1d8360e4 — Gree Split AC 24000 BTU cool only",
+      "23b80f80 — Gree Split AC 24000 BTU Inverter hot cold (ADR-320)",
+      "32cad851 — Gree Split AC 18000 BTU cool only (ADR-321)",
+      "3bdcc828 — Gree Split AC 30000 BTU Inverter hot cold",
+      "5639fbd6 — Gree Split AC 12000 BTU Inverter hot cold",
+      "68446141 — Gree Split AC 34200 BTU Inverter cool only",
+      "91814ff5 — Gree Split AC 18000 BTU",
+      "d8722264 — Gree Split AC 18000 BTU Inverter hot cold"
+    ],
+    "AFFECTED_PRODUCTS_storefront": 0,
+    "MERCHANTS": "affected canonicals span stores 2 (Amazon), 4, 5, 9, 18 — the same merchant set as the rest of the AC category, no single-merchant concentration",
+    "CUSTOMER_FACING_EXPOSURE": "ZERO — none of the 8 affected canonicals have any live storefront (products/product_stores) row pointing at them, confirmed by direct query. No customer has seen or can currently see a page mixing these product lines.",
+    "CURRENT_TIER": "all 8 are low_confidence_candidate tier — none reached valid tier, consistent with Phase 3's finding that valid tier structurally screens this pattern out",
+    "HOW_MANY_ARE_ACTUALLY_LIVE_COMPARABLE": "0 of 8 are live/comparable on the storefront today — this is a real, confirmed defect in the TPS knowledge layer, but it has caused zero customer-facing harm to date because none of the affected canonicals were ever storefront-projected.",
+    "scope_conclusion": "8 confirmed instances (up from the 3 known before this scan), 0 customer-facing exposure. The pattern is larger than previously known but currently contained to the knowledge layer, not customer-visible. Scan is READ-ONLY; nothing was fixed."
+  },
+
+  "part5_brand_corruption_scope_only": {
+    "AFFECTED_CANONICALS": 30,
+    "breakdown_by_token": { "إل (\"il\", truncated إل جي = LG)": 26, "ال (\"al\", another LG truncation)": 3, "مكيف (\"mukayyif\" = air conditioner, the category word)": 5 },
+    "breakdown_by_category": { "air_conditioner": 29, "tv": 1 },
+    "AFFECTED_PRODUCTS_storefront": 0,
+    "CUSTOMER_VISIBLE": "NO — zero storefront (products/product_stores) rows point at any of the 30 affected canonicals; confirmed by direct query. This defect exists only at the normalized TPS knowledge-layer, never reached a customer-facing page.",
+    "MATCHING_IMPACT": "any future brand-based filter, search facet, or comparison feature keyed on canonical_products.brand would silently mis-group or drop these 30 rows — they would not appear under 'LG' despite being LG products. Also relevant to future candidate-generation: a rescue-style matcher blocking on brand_canonical would need these repaired (or normalized) before they could ever participate correctly, since 'إل'/'ال'/'مكيف' are excluded by the UNSAFE_BRAND_PLACEHOLDERS-style denylist logic used throughout this lab.",
+    "RESCUE_LAB_IMPACT": "NONE of the 30 affected canonicals appeared as a candidate anywhere in Run A (confirmed: the Rescue Lab's brand_safe filter structurally excludes any brand not in the recognized-brand list, and 'إل'/'ال'/'مكيف' are not recognized brand tokens) — this defect did not and could not influence any Rescue Lab finding to date, but would need fixing before it could ever safely be included in a widened trusted universe.",
+    "scope_conclusion": "30 confirmed instances (up from the 3 known before this scan; also found to extend beyond AC into TV), 0 customer-facing exposure, 0 impact on any Rescue Lab result so far. Scan is READ-ONLY; nothing was fixed."
+  },
+
+  "part6_decision_separation": {
+    "A_AC_RESCUE_LAB_PRODUCTION_PILOT": {
+      "status": "NOT_YET",
+      "reason": "the 2 genuinely-novel HIGH_CONFIDENCE reference canonicals (TCL, Haier) are INSUFFICIENT_EVIDENCE, not REFERENCE_CLEAN, per the mission's own explicit stop-rule",
+      "authorization_scope_if_ever_approved": "would touch ONLY products.canonical_product_id for specific, individually-verified Amazon AC rows, through a dedicated, physically-separate pilot ledger table — never storefront_identity_links, never any GREE or brand-corruption remediation"
+    },
+    "B_PRODUCTS_2_EXISTING_DEFECT_REMEDIATION": {
+      "status": "NOT AUTHORIZED BY THIS MISSION — diagnosis only",
+      "items": ["8 GREE AI-Pro/Cosmo series-collapse canonicals (Part 4)", "30 corrupted-brand-token canonicals (Part 5)", "1 unresolved Samsung WindFree model/variant mismatch (ADR-321)"],
+      "explicit_statement": "these defects were DISCOVERED by the Rescue Lab's read-only audits, but discovery does not confer authorization to fix them. Each requires its own separate founder-approved mission, its own root-cause confirmation, its own smallest-safe-fix design, and its own blast-radius review — none of that work is authorized under the AC Rescue Lab's mandate, which governs only the isolated experimental lane, not general Products 2 remediation."
+    },
+    "explicit_non_conflation_statement": "Products 2 defects discovered by the Rescue Lab do not become an excuse to alter Products 2 under Rescue Lab authority. Decision A and Decision B require separate founder approvals, on separate occasions, scoped separately."
+  },
+
+  "final_gate": {
+    "TCL_REFERENCE_CLEAN": "NO",
+    "HAIER_REFERENCE_CLEAN": "NO",
+    "FOUR_HIGH_CONFIDENCE_REVERIFIED": "YES",
+    "FALSE_MERGES": 0,
+    "ROLLBACK_READY": "DESIGNED, NOT BUILT — the mechanism is fully specified (Part 3) but no table was created and no code was written; 'ready' here means the design exists and reuses a proven pattern, not that it could be executed today",
+    "ROLLBACK_TESTABLE_WITHOUT_PRODUCTION_WRITE": "YES — the design's every property (deterministic, narrowly scoped, independently verifiable, incapable of reverting unrelated work) can and should be verified in a non-production or dry-run context before any real write, exactly as every prior write-capable script in this project (e.g. project-storefront-identity.ts) already requires dry-run-first",
+    "KNOWN_GATE_FAILURE_AFFECTING_THE_4": "NO — the Fisher hard-conflict-gate blind spot (ADR-320/321) is confined to a REVIEW-tier GREE-adjacent case and does not touch any of the 4 HIGH_CONFIDENCE candidates or their reference canonicals",
+    "V1_CHANGED": "NO",
+    "PRODUCTS_2_CHANGED": "NO",
+    "DOES_V1_NOW_DESERVE_MAX_5_PRODUCT_PRODUCTION_PILOT": "NOT_YET",
+    "pilot_plan_prepared": false,
+    "why_no_pilot_plan": "the mission's own rule ('If either is not REFERENCE_CLEAN: STOP the production-pilot proposal') is triggered by both TCL and Haier being INSUFFICIENT_EVIDENCE rather than REFERENCE_CLEAN. Preparing a 5-product (or even a 2-product) pilot plan now would mean proposing to link products whose reference truth itself was just found to be under-corroborated — exactly the failure mode this whole 4-phase audit exists to prevent. Consistent with the mission's own closing instruction ('a pilot of 2 clean new rescues is preferable to 5 partially justified ones... do not manufacture five'), the honest number of CURRENTLY reference-clean, genuinely-novel rescue candidates is ZERO, not 2 and not 5 — so no pilot plan is prepared at all, of any size.",
+    "path_to_a_future_YES": "strengthen TCL's and Haier's reference corroboration to 2+ independent merchants (this is a data-coverage question, not a V1 logic question — both stores' AC categories are actively scraped, so more merchant coverage may simply require time, or targeted verification against an additional retailer's own product page) OR find other, already-REFERENCE_CLEAN, genuinely-novel rescue candidates elsewhere in the 270-product Amazon AC population that this lab has not yet tried to expand into."
+  },
+
+  "products_2_boundary": { "PRODUCTS_2_CHANGED": false, "writes_performed": 0, "PRODUCTS_2_REMAINS_READ_ONLY": true }
+}
