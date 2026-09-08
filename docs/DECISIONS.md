@@ -6,6 +6,38 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-314 — AC PDP evidence test: proved exactly where information is lost — description text carries real signal the AC extractor structurally never reads; zero promotions, zero writes · Accepted (2026-09-08)
+
+**Context.** Founder instruction, same day as ADR-313: run the proposed PDP re-scrape as an evidence test, not a presumed fix — trace the exact data path (PDP → raw capture → normalization → identity extraction → tier) for 20-30 representative candidates, and classify precisely where evidence is lost, using labels A (no recoverable data) through E (safety gate correctly rejects). Explicit stop condition: if evidence reaches normalization but the AC identity builder ignores it, STOP before touching `parser.ts` and return a `TYPE_2` proposal instead of implementing it.
+
+**Write path confirmed before running, per instruction.** `AmazonScraper.updateProductPrice(url)` called directly (bypassing `ScrapingOrchestrator` entirely) performs **zero database writes** — it is a pure fetch/parse/return function; every write (raw_observations insert, `product_stores` price refresh, `last_checked_at` bookkeeping) lives in the orchestrator's surrounding loop, never invoked here. Verified empirically after the run too: a direct query found 0 new rows in `raw_observations`, `storefront_identity_links`, and `normalized_product_observations` across the test's full 30-minute window.
+
+**Method.** 23 ASINs sampled (stratified across brands/types/reasons-for-low-confidence) from the 400-row low-confidence pool. For each: BEFORE state read from already-stored `normalized_product_observations`; then a live, in-memory-only PDP fetch; then the **real, unmodified** production `normalize()` (`scripts/tps-plugins/ac/parser.ts`) and `buildIdentityKey()` (`identity.ts`) run against the freshly-scraped title to compute what tier they would produce — nothing persisted.
+
+**Two self-corrections made and disclosed, not hidden.** The first pass converted a brand of `"Unknown"` to `null` before calling `buildIdentityKey`, artificially forcing 6 items to a false `invalid` status via the missing-brand guard. Corrected once, still wrong (raw `detectBrandFromText()` can itself return `null`); corrected again to match `AmazonSearchScraper`'s own exact pattern (`detectBrandFromText(title) ?? "Unknown"` — the scraper never stores a null brand). Both fixes applied to the already-captured scrape results, no re-fetching needed. Final numbers below are from the twice-corrected pass.
+
+**Result — 21 successfully tested (2 scrape failures, URL-format/network noise, unrelated to identity coverage):**
+
+| Classification | Count | Meaning |
+|---|--:|---|
+| A — no recoverable data anywhere on the page | 12 | Genuine source sparsity, confirmed |
+| B — promoted to valid under unchanged logic | **0** | — |
+| C — scraper recovers it, normalization ignores it | 0 | — |
+| D — description/feature-bullet text has real signal (inverter/hot&cold/cool-only words), `normalize()` never reads description, only title | **9** | The information-loss point, proven |
+| E — safety gate correctly rejects ambiguous evidence | 0 | Never reached — evidence never surfaces far enough for the gate to see it |
+
+**Where exactly is the information lost, answered precisely.** For 9 of 21 (43%) sampled candidates, Amazon's own product page states cooling-technology-relevant words in the description/feature-bullets that are absent from the title — real, legitimate evidence, sitting in `ScrapedProduct.description_ar/description_en`, which `normalize()` structurally never reads (only `nameAr + nameEn`). This is loss point **D**, proven with named examples (Gree B09R7MPD6L, Aston B0GZPXH9C5, LG B0FH543XRT, TCL B0GWM2ZRJB, Cooline B0GXB5PY3P among them). For the other 12 (57%), the missing attributes are genuinely absent everywhere on the page — confirms and generalizes ADR-313's single-example finding across a real sample.
+
+**Honest caveat, not oversold.** Even for the 9 D-classified items, most remain additionally blocked by `series_or_platform missing` — a marketing-line concept (LG ArtCool, Samsung WindFree) that budget/generic-brand units simply don't have, in title, description, or spec table. Consuming description text would likely move several of the 9 from "blocked on 2-3 fields" to "blocked on 1 field (series)" — real, measurable, but **not** expected to promote most of them to `valid` on its own, because `series` is the harder, category-wide, structural blocker. Stated plainly so the proposal below isn't oversold.
+
+**TYPE_2 proposal — not implemented, per the stop condition.** Widen the text window `normalize()` scans from `nameAr + nameEn` to also include `description_ar + description_en` when available (two new optional parameters, one call site updated to pass them through). Zero regex pattern changes. Zero change to `identity.ts`'s tier rule, `canonicalizeBrand`, or any veto/safety-gate logic. Same four-condition `full` rule still gates `valid` — this only widens *where* those same, already-approved patterns are allowed to look. **Prerequisite, not alternative:** has zero effect today, since `description_ar/description_en` are null for every search-tile-discovered row — it only matters in combination with a `TYPE_1` PDP re-scrape (this same evidence test's own mechanism). **Not implemented. Awaiting founder review.**
+
+**Verification, as instructed.** Every fetch target was Amazon.sa only (no Jarir/eXtra/Almanea/Noon URL constructed or touched). Zero database writes, confirmed twice (code-path + post-test query). No canonical identity, matching rule, confidence threshold, or Products 2 semantic touched. Full detail, including all 21 individual before/after records: `docs/evidence/ac-pdp-evidence-test-2026-09-08.json`.
+
+**Products 2 status.** Not touched. Read-only evidence test plus two already-existing, unmodified functions run in memory.
+
+---
+
 ### ADR-313 — Amazon AC identity root cause, empirically confirmed: mixed causes, not a single defect — genuine source-data sparsity AND a real scraper capture gap, neither a matching or Products 2 problem · Accepted (2026-09-08)
 
 **Context.** Founder mandate: prove — not assume — why 147 Amazon AC candidates sit at `low_confidence_candidate` tier rather than closing the gap by lowering thresholds. Explicit requirement: more evidence before lower confidence; ground findings in Amazon's own real pages, not documentation assumptions.

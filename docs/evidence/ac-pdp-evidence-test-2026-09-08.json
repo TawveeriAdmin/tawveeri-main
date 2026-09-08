@@ -1,0 +1,52 @@
+{
+  "investigation": "AC PDP re-scrape evidence test — traces PDP Technical Details -> raw capture -> normalization -> identity extraction -> TPS tier, for a 23-item sample of the 147 low-confidence Amazon AC candidates",
+  "mission": "TAWVEERI — AMAZON PRODUCT IDENTITY RECOVERY, evidence test phase",
+  "date": "2026-09-08",
+  "write_path_confirmed_before_running": {
+    "method_used": "AmazonScraper.updateProductPrice(url) called DIRECTLY, bypassing ScrapingOrchestrator entirely",
+    "finding": "The scraper method itself performs zero database writes — it is a pure fetch+parse+return function. All writes (raw_observations insert via IngestionService.ingestBatch, product_stores price/availability update via ProductService, last_checked_at bookkeeping) happen in the ORCHESTRATOR's surrounding loop code (scraping-orchestrator.ts lines ~425-458), which this test never called.",
+    "verified_after_running": "Direct DB check: 0 new raw_observations rows, 0 new storefront_identity_links rows, 0 new normalized_product_observations rows in the 30 minutes spanning this entire test. Confirmed read-only in practice, not just by code inspection."
+  },
+  "method": "23 ASINs selected (stratified sample from the 400-row low-confidence pool, spread across brands/types/reasons-for-low-confidence). For each: BEFORE state pulled from already-stored normalized_product_observations. Then AmazonScraper.updateProductPrice() called for a fresh PDP fetch (in-memory only). Then the REAL, UNMODIFIED production normalize() (parser.ts) and buildIdentityKey() (identity.ts) were run against the freshly-scraped title, to compute what tier they would produce — without persisting anything.",
+  "self_corrections_during_the_test": [
+    "First pass incorrectly converted a brand of 'Unknown' to `null` before calling buildIdentityKey(), artificially forcing 6 items to a false 'invalid' status via the `!brand` guard. Fixed: buildIdentityKey expects the raw brand string (it canonicalizes internally); passing null bypasses that and hits the missing-brand guard instead.",
+    "Second pass still used detectBrandFromText()'s raw (possibly null) return value. Fixed to match AmazonSearchScraper's own exact pattern — `detectBrandFromText(title) ?? 'Unknown'` — since the scraper never stores a null brand, only a real one or the literal string 'Unknown'. This matches why every already-stored before_key in this sample starts with 'unknown|...', never with an invalid/null-brand row.",
+    "Both corrections applied to the ALREADY-CAPTURED scrape results (no new network calls) — the final numbers below are from the twice-corrected re-analysis."
+  ],
+  "results": {
+    "sample_size": 23,
+    "scrape_failed": 2,
+    "successfully_tested": 21,
+    "classification_A_no_recoverable_data_beyond_title": 12,
+    "classification_B_promoted_to_valid": 0,
+    "classification_C_scraper_recovers_normalization_ignores": 0,
+    "classification_D_signal_exists_in_description_normalize_never_reads_description": 9,
+    "classification_E_safety_gate_correctly_rejects": 0,
+    "note_on_C_vs_D": "C and D collapse into the same practical bucket here: normalize() structurally only ever reads nameAr+nameEn, so ANY evidence sitting in specifications/description/feature-bullets is invisible to it regardless of whether it's a clean structured field (C) or free text (D). All 9 signal-bearing cases were free-text description matches (inverter/hot&cold/cool-only keywords appearing in feature bullets or description, absent from the title) -> classified D.",
+    "note_on_E": "Zero cases reached the safety-gate-correctly-rejects scenario, because normalize() never surfaces the extra evidence in the first place for the gate to evaluate. The tier gate (requiring series+technology+cooling_mode all genuinely stated) never got the chance to see the richer text."
+  },
+  "examples": {
+    "classification_D": [
+      { "asin": "B09R7MPD6L", "name": "Gree Window AC Hot & Cold 21400 BTU" },
+      { "asin": "B0GZPXH9C5", "name": "Aston Split AC 12000 BTU Hot & Cold Inverter" },
+      { "asin": "B0FH543XRT", "name": "LG Split AC Jet Cool Ai Precool 22000 Cool Only" },
+      { "asin": "B0GWM2ZRJB", "name": "TCL SaveIN NEO T4 Split AC 12100 BTU Inverter" },
+      { "asin": "B0GXB5PY3P", "name": "Cooline PRO Split AC 22100 BTU Cold AI Vision" }
+    ],
+    "classification_A": [
+      { "asin": "B0BQ3QRYMW", "name": "Nikai 21000 BTU R410A Split AC Heat/Cool" },
+      { "asin": "B0DPJD9T4F", "name": "MIDEA Split AC Cold Only 18300 BTU Wi-Fi" },
+      { "asin": "B0F8N9HX9S", "name": "Impex 1.5 Ton Window AC Cooling Only 17200 BTU" },
+      { "asin": "B0CBSGDFQD", "name": "Hisense Window AC 21800 BTU Cooling" },
+      { "asin": "B0GVFV5VDN", "name": "Arrow Split AC 2 Ton 23400 BTU Tropical Cool" }
+    ]
+  },
+  "the_honest_caveat_on_type_2_impact": "Even for the 9 D-classified items, most remain blocked by 'series_or_platform missing' even after mentally granting them a consumed technology/cooling_mode from description text — series/platform names are a marketing-line concept (LG ArtCool, Samsung WindFree) that rarely exists at all for budget/generic-brand units, in title OR description OR spec table. So a TYPE_2 fix (consuming description text) would likely move some fraction of the 9 from 'blocked on 2-3 missing fields' to 'blocked on 1 missing field (series)' — a real, measurable improvement in evidence completeness — but would NOT, by itself, be expected to promote most of them all the way to 'valid' tier, because the series requirement is the more structural, category-wide blocker. This is stated plainly so the TYPE_2 proposal below is not oversold.",
+  "type_2_proposal_not_implemented": {
+    "what": "Widen the text window normalize() (scripts/tps-plugins/ac/parser.ts) scans from `nameAr + nameEn` to also include `description_ar + description_en` when available, by adding two optional parameters to normalize() and having its one existing call site pass them through. Zero regex patterns change. Zero change to identity.ts's tier rule, canonicalizeBrand, or any veto/safety-gate logic in project-storefront-identity.ts.",
+    "prerequisite": "This has zero effect today because description_ar/description_en are null for every row discovered via the search-tile path (specifications: {} confirmed empty). It only becomes useful in combination with a TYPE_1 fix (actually re-scraping the PDP for these ASINs) — TYPE_1 is a prerequisite, not an alternative.",
+    "why_this_is_type_2_not_type_5": "No canonical identity semantics change. No matching rule changes. No confidence threshold changes. The SAME four-condition 'full' rule (series + technology + non-inferred + cooling_mode) still gates 'valid' status — this proposal only widens WHERE those same, already-approved regex patterns are allowed to look for evidence of them, using text Amazon itself published about the same product.",
+    "status": "PROPOSED ONLY. Not implemented. Not run. Awaiting founder review, per the mission's explicit instruction to stop before touching parser.ts."
+  },
+  "cross_merchant_and_out_of_sample_verification": "Every scrape target was an Amazon.sa (store_id=2) URL from the pre-selected 23-ASIN sample list. No Jarir/eXtra/Almanea/Noon URL was ever constructed or fetched. Zero database writes occurred (verified both by code-path inspection and a direct post-test query across three tables). No Products 2 read or write beyond the two already-existing, unmodified functions (normalize, buildIdentityKey) invoked in-memory."
+}
