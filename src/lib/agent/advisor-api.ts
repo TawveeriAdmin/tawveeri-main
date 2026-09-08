@@ -424,13 +424,36 @@ export function comparisonBadge(rec: AdvisorRecommendation, locale: Locale): { t
  * price) is the one FACT in this breakdown — it stays unqualified because it IS a real,
  * observed retailer price, not an estimate.
  */
+function costBreakdownLines(
+  b: { installation: number | null; annual_electricity: number | null },
+  locale: Locale,
+): { label: string; amount: number }[] {
+  const lines: { label: string; amount: number }[] = [];
+  if (b.installation != null && b.installation > 0) lines.push({ label: locale === "ar" ? "تركيب (تقديري)" : "Est. installation", amount: b.installation });
+  if (b.annual_electricity != null && b.annual_electricity > 0) lines.push({ label: locale === "ar" ? "كهرباء سنوية (تقديري)" : "Est. annual electricity", amount: b.annual_electricity });
+  return lines;
+}
+
 export function costLines(rec: AdvisorRecommendation, locale: Locale): { label: string; amount: number }[] {
   const b = rec.cost_breakdown ?? { unit: null, installation: null, annual_electricity: null };
   const lines: { label: string; amount: number }[] = [];
   if (b.unit != null) lines.push({ label: locale === "ar" ? "سعر الجهاز" : "Unit price", amount: b.unit });
-  if (b.installation != null && b.installation > 0) lines.push({ label: locale === "ar" ? "تركيب (تقديري)" : "Est. installation", amount: b.installation });
-  if (b.annual_electricity != null && b.annual_electricity > 0) lines.push({ label: locale === "ar" ? "كهرباء سنوية (تقديري)" : "Est. annual electricity", amount: b.annual_electricity });
+  lines.push(...costBreakdownLines(b, locale));
   return lines;
+}
+
+/**
+ * Founder product decision (AC price-hierarchy audit, 2026-09-08): the PURCHASE PRICE is
+ * always the headline a shopper reads — never a device+installation+electricity sum wearing
+ * the price's own visual weight. `installation`/`annual_electricity` are a secondary decision
+ * insight (never fabricated, never combined into a number a shopper could mistake for what
+ * they need to pay). See `docs/DECISIONS.md` ADR-306 for the measured defect this replaces:
+ * an AC recommendation rendered «التكلفة الإجمالية التقديرية 3,819 ريال» as the PRIMARY price
+ * for a 1,749 SAR device, which a shopper could reasonably read as the amount to pay today.
+ */
+export function secondaryCostLines(rec: AdvisorRecommendation, locale: Locale): { label: string; amount: number }[] {
+  const b = rec.cost_breakdown ?? { unit: null, installation: null, annual_electricity: null };
+  return costBreakdownLines(b, locale);
 }
 
 /** Whether a total-cost figure adds anything beyond the unit price (install/electricity). */

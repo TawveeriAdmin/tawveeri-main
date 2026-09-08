@@ -18,6 +18,7 @@ import { saveJourneyTask } from '@/lib/agent/journey-context';
 import { classifyDecisionIntent } from '@/lib/agent/decision-intent';
 import { isAmbiguousBareOvenQuery } from '@/lib/agent/task-parser';
 import { classifyZeroResult } from '@/lib/agent/catalog-gap';
+import { isNewSearchSubject } from '@/lib/search/url-sync-strategy';
 import {
   readDecisionState, clearDecisionState, createDecisionState, applyParsedTask,
   applyDecisionResult, saveDecisionState, decisionStateToAdvisorBody, removeConstraint,
@@ -458,10 +459,20 @@ export default function SearchClient() {
 
   // ── URL write-back: mirror filter/sort/page state into the URL so reload + share preserve view ──
   const urlSyncReadyRef = useRef(false);
+  // Founder back-navigation audit (2026-09-08): every write here used router.replace (ADR-282,
+  // to avoid history bloat on chip toggles), which also meant a genuinely NEW search — the
+  // advisor answering "مكيف لغرفة 30 متر هادئ تحت 4000" while already on /search — never earned
+  // its own history entry. Browser Back from a later page (compare/merchant) then skipped past
+  // it entirely, landing on whatever preceded it (often the empty /search state, which falls
+  // back to the category-agnostic "trending" rail). A NEW subject (query text or category) gets
+  // a real history entry so Back can return to it; a filter/sort/page refinement of the SAME
+  // subject keeps replacing, exactly as ADR-282 intended.
+  const prevSearchSubjectRef = useRef<{ q: string; cat: string } | null>(null);
   useEffect(() => {
     // Skip the very first run so we don't blow away the URL before initial state hydrates
     if (!urlSyncReadyRef.current) {
       urlSyncReadyRef.current = true;
+      prevSearchSubjectRef.current = { q: debouncedQuery, cat: selectedCategory };
       return;
     }
     const params = new URLSearchParams();
@@ -498,8 +509,15 @@ export default function SearchClient() {
     // Stamp the refs with what we are ABOUT to write so that echo is inert.
     urlQueryRef.current = debouncedQuery;
     urlCategoryRef.current = selectedCategory;
-    // Use replace so we don't bloat history on every chip toggle
-    router.replace(next, { scroll: false });
+    // Push for a genuinely new search subject (distinct history entry Back can return to);
+    // replace for a filter/sort/page refinement of the SAME subject (no history bloat).
+    const isNewSubject = isNewSearchSubject(prevSearchSubjectRef.current, { q: debouncedQuery, cat: selectedCategory });
+    prevSearchSubjectRef.current = { q: debouncedQuery, cat: selectedCategory };
+    if (isNewSubject) {
+      router.push(next, { scroll: false });
+    } else {
+      router.replace(next, { scroll: false });
+    }
   }, [
     debouncedQuery,
     selectedCategory,

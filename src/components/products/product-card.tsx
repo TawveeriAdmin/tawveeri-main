@@ -602,7 +602,17 @@ export function ProductCard({
             </Link>
           )}
 
-          {/* Primary CTA */}
+          {/* Primary CTA.
+              FOUNDER AUDIT (2026-09-08, shopper price/compare/back-nav mandate): a multi-store
+              card structurally has no `externalProductUrl` (computed only when `!isMultiStore`,
+              above) — so before this fix, EVERY card with a working "قارن الأسعار" button also
+              rendered "رابط المتجر غير متاح لهذا العرض" directly beneath it, reading as a dead
+              end next to a working action. `tps_compare_url` is only ever set when the offer
+              has ≥2 approved-retailer stores (search/route.ts: `byStore.size >= 2`), so Compare
+              IS the actionable path for exactly the cards that lacked a direct link — the
+              warning is withheld there, never fabricated, per the decision matrix: direct link
+              → direct CTA; compare available, no direct link → Compare only, no warning;
+              neither → the honest unavailable state stays (true dead end). */}
           {externalProductUrl ? (
             <Button variant="default" size="sm" className="w-full text-xs" asChild>
               <a href={externalProductUrl} target="_blank" rel="noopener noreferrer">
@@ -610,7 +620,7 @@ export function ProductCard({
                 <span className="truncate">{t('products.viewAtStore')}</span>
               </a>
             </Button>
-          ) : (
+          ) : product.tps_compare_url ? null : (
             /* No destination for this offer. A disabled "View at store" button states nothing
                and is the disabled-control pattern REDESIGN_BRIEF §7.3 rules out; it also reads
                as a temporary outage rather than what is true. Say what we actually hold: the

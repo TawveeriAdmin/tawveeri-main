@@ -13,6 +13,13 @@ import { getCanonicalDiscountIntegrity } from "@/lib/intelligence/discount-looku
 import { getProductAlternatives } from "@/lib/intelligence/product-edges-lookup";
 import { assessTrust, hoursSince, PICK_FRESHNESS_MAX_HOURS } from "@/lib/intelligence/evidence-engine";
 import { getProviderByStoreId, getProvider } from "@/lib/providers/registry";
+import { getComparison, isComparisonError } from "@/lib/compare/get-comparison";
+
+// Must match `MIN_RETAILERS` in resolve-comparison.ts — the compare page's own "is this a
+// comparison" threshold. Store-count consistency audit (2026-09-08): duplicated rather than
+// imported because resolve-comparison.ts is chat-agent-specific and importing it here would
+// pull in unrelated chat-intent code for one constant.
+const MIN_COMPARISON_RETAILERS = 2;
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -259,6 +266,41 @@ export async function POST(req: NextRequest) {
     return raw ? storeDisplay(raw) : null;
   };
 
+  // STORE-COUNT CONSISTENCY (2026-09-08 founder audit). `r.store_count`/`r.comparison_available`
+  // above come from `tps_product_projection`, a BATCH table refreshed out-of-band — it can say
+  // "N stores" for a store the compare page (which reads `price_history` live, minus delist/
+  // implausibility signals) no longer honours, so a shopper could see "مقارنة موثقة في N متاجر"
+  // on the card and fewer actionable offers after pressing Compare. `resolve-comparison.ts`
+  // already established the fix for the chat "compare X" flow — never trust the projection
+  // count, ask the page's own loader (`getComparison()`) — this applies the same rule here, for
+  // every recommendation that would otherwise CLAIM a comparison.
+  //
+  // Fail-soft toward WITHHOLDING the claim, not toward trusting it (ADR-129: never publish an
+  // unverified number) — the same direction this file's own sibling fetches already fail in
+  // (`getPriceVerdicts(ids).catch(() => new Map())` defaults to NO signal, never a stale one).
+  // A first draft of this fix defaulted a lookup failure to the stale projection value, which
+  // is the wrong direction: it would let an unverifiable claim through instead of suppressing
+  // it, exactly the failure mode this fix exists to close.
+  const liveComparisonByCanon = new Map<string, { store_count: number; comparison_available: boolean }>();
+  await Promise.all(
+    recs.filter((r) => r.comparison_available).map(async (r) => {
+      let live = { store_count: 0, comparison_available: false };
+      try {
+        const res = await getComparison({ canonicalId: r.canonical_id });
+        const n = isComparisonError(res) ? 0 : (res.offers?.length ?? 0);
+        live = { store_count: n, comparison_available: n >= MIN_COMPARISON_RETAILERS };
+      } catch {
+        /* live check failed — withhold the claim rather than trust an unverified count */
+      }
+      liveComparisonByCanon.set(r.canonical_id, live);
+    }),
+  );
+  const reconciledComparison = (r: Recommendation): { store_count: number | null; comparison_available: boolean } => {
+    // Only recs that claimed a comparison were checked above; one that never claimed one
+    // (comparison_available already false) has nothing to reconcile — its own values stand.
+    return liveComparisonByCanon.get(r.canonical_id) ?? { store_count: r.store_count, comparison_available: r.comparison_available };
+  };
+
   // verdicts / discounts / alternatives were fetched in parallel above (buy-timing intelligence,
   // honest discount integrity, and knowledge-graph alternatives — all fail-soft).
   const out = recs.map((r) => {
@@ -279,10 +321,14 @@ export async function POST(req: NextRequest) {
     // core Tawveeri honesty signal). stable / no data = no claim, nothing to distrust.
     const d = discounts.get(r.canonical_id);
     const discountClaimed = d ? (d.verdict === "verified_drop" || d.verdict === "inflated_reference") : false;
+    // Store-count consistency: use the LIVE-verified count/claim (see reconciledComparison
+    // above) everywhere a store count could reach the customer, so the trust tier the badge
+    // shows and the number the card states can never disagree with each other.
+    const { store_count, comparison_available } = reconciledComparison(r);
     const trust = assessTrust({
-      store_count: r.store_count,
+      store_count,
       identity_confidence: proj?.identity_confidence ?? null,
-      has_comparison: r.comparison_available,
+      has_comparison: comparison_available,
       specs_incomplete: /\|NO_(STORAGE|TECH|SERIES|PANEL)\b/.test(r.tps_identity_key || ""),
       price_confident: v?.confident ?? null,
       price_distinct_days: v?.distinctDays ?? null,
@@ -301,7 +347,8 @@ export async function POST(req: NextRequest) {
       console.warn(`[smart-pick-freshness] advisor label withheld: age=${Math.round(data_age_hours!)}h > ${PICK_FRESHNESS_MAX_HOURS}h · canonical=${r.canonical_id}`);
     }
     return {
-      ...r, is_smart_pick, trust, confidence: trust.score, go_url: goByCanon.get(r.canonical_id) ?? null,
+      ...r, store_count, comparison_available, is_smart_pick, trust, confidence: trust.score,
+      go_url: goByCanon.get(r.canonical_id) ?? null,
       stores: storeNames(r.canonical_id), best_offer_store_ar: bestOfferStore(r.canonical_id), data_age_hours,
       price_intel, discount_intel: discounts.get(r.canonical_id) ?? null, alternatives: alternatives.get(r.canonical_id) ?? null,
       size_mismatch: null as { requested: number; actual: number; comparator?: "eq" | "gt" | "gte" | "lt" | "lte" } | null,

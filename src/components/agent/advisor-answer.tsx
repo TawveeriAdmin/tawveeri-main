@@ -9,7 +9,7 @@ import {
 import { useTranslations } from '@/lib/simple-intl-provider';
 import { Price } from '@/components/ui/price';
 import {
-  comparisonBadge, costLines, exitHref, hasTotalBeyondUnit, recTitle,
+  comparisonBadge, secondaryCostLines, exitHref, recTitle,
   verdictTone, verdictText, choiceReasons, discountLine, alternativeLabel, evidenceGroups,
   alternativePriceLine, sizeMismatchCopy,
   type AdvisorRecommendation, type AdvisorResponse, type Locale,
@@ -343,16 +343,23 @@ function TrustBadge({ rec, loc }: { rec: AdvisorRecommendation; loc: Locale }) {
   );
 }
 
+/**
+ * Founder product decision (AC price-hierarchy audit, 2026-09-08): the shopper came to
+ * compare the PURCHASE PRICE — that stays the permanent headline. Installation/electricity
+ * are a secondary, clearly-labelled decision insight, never combined into one number that
+ * could read as what the shopper needs to pay today. See `secondaryCostLines()`'s own doc
+ * for the measured defect this replaces (an AC pick headlined «التكلفة الإجمالية التقديرية
+ * 3,819 ريال» for a 1,749 SAR device).
+ */
 function CostBlock({ rec, loc, t }: { rec: AdvisorRecommendation; loc: Locale; t: TFn }) {
-  const lines = costLines(rec, loc);
-  const showTotal = hasTotalBeyondUnit(rec);
+  const secondary = secondaryCostLines(rec, loc);
   return (
     <div className="text-end">
-      <div className="text-[11px] text-on-surface-variant">{showTotal ? t('agent.totalCost') : t('agent.unitPrice')}</div>
-      <Price amount={(showTotal ? rec.total_cost_estimate : rec.unit_price) ?? 0} className="text-xl font-bold text-primary-700 dark:text-primary-300" />
-      {showTotal && lines.length > 1 && (
+      <div className="text-[11px] text-on-surface-variant">{t('agent.unitPrice')}</div>
+      <Price amount={rec.unit_price ?? 0} className="text-xl font-bold text-primary-700 dark:text-primary-300" />
+      {secondary.length > 0 && (
         <ul className="mt-1 space-y-0.5 text-[11px] text-on-surface-variant">
-          {lines.map((l, i) => (
+          {secondary.map((l, i) => (
             <li key={i} className="flex items-center justify-end gap-1">
               <span>{l.label}</span><span className="tabular-nums">{Math.round(l.amount).toLocaleString(loc === 'ar' ? 'ar-SA' : 'en-US')}</span>
             </li>

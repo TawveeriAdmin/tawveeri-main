@@ -5,7 +5,7 @@
  */
 import {
   categoryLabel, priorityLabel, recTitle, comparisonBadge, costLines,
-  hasTotalBeyondUnit, parsedSummary, parsedConstraintChips, exitHref, verdictTone, verdictText, choiceReasons, discountLine,
+  hasTotalBeyondUnit, secondaryCostLines, parsedSummary, parsedConstraintChips, exitHref, verdictTone, verdictText, choiceReasons, discountLine,
   alternativePriceLine, sizeMismatchCopy,
   type AdvisorRecommendation, type PriceIntel,
 } from "../../src/lib/agent/advisor-api";
@@ -121,6 +121,28 @@ describe("costLines — only engine-supplied, non-zero parts", () => {
   it("hasTotalBeyondUnit is true only when total exceeds unit", () => {
     expect(hasTotalBeyondUnit(rec())).toBe(true);
     expect(hasTotalBeyondUnit(rec({ total_cost_estimate: 2000, unit_price: 2000 }))).toBe(false);
+  });
+});
+
+describe("secondaryCostLines — the purchase price is ALWAYS the headline (founder decision, 2026-09-08)", () => {
+  // MEASURED DEFECT this pins the fix for: an AC recommendation for a 1,749 SAR device with a
+  // 2,070 SAR estimated annual-electricity cost rendered «التكلفة الإجمالية التقديرية 3,819
+  // ريال» as the PRIMARY, headline price — a shopper could reasonably read that as what they
+  // need to pay to buy the product. `CostBlock` (advisor-answer.tsx) now always headlines
+  // `rec.unit_price` and uses ONLY this helper for the secondary line(s); it must never
+  // include the unit price itself, only installation/electricity.
+  it("never includes the unit price — only installation/electricity", () => {
+    const lines = secondaryCostLines(rec(), "ar");
+    expect(lines.map((l) => l.amount)).toEqual([350, 360]);
+    expect(lines.some((l) => l.amount === 2000)).toBe(false);
+  });
+  it("is empty when there is no installation/electricity estimate (e.g. small appliance)", () => {
+    const lines = secondaryCostLines(rec({ cost_breakdown: { unit: 120, installation: null, annual_electricity: 0 } }), "en");
+    expect(lines).toHaveLength(0);
+  });
+  it("labels each line as an estimate, in both locales", () => {
+    expect(secondaryCostLines(rec(), "ar").map((l) => l.label)).toEqual(["تركيب (تقديري)", "كهرباء سنوية (تقديري)"]);
+    expect(secondaryCostLines(rec(), "en").map((l) => l.label)).toEqual(["Est. installation", "Est. annual electricity"]);
   });
 });
 
