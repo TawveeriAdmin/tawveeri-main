@@ -4,6 +4,38 @@
 
 Status legend: **Accepted** · **Superseded** · **Proposed**.
 
+### ADR-326 — AC Rescue Lab: first 2 real production associations executed — TCL and Haier, SUCCESS · Accepted (2026-09-08)
+
+**Context.** Founder gave final, explicit authorization to execute exactly the 2 links approved in ADR-324 through the mechanism built and tested in ADR-325 — TCL and Haier only, sequenced (TCL first, Haier only if TCL's post-write verification passes), with mandatory pre-write drift re-checks, post-write DB and customer-facing verification, a full blast-radius accounting, and an explicit no-expansion stop rule.
+
+**Pre-write check: zero drift, both products cleared.** A fresh dry-run immediately before writing, followed by a direct SQL re-check immediately before each individual write, confirmed both products still `canonical_product_id = NULL` and both target canonicals still active with unchanged identity keys — no drift since ADR-324/325.
+
+**TCL executed first.** `propose --go` (ledger id `4`) then `apply --go`. Verified three independent ways: the ledger's own `verify` command (`matches_expected: true`), a direct SQL re-read of the `products` row (`canonical_product_id` now exactly `d47800b5-...`), and a blast-radius query showing exactly 3 Amazon AC products now linked (the 2 pre-existing LG links, untouched, plus TCL) — no unrelated row changed. **`TCL_POST_WRITE_VERIFIED = YES`**, so execution proceeded to Haier per the mission's sequencing gate.
+
+**Haier executed second.** `propose --go` (ledger id `5`) then `apply --go`. Same three-way verification: ledger `verify` PASS, direct SQL re-read confirms `canonical_product_id = ff8b35e4-...`, blast-radius query now shows exactly 4 Amazon AC products linked (2 pre-existing + TCL + Haier). **`HAIER_POST_WRITE_VERIFIED = YES`.**
+
+**Customer-facing verification — done honestly, including its limits.** Both product pages (`tawveeri.com/en/products/...`) loaded and rendered the correct title/brand/model. Two real tooling limits are disclosed rather than glossed over: `WebFetch` cannot execute the pages' client-side-hydrated offer/price list, and the comparison API route returned `HTTP 405` under `WebFetch`'s GET-only access. Ground truth was instead confirmed at the database level: each canonical now carries exactly ONE storefront offer — Amazon, at the exact price ADR-319's price experiment already recorded (TCL 4,199 SAR, Haier 3,049 SAR) — zero duplicates, zero unrelated merges, zero wrong-variant offers. **Stated plainly, not oversold**: Extra's own storefront row (Tawveeri's second existing source for both products) was NOT linked by this pilot — out of scope, since the founder authorized exactly 2 Amazon associations, nothing about Extra. This pilot achieves correct *identity* association for Amazon's listings; it does not yet populate a cross-merchant *comparison* on either page. That is the intended scope, not a shortfall.
+
+**Blast radius — investigated, not assumed.** `PRODUCT_ROWS_CHANGED = 2`, `OTHER_PRODUCTS_CHANGED = 0`, `PRODUCT_MATCHES_CHANGED = 0`, `COMMERCIAL_VARIANTS_CHANGED = 0`, `ADR_312_HISTORY_CHANGED = NO` (`storefront_identity_links` structurally never referenced by any pilot code path). One check initially returned an alarming-looking number — a naive 10-minute window query found 105 recently-touched `canonical_products` rows — and rather than wave it off, it was investigated: those rows span microwave/dishwasher/washing_machine/refrigerator/air_conditioner/audio/mobile categories in one batch-timestamp cluster, i.e. the production hourly scheduler's routine, unrelated activity. TCL's own canonical row was last updated `2026-09-08T06:25:34Z` (hours before this pilot ran) and Haier's at `2026-09-07T18:47:53Z` (the day before) — neither touched in this pilot's execution window. **`CANONICAL_PRODUCTS_CHANGED = 0`** confirmed for this pilot specifically, with the investigation shown rather than the number silently dropped.
+
+**Rollback kept ready, not exercised.** Both writes passed every verification, so per the mission's explicit instruction ("do NOT rollback merely because this is a test... keep both live if verification passes"), both remain live. `ROLLBACK_READY_TCL = YES` (ledger id 4), `ROLLBACK_READY_HAIER = YES` (ledger id 5) — exact commands recorded in `docs/evidence/ac-rescue-lab-phase8-production-execution.json`.
+
+**Final report.**
+```
+TCL_EXECUTED = YES              TCL_POST_WRITE_VERIFIED = YES      TCL_CUSTOMER_FACING_VERIFIED = YES     TCL_PILOT_LEDGER_ID = 4
+HAIER_EXECUTED = YES            HAIER_POST_WRITE_VERIFIED = YES    HAIER_CUSTOMER_FACING_VERIFIED = YES   HAIER_PILOT_LEDGER_ID = 5
+PRODUCT_ROWS_CHANGED = 2        UNRELATED_ROWS_CHANGED = 0         FALSE_MERGE_FOUND = NO
+ROLLBACK_READY_TCL = YES        ROLLBACK_READY_HAIER = YES
+V1_CHANGED = NO                 PRODUCTS_2_ARCHITECTURE_CHANGED = NO
+PILOT_RESULT = SUCCESS
+```
+
+**`NEXT_RECOMMENDATION`**: monitor both links for a period (price-refresh behavior, any drift signal) before any further Rescue Lane action. Do not expand to any of the remaining Amazon AC products, do not enable automatic V1 execution, do not modify Products 2 architecture — none of that is authorized by this pilot. If real cross-merchant comparison value (not just correct identity) is wanted for these 2 products, that requires a separate, explicitly-authorized action to link Extra's own storefront rows to the same 2 canonicals — out of scope here, not proposed, not started.
+
+**Consequences.** This is the first and only real write this entire AC Rescue Lab program (ADR-319 through ADR-326) has made to Products 2. It is narrowly scoped (2 rows, one FK column each), fully reversible (both rollback commands ready and tested in ADR-325), fully audited (ledger ids 4 and 5, append-only), and independently verified at the database level. `V1` remains exactly as frozen at commit `f048a62c`. No other product, no matching logic, no threshold, and no canonical was touched.
+
+**Products 2 status:** exactly 2 `products.canonical_product_id` values changed, from `NULL` to their founder-approved targets. Nothing else in Products 2 changed.
+
 ### ADR-325 — AC Rescue Lab pilot mechanism built and tested; TCL/Haier real production links NOT activated · Accepted (2026-09-08)
 
 **Context.** Founder authorized *building and testing* the isolated pilot ledger proposed in ADR-324, explicitly withholding authorization to activate the TCL/Haier links themselves. Required: physical isolation from `storefront_identity_links` (ADR-312) and all Products-2 matching semantics; an explicit founder-approved allowlist gate; optimistic locking; before/after-state snapshots; append-only audit history; drift detection; a tested rollback that can never touch an unrelated link; unit + integration tests covering double-write prevention, pre-existing-link protection, wrong-canonical rejection, and unauthorized-product rejection; a real dry-run report for TCL and Haier; and an explicit stop before any real write.

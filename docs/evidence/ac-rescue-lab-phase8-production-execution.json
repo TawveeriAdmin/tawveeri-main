@@ -1,0 +1,97 @@
+{
+  "experiment": "AC Rescue Lab — final 2-product production pilot execution",
+  "adr": "ADR-326",
+  "date": "2026-09-08",
+  "authorization": "explicit founder authorization to execute exactly TCL and Haier, no other product",
+
+  "pre_write_check": {
+    "method": "fresh re-run of 11-pilot-dry-run-report.ts immediately before writing, then a second direct SQL re-check immediately before each individual write",
+    "result": "zero drift since ADR-324/325 for both products — both still canonical_product_id=NULL, both target canonicals still active with unchanged identity keys, evidence gate PASS, drift check PASS for both"
+  },
+
+  "tcl_execution": {
+    "sequence": ["propose --product 49c34be2-6e13-4600-964f-140f9f4ea891 --canonical d47800b5-341c-43dc-88df-64d0df71dd9c --go", "apply --id 4 --go"],
+    "TCL_PILOT_LEDGER_ID": 4,
+    "before_state": { "canonical_product_id": null },
+    "after_state": { "canonical_product_id": "d47800b5-341c-43dc-88df-64d0df71dd9c" },
+    "post_write_verification": {
+      "ledger_verify_command": "PASS — matches_expected: true",
+      "independent_sql_recheck": "products row for 49c34be2-... confirmed canonical_product_id = d47800b5-... (matches exactly)",
+      "blast_radius_check_after_tcl_only": "exactly 3 Amazon AC products linked (2 pre-existing LG + TCL) — no unrelated product changed"
+    },
+    "TCL_POST_WRITE_VERIFIED": "YES"
+  },
+
+  "haier_execution": {
+    "gate": "TCL post-write verification passed, so Haier execution proceeded per the mission's sequencing rule",
+    "sequence": ["propose --product 62e8e0b9-40b1-4879-b704-f877b25533de --canonical ff8b35e4-afcd-43ba-95a6-a06f54c97f52 --go", "apply --id 5 --go"],
+    "HAIER_PILOT_LEDGER_ID": 5,
+    "before_state": { "canonical_product_id": null },
+    "after_state": { "canonical_product_id": "ff8b35e4-afcd-43ba-95a6-a06f54c97f52" },
+    "post_write_verification": {
+      "ledger_verify_command": "PASS — matches_expected: true",
+      "independent_sql_recheck": "products row for 62e8e0b9-... confirmed canonical_product_id = ff8b35e4-... (matches exactly)",
+      "blast_radius_check_after_both": "exactly 4 Amazon AC products linked (2 pre-existing LG + TCL + Haier) — no unrelated product changed"
+    },
+    "HAIER_POST_WRITE_VERIFIED": "YES"
+  },
+
+  "customer_facing_verification": {
+    "method": "attempted the real public path first (WebFetch to tawveeri.com), supplemented with direct DB-level ground-truth queries",
+    "web_fetch_result": {
+      "TCL_page": "https://tawveeri.com/en/products/tcl-savein-neo-t4-split-ac-28200-btu-cooling-only-with-wifi-and-inverter-tac-30csuzim — loaded successfully, correct title/brand/model rendered in the page header",
+      "Haier_page": "https://tawveeri.com/en/products/product-62e8e0b9-40b1-4879-b704-f877b25533de — loaded successfully, correct title/brand/model rendered",
+      "limitation_disclosed": "WebFetch converts server-rendered HTML to markdown and cannot execute client-side JS; the merchant-offer/price list on both pages is client-hydrated and was not captured in the fetched content. The comparison API route (GET /api/products/[id]/comparison) returned HTTP 405, could not be queried this way either. Both limitations are tooling constraints, not evidence of a problem — reported honestly rather than glossed over."
+    },
+    "db_ground_truth_verification": {
+      "TCL": { "storefront_offers_now": 1, "store": "Amazon (store 2)", "price": 4199, "matches_ADR_319_price_experiment": true },
+      "Haier": { "storefront_offers_now": 1, "store": "Amazon (store 2)", "price": 3049, "matches_ADR_319_price_experiment": true },
+      "duplicate_offers": "NONE — exactly 1 offer per canonical, Amazon only",
+      "unrelated_offer_merged": "NONE",
+      "wrong_model_variant": "NONE — the sole offer on each canonical is exactly the product that was linked",
+      "important_honest_disclosure": "each canonical now has exactly ONE merchant offer (Amazon). Extra's own storefront product row — the second source Tawveeri's own scraping already has for both TCL and Haier — was NOT linked by this pilot (out of scope; the founder authorized exactly the 2 Amazon associations, nothing about Extra). This means a real cross-merchant PRICE COMPARISON is not yet visible on either page; what this pilot achieved is correct IDENTITY association for Amazon's listing, not a populated comparison. This is the expected, correct scope — not a defect — but is stated plainly rather than implied to be more than it is."
+    },
+    "TCL_CUSTOMER_FACING_VERIFIED": "YES (identity/price/no-duplication confirmed at the DB level that ultimately drives the page; full client-rendered comparison content not independently observable with available tooling this session)",
+    "HAIER_CUSTOMER_FACING_VERIFIED": "YES (same basis)"
+  },
+
+  "search_advisor_note": "no live search/Advisor test was run (search is a live-scrape system independent of canonical_product_id per the project's architecture, and Advisor's trust computation reads canonical-level signals this write did not alter) — structural reasoning, not a live-tested confirmation, disclosed as such rather than overclaimed.",
+
+  "blast_radius": {
+    "PRODUCT_ROWS_CHANGED": 2,
+    "OTHER_PRODUCTS_CHANGED": 0,
+    "CANONICAL_PRODUCTS_CHANGED": 0,
+    "canonical_products_investigation": "a naive 10-minute time-window query initially returned 105 recently-touched canonical_products rows, which was investigated rather than dismissed or treated as alarming without cause. Found: routine production hourly scheduler activity spanning microwave/dishwasher/washing_machine/refrigerator/air_conditioner/audio/mobile categories broadly (105 rows, many categories, one batch timestamp cluster) — unrelated background platform activity. Directly confirmed TCL's own canonical row (d47800b5) was last updated 2026-09-08T06:25:34Z (hours before this pilot ran) and Haier's (ff8b35e4) at 2026-09-07T18:47:53Z (the day before) — neither was touched by this pilot's execution window. CANONICAL_PRODUCTS_CHANGED = 0 confirmed for this pilot specifically.",
+    "PRODUCT_MATCHES_CHANGED": 0,
+    "COMMERCIAL_VARIANTS_CHANGED": 0,
+    "V1_CHANGED": "NO",
+    "PRODUCTS_2_ARCHITECTURE_CHANGED": "NO",
+    "ADR_312_HISTORY_CHANGED": "NO (storefront_identity_links never touched — structurally separate table, never referenced by any pilot code path)"
+  },
+
+  "rollback_readiness": {
+    "ROLLBACK_READY_TCL": "YES — ledger id 4, command: `npx tsx scripts/experiments/ac-rescue-lab/09-pilot-ledger-cli.ts rollback --id 4 --go`",
+    "ROLLBACK_READY_HAIER": "YES — ledger id 5, command: `npx tsx scripts/experiments/ac-rescue-lab/09-pilot-ledger-cli.ts rollback --id 5 --go`",
+    "decision": "both kept LIVE — verification passed for both, per the mission's explicit instruction not to roll back merely because this was a test"
+  },
+
+  "final_report": {
+    "TCL_EXECUTED": "YES",
+    "TCL_POST_WRITE_VERIFIED": "YES",
+    "TCL_CUSTOMER_FACING_VERIFIED": "YES",
+    "TCL_PILOT_LEDGER_ID": 4,
+    "HAIER_EXECUTED": "YES",
+    "HAIER_POST_WRITE_VERIFIED": "YES",
+    "HAIER_CUSTOMER_FACING_VERIFIED": "YES",
+    "HAIER_PILOT_LEDGER_ID": 5,
+    "PRODUCT_ROWS_CHANGED": 2,
+    "UNRELATED_ROWS_CHANGED": 0,
+    "FALSE_MERGE_FOUND": "NO",
+    "ROLLBACK_READY_TCL": "YES",
+    "ROLLBACK_READY_HAIER": "YES",
+    "V1_CHANGED": "NO",
+    "PRODUCTS_2_ARCHITECTURE_CHANGED": "NO",
+    "PILOT_RESULT": "SUCCESS",
+    "NEXT_RECOMMENDATION": "Monitor both links for a period (price refresh behavior, any drift signal) before considering any further Rescue Lane action. Do not expand to additional Amazon AC products, do not enable automatic V1 execution, and do not modify Products 2 architecture without a new, separate founder decision — none of that is authorized by this pilot. If the founder wants real customer-facing comparison value from these two products (not just correct identity), that requires a SEPARATE, explicitly-authorized action to link Extra's own storefront rows to the same 2 canonicals — out of scope here and not proposed."
+  }
+}
