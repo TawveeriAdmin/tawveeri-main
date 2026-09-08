@@ -6,6 +6,28 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-312 — Storefront identity projection: first live execution (Amazon pilot, 12 links, verified), and proof that AC's remaining gap is an upstream identity-confidence problem, not a projection or ambiguity one · Accepted (2026-09-08)
+
+**Context.** Founder authorization, same day as ADR-311: execute the proven fix, step by step, without harming the platform or other merchants — explicit guardrails given: prove root cause first, confirm TPS already holds correct identity before writing anything, never create new identities, never touch matching/normalization/canonical semantics to solve a projection problem, determine the exact affected population, dry-run first with full expected-outcome visibility, test a very small reversible sample before any expansion, preserve rollback, never mass-link ambiguous products, and re-check other merchants/categories after every stage. Every step below follows that sequence in order.
+
+**Step 1 — dry run, Amazon only (`--stores 2`).** 184 clean (R1/R2-passing) candidates; 11 rejected by the script's own negative-evidence vetoes (R11-R17 — storage, params, suffix, device-class, word-numeral, brand, accessory contradictions); 161 `low_confidence_candidate`; **12 `valid`**. Zero of the 12 were `air_conditioner`.
+
+**Step 2 — human precision audit** (`--audit-sample 12`, still dry). All 12 reviewed by name against their canonical: 10 tablet, 1 accessories→tablet, 1 refrigerator. One minor labeling variance noted (DANSAT 83L listing → a canonical named "80L") — traced to a pre-existing TPS-side rounding/labeling classification, not something this projection step introduces; the same listing already carries that classification everywhere else it's used.
+
+**Step 3 — write, still Amazon-only** (`--stores 2 --go`). **Wrote 12 links, 0 skipped.** One unrelated, pre-existing link was independently flagged `drift` by the script's own R8 check (its evidence had changed since it was written) and correctly left unmodified — proof the drift-protection guard is live, not just documented.
+
+**Step 4 — verification, read-only.** All 12 `products.canonical_product_id` confirmed populated. **Zero writes outside `store_id=2`** (checked directly against the ledger). Amazon per-category counts moved by exactly the expected amounts (tablet 35→45, accessories 1→2, appliance 60→61) and by nothing else. `air_conditioner` unchanged at 2/268 — confirms the pilot did not touch it, honestly.
+
+**Step 5 — read-only diagnostic (no `--go`) to explain the AC gap** (`--stores 2 --include-low-confidence --audit-sample 20`). Found the missing piece: **147 `air_conditioner` candidates exist with matching TPS evidence** — the population is there — but every one sits at `low_confidence_candidate` tier, not `valid`. Sampled identity keys are heavy with placeholders — `koolen|window|NO_SERIES|24000|NO_TECH|NO_MODE`, `unknown|split|NO_SERIES|22000|NO_TECH|cool_only` — because many of the newly-discovered (2026-09-07 discover-firecrawl backlog) listing titles are too generic to extract cooling-technology, series, or mode confidently. **Not written.** The script's own header reserves `--include-low-confidence` for "a later, audited pass," and the founder's live guardrail this session ("unknown or conflicting identity must remain unlinked rather than be guessed") independently confirms the identical stop condition from a different direction.
+
+**Conclusion.** AC's remaining gap is neither a projection defect (ADR-311) nor primarily an ambiguity/conflict problem (R1/R2 pass most candidates) — it is an **identity-key confidence gap upstream in normalization/title-extraction.** Closing it means improving how AC titles are parsed into identity-key fields — a matching/normalization-quality change, not a projection one. That is explicitly the class of change the founder's guardrail says to stop and return for, rather than execute under this authorization. **Not attempted.** Reported instead, per instruction.
+
+**Blast radius, confirmed.** Exactly 12 `products.canonical_product_id` rows changed, all `store_id=2`, all previously `NULL`, all reversible via `npx tsx scripts/tps-core/project-storefront-identity.ts --rollback --go`. Zero other stores touched, zero already-linked products touched, zero AC products touched. Full sequence and evidence: `docs/evidence/storefront-projection-pilot-2026-09-08.json`.
+
+**Products 2 status.** One narrow, audited, reversible write performed under explicit founder authorization (12 rows, Amazon-only, additive-only per R3, full provenance in `storefront_identity_links`). No canonical identity was created or re-decided; no matching rule, normalization semantic, or Commercial Variant logic was touched. The deeper AC identity-confidence fix identified in Step 5 was correctly NOT executed and awaits a separate founder decision.
+
+---
+
 ### ADR-311 — Correcting ADR-310: the 268 unlinked Amazon AC products are not an unprocessed backlog — normalization already succeeded, and the gap is a storefront-identity-projection lag affecting Amazon's entire catalog, not AC specifically · Accepted (2026-09-08)
 
 **Context.** Founder question, same day as ADR-310: *"is the 268 a normal backlog waiting for the usual pipeline, or a real defect blocking linkage? Don't touch Products 2."* Re-investigated read-only, no code run beyond SQL `SELECT`s.
