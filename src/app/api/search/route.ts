@@ -347,7 +347,17 @@ const ACCESSORY_HINTS_EN = ['accessory', 'accessories', 'cover', 'mount', 'holde
   // coffee servingware / warmers (not a coffee MAKER)
   'cup heater', 'cup warmer', 'mug warmer', 'coffee server', 'carafe',
   // carrying goods that keyword-match the device they carry
-  'bag', 'sleeve', 'backpack', 'briefcase', 'messenger', 'pouch'];
+  'bag', 'sleeve', 'backpack', 'briefcase', 'messenger', 'pouch',
+  // MEASURED LIVE (2026-09-08, founder shopper-experience audit): "مكيف لغرفة 30 متر هادئ
+  // تحت 4000" surfaced "SPECTRA, 1G AC Switch, 45A, 7X7 CM, White" (an electrical wall
+  // switch, not an air conditioner) ahead of several genuine ACs in the general results
+  // grid. `hasAccessoryHint` already has the Arabic equivalent ('مفتاح', line ~329 in
+  // ACCESSORY_HINTS_AR) but the SPECTRA titles are Latin-script only, so that hint never
+  // matched. "ac switch" as a whole-phrase hint (word-boundary matched, see
+  // ACCESSORY_HINTS_EN_RE below) catches exactly this electrical-fixture naming without
+  // touching a bare "switch" (which would false-positive "Nintendo Switch", "network
+  // switch", "smart switch" — none of which are AC accessories).
+  'ac switch'];
 
 // MEASURED DEFECT (2026-08-20, founder taxonomy audit continued — «طباخ كهربائي» coverage
 // gap): `ACCESSORY_HINTS_EN` was matched with a bare `.includes(h)` substring check at every

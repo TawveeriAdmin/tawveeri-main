@@ -668,6 +668,50 @@ describe("excludeIneligibleCandidates — needShapedWithCategory turns a 100%-ju
 });
 
 /**
+ * LIVE PRODUCTION REPRODUCTION (2026-09-08, founder shopper-experience audit): "مكيف لغرفة 30
+ * متر هادئ تحت 4000" — a sentence-shaped query — surfaced "SPECTRA, 1G AC Switch, 45A, 7X7 CM,
+ * White" as the FIRST item in the general results grid, ahead of several genuine ACs, despite
+ * the grid's own stated sort contract ("...والإكسسوارات في الآخر" — accessories last). Root
+ * cause: production's `canonical_products`/`products` rows for this SKU have BOTH `name_ar`
+ * AND `name_en` populated with the identical Latin-script text (verified via a direct
+ * read-only production query) — unlike the `junkAcSwitches` fixture above, which only
+ * populates `name_ar` and leaves `name_en: null`. `hasAccessoryHint`'s Arabic list already has
+ * 'مفتاح' (switch), but that never matches a Latin-script `name_ar`; the English list had no
+ * "switch" term at all, so the real `name_en` field went unchecked too. Fixed by adding a
+ * precise whole-phrase "ac switch" hint to `ACCESSORY_HINTS_EN` (word-boundary matched, so it
+ * cannot collide with "Nintendo Switch"/"network switch"/"smart switch").
+ */
+describe("ACCESSORY_HINTS_EN 'ac switch' — the real production data shape (both name_ar and name_en populated)", () => {
+  const spectraRealShape = {
+    name_ar: "SPECTRA 1G AC Switch 45A 7X7 CM White",
+    name_en: "SPECTRA, 1G AC Switch, 45A, 7X7 CM, White",
+    best_price: 19,
+  };
+  const realAc = { name_ar: "مكيف زاميل سبليت 18000 وحدة بارد فقط", name_en: "Zamil Split AC 18000 BTU Cool Only", best_price: 630 };
+  const nintendoSwitch = { name_ar: "نينتندو سويتش OLED", name_en: "Nintendo Switch OLED Model", best_price: 1400 };
+  const smartSwitch = { name_ar: "مفتاح إضاءة ذكي واي فاي", name_en: "Smart Wi-Fi Light Switch", best_price: 45 };
+
+  it("excludes the AC-switch fixture entirely (the actual production data shape) as an accessory, not just via the AC-signal check", () => {
+    const result = excludeIneligibleCandidates([spectraRealShape, realAc]);
+    const names = result.map((r) => r.name_en);
+    expect(names).not.toContain(spectraRealShape.name_en);
+    expect(names).toContain(realAc.name_en);
+  });
+
+  it("does not collide with an unrelated 'Switch' product ('Nintendo Switch') — word-boundary phrase match, not a bare 'switch' hint", () => {
+    const result = excludeIneligibleCandidates([nintendoSwitch, spectraRealShape]);
+    const names = result.map((r) => r.name_en);
+    expect(names).toContain(nintendoSwitch.name_en);
+  });
+
+  it("does not collide with a genuine 'Smart Switch' (light switch) product", () => {
+    const result = excludeIneligibleCandidates([smartSwitch, spectraRealShape]);
+    const names = result.map((r) => r.name_en);
+    expect(names).toContain(smartSwitch.name_en);
+  });
+});
+
+/**
  * FOUNDER TAXONOMY AUDIT, TRACK 1 (2026-08-19) — a freestanding cooker/range («فرن» + a burner
  * count, e.g. «5 عيون»/«5 شعلات») is a PHYSICALLY DIFFERENT product from a bare oven cavity
  * (built-in or countertop), confirmed with zero counterexamples across a 5-source retailer study
