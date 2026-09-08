@@ -10,6 +10,7 @@ import {
   COMMERCIAL_BASELINE, computeCampaignAttribution,
   type Period, type DateRange,
 } from './command-center-queries';
+import { isProbableAutomatedRedirect } from '@/lib/analytics/bot-detection';
 
 export interface RetailerOption { slug: string; storeId: number; displayName: string; displayNameAr: string; hasAffiliateProgram: boolean }
 
@@ -32,6 +33,11 @@ export interface RetailerReport {
   qualifiedSessions: number;
   confirmedRedirects: number;
   totalOutboundClicks: number;
+  // Market Proof mission, 2026-09-08: rows matching isProbableAutomatedRedirect() (no
+  // session_id on a row written after session tracking went live) are excluded from every
+  // figure above AND from topProducts/topCategories/dailyTrend — this field is how many were
+  // excluded, so the exclusion is visible, not silent. Raw rows are untouched in the database.
+  probableAutomatedRedirectsExcluded: number;
   uniqueProducts: number;
   topProducts: Array<{ id: string; nameAr: string; nameEn: string; count: number }>;
   topCategories: Array<{ category: string; count: number }>;
@@ -72,7 +78,9 @@ export async function getRetailerReport(
 
   const realEvents = events.filter((e) => !e.is_test);
   const storeKey = String(storeId);
-  const retailerRows = outboundRows.filter((r) => !r.is_test && r.store_name === storeKey);
+  const retailerRowsBeforeAutomationFilter = outboundRows.filter((r) => !r.is_test && r.store_name === storeKey);
+  const retailerRows = retailerRowsBeforeAutomationFilter.filter((r) => !isProbableAutomatedRedirect(r));
+  const probableAutomatedRedirectsExcluded = retailerRowsBeforeAutomationFilter.length - retailerRows.length;
 
   const productIds = Array.from(new Set(retailerRows.map((r) => r.canonical_product_id).filter((x): x is string => Boolean(x))));
   const [categories, names] = await Promise.all([categoriesForProducts(productIds), namesForProducts(productIds)]);
@@ -138,6 +146,9 @@ export async function getRetailerReport(
     // buildRetailerNarrative and the on-screen headline card).
     'Recorded retailer redirects count /go requests only (server-recorded, operational evidence — not proof of customer interaction); some legacy storefront exits are not routed through /go and are not included here.',
     'No order, shipment, or commission data is included — this report contains no affiliate-network-reported figures.',
+    probableAutomatedRedirectsExcluded > 0
+      ? `${probableAutomatedRedirectsExcluded} additional redirect row(s) in this window were excluded as probable automated traffic (no session identity on a row written after session tracking went live, 2026-08-13T09:08:15Z) — see docs/DECISIONS.md ADR for the 2026-09-08 root-cause investigation (src/lib/analytics/bot-detection.ts, isProbableAutomatedRedirect). The excluded rows remain in the database untouched; this report simply does not count them.`
+      : 'No rows in this window matched the probable-automated-redirect pattern found 2026-09-08 (isProbableAutomatedRedirect).',
   ];
 
   return {
@@ -147,6 +158,7 @@ export async function getRetailerReport(
     qualifiedSessions: qualifiedSessionIds.size,
     confirmedRedirects: retailerRows.length,
     totalOutboundClicks: retailerRows.length,
+    probableAutomatedRedirectsExcluded,
     uniqueProducts: productIds.length,
     topProducts,
     topCategories,

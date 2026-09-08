@@ -113,6 +113,13 @@ export default async function RetailerReportPage({
               {isRTL ? 'حجم العينة' : 'Sample size'}: {report.sampleSize} {isRTL ? 'نقرة خروج' : 'redirects'}
               {report.sampleSize < 30 && <span className="ms-2 font-black text-amber-600 dark:text-amber-400">{isRTL ? 'إشارة مبكرة' : 'EARLY SIGNAL'}</span>}
             </p>
+            {report.probableAutomatedRedirectsExcluded > 0 && (
+              <p className="mt-1 text-xs text-on-surface-variant dark:text-white/40">
+                {isRTL
+                  ? `تم استبعاد ${report.probableAutomatedRedirectsExcluded} نقرة إضافية يُرجَّح أنها آلية (بدون هوية جلسة) من كل الأرقام أعلاه — السجل الخام لم يُحذف.`
+                  : `${report.probableAutomatedRedirectsExcluded} additional probable-automated redirect(s) were excluded from every figure above (no session identity) — raw rows were not deleted.`}
+              </p>
+            )}
           </Card>
 
           <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">

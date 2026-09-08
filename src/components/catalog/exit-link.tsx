@@ -27,7 +27,13 @@ export function ExitLink({
     <a
       href={href}
       target="_blank"
-      rel="noopener noreferrer"
+      // Market Proof mission, 2026-09-08: nofollow added — a compliant crawler that respects
+      // rel (distinct from robots.txt's own pre-existing `Disallow: /go/`) will not fetch this
+      // href. Purely defense-in-depth: does not change what a real click does (onClick still
+      // intercepts and opens the same, now-attributed URL) and does not stop a client that
+      // ignores both robots.txt and rel — see isProbableAutomatedRedirect() for how that
+      // remaining traffic is kept out of commercial-facing counts without deleting anything.
+      rel="nofollow noopener noreferrer"
       className={className}
       onClick={(e) => {
         track('go_click', { canonical_id: canonicalId, store, source: surface, meta: { measured: true } });

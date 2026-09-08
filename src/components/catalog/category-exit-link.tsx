@@ -29,7 +29,8 @@ export function CategoryExitLink({
     <a
       href={href}
       target="_blank"
-      rel="noopener noreferrer"
+      // Market Proof mission, 2026-09-08 — see exit-link.tsx's identical comment.
+      rel="nofollow noopener noreferrer"
       className={className}
       onClick={(e) => {
         track('category_go_click', {

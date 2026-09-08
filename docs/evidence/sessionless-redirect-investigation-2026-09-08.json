@@ -1,0 +1,109 @@
+{
+  "investigation": "Sessionless outbound_clicks contamination — root cause",
+  "mission": "TAWVEERI 1.0 — MARKET PROOF EXECUTION",
+  "date": "2026-09-08",
+  "method": "Read-only SQL against production (vyceqrzttspyycdpojtn) via the pooler URL, same pattern as scripts/tps-analysis/measurement-sanity.ts. No writes performed by the investigation itself.",
+  "trigger": "npm run tps:sanity --from=2026-09-01 --to=2026-09-08 reported check #2 (redirect/browse mismatch) and #3 (session_id completeness) as FAIL: 3,683 real outbound_clicks in the window, 3,663 (99%) missing session_id, 6 of 7 days showing redirect volume decoupled from real browsing activity.",
+  "daily_no_session_vs_with_session_last_21_days": [
+    { "day": "2026-08-18", "no_session": 4, "with_session": 6, "test_flagged": 0 },
+    { "day": "2026-08-19", "no_session": 15, "with_session": 26, "test_flagged": 0 },
+    { "day": "2026-08-20", "no_session": 13, "with_session": 14, "test_flagged": 0 },
+    { "day": "2026-08-21", "no_session": 18, "with_session": 20, "test_flagged": 6 },
+    { "day": "2026-08-22", "no_session": 12, "with_session": 7, "test_flagged": 0 },
+    { "day": "2026-08-23", "no_session": 23, "with_session": 18, "test_flagged": 0 },
+    { "day": "2026-08-24", "no_session": 6, "with_session": 14, "test_flagged": 0 },
+    { "day": "2026-08-25", "no_session": 24, "with_session": 10, "test_flagged": 2 },
+    { "day": "2026-08-26", "no_session": 27, "with_session": 9, "test_flagged": 0 },
+    { "day": "2026-08-27", "no_session": 19, "with_session": 18, "test_flagged": 4 },
+    { "day": "2026-08-28", "no_session": 13, "with_session": 14, "test_flagged": 15 },
+    { "day": "2026-08-29", "no_session": 21, "with_session": 2, "test_flagged": 0 },
+    { "day": "2026-08-30", "no_session": 20, "with_session": 5, "test_flagged": 2 },
+    { "day": "2026-08-31", "no_session": 204, "with_session": 4, "test_flagged": 2, "note": "previously known as 'the Aug 31 anomaly' (AUGUST-2026-FOUNDER-REVIEW.md §12)" },
+    { "day": "2026-09-01", "no_session": 981, "with_session": 1, "test_flagged": 0 },
+    { "day": "2026-09-02", "no_session": 1886, "with_session": 1, "test_flagged": 1, "note": "peak day" },
+    { "day": "2026-09-03", "no_session": 188, "with_session": 5, "test_flagged": 17 },
+    { "day": "2026-09-04", "no_session": 339, "with_session": 5, "test_flagged": 18 },
+    { "day": "2026-09-05", "no_session": 93, "with_session": 2, "test_flagged": 68 },
+    { "day": "2026-09-06", "no_session": 51, "with_session": 0, "test_flagged": 39 },
+    { "day": "2026-09-07", "no_session": 35, "with_session": 11, "test_flagged": 47 },
+    { "day": "2026-09-08", "no_session": 24, "with_session": 20, "test_flagged": 19, "note": "partial day at time of query" }
+  ],
+  "earlier_pre_session_tracking_context_2026_07_21_to_2026_08_12": {
+    "note": "session_id did not exist on any row before the instant below; every row in this range has no_session by design, not as a signal of anything. Included only because 2026-08-10 shows an isolated large spike (2487) worth flagging as a possible earlier instance of related traffic, though it cannot be diagnosed with this session-based method.",
+    "notable_days": [
+      { "day": "2026-07-29", "no_session": 363 },
+      { "day": "2026-08-01", "no_session": 358 },
+      { "day": "2026-08-10", "no_session": 2487 }
+    ],
+    "earliest_row_anywhere_with_non_null_session_id": "2026-08-13T09:08:15.290Z"
+  },
+  "no_session_rows_since_2026_09_01_characteristics": {
+    "total_rows": 3597,
+    "distinct_canonical_products": 704,
+    "top_user_agents": [
+      { "count": 456, "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36" },
+      { "count": 445, "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36" },
+      { "count": 441, "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" },
+      { "count": 429, "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36" },
+      { "count": 415, "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36" },
+      { "count": 405, "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36" },
+      { "count": 399, "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 Edg/145.0.0.0" },
+      { "count": 361, "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36 Edg/144.0.0.0" },
+      { "count": 98, "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1" }
+    ],
+    "note_on_uas": "None of these match KNOWN_BOT_UA_PATTERN (bot-detection.ts) — they are current, realistic, diverse browser UAs (Chrome 142-150, Edge, Safari, mobile Safari), which is why UA-based detection cannot catch this traffic class.",
+    "top_referrers": [
+      { "count": 3351, "referrer": "https://tawveeri.com" },
+      { "count": 238, "referrer": null },
+      { "count": 4, "referrer": "https://tawveeri-main-production.up.railway.app/go/bb3aae8f-b72e-47bd-817e-57bce6b8ab24" },
+      { "count": 4, "referrer": "https://tawveeri.com/" }
+    ],
+    "note_on_referrer": "The ExitLink/CategoryExitLink anchors carry rel=\"noopener noreferrer\" and every real click additionally re-opens the URL via window.open(url,'_blank','noopener,noreferrer') — so a genuine click, whether or not its onClick JS runs, should send NO referrer at all. A referrer of the bare origin (no path) is therefore itself evidence AGAINST these being real clicks through this element, not for it: it indicates a client that does not honor rel=noreferrer, i.e. a non-browser HTTP client.",
+    "store_name_breakdown": [
+      { "store_id": "4", "count": 881 }, { "store_id": "3", "count": 862 }, { "store_id": "5", "count": 465 },
+      { "store_id": "9", "count": 313 }, { "store_id": "18", "count": 275 }, { "store_id": "2", "count": 235 },
+      { "store_id": "8", "count": 229 }, { "store_id": "7", "count": 104 }, { "store_id": "1", "count": 103 },
+      { "store_id": "10", "count": 80 }, { "store_id": "جرير", "count": 15 }, { "store_id": "6", "count": 14 },
+      { "store_id": "أمازون", "count": 12 }, { "store_id": "اكسترا", "count": 9 }
+    ],
+    "note_on_store_names": "store_name is stamped as String(resolved.storeId) by src/app/go/[offerId]/route.ts for every /go request — the numeric values above are NOT a bot signature, they are the normal value this route always writes. The small Arabic-named rows come from a separate, older insert path (per category-exit-link.tsx's own comment about a 'plain, zero-JS <a>' still in use on parts of /compare) — not investigated further, out of this mission's scope.",
+    "campaign_source_breakdown": [
+      { "campaign": null, "source": "product_page", "count": 3487 },
+      { "campaign": null, "source": "home_deal", "count": 110 }
+    ],
+    "hour_of_day_riyadh": {
+      "0": 49, "1": 2, "2": 20, "3": 67, "4": 87, "5": 44, "6": 25, "7": 51, "8": 117, "9": 154,
+      "10": 283, "11": 500, "12": 190, "13": 46, "14": 35, "15": 53, "16": 66, "17": 126, "18": 183,
+      "19": 155, "20": 117, "21": 166, "22": 230, "23": 831
+    },
+    "note_on_timing": "Sharp bursts at hour 23 (831) and hour 11 (500), well above neighboring hours — consistent with a scheduled crawl job rather than ambient organic traffic, which would follow a smoother daily usage curve."
+  },
+  "still_active_check": {
+    "queried_at": "2026-09-08T12:08:xx UTC (approx)",
+    "sessionless_rows_last_2_hours": 6,
+    "latest_row_at": "2026-09-08T12:08:34.890Z",
+    "conclusion": "Not fully stopped, but far below the 2026-09-02 peak (1886/day ≈ 78/hour) — has tapered to roughly the same order of magnitude as the pre-spike August baseline, possibly slightly above it."
+  },
+  "august_2026_whole_month_baseline": { "no_session": 864, "with_session": 196 },
+  "root_cause": {
+    "classification": "EXTERNAL — an automated HTTP client (crawler/scraper class, exact identity not determined) directly requesting the /go/[offerId] route.",
+    "mechanism": "src/components/catalog/exit-link.tsx (ExitLink) and src/components/catalog/category-exit-link.tsx (CategoryExitLink) render a real, crawlable <a href=\"/go/<offerId>\"> in server-rendered HTML — kept deliberately for accessibility/no-JS/middle-click support. A real user's click is intercepted by onClick (preventDefault + window.open with tracked session/interaction params). A non-JS HTTP client that simply parses the HTML and follows the raw href bypasses the onClick handler entirely, hitting the route directly with a plain GET — receiving a normal 302 redirect and a normal outbound_clicks row, with none of the client-side session/interaction stamping. This exact failure mode was already predicted in the /go route's own ADR-286 comment ('a crawler, curl, a scraper — no click, no JS, no session required... receives an identically valid token').",
+    "contributing_factor": "robots.txt already disallows /go/ for all user agents, but this traffic does not honor it — either a non-compliant crawler, or a compliant-with-robots.txt-format but not enforcing client (many link-checker/SEO-audit/preview tools use realistic modern UAs specifically to avoid being blocked).",
+    "not_the_cause": "isKnownBotUserAgent()'s existing UA allowlist (bot-detection.ts) — correctly flags its own known signatures (175 rows this window) but this traffic uses realistic, non-matching UAs.",
+    "not_the_cause_2": "store_name being a numeric string — this is the route's own normal, by-design behavior for every request, not evidence of anything unusual on its own."
+  },
+  "fix_applied": {
+    "type": "Non-destructive, read-time classification + reporting exclusion — no historical row deleted or rewritten.",
+    "files": [
+      "src/lib/analytics/bot-detection.ts — added isProbableAutomatedRedirect(row) + SESSION_TRACKING_LIVE_SINCE constant",
+      "src/lib/admin/retailer-report-queries.ts — excludes probable-automated rows from qualifiedSessions/confirmedRedirects/totalOutboundClicks/topProducts/topCategories/dailyTrend; adds probableAutomatedRedirectsExcluded to the report and a matching limitations-array entry",
+      "src/app/[locale]/admin/retailer-report/page.tsx — surfaces the excluded count on-screen",
+      "src/app/api/admin/retailer-report/export/route.ts — surfaces the excluded count in the CSV export",
+      "src/components/catalog/exit-link.tsx, src/components/catalog/category-exit-link.tsx — added rel=\"nofollow\" (defense-in-depth for compliant crawlers; does not stop non-compliant ones)",
+      "tests/analytics/bot-detection.test.ts — new isProbableAutomatedRedirect test cases"
+    ],
+    "boundary": "SESSION_TRACKING_LIVE_SINCE = 2026-08-13T09:08:15Z (the verified-live instant the earliest session_id-populated row exists) — a row with no session_id is only classified as probable-automated if it was written AT OR AFTER this instant, so pre-cutover historical rows (which legitimately have no session_id because the column didn't exist yet) are never misclassified.",
+    "scope": "Applied only to the retailer-facing (merchant-conversation) report, not to the general Command Center funnel/KPIs — narrower scope, lower risk, matches this mission's explicit priority (make merchant-facing evidence defensible). Extending the same classifier to command-center-queries.ts's broader consumers is a reasonable, separate follow-up, not done in this pass.",
+    "not_fixed_this_pass": "The exact identity/operator of the automated client was not determined (no further network-level investigation attempted — out of scope for a read-only DB/code investigation). A full audit of every exit-link rendering surface for the same raw-href pattern (beyond exit-link.tsx and category-exit-link.tsx) was not exhaustively completed."
+  }
+}

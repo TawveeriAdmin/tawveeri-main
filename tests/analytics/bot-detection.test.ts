@@ -3,7 +3,7 @@
 // Positive cases include the exact confirmed bot UA found in the 2026-08-31 anomaly
 // investigation; negative cases are the real browser UAs also observed that same day, to
 // guard against the fix over-flagging genuine customer traffic as TEST.
-import { isKnownBotUserAgent } from "../../src/lib/analytics/bot-detection";
+import { isKnownBotUserAgent, isProbableAutomatedRedirect, SESSION_TRACKING_LIVE_SINCE } from "../../src/lib/analytics/bot-detection";
 
 describe("isKnownBotUserAgent", () => {
   it("flags the exact BuiltWith UA confirmed in the Aug 31 anomaly (previously MISSED)", () => {
@@ -42,5 +42,29 @@ describe("isKnownBotUserAgent", () => {
     expect(isKnownBotUserAgent(null)).toBe(false);
     expect(isKnownBotUserAgent(undefined)).toBe(false);
     expect(isKnownBotUserAgent("")).toBe(false);
+  });
+});
+
+// Market Proof mission, 2026-09-08 — pins the sessionless-redirect classifier this
+// investigation added, and the exact production instant (verified live: the earliest
+// outbound_clicks row anywhere carrying a non-null session_id) that makes it safe to apply.
+describe("isProbableAutomatedRedirect", () => {
+  it("never flags a row before session tracking existed, even with no session_id", () => {
+    expect(isProbableAutomatedRedirect({ session_id: null, clicked_at: "2026-08-01T00:00:00Z" })).toBe(false);
+    expect(isProbableAutomatedRedirect({ session_id: null, clicked_at: "2026-08-13T09:08:14.999Z" })).toBe(false);
+  });
+
+  it("flags a sessionless row at/after the moment session tracking went live", () => {
+    expect(isProbableAutomatedRedirect({ session_id: null, clicked_at: SESSION_TRACKING_LIVE_SINCE.toISOString() })).toBe(true);
+    expect(isProbableAutomatedRedirect({ session_id: null, clicked_at: "2026-09-02T12:00:00Z" })).toBe(true);
+  });
+
+  it("never flags a row that actually carries a session_id, regardless of date", () => {
+    expect(isProbableAutomatedRedirect({ session_id: "abc123", clicked_at: "2026-09-02T12:00:00Z" })).toBe(false);
+    expect(isProbableAutomatedRedirect({ session_id: "abc123", clicked_at: "2026-07-01T00:00:00Z" })).toBe(false);
+  });
+
+  it("treats a missing session_id field the same as null", () => {
+    expect(isProbableAutomatedRedirect({ clicked_at: "2026-09-02T12:00:00Z" })).toBe(true);
   });
 });

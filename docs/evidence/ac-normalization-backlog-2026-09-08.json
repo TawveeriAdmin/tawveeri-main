@@ -1,0 +1,29 @@
+{
+  "investigation": "Amazon AC catalog growth vs. normalization backlog — read-only, no Products 2 write performed",
+  "mission": "TAWVEERI 1.0 — MARKET PROOF EXECUTION",
+  "date": "2026-09-08",
+  "trigger": "Mission required verifying current AC quality/coverage status against ADR-305's 2026-09-07 finding ('valid_amazon_offers for air_conditioner is still 0... normalization-drop, NOT fixed this pass').",
+  "rpc_result": {
+    "function": "get_category_coverage_matrix()",
+    "row_for_air_conditioner": {
+      "active_products": 1665, "noon_offer_products": 2, "valid_noon_offers": 2, "fresh_noon_offers": 2,
+      "valid_amazon_offers": 1, "overlap_products": 1, "noon_only_products": 1, "amazon_only_products": 0,
+      "demand_30d": 159, "explicit_interactions_30d": 5
+    },
+    "note": "valid_amazon_offers moved from 0 (ADR-305, 2026-09-07) to 1 — negligible improvement in comparison-visible depth despite a much larger raw catalog, per below."
+  },
+  "direct_query_result": {
+    "query": "products p join product_stores ps on ps.product_id=p.id where p.category='air_conditioner' and ps.store_id=2 (Amazon)",
+    "total_rows": 270,
+    "linked_to_canonical_product_id": 2,
+    "unlinked": 268,
+    "by_creation_day": [
+      { "day": "2026-07-30", "n": 1 },
+      { "day": "2026-08-03", "n": 1 },
+      { "day": "2026-09-07", "n": 255, "note": "same day as commit ca3295c7 ('discover-firecrawl never set products.slug, silently blocking every scheduled new-product creation since inception') and ADR-305's own accessory-reclassification fix." },
+      { "day": "2026-09-08", "n": 13 }
+    ]
+  },
+  "interpretation": "The discover-firecrawl slug fix (2026-09-07) unblocked a large backlog of Amazon AC product creation — 255 new Amazon AC storefront products appeared in a single day, then 13 more the next. This is a genuinely large, real catalog now sitting in the storefront layer (products/product_stores). But 268 of the 270 (99.3%) are NOT linked to any canonical_product_id — i.e. never staged into normalized_product_observations / the TPS knowledge layer — so none of this new inventory is visible in cross-store AC comparison. This is the same normalization-staging defect ADR-305 already found and explicitly left open ('a materially larger, cross-category investigation than Amazon AC scope bounds'), now visibly much larger in absolute row count because the upstream discovery blocker that was suppressing it got fixed the same day.",
+  "products_2_boundary": "This mission's mandate places WRITE/MODIFY/REFACTOR/MIGRATE/REMATCH/MERGE/SPLIT/BACKFILL/REDEFINE of canonical identity, product_matches semantics, and the TPS knowledge layer OFF LIMITS without separate founder approval. Running the normalization pipeline (npm run tps:normalize / scripts/tps-core/normalize-incremental.ts) to link these 268 rows would populate canonical_product_id and touch product_matches-adjacent structures — this IS a Products 2 write by the mission's own definition. NOT executed. Flagged below as PRODUCTS_2_CHANGE_PROPOSED for separate founder approval, per ADR-099's own standing caution that this pipeline must never be run ad hoc/concurrently with the hourly scheduler and must be --dry-run first."
+}
