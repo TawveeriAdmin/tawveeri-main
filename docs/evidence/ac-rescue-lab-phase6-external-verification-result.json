@@ -1,0 +1,88 @@
+{
+  "experiment": "AC Rescue Lab — external verification of TCL and Haier against founder-supplied URLs",
+  "adr": "ADR-324",
+  "date": "2026-09-08",
+  "v1_frozen": { "V1_CHANGED": false, "PRODUCTS_2_CHANGED": false, "production_links_created": 0 },
+  "methodology": "every URL was fetched directly via WebFetch and its content extracted independently — the founder's own paraphrase of each page was NOT taken at face value; in at least one case (TCL manufacturer page) the direct fetch found LESS confirmed detail than the founder's summary implied, and that discrepancy is reported below rather than smoothed over. One of the five supplied URLs (efifty.com) could not be fetched at all (HTTP 403) and is reported as unverified, not silently treated as corroborating.",
+
+  "haier": {
+    "internal_evidence_tawveeri_own_data": {
+      "amazon_title": "Haier Ultra Inverter 24000 BTU Cool Only Split AC | R32 | HSU-24LQ13/R32(T3DB-B) | Nano Sterilization | Anti-Dust Reverse | Self-Clean | WIFI Enabled | ECO MODE | 10-Years Compressor Warranty | White",
+      "extra_title": "Haier, Split AC, 24,000 BTU, Cool Only, Nano Sterilization, WIFI, Ultra Inverter"
+    },
+    "source_1_official_manufacturer": {
+      "SOURCE": "https://www.haier.com/sa/air-conditioners/hsu-24lq13r32-t3db-b-.shtml",
+      "SOURCE_TYPE": "official manufacturer (Haier Saudi)",
+      "MODEL": "HSU-24LQ13/R32(T3DB-B) — exact match",
+      "ATTRIBUTES_CONFIRMED": "brand=Haier, series='Ultra Inverter' (matches both Amazon and Extra), ac_type=split (indoor+outdoor units specified), capacity T1=24,000 BTU/h (matches the '24000 BTU' both internal sources state), capacity T3=22,000 BTU/h (a SEPARATE, lower-ambient dual rating — standard GCC-market labeling, not a conflict with the T1=24000 both internal sources cite), cooling_mode=cool only ('Heating: /'), inverter=yes, refrigerant=R32 (matches Amazon's explicit 'R32'), voltage=220-240V/50-60Hz, wifi=yes, 'Nano-Aqua Sterilization' (matches 'Nano Sterilization' on both internal sources), compressor warranty='10 Years' (matches Amazon's verbatim '10-Years Compressor Warranty')",
+      "ATTRIBUTES_CONFLICTED": "none",
+      "INDEPENDENCE_CONFIDENCE": "HIGH — authoritative manufacturer source, structurally independent of Amazon/Extra's own listing text"
+    },
+    "source_2_independent_merchant": {
+      "SOURCE": "https://store.alkhn.com/haier-air-conditioner-split-cold-only-24000-btu-inverter-ultra-nano-sterilization-technology-wifi-efficiency-b-p-hsu-24lq13-r32-t3db-b",
+      "SOURCE_TYPE": "independent third-party Saudi merchant (not Amazon, not Extra, not any store already in Tawveeri's tracked set)",
+      "MODEL": "HSU-24LQ13-R32-T3DB-B (hyphens instead of slashes — a formatting difference, not a different model)",
+      "ATTRIBUTES_CONFIRMED": "brand=Haier (Arabic: هاير), ac_type=split, cooling_mode=cold only, capacity=24000 BTU, inverter=yes, wifi=yes, series='Ultra' with nano-sterilization tech, barcode/GTIN=6932063890295 (new, independent unique identifier not previously available in Tawveeri's own data), energy class B",
+      "ATTRIBUTES_CONFLICTED": "none — a stated '60 Hz' operating frequency is consistent with Saudi Arabia's grid (Saudi runs 60Hz, unlike most of the GCC), not a conflict",
+      "INDEPENDENCE_CONFIDENCE": "HIGH — a distinct merchant domain, distinct from Amazon and Extra, carrying its own barcode/GTIN not derived from either internal source",
+      "note": "price shown (2,799 SAR promo / 3,749 SAR regular) differs from Tawveeri's own observed price (3,049 SAR, ADR-319) — expected normal retail price variation across merchants/time, not an identity signal (ADR-319 already established PRICE_USEFUL=NO for identity purposes)."
+    },
+    "HAIER_EXTERNAL_CORROBORATION": "STRONG",
+    "HAIER_REFERENCE_CLEAN": "YES",
+    "why": "exact model number confirmed by an authoritative manufacturer page AND a second, genuinely independent third-party Saudi merchant with its own barcode — zero conflicts on any identity-relevant field (brand, model, series, type, capacity, cooling mode, inverter, refrigerant). This closes the specific, precise gap ADR-322/323 identified (only 1 independent non-Amazon source) with real, verified, non-Tawveeri-sourced evidence."
+  },
+
+  "tcl": {
+    "internal_evidence_tawveeri_own_data": {
+      "amazon_title": "TCL SaveIN NEO T4 Split AC 28200 BTU cooling only, with WiFi and Inverter - TAC-30CSU/ZIM",
+      "extra_title": "TCL, Split AC, SaveIN Neo, 28,200 BTU, Inverter, Cooling, Golden Fins"
+    },
+    "source_1_official_manufacturer": {
+      "SOURCE": "https://www.tcl.com/sa/en/air-conditioners/savein-giant-cooling",
+      "SOURCE_TYPE": "official manufacturer (TCL Saudi)",
+      "MODEL": "TAC-30CSU/ZIM — exact match",
+      "ATTRIBUTES_CONFIRMED": "brand=TCL, series='TCL SaveIN Neo T4 Series' (matches Amazon's 'SaveIN NEO T4' exactly), ac_type=split",
+      "ATTRIBUTES_CONFLICTED": "none",
+      "ATTRIBUTES_NOT_CONFIRMED_ON_THIS_PAGE": "BTU/capacity, cooling mode, inverter detail, voltage, Wi-Fi — this is a marketing overview page, not a full spec sheet. CORRECTION TO THE FOUNDER'S SUMMARY: the founder's message characterized this official page as confirming 'Ultra Inverter, 24,000 BTU T1, 22,000 BTU T3, cooling only, R32, 220-240V, Wi-Fi... SASO label image' — that detailed spec list is actually what was found on the HAIER manufacturer page, not this TCL page. The direct fetch of this TCL URL found only brand+series+model+type; it does not itself confirm BTU/cooling-mode/inverter/voltage/wifi. Those come from the merchant page below, not the manufacturer page, for TCL specifically.",
+      "INDEPENDENCE_CONFIDENCE": "HIGH for what it does confirm (model/series/brand/type)"
+    },
+    "source_2_independent_merchant": {
+      "SOURCE": "https://www.alkhunaizan.sa/en/product/28200-tac-30csu-zim-p-tac-30csu-zim",
+      "SOURCE_TYPE": "independent third-party Saudi merchant",
+      "MODEL": "TAC-30CSU/ZIM — exact match",
+      "ATTRIBUTES_CONFIRMED": "brand=TCL, ac_type=split, cooling_mode=cold only, capacity=28200 BTU (exact match to both Amazon and Extra), inverter=yes, wifi=available, barcode/GTIN=6931084757563 (new, independent identifier), energy class B",
+      "ATTRIBUTES_CONFLICTED": "MINOR, LIKELY COSMETIC: this page's series name extracted as 'Safe N Ultra T4' rather than 'SaveIN Neo T4'. Given the model number (the most specific, discriminating identifier) matches exactly across the manufacturer page, this merchant page, and both internal Tawveeri sources, this is most likely a fetch/rendering artifact on a stylized product-name graphic rather than a genuinely different product — but it is NOT silently resolved here; it is flagged as an open, unresolved minor discrepancy per the mission's 'do not infer missing facts' instruction.",
+      "INDEPENDENCE_CONFIDENCE": "HIGH — distinct merchant domain, own barcode",
+      "note": "price shown (4,699 SAR, currently out of stock) differs from Tawveeri's own observed price (4,199 SAR, ADR-319) — same normal-variation caveat as Haier, not an identity signal."
+    },
+    "source_3_additional_merchant_UNVERIFIED": {
+      "SOURCE": "https://www.efifty.com/products/tac-30csu-zim",
+      "result": "HTTP 403 Forbidden on direct fetch — CANNOT be verified. The founder's paraphrase of this page's content is NOT independently confirmed and is NOT counted as evidence in this assessment."
+    },
+    "TCL_EXTERNAL_CORROBORATION": "STRONG",
+    "TCL_REFERENCE_CLEAN": "YES",
+    "why": "exact model number confirmed by the manufacturer's own catalog page and by a second, genuinely independent third-party Saudi merchant with its own barcode; the core identity-discriminating fields (model, brand, type, capacity, cooling mode, inverter) show zero conflicts. One minor series-name-spelling discrepancy is disclosed rather than hidden, and one of the three supplied URLs could not be verified at all and is excluded from the evidentiary basis for this conclusion — the YES rests on 2 verified independent sources plus Tawveeri's own 2 (Amazon + Extra), not 4."
+  },
+
+  "any_conflict_summary": {
+    "ANY_CONFLICT": "NO on any identity-discriminating field (brand/model/type/capacity/cooling_mode/inverter/refrigerant) for either product",
+    "disclosed_anomalies_not_treated_as_conflicts": [
+      "TCL: one merchant's series-name text rendered as 'Safe N Ultra T4' vs the manufacturer's 'SaveIN Neo T4' — likely a text-extraction artifact given the identical model code across all sources, flagged not resolved",
+      "both products: external merchant prices differ from Tawveeri's own observed prices — expected, non-diagnostic (ADR-319 already established price is not an identity signal)",
+      "one of three TCL URLs (efifty.com) could not be fetched (403) — excluded from evidence, not assumed to corroborate"
+    ]
+  },
+
+  "rollback_design": { "ROLLBACK_DESIGN_READY": "YES — unchanged, finalized in ADR-323, still not built or executed" },
+
+  "final_gate": {
+    "TCL_EXTERNAL_CORROBORATION": "STRONG",
+    "TCL_REFERENCE_CLEAN": "YES",
+    "HAIER_EXTERNAL_CORROBORATION": "STRONG",
+    "HAIER_REFERENCE_CLEAN": "YES",
+    "ANY_CONFLICT": "NO",
+    "ROLLBACK_DESIGN_READY": "YES",
+    "READY_FOR_2_PRODUCT_PRODUCTION_PILOT_PROPOSAL": "YES",
+    "PILOT_PROPOSAL": "prepared in this evidence file's sibling ADR-324 entry and docs/DECISIONS.md — NOT EXECUTED, no production write performed, no canonical link created, V1 and Products 2 both unchanged"
+  }
+}

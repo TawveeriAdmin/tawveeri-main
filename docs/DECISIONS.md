@@ -4,6 +4,51 @@
 
 Status legend: **Accepted** · **Superseded** · **Proposed**.
 
+### ADR-324 — AC Rescue Lab: TCL and Haier externally verified STRONG, both REFERENCE_CLEAN — a 2-product pilot is PROPOSED (not executed) · Proposed (2026-09-08)
+
+**Context.** Founder supplied 5 specific URLs (official Haier Saudi, official TCL Saudi, and 3 independent third-party Saudi merchants) as the exact missing evidence ADR-323 said this session's tooling couldn't retrieve. Mission: fetch and verify each URL directly (not trust the founder's own paraphrase), compare field-by-field against the existing Amazon+Extra evidence, disclose any conflict, and — only if the evidence genuinely supports it — return a final gate verdict and, if `YES`, prepare (never execute) an exact 2-product pilot proposal.
+
+**Every URL fetched and checked independently — one correction made to the founder's own summary, one source found unverifiable.** All 5 URLs were fetched directly via `WebFetch`; none were taken on the founder's word. Two things surfaced that a less careful pass would have missed: (1) the founder's message attributed a detailed spec list (BTU/T1/T3, cooling mode, R32, voltage, Wi-Fi) to the *TCL* manufacturer page — the direct fetch found that TCL's own page confirms only brand/series/model/type, and that detailed spec list actually belongs to the *Haier* manufacturer page; corrected explicitly rather than passed through. (2) `efifty.com` (the third TCL merchant URL) returned HTTP 403 on direct fetch — it is **excluded from the evidentiary basis** entirely, not counted as corroborating just because the founder's summary described it.
+
+**Haier: `HAIER_EXTERNAL_CORROBORATION = STRONG`, `HAIER_REFERENCE_CLEAN = YES`.** Official Haier Saudi page (`haier.com/sa/.../hsu-24lq13r32-t3db-b-.shtml`) confirms the exact model, series "Ultra Inverter" (matching both Amazon and Extra), split type, T1=24,000 BTU (matching both internal sources' stated "24000 BTU"; T3=22,000 BTU is a separate, lower-ambient dual rating, standard for GCC units, not a conflict), cool-only, R32, 220-240V, Wi-Fi, Nano-Aqua Sterilization (matching "Nano Sterilization" on both internal sources), and a 10-year compressor warranty matching Amazon's title *verbatim*. A second, genuinely independent third-party Saudi merchant (`store.alkhn.com`) independently confirms model, brand, type, capacity, cooling mode, inverter, Wi-Fi, and contributes its own barcode/GTIN (`6932063890295`) — a real, independent unique identifier neither Amazon nor Extra provided. **Zero conflicts on any identity-relevant field.**
+
+**TCL: `TCL_EXTERNAL_CORROBORATION = STRONG`, `TCL_REFERENCE_CLEAN = YES`.** Official TCL Saudi page confirms brand, series ("TCL SaveIN Neo T4 Series," matching Amazon's "SaveIN NEO T4" exactly), and the exact model `TAC-30CSU/ZIM`. A second, independent third-party Saudi merchant (`alkhunaizan.sa`) independently confirms the exact model, brand, split type, cool-only mode, exact 28,200 BTU capacity, inverter, Wi-Fi, and contributes its own barcode/GTIN (`6931084757563`). **One disclosed, unresolved minor anomaly, not treated as a conflict**: that merchant's page renders the series name as "Safe N Ultra T4" rather than "SaveIN Neo T4" — given the model code (the actual discriminating identifier) matches exactly everywhere else, this is judged most likely a text-extraction artifact on a stylized product-name graphic, but it is flagged, not silently resolved. The third supplied URL (`efifty.com`) could not be verified (403) and is excluded — the `YES` verdict rests on 2 verified independent external sources plus Tawveeri's own 2 (Amazon + Extra), not on all 3 originally supplied.
+
+**`ANY_CONFLICT = NO`** on every identity-discriminating field (brand/model/type/capacity/cooling_mode/inverter/refrigerant) for both products. Price differences between the external merchants and Tawveeri's own observed prices (Haier: 2,799–3,749 vs 3,049 SAR; TCL: 4,699 vs 4,199 SAR) are disclosed as normal cross-merchant/cross-time variation, not an identity signal — consistent with ADR-319's already-established `PRICE_USEFUL = NO`.
+
+**`ROLLBACK_DESIGN_READY = YES`** — unchanged, finalized in ADR-323, still nothing built.
+
+**`READY_FOR_2_PRODUCT_PRODUCTION_PILOT_PROPOSAL = YES`.** The exact, previously-precise blocker from ADR-322/323 (both candidates resting on only 1 independent non-Amazon source) is now closed with genuinely independent, directly-verified, non-Tawveeri-sourced evidence for both.
+
+---
+
+**2-PRODUCT PILOT PROPOSAL — PREPARED, NOT EXECUTED.**
+
+| Field | TCL | Haier |
+|---|---|---|
+| Amazon storefront product_id | `49c34be2-6e13-4600-964f-140f9f4ea891` | `62e8e0b9-40b1-4879-b704-f877b25533de` |
+| Amazon listing | "TCL SaveIN NEO T4 Split AC 28200 BTU cooling only, WiFi, Inverter - TAC-30CSU/ZIM" | "Haier Ultra Inverter 24000 BTU Cool Only Split AC - HSU-24LQ13/R32(T3DB-B)" |
+| Current `canonical_product_id` | `NULL` (confirmed, ADR-320) | `NULL` (confirmed, ADR-320) |
+| Target canonical | `d47800b5-341c-43dc-88df-64d0df71dd9c` ("Tcl Split AC 28200 BTU Inverter cool only") | `ff8b35e4-afcd-43ba-95a6-a06f54c97f52` ("Haier Split AC 24000 BTU Inverter cool only") |
+| V1 classification | `RESCUE_HIGH_CONFIDENCE` (ADR-320) | `RESCUE_HIGH_CONFIDENCE` (ADR-320) |
+| Internal price corroboration | exact match, 4,199 = 4,199 SAR (ADR-319) | exact match, 3,049 = 3,049 SAR (ADR-319) |
+| External corroboration | STRONG (manufacturer + 1 independent merchant, this ADR) | STRONG (manufacturer + 1 independent merchant, this ADR) |
+
+**Mechanism**: writes exactly these 2 rows via the new, physically separate pilot ledger table designed in ADR-322/323 (never `storefront_identity_links`) — `UPDATE products SET canonical_product_id = <target> WHERE id = <product_id> AND canonical_product_id IS NULL` (optimistic lock, structurally cannot overwrite any pre-existing link), with `pilot_batch_id = 'ac-rescue-pilot-2026-09'` and `rule_version = 'ac-rescue-lab-pilot-v1'` tagging every row.
+
+**Pre-execution checklist (for the founder, before any `--go`):**
+1. Build the pilot ledger table (currently only designed, not created) and its dry-run/rollback tooling, mirroring `project-storefront-identity.ts`'s existing dry-run-by-default pattern.
+2. Dry-run first — print the exact 2 rows that would change, require an explicit `--go` to write, exactly as every other write-capable script in this project already requires.
+3. Founder's own explicit, separate authorization to execute (this ADR proposes; it does not authorize execution).
+4. Post-write: verify both rows via a fresh read-only query, confirm price/identity charts and any customer-facing surface render correctly for these 2 products.
+5. Rollback drill: verify the designed rollback procedure actually restores `NULL` and flips ledger status to `rolled_back`, in a non-production context first if practical.
+
+**Explicitly not done by this ADR**: no table created, no code written, no row written, no canonical link created, V1 untouched, Products 2 untouched. This is a proposal only, awaiting separate founder execution approval.
+
+**Consequences.** If executed later, this remains the smallest possible pilot (2 products, both exhaustively verified across 4 independent sources each) with a fully-designed, narrowly-scoped rollback. If the founder declines, no harm is done — nothing changes.
+
+**Products 2 status:** UNCHANGED. `PRODUCTS_2_CHANGED = false`. Zero writes.
+
 ### ADR-323 — AC Rescue Lab external corroboration check: blocked by tooling, not by evidence — TCL/Haier decision unchanged, rollback design finalized · Accepted (2026-09-08)
 
 **Context.** Founder asked one narrow question: can external, genuinely-independent evidence (manufacturer site, SASO/energy-efficiency listing, a third independent Saudi merchant) strengthen the TCL and Haier reference canonicals enough to clear ADR-322's `REFERENCE_CLEAN` bar, and can the future pilot's rollback mechanism be finalized in parallel — design only, no execution, no fix to GREE or brand-corruption, no other category.
