@@ -1,0 +1,107 @@
+{
+  "investigation": "Model/MPN evidence instrumentation (ADR-317/318) — build extractor, measure real coverage, manually validate precision, study collisions. NOT identity-deciding. NO shadow test, NO pilot.",
+  "mission": "CLAUDE — ADR-316 CORRECTION + MODEL/MPN EVIDENCE INSTRUMENTATION",
+  "date": "2026-09-08",
+
+  "google_correction": {
+    "sources_fetched_directly": [
+      "support.google.com/merchants/answer/160161 (mpn attribute definition)",
+      "support.google.com/merchants/answer/7052112 (product data specification)",
+      "support.google.com/merchants/answer/188494 (redirects to product data specification)",
+      "support.google.com/merchants/answer/6219078 (GTIN definition)"
+    ],
+    "quoted_findings": [
+      "'The number which uniquely identifies the product with its manufacturer' — Google's own definition of what MPN identifies.",
+      "MPN is explicitly listed among 'Types of unique product identifiers' in Google's own documentation.",
+      "MPN requirement status: 'Required (Only if your product does not have a manufacturer assigned GTIN)' and 'Optional for all other products' — i.e. MPN is Google's REQUIRED fallback identifier when GTIN is absent, not merely an optional nice-to-have.",
+      "'Only submit MPNs assigned by a manufacturer.' 'Use the most specific MPN possible.'",
+      "The caution found ('Don't make up, guess, or include values from similar products... incorrect identifiers... internal SKUs or other values specific to your store') is about SUBMISSION accuracy — don't fabricate a value — not a claim that a genuine, verified MPN is a weaker CONCEPT than GTIN."
+    ],
+    "correction_to_adr_316": "ADR-316 characterized MPN as 'merely a supplementary field... treated as unverified/uncertified' by Google. That understated it. Google classifies MPN as a genuine 'unique product identifier' TYPE and REQUIRES it specifically when GTIN is absent — a stronger role than 'supplementary if available'.",
+    "what_remains_true_and_is_preserved": "GTIN's uniqueness is enforced by an external registry (GS1). MPN's uniqueness is asserted by the manufacturer/merchant with NO third-party registry verifying it — Google's own docs are silent on any collision-checking mechanism for MPN. This is the real, durable distinction: not 'MPN is weak', but 'MPN's uniqueness verification burden falls on the CONSUMING SYSTEM (Tawveeri), not on any external registry' — which is exactly why this mission's own instrumentation-before-matching design (extraction precision validation + collision study) is the correct and necessary safeguard, not an overcautious one.",
+    "verdict": "ADR_316_GOOGLE_CLAIM_CORRECTED = YES."
+  },
+
+  "extractor_built": {
+    "file": "scripts/tps-plugins/ac/model-mpn-evidence.ts",
+    "wired_into_production": false,
+    "verified_zero_coupling": "grep across src/ and scripts/: not imported by any file other than its own test and this pilot's measurement script.",
+    "fields_kept_distinct_per_instruction_5": "model_number (from a labeled 'Item model number'/'Model number' spec key) vs mpn (ONLY from a labeled 'Manufacturer Reference' key — the closest labeled analogue Amazon's captured vocabulary has to MPN) vs asin vs upc_or_gtin. system_model/indoor_model/outdoor_model are explicitly, permanently null in this module — nothing in the captured Amazon spec vocabulary distinguishes them; reporting the honest absence rather than guessing.",
+    "normalization_policy": "Only whitespace/bidi-control-character cleanup on both key names and values. Hyphens, slashes, underscores, and all alphanumeric content preserved verbatim — confirmed by test: 'AR24DSFZAWK/MG' and 'DW18E6AA3XTS00' pass through unchanged.",
+    "tests": "tests/tps-plugins/ac-model-mpn-evidence.test.ts, 7 tests, all passing."
+  },
+
+  "key_vocabulary_scan": {
+    "method": "Full scan across ALL raw_observations rows (not sampled) whose title contains 'air condition' (a broader, uncategorized substring match — see methodology caveat below) and which have non-empty specifications.",
+    "total_raw_observations_matching_title_substring": 3565,
+    "rows_with_any_specification_data_at_all": 39,
+    "note": "Amazon's own HTML-derived key names carry real, reproducible corruption (embedded newlines, bidi marks, and — separately — a character-loss artifact that silently drops literal 's' characters in some keys, e.g. 'customer reviews' rendered as 'cu tomer review'). The extractor's key-matching is regex-based and fuzzy specifically to be robust to this, verified working correctly against the real corrupted keys in production data.",
+    "model_mpn_relevant_keys_found": {
+      "manufacturer reference": 10,
+      "model number": 5,
+      "item model number (all whitespace variants combined)": "~3 (some overlap with 'model number' possible)",
+      "upc": 3,
+      "asin (all variants)": 13
+    }
+  },
+
+  "measurement_methodology_caveat_disclosed": {
+    "issue": "The 3,565-row 'total AC rows' denominator used for this measurement pass was computed via raw_name ILIKE '%air condition%' — a title-substring match, NOT the same as the properly-categorized products.category='air_conditioner' population. This substring match is contaminated with genuine AC accessories (condensate drain trays, installation hoists, pipe expanders) and even one completely unrelated product (ice cube trays, which mentions 'Air Conditioner' only as a use-case in its own title) whose titles happen to contain the phrase.",
+    "the_correction": "Cross-checked directly: of the 9 unique products found via the substring search to carry ANY model/MPN evidence, Tawveeri's OWN storefront category classifier (products.category) already correctly excludes 6 of them as 'accessories' and 1 as 'appliance' (not air_conditioner) — only 2 are genuinely category='air_conditioner'. The clean, correctly-categorized Amazon AC population is 270 products (products.category='air_conditioner', store_id=2), not 3,565.",
+    "why_this_matters": "This is itself a finding: raw title-substring measurement overstates both the denominator (implying a much larger 'AC dataset' than really exists) and, worse, feeds contaminated accessory data into what would otherwise look like AC identity evidence. The storefront layer's existing category classification is doing real, correct filtering work that a naive raw-observations-level extraction pass would bypass entirely. Disclosed here rather than left as an unstated measurement artifact."
+  },
+
+  "exhaustive_manual_precision_review": {
+    "population_reviewed": "All 21 raw_observations rows carrying a model_number or mpn extraction (representing 9 unique products, each scraped 2-3 times over different dates) — fewer than 30 exist, so ALL were reviewed, per the mission's own instruction.",
+    "per_product_classification": [
+      { "product": "Star vision 16000 BTU Hot&Cold Portable AC", "extracted_value": "SVPOR16 (model_number)", "storefront_category": "air_conditioner (correct)", "classification": "TRUE_MODEL" },
+      { "product": "MIDEA Cold Only Wall Split AC 12000 (MISSION XTREME)", "extracted_value": "MSTMX12CRN1AG1 (model_number)", "storefront_category": "air_conditioner (correct)", "classification": "TRUE_MODEL" },
+      { "product": "DiversiTech (6-2424L) A/C Secondary Condensate Drain Pan", "extracted_value": "6-2424L (model_number)", "storefront_category": "accessories", "classification": "COMPONENT_MODEL — a real manufacturer part number, but for an accessory, not the AC appliance itself. Storefront category already correctly excludes it from 'air_conditioner'." },
+      { "product": "Air Conditioner Condensate Drain Tray (2 variants)", "extracted_value": "'Generic' (mpn)", "storefront_category": "accessories", "classification": "FALSE_EXTRACTION — 'Generic' is Amazon's own template placeholder for no-name sellers, not a real manufacturer identifier. Identical value repeated verbatim across multiple unrelated listings proves it carries zero discriminating information." },
+      { "product": "High Capacity AC Installation Hoist", "extracted_value": "'Generic' (mpn)", "storefront_category": "accessories", "classification": "FALSE_EXTRACTION — same placeholder pattern." },
+      { "product": "Universal AC Drain Hose Plastic Condensate Tray", "extracted_value": "'Generic' (mpn)", "storefront_category": "accessories", "classification": "FALSE_EXTRACTION — same placeholder pattern." },
+      { "product": "6Pcs/Set Electric Drill Pipe Expander AC Swaging Tools", "extracted_value": "'3111200286011_ybz_AM4844f67-489' (model_number)", "storefront_category": "accessories", "classification": "FALSE_EXTRACTION / SELLER_INTERNAL_ID — shape (long underscore-delimited segments) is characteristic of a dropship/marketplace internal tracking code, not a manufacturer model number." },
+      { "product": "Ice Cube Molds Trays Ice Packs 4Pcs", "extracted_value": "'1' (model_number)", "storefront_category": "appliance (not air_conditioner)", "classification": "FALSE_EXTRACTION — unrelated product (ice packs), matched only because its title mentions 'Air Conditioner' as a use-case; extracted 'model number' is a meaningless single digit." }
+    ],
+    "precision_strict": "2 TRUE_MODEL / 9 unique products = 22%",
+    "precision_with_component_model_partial_credit": "3 / 9 = 33%",
+    "false_extraction_rate": "6 / 9 = 67%",
+    "ambiguous_rate": "0 / 9 (every case classified with confidence — none genuinely ambiguous, each was either clearly a real AC model or clearly not)",
+    "verdict": "Precision is LOW, not 'extremely high'. Per the mission's own §7 instruction ('Do not proceed to matching if extractor precision is not extremely high'), this alone is sufficient to stop before any shadow test — independent of the coverage numbers below."
+  },
+
+  "uniqueness_collision_study": {
+    "distinct_model_mpn_values_found": 6,
+    "total_rows_carrying_a_value": 21,
+    "repeated_values": [
+      { "value": "SVPOR16", "occurrences": 2, "cause": "same genuine product (Star vision) re-scraped on two different dates — legitimate repeat observation, not a collision" },
+      { "value": "Generic", "occurrences": 10, "cause": "the SAME placeholder string across 4 different, unrelated accessory products — a real, proven collision pattern: if 'Generic' were ever naively treated as a real MPN, it would incorrectly corroborate a drain tray with an installation hoist with a drain hose kit as 'the same product'" },
+      { "value": "3111200286011_ybz_AM4844f67-489", "occurrences": 3, "cause": "same product (pipe expander kit) re-scraped 3 times — legitimate repeat, not a collision, but the value itself is not a real MPN (see precision review)" },
+      { "value": "6-2424L", "occurrences": 3, "cause": "same product (DiversiTech drain pan) re-scraped 3 times — legitimate repeat" },
+      { "value": "1", "occurrences": 2, "cause": "same product (ice cube trays) re-scraped twice — legitimate repeat, but the value is meaningless" }
+    ],
+    "MPN_COLLISION_RATE": "1 real collision class found among 6 distinct values (the 'Generic' placeholder) = 17% of distinct values would cause a real false-merge if trusted naively — a directly measured, non-hypothetical risk, exactly the class of failure this instrumentation-before-matching approach exists to catch.",
+    "MODEL_COLLISION_RATE": "0% among genuine model numbers (no two DIFFERENT real products shared the same real model value in this population) — but the population is too small (2 genuine cases) to generalize a rate from.",
+    "split_component_risk": "Directly observed, not hypothetical: the DiversiTech case proves a real manufacturer part number can belong to a component (a drain pan) rather than the complete appliance — exactly the founder's own Path D concern (§ split AC indoor/outdoor/component identity), now evidenced with a real example rather than a theoretical one."
+  },
+
+  "adr_077_retest": {
+    "status": "NOT PERFORMED — the mission's own instruction (§9) is to revisit ADR-077 'only after the dataset exists.' The dataset does not exist: neither of the two genuine TRUE_MODEL cases found (Star vision, MIDEA) are LG products, and no LG ArtCool/Fresh DV/AirFit listing anywhere in this AC population has a captured model/MPN value to test against. There is nothing to retest ADR-077 with yet.",
+    "ADR_077_RETEST_READY": "NO"
+  },
+
+  "final_coverage_numbers_against_the_clean_270_product_population": {
+    "TOTAL_AC_ROWS_clean_categorized": 270,
+    "AC_MODEL_COVERAGE": "2 / 270 ≈ 0.7%",
+    "AC_MPN_COVERAGE": "0 / 270 (zero genuine, non-placeholder Manufacturer-Reference values found among properly-categorized AC products — the only 'mpn'-labeled values found were all 'Generic' placeholders on accessory listings, correctly excluded from this category)",
+    "GTIN_COVERAGE": "at most 1 / 270 ≈ 0.4% (carried over from ADR-316; not independently re-verified against the clean 270-product set this pass)",
+    "EXTRACTION_PRECISION": "22-33% (low, see manual review above)",
+    "MODEL_MPN_COLLISIONS": "1 proven collision class ('Generic' placeholder) directly measured"
+  },
+
+  "decision": {
+    "STRONG_ID_SHADOW_TEST_NOW": "NO",
+    "why": "Both independent gates fail: (1) coverage is under 1% of the clean AC population — far too small to be a meaningful population for any shadow test; (2) even within that tiny population, extraction precision is low (22-33%, not 'extremely high') and a real, proven collision pattern ('Generic') was found — directly validating the founder's caution, not just satisfying it procedurally.",
+    "not_a_rejection_of_the_principle": "The Google-guidance correction stands: MPN IS a legitimate identifier type, required by Google's own spec when GTIN is absent, and a verified, collision-checked MPN could plausibly have prevented ADR-077's false merge. But 'plausibly could work in principle' and 'is safe to shadow-test in Tawveeri today' are different claims — this instrumentation pass answers the second, honestly, as NO."
+  }
+}

@@ -4,6 +4,46 @@
 
 Status legend: **Accepted** · **Superseded** · **Proposed**.
 
+### ADR-318 — Model/MPN evidence instrumentation: built, tested, measured against the real population — precision too low and coverage under 1%, shadow test correctly not run · Accepted (2026-09-08)
+
+**Context.** Founder accepted ADR-316's stopping decision but flagged one correction needed first: re-verify Google's Merchant Center guidance on MPN directly, since the prior characterization understated it. Founder then authorized building a narrow, non-identity-deciding Model/MPN evidence extractor to answer one question only — "what manufacturer identifiers do we actually have?" — with explicit instructions to preserve raw values, keep model/MPN/system/indoor/outdoor fields distinct, measure exhaustively rather than estimate, manually validate precision, run a collision study, and decide the shadow-test gate from real numbers, not hope.
+
+**ADR-316's Google correction, verified directly — see ADR-317.**
+
+**Built.** `scripts/tps-plugins/ac/model-mpn-evidence.ts` — reads Amazon's own labeled spec keys ("Item model number"/"Model number" → `model_number`; "Manufacturer Reference" → `mpn`, kept distinct per instruction; ASIN and UPC into their own fields). `system_model`/`indoor_model`/`outdoor_model` are permanently `null` in this module — nothing in the captured Amazon vocabulary distinguishes them, and reporting that honestly was chosen over guessing. Normalization is whitespace/bidi-cleanup only — hyphens, slashes, and full alphanumeric content preserved verbatim, confirmed by test (`AR24DSFZAWK/MG`, `DW18E6AA3XTS00` pass through unchanged). Not imported anywhere in the live call graph (verified by grep) — same zero-coupling guarantee as ADR-315's module. 7 tests, `tests/tps-plugins/ac-model-mpn-evidence.test.ts`, all passing.
+
+**Measurement, exhaustive, with a real methodology correction disclosed mid-investigation.** A first pass measured against `raw_name ILIKE '%air condition%'` (3,565 rows) — but cross-checking the 9 unique products this substring search found with any model/MPN signal against `products.category` showed Tawveeri's own storefront classifier already correctly excludes 6 of them as `accessories` (condensate drain trays, an installation hoist, a pipe expander) and 1 as `appliance` (ice cube trays, matched only because "Air Conditioner" appears as a use-case in its own title) — only 2 are genuinely `category='air_conditioner'`. **The clean, correctly-categorized Amazon AC population is 270 products, not 3,565.** Recorded as a real measurement-methodology finding, not hidden.
+
+**Exhaustive manual precision review — all 21 rows (9 unique products; fewer than 30 exist, so all were reviewed, per instruction).** Result: **2 `TRUE_MODEL`** (Star vision `SVPOR16`, MIDEA `MSTMX12CRN1AG1` — both correctly categorized `air_conditioner`), **1 `COMPONENT_MODEL`** (DiversiTech `6-2424L` — a real manufacturer part number, but for a drain pan accessory, already correctly excluded from the AC category by the storefront's own classifier), **6 `FALSE_EXTRACTION`** — four of them the identical placeholder string `"Generic"` (Amazon's own template value for no-name sellers, appearing verbatim across four unrelated accessory listings), one a dropship-shaped internal tracking code (`3111200286011_ybz_AM4844f67-489`), one a meaningless `"1"` on a completely unrelated product. **Precision: 22% strict / 33% with partial credit for the component case. False-extraction rate: 67%.**
+
+**Collision study — a real risk found, not hypothetical.** The `"Generic"` value is a proven, directly-measured collision: it appears on 4 different, unrelated accessory products — if ever naively trusted as a real MPN, it would incorrectly corroborate a drain tray with an installation hoist with a drain hose kit as "the same product." The DiversiTech case independently proves the founder's own Path D concern (component vs. system identity) with a real example, not a theory: a genuine manufacturer part number that belongs to an accessory, not the appliance.
+
+**Coverage against the clean 270-product population.** `AC_MODEL_COVERAGE ≈ 0.7%` (2/270). `AC_MPN_COVERAGE = 0%` (every genuine "Manufacturer Reference" value found was the `"Generic"` placeholder, correctly excluded). `GTIN_COVERAGE`: carried over from ADR-316, ~0.4%, not independently re-verified against the clean set this pass.
+
+**`STRONG_ID_SHADOW_TEST_NOW = NO`.** Two independent gates fail: coverage is under 1% of the clean population — too small a population for any meaningful test — and even within it, extraction precision (22–33%) is far below "extremely high," with a real, measured collision pattern found. This is not a rejection of the underlying principle (ADR-317 confirms MPN is a legitimate identifier type Google itself requires when GTIN is absent) — it is confirmation that "the principle can plausibly work" and "it is safe to shadow-test in Tawveeri today" are different claims, and the honest answer to the second one is no.
+
+**`ADR_077_RETEST_READY = NO`.** Neither genuine `TRUE_MODEL` found is an LG product; no LG ArtCool/Fresh DV/AirFit listing in this population has a captured model value. There is nothing to retest ADR-077 against yet.
+
+**Products 2 status.** Not touched. `PRODUCTION_IDENTITY_CHANGED = NO`. `PRODUCTS_2_SEMANTICS_CHANGED = NO`. No matching rule, threshold, or `series_or_platform` requirement altered. Full detail: `docs/evidence/ac-model-mpn-evidence-instrumentation-2026-09-08.json`.
+
+---
+
+### ADR-317 — Correcting ADR-316: Google Merchant Center does classify MPN as a genuine unique-product-identifier type, required when GTIN is absent — not merely optional/supplementary as previously characterized · Accepted (2026-09-08)
+
+**Context.** Founder challenged ADR-316's characterization of Google's MPN guidance and asked for direct re-verification from current primary sources before building on it.
+
+**Verified directly** (`support.google.com/merchants/answer/160161`, the MPN attribute definition page, and `.../7052112`, the full product data specification — both fetched live, not assumed). Google's own text: MPN is *"the number which uniquely identifies the product with its manufacturer"* and is explicitly listed among Google's **"Types of unique product identifiers."** Its requirement status is **`Required (Only if your product does not have a manufacturer assigned GTIN)`**, `Optional for all other products` — i.e. Google's REQUIRED fallback identifier when GTIN is absent, not a nice-to-have. Also: *"Only submit MPNs assigned by a manufacturer,"* *"Use the most specific MPN possible."*
+
+**What ADR-316 got wrong.** It characterized MPN as *"treated as unverified/uncertified"* and *"offered only as supplementary 'if available'"* by Google — both understate Google's actual documented position. **`ADR_316_GOOGLE_CLAIM_CORRECTED = YES.`**
+
+**What remains true and is preserved, not erased by this correction.** Google's own "don't make up, guess, or include values from similar products" warning is about submission accuracy, not a claim MPN is conceptually weaker than GTIN — but the deeper, durable distinction still holds: **GTIN's uniqueness is enforced by an external registry (GS1); MPN's uniqueness is asserted by the manufacturer/merchant with no third-party registry verifying it.** Google's own documentation is silent on any MPN collision-checking mechanism. The correct framing is not "MPN is weak" — it's "MPN's uniqueness-verification burden falls on the consuming system, not on any external registry" — which is exactly why ADR-318's extraction-precision-and-collision-study approach is the right safeguard, not overcaution.
+
+**`GOOGLE_MPN_VERDICT`** = a genuine, Google-required (when GTIN absent) unique-identifier type — stronger than ADR-316 characterized it. **`GS1_GTIN_VERDICT`** = unchanged from ADR-316: registry-backed, the stronger of the two. **`GTIN_VS_MPN_DISTINCTION`** = both are legitimate identifier types; the real difference is registry-enforced uniqueness (GTIN) versus asserted-but-unverified uniqueness (MPN) — a verification burden, not a legitimacy gap.
+
+**Products 2 status.** Not touched. Pure external-research correction, no code, no query beyond the two source fetches. See ADR-318 for what this correction does — and does not — unlock internally.
+
+---
+
 ### ADR-316 — AC strong identity path (GTIN/MPN/Model): global principle partially confirmed with a real correction to Google's guidance; internal path fails on data availability, not on principle — no shadow test, no pilot, correctly stopped before that stage · Accepted (2026-09-08)
 
 **Context.** Founder proposed testing whether a verified GTIN, or verified Brand+MPN/Model, could safely substitute for `series_or_platform` on AC products that have strong manufacturer identity but no marketed series — explicitly demanding independent verification of the principle itself before touching production, full ADR-077 reconstruction, a real 30-50 product truth sheet, identifier-quality measurement, a read-only shadow test, and only then a maximum-5-product live pilot, with an explicit instruction to STOP at any gate that fails.
