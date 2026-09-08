@@ -1,0 +1,196 @@
+{
+  "experiment": "AC Rescue Lab Phase 2 — blind validation + systematic red-team against V1 (frozen, ADR-319)",
+  "adr": "ADR-320",
+  "date": "2026-09-08",
+  "v1_frozen": {
+    "frozen_at_commit": "f048a62c",
+    "v1_files_unchanged_this_phase": ["01-build-fingerprints.ts", "02-candidate-generation.ts", "03-rank-and-classify.ts", "04-price-experiment.ts"],
+    "spec_file": "scripts/experiments/ac-rescue-lab/V1_SPEC.md",
+    "new_files_this_phase": ["05-blind-evidence-pull.ts (additive, read-only, does not touch V1 logic)"],
+    "V1_TUNED_DURING_VALIDATION": false
+  },
+  "methodology_disclosure": {
+    "true_analyst_blinding_impossible": "the same session designed V1 and performed this validation — full analyst blindness (never having seen V1's output before establishing ground truth) is not achievable. The rigor applied instead: ground truth for each case was established from evidence V1's fingerprint NEVER used for its decision — literal model-number substrings and full raw scraped titles (across ALL non-Amazon store observations for each trusted candidate, not just the single title used to derive tps_identity_key) — pulled via 05-blind-evidence-pull.ts BEFORE re-reading V1's own matching/missing attribute lists for interpretation. This is evidentiary independence, not analyst blindness — disclosed honestly as the mission instructed ('where practical').",
+    "coverage": "exhaustive — all 26 Run-A-eligible cases were resolved to one of: 4 RESCUE_HIGH_CONFIDENCE (100% manually verified, exceeding the mission's own bar), 4 RESCUE_REVIEW (100% manually verified), 3 AMBIGUOUS (100% manually verified), 3 HARD_CONFLICT (100% re-verified with attribute-level detail), 12 NO_CANDIDATE (not individually re-verified — no merge risk from an abstention; spot-checked via keyword population scan instead)."
+  },
+  "ground_truth_by_case": [
+    {
+      "case": "TCL SaveIN NEO T4 28200 BTU (TAC-30CSU/ZIM)",
+      "v1_class": "RESCUE_HIGH_CONFIDENCE",
+      "independent_evidence": "trusted raw title states 'SaveIN Neo' — the exact same sub-series name as the Amazon title — a match V1's own structured fingerprint MISSED (series_or_platform was recorded as 'missing' by V1's parser on both sides despite being present in the raw text).",
+      "ground_truth": "SAME_EXACT_PRODUCT",
+      "v1_verdict": "CORRECT",
+      "note": "V1 was actually more conservative than the evidence warranted here — a real extraction gap, not a safety problem."
+    },
+    {
+      "case": "MIDEA Wall Split AC 22000 BTU cool only Infinity",
+      "v1_class": "AMBIGUOUS",
+      "independent_evidence": "one candidate shares the 'Infinity' series name and exact 22000 BTU, but its manufacturer model code (MSTE24CRN family) does not literally match Amazon's stated model (MSTN24CRNAG16) — a real, unresolved divergence, not a confirmed match.",
+      "ground_truth": "VARIANT_DIFFERENCE_OR_UNKNOWN",
+      "v1_verdict": "CORRECT",
+      "note": "safe abstention validated by evidence."
+    },
+    {
+      "case": "Haier Ultra Inverter 24000 BTU Cool Only (HSU-24LQ13/R32(T3DB-B))",
+      "v1_class": "RESCUE_HIGH_CONFIDENCE",
+      "independent_evidence": "trusted raw title independently repeats 'Nano Sterilization' and 'Ultra Inverter' — specific marketing terms shared verbatim with the Amazon title, well beyond what V1's structured fingerprint checks.",
+      "ground_truth": "SAME_EXACT_PRODUCT",
+      "v1_verdict": "CORRECT"
+    },
+    {
+      "case": "LG FreshDV 18000 BTU Heat & Cool, Rating (B)",
+      "v1_class": "RESCUE_HIGH_CONFIDENCE",
+      "independent_evidence": "one trusted store's raw title ('LG Split Air Conditioner 18000 BTU Heat & Cool – Fresh DV, Inverter, Rating (B)') is NEAR-VERBATIM identical to the Amazon title — the strongest single piece of evidence in this dataset.",
+      "ground_truth": "SAME_EXACT_PRODUCT",
+      "v1_verdict": "CORRECT",
+      "note": "second live, correct resolution of the historical ADR-077 LG scenario, now independently confirmed."
+    },
+    {
+      "case": "GREE GWH24AVEXF-S6DTA1B 24000 BTU Hot & Cold",
+      "v1_class": "RESCUE_REVIEW",
+      "independent_evidence": "the trusted candidate's raw observations reveal it is ITSELF a merge of two genuinely different GREE product lines: 'AI-PLUS/AI-PRO' (model GWH24AVEXF, matching Amazon) and 'Cosmo' (model GWH24AWEXF-S6DTA3H, NOT matching Amazon) — a pre-existing Products-2-side trusted-canonical identity contamination, unrelated to this lab.",
+      "ground_truth": "VARIANT_DIFFERENCE — matches part of a contaminated multi-SKU trusted candidate, not a clean single-product target",
+      "v1_verdict": "CORRECT_BY_CAUTION",
+      "note": "NEW FAILURE MODE DISCOVERED (not on the founder's original list): a rescue candidate can itself be an unclean, merged trusted identity. V1's REVIEW tier avoided auto-trusting it, but for a different reason (missing series_or_platform) than the real risk (candidate contamination) — it got the right operational outcome without detecting the actual hazard."
+    },
+    {
+      "case": "TCL Inverter Split AC 12400BTU Cold/Hot T-SUPER Series (TAC-12HSU/TSSI1)",
+      "v1_class": "AMBIGUOUS",
+      "independent_evidence": "all 4 raw-title-confirmed candidate sub-series (BreezeIN, VoxIN EVO ×2, SaveIN Neo) are DIFFERENT named TCL product lines — none is 'T-SUPER'.",
+      "ground_truth": "DIFFERENT_PRODUCT (all 4 candidates)",
+      "v1_verdict": "SAFE_BUT_UNDERSTATED",
+      "note": "V1's AMBIGUOUS framing ('can't tell which') actually understates the finding — ground truth is closer to 'none of these', not merely 'uncertain which one'. No false merge occurred (correct behavior), but the abstention reason differs from what V1 records."
+    },
+    {
+      "case": "Fisher Split AC FSACME-XF18CIB, inverter cold only 18000 BTU",
+      "v1_class": "RESCUE_REVIEW",
+      "independent_evidence": "trusted candidate's own raw title reads 'Fisher Split AC, 18,000 BTU Hot / Cold, FSACQD-XF18HIB/FSACQD-XC18HIB' — a DIFFERENT model-code family (FSACQD vs Amazon's FSACME) AND explicitly 'Hot/Cold', directly conflicting with Amazon's stated 'cold only'. V1's structured cooling_mode field for this trusted candidate was blank (extraction gap), so V1's hard-conflict gate never saw this conflict and could not reject it.",
+      "ground_truth": "DIFFERENT_PRODUCT",
+      "v1_verdict": "UNSAFE_IF_EVER_AUTO_APPROVED",
+      "note": "MATERIAL FINDING: this is a real case where the REVIEW tier, if ever relaxed to auto-approve, would produce a genuine false merge. The hard-conflict gate's protection is coverage-dependent, not absolute — it can only catch a conflict it can see, and here the conflicting evidence existed only in unstructured raw text V1 never reads structurally."
+    },
+    {
+      "case": "GREE GWC18AGD-S3DTA1A 18000 BTU Cold Only",
+      "v1_class": "RESCUE_REVIEW",
+      "independent_evidence": "the top trusted candidate aggregates SEVERAL distinct GREE 18000 BTU model codes (GWC18AVDXE-S6DTA1B/I/O, GWC18AVDXF-S6DTA1C, GWC18AWDXE) — none matches Amazon's stated 'GWC18AGD-S3DTA1A'. Second instance of the trusted-canonical-contamination failure mode found in the GREE 24000 BTU case above.",
+      "ground_truth": "UNKNOWN_OR_VARIANT_DIFFERENCE",
+      "v1_verdict": "CORRECT_BY_CAUTION"
+    },
+    {
+      "case": "TCL SaveIN NEO T4 12100 BTU (TAC-12CSU/ZIM)",
+      "v1_class": "AMBIGUOUS",
+      "independent_evidence": "one of the 4 candidates (12100 BTU) states 'SaveIN Neo' in its raw title — matching the Amazon product's own 'SaveIN NEO T4' series name and exact capacity (12100=12100) and cooling-only mode — while the other 3 candidates are different named sub-series (BreezeIN, VoxIN EVO). This distinguishing evidence exists in raw text but was never extracted into V1's structured series_or_platform field on either side, so all 4 scored identically and none could out-rank the others.",
+      "ground_truth": "SAME_EXACT_PRODUCT for the 'SaveIN Neo' 12100 BTU candidate specifically; DIFFERENT_PRODUCT for the other 3",
+      "v1_verdict": "SAFE_BUT_A_MISSED_RESCUE",
+      "note": "MATERIAL FINDING: a genuine, recoverable true match exists inside an AMBIGUOUS bucket, hidden purely by an extraction gap — not a safety failure (no false merge), but concrete proof that raising series_or_platform extraction coverage (ADR-319's existing recommendation) would recover real rescue value, not just theoretical value."
+    },
+    {
+      "case": "MANDO GOLD Inverter 12,000 BTU (AU-24INV-12C)",
+      "v1_class": "RESCUE_REVIEW",
+      "independent_evidence": "trusted candidate's raw title states model 'F24TP-12CT' and 12100 BTU — a different model-code family from Amazon's 'AU-24INV-12C' and a literal (though capacity-class-tolerant) BTU mismatch (12000 vs 12100). Only 'Gold' branding overlaps.",
+      "ground_truth": "UNKNOWN_LEANING_DIFFERENT_PRODUCT",
+      "v1_verdict": "CORRECT_BY_CAUTION"
+    },
+    {
+      "case": "LG ArtCool 18,000 BTU Cooling Only, Dual Inverter, Pre-cooling (AM182C0.UK1)",
+      "v1_class": "RESCUE_HIGH_CONFIDENCE",
+      "independent_evidence": "the winning trusted candidate's model code 'AM182C0' appears verbatim across FOUR independent store observations (stores 18, 3, 4, 7), matching Amazon's stated 'AM182C0.UK1' prefix exactly. A losing candidate in the same pool ('AM182C0.UK2-NK2') has a genuinely different suffix — a real color/generation variant that V1's ranking correctly did NOT select as the winner.",
+      "ground_truth": "SAME_EXACT_PRODUCT",
+      "v1_verdict": "CORRECT",
+      "note": "strongest single evidence chain in the dataset — exact model-code match repeated across 4 independent merchants. Also validates the ranking mechanism's SPECIFIC choice (not just the general concept) — it correctly avoided the sibling variant."
+    }
+  ],
+  "hard_conflict_re_verification": [
+    {
+      "case": "GREE GWH24AGE-S3DTA1F 22000 BTU Hot/Cold, Inverter",
+      "rejected_candidate_1": "Gree Split AC 22200 BTU Standard cool only — conflict on BOTH cooling_mode (hot_cold vs cool_only) AND technology (Inverter vs 'Standard', a real inverter-vs-non-inverter conflict)",
+      "rejected_candidate_2": "Gree Split AC 22000 BTU cool only — conflict on cooling_mode only",
+      "verdict": "CONFIRMED real, correct rejections. This is also the real, concrete instance of the founder's 'inverter vs non-inverter' failure mode."
+    },
+    {
+      "case": "Super General 12000 BTU cool only, Inverter (KSGS1271Ei)",
+      "rejected_candidate": "Supergeneral Split AC 12400 BTU hot cold — conflict on cooling_mode",
+      "verdict": "CONFIRMED real, correct rejection."
+    },
+    {
+      "case": "Super General 12100 BTU cool only, Inverter (KSGS123i)",
+      "rejected_candidate": "Supergeneral Split AC 12400 BTU hot cold — conflict on cooling_mode",
+      "verdict": "CONFIRMED real, correct rejection."
+    }
+  ],
+  "systematic_hard_negative_matrix": [
+    { "mode": "same brand + same capacity + different model", "status": "REAL_CASE_CONFIRMED", "evidence": "Fisher FSACME-XF18CIB vs trusted FSACQD-XF18HIB — different model family, same brand/capacity block" },
+    { "mode": "same brand + same capacity + different cooling mode", "status": "REAL_CASE_CONFIRMED", "evidence": "Haier hot/cold hard-conflict (ADR-319); GREE 22000 BTU hot/cold vs trusted cool-only; Super General x2" },
+    { "mode": "same brand + same capacity + inverter vs non-inverter", "status": "REAL_CASE_CONFIRMED", "evidence": "GREE 22000 BTU Amazon 'Inverter' vs trusted 'Standard' (non-inverter) technology — correctly rejected" },
+    { "mode": "T1 vs T3", "status": "NO_REAL_CASE_AVAILABLE", "evidence": "14 Amazon AC titles explicitly state 'T3' (including the Haier RESCUE_HIGH_CONFIDENCE case); zero trusted-side raw titles mention 'T1' anywhere in the 990-canonical universe. T-rating is not extracted into the fingerprint at all — this is a real, disclosed COVERAGE GAP, not evidence the failure mode is safe." },
+    { "mode": "Wi-Fi vs non-Wi-Fi", "status": "NO_REAL_CASE_AVAILABLE", "evidence": "not found in the reviewed population; not extracted into the fingerprint." },
+    { "mode": "220V / Saudi variant vs materially different regional variant", "status": "NO_REAL_CASE_AVAILABLE", "evidence": "zero Amazon AC titles mention explicit voltage figures (110V/120V) in a population scan; not extracted into the fingerprint." },
+    { "mode": "split vs window", "status": "STRUCTURALLY_PREVENTED_BY_BLOCKING_KEY", "evidence": "ac_type is a blocking key — a real window-unit listing in the population ('Ugine Gold Window Air Conditioner, 20,600 BTU') produced NO_CANDIDATE, confirming no split-type trusted candidate leaked into its pool." },
+    { "mode": "indoor-only vs complete system", "status": "PRESENT_IN_POPULATION_BUT_NOT_ELIGIBLE_IN_RUN_A", "evidence": "4 Amazon titles reference 'indoor unit'/'outdoor unit'; none reached Run A's 26 full-fingerprint-eligible rows, so no live candidate-generation test occurred for them this phase." },
+    { "mode": "outdoor-only vs complete system", "status": "PRESENT_IN_POPULATION_BUT_NOT_ELIGIBLE_IN_RUN_A", "evidence": "same as above." },
+    { "mode": "renewed/refurbished vs new", "status": "NO_REAL_CASE_AVAILABLE", "evidence": "zero 'renewed'/'refurbished' keyword hits across all 270 Amazon AC titles." },
+    { "mode": "accessory vs appliance", "status": "REAL_CASE_ADJACENT_BUT_NOT_IN_ELIGIBLE_POOL", "evidence": "bracket/stand/mount accessory listings exist in the broader 270-row Amazon AC category tag (3 hits: 'WeCooper Mini Split Ground Stand', 'Qualward AC Bracket', 'Wall Mounting Bracket') but none passed brand/type/capacity eligibility to enter Run A's candidate pool — accessories are structurally filtered out upstream by capacity_btu extraction failing on non-appliance titles, not by a dedicated accessory gate." },
+    { "mode": "same family / different commercial variant", "status": "REAL_CASE_CONFIRMED — MULTIPLE", "evidence": "LG ArtCool AM182C0.UK1 vs AM182C0.UK2-NK2 (case 11, correctly NOT selected as the winner); GREE AI-Pro vs Cosmo lines folded into one contaminated trusted canonical (cases 5, 8)." },
+    { "mode": "nominal BTU vs actual BTU", "status": "REAL_CASE_CONFIRMED — PERVASIVE", "evidence": "TCL 12000/12100/12400/11900 BTU sub-variants throughout; V1's capacity_class rounding (nearest 1000 BTU) absorbs this correctly for blocking purposes but does not by itself disambiguate identity." },
+    { "mode": "stale merchant specs / wrong merchant attribute", "status": "REAL_CASE_CONFIRMED", "evidence": "trusted-side TCL 12400 BTU candidate's raw title says 'Cooling/Heating' but its own tps_identity_key was parsed as cool_only — a genuine extraction error already baked into the TRUSTED reference layer, independent of this lab; Fisher's cooling_mode also blank despite raw title stating 'Hot/Cold'." },
+    { "mode": "generic/unknown brand collisions", "status": "STRUCTURALLY_PREVENTED", "evidence": "UNSAFE_BRAND_PLACEHOLDERS denylist (carried over from ADR-318) excludes 'generic'/'unknown'/etc. from both sides of the fingerprint by construction." },
+    { "mode": "near-identical titles for different products", "status": "REAL_CASE_CONFIRMED", "evidence": "TCL BreezeIN / VoxIN EVO / SaveIN Neo at the same capacity_class — three genuinely different sub-lines that a naive matcher could easily conflate; V1 did not conflate them (AMBIGUOUS, not a false merge)." },
+    { "mode": "same price for different products", "status": "REAL_CASE_CONFIRMED (ADR-319 price experiment)", "evidence": "2 of 17 weak/ambiguous candidate pairs hit exact price ratio 1.000 despite being unconfirmed matches." },
+    { "mode": "very different prices for the same proven product", "status": "NO_REAL_CASE_AVAILABLE", "evidence": "all 3 usable ADR-319 true-match price pairs happened to show EXACT price equality (ratio 1.000) — no real instance of a confirmed match with divergent pricing was available to test this specific mode." }
+  ],
+  "exhaustive_manual_verification": {
+    "TOTAL_STRONG_RESCUE_CANDIDATES": 4,
+    "ALL_MANUALLY_VERIFIED": "YES",
+    "TRUE_EXACT_MATCHES": 4,
+    "FALSE_MERGES": 0,
+    "UNKNOWN": 0,
+    "REVIEW_TIER_TOTAL": 4,
+    "REVIEW_TIER_MANUALLY_VERIFIED": "YES (4/4)",
+    "REVIEW_TIER_CONFIRMED_SAME_PRODUCT": 0,
+    "REVIEW_TIER_WOULD_BE_FALSE_MERGE_IF_AUTO_APPROVED": 1,
+    "REVIEW_TIER_UNCERTAIN_CONTAMINATED_CANDIDATE": 2,
+    "REVIEW_TIER_UNCERTAIN_LEANING_DIFFERENT": 1,
+    "AMBIGUOUS_TIER_TOTAL": 3,
+    "AMBIGUOUS_TIER_MANUALLY_VERIFIED": "YES (3/3)",
+    "AMBIGUOUS_TIER_RECOVERABLE_TRUE_MATCH_HIDDEN_BY_EXTRACTION_GAP": 1,
+    "AMBIGUOUS_TIER_CORRECTLY_NEGATIVE_OR_UNCERTAIN": 2
+  },
+  "metrics": {
+    "HIGH_CONFIDENCE_TOTAL": 4,
+    "HIGH_CONFIDENCE_TRUE": 4,
+    "HIGH_CONFIDENCE_FALSE": 0,
+    "HIGH_CONFIDENCE_UNKNOWN": 0,
+    "HIGH_CONFIDENCE_PRECISION": "4/4 = 100% (n=4, exhaustively verified — small-sample caveat applies, disclosed)",
+    "FALSE_MERGE_RATE_within_actual_V1_output": "0/4 = 0% — nothing V1 currently labels HIGH_CONFIDENCE was found to be a false merge",
+    "FALSE_MERGE_RATE_if_REVIEW_tier_were_ever_auto_approved": "at least 1/4 = 25% confirmed-different, plus 2/4 resting on contaminated trusted candidates that also should not be auto-trusted — i.e. up to 3/4 = 75% would be unsafe to auto-approve without human review",
+    "PRECISION_review_tier_as_a_decision_not_just_a_flag": "0/4 = 0% (none independently confirmed same-product) — REVIEW must remain a human-gated flag, never a decision",
+    "RECALL": "not computable in the traditional sense (total true-match count in the population is unknown), but at least 1 concrete recoverable true match was found hidden inside an AMBIGUOUS bucket by an extraction gap — recall is capped by series_or_platform coverage (1.1%), consistent with and now reinforced by ADR-319's own conclusion",
+    "ABSTENTION_RATE": "18/26 = 69.2% (AMBIGUOUS + NO_CANDIDATE + HARD_CONFLICT, unchanged from ADR-319)",
+    "HARD_NEGATIVE_REJECTION_RATE_as_originally_measured": "3/3 = 100% (ADR-319 framing)",
+    "HARD_NEGATIVE_REJECTION_RATE_corrected_for_gate_blind_spots": "3/4 = 75% once the Fisher case (a real conflict the gate could not see due to a trusted-side extraction gap) is counted — this is a genuine downward correction to ADR-319's original figure, found by this phase's red-team, not hidden.",
+    "FALSE_SPLIT_RATE": "not independently measurable from this exercise — no confirmed case of V1 wrongly failing to link two observations that were provably the same product beyond the one extraction-gap case already counted under recall."
+  },
+  "verdict": {
+    "V1_VALIDATION_VERDICT": "PROMISING",
+    "reasoning": "The RESCUE_HIGH_CONFIDENCE tier — the only tier V1 currently flags as trustworthy — held up perfectly under exhaustive, independently-sourced verification (4/4 true, 0 false merges), and two of the four cases are proven, correct re-resolutions of the historical ADR-077 confusion with even stronger evidence than V1's own score reflects. This is genuinely strong evidence FOR the narrow HIGH_CONFIDENCE tier specifically. However, this phase also found two things ADR-319 did not have direct evidence for and that materially qualify the verdict: (1) a NEW failure mode — trusted-side canonical identity contamination, where a 'candidate' is itself a merge of 2+ different underlying SKUs (found twice, both in GREE cases) — meaning cleanliness of the TRUSTED universe cannot be assumed, only the Amazon-side extraction was being stress-tested before; (2) the hard-conflict gate's protection is coverage-dependent, not absolute — the Fisher case proves a real conflict can hide from the gate purely because the conflicting attribute was never extracted on the trusted side, correcting the hard-negative catch rate from 100% to 75%. Neither finding invalidates the HIGH_CONFIDENCE tier itself (no false positives were found there), but both are decisive reasons the REVIEW tier must never be relaxed into an auto-approve path, and both should gate any future production-pilot proposal.",
+    "V1_TUNED_DURING_VALIDATION": false,
+    "DOES_V1_DESERVE_PRODUCTION_PILOT": "NOT_YET",
+    "evidence_still_missing_for_a_YES": [
+      "a larger, ideally population-doubling gold set for the HIGH_CONFIDENCE tier — n=4 is a genuine, if perfect, sample; a pilot needs more than 4 exhaustively-verified true positives before it can claim a stable precision estimate",
+      "a scan of the FULL 990-canonical trusted universe for the identity-contamination pattern found in the two GREE cases — until that scan exists, a wider rollout could silently inherit trusted-side identity errors that this phase's narrow 30-canonical evidence pull happened to surface only because it looked",
+      "closing (or at minimum measuring the size of) the hard-conflict gate's coverage-dependent blind spot demonstrated by the Fisher case — e.g., requiring a minimum stated-attribute density on the trusted side before a REVIEW-tier candidate is even shown to a human reviewer, rather than trusting an under-specified candidate by default",
+      "systematic real-case testing of T1/T3, Wi-Fi-variant, voltage-variant, indoor/outdoor-only, and renewed-condition failure modes — this phase could not locate real Tawveeri cases for these (honestly recorded as NO_REAL_CASE_AVAILABLE, not fabricated), so they remain untested, not proven safe",
+      "the known model/mpn join limitation (0/270 in this lab vs ADR-318's 2/270) should be fixed before any coverage-dependent claim is finalized, since model-number matching turned out this phase to be the single strongest piece of independent evidence available (TCL SaveIN Neo, Haier marketing terms, LG near-verbatim title, LG ArtCool AM182C0 — all found via raw-text reading, none via the currently-broken structured model_number field)"
+    ]
+  },
+  "products_2_boundary": {
+    "writes_to_canonical_identity": false,
+    "writes_to_commercial_variants": false,
+    "writes_to_product_matches": false,
+    "writes_to_tps_matching": false,
+    "writes_to_storefront_identity": false,
+    "writes_to_advisor": false,
+    "writes_to_comparison_pages": false,
+    "PRODUCTS_2_REMAINS_READ_ONLY": true
+  }
+}
