@@ -4,6 +4,24 @@
 
 Status legend: **Accepted** · **Superseded** · **Proposed**.
 
+### ADR-323 — AC Rescue Lab external corroboration check: blocked by tooling, not by evidence — TCL/Haier decision unchanged, rollback design finalized · Accepted (2026-09-08)
+
+**Context.** Founder asked one narrow question: can external, genuinely-independent evidence (manufacturer site, SASO/energy-efficiency listing, a third independent Saudi merchant) strengthen the TCL and Haier reference canonicals enough to clear ADR-322's `REFERENCE_CLEAN` bar, and can the future pilot's rollback mechanism be finalized in parallel — design only, no execution, no fix to GREE or brand-corruption, no other category.
+
+**External verification could not be performed this session — a tooling gap, not a finding.** `WebSearch` was already at its budget ceiling (200/200) before this mission began, confirmed by a direct call, not assumed from memory. `WebFetch` was tried as a fallback: a search-engine fetch returned a CAPTCHA challenge page (unsolvable by a fetch tool) or a connection reset; a guessed TCL product-page URL 404'd; Haier's corporate homepage fetched cleanly but had no reachable path to the specific SKU without a search capability. Per the mission's own "do not infer missing facts" instruction, guessing deeper URLs was correctly not attempted — reported as `NONE` (unattempted successfully), not fabricated as a search result.
+
+**Reference status unchanged from ADR-322.** No new internal evidence was gathered (V1 stayed frozen, no new database queries). `TCL_REFERENCE_STATUS = INSUFFICIENT`, `HAIER_REFERENCE_STATUS = INSUFFICIENT` — both still rest on exactly 2 observations (Amazon + one independent merchant, Extra). Neither is rejected outright — no contradicting evidence exists anywhere, internal or external, and the existing internal evidence (exact price match, shared marketing-language corroboration, zero hard conflicts) remains genuinely encouraging. The gate stays open pending evidence, not closed by an adverse finding.
+
+**Rollback design finalized (not built).** Carries forward and completes ADR-322 Part 3's design against this mission's exact field list: a new, physically separate pilot-only ledger table (never `storefront_identity_links`, whose `evidence_class` constraint is structurally incompatible with fingerprint-based candidates), its own `rule_version` and `pilot_batch_id` tags, an optimistic-locked write guarded by `canonical_product_id = NULL` (structurally prevents ever overwriting a pre-existing link — directly informed by ADR-322's "already-linked" finding), a rollback scoped strictly to the pilot's own ledger rows, drift detection mirroring the existing mechanism's own drift column, and an append-only audit trail. `ROLLBACK_DESIGN_READY = YES`; nothing was created or executed.
+
+**Final decision.** `TCL_REFERENCE_CLEAN = NO`. `HAIER_REFERENCE_CLEAN = NO`. `V1_CHANGED = NO`. `PRODUCTS_2_CHANGED = NO`. **`READY_FOR_2_PRODUCT_PRODUCTION_PILOT_PROPOSAL = NOT_YET`.** Missing evidence is precise and actionable: genuine external corroboration for these 2 exact SKUs, obtainable either by raising the session's `CLAUDE_CODE_MAX_WEB_SEARCHES_PER_SESSION` limit for a search-capable session, or by the founder supplying direct manufacturer/distributor/SASO URLs to fetch and verify against directly.
+
+**Stop rule honored.** GREE series-collapse and brand-corruption defects were not touched; no other category was audited; scope stayed exactly TCL and Haier.
+
+**Consequences.** Nothing in production changed. The AC Rescue Lab pilot proposal remains blocked on the same two data points as ADR-322 — this phase neither strengthened nor weakened that position, it only confirmed the blocker is currently a tooling limitation rather than a permanent evidentiary gap.
+
+**Products 2 status:** UNCHANGED. Read-only throughout — zero writes.
+
 ### ADR-322 — AC Rescue Lab final pre-pilot gate: TCL and Haier references are INSUFFICIENT_EVIDENCE, not CLEAN — pilot proposal stopped by the mission's own rule · Accepted (2026-09-08)
 
 **Context.** Founder accepted ADR-321 and, judging the remaining pilot gates "narrow," authorized one final, stricter mission: formally classify the TCL and Haier reference canonicals behind the two genuinely-novel `RESCUE_HIGH_CONFIDENCE` rescues (with an explicit rule — if either is not `REFERENCE_CLEAN`, stop the pilot proposal); reverify all 4 `RESCUE_HIGH_CONFIDENCE` cases distinguishing `PREVIOUSLY_PROVEN` from `GENUINELY_NEW_RESCUE`; design (never execute) a rollback mechanism for a future ≤5-product pilot; scope (never fix) the GREE series-collapse defect and the brand-corruption defect population-wide; and explicitly separate any future Rescue Lab pilot authorization from any Products-2-defect-remediation authorization — discovery by the lab does not confer fix authorization. V1 and Products 2 both remain untouched.

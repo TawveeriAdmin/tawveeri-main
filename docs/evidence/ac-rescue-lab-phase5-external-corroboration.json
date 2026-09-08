@@ -1,0 +1,64 @@
+{
+  "experiment": "AC Rescue Lab — Final external corroboration check, TCL and Haier only",
+  "adr": "ADR-323",
+  "date": "2026-09-08",
+  "v1_frozen": { "V1_CHANGED": false, "PRODUCTS_2_CHANGED": false, "files_touched_this_phase": [] },
+
+  "part1_external_verification_attempted": {
+    "method": "WebSearch (primary tool for this task) + WebFetch (fallback)",
+    "WebSearch_result": "session's WebSearch budget fully exhausted (200/200) before this mission began — confirmed by direct tool call, not assumed from memory. Both TCL and Haier search queries returned 'Web search was not performed' with no results.",
+    "WebFetch_fallback_attempts": [
+      { "target": "https://html.duckduckgo.com/html/?q=TCL+TAC-30CSU%2FZIM...", "result": "connection reset (ECONNRESET)" },
+      { "target": "https://html.duckduckgo.com/html/?q=Haier+HSU-24LQ13...", "result": "returned a CAPTCHA challenge page ('identify the ducks'), zero search results — WebFetch cannot solve interactive challenges" },
+      { "target": "https://www.tcl.com/global/en/products/home-appliances/air-conditioner.html", "result": "HTTP 404 — guessed URL path did not exist" },
+      { "target": "https://www.haier.com/global/", "result": "fetched successfully but is a corporate homepage with no product catalog navigation reachable without a search capability; explicitly found no reference to 'Ultra Inverter' or the model code" }
+    ],
+    "conclusion": "genuine external web verification (manufacturer site, SASO, third independent Saudi merchant) could NOT be performed this session. This is a tooling-availability gap, not a finding about the products themselves — reported honestly per the mission's own 'unknown beats guessing' standard rather than fabricating a search result or guessing at an unverified product-page URL to fill the gap.",
+    "TCL_EXTERNAL_CORROBORATION": "NONE — not because none exists, but because it could not be attempted this session",
+    "HAIER_EXTERNAL_CORROBORATION": "NONE — same reason"
+  },
+
+  "part2_reference_status_unchanged": {
+    "note": "no new internal evidence was gathered this phase (V1 frozen, no new DB queries beyond what ADR-322 already established) — reference status carries forward unchanged from ADR-322's Part 1 finding.",
+    "TCL_REFERENCE_STATUS": "INSUFFICIENT (2 total observations: Amazon + exactly 1 independent merchant, Extra — unchanged)",
+    "HAIER_REFERENCE_STATUS": "INSUFFICIENT (same structure — unchanged)"
+  },
+
+  "part3_rollback_design_finalized_not_built": {
+    "status": "DESIGN ONLY — carried forward and finalized from ADR-322 Part 3, restated against this mission's exact requested fields. No table created, no code written, no production link written.",
+    "how_a_future_pilot_link_would_be_stored": "a new, physically separate table (working name: ac_rescue_lab_pilot_links) — never storefront_identity_links, whose evidence_class CHECK constraint (url_exact/asin_exact only) is structurally incompatible with fingerprint-based rescue candidates.",
+    "how_it_stays_separate_from_ADR_312_history": "separate table entirely (not a shared row type, not a shared status column, not a shared rule_version namespace) — a query against storefront_identity_links can never accidentally include or be confused with a pilot row, and vice versa. Pilot rows carry their own rule_version tag (e.g. 'ac-rescue-lab-pilot-v1') distinct from ADR-312's exact-match rule versions.",
+    "exact_before_after_state": {
+      "before": "products.canonical_product_id = NULL for the specific pilot product row (confirmed NULL for both TCL and Haier's Amazon storefront rows as of this audit)",
+      "after": "products.canonical_product_id = <verified target canonical_product_id>, written via an optimistic-locked UPDATE (... WHERE canonical_product_id = NULL) identical in shape to the existing ADR-312 mechanism, so a pilot write can structurally never fire against a row that already has any link (guards directly against the 'already-linked' confusion found in ADR-321/322)."
+    },
+    "pilot_identifier": "a dedicated (product_id, canonical_product_id, pilot_batch_id) key in the new table, with pilot_batch_id a single shared tag for this specific pilot run (e.g. 'ac-rescue-pilot-2026-09') so every row from one pilot can be selected, audited, or rolled back as one unit without touching any other row.",
+    "rollback_procedure": "UPDATE products SET canonical_product_id = NULL WHERE id = ANY(<pilot product_ids from the ledger>) AND canonical_product_id = ANY(<the exact canonical_product_ids the pilot itself wrote, from the ledger>) — scoped strictly to rows the pilot's own ledger recorded, nothing else.",
+    "drift_protection": "a scheduled recheck compares each pilot-linked canonical's current tps_identity_key against the value captured in the ledger at link time; a mismatch flips that ledger row's status to 'drift' (mirroring storefront_identity_links' own drift column) WITHOUT touching the products table until a human reviews it.",
+    "verification_after_rollback": "re-query products.canonical_product_id for the exact pilot product_ids and assert NULL; assert every pilot ledger row's status reads 'rolled_back'; assert storefront_identity_links' own row count is unchanged (proves the rollback touched nothing outside the pilot table).",
+    "audit_trail": "append-only ledger — status transitions only (active -> rolled_back or active -> drift), no row ever deleted or overwritten, consistent with the project's constitutional rule that provenance records are never destructively modified.",
+    "ROLLBACK_DESIGN_READY": "YES (as a design — nothing built or executed)"
+  },
+
+  "final_decision": {
+    "TCL_REFERENCE_CLEAN": "NO",
+    "HAIER_REFERENCE_CLEAN": "NO",
+    "ROLLBACK_DESIGN_READY": "YES",
+    "V1_CHANGED": "NO",
+    "PRODUCTS_2_CHANGED": "NO",
+    "READY_FOR_2_PRODUCT_PRODUCTION_PILOT_PROPOSAL": "NOT_YET",
+    "evidence_still_missing": [
+      "genuine external corroboration for TCL (TAC-30CSU/ZIM / 'SaveIN Neo' T4 28200 BTU) from a manufacturer page, SASO/energy-efficiency listing, or a genuinely independent third Saudi merchant — not attempted successfully this session due to WebSearch budget exhaustion, not because such evidence was sought and found absent",
+      "same for Haier (HSU-24LQ13/R32(T3DB-B) Ultra Inverter 24000 BTU)",
+      "path forward: either raise CLAUDE_CODE_MAX_WEB_SEARCHES_PER_SESSION for a session with search capability, or the founder supplies direct manufacturer/distributor/SASO URLs for these two exact SKUs to fetch and verify against"
+    ],
+    "why_not_NO_outright": "the candidates were not rejected — no contradicting evidence exists anywhere (internal or external), and their internal evidence (exact price match, shared marketing-language corroboration, zero hard conflicts) remains genuinely encouraging. The gate is open pending evidence, not closed by a finding against them."
+  },
+
+  "stop_rule_honored": {
+    "GREE_fix": "not touched",
+    "brand_corruption_fix": "not touched",
+    "other_categories": "not audited",
+    "scope": "TCL and Haier only, as instructed"
+  }
+}
