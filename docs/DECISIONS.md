@@ -6,6 +6,26 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 ---
 
+### ADR-311 — Correcting ADR-310: the 268 unlinked Amazon AC products are not an unprocessed backlog — normalization already succeeded, and the gap is a storefront-identity-projection lag affecting Amazon's entire catalog, not AC specifically · Accepted (2026-09-08)
+
+**Context.** Founder question, same day as ADR-310: *"is the 268 a normal backlog waiting for the usual pipeline, or a real defect blocking linkage? Don't touch Products 2."* Re-investigated read-only, no code run beyond SQL `SELECT`s.
+
+**ADR-310's claim was wrong, and the error is instructive.** ADR-310 queried `normalized_product_observations` for `detected_category = 'air_conditioner'` and got zero rows, concluding the 268 storefront products were "never staged." That query used the wrong label — **the storefront layer's `products.category` says `'air_conditioner'`; the TPS layer's own `detected_category` says `'ac'`.** A naming mismatch between the two layers, exactly the class of defect CLAUDE.md's own "Naming discipline" section warns about, produced a false negative in the very first pass.
+
+**Corrected finding.** Querying `detected_category = 'ac'` for Amazon (`store_id='2'`) found **244 normalized rows in the last 3 days alone, 1,243 all-time**, every sampled row carrying a real, populated `canonical_product_id`, as recent as `2026-09-08T12:08:49Z` — normalization is actively running and succeeding. **Proof the gap is downstream, not in matching:** the exact product *"Fisher Window Air Conditioner Cold 18000 Btu - FWAC-H18CF"* exists in `normalized_product_observations` with `canonical_product_id='980ac6af-aa7b-4988-8c3c-371b8b51943f'` (observed `06:09:16Z`) — and its corresponding storefront `products` row (created `2026-09-07T16:00:16Z`) still shows `canonical_product_id: null`. Confirmed identically on 3 more title matches (Nikai, Hisense, Aston).
+
+**Real root cause.** The TPS knowledge layer has already done the hard part — identity matching succeeded and produced a real canonical link. What's missing is the separate storefront-identity-projection step that copies that link onto the `products` row a customer-facing query actually reads (likely `scripts/tps-core/project-storefront-identity.ts` / `npm run tps:storefront-link` — not traced line-by-line, deliberately, to stay strictly read-only this pass).
+
+**Not AC-specific — checked and ruled out.** Per-category linked/unlinked counts for Amazon, same store: `tv` 1,119/3,062, `air_conditioner` 2/268, `laptop` 33/193, `monitor` 106/134, `audio` 46/113, `tablet` 35/96, `smartphone` 21/74, `camera` 16/106, `appliance` 60/162 — the identical pattern holds across every category. This is a systemic storefront-projection lag for this merchant's entire catalog, not an AC-specific or even a normalization-specific defect. AC is not unusually broken; it is unusually *visible*, because ADR-305's own audit happened to be scoped there first.
+
+**Classification.** `REAL_DEFECT` — not a normal backlog waiting its turn. **Consequence for ADR-310's proposed fix:** running `tps:normalize`/`normalize-incremental.ts` (ADR-310's proposal) would not close this gap — that pipeline is already running and already succeeding at the step it owns. The action that would actually close it is the projection step, a distinct pipeline component, not yet identified with the same confidence and not investigated further this pass to stay inside the read-only boundary.
+
+**Products 2 boundary — reaffirmed, not loosened.** This correction sharpens the diagnosis; it does not authorize action. Reading `project-storefront-identity.ts`'s own logic in enough depth to propose a fix, or running it, is exactly the class of Products-2-adjacent step this mission is not authorized to take. Recorded here, corrected on the record per this register's own "history never disappears" rule, for a future, separately-approved mission.
+
+**Products 2 status.** Not touched. Read-only correction only — no query beyond `SELECT`, no schema change, no data write.
+
+---
+
 ### ADR-310 — AC normalization backlog: the discover-firecrawl fix unblocked 255 new Amazon AC products in one day, 268/270 still unlinked to canonical identity — read-only finding, no fix, flagged for separate Products 2 approval · Accepted (2026-09-08)
 
 **Context.** Market Proof mission required re-verifying current AC coverage against ADR-305's 2026-09-07 finding that Amazon's genuine AC catalog exists but `valid_amazon_offers` stayed at 0 due to a "normalization-drop" defect, explicitly left unfixed and out of that mission's bound.
