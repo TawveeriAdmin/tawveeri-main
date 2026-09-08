@@ -1,0 +1,63 @@
+{
+  "investigation": "Amazon AC product identity recovery — root cause of the 147 low-confidence candidates, read-only + one Amazon.sa live-page empirical test",
+  "mission": "TAWVEERI — AMAZON PRODUCT IDENTITY RECOVERY",
+  "date": "2026-09-08",
+  "no_further_writes_performed": true,
+  "creators_api_pa_api_sp_api_status": "NOT_CURRENTLY_AVAILABLE — exhaustive grep of the full codebase and .env.example found zero references to any Amazon Product Advertising API / Creators API / SP-API credential anywhere. All Amazon data comes from HTML web scraping (cheerio + Puppeteer) against public pages.",
+  "two_scrapers_confirmed": {
+    "search_tile_scraper": "src/lib/scraping/search/amazon-search-scraper.ts and the discovery half of src/lib/scraping/stores/amazon-scraper.ts — parses /s?k= search-result tiles only. Hardcodes specifications:{}. Brand/model come from regex-matching a small known-brand list against the title text only. source_method stamped 'amazon-search'.",
+    "product_detail_scraper": "src/lib/scraping/stores/amazon-scraper.ts scrapeProductPage()/extractSpecs() — visits the individual PDP, walks #productDetails_techSpec_section_1, #detailBullets_feature_div, #productDetails_detailBullets_sections1, #productOverview_feature_div, #detailBulletsWrapper_feature_div. Captures a real label/value specifications object, plus feature-bullet/description text. source_method stamped 'scraper'. Currently only invoked via updateProductPrice() (price-refresh path), not the initial discovery path."
+  },
+  "sample_check": {
+    "n_sampled": 5,
+    "source_method_of_all_5": "amazon-search (100%)",
+    "specifications_field": "{} (empty) on all 5 — confirms these rows never had a PDP visit"
+  },
+  "identity_key_builder_code_reading": {
+    "file": "scripts/tps-plugins/ac/identity.ts (buildIdentityKey) + scripts/tps-plugins/ac/parser.ts (normalize)",
+    "finding": "normalize() is 100% title-text regex extraction (nameAr + nameEn only) — it has no parameter and no code path that reads a specifications object, description, or feature bullets. Even if a PDP re-scrape populated specifications, current code would not consume it without a separate extension.",
+    "confidence_rule": "identity.ts requires series_or_platform AND technology (non-inferred) AND cooling_mode all to be genuinely stated for 'valid' tier (ADR-079, ADR-306) — brand and capacity_btu are the only hard requirements. This design is deliberate and evidence-based (both ADRs cite measured false-negative rates from requiring these fields), not a bug."
+  },
+  "empirical_amazon_sa_live_page_tests": [
+    {
+      "asin": "B0CTFHYF2H",
+      "product": "Fisher Window Air Conditioner Cold 18000 Btu - FWAC-H18CF",
+      "fetched_via": "real browser navigation, 2026-09-08",
+      "found_on_page": {
+        "brand": "فيشر / Fisher — present, matches captured data",
+        "manufacturer": "فيشر (Product Details table)",
+        "item_model_number": "FWAC-H18CF — real, NOT currently captured by Tawveeri (stored model='18000', the BTU number)",
+        "asin": "B0CTFHYF2H — matches",
+        "capacity_btu": "18000 — present, matches",
+        "cooling_mode_evidence": "description explicitly states 'بارد فقط' (cool only); English title contains 'Cold' with no 'hot'/'heat' — already correctly extracted as cool_only",
+        "series_or_platform": "NOT FOUND anywhere on the page (title, bullets, spec table, description)",
+        "technology_inverter_status": "NOT FOUND anywhere on the page — no 'إنفرتر'/'Inverter'/'on-off' statement at all",
+        "gtin_ean_upc": "NOT FOUND — Product Details table has no such field visible"
+      },
+      "conclusion": "For THIS product, low_confidence status is CORRECT and evidence-complete — the missing fields (series, technology) are genuinely absent from Amazon's own listing at every level, not a Tawveeri capture gap. Re-scraping the PDP would NOT promote this one to valid."
+    },
+    {
+      "asin": "B0G1KD7BCY",
+      "product_as_stored_by_tawveeri": "18000BTU Fast Cooling Split Air Conditioner, White (brand recorded as 'unknown')",
+      "product_as_shown_on_amazon": "مكيف سبليت للتبريد السريع 18000 وحدة حرارية بريطانية من كرافت، لون أبيض",
+      "fetched_via": "real browser navigation, 2026-09-08",
+      "found_on_page": {
+        "brand": "كرافت / Kraft — CLEARLY STATED, both in the byline and the Product Details table. Tawveeri's captured data has brand='unknown' for this SKU.",
+        "manufacturer": "Al Obaidi General General Trading (Product Details table)",
+        "item_model_number": "DW18E6AA3XTS00 — real, not currently captured",
+        "form_factor": "نظام سبليت (Split system) — confirms type=split, already correctly captured",
+        "series_or_platform": "NOT FOUND",
+        "technology_inverter_status": "NOT FOUND anywhere on the page"
+      },
+      "conclusion": "For THIS product, Tawveeri's captured title/brand data is genuinely incomplete relative to what Amazon actually shows — a real brand ('Kraft') exists and was missed. This IS a recoverable gap. But even with the brand recovered, series/technology would still be unstated at the source (same limitation as case 1) — so this would move from 'unknown|split|...' toward 'kraft|split|...', still low_confidence, not valid, without also solving the series/technology question."
+    }
+  ],
+  "conclusion_root_cause": "MULTIPLE CAUSES (hypothesis I), confirmed by direct empirical testing, not assumed: (1) genuine source-data sparsity for series/technology on budget/generic-brand AC units — present in both tested cases and appears to be the harder, less-recoverable half; (2) real brand-capture misses on the search-tile-only discovery path for a subset of listings — recoverable via PDP re-scrape, present in 1 of 2 tested cases. Sample size is 2, not the mission's requested 20-30 — an honest limitation, time-bounded. Percentages/counts of the 147 falling into each bucket are UNKNOWN without a larger sample or an actual re-scrape-and-remeasure experiment.",
+  "12_pilot_reaudit": {
+    "method": "queried storefront_identity_links + products + canonical_products for all 12 rows written in this session's --go run (isolated by exact linked_at minute, confirmed distinct from a separate, EARLIER, independently-scheduled automated batch of 57 rows written at 09:17 UTC the same day, before this session began — same rule_version, same safety gate, unrelated to this investigation)",
+    "identity_correctness": "All 12 confirmed correct by url_exact/asin_exact evidence (same-listing equality, not re-decided here)",
+    "category_finding": "One row (Xiaomi Redmi Pad 2, product_id linked via asin_exact) has storefront products.category = 'accessories' while its correct canonical_category is 'tablet'. This is a PRE-EXISTING storefront categorization error, not caused or fixed by the projection script (which never writes category, only canonical_product_id). IDENTITY_CORRECT=YES, CATEGORY_CORRECT=NO (pre-existing, separate bug), CUSTOMER_FACING_RISK=LOW-MEDIUM (the tablet's own product/comparison page now shows correct linked data; a shopper browsing the 'accessories' storefront category simply won't find it there — a discoverability gap, not a wrong-price or wrong-identity risk).",
+    "dansat_verdict": "Nominal/rounded capacity-bucket representation, NOT a data error — corroborated by 3 independent Amazon listings (single-door, mini-bar-framed, single-door-with-freezer) all stating 83L/83 Liters and all converging on the same canonical labeled '80L'. Consistent with standard appliance capacity-class marketing conventions. Not verified against Dansat's own manufacturer spec sheet (time-bounded, flagged as unverified beyond internal corroboration). No global capacity-tolerance rule proposed."
+  },
+  "recommended_next_step_not_executed": "Re-scrape (via the existing, already-approved product-detail-page scraper — zero new access, zero new code) the actual Amazon.sa product pages for a sample of the 147 low-confidence AC ASINs, and check empirically, under the CURRENT UNCHANGED normalize() logic, how many reach valid tier purely from a fuller title/description. This is TYPE_1 (source enrichment only), fully reversible, zero Products 2 semantic change. Whether a further TYPE_2 (extending normalize() to also read specifications/description) is additionally needed cannot be determined without this step's results. NOT EXECUTED — awaiting founder go-ahead given this mission's explicit high-caution framing."
+}
