@@ -428,27 +428,23 @@ export function decideAc(task: ShoppingTask, rows: CanonicalRow[]): Recommendati
     else reasons.evidence("متوفر في متجر واحد — المقارنة غير متاحة");
 
     const cost = estimateTotalCost(row.lowest_price, dna);
-    // 5. Total cost within budget (suitability, not commission). ESTIMATE, not a measurement:
-    //    installation and annual electricity are modelled from KSA heuristics (ADR-187).
-    // SCORE IS UNCHANGED (founder review, 2026-08-22, disclosure-only fix): the -0.12 penalty
-    // still applies whenever cost.total exceeds budget, exactly as before — only the WORDING
-    // changes. MEASURED: a device priced 1,199 SAR (within a 2,000 SAR budget) was captioned
-    // "أعلى من ميزانيتك" ("over your budget") solely because the estimated total (device +
-    // install + modelled annual electricity, 2,908) exceeded it — asserting the DEVICE itself
-    // is unaffordable when it is not. "Over budget" is only true when the device's own
-    // verified price exceeds budget; a total-cost overage is a different, milder fact.
-    if (task.budget_total && cost.total) {
-      if (cost.total <= task.budget_total) { score += 0.06; reasons.estimate(`ضمن ميزانيتك — التكلفة الإجمالية ~${cost.total} ريال`); }
-      else if (cost.unit != null && cost.unit <= task.budget_total) {
-        // `caution`, not `estimate` (2026-08-22 follow-up): the score impact is identical to
-        // the true-over-budget branch below (-0.12), and `pickHeadlineReasons` (§B3) only
-        // guarantees a compact-card slot to cautions — classifying this as `estimate` demoted
-        // it below the 3-slot fill cap and made it silently vanish from the compact card on
-        // exactly the query that motivated this fix. The wording is corrected; the visibility
-        // tier matching the real score impact is not.
-        score -= 0.12;
-        reasons.caution(`سعر الجهاز ${cost.unit} ضمن ميزانيتك — التكلفة الإجمالية التقديرية (شاملة التركيب والكهرباء) ~${cost.total} ريال`);
-      } else { score -= 0.12; reasons.caution(`أعلى من ميزانيتك — التكلفة الإجمالية ~${cost.total} ريال`); }
+    // 5. PURCHASE BUDGET vs DEVICE PRICE ONLY (founder product decision, 2026-09-08 budget-
+    //    semantics closure). A stated budget ("تحت 4000") is a test on what the shopper pays
+    //    to buy the device — never on device + modelled installation + modelled annual
+    //    electricity. `applyBudgetGate` (below in this file) already hard-gates
+    //    ranking/eligibility on `unit_price` for exactly this reason; this closes the matching
+    //    gap in this decider's OWN soft score and customer-facing reason, which until now
+    //    still scored and CAPTIONED budget-fit against `cost.total`. MEASURED (production,
+    //    2026-09-08): a 1,749 SAR device with a 2,070 SAR estimated annual-electricity cost
+    //    was captioned «ضمن ميزانيتك — التكلفة الإجمالية ~3,819 ريال» for a 4,000 SAR budget —
+    //    stating the budget test passed because of a number that includes electricity, when
+    //    the actual test the shopper meant (and the hard gate above already enforces) is the
+    //    device's own price. The estimated total remains fully available and disclosed
+    //    elsewhere (`cost_breakdown`/`secondaryCostLines`, CostBlock's own secondary line) —
+    //    it is a real decision insight, just never the budget-eligibility test itself.
+    if (task.budget_total && cost.unit != null) {
+      if (cost.unit <= task.budget_total) { score += 0.06; reasons.estimate(`ضمن ميزانيتك — سعر الجهاز ${cost.unit} ريال`); }
+      else { score -= 0.12; reasons.caution(`أعلى من ميزانيتك — سعر الجهاز ${cost.unit} ريال`); }
     } else if (cost.total) {
       reasons.estimate(`التكلفة الإجمالية التقديرية ~${cost.total} ريال (الجهاز ${cost.unit} + تركيب ${cost.installation} + كهرباء سنوية ~${cost.annual_electricity})`);
     }
@@ -802,16 +798,13 @@ export function decideRefrigerator(task: ShoppingTask, rows: CanonicalRow[]): Re
     if ((row.store_count ?? 0) >= 2) { score += 0.08; reasons.evidence(`سعر موثوق — متوفر في ${row.store_count} متاجر`); } else reasons.evidence("متوفر في متجر واحد — المقارنة غير متاحة");
     const unit = row.lowest_price; const annual = fridgeAnnualElectricity(liters, inverter);
     const total = unit != null ? Math.round(unit + annual) : null;
-    // Same disclosure-only fix as decideAc above (founder review, 2026-08-22): score unchanged,
-    // wording corrected so a device priced within budget is never captioned "over budget" just
-    // because the modelled annual-electricity total pushes past it.
-    if (task.budget_total && total) {
-      if (total <= task.budget_total) { score += 0.06; reasons.estimate(`ضمن ميزانيتك — التكلفة ~${total} ريال (الجهاز ${unit} + كهرباء سنوية ~${annual})`); }
-      else if (unit != null && unit <= task.budget_total) {
-        // caution, not estimate — same reasoning as decideAc's identical fix above.
-        score -= 0.12;
-        reasons.caution(`سعر الجهاز ${unit} ضمن ميزانيتك — التكلفة الإجمالية التقديرية (شاملة الكهرباء) ~${total} ريال`);
-      } else { score -= 0.12; reasons.caution(`أعلى من ميزانيتك — التكلفة ~${total} ريال`); }
+    // Same fix as decideAc's identical defect (founder product decision, 2026-09-08 budget-
+    // semantics closure): budget-fit is a DEVICE-PRICE test, never device + modelled annual
+    // electricity. See decideAc's own doc comment above for the measured production defect
+    // this replaces. The estimated total remains disclosed via `cost_breakdown`/CostBlock.
+    if (task.budget_total && unit != null) {
+      if (unit <= task.budget_total) { score += 0.06; reasons.estimate(`ضمن ميزانيتك — سعر الجهاز ${unit} ريال`); }
+      else { score -= 0.12; reasons.caution(`أعلى من ميزانيتك — سعر الجهاز ${unit} ريال`); }
     }
     else if (total) reasons.estimate(`التكلفة التقديرية ~${total} ريال (الجهاز ${unit} + كهرباء سنوية ~${annual})`);
     return { row, dna, score, reasons, total, breakdown: { unit: unit ?? null, installation: null, annual_electricity: annual } };

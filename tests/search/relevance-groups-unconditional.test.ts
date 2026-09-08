@@ -12,7 +12,7 @@
  * `queryIsMainProduct` query already ran. Scoped narrowly: does NOT touch the `gated`/
  * `categoryEnforcedZero` result-list filter, which keeps its own `queryIsMainProduct` gate.
  */
-import { scoreProduct } from "@/app/api/search/route";
+import { scoreProduct, hasStrongACSignal } from "@/app/api/search/route";
 import type { GroupedSearchProduct } from "@/lib/scraping/search/product-grouper";
 import fs from "fs";
 import path from "path";
@@ -72,6 +72,65 @@ describe("scoreProduct — relevance dominates once relevanceGroups is non-empty
     const geniunelyRelevant = product({ name_ar: "مكيف يبرد الغرفة بسرعة", best_price: 1500 });
     expect(scoreProduct(geniunelyRelevant, 50, 1500, false, relevanceGroups, false))
       .toBeGreaterThan(scoreProduct(irrelevantButCommonWord, 50, 1500, false, relevanceGroups, false));
+  });
+});
+
+/**
+ * FOUNDER AC-RELEVANCE CLOSURE (2026-09-08) — MEASURED LIVE on production:
+ * "مكيف لغرفة 30 متر تحت 4000" ranked a RAVPower power strip ("AC Outlets"), a HUAWEI
+ * router ("Wireless AC"), a Dell Chromebook ("AC BT" Bluetooth spec), and a wall fan
+ * ("Fan split") on EQUAL relevance footing with genuine air conditioners. Root cause:
+ * `ARABIC_TO_ENGLISH['مكيف'] = ['split ac', 'air conditioner', 'ac']` is split into
+ * individual OR-terms by `expandWordTerms` for `relevanceGroups` — "ac"/"split" alone are
+ * a real English AC synonym, but as BARE substrings they also match a Wi-Fi spec, a
+ * Bluetooth spec, a power outlet, and any product merely described as "split"-anything.
+ * Fixed by requiring `hasStrongACSignal` (the SAME check `excludeIneligibleCandidates`
+ * already trusts) to corroborate a bare "ac"/"split" match on an AC query — every OTHER
+ * query shape and every OTHER relevance term is untouched.
+ */
+describe("scoreProduct — AC query: a bare 'ac'/'split' substring alone must not satisfy relevance", () => {
+  // The real (English-only) expansion shape for "مكيف" once wrapper/constraint words are
+  // stripped: one relevance group with the Arabic word plus its bilingual expansion terms.
+  const acRelevanceGroups = [["مكيف", "split ac", "air", "conditioner", "ac", "split"]];
+
+  const genuineAcs = [
+    product({ name_en: "Zamil Winow AC, Cool only, 17,600 BTU Rotary Compressor", best_price: 630 }),
+    product({ name_en: "LG Spilt AC, 21,500 BTU, Cool, Win, Dual Inverter", best_price: 1605 }),
+  ];
+  const falsePositives = [
+    product({ name_en: "Ravpower Extension 6 AC Outlets - 3150W Max", best_price: 139 }),
+    product({ name_en: "HUAWEI B535-932 4G+ CPE Router, Wireless AC (802.11ac)", best_price: 279 }),
+    product({ name_en: "Dell 3100 Intel Celeron N4020, AC BT, 11.6 inch HD (Renewed)", best_price: 217 }),
+    product({ name_en: "Fan split TAT FW3515", best_price: 129 }),
+  ];
+
+  it("sanity: each false-positive fixture matches ONLY via the bare ac/split term, confirmed by hasStrongACSignal", () => {
+    for (const p of falsePositives) {
+      expect(hasStrongACSignal(p.name_ar || "", p.name_en || "")).toBe(false);
+    }
+    for (const p of genuineAcs) {
+      expect(hasStrongACSignal(p.name_ar || "", p.name_en || "")).toBe(true);
+    }
+  });
+
+  it("on an AC query (isAcQuery=true), every false positive scores far below every genuine AC", () => {
+    const genuineScores = genuineAcs.map((p) => scoreProduct(p, 129, 1605, false, acRelevanceGroups, true));
+    const fpScores = falsePositives.map((p) => scoreProduct(p, 129, 1605, false, acRelevanceGroups, true));
+    for (const fp of fpScores) {
+      for (const g of genuineScores) {
+        expect(g).toBeGreaterThan(fp);
+      }
+    }
+    // Confirms the mechanism: a false positive now takes the full -400 missing-group
+    // penalty (relevanceGroups.length=1, matched=0), not the +300 it wrongly got before.
+    expect(fpScores.every((s) => s < 0)).toBe(true);
+  });
+
+  it("on a NON-AC query (isAcQuery=false), the bare term still counts (no regression for other categories reusing this shared matcher)", () => {
+    const ravpower = product({ name_en: "Ravpower Extension 6 AC Outlets - 3150W Max", best_price: 139 });
+    const scoreAsAcQuery = scoreProduct(ravpower, 129, 1605, false, acRelevanceGroups, true);
+    const scoreAsOtherQuery = scoreProduct(ravpower, 129, 1605, false, acRelevanceGroups, false);
+    expect(scoreAsOtherQuery).toBeGreaterThan(scoreAsAcQuery); // ungated match still scores the full +300 when isAcQuery is false
   });
 });
 

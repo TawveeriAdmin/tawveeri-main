@@ -1464,6 +1464,40 @@ function applyCommonFilters(query: any, body: SearchBody): any {
   return query;
 }
 
+// MEASURED LIVE (2026-09-08, founder AC-relevance closure): `ARABIC_TO_ENGLISH['مكيف'] =
+// ['split ac', 'air conditioner', 'ac']` (above), split into individual OR-terms by
+// `expandWordTerms`, deliberately keeps bare "ac"/"split" for Algolia RETRIEVAL recall (many
+// genuine listings are titled "Split AC" — see GENERIC_EXPANSION_STOPWORDS's own doc comment
+// for why "ac" must stay there). But `relevanceGroups` feeds SCORING with the SAME bare
+// tokens, where a match is worth +300 — not a small nudge. "مكيف لغرفة 30 متر تحت 4000"
+// ranked a RAVPower power strip ("AC Outlets"), a HUAWEI router ("Wireless AC"), a Dell
+// Chromebook ("AC BT") and a wall fan ("Fan split") on equal relevance footing with genuine
+// air conditioners, solely because each title happens to contain one of these two bare
+// words. `excludeIneligibleCandidates` already solved exactly this false-positive class for
+// its own (harder) exclusion gate via `hasStrongACSignal` (requiring a genuine compound AC
+// phrase — BTU, سبليت, تكييف, "split ac", "window ac", "inverter", …) — this reuses that
+// SAME authority for the scoring path, which runs for every query shape (including
+// sentence-shaped queries that never reach the exclusion gate at all). A genuine AC titled
+// "Split AC ... BTU ..." still passes `hasStrongACSignal` and keeps its full relevance
+// credit; only a product whose ONLY reason for matching was the bare "ac"/"split" token
+// loses it.
+const WEAK_RELEVANCE_TERMS = new Set(['ac', 'split']);
+
+/**
+ * A single relevance-group's OR-terms against one product's haystack — shared by
+ * `scoreProduct` (ranking) and the two `gated` candidate-list filters below (retrieval
+ * narrowing), so the weak-term guard above cannot drift between "deprioritize" and
+ * "exclude": the same rule must decide both, or a query shape that skips one of them would
+ * silently reopen the exact false-positive class this closes.
+ */
+function relevanceGroupMatches(hay: string, group: string[], isAcQuery: boolean, nameAr: string, nameEn: string): boolean {
+  return group.some((t) => {
+    if (!hay.includes(t)) return false;
+    if (isAcQuery && WEAK_RELEVANCE_TERMS.has(t)) return hasStrongACSignal(nameAr, nameEn);
+    return true;
+  });
+}
+
 export function scoreProduct(p: GroupedSearchProduct, priceMin: number, priceMax: number, queryIsMainProduct: boolean, relevanceGroups: string[][] = [], isAcQuery = false): number {
   const isAccessory = hasAccessoryHint(p.name_ar || '', p.name_en || '');
   const acSignal = hasACSignal(p.name_ar || '', p.name_en || '');
@@ -1473,7 +1507,7 @@ export function scoreProduct(p: GroupedSearchProduct, priceMin: number, priceMax
   let relevanceScore = 0;
   if (relevanceGroups.length) {
     const hay = (normalizeArabic(p.name_ar || '') + ' ' + (p.name_en || '') + ' ' + (p.brand || '')).toLowerCase();
-    const matched = relevanceGroups.filter((g) => g.some((t) => hay.includes(t))).length;
+    const matched = relevanceGroups.filter((g) => relevanceGroupMatches(hay, g, isAcQuery, p.name_ar || '', p.name_en || '')).length;
     if (matched === relevanceGroups.length) relevanceScore = 300;
     else relevanceScore = -400 * (relevanceGroups.length - matched);
   }
@@ -2578,7 +2612,7 @@ export async function POST(request: NextRequest) {
     if (wordGroups.length) {
       const gated = products.filter((p) => {
         const hay = (normalizeArabic(p.name_ar || '') + ' ' + (p.name_en || '') + ' ' + (p.brand || '')).toLowerCase();
-        return wordGroups.every((group) => group.some((t) => hay.includes(t)));
+        return wordGroups.every((group) => relevanceGroupMatches(hay, group, isAcQuery, p.name_ar || '', p.name_en || ''));
       });
       if (gated.length > 0) products = gated;
       else if (needShapedWithCategory || constraintTask?.category || isSentenceShaped) {
@@ -2632,7 +2666,7 @@ export async function POST(request: NextRequest) {
     // broadening exactly that zeroing trigger, and this deliberately stays out of it.
     const gated = products.filter((p) => {
       const hay = (normalizeArabic(p.name_ar || '') + ' ' + (p.name_en || '') + ' ' + (p.brand || '')).toLowerCase();
-      return relevanceGroups.every((group) => group.some((t) => hay.includes(t)));
+      return relevanceGroups.every((group) => relevanceGroupMatches(hay, group, isAcQuery, p.name_ar || '', p.name_en || ''));
     });
     if (gated.length > 0) products = gated;
   }

@@ -317,6 +317,55 @@ describe("Category dispatcher", () => {
       expect(anyWithinBudget).toBe(true);
     });
   });
+
+  /**
+   * FOUNDER PRODUCT DECISION (2026-09-08, budget-semantics closure) — a stated budget
+   * ("تحت 4000") tests the DEVICE PURCHASE PRICE only, never device + modelled installation
+   * + modelled annual electricity. MEASURED (production): a 1,749 SAR device with a 2,070
+   * SAR estimated annual-electricity cost was captioned «ضمن ميزانيتك — التكلفة الإجمالية
+   * ~3,819 ريال» — correct in outcome only by coincidence (3,819 ≤ 4,000 budget), but wrong
+   * in what it told the shopper passed the test. These pin the DEVICE-PRICE-ONLY contract
+   * directly against `decideAc`'s own score and reason text (not just `applyBudgetGate`,
+   * which already gated on unit_price — this is the gap that remained).
+   */
+  describe("Budget-fit reasoning is DEVICE PRICE ONLY, never device + estimated electricity", () => {
+    it("device price within budget is captioned 'within budget' by device price, even when total ownership cost would exceed it", () => {
+      // A large-capacity inverter unit: high modelled annual electricity, but a cheap device.
+      const task: ShoppingTask = { category: "air_conditioner", room_size_m2: 30, budget_total: 4000 };
+      const recs = decideAc(task, [ac({ btu: 21800, tech: "Standard", cool: "cool_only", price: 1749, stores: 2 })]);
+      const r = recs[0];
+      // The estimated total (device + install + electricity) must still exceed the device
+      // price — otherwise this fixture doesn't actually exercise the defect.
+      expect(r.total_cost_estimate!).toBeGreaterThan(r.unit_price!);
+      const budgetLine = r.reasons_ar.find((t) => /ميزانيتك/.test(t));
+      expect(budgetLine).toBeDefined();
+      expect(budgetLine).toMatch(/ضمن ميزانيتك/);
+      expect(budgetLine).toMatch(/سعر الجهاز 1749/);
+      // Must NOT frame the pass as being about the combined total.
+      expect(budgetLine).not.toMatch(/التكلفة الإجمالية/);
+    });
+
+    it("device price itself over budget is captioned 'over budget' by device price, not the total", () => {
+      const task: ShoppingTask = { category: "air_conditioner", room_size_m2: 30, budget_total: 1000 };
+      const recs = decideAc(task, [ac({ btu: 21800, tech: "Standard", cool: "cool_only", price: 1749, stores: 2 })]);
+      const budgetLine = recs[0].reasons_ar.find((t) => /ميزانيتك/.test(t));
+      expect(budgetLine).toMatch(/أعلى من ميزانيتك/);
+      expect(budgetLine).toMatch(/سعر الجهاز 1749/);
+    });
+
+    it("the same device-price-only contract holds for decideRefrigerator (identical prior defect)", () => {
+      const task = { category: "refrigerator", budget_total: 1500 } as ShoppingTask;
+      const recs = decideRefrigerator(task, [
+        fridge({ type: "side_by_side", liters: 500, inverter: true, price: 1300, stores: 1 }),
+      ]);
+      const r = recs[0];
+      expect(r.total_cost_estimate!).toBeGreaterThan(r.unit_price!); // electricity estimate present
+      const budgetLine = r.reasons_ar.find((t) => /ميزانيتك/.test(t));
+      expect(budgetLine).toMatch(/ضمن ميزانيتك/);
+      expect(budgetLine).toMatch(/سعر الجهاز 1300/);
+      expect(budgetLine).not.toMatch(/التكلفة/);
+    });
+  });
 });
 
 describe("Refrigerator decision — efficiency + capacity (deterministic, single-store honest)", () => {
