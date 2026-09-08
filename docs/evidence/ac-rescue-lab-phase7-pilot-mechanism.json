@@ -1,0 +1,60 @@
+{
+  "experiment": "AC Rescue Lab — pilot mechanism built and tested, TCL/Haier NOT activated",
+  "adr": "ADR-325",
+  "date": "2026-09-08",
+  "built": {
+    "migration": "scripts/database/knowledge-db/030_ac_rescue_pilot_links.sql — table ac_rescue_pilot_links, RLS enabled, service_role only, no FK to products/canonical_products (deliberate, documented), partial unique index on (amazon_product_id) WHERE status IN ('proposed','active')",
+    "migration_apply_script": "scripts/experiments/ac-rescue-lab/08-apply-pilot-ledger-migration.ts — run once, verified: table exists, RLS on, 0 rows",
+    "pure_logic": "scripts/experiments/ac-rescue-lab/pilot/ledger-logic.ts — evaluateProposal/evaluateApply/evaluateRollback, PRODUCTION_ALLOWLIST (exactly 2 entries, ADR-324), TEST_ALLOWLIST (1 synthetic fixture, disjoint from production)",
+    "cli": "scripts/experiments/ac-rescue-lab/09-pilot-ledger-cli.ts — propose/apply/rollback/verify/status, dry-run-by-default + --go, transaction-wrapped writes with rowcount verification"
+  },
+  "tests": {
+    "unit": { "file": "tests/tps-plugins/ac-rescue-pilot-ledger.test.ts", "result": "25/25 passing", "coverage": ["unauthorized-product rejection (incl. allowlisted product + wrong canonical)", "pre-existing-link protection (at both propose and apply time)", "double-write prevention", "product-not-found", "wrong-status rejection (apply and rollback)", "drift detection (apply and rollback)", "wrong/inactive-canonical rejection", "rollback idempotency (no double-rollback)", "TEST_ALLOWLIST/PRODUCTION_ALLOWLIST disjointness"] },
+    "integration_ledger_table": {
+      "file": "scripts/experiments/ac-rescue-lab/10-pilot-integration-checks.ts",
+      "result": "PASS — DB-level unique index correctly rejected a second open row (23505 unique_violation); a new row for the same product after the prior one closed (rolled_back) was correctly allowed (history accumulates); all synthetic rows cleaned up, table restored to 0 rows"
+    },
+    "integration_cli_live": {
+      "commands_run": [
+        "propose --product 00000000-0000-0000-0000-0000000000aa --canonical 00000000-0000-0000-0000-0000000000bb --fixtures test  ->  EVIDENCE_GATE: FAIL - PRODUCT_NOT_FOUND (correct: fixture id does not exist in products)",
+        "propose --product 11111111-1111-1111-1111-111111111111 --canonical 22222222-2222-2222-2222-222222222222  ->  EVIDENCE_GATE: FAIL - UNAUTHORIZED_PRODUCT (correct: not on PRODUCTION_ALLOWLIST)"
+      ],
+      "writes_performed": 0
+    }
+  },
+  "tcl_haier_dry_run": {
+    "script": "scripts/experiments/ac-rescue-lab/11-pilot-dry-run-report.ts — SELECT-only against products/canonical_products/ac_rescue_pilot_links, zero writes, decisions computed via the exact live guard functions called in-memory",
+    "TCL": { "AMAZON_PRODUCT_ID": "49c34be2-6e13-4600-964f-140f9f4ea891", "CURRENT_CANONICAL_PRODUCT_ID": null, "TARGET_CANONICAL_ID": "d47800b5-341c-43dc-88df-64d0df71dd9c", "CURRENT_STATE_VALID": "YES", "EVIDENCE_GATE": "PASS", "DRIFT_CHECK": "PASS", "WRITE_WOULD_SUCCEED": "YES", "ROLLBACK_WOULD_SUCCEED": "YES (simulated)", "target_canonical_active": true },
+    "HAIER": { "AMAZON_PRODUCT_ID": "62e8e0b9-40b1-4879-b704-f877b25533de", "CURRENT_CANONICAL_PRODUCT_ID": null, "TARGET_CANONICAL_ID": "ff8b35e4-afcd-43ba-95a6-a06f54c97f52", "CURRENT_STATE_VALID": "YES", "EVIDENCE_GATE": "PASS", "DRIFT_CHECK": "PASS", "WRITE_WOULD_SUCCEED": "YES", "ROLLBACK_WOULD_SUCCEED": "YES (simulated)", "target_canonical_active": true },
+    "ledger_row_count_after_report": 0
+  },
+  "final_report": {
+    "PILOT_LEDGER_BUILT": "YES",
+    "PRODUCTION_ISOLATION_VERIFIED": "YES",
+    "ROLLBACK_IMPLEMENTED": "YES",
+    "ROLLBACK_TESTED": "YES",
+    "DRIFT_PROTECTION_TESTED": "YES",
+    "PREEXISTING_LINK_PROTECTION": "PASS",
+    "TCL_DRY_RUN": "PASS",
+    "HAIER_DRY_RUN": "PASS",
+    "V1_CHANGED": "NO",
+    "PRODUCTS_2_ARCHITECTURE_CHANGED": "NO",
+    "REAL_PRODUCT_LINKS_CREATED": 0,
+    "READY_FOR_FINAL_2_PRODUCT_EXECUTION_APPROVAL": "YES",
+    "exact_writes_if_approved": {
+      "TCL": "UPDATE products SET canonical_product_id = 'd47800b5-341c-43dc-88df-64d0df71dd9c' WHERE id = '49c34be2-6e13-4600-964f-140f9f4ea891' AND canonical_product_id IS NULL",
+      "HAIER": "UPDATE products SET canonical_product_id = 'ff8b35e4-afcd-43ba-95a6-a06f54c97f52' WHERE id = '62e8e0b9-40b1-4879-b704-f877b25533de' AND canonical_product_id IS NULL",
+      "commands": [
+        "npx tsx scripts/experiments/ac-rescue-lab/09-pilot-ledger-cli.ts propose --product 49c34be2-6e13-4600-964f-140f9f4ea891 --canonical d47800b5-341c-43dc-88df-64d0df71dd9c --go",
+        "npx tsx scripts/experiments/ac-rescue-lab/09-pilot-ledger-cli.ts apply --id <returned id> --go",
+        "npx tsx scripts/experiments/ac-rescue-lab/09-pilot-ledger-cli.ts propose --product 62e8e0b9-40b1-4879-b704-f877b25533de --canonical ff8b35e4-afcd-43ba-95a6-a06f54c97f52 --go",
+        "npx tsx scripts/experiments/ac-rescue-lab/09-pilot-ledger-cli.ts apply --id <returned id> --go"
+      ],
+      "rollback_commands": [
+        "npx tsx scripts/experiments/ac-rescue-lab/09-pilot-ledger-cli.ts rollback --id <tcl ledger id> --go",
+        "npx tsx scripts/experiments/ac-rescue-lab/09-pilot-ledger-cli.ts rollback --id <haier ledger id> --go"
+      ]
+    },
+    "stopped_here": "per the mission's explicit instruction, execution was NOT performed — returning to founder for separate, final authorization."
+  }
+}

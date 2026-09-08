@@ -4,6 +4,64 @@
 
 Status legend: **Accepted** · **Superseded** · **Proposed**.
 
+### ADR-325 — AC Rescue Lab pilot mechanism built and tested; TCL/Haier real production links NOT activated · Accepted (2026-09-08)
+
+**Context.** Founder authorized *building and testing* the isolated pilot ledger proposed in ADR-324, explicitly withholding authorization to activate the TCL/Haier links themselves. Required: physical isolation from `storefront_identity_links` (ADR-312) and all Products-2 matching semantics; an explicit founder-approved allowlist gate; optimistic locking; before/after-state snapshots; append-only audit history; drift detection; a tested rollback that can never touch an unrelated link; unit + integration tests covering double-write prevention, pre-existing-link protection, wrong-canonical rejection, and unauthorized-product rejection; a real dry-run report for TCL and Haier; and an explicit stop before any real write.
+
+**Built — one new, physically isolated table.** `scripts/database/knowledge-db/030_ac_rescue_pilot_links.sql` — `ac_rescue_pilot_links`, RLS-enabled, revoked from `anon`/`authenticated`, granted only to `service_role` (same convention as `storefront_identity_links`). **No foreign key to `products` or `canonical_products`** — a deliberate choice, documented in the migration: referential validity is checked at write time by application logic (a live lookup against a hardcoded, founder-approved allowlist), not by a DB constraint, which keeps the ledger physically decoupled (nothing here can be pulled into a join, cascade, or ORM relation defined against Products 2's own tables) and lets the mechanism be safely integration-tested with synthetic fixtures that satisfy no real FK. A partial unique index enforces at most one *open* (`proposed`/`active`) ledger row per product — history (`rolled_back`) may accumulate without limit, append-only, nothing ever deleted or overwritten.
+
+Applied via `08-apply-pilot-ledger-migration.ts` — the one script in this entire lab authorized to write DDL, idempotent (`create table if not exists`), touches nothing else. Verified live: table exists, RLS on, 0 rows.
+
+**Decision logic is pure and separately testable.** `scripts/experiments/ac-rescue-lab/pilot/ledger-logic.ts` — `evaluateProposal()`, `evaluateApply()`, `evaluateRollback()`, no I/O. `PRODUCTION_ALLOWLIST` hardcodes exactly the 2 ADR-324-approved (product, canonical) pairs — anything else is rejected before any database read or write is attempted. A separate, disjoint `TEST_ALLOWLIST` (one synthetic, obviously-fake pair) exists only for testing, wired in solely via an explicit `--fixtures test` flag a human must pass deliberately.
+
+**CLI**: `09-pilot-ledger-cli.ts` — `propose` / `apply` / `rollback` / `verify` / `status`, every mutating subcommand dry-run by default, requiring explicit `--go`, matching `project-storefront-identity.ts`'s established convention exactly. `apply`/`rollback` both wrap their real write in a transaction that verifies exactly 1 row was affected before committing, aborting otherwise — a second, code-level backstop behind the guard-function check.
+
+**Tests — 25/25 unit tests passing** (`tests/tps-plugins/ac-rescue-pilot-ledger.test.ts`): unauthorized-product rejection (including an allowlisted product paired with the *wrong* canonical), pre-existing-link protection, double-write prevention, product-not-found, every `evaluateApply` branch (status, drift, pre-existing-link-at-apply-time, wrong/inactive canonical), every `evaluateRollback` branch (status, drift, product-not-found, idempotency against double-rollback), and a check that `TEST_ALLOWLIST` can never accidentally authorize a real TCL/Haier product.
+
+**Real, live integration checks against the actual isolated table** (`10-pilot-integration-checks.ts`, cleaned up after itself, table left at 0 rows): the DB-level unique index genuinely rejects a second open ledger row for the same product (`23505 unique_violation`, confirmed) — a real backstop independent of the application-level check; a new row for the same product *is* correctly allowed once the prior one is closed (`rolled_back`) — proving history accumulates without over-blocking. Separately, running `propose` against the CLI for real (dry-run) confirmed the synthetic test fixture is correctly refused as `PRODUCT_NOT_FOUND` (it doesn't exist in `products`, as designed) and an arbitrary unauthorized UUID is correctly refused as `UNAUTHORIZED_PRODUCT` under the production allowlist — both live, both real database reads, zero writes.
+
+**TCL/Haier dry-run — zero writes, everything simulated in memory.** `11-pilot-dry-run-report.ts` performs only `SELECT`s (`products`, `canonical_products`, and a real check for any existing open ledger row) and calls the exact same pure guard functions the live CLI uses, without ever inserting a real ledger row — satisfying the mission's "DRY-RUN mode only" instruction as literally as possible. Both products: `CURRENT_STATE_VALID=YES` (still `NULL`, confirmed live, unchanged since ADR-320), `EVIDENCE_GATE=PASS`, `DRIFT_CHECK=PASS`, `WRITE_WOULD_SUCCEED=YES`, `ROLLBACK_WOULD_SUCCEED=YES` (simulated against a hypothetical post-apply state), target canonicals confirmed still `is_active=true` with the identity keys recorded in ADR-320/324. Ledger table row count confirmed unchanged (0) after the report ran.
+
+**Final report.**
+```
+PILOT_LEDGER_BUILT                      = YES
+PRODUCTION_ISOLATION_VERIFIED           = YES (no FK to Products 2 tables; separate from
+                                           storefront_identity_links; separate rule_version
+                                           namespace; separate allowlist)
+ROLLBACK_IMPLEMENTED                    = YES
+ROLLBACK_TESTED                         = YES (unit-tested exhaustively; integration-tested
+                                           at the ledger-table level; simulated for TCL/Haier
+                                           specifically — never executed against them, since
+                                           nothing was ever applied to roll back)
+DRIFT_PROTECTION_TESTED                 = YES (unit + dry-run simulation)
+PREEXISTING_LINK_PROTECTION             = PASS
+TCL_DRY_RUN                             = PASS
+HAIER_DRY_RUN                           = PASS
+V1_CHANGED                              = NO (01-07 confirmed byte-identical via git diff --stat)
+PRODUCTS_2_ARCHITECTURE_CHANGED         = NO (matching semantics, product_matches, canonical
+                                           identity logic, and storefront_identity_links are
+                                           all untouched; one new, physically isolated,
+                                           explicitly-authorized table now exists, containing
+                                           zero rows referencing any real product)
+REAL_PRODUCT_LINKS_CREATED              = 0
+READY_FOR_FINAL_2_PRODUCT_EXECUTION_APPROVAL = YES
+```
+
+**The exact two production writes that would occur, if and when separately authorized:**
+
+| | TCL | Haier |
+|---|---|---|
+| `UPDATE products SET canonical_product_id = ...` | `= 'd47800b5-341c-43dc-88df-64d0df71dd9c' WHERE id = '49c34be2-6e13-4600-964f-140f9f4ea891' AND canonical_product_id IS NULL` | `= 'ff8b35e4-afcd-43ba-95a6-a06f54c97f52' WHERE id = '62e8e0b9-40b1-4879-b704-f877b25533de' AND canonical_product_id IS NULL` |
+| exact commands | `propose --product 49c34be2-6e13-4600-964f-140f9f4ea891 --canonical d47800b5-341c-43dc-88df-64d0df71dd9c --go`, then `apply --id <returned id> --go` | `propose --product 62e8e0b9-40b1-4879-b704-f877b25533de --canonical ff8b35e4-afcd-43ba-95a6-a06f54c97f52 --go`, then `apply --id <returned id> --go` |
+| rollback command | `rollback --id <ledger id> --go` | `rollback --id <ledger id> --go` |
+| rollback effect | `UPDATE products SET canonical_product_id = NULL WHERE id = '49c34be2-...' AND canonical_product_id = 'd47800b5-...'` | `UPDATE products SET canonical_product_id = NULL WHERE id = '62e8e0b9-...' AND canonical_product_id = 'ff8b35e4-...'` |
+
+**Neither was executed. `REAL_PRODUCT_LINKS_CREATED = 0`.** Per the mission's explicit stop rule, this ADR returns to the founder for final, separate execution approval rather than proceeding.
+
+**Consequences.** The pilot mechanism exists, is tested, and is provably isolated — but inert. No customer-facing behavior changed. The next action, if authorized, is running the two `propose --go` / `apply --go` command pairs above, followed by a post-write verification pass.
+
+**Products 2 status:** matching semantics, `product_matches`, canonical identity logic, and `storefront_identity_links` all UNCHANGED. One new, isolated, explicitly-authorized, currently-empty table exists (`ac_rescue_pilot_links`). No canonical link was created for any real product.
+
 ### ADR-324 — AC Rescue Lab: TCL and Haier externally verified STRONG, both REFERENCE_CLEAN — a 2-product pilot is PROPOSED (not executed) · Proposed (2026-09-08)
 
 **Context.** Founder supplied 5 specific URLs (official Haier Saudi, official TCL Saudi, and 3 independent third-party Saudi merchants) as the exact missing evidence ADR-323 said this session's tooling couldn't retrieve. Mission: fetch and verify each URL directly (not trust the founder's own paraphrase), compare field-by-field against the existing Amazon+Extra evidence, disclose any conflict, and — only if the evidence genuinely supports it — return a final gate verdict and, if `YES`, prepare (never execute) an exact 2-product pilot proposal.
