@@ -9,7 +9,42 @@
  * it reached this endpoint, and gets the same honest-zero treatment `categoryEnforcedZero`
  * already applies to a failed category-scoped match.
  */
-import { looksLikeSentenceNotProductQuery, isAccessoryShapedQuery, excludeIneligibleCandidates, GENERIC_EXPANSION_STOPWORDS, hasStrongACSignal, hasStrongMonitorSignal, hasStrongWatchSignal, hasStrongDishwasherSignal, hasStrongOvenSignal, hasStrongCookerSignal, productFuelType, lookupArToEn } from "@/app/api/search/route";
+import { looksLikeSentenceNotProductQuery, isAccessoryShapedQuery, excludeIneligibleCandidates, GENERIC_EXPANSION_STOPWORDS, hasStrongACSignal, hasStrongMonitorSignal, hasStrongWatchSignal, hasStrongDishwasherSignal, hasStrongOvenSignal, hasStrongCookerSignal, productFuelType, lookupArToEn, detectCanonicalCategories, hasAccessoryHint } from "@/app/api/search/route";
+
+/**
+ * FOUNDER AC-RELEVANCE CLOSURE, DEEPEST ROOT CAUSE (2026-09-08) — MEASURED LIVE: the exact
+ * query "مكيف لغرفة 30 متر تحت 4000" returned `isAcQuery=false` because
+ * `detectCanonicalCategories`'s own accessory pre-check bare-substring-matched 'رف' (shelf,
+ * added 2026-08-10 for a genuine microwave-shelf false positive) inside 'غرفة'/'لغرفة'
+ * ("room"/"for a room") — every AC query stating a room size was silently read as
+ * accessory-shaped, defeating `isAcQuery` and BOTH of its downstream protections
+ * (`hasStrongACSignal` hard-exclusion in `excludeIneligibleCandidates`, and the weak "ac"/
+ * "split" relevance guard on `scoreProduct`). This is the reason those two fixes alone did
+ * not change live behavior until this was found and fixed alongside them.
+ */
+describe("detectCanonicalCategories / hasAccessoryHint — 'رف' (shelf) must not match inside 'غرفة' (room)", () => {
+  it("an AC query stating a room size is recognized as air_conditioner, not accessory-shaped", () => {
+    expect(detectCanonicalCategories("مكيف لغرفة 30 متر تحت 4000")).toEqual(["air_conditioner"]);
+    expect(detectCanonicalCategories("مكيف لغرفة 30 متر هادئ تحت 4000")).toEqual(["air_conditioner"]);
+  });
+
+  it("isAccessoryShapedQuery is false for a room-size AC query (was true before this fix)", () => {
+    expect(isAccessoryShapedQuery("مكيف لغرفة 30 متر تحت 4000")).toBe(false);
+  });
+
+  it("hasAccessoryHint does not flag a genuine AC title that mentions a room", () => {
+    expect(hasAccessoryHint("مكيف سبليت جري 24000 وحدة لغرفة كبيرة", "LG Split AC 24000 BTU for a large room")).toBe(false);
+  });
+
+  it("the original 'رف' fix (a genuine standalone microwave-shelf product) still works", () => {
+    expect(hasAccessoryHint("رف مايكروويف زجاجي", "Microwave Glass Shelf")).toBe(true);
+  });
+
+  it("longer accessory hints keep substring matching (Arabic prefixes/suffixes attach with no space)", () => {
+    // "شنطتي" (my bag) — an inflected form of "شنطة" (bag), never its own separate token.
+    expect(hasAccessoryHint("شنطتي المفضلة للابتوب", "My favorite laptop bag")).toBe(true);
+  });
+});
 
 describe("looksLikeSentenceNotProductQuery — the generic candidate-eligibility floor", () => {
   it("THE FOUNDER'S EXACT T2 SENTENCE is sentence-shaped, not a product query", () => {

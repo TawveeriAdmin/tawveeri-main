@@ -337,6 +337,32 @@ const ACCESSORY_HINTS_AR = ['حامل', 'فتحة', 'موجه', 'غطاء', 'ك�
   // الكهربائية...خلاط محمول" — explicitly self-described as a PORTABLE ELECTRIC blender) was
   // deliberately left untouched: no evidence it is anything other than what it says.
   'شيكر', 'كوب سفر'];
+
+/**
+ * MEASURED LIVE (2026-09-08, founder AC-relevance closure): `ACCESSORY_HINTS_AR` was
+ * matched with a bare `norm.includes(...)` substring check everywhere it's used. 'رف'
+ * (shelf — added for a genuine microwave-shelf false positive, 2026-08-10) is a literal
+ * substring of 'غرفة'/'لغرفة' ("room"/"for a room") even after `normalizeArabic` (ة→ه
+ * gives 'غرفه', which still contains 'رف'). Every AC query stating a room size — "مكيف
+ * لغرفة 30 متر تحت 4000" — was therefore silently read as accessory-SHAPED by
+ * `detectCanonicalCategories`'s own pre-check, returning `null` before ever reaching the
+ * AC_QUERY_WORDS whole-word check below — so `isAcQuery` came back `false`, defeating
+ * BOTH `excludeIneligibleCandidates`'s `hasStrongACSignal` hard-exclusion AND the
+ * relevance weak-term guard (`relevanceGroupMatches`, above `scoreProduct`) for exactly
+ * the query shape a real shopper types. Same class of bug as the already-fixed English
+ * "stand" vs "Free-Standing" collision (word-boundary regex) — Arabic has no `\b` that
+ * works beside Arabic letters, so a short (≤2-char) hint is instead required to be its
+ * OWN token (the SAME whole-word rule `AC_QUERY_WORDS` below already uses successfully).
+ * Longer hints keep substring matching: Arabic attaches prefixes/suffixes with no space
+ * (e.g. "شنطتي" for "شنطة"), and a whole-word-only rule would silently break their
+ * existing, working detection — this is deliberately scoped to the one proven-short,
+ * proven-colliding case, not a blanket behavior change.
+ */
+function matchesArabicAccessoryHint(normalizedHaystack: string, hint: string): boolean {
+  const normHint = normalizeArabic(hint);
+  if (normHint.length > 2) return normalizedHaystack.includes(normHint);
+  return normalizedHaystack.split(/\s+/).filter(Boolean).includes(normHint);
+}
 const ACCESSORY_HINTS_EN = ['accessory', 'accessories', 'cover', 'mount', 'holder', 'vent', 'adapter', 'charger', 'cable', 'case', 'remote', 'bracket', 'protector', 'stand', 'sticker', 'skin', 'lens', 'magsafe', 'tempered',
   // compatible peripherals that keyword-match a device but are NOT the device itself
   'mouse', 'keyboard', 'stylus',
@@ -562,7 +588,7 @@ export function anchorSubjectToCategory(subject: string, category: string | null
 export function detectCanonicalCategories(raw: string): string[] | null {
   const norm = normalizeArabic(raw).toLowerCase();
   if (
-    ACCESSORY_HINTS_AR.some((h) => norm.includes(normalizeArabic(h))) ||
+    ACCESSORY_HINTS_AR.some((h) => matchesArabicAccessoryHint(norm, h)) ||
     hasEnglishAccessoryHint(norm) ||
     ACCESSORY_COMPAT_AR.test(norm) || ACCESSORY_COMPAT_EN.test(norm)
   ) return null;
@@ -630,7 +656,7 @@ export function hasAccessoryHint(nameAr: string, nameEn: string): boolean {
   const ar = normalizeArabic(nameAr);
   const en = (nameEn || '').toLowerCase();
   const isCompat = ACCESSORY_COMPAT_AR.test(ar) || ACCESSORY_COMPAT_EN.test(en);
-  const hasHint = ACCESSORY_HINTS_AR.some((h) => ar.includes(normalizeArabic(h))) ||
+  const hasHint = ACCESSORY_HINTS_AR.some((h) => matchesArabicAccessoryHint(ar, h)) ||
     hasEnglishAccessoryHint(en) ||
     isCompat;
   if (!hasHint) return false;
@@ -654,7 +680,7 @@ export function hasAccessoryHint(nameAr: string, nameEn: string): boolean {
 export function isAccessoryShapedQuery(raw: string): boolean {
   const norm = normalizeArabic(raw).toLowerCase();
   return (
-    ACCESSORY_HINTS_AR.some((h) => norm.includes(normalizeArabic(h))) ||
+    ACCESSORY_HINTS_AR.some((h) => matchesArabicAccessoryHint(norm, h)) ||
     hasEnglishAccessoryHint(norm) ||
     ACCESSORY_COMPAT_AR.test(norm) || ACCESSORY_COMPAT_EN.test(norm)
   );
