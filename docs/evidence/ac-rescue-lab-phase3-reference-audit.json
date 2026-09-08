@@ -1,0 +1,218 @@
+{
+  "experiment": "AC Rescue Lab Phase 3 — reference-truth audit + hard-negative blind-spot closure",
+  "adr": "ADR-321",
+  "date": "2026-09-08",
+  "v1_frozen": { "V1_TUNED_DURING_PHASE_3": false, "files_touched": ["06-reference-truth-audit.ts (new, additive, read-only)"], "01_through_05_unchanged": true },
+
+  "audit_scope": {
+    "TOTAL_VALID_TIER_AC_CANONICALS": 20,
+    "additionally_audited_low_confidence_canonicals": 3,
+    "note_on_the_3rd": "39657761 and 23b80f80 were the 2 canonicals ADR-320 flagged as contamination candidates; a 3rd (32cad851) was found to carry the identical defect signature while re-deriving the CLEAN-reference-only rerun in step 6 below, and was pulled into the audit once discovered — not part of the original 20 valid-tier or original 2-candidate scope, added because the evidence demanded it.",
+    "TOTAL_AUDITED": 23
+  },
+
+  "reference_reliability": {
+    "TOTAL_VALID_REFERENCES": 20,
+    "REFERENCE_CLEAN": 11,
+    "REFERENCE_SUSPECT": 4,
+    "REFERENCE_CONTAMINATED_within_valid_tier": 0,
+    "INSUFFICIENT_EVIDENCE": 5,
+    "arithmetic_check": "11+4+0+5 = 20",
+    "additional_low_confidence_tier_findings_outside_the_20": {
+      "REFERENCE_CONTAMINATED": 3,
+      "canonicals": ["23b80f80 (Gree 24000 BTU)", "39657761 (Gree 18000 BTU)", "32cad851 (Gree 18000 BTU, found via step 6)"]
+    },
+    "key_positive_finding": "ZERO of the 20 manually-audited VALID-tier canonicals exhibit the Type-A merge-contamination pattern found in the low-confidence tier. This is coherent, not coincidental: the contamination root cause (missing series_or_platform extraction for GREE) is exactly the attribute whose ABSENCE keeps a canonical out of valid tier in the first place — valid-tier's own admission requirement structurally screens out this specific failure mode. Valid tier does NOT, however, protect against the two other defects found (brand-extraction corruption, single-merchant under-corroboration) — those appear even inside the audited 20."
+  },
+
+  "per_canonical_classification": [
+    { "id": "0cff7971", "name": "Lg ArtCool 21500 BTU cool only", "class": "REFERENCE_CLEAN", "stores": 3, "evidence": "model AM242C0.UK1 consistent across EN/AR titles at 3 merchants" },
+    { "id": "137c74da", "name": "Samsung WindFree 20500 BTU hot cold", "class": "REFERENCE_CLEAN", "stores": 3, "evidence": "model AR24CSFCBWK/MG repeated identically across stores 3 and 5" },
+    { "id": "1a75749e", "name": "Samsung WindFree 20000 BTU cool only", "class": "REFERENCE_CLEAN", "stores": 2, "evidence": "model AR24CVFCBWK/MG repeated identically" },
+    { "id": "2a230c9a", "name": "White Westinghouse Window 17800 BTU", "class": "REFERENCE_CLEAN", "stores": 2, "evidence": "model WWA20K22HR repeated identically" },
+    { "id": "2ab6ae6d", "name": "Lg FreshDV 21500 BTU cool only", "class": "INSUFFICIENT_EVIDENCE", "stores": 1, "evidence": "single-merchant (store 4), single observation — internally consistent but uncorroborated. Note: this canonical carries identity_key_status='valid' despite only 1 merchant — 'valid' certifies attribute-completeness of the identity key, NOT multi-source corroboration; these are different guarantees, a distinction worth making explicit for any future trust policy." },
+    { "id": "3494e903", "name": "Lg FreshDV 18000 BTU cool only", "class": "REFERENCE_CLEAN", "stores": 5, "evidence": "'Fresh'/'FreshDV'/'فريش' naming consistent across 5 merchants; model ND182C0 repeated at 2 of them" },
+    { "id": "42285ff6", "name": "'إل FreshDV' 18000 BTU cool only", "class": "REFERENCE_SUSPECT", "type": "BRAND_EXTRACTION_DEFECT (not in the mission's A-H taxonomy — a new sub-class)", "evidence": "brand field is the literal string 'إل' — a truncation of 'إل جي' (Arabic for LG), not a valid brand value. The raw title itself says 'إل جي' correctly; the extraction that produced this canonical's brand field truncated it. Single-merchant (store 7)." },
+    { "id": "5371301a", "name": "'إل ArtCool' 21500 BTU cool only", "class": "REFERENCE_SUSPECT", "type": "BRAND_EXTRACTION_DEFECT", "evidence": "identical defect to 42285ff6 — brand='إل', single-merchant (store 7)." },
+    { "id": "610b44af", "name": "Lg ArtCool 18000 BTU cool only", "class": "REFERENCE_CLEAN", "stores": 5, "evidence": "model AM182C0 repeated across 4 of 5 merchants including a raw Amazon observation; SEE ALSO the 'already-linked' finding below — this canonical is already the storefront-linked target for the corresponding Amazon product." },
+    { "id": "61425a39", "name": "Lg FreshDV 21000 BTU hot cold", "class": "REFERENCE_CLEAN", "stores": 3, "evidence": "consistent 'Fresh DV' naming; NOTE: store 5 states model 'NF242H3' while store 9 states 'ND242H0' — different prefixes (ND vs NF) for what reads as the same product. This ND/NF duality recurs consistently elsewhere in the audited set (e.g. 3494e903 legitimately merges ND182C0 and NF182C2 at 18000 BTU) suggesting it is LG's own parallel model-naming convention, not a merge error — flagged for awareness, not downgraded." },
+    { "id": "78d46113", "name": "Lg AirFit 22300 BTU cool only", "class": "INSUFFICIENT_EVIDENCE", "stores": 1, "evidence": "single-merchant, single observation" },
+    { "id": "8f31bfd2", "name": "Lg ArtCool 22100 BTU cool only", "class": "INSUFFICIENT_EVIDENCE", "stores": 1, "evidence": "single-merchant, single observation, model AM242C2 stated but uncorroborated" },
+    { "id": "9d70c034", "name": "Gree Portable AC 16000 BTU", "class": "REFERENCE_CLEAN", "stores": 2, "evidence": "model GPH16ALD3NTA3A repeated identically across EN/AR titles" },
+    { "id": "a36389f4", "name": "'مكيف ArtCool' 18000 BTU cool only", "class": "REFERENCE_SUSPECT", "type": "BRAND_EXTRACTION_DEFECT", "evidence": "brand field is the literal string 'مكيف' — Arabic for 'air conditioner', the CATEGORY word itself, not a brand. Single-merchant (store 7)." },
+    { "id": "b529133e", "name": "Samsung WindFree 17500 BTU hot cold", "class": "REFERENCE_CLEAN", "stores": 2, "evidence": "model AR18CSFCBWK/MG repeated identically" },
+    { "id": "bc10b959", "name": "Samsung WindFree 17000 BTU cool only", "class": "REFERENCE_SUSPECT", "type": "D (wrong/stale merchant attribute) or C (different Commercial Variant) — evidence is ambiguous between the two", "evidence": "canonical's own model_number field states 'AR18CVFCBWK/MG', but the ONLY observation that states a full model code (store 3) says 'AR18CVDAGWK/MG' — a DIFFERENT code (CVDAG vs CVFCB) — and that same observation explicitly says 'Motion Sensor', a feature not mentioned by the other (codeless) store-4 observations. Either the canonical's model_number field is simply wrong (Type D), or store 3 is selling a genuinely different 'Motion Sensor' commercial variant that got folded into the base WindFree 17000 canonical (Type C). Not resolved from available evidence — recorded as SUSPECT, not CONTAMINATED, because no two conflicting FULL observations exist to prove a merge, only one code that doesn't match the canonical's own stated field." },
+    { "id": "cd74054c", "name": "Lg FreshDV 12000 BTU hot cold", "class": "INSUFFICIENT_EVIDENCE", "stores": 1, "evidence": "single-merchant, single observation" },
+    { "id": "d3ef53c9", "name": "White Westinghouse Window 21800 BTU", "class": "REFERENCE_CLEAN", "stores": 2, "evidence": "model WWA25K22R repeated identically" },
+    { "id": "eb0b3467", "name": "Lg AirFit 18000 BTU cool only", "class": "INSUFFICIENT_EVIDENCE", "stores": 1, "evidence": "single MERCHANT (store 4) — 2 raw observations (1 AR, 1 EN) agree with each other, but both are from the same merchant, so this is not independent multi-source corroboration." },
+    { "id": "f3840d3b", "name": "Lg FreshDV 18000 BTU hot cold", "class": "REFERENCE_CLEAN", "stores": 3, "evidence": "includes the raw Amazon observation itself (store 2); near-verbatim title match with store 7's listing; already the storefront-linked target for the corresponding Amazon product (see below)." }
+  ],
+
+  "reconstructed_contamination_cases": [
+    {
+      "CANONICAL_ID": "23b80f80-fd8c-4962-b061-a916e5f4eaa0",
+      "canonical_name": "Gree Split AC 24000 BTU Inverter hot cold",
+      "tier": "low_confidence_candidate (not valid-tier)",
+      "MERCHANTS": ["store 4 (Extra, x2 observations)", "store 9 (x2 observations, one per merged product line)"],
+      "PRODUCTS_OFFERS": "no storefront (products/product_stores) offers attached — this canonical exists only at the normalized_product_observations layer, never reached the storefront projection.",
+      "WHY_IT_LOOKED_TRUSTED": "identity_confidence=95, data_quality_score=85 on the canonical row — both HIGH scores, because those scores are computed from attribute-completeness (brand/type/capacity/mode/technology all stated) and observation count (4 observations), not from cross-observation CONSISTENCY. The scoring has no check for 'do all observations describe the same physical product.'",
+      "WHAT_IS_ACTUALLY_WRONG": "4 raw observations split into 2 genuinely different GREE model families: 'AI-PLUS/AI-PRO' (model prefix GWH24AVEXF, 3 observations — 2 from store 4, 1 from store 9) and 'Cosmo' (model GWH24AWEXF-S6DTA3H, 1 observation from store 9). Both families compute the SAME tps_identity_key ('gree|split|NO_SERIES|24000|Inverter|hot_cold') because GREE's parser does not extract series_or_platform — 'AI-Pro' and 'Cosmo' are both invisible to the identity key, so the matching layer correctly-by-its-own-rules attached both to one canonical. The canonical's own model_number field ('GWH24AVEXF-S6DTA1H/I') doesn't exactly match ANY single observation's stated code either (closest: store 9's bare 'GWH24AVEXF', missing the '-S6DTA1H/I' suffix) — suggesting the model_number field itself was set through some normalization step that altered the raw value.",
+      "WHEN_THE_BAD_EVIDENCE_ENTERED": "canonical created 2026-07-22; the AI-Pro observations arrived 2026-09-06 (store 4) and 2026-09-08 (store 9); the contaminating Cosmo observation arrived 2026-09-08T12:14:33.952Z — the EXACT same millisecond timestamp as the store-9 AI-Pro observation, meaning both came from the same store-9 scrape batch and were matched into this canonical in the same run.",
+      "WHETHER_V1_WOULD_INHERIT_THE_ERROR": "YES, structurally — V1's candidate generation treats this canonical as ONE candidate with ONE fingerprint (brand/type/capacity/mode/technology all agree, matching the Amazon AI-Pro listing on those attributes) and has no mechanism to detect that the candidate's own evidence is internally split between two different model lines. V1 classified the resulting case RESCUE_REVIEW (not HIGH_CONFIDENCE) — but for an unrelated reason (missing series_or_platform), not because it detected the contamination.",
+      "CUSTOMER_FACING_RISK": "MEDIUM — this canonical has no current storefront offers, so no customer-facing page is affected TODAY. If it were ever storefront-projected (via the same project-storefront-identity.ts pipeline used in ADR-312), a customer comparing 'Gree Split AC 24000 BTU' would see a price/feature comparison silently mixing two different GREE product lines (AI-Pro vs Cosmo), which could misrepresent either line's actual price or specs."
+    },
+    {
+      "CANONICAL_ID": "39657761-7015-40a7-8a26-c4f4fab68f93",
+      "canonical_name": "Gree Split AC 18000 BTU Inverter cool only",
+      "tier": "low_confidence_candidate (not valid-tier)",
+      "MERCHANTS": ["store 4 (Extra, x4 observations)", "store 5 (Almanea, x4 observations)", "store 9 (x3 observations)"],
+      "PRODUCTS_OFFERS": "no storefront offers attached — same as above, normalized-layer only.",
+      "WHY_IT_LOOKED_TRUSTED": "11 total deduped observations across 3 merchants — the highest observation count of any low-confidence GREE canonical in this population, which would read as strong corroboration under a naive 'more observations = more trustworthy' heuristic.",
+      "WHAT_IS_ACTUALLY_WRONG": "same root cause as the 24000 BTU case: observations split across AI-Pro/AI-Plus codes (GWC18AVDXE-family, 8 of 11 observations) and at least one Cosmo-family code (GWC18AWDXE, store 9) — again invisible to the shared tps_identity_key because series_or_platform is never extracted for GREE. This is the SAME systemic defect as the 24000 BTU case, not an independent coincidence — both are instances of one root cause (GREE parser has no series_or_platform extraction) manifesting wherever a store happens to carry both an AI-Pro/AI-Plus and a Cosmo listing at the same nominal BTU.",
+      "WHEN_THE_BAD_EVIDENCE_ENTERED": "canonical created 2026-07-21 — the OLDEST of the 3 now-known-contaminated canonicals; first observation 2026-06-12, meaning this specific contamination has been live for roughly 3 months, well before ADR-320 first surfaced it.",
+      "WHETHER_V1_WOULD_INHERIT_THE_ERROR": "YES — this canonical was in fact the WINNING (top-ranked) candidate for the corresponding Amazon GREE 18000 BTU listing in V1's Run A output (RESCUE_REVIEW). Human review, not V1 itself, is the only thing currently standing between this contaminated candidate and a false merge.",
+      "CUSTOMER_FACING_RISK": "MEDIUM, same reasoning as above — no current storefront exposure, but a real risk if this candidate is ever storefront-projected or if the REVIEW tier is ever relaxed."
+    },
+    {
+      "CANONICAL_ID": "32cad851-c5f9-49e0-b10a-0bd4c2aca3fa",
+      "canonical_name": "Gree Split AC 18000 BTU cool only",
+      "tier": "low_confidence_candidate (not valid-tier)",
+      "discovered_via": "Phase 3 step 6 (clean-reference-only rerun) — after excluding 39657761 as a candidate for the Amazon GREE GWC18AGD-S3DTA1A listing, this canonical becomes the new top-ranked candidate; inspecting ITS OWN raw evidence (not previously done in Phase 2) revealed the identical defect.",
+      "WHAT_IS_ACTUALLY_WRONG": "its 2 observations are 'مكيف جري جداري بارد فقط 18000 وحدة اي بلس انفيرتر واي فاي' (AI-Plus, Arabic) and 'Gree Cosmo Split AC, 18,000 BTU, Cool Only, White - GWC18AWDXE-S6DTA3' (Cosmo, English, EXPLICIT 'Cosmo' branding stated) — a third real instance of the exact same AI-Plus/Cosmo merge pattern.",
+      "significance": "this is not a new independent defect — it is the SAME systemic root cause (GREE series_or_platform extraction gap) recurring a third time, discovered specifically because Phase 3's clean-reference exercise forced a look at the NEXT candidate down the ranking. This raises material doubt that only 2 canonicals are affected; the true extent across the full ~970 low-confidence-tier population (not just the 3 examined here) is UNKNOWN and was not exhaustively scanned this phase — flagged as an open question, not resolved."
+    }
+  ],
+
+  "already_linked_finding": {
+    "description": "Independent of contamination, this phase discovered a distinct and important reference-truth fact: of V1's 4 RESCUE_HIGH_CONFIDENCE Run-A cases, 2 (both LG, both re-runs of the historical ADR-077 confusion) correspond to Amazon storefront rows that ALREADY had canonical_product_id set BEFORE this lab ever ran — i.e. production's own existing pipeline had already correctly linked them, independent of and prior to the AC Rescue Lab.",
+    "cases": [
+      { "amazon_product": "Lg Split Air Conditioner 18000 Btu Heat & Cool – Fresh Dv", "already_linked_to": "f3840d3b-1efa-4da0-b78d-721f8893f6e3" },
+      { "amazon_product": "LG - ArtCool Split Air Conditioner, 18,000 BTU, Cooling Only - AM182C0.UK1", "already_linked_to": "610b44af-97ad-402c-87ac-11e1fcb43dfe" }
+    ],
+    "population_scan": "checked all 270 Amazon AC storefront rows: exactly 2/270 are already canonical-linked, and both happen to be exactly these two RESCUE_HIGH_CONFIDENCE cases — no other Run-A case (eligible or not) is pre-linked.",
+    "reframing_required": "V1's TRUE novel-rescue yield within the exhaustively-verified RESCUE_HIGH_CONFIDENCE tier is 2/4 (TCL, Haier — genuinely previously-unlinked), not 4/4. The other 2 are re-derivations of a link that already exists in production, independent of this lab. This does NOT weaken V1 — it is in fact a strong, independent OUT-OF-BAND precision check: V1 agreed with production's own already-established ground truth in 2/2 such cases, with zero disagreement — but the ADR-319/320 framing of '4 rescued products' should be corrected to '2 genuinely rescued + 2 independently-confirmed-already-correct', a materially different and more precise claim."
+  },
+
+  "clean_reference_rerun": {
+    "method": "re-evaluated the 2 REVIEW-tier cases whose candidate pool touched a now-confirmed-contaminated canonical, applying V1's frozen ranking/classification rules (V1_SPEC.md, unmodified) to the candidate pool with contaminated canonicals removed. No candidate pool for any RESCUE_HIGH_CONFIDENCE or AMBIGUOUS case touches a SUSPECT, INSUFFICIENT_EVIDENCE, or CONTAMINATED canonical — confirmed by direct query, so those 7 cases are provably unaffected and were not re-run.",
+    "ORIGINAL_REFERENCE_RESULT": { "RESCUE_HIGH_CONFIDENCE": 4, "RESCUE_REVIEW": 4, "AMBIGUOUS": 3, "HARD_CONFLICT": 3, "NO_CANDIDATE": 12 },
+    "CLEAN_REFERENCE_RESULT": { "RESCUE_HIGH_CONFIDENCE": 4, "RESCUE_REVIEW": 3, "AMBIGUOUS": 3, "HARD_CONFLICT": 3, "NO_CANDIDATE": 13 },
+    "per_case_detail": [
+      {
+        "case": "GREE GWH24AVEXF-S6DTA1B 24000 BTU",
+        "original": "RESCUE_REVIEW (leading candidate: 23b80f80, contaminated)",
+        "clean": "RESCUE_REVIEW (leading candidate becomes e2a1b3ab, which is itself a CLEAN but WRONG-LINE candidate — explicitly 'Cosmo' per its own raw title, GWH24AWEXF, while the Amazon listing is explicitly AI-Pro/GWH24AVEXF). V1's mechanical classification is unchanged, but a human reviewer given accurate reference data would now clearly REJECT this candidate as a different product line, versus being merely 'uncertain' before.",
+        "class_changed": false,
+        "practical_outcome_improved": true
+      },
+      {
+        "case": "GREE GWC18AGD-S3DTA1A 18000 BTU",
+        "original": "RESCUE_REVIEW (leading candidate: 39657761, contaminated)",
+        "clean": "all 3 raw candidates are now disqualified — 39657761 and 32cad851 both confirmed contaminated (Type A), and the remaining candidate (91814ff5) is itself an under-specified, likely-Cosmo-line listing with no distinguishing evidence — NO_CANDIDATE.",
+        "class_changed": true,
+        "direction": "RESCUE_REVIEW -> NO_CANDIDATE (a DOWNGRADE, i.e. more conservative, not less)"
+      }
+    ],
+    "REFERENCE_CONTAMINATION_IMPACT": "Zero impact on the RESCUE_HIGH_CONFIDENCE tier — the only tier any future trust decision would draw on. All impact is confined to the RESCUE_REVIEW tier, which was already human-gated and never eligible for auto-approval. Where contamination mattered, cleaning the reference universe made V1's OUTPUT MORE conservative (one REVIEW case downgraded to NO_CANDIDATE), never less. This is a reassuring structural finding: reference contamination in this dataset did not inflate confidence anywhere — it only ever risked misleading a human reviewer within a tier that requires human judgment regardless."
+  },
+
+  "hard_negative_75pct_blind_spot_deep_dive": {
+    "case": "Fisher Split AC FSACME-XF18CIB, cold only 18000 BTU (Amazon) vs trusted candidate 43ccfb48 ('Fisher Split AC 18000 BTU')",
+    "WHY_V1_MISSED_IT": "V1's hard-conflict gate only fires when BOTH sides carry a non-null structured value for the compared attribute. The trusted candidate's structured cooling_mode field is null (parsed as NO_MODE in its tps_identity_key), so the gate had nothing to compare against Amazon's stated 'cold only' and let the candidate through.",
+    "WHICH_ATTRIBUTE_GATE_FAILED": "the cooling_mode hard-conflict gate specifically — its logic is correct (reject on proven disagreement), but its INPUT was incomplete.",
+    "WHETHER_THE_DATA_WAS_AVAILABLE": "YES. The trusted candidate's own raw observation title (store 5) explicitly states 'Fisher Split AC,18,000 BTU Hot / Cold, FSACQD-XF18HIB/FSACQD-XC18HIB' — the cooling-mode information existed in raw text but was never extracted into the structured field that V1's gate reads.",
+    "WHETHER_THE_REFERENCE_ITSELF_WAS_WRONG": "No — this is not a merge/contamination case like the GREE ones (only 1 observation exists for this canonical, so there is nothing to be internally inconsistent WITH). It is an under-extraction: a true attribute value existed in the source text and was never captured, leaving the field null rather than wrong.",
+    "WHETHER_THIS_IS_GENERALIZABLE": "Likely yes, but narrowly. cooling_mode extraction succeeds correctly on the large majority of observations reviewed across this whole audit (Haier 'Cool Only', multiple Gree 'Hot & Cold', Samsung 'Hot/Cold' etc. all extracted correctly) — the specific phrasing here ('Hot / Cold' with spaces around the slash) is a plausible regex-edge-case hypothesis distinct from the more common unspaced 'Hot/Cold' or ampersand-joined 'Hot & Cold' forms seen elsewhere in this same audit. This is a concrete, falsifiable, narrow hypothesis for a future fix — not proposed or applied here, since V1 and the underlying parser both remain frozen this phase.",
+    "model_number_cross_check": "independently: the trusted candidate's raw title states model codes 'FSACQD-XF18HIB/FSACQD-XC18HIB', while the Amazon listing states 'FSACME-XF18CIB' — a different model-code family (FSACQD vs FSACME) entirely, corroborating DIFFERENT_PRODUCT from a second, independent angle beyond the missed cooling_mode conflict."
+  },
+
+  "failure_mode_matrix_completion": [
+    { "mode": "same brand + BTU + different model", "status": "REAL", "evidence": "Fisher (Phase 2/3); also the bc10b959 Samsung WindFree 17000 BTU model-code mismatch found this phase (canonical states AR18CVFCBWK/MG, its own observation states AR18CVDAGWK/MG)." },
+    { "mode": "same family + different variant", "status": "REAL", "evidence": "LG ArtCool AM182C0.UK1 vs UK2-NK2 (Phase 2); the 3 confirmed GREE AI-Pro/Cosmo merges (Phase 3); the Samsung 'Motion Sensor' possible-variant (bc10b959, Phase 3)." },
+    { "mode": "nominal vs actual BTU", "status": "REAL", "evidence": "pervasive across TCL (11900-12400 range) and LG (17500-18400 range) canonicals throughout the audited set." },
+    { "mode": "stale/wrong merchant specification", "status": "REAL", "evidence": "TCL 12400 BTU trusted candidate's raw title says 'Cooling/Heating' but its own identity_key says cool_only (Phase 2); the Fisher cooling_mode under-extraction (this phase); the canonical-vs-observation model_number mismatch on bc10b959 (this phase)." },
+    { "mode": "inverter vs non-inverter", "status": "REAL", "evidence": "GREE 22000 BTU Amazon 'Inverter' vs trusted 'Standard' technology (Phase 2), correctly rejected by the hard-conflict gate." },
+    { "mode": "different cooling mode, same brand+BTU", "status": "REAL", "evidence": "Haier, GREE 22000 BTU, Super General x2 (Phase 2, all correctly rejected)." },
+    { "mode": "T1 vs T3", "status": "NO_TEST_POSSIBLE", "evidence": "14 real Amazon AC titles state 'T3'; zero trusted-side observations anywhere in the 990-canonical universe mention 'T1'. A constructed test would require inventing a T1 attribute value for a real product — this crosses into fabricating data, not pairing two real listings, so it is correctly marked NO_TEST_POSSIBLE rather than CONSTRUCTED_FROM_REAL." },
+    { "mode": "Wi-Fi vs non-Wi-Fi", "status": "NO_TEST_POSSIBLE", "evidence": "zero trusted-side observations state 'non-wifi'/'without wifi' anywhere in the 990-canonical universe; same reasoning as T1/T3 — no real counterpart to pair against." },
+    { "mode": "voltage/regional variant", "status": "NO_TEST_POSSIBLE", "evidence": "zero real Amazon or trusted AC listings state an explicit voltage figure (110V/120V) in either the 270-row or 990-canonical population." },
+    { "mode": "renewed/refurbished vs new", "status": "NO_TEST_POSSIBLE", "evidence": "zero 'renewed'/'refurbished'/'used' keyword hits across both the 270-row Amazon population and the 990-canonical trusted universe." },
+    { "mode": "indoor-only vs full system", "status": "NO_TEST_POSSIBLE", "evidence": "4 real Amazon 'indoor unit'/'outdoor unit' listings exist, but ALL 4 have brand_canonical='unknown' (their brands — 'Kool Sense', 'ACUMA', 'General X', a bare model number — are not in the brand-detection map at all), so none can generate ANY same-brand candidate pool to test against, real or constructed. The structural precondition (brand recognition) is what's actually missing here, a distinct and separate gap from the indoor/outdoor question itself." },
+    { "mode": "outdoor-only vs full system", "status": "NO_TEST_POSSIBLE", "evidence": "same root cause and same 4 listings as above." }
+  ],
+
+  "products_2_touch_diagnosis_only_not_fixed": [
+    {
+      "CANONICAL_CONTAMINATION_CASE": "23b80f80 — Gree 24000 BTU AI-Pro/Cosmo merge",
+      "EVIDENCE": "see reconstructed_contamination_cases above",
+      "CUSTOMER_RISK": "MEDIUM (no current storefront exposure; latent risk if ever projected)",
+      "ROOT_CAUSE": "GREE AC parser (scripts/tps-plugins/ac/parser.ts or its GREE-specific handling) does not extract series_or_platform (e.g. 'AI-Pro'/'AI-Plus' vs 'Cosmo'), so both lines collapse to the same tps_identity_key and get matched into one canonical.",
+      "SMALLEST_SAFE_PRODUCTS_2_FIX": "extend series_or_platform extraction for GREE to recognize 'AI-Pro'/'AI-Plus' and 'Cosmo' as distinct series tokens (mirrors the LG ArtCool/FreshDV/AirFit pattern already handled correctly elsewhere in the same parser), THEN re-run identity-key computation and re-matching for GREE observations only — this would naturally split the contaminated canonical without any manual data surgery.",
+      "PRODUCTS_2_TOUCH": "YES",
+      "FOUNDER_APPROVAL_REQUIRED": "YES"
+    },
+    {
+      "CANONICAL_CONTAMINATION_CASE": "39657761 — Gree 18000 BTU AI-Pro/Cosmo merge",
+      "EVIDENCE": "see reconstructed_contamination_cases above",
+      "CUSTOMER_RISK": "MEDIUM",
+      "ROOT_CAUSE": "identical to 23b80f80",
+      "SMALLEST_SAFE_PRODUCTS_2_FIX": "identical to 23b80f80 — same parser fix resolves both",
+      "PRODUCTS_2_TOUCH": "YES",
+      "FOUNDER_APPROVAL_REQUIRED": "YES"
+    },
+    {
+      "CANONICAL_CONTAMINATION_CASE": "32cad851 — Gree 18000 BTU AI-Plus/Cosmo merge (third instance, found this phase)",
+      "EVIDENCE": "see reconstructed_contamination_cases above",
+      "CUSTOMER_RISK": "MEDIUM",
+      "ROOT_CAUSE": "identical to the above two",
+      "SMALLEST_SAFE_PRODUCTS_2_FIX": "identical — same parser fix resolves all three; RECOMMENDATION: before applying any fix, run a full scan of the ~970 low-confidence-tier AC canonicals for the same AI-Pro/Cosmo (and any other GREE series) merge signature, since 3 real instances were found by incidental inspection of a small subset — the true population-wide extent is unknown.",
+      "PRODUCTS_2_TOUCH": "YES",
+      "FOUNDER_APPROVAL_REQUIRED": "YES"
+    },
+    {
+      "CANONICAL_CONTAMINATION_CASE": "42285ff6, 5371301a, a36389f4 — brand-extraction defect ('إل' / 'مكيف' instead of the real brand)",
+      "EVIDENCE": "brand field literally contains a truncated Arabic word fragment or the category word itself, not a brand",
+      "CUSTOMER_RISK": "LOW-MEDIUM — these 3 canonicals have zero storefront offers today, so no direct customer exposure, but any future brand-based filtering, search, or comparison feature would silently mis-group or drop them",
+      "ROOT_CAUSE": "an Arabic brand-detection regex or tokenizer step is truncating/mis-segmenting 'إل جي' (LG) and confusing the generic Arabic word 'مكيف' (air conditioner) for a brand token — likely the same underlying Arabic-text-handling class of bug flagged earlier this project as the 'bilingual matching invariant' (JS \\b does not respect Arabic script boundaries)",
+      "SMALLEST_SAFE_PRODUCTS_2_FIX": "correct the Arabic brand-detection pattern for LG ('إل' -> 'إل جي') and add 'مكيف' to a category-word denylist so it is never accepted as a brand value; then re-normalize these 3 specific observations (small, bounded blast radius)",
+      "PRODUCTS_2_TOUCH": "YES",
+      "FOUNDER_APPROVAL_REQUIRED": "YES"
+    },
+    {
+      "CANONICAL_CONTAMINATION_CASE": "bc10b959 — Samsung WindFree 17000 BTU model-code / possible Motion-Sensor-variant mismatch",
+      "EVIDENCE": "canonical's model_number field ('AR18CVFCBWK/MG') does not match its own sole full-code observation ('AR18CVDAGWK/MG', explicitly 'Motion Sensor')",
+      "CUSTOMER_RISK": "LOW — this canonical HAS a live storefront offer (store 4, extra.com) at a stated price; if the Motion Sensor variant is genuinely a different, pricier SKU merged into the base model's canonical, a customer could see a misleading price comparison",
+      "ROOT_CAUSE": "unresolved from available evidence — either (a) the canonical's model_number field was populated incorrectly at some point (Type D), or (b) a genuine 'Motion Sensor' commercial variant was matched into the base WindFree 17000 canonical without being recognized as distinct (Type C). Diagnosis only — insufficient evidence to assign a single root cause with confidence.",
+      "SMALLEST_SAFE_PRODUCTS_2_FIX": "NOT PROPOSED — root cause is not yet certain enough to propose a specific fix; recommend a targeted manual check of store 3's product page before any change",
+      "PRODUCTS_2_TOUCH": "YES (if a fix is later authorized)",
+      "FOUNDER_APPROVAL_REQUIRED": "YES"
+    }
+  ],
+
+  "verdict": {
+    "V1_AFTER_REFERENCE_AUDIT": "PROMISING",
+    "reasoning": "Unchanged from Phase 2's PROMISING, now on a materially stronger evidentiary footing. The reference audit found the contamination pattern is WORSE than ADR-320 first reported (3 confirmed instances, not 2, with the true population-wide extent still unknown) — but also found the contamination is STRUCTURALLY CONFINED: it never touches the RESCUE_HIGH_CONFIDENCE tier (0/20 valid-tier canonicals show it, and neither of the 2 canonicals that WERE HIGH_CONFIDENCE winners are affected), and cleaning the reference universe for the REVIEW tier only ever made V1's output MORE conservative, never less (one case downgraded to NO_CANDIDATE, none upgraded). A second, independent and previously-unrecognized finding — 2 of the 4 RESCUE_HIGH_CONFIDENCE cases were already correctly linked in production before this lab ran — turns out to be a strong out-of-band precision check (V1 agreed with an independent, pre-existing ground truth in 2/2 such cases) while correcting the 'rescue yield' framing down to 2 genuinely novel rescues (TCL, Haier) among the exhaustively-verified tier.",
+    "V1_CHANGED": false,
+    "HIGH_CONFIDENCE_RESULTS_ON_CLEAN_REFERENCES": "4/4 unchanged and unaffected by the reference audit (2 genuinely novel: TCL, Haier; 2 independently pre-confirmed: LG FreshDV, LG ArtCool)",
+    "FALSE_MERGES": 0,
+    "UNKNOWN": 0,
+    "DOES_V1_NOW_DESERVE_5_PRODUCT_PRODUCTION_PILOT": "NOT_YET",
+    "production_pilot_gate_check": {
+      "1_all_reference_canonicals_used_by_the_5_manually_verified_clean": "PARTIALLY — the 2 canonicals behind the genuinely-novel HIGH_CONFIDENCE rescues (TCL, Haier) were not part of the 20 valid-tier audit population (they are themselves low-confidence-tier canonicals) and have not been individually classified CLEAN/SUSPECT/CONTAMINATED under this phase's taxonomy — only their raw evidence was reviewed for the case-level ground-truth check in Phase 2, which found no internal inconsistency, but a formal reference-audit classification was not applied to them specifically.",
+      "2_every_proposed_rescue_candidate_manually_verified_exact": "YES for the 4 in question (Phase 2)",
+      "3_zero_known_false_merges": "YES (0 confirmed)",
+      "4_no_unexplained_hard_negative_failure_affects_those_candidates": "YES for the 4 HIGH_CONFIDENCE candidates specifically — the Fisher/REVIEW-tier gate blind-spot does not touch any of them",
+      "5_products_2_remains_authoritative": "YES — no writes made",
+      "6_rollback_defined": "NOT YET DEFINED — no rollback plan has been written for even a hypothetical pilot",
+      "7_v1_remains_frozen": "YES",
+      "overall": "conditions 1 and 6 are not satisfied — PRODUCTION_PILOT = NOT_YET, per the mission's own rule that any failing condition forces NOT_YET"
+    },
+    "NEXT_SAFEST_STEP": "Before any production discussion: (a) formally classify the TCL and Haier trusted canonicals (behind the 2 genuinely-novel rescues) under this same CLEAN/SUSPECT/CONTAMINATED taxonomy, since condition 1 of the pilot gate is currently unmet for them; (b) run a full, not-yet-attempted scan of the ~970 low-confidence-tier AC canonicals for the AI-Pro/Cosmo merge signature now proven to recur (3 real instances found incidentally), to learn its true extent rather than assume it stops at 3; (c) define a rollback plan for whatever pilot shape is eventually proposed. None of this requires touching Products 2 or tuning V1 — it is further read-only diagnosis, the same posture as this phase."
+  },
+
+  "products_2_boundary": {
+    "PRODUCTS_2_CHANGED": false,
+    "writes_performed": 0,
+    "PRODUCTS_2_REMAINS_READ_ONLY": true
+  }
+}
