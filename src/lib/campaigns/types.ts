@@ -2,7 +2,12 @@
 // Affiliate Campaign Revenue Layer V1 — shared types. See scripts/database/44-affiliate-campaigns.sql.
 
 export type CampaignMerchant = 'amazon' | 'noon';
-export type CampaignPlacement = 'homepage' | 'post_search' | 'both';
+// Merchant Affiliate Campaign Engine (Sept 2026 mission) — 'campaign_page' is the
+// dedicated, evergreen per-merchant offers page (src/app/[locale]/(public)/offers/
+// [merchant]/page.tsx). Deliberately its OWN value, not folded into 'both': a campaign
+// must opt in explicitly, and 'both' keeps its original, unchanged meaning (homepage +
+// post_search).
+export type CampaignPlacement = 'homepage' | 'post_search' | 'both' | 'campaign_page';
 
 export interface AffiliateCampaign {
   id: string;
@@ -28,6 +33,26 @@ export interface AffiliateCampaign {
   created_by: string | null;
   created_at: string;
   updated_at: string;
+  /** Optional seasonal/event identity shared by multiple merchant rows (migration 57,
+   *  e.g. "national_day_96"). null/undefined = an evergreen, event-less campaign.
+   *  Optional (not required) so every existing campaign object literal — tests, admin
+   *  forms, older rows read before this migration — keeps compiling and working
+   *  unchanged; treat a missing value exactly like null. */
+  event_slug?: string | null;
+  /** Optional visual theme hook for the event — styling only, no business logic
+   *  branches on this value. */
+  event_theme?: string | null;
+  /** The MERCHANT'S OWN quoted marketing claim (never Tawveeri's own wording) — see
+   *  `claim_verified_at`'s own doc comment for the rule governing when this may render. */
+  official_claim_ar?: string | null;
+  official_claim_en?: string | null;
+  /** Official-source provenance only (never a third-party coupon-aggregator site). */
+  official_claim_source?: string | null;
+  /** When a human last confirmed official_claim_ar/en against the live official source.
+   *  null/undefined = no verified claim exists — a campaign_page render must show its
+   *  generic evergreen framing, NEVER a claim banner, while this is unset (mission
+   *  §20/§30). */
+  claim_verified_at?: string | null;
 }
 
 export type CampaignStatus = 'scheduled' | 'live' | 'expired' | 'paused';

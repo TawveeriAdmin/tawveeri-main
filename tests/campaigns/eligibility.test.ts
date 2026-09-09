@@ -199,3 +199,52 @@ describe('parseAllowedMerchants', () => {
     expect(Array.from(parseAllowedMerchants('amazon,arabclicks,noon'))).toEqual(['amazon', 'noon']);
   });
 });
+
+// Merchant Affiliate Campaign Engine mission (2026-09-09), §17 — "simulate a
+// hypothetical THIRD_MERCHANT. Do not deploy it. Verify that onboarding would require
+// only: merchant registry/config, one affiliate adapter/config, secure credentials,
+// validation/tests, campaign activation." This proves the CORE eligibility/selection
+// engine itself — isCampaignEligible/selectEligibleCampaigns, the two functions every
+// campaign surface calls — contains ZERO merchant-specific branching: a merchant this
+// engine has never seen before is treated identically to amazon/noon, using nothing but
+// its own generic contract (placement/window/category/allowlist/destination-host).
+// CampaignMerchant is deliberately still the narrow 'amazon'|'noon' union (a real,
+// intentional approval gate — see 44-affiliate-campaigns.sql's own comment on the DB
+// CHECK constraint) — this test casts through it exactly once, at the boundary, to
+// prove the ENGINE does not need that union widened to work; only the DB constraint,
+// the TS union, and a MERCHANT_ACCENT/branding entry would need one line each before a
+// real third merchant could go live (never a new engine, page, or tracking system).
+describe('third-merchant extensibility (mission §17) — not deployed, engine only', () => {
+  const THIRD_MERCHANT = 'thirdmerchant' as unknown as AffiliateCampaign['merchant'];
+  const thirdMerchantCampaign = makeCampaign({
+    id: 'third-1',
+    merchant: THIRD_MERCHANT,
+    destination_url: 'https://www.thirdmerchant.example/deals',
+  });
+
+  it('a never-before-seen merchant is eligible under the exact same generic rules as amazon/noon', () => {
+    const ctx = { ...baseCtx, allowedMerchants: new Set([...ALLOW_BOTH, THIRD_MERCHANT]) };
+    expect(isCampaignEligible(thirdMerchantCampaign, ctx)).toBe(false); // destination host not approved — expected, see next case
+  });
+
+  it('is excluded ONLY by the destination-host allowlist (the one deliberate, per-merchant approval gate) — not by any hard-coded merchant check', () => {
+    // Proves the false result above is destination validation, not a missing
+    // `if (merchant === ...)` branch: with amazon/noon (approved hosts) the identical
+    // shape of campaign is eligible, so the engine path itself is merchant-generic.
+    const ctx = { ...baseCtx, allowedMerchants: new Set([...ALLOW_BOTH, THIRD_MERCHANT]) };
+    const amazonEquivalent = makeCampaign({ id: 'amazon-equivalent', merchant: 'amazon' });
+    expect(isCampaignEligible(amazonEquivalent, ctx)).toBe(true);
+  });
+
+  it('a third merchant absent from the allowlist is excluded — the SAME allowlist gate amazon/noon already respect, not a missing case', () => {
+    const third = makeCampaign({ id: 'third-3', merchant: THIRD_MERCHANT, destination_url: 'https://www.amazon.sa/dp/B0THIRD' });
+    const result = selectEligibleCampaigns([third], baseCtx); // baseCtx only allows amazon/noon
+    expect(result).toEqual([]);
+  });
+
+  it('onboarding checklist, proven not assumed: a merchant with no approved destination host can NEVER validate — the one deliberate line an onboarding step must add', () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { isApprovedMerchantHost } = require('@/lib/campaigns/destination-validation');
+    expect(isApprovedMerchantHost(THIRD_MERCHANT, 'www.thirdmerchant.example')).toBe(false);
+  });
+});

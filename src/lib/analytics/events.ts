@@ -56,6 +56,12 @@ export const USAGE_EVENT_TYPES = [
                                           // meta.merchant, meta.campaign_id
   "campaign_click",                      // its CTA was clicked (client-side signal only;
                                           // campaign_clicks is authoritative for the actual exit)
+  // Merchant Affiliate Campaign Engine (Sept 2026 mission) — /offers/[merchant], the
+  // dedicated evergreen per-merchant page. `deal_click` is the client-side signal for a
+  // per-product deal card (recordFirstPartyInteraction is the authoritative,
+  // decision-grade evidence, same split as go_click/outbound_clicks above).
+  "campaign_page_view",                  // /offers/[merchant] rendered. meta.merchant, meta.deal_count
+  "deal_click",                          // a verified-deal card's CTA was clicked. meta.merchant, meta.name
 ] as const;
 
 export type UsageEventType = (typeof USAGE_EVENT_TYPES)[number];

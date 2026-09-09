@@ -25,10 +25,14 @@ export function untypedClient() {
  *  the admin list (which needs paused/expired/scheduled rows too). */
 export async function listCampaignsForPlacement(placement: CampaignPlacement): Promise<AffiliateCampaign[]> {
   const supabase = untypedClient();
+  const placements =
+    placement === 'homepage' ? ['homepage', 'both']
+    : placement === 'campaign_page' ? ['campaign_page'] // deliberately NOT folded into 'both' — see CampaignPlacement's own doc comment
+    : ['post_search', 'both'];
   const { data, error } = await supabase
     .from('affiliate_campaigns')
     .select('*')
-    .in('placement', placement === 'homepage' ? ['homepage', 'both'] : ['post_search', 'both']);
+    .in('placement', placements);
   if (error || !data) return [];
   return data as AffiliateCampaign[];
 }
@@ -285,4 +289,30 @@ export async function getCampaignById(id: string): Promise<AffiliateCampaign | n
   const { data, error } = await supabase.from('affiliate_campaigns').select('*').eq('id', id).maybeSingle();
   if (error || !data) return null;
   return data as AffiliateCampaign;
+}
+
+/**
+ * Merchant Affiliate Campaign Engine (Sept 2026 mission) — the ONE function
+ * `/offers/[merchant]` calls for its hero. Reuses `getEligibleCampaigns` exactly like
+ * the homepage/post-search surfaces do (same kill switch, allowlist, window, claim
+ * guard, destination validation, exposure logging) — no new eligibility logic.
+ *
+ * Returns null whenever no LIVE, verified merchant claim exists for this merchant —
+ * which is the honest, expected state today for both Amazon and Noon (no National Day
+ * 96 claim was found live from either merchant as of this mission's research, and
+ * Amazon's own Associates Program Operating Agreement forbids advertising a sale that
+ * isn't confirmed via real-time merchant data). The caller must render its generic
+ * evergreen framing in that case — never fabricate a claim to fill this slot.
+ */
+export async function getCampaignPageHero(
+  merchant: EligibleCampaign['merchant'],
+  ctx: ExposureContext = {},
+): Promise<EligibleCampaign | null> {
+  const eligible = await getEligibleCampaigns('campaign_page', null, ctx);
+  const forMerchant = eligible.find((c) => c.merchant === merchant) ?? null;
+  // claim_verified_at is the hard gate (mission §20/§30): a row can be enabled/live/
+  // eligible for other reasons (e.g. a themed evergreen destination override) yet still
+  // carry no verified claim — that is not an error, it just means "no banner today."
+  if (!forMerchant?.claim_verified_at) return null;
+  return forMerchant;
 }

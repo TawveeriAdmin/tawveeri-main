@@ -24,6 +24,7 @@ import { useEffect, useRef } from 'react';
 import type { EligibleCampaign, CampaignSurface } from '@/lib/campaigns/types';
 import { track } from '@/lib/analytics/track';
 import { buildModeInsightAr, buildModeInsightEn } from '@/lib/campaigns/original-value';
+import { MERCHANT_ACCENT } from '@/lib/campaigns/merchant-accent';
 
 function sendClickBeacon(campaign: EligibleCampaign, surface: CampaignSurface, category?: string | null) {
   const payload = JSON.stringify({
@@ -51,26 +52,6 @@ function sendClickBeacon(campaign: EligibleCampaign, surface: CampaignSurface, c
     fetch('/api/campaigns/click', { method: 'POST', headers: { 'content-type': 'application/json' }, body: payload, keepalive: true }).catch(() => {});
   } catch { /* best-effort — navigation already happened via the anchor's own href */ }
 }
-
-// Brand-color accents (2026-09-09, Amazon×Noon commercial merchandising mission;
-// refined 2026-09-09 per founder round 2 — closer to the Rakhys reference's icon-chip +
-// large-wordmark composition) — a TEXT/color cue for instant merchant recognition,
-// never a copied logo asset (no new image pipeline, no trademarked artwork). Amazon's
-// dark navy + its own "smile" orange, Noon's own signature yellow — publicly associated
-// brand colors, not a pixel copy of Rakhys's design.
-const MERCHANT_ACCENT: Record<EligibleCampaign['merchant'], {
-  bg: string; fg: string; badgeBg: string; badgeFg: string; name: string; nameAr: string;
-  iconBg: string; iconFg: string; iconLetter: string;
-}> = {
-  amazon: {
-    bg: '#131A22', fg: '#ffffff', badgeBg: '#FF9900', badgeFg: '#131A22', name: 'Amazon.sa', nameAr: 'أمازون',
-    iconBg: '#ffffff', iconFg: '#131A22', iconLetter: 'a',
-  },
-  noon: {
-    bg: '#FEEE00', fg: '#111111', badgeBg: '#111111', badgeFg: '#FEEE00', name: 'Noon', nameAr: 'نون',
-    iconBg: '#111111', iconFg: '#FEEE00', iconLetter: 'ن',
-  },
-};
 
 export function CampaignCard({
   campaign,

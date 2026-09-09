@@ -64,6 +64,24 @@ export interface HomeVerifiedDeal {
  * (Contrast CHECKPOINT #20, where omission was rejected because unroutable cards CONCENTRATED in
  * one query and would have shown 1 result where 14 existed.)
  */
+type Obs = { id: string; canonical_product_id: string | null; normalized_payload: { _url?: string } | null };
+
+/**
+ * MEASURED (2026-09-09, Merchant Affiliate Campaign Engine mission): a `.in()` filter
+ * built from real Amazon.sa URLs (each ~300-600 chars — Amazon's own `dib=`/tracking
+ * query params are long, unlike jarir/extra/almanea's short paths) fails outright once
+ * the combined query string crosses a size threshold PostgREST/the network path
+ * enforces — live-reproduced: 25 such URLs in one `.in()` call succeeded, 37 failed with
+ * a bare "fetch failed" (no partial data, silently swallowed by this function's own
+ * try/catch upstream). getHomeVerifiedDeals (all merchants mixed, mostly short URLs)
+ * never hit this because Amazon's long URLs were diluted among many short ones;
+ * getMerchantVerifiedDeals('amazon', ...) sends ONLY long Amazon URLs and hit it
+ * immediately. Fixed generically here (benefits every caller, not just the merchant
+ * page) by batching into small, safely-sized chunks and merging — never a query-size
+ * gamble on the caller's URL mix.
+ */
+const RESOLVE_BATCH_SIZE = 15;
+
 async function resolveDestinations(
   supabase: ReturnType<typeof createServerClient>,
   urls: string[],
@@ -73,15 +91,29 @@ async function resolveDestinations(
   if (!urls.length) return out;
   const sb = supabase as unknown as { from: (t: string) => { select: (c: string) => never } };
 
-  const { data: obs } = await (sb.from('normalized_product_observations') as never as {
-    select: (c: string) => { in: (k: string, v: string[]) => Promise<{ data: unknown[] | null }> };
-  }).select('id, canonical_product_id, normalized_payload').in('normalized_payload->>_url', urls);
+  const batches: string[][] = [];
+  for (let i = 0; i < urls.length; i += RESOLVE_BATCH_SIZE) batches.push(urls.slice(i, i + RESOLVE_BATCH_SIZE));
 
-  type Obs = { id: string; canonical_product_id: string | null; normalized_payload: { _url?: string } | null };
   const byUrl = new Map<string, Obs>();
-  for (const o of ((obs ?? []) as Obs[])) {
-    const u = o.normalized_payload?._url;
-    if (u && !byUrl.has(u)) byUrl.set(u, o);
+  const batchResults = await Promise.all(batches.map(async (batch) => {
+    // Supabase's query builder is a thenable, not a real Promise — it has no .catch()
+    // of its own, so a batch failure must be caught by awaiting it inside a real async
+    // function (the bug this fixes: a bare `.catch()` chained directly on the builder
+    // threw "not a function" and that throw was itself swallowed by this file's own
+    // outer try/catch, silently returning [] for every caller — proven live 2026-09-09).
+    try {
+      return await (sb.from('normalized_product_observations') as never as {
+        select: (c: string) => { in: (k: string, v: string[]) => Promise<{ data: unknown[] | null; error: unknown }> };
+      }).select('id, canonical_product_id, normalized_payload').in('normalized_payload->>_url', batch);
+    } catch {
+      return { data: null, error: 'batch_failed' };
+    }
+  }));
+  for (const { data } of batchResults) {
+    for (const o of ((data ?? []) as Obs[])) {
+      const u = o.normalized_payload?._url;
+      if (u && !byUrl.has(u)) byUrl.set(u, o);
+    }
   }
   if (!byUrl.size) return out;
 
@@ -113,7 +145,23 @@ async function resolveDestinations(
   return out;
 }
 
+/**
+ * Merchant Affiliate Campaign Engine (Sept 2026 mission) — reuses this SAME verified-
+ * drop evidence, ranking and destination-resolution logic for a single merchant's
+ * evergreen offers page (`/offers/[merchant]`), instead of inventing a second deal-
+ * selection engine. `merchantSlug` filters candidates by `resolveApprovedSlug(store_name)`
+ * — the exact normalization the display step below already applies — never by matching
+ * raw `store_name` strings directly (many scraper-side spellings exist for one retailer).
+ */
+export async function getMerchantVerifiedDeals(merchantSlug: string, limit = 12, locale = 'ar'): Promise<HomeVerifiedDeal[]> {
+  return getVerifiedDeals(limit, locale, merchantSlug);
+}
+
 export async function getHomeVerifiedDeals(limit = 4, locale = 'ar'): Promise<HomeVerifiedDeal[]> {
+  return getVerifiedDeals(limit, locale, null);
+}
+
+async function getVerifiedDeals(limit: number, locale: string, merchantSlug: string | null): Promise<HomeVerifiedDeal[]> {
   try {
     const supabase = createServerClient();
     const { data, error } = await supabase
@@ -139,11 +187,13 @@ export async function getHomeVerifiedDeals(limit = 4, locale = 'ar'): Promise<Ho
         const price = Number(r.current_price);
         const observedMax = Number(r.observed_max);
         const trackedDays = Number(r.distinct_days);
+        const slug = resolveApprovedSlug(r.store_name);
         return {
           name: r.name ?? '',
           url: r.url ?? '',
           // Never render a raw store id to a customer (ADR-135); unresolved → no name.
-          storeName: retailerDisplayName(resolveApprovedSlug(r.store_name) ?? '', 'ar'),
+          storeName: retailerDisplayName(slug ?? '', 'ar'),
+          _slug: slug,
           // Whole riyals. Saudi retail prices are whole; a trailing .01 is a VAT-computed
           // float artifact, and "12,499.01" on a trust surface reads as noise rather than
           // evidence. Same convention as the ADR-129 float fix (69.000001 → 69).
@@ -156,6 +206,10 @@ export async function getHomeVerifiedDeals(limit = 4, locale = 'ar'): Promise<Ho
       })
       .filter((d) =>
         d.name && d.url &&
+        // Merchant-scoped page (getMerchantVerifiedDeals): only this merchant's own
+        // verified drops. null merchantSlug (getHomeVerifiedDeals) = every merchant, the
+        // original unchanged behavior.
+        (merchantSlug === null || d._slug === merchantSlug) &&
         Number.isFinite(d.price) && d.price > 0 &&
         Number.isFinite(d.observedMax) && d.observedMax > d.price &&
         // A drop we watched for a single day is not evidence of anything.
@@ -180,8 +234,9 @@ export async function getHomeVerifiedDeals(limit = 4, locale = 'ar'): Promise<Ho
     return candidates
       .filter((d) => dest.has(d.url))
       .slice(0, limit)
-      .map(({ _acc, url, ...d }) => {
+      .map(({ _acc, _slug, url, ...d }) => {
         void _acc;
+        void _slug;
         void url; // the raw retailer URL never reaches the client — the exit is built here
         const { href, internal } = dest.get(url)!;
         return { ...d, url, href, internal };

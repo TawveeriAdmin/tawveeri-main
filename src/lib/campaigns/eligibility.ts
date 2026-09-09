@@ -50,7 +50,18 @@ export function isCampaignEligible(c: AffiliateCampaign, ctx: EligibilityContext
  *      specific evidence of relevance wins;
  *   2. earlier created_at wins — stable or first-created, never "whichever was clicked
  *      more."
- * Returns campaigns sorted amazon-then-noon for a stable render order.
+ * Returns campaigns sorted amazon-then-noon (the two proven merchants' existing,
+ * stable render order — unchanged) then any OTHER merchant in first-eligible order.
+ *
+ * MEASURED (Merchant Affiliate Campaign Engine mission, 2026-09-09, §17's own
+ * third-merchant extensibility test): the previous `order` was the LITERAL array
+ * `['amazon', 'noon']`, so an otherwise-fully-eligible campaign from any other merchant
+ * was silently dropped here — the one real "if merchant is amazon-or-noon" branch this
+ * mission's own audit found in the core engine (isCampaignEligible itself has none).
+ * Fixed generically: amazon/noon keep their existing priority position (no rendering-
+ * order change for either), and every other eligible merchant is appended afterward in
+ * the order it was first encountered — never dropped, never requiring this function to
+ * be edited again for a future third merchant.
  */
 export function selectEligibleCampaigns(campaigns: AffiliateCampaign[], ctx: EligibilityContext): AffiliateCampaign[] {
   const eligible = campaigns.filter((c) => isCampaignEligible(c, ctx));
@@ -69,7 +80,9 @@ export function selectEligibleCampaigns(campaigns: AffiliateCampaign[], ctx: Eli
       byMerchant.set(c.merchant, c);
     }
   }
-  const order: CampaignMerchant[] = ['amazon', 'noon'];
+  const KNOWN_ORDER: CampaignMerchant[] = ['amazon', 'noon'];
+  const otherMerchants = Array.from(byMerchant.keys()).filter((m) => !KNOWN_ORDER.includes(m));
+  const order = [...KNOWN_ORDER, ...otherMerchants];
   return order.map((m) => byMerchant.get(m)).filter((c): c is AffiliateCampaign => !!c);
 }
 
