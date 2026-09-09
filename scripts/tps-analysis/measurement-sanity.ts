@@ -260,6 +260,25 @@ if (arg("from") || arg("to")) {
       detail: answerRate === null ? "No searching sessions in this window — nothing to measure." : `${(answerRate * 100).toFixed(1)}% of searching sessions (${sf.searchedAndGotResults}/${sf.searched}) got a result this window.` });
   }
 
+  // ═══ CHECK 8 — decision-grade vs raw outbound gap (ADR-286 / ADR-309) ═══════════════════
+  // Check 2/3 above already prove raw outbound_clicks is contaminated by a non-JS automated
+  // client hitting /go hrefs directly (ADR-309) — that traffic can never produce a
+  // first_party_interactions row (requires a real onClick, src/lib/analytics/interaction.ts).
+  // This check makes the resulting gap between "raw exit volume" and "proven real exits"
+  // visible on every run, so a founder-facing count is never quoted from the wrong ledger.
+  {
+    const dg = (await rows(
+      `select count(*) filter (where is_test=false) as n from first_party_interactions
+       where created_at >= '${start.toISOString()}' and created_at < '${end.toISOString()}'`
+    ).catch(() => [{ n: 0 }]))[0] as { n: number };
+    const rawReal = obReal.length;
+    const ratio = rawReal > 0 ? (dg.n / rawReal) : null;
+    add({ area: "8. Decision-grade coverage", check: "Interaction-proven exits vs raw outbound_clicks ledger", level: "WATCH",
+      detail: `${dg.n} first_party_interactions (real, exact-ID proven) vs ${rawReal} raw outbound_clicks (real) this window` +
+        (ratio !== null ? ` — ${(ratio * 100).toFixed(1)}% coverage.` : ".") +
+        ` Any founder/market-proof "qualified outbound" claim should cite the first number, not the second (ADR-286/ADR-309). Always WATCH: informational, not a pass/fail floor — this ledger is new and its own healthy ratio is not yet established.` });
+  }
+
   // ── Render ──────────────────────────────────────────────────────────────────────────────
   const icon = (l: Level) => (l === "PASS" ? "✅ PASS " : l === "WATCH" ? "🟡 WATCH" : "🔴 FAIL ");
   console.log(`\n═══ TAWVEERI — WEEKLY MEASUREMENT SANITY CHECK ═══`);

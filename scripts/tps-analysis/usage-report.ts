@@ -340,6 +340,28 @@ type Funnel = {
   w(`MEASURED EXITS (outbound_clicks — /go-routed only; storefront exits appear as go_click events above):`);
   if (!oc.length) w(`  (none yet)`);
   for (const r of oc) w(`  [${r.is_test ? "TEST" : "REAL"}] clicks=${r.n} distinct_products=${r.products} monetized=${r.monetized}`);
+  w(`  WARNING (ADR-309): the REAL count above is NOT qualified/decision-grade — it includes`);
+  w(`  a confirmed, ongoing automated-client pattern (crawler/link-checker directly requesting`);
+  w(`  /go/<id> hrefs, bypassing onClick — no session, no real click). Do not quote this number`);
+  w(`  as shopper exits without reading the DECISION-GRADE line below.`);
+  w("");
+
+  // ── DECISION-GRADE EXITS (ADR-286) — the authoritative, interaction-proven count.
+  //    first_party_interactions requires a real onClick to have fired (src/lib/analytics/
+  //    interaction.ts); a bare GET on /go (the ADR-309 contamination class) can never write
+  //    one. This does NOT replace the raw ledger above (kept for volume/affiliate-tagging
+  //    visibility, same "disclose both, hide nothing" precedent as ADR-309) — it is the
+  //    number a market-proof claim should actually be built on.
+  const dgRows = await rows(
+    `select count(*) filter (where is_test=false) real, count(*) filter (where is_test) test,
+            min(created_at) earliest
+     from first_party_interactions`
+  ).catch(() => [{ real: 0, test: 0, earliest: null }] as Record<string, unknown>[]);
+  const dg = dgRows[0] ?? { real: 0, test: 0, earliest: null };
+  w(`DECISION-GRADE EXITS (first_party_interactions — ADR-286, authoritative, exact-ID proven):`);
+  w(`  REAL=${dg.real ?? 0}  TEST=${dg.test ?? 0}  ledger live since=${dg.earliest ?? "n/a"}`);
+  w(`  This ledger only recently went live (see earliest date) — a small number here reflects`);
+  w(`  its short lifetime, not necessarily low real demand. Re-run this report as it accumulates.`);
   w("");
 
   // ── TAWVEERI HOME (ADR-257 §8): same pure builder as /admin/command-center — one
