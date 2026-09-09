@@ -1,10 +1,16 @@
 // src/components/campaigns/campaign-card.tsx
 // Shared presentational card for an eligible affiliate campaign (homepage + post-search).
 // Phase 0E — deliberately visually distinct from a neutral Tawveeri result: a different
-// background/border treatment (not brand-green, which every neutral surface uses), an
-// always-visible disclosure badge, and NO price/availability claim of any kind — V1
-// campaigns are pure text + CTA, so none of the Amazon price-sourcing/price-tracking
-// compliance questions (Phase 0A) apply to this surface at all.
+// background/border treatment (not brand-green, which every neutral surface uses) and NO
+// price/availability claim of any kind — V1 campaigns are pure text + CTA, so none of the
+// Amazon price-sourcing/price-tracking compliance questions (Phase 0A) apply to this
+// surface at all. The 'default' variant (post-search) still shows an always-visible
+// disclosure badge; the 'featured' variant (homepage, founder round-2 direction,
+// 2026-09-09) deliberately omits it — the card's own size/branding/"Explore offers on
+// X.sa" copy already makes the commercial nature obvious, matching the observed Rakhys
+// reference this variant is modeled on. `checkClaimGuard` (unaffected by this file)
+// still independently gates the underlying campaign copy for any price/endorsement claim
+// regardless of which variant renders it.
 //
 // CLICK ARCHITECTURE (final closure round §3, "B"): `campaign.merchantUrl` is the
 // FINAL, already-tagged, server-built destination — this anchor points straight at
@@ -46,13 +52,24 @@ function sendClickBeacon(campaign: EligibleCampaign, surface: CampaignSurface, c
   } catch { /* best-effort — navigation already happened via the anchor's own href */ }
 }
 
-// Brand-color accents (2026-09-09, Amazon×Noon commercial merchandising mission) — a
-// TEXT/color cue for instant merchant recognition, never a copied logo asset (no new
-// image pipeline, no trademarked artwork). Amazon's dark navy + its own "smile" orange,
-// Noon's own signature yellow — publicly associated brand colors, not Rakhys's design.
-const MERCHANT_ACCENT: Record<EligibleCampaign['merchant'], { bg: string; fg: string; badgeBg: string; badgeFg: string; name: string; nameAr: string }> = {
-  amazon: { bg: '#131A22', fg: '#ffffff', badgeBg: '#FF9900', badgeFg: '#131A22', name: 'Amazon.sa', nameAr: 'أمازون' },
-  noon:   { bg: '#FEEE00', fg: '#111111', badgeBg: '#111111', badgeFg: '#FEEE00', name: 'Noon', nameAr: 'نون' },
+// Brand-color accents (2026-09-09, Amazon×Noon commercial merchandising mission;
+// refined 2026-09-09 per founder round 2 — closer to the Rakhys reference's icon-chip +
+// large-wordmark composition) — a TEXT/color cue for instant merchant recognition,
+// never a copied logo asset (no new image pipeline, no trademarked artwork). Amazon's
+// dark navy + its own "smile" orange, Noon's own signature yellow — publicly associated
+// brand colors, not a pixel copy of Rakhys's design.
+const MERCHANT_ACCENT: Record<EligibleCampaign['merchant'], {
+  bg: string; fg: string; badgeBg: string; badgeFg: string; name: string; nameAr: string;
+  iconBg: string; iconFg: string; iconLetter: string;
+}> = {
+  amazon: {
+    bg: '#131A22', fg: '#ffffff', badgeBg: '#FF9900', badgeFg: '#131A22', name: 'Amazon.sa', nameAr: 'أمازون',
+    iconBg: '#ffffff', iconFg: '#131A22', iconLetter: 'a',
+  },
+  noon: {
+    bg: '#FEEE00', fg: '#111111', badgeBg: '#111111', badgeFg: '#FEEE00', name: 'Noon', nameAr: 'نون',
+    iconBg: '#111111', iconFg: '#FEEE00', iconLetter: 'ن',
+  },
 };
 
 export function CampaignCard({
@@ -124,8 +141,8 @@ export function CampaignCard({
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
-          gap: 10,
-          minHeight: 132,
+          gap: 12,
+          minHeight: 148,
           background: accent.bg,
           color: accent.fg,
           borderRadius: 18,
@@ -133,19 +150,24 @@ export function CampaignCard({
           textDecoration: 'none',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span
+            aria-hidden="true"
             style={{
-              display: 'inline-flex', alignItems: 'center', minHeight: 22,
-              fontSize: 12, fontWeight: 900, color: accent.badgeFg, background: accent.badgeBg,
-              borderRadius: 999, padding: '3px 10px',
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              width: 40, height: 40, flexShrink: 0,
+              fontSize: 20, fontWeight: 900, color: accent.iconFg, background: accent.iconBg,
+              borderRadius: 12,
             }}
           >
-            {merchantName}
+            {accent.iconLetter}
           </span>
-          <span style={{ fontSize: 9, fontWeight: 700, opacity: 0.7, whiteSpace: 'nowrap' }}>{disclosure}</span>
+          {/* Merchant wordmark — the largest, boldest text on the card (founder round-2
+              direction: "اجعل اسم أمازون/نون أوضح بصريًا"), same spirit as the Rakhys
+              reference's icon-chip + big-name pairing. */}
+          <span style={{ fontSize: 22, fontWeight: 900, lineHeight: 1.1 }}>{merchantName}</span>
         </div>
-        <div style={{ fontSize: 15, fontWeight: 900, lineHeight: 1.4 }}>{title}</div>
+        <div style={{ fontSize: 15, fontWeight: 800, lineHeight: 1.4 }}>{title}</div>
         <span
           style={{
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',

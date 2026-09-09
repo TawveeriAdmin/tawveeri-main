@@ -28,7 +28,7 @@ const T = {
     dealsTitle: 'أفضل العروض',
     dealsAll: 'شوف الكل',
     save: 'وفّر',
-    campaignsTitle: 'عروض المتاجر الآن',
+    campaignsTitle: 'ركن العروض من أجلك',
   },
   en: {
     tagline: 'Compare electronics prices across Saudi stores — with evidence, not marketing numbers.',
@@ -38,7 +38,7 @@ const T = {
     dealsTitle: 'Best deals',
     dealsAll: 'See all',
     save: 'Save',
-    campaignsTitle: 'Store offers now',
+    campaignsTitle: 'Offers picked for you',
   },
 };
 

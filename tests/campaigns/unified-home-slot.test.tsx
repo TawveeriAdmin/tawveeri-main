@@ -67,12 +67,12 @@ describe('UnifiedHome — campaign/deals slot', () => {
     render(<UnifiedHome locale="en" deals={[deal]} campaigns={[]} />);
     expect(screen.getByText('Best deals')).toBeInTheDocument();
     expect(screen.getByText('Example verified deal')).toBeInTheDocument();
-    expect(screen.queryByText('Store offers now')).not.toBeInTheDocument();
+    expect(screen.queryByText('Offers picked for you')).not.toBeInTheDocument();
   });
 
   it('an eligible campaign replaces the deals section in the SAME slot, not alongside it', () => {
     render(<UnifiedHome locale="en" deals={[deal]} campaigns={[campaign]} />);
-    expect(screen.getByText('Store offers now')).toBeInTheDocument();
+    expect(screen.getByText('Offers picked for you')).toBeInTheDocument();
     expect(screen.getByText('Current store offers')).toBeInTheDocument();
     // The original deals heading/content must NOT also render — one slot, one content.
     expect(screen.queryByText('Best deals')).not.toBeInTheDocument();
@@ -82,7 +82,7 @@ describe('UnifiedHome — campaign/deals slot', () => {
   it('16b. zero campaigns AND zero deals -> no broken/empty commercial or deals shell', () => {
     const { container } = render(<UnifiedHome locale="en" deals={[]} campaigns={[]} />);
     expect(screen.queryByText('Best deals')).not.toBeInTheDocument();
-    expect(screen.queryByText('Store offers now')).not.toBeInTheDocument();
+    expect(screen.queryByText('Offers picked for you')).not.toBeInTheDocument();
     expect(container.querySelector('[data-testid="campaign-card"]')).toBeNull();
   });
 });
