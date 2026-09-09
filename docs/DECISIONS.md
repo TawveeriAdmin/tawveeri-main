@@ -4,6 +4,65 @@
 
 Status legend: **Accepted** · **Superseded** · **Proposed**.
 
+### ADR-329 — Grok × Claude bridge truth audit: ADR-297's "no automation, shared-registry-plus-manual-relay" verdict re-verified live, unchanged, no bridge built · Accepted (2026-09-09)
+
+**Context.** Founder mission ("MARKET PROOF BRIDGE TRUTH AUDIT") required proving — not assuming — what ADR-297 (2026-09-05) actually implemented before any Grok↔Claude integration work, ahead of dispatching Grok's own Market Proof Phase 1 research brief.
+
+**Re-verification, read-only + one synthetic write, production.** Grepped the full repo for any Grok-specific code, webhook, MCP server, or queue added since ADR-297 (2026-09-05) through today: **zero found** (only the pre-existing ADR-297 prose and the `55-growth-content-platform-object-id.sql` migration comment mention "Grok" at all). `docs/CAPABILITY-CONTRACT.md` unmodified since 2026-09-05 (`git log`). The only write surface on `growth_content` is `PATCH /api/admin/growth/content` (admin-authenticated, status-only, no insert capability) — confirmed by reading the route; RLS confirmed still `service_role`-only, zero grants to `anon`/`authenticated`.
+
+**Live synthetic test (per the mission's own §3 instruction).** Inserted one test row (`content_id=experiment_id=bridge_test_001`, `channel=x`, `evidence={source:x, intent:COMPARISON, category:air_conditioner, safe_to_route:true, confidence:SYNTHETIC_TEST...}`, `utm={utm_source:x,...}`) directly into `growth_content` via a temporary script (deleted after the run, never committed), read it back intact (proves the schema already accepts exactly the field shape the mission proposed for a Grok-sourced signal), then deleted it (`DELETE ... rowCount=1`, net zero rows added). No app code, migration, or table was touched — the table itself was untouched by anything except this one insert+delete pair.
+
+**Answers to the mission's exact questions (§2, §11):**
+- A. Shared OPERATING MODEL: **YES** (Layer A/B/C + ownership split, ADR-297; the founder is actively operating it manually right now, relaying mission briefs between models in one session).
+- B. Shared DATA CONTRACT: **YES at the schema level** (`growth_content` + `docs/CAPABILITY-CONTRACT.md`), inert until something writes to it.
+- C. Grok submit evidence without founder manually copying to Claude: **NO.**
+- D. Claude publish capability/safe-to-route truth for Grok to consume automatically: **NO** — `CAPABILITY-CONTRACT.md` is relayed by the founder, not fetched by anything.
+- E. GROK→TAWVEERI→CLAUDE automated handoff: **PARTIAL** — the WRITE step is manual (no API, service-role DB access only); once a row lands, every existing downstream reader (`fetchGrowthContent()`, `/admin/growth`) picks it up with zero further action — confirmed by this session's test.
+- F. CLAUDE/TAWVEERI→GROK automated return path: **NO.**
+
+**Decision — BRIDGE_NEEDED = NO, matching ADR-297 exactly, re-confirmed rather than re-litigated.** Current qualified-signal volume (21 total `first_party_interactions` platform-wide, 6 days old — ADR-328/Phase-1 baseline, same day) does not remotely justify an authenticated ingestion API — building one now would be exactly the "giant orchestration platform" both this mission and ADR-297 independently warn against, for a founder-time saving currently measured in minutes/week. `RECOMMENDED_MODEL = SEMI_AUTOMATED`: founder/Claude manually inserts a Grok-sourced signal into `growth_content` using the now-proven field shape; every existing reporting surface consumes it automatically from there — Option B from the mission's own menu, no "tiny missing adapter" required because ADR-297 already built the one that was missing (`platform_object_id`).
+
+**Security boundary — unchanged, already correct.** `growth_content` RLS was already service-role-only before this audit; Grok has no path to Products 2, canonical identity, `product_matches`, pricing, or affiliate settings today, by construction (nothing exposes those tables outside server-side service-role code) — nothing in this audit needed to add a boundary, only confirm the existing one holds.
+
+**Publication safety — confirmed preserved.** Grepped for any social-platform posting call anywhere in the codebase: zero. The `PATCH` review route changes only an internal `status` enum; nothing auto-publishes.
+
+**Final report.**
+```
+ADR_297_OPERATING_MODEL               = PARTIAL (ownership/model FULL; automation PARTIAL/NONE)
+SHARED_DATA_CONTRACT                  = YES (schema-level: growth_content, CAPABILITY-CONTRACT.md)
+GROK_TO_CLAUDE_AUTOMATION             = PARTIAL (write manual, downstream read automatic)
+CLAUDE_TO_GROK_AUTOMATION             = NO
+FOUNDER_MANUAL_HANDOFF_REQUIRED       = YES
+EXISTING_COMPONENTS_REUSED            = growth_content (mig. 31+55), CAPABILITY-CONTRACT.md,
+                                         fetchGrowthContent(), /admin/growth PATCH review flow
+MISSING_COMPONENT                     = an authenticated write endpoint (does not exist, not
+                                         needed yet); no is_test flag on growth_content (worked
+                                         around via status='draft' + evidence.confidence, not a
+                                         blocker)
+BRIDGE_NEEDED                         = NO
+RECOMMENDED_MODEL                     = SEMI_AUTOMATED (manual write, automatic downstream read)
+IMPLEMENTATION_COMPLEXITY_IF_BUILT    = LOW, but not justified by current volume
+MARKET_PROOF_DELAY_IF_BUILT           = would consume a session better spent on the Amazon/Noon
+                                         CSV import blockers already open (Phase-1 baseline)
+SECURITY_BOUNDARY                     = confirmed correct, unchanged (service_role-only RLS)
+PUBLICATION_APPROVAL_PRESERVED        = YES
+TEST_RESULT                           = PASS — synthetic row round-tripped correctly, cleaned up,
+                                         net zero rows added
+PRODUCTION_WRITES                     = 1 test row inserted + deleted in the same run (net zero)
+PRODUCTS_2_CHANGED                    = NO
+SAFE_TO_SEND_GROK_MARKET_PROOF_PROMPT = YES (already dispatched by the founder this session;
+                                         nothing found here should have blocked or changed it)
+NEXT_STEP                             = keep the manual relay; when Grok returns real qualified
+                                         signals, insert them into growth_content using today's
+                                         proven shape instead of leaving them only in chat
+```
+
+**Consequences.** No code shipped, no schema changed, no new integration surface created. This ADR exists to make the re-verification durable (so a future session doesn't re-litigate the same question against stale memory) — the answer was "no drift since ADR-297," confirmed with one live, cleaned-up test rather than assumed from documentation alone.
+
+**Products 2 status.** Not touched.
+
+---
+
 ### ADR-328 — Market Proof Phase 1 baseline: founder-facing `tps:usage`/`tps:sanity` were headlining a crawler-contaminated exit count; wired in the already-built decision-grade (ADR-286) count alongside it, disclosed not hidden · Accepted (2026-09-09)
 
 **Context.** Founder mission "TAWVEERI 1.0 — MARKET PROOF, PHASE 1: BASELINE TRUTH & MEASUREMENT AUDIT" required reconstructing current market-proof measurement truth before any acquisition spend, and explicitly authorized fixing (not just flagging) any proven, small, safe, reversible measurement blocker found along the way.
