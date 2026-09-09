@@ -1258,6 +1258,18 @@ const STOPWORDS = new Set<string>([
   // mission pre-deploy check) — same class as «وش»/«ما» above, a sentence-structure word, never
   // product-title text.
   'بس',
+  // «بين»/«مابين» ("between"/"among") and «محتار»/«محتاره» ("torn"/"undecided" — the SAME
+  // indecision vocabulary `task-parser.ts`'s own `INDECISION_MARKERS` already recognizes for
+  // routing, e.g. «محتار بين جوالين») — MEASURED (2026-09-09, Market Proof real-shopper
+  // pre-flight mission): a real shopper's own wording, «تابلت الميزانية 1200 محتار بين هواوي
+  // شاومي هونر سامسونج», hit `categoryEnforcedZero` on the plain grid even though category
+  // (tablet) and budget (1200) both resolved correctly — no product title ever contains the
+  // word "between" or states that it is "undecided", so each was silently demanded as a
+  // REQUIRED literal match, same class of bug as «وش»/«شي»/«بس» above. Stripping these two
+  // words alone does not by itself make a multi-brand list ("هواوي-شاومي-هونر-سامسونج") a
+  // satisfiable AND-gate — see this mission's own findings for why that half is a genuine,
+  // separately-scoped intent-understanding gap, not a wrapper-word omission.
+  'بين', 'مابين', 'محتار', 'محتاره', 'حائر', 'حايره', 'حايرة',
   'best', 'cheapest', 'cheap', 'price', 'prices', 'new', 'offer', 'offers', 'deal', 'deals',
   'the', 'a', 'an', 'in', 'of', 'for', 'with', 'and', 'or', 'want',
   ...BUDGET_WRAPPER,
