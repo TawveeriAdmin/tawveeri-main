@@ -182,9 +182,9 @@ export function UnifiedHome({
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
             <h2 style={{ fontSize: 16, fontWeight: 900, color: 'var(--color-on-surface)', margin: 0 }}>{t.campaignsTitle}</h2>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: campaigns.length > 1 ? 'repeat(2, 1fr)' : '1fr', gap: 12 }}>
             {campaigns.map((c) => (
-              <CampaignCard key={c.id} campaign={c} locale={locale} surface="homepage" category={null} />
+              <CampaignCard key={c.id} campaign={c} locale={locale} surface="homepage" category={null} variant="featured" />
             ))}
           </div>
         </section>

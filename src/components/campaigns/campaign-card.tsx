@@ -46,16 +46,31 @@ function sendClickBeacon(campaign: EligibleCampaign, surface: CampaignSurface, c
   } catch { /* best-effort — navigation already happened via the anchor's own href */ }
 }
 
+// Brand-color accents (2026-09-09, Amazon×Noon commercial merchandising mission) — a
+// TEXT/color cue for instant merchant recognition, never a copied logo asset (no new
+// image pipeline, no trademarked artwork). Amazon's dark navy + its own "smile" orange,
+// Noon's own signature yellow — publicly associated brand colors, not Rakhys's design.
+const MERCHANT_ACCENT: Record<EligibleCampaign['merchant'], { bg: string; fg: string; badgeBg: string; badgeFg: string; name: string; nameAr: string }> = {
+  amazon: { bg: '#131A22', fg: '#ffffff', badgeBg: '#FF9900', badgeFg: '#131A22', name: 'Amazon.sa', nameAr: 'أمازون' },
+  noon:   { bg: '#FEEE00', fg: '#111111', badgeBg: '#111111', badgeFg: '#FEEE00', name: 'Noon', nameAr: 'نون' },
+};
+
 export function CampaignCard({
   campaign,
   locale,
   surface,
   category,
+  variant = 'default',
 }: {
   campaign: EligibleCampaign;
   locale: string;
   surface: CampaignSurface;
   category?: string | null;
+  /** 'featured' = large, merchant-branded homepage merchandising card (Amazon×Noon
+   *  mission). 'default' (unchanged) is the existing small, muted, text-only treatment
+   *  already live at post-search — every existing call site keeps rendering byte-for-
+   *  byte identically since this prop is optional and defaults to 'default'. */
+  variant?: 'default' | 'featured';
 }) {
   const isAr = locale !== 'en';
   const firedImpression = useRef(false);
@@ -85,6 +100,65 @@ export function CampaignCard({
   const insight = isAr
     ? buildModeInsightAr(campaign.destinationMode, category ?? null)
     : buildModeInsightEn(campaign.destinationMode, category ?? null);
+
+  if (variant === 'featured') {
+    const accent = MERCHANT_ACCENT[campaign.merchant];
+    const merchantName = isAr ? accent.nameAr : accent.name;
+    return (
+      <a
+        data-testid="campaign-card"
+        data-variant="featured"
+        href={campaign.merchantUrl}
+        target="_blank"
+        rel="noopener noreferrer sponsored"
+        onClick={() => {
+          sendClickBeacon(campaign, surface, category);
+          track('campaign_click', {
+            store: campaign.merchant,
+            category: category ?? undefined,
+            source: surface,
+            meta: { placement: surface, campaign_id: campaign.id },
+          });
+        }}
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          gap: 10,
+          minHeight: 132,
+          background: accent.bg,
+          color: accent.fg,
+          borderRadius: 18,
+          padding: '16px 18px',
+          textDecoration: 'none',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+          <span
+            style={{
+              display: 'inline-flex', alignItems: 'center', minHeight: 22,
+              fontSize: 12, fontWeight: 900, color: accent.badgeFg, background: accent.badgeBg,
+              borderRadius: 999, padding: '3px 10px',
+            }}
+          >
+            {merchantName}
+          </span>
+          <span style={{ fontSize: 9, fontWeight: 700, opacity: 0.7, whiteSpace: 'nowrap' }}>{disclosure}</span>
+        </div>
+        <div style={{ fontSize: 15, fontWeight: 900, lineHeight: 1.4 }}>{title}</div>
+        <span
+          style={{
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            minHeight: 38, alignSelf: 'flex-start',
+            background: accent.badgeBg, color: accent.badgeFg,
+            borderRadius: 10, padding: '7px 16px', fontSize: 12, fontWeight: 900,
+          }}
+        >
+          {cta}
+        </span>
+      </a>
+    );
+  }
 
   return (
     <div
