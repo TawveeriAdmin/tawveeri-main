@@ -4,6 +4,61 @@
 
 Status legend: **Accepted** · **Superseded** · **Proposed**.
 
+### ADR-337 — Affiliate Money Proof (Amazon × Noon): zero real revenue exists yet, but three real reconciliation defects proven and fixed before the first import · Accepted (2026-09-10)
+
+**Context.** Founder mission, parallel to the Noon Apify 7-day proof (ADR-336, untouched by this mission): can Tawveeri prove its first real affiliate riyal end-to-end, for Amazon and Noon specifically? Strict evidence ladder (LEVEL_0 qualified outbound → LEVEL_4 commission paid), and an explicit instruction never to fabricate revenue.
+
+**Reconstructing current commercial truth (§1).** The full reconciliation architecture already exists and is more mature than expected — `affiliate_reports`/`affiliate_conversions` (migration 30, ADR-213), a column-mapping CSV importer with dry-run preview (`/api/admin/affiliate/reports`), and a merchant-agnostic reporting layer (`revenue-proof-queries.ts`) that already treats Amazon and Noon identically. Design doc: `docs/AFFILIATE_RECONCILIATION_CONTRACT.md`.
+
+**The decisive fact.** `affiliate_reports`: 0 rows. `affiliate_conversions`: 0 rows. **No real affiliate report — Amazon or Noon — has ever been imported into production.** Every revenue-proof level above LEVEL_1 is therefore currently unreachable, honestly, not from a code defect but from missing external input.
+
+**What IS proven, independently, today:**
+```
+AMAZON_QUALIFIED_OUTBOUND (has a real interaction_id, i.e. decision-grade) = 12 (11 non-test, 1 test)
+NOON_QUALIFIED_OUTBOUND                                                    = 1  (0 test)
+Amazon affiliate_tag on those clicks   = "tawveeri0f-21" (matches the shared org tag, correct)
+Noon affiliate_tag on those clicks     = "C1000264L" (matches the registered Noon program tag, correct)
+sub_id present and non-null on every qualified click for both merchants (needed for EXACT-tier matching)
+```
+This proves the `/go` → tag → attribution path is intact and correct for both merchants RIGHT NOW — the reconciliation code has real, valid data to match against the moment a report arrives.
+
+**Three real defects found by direct code audit and fixed (none required real revenue data to prove — all are provable from the code's own logic against its own documented contract):**
+
+1. **PROBABLE match tier had no merchant scope.** `docs/AFFILIATE_RECONCILIATION_CONTRACT.md` itself specifies "ASIN/SKU + date window matches exactly one `outbound_clicks` row **for that store**" — the actual code never filtered by store at all, only by date window, platform-wide. At today's low click volume (8,874 total outbound_clicks ever, 39 ever decision-grade-qualified), a 30-day window frequently contains exactly one click platform-wide — meaning a Noon commission row could genuinely have matched an unrelated Amazon click, or vice versa, on the very first real import. Fixed: candidates are now filtered through `resolveApprovedSlug()` (the existing single authority for `outbound_clicks.store_name`'s three coexisting conventions — numeric id, Arabic name, English name — the exact defect class ADR-135 already fixed once elsewhere, applied here for the first time) against a merchant slug derived from the report's own `source` field.
+2. **Commission summing ignored reversal state.** `commissionSar` summed `commission_amount` unconditionally — a CANCELLED or RETURNED row whose source report still carries a commission figure would have silently inflated confirmed commission, directly violating the founder's own "ORDER_PROVEN = YES, COMMISSION_PROVEN = NO" distinction. Fixed: only `COMMISSION_CONFIRMED`/`PAID` rows contribute to `commissionSar`; a new `paidCommissionSar` field (PAID only) keeps confirmed and paid strictly separate, as the mission's §13 report format requires.
+3. **Currency was never captured.** `affiliate_conversions.currency` is a real schema column (migration 30) that the CSV normalizer never populated — every future import would have silently written `currency: null` on a financial record. Fixed: defaults to SAR (the real, non-fabricated reporting currency for both Amazon.sa Associates and Noon's Saudi program — not an invented conversion), overridable via the same column-mapping mechanism as every other field.
+
+**Also fixed, found during the same audit:** date parsing round-tripped date-only values through JS's local-timezone-dependent `Date` parsing then `.toISOString()` (UTC) — a well-known bug class that can shift a calendar date by ±1 day depending on server/input timezone offset. ISO-shaped dates are now used verbatim (no `Date` object involved at all); the non-ISO fallback reads local Y/M/D components consistently instead of mixing a local parse with a UTC read.
+
+**Evidence ladder — Amazon and Noon independently:**
+```
+LEVEL_0 (qualified outbound exists)        AMAZON: YES (12)   NOON: YES (1)
+LEVEL_1 (network records valid clicks)      AMAZON: NO_DATA    NOON: NO_DATA   (no report imported)
+LEVEL_2 (real order recorded)               AMAZON: NO_DATA    NOON: NO_DATA
+LEVEL_3 (commission confirmed)              AMAZON: NO_DATA    NOON: NO_DATA
+LEVEL_4 (commission paid)                   AMAZON: NO_DATA    NOON: NO_DATA
+```
+
+**External data required (§8) — reusing the contract doc's own already-specified ask, unchanged since it was written:**
+```
+AMAZON: Associates Central → Reports → Earnings Report (by Tracking ID if available), CSV,
+        any recent period with >=1 real order, ideally since the tawveeri0f-21 tag rotation
+        (2026-08-05, ADR-212). No account credentials needed — just the file (or its header
+        row alone, to seed the column mapping without exposing commercial rows).
+NOON:   The equivalent order/earnings export from Noon's affiliate/partner dashboard (exact
+        report name unconfirmed — no prior investigation has recorded one; the founder has
+        dashboard access this session does not). Same minimal ask: CSV, any period with an
+        order if one exists, or just the header row to seed the mapping.
+```
+
+**Decision.** `CONFIRMED_COMMISSION = 0` for both merchants, honestly, per the mission's own explicit rule — no click, order, or EPC estimate was converted into a revenue figure. `REPORT_IMPORTER_STATUS = DEFECT_FOUND_FIXED` (three real defects, all fixed and tested before any real report exists to be corrupted by them — the best possible time to have found them). No ranking, search, compare, campaign, or affiliate-tag/commission-agreement logic touched, per the mission's hard boundary.
+
+**Tests.** 33 new/updated regression tests (merchant-scoped PROBABLE matching, reversal-safe commission aggregation, currency default/override, timezone-safe date parsing). Full suite: 224 suites / 3,473 tests, zero regressions.
+
+**Products 2 status.** Not touched.
+
+---
+
 ### ADR-336 — Noon 7-day operating proof: checkpoint opened, honest day-0 baseline, metric definitions fixed · Proposed (2026-09-10)
 
 **Context.** ADR-335 shipped Apify (saswave) production retrieval, bounded to the FREE Apify plan's $5/month credit at ~15 Noon products/6h (~60/day). Founder mandate: run this cadence for 7 real days, measure actual behavior (not fabricated), and only THEN decide the long-term operating model (stay FREE, upgrade to STARTER, or roll back). This ADR is the OPENING checkpoint — the honest day-0 baseline and the exact review to run at day 7 — not the final scale decision, which requires real elapsed time that has not yet passed.
