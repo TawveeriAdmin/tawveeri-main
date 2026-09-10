@@ -12,20 +12,24 @@ async function requireAdminOrCronSecret(request: NextRequest) {
 }
 
 /**
- * GET /api/admin/diagnostics/noon-probe — TEMPORARY, single-purpose diagnostic.
+ * GET /api/admin/diagnostics/noon-probe?q=<query> — TEMPORARY, single-purpose diagnostic.
  *
  * Noon commerce data truth mission (2026-09-10): a sandbox test proved Noon's HTML pages
  * (product-detail, search-listing) return a fast, deliberate 403, while the separate JSON
  * search-API endpoint returned 200 with real data from a FRESH IP with no scraping history.
  * That does not prove anything about Tawveeri's actual production egress IP, which has
  * ~25 days of Noon HTML-page 403s already on its reputation — the anti-bot block may be
- * IP-reputation-scored across paths, not purely URL-pattern-scored. This route makes ONE
- * request from inside production itself (the only way to get a real answer) so a fix
- * decision is based on evidence from the actual egress, not a clean external IP.
+ * IP-reputation-scored across paths, not purely URL-pattern-scored.
  *
- * One request, no retry, no loop — exactly the kind of single well-behaved probe the
- * founder's "no continuous evasion" red line permits. Delete this route once the decision
- * is made; it is not meant to be permanent.
+ * `q` defaults to a category keyword (discovery-shaped query). Passing a KNOWN Noon SKU as
+ * `q` tests a second, separate question: whether the same search endpoint can also serve
+ * accurate PRICE-REFRESH of an already-known catalog item (matching that exact SKU back in
+ * the results), not just category discovery — required for §5/§10 of the mission before
+ * this endpoint could replace scrapeProductPageHtml() for existing products.
+ *
+ * One request per call, no retry, no loop — exactly the kind of single well-behaved probe
+ * the founder's "no continuous evasion" red line permits. Delete this route once the
+ * sourcing decision is made; it is not meant to be permanent.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -34,7 +38,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: (err as Error).message }, { status: 403 });
   }
 
-  const url = 'https://www.noon.com/_svc/catalog/api/v3/u/en-sa/search?q=tv&page=1&limit=5&sort%5Bby%5D=relevance&sort%5Bdir%5D=desc';
+  const q = request.nextUrl.searchParams.get('q') || 'tv';
+  const url = `https://www.noon.com/_svc/catalog/api/v3/u/en-sa/search?q=${encodeURIComponent(q)}&page=1&limit=5&sort%5Bby%5D=relevance&sort%5Bdir%5D=desc`;
   const headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
     'Accept': 'application/json, text/plain, */*',
@@ -57,25 +62,36 @@ export async function GET(request: NextRequest) {
     clearTimeout(timeout);
     const elapsedMs = Date.now() - t0;
     const text = await res.text();
-    let hitCount: number | null = null;
+    let hits: Record<string, unknown>[] = [];
     try {
       const json = JSON.parse(text);
-      const hits = json.hits || json.results || json.products || json.data?.hits || json.data?.products;
-      hitCount = Array.isArray(hits) ? hits.length : null;
-    } catch { /* non-JSON body, leave hitCount null */ }
+      const raw = json.hits || json.results || json.products || json.data?.hits || json.data?.products;
+      hits = Array.isArray(raw) ? raw : [];
+    } catch { /* non-JSON body, leave hits empty */ }
 
     return NextResponse.json({
       probed_at: new Date().toISOString(),
+      query: q,
       status: res.status,
       ok: res.ok,
       elapsed_ms: elapsedMs,
       body_length: text.length,
-      hit_count: hitCount,
-      body_sample: text.slice(0, 300),
+      hit_count: hits.length,
+      // Full first hit + every hit's sku/price/name — enough to judge exact-match capability
+      // (does searching a SKU return that same SKU?) without dumping the whole payload.
+      hits_summary: hits.slice(0, 5).map((h) => ({
+        sku: h.sku ?? h.id ?? h.product_id ?? null,
+        name: h.name ?? h.title ?? null,
+        price: h.price ?? h.sale_price ?? null,
+        in_stock: h.in_stock ?? h.is_available ?? null,
+      })),
+      first_hit_raw: hits[0] ?? null,
+      body_sample: hits.length === 0 ? text.slice(0, 300) : undefined,
     });
   } catch (e) {
     return NextResponse.json({
       probed_at: new Date().toISOString(),
+      query: q,
       error: e instanceof Error ? `${e.name}: ${e.message}` : String(e),
       elapsed_ms: Date.now() - t0,
     });
