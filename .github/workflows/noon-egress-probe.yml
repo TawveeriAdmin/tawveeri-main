@@ -24,11 +24,16 @@ jobs:
             len=$(wc -c < /tmp/body.txt | tr -d ' ')
             elapsed=$((t1-t0))
             echo "probe=$name http_code=$code elapsed_ms=$elapsed body_length=$len"
+
+            cat > /tmp/payload.json <<PAYLOAD_EOF
+          {"source":"github-actions","probe":"$name","http_code":"$code","elapsed_ms":$elapsed,"body_length":$len}
+          PAYLOAD_EOF
+            cat /tmp/payload.json
             curl -s -X POST "https://tawveeri.com/api/admin/diagnostics/egress-report" \
               -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
               -H "Content-Type: application/json" \
-              -d "{\"source\":\"github-actions\",\"probe\":\"$name\",\"http_code\":\"$code\",\"elapsed_ms\":$elapsed,\"body_length\":$len}" \
-              --max-time 20 -o /dev/null
+              --data-binary @/tmp/payload.json \
+              --max-time 20 -w "\nreport_status=%{http_code}\n"
           }
 
           probe "homepage" "https://www.noon.com/" -A "$UA"
