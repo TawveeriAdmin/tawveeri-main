@@ -71,3 +71,57 @@ describe("sha256", () => {
     expect(sha256("a")).not.toBe(sha256("b"));
   });
 });
+
+// Affiliate Money Proof mission (2026-09-10), §6/§10 — currency was never populated at all
+// (affiliate_conversions.currency stayed null on every import); both real merchants in
+// scope (Amazon.sa, Noon) report in SAR natively, so that's the honest default, not a
+// fabricated conversion.
+describe("normalizeRow — currency handling", () => {
+  const mapping: ColumnMapping = {
+    trackingId: "Tracking ID", itemName: "Item Name", price: "Price", commissionAmount: "Earnings",
+  };
+
+  it("defaults to SAR when no currency column is mapped", () => {
+    const r = normalizeRow({ "Item Name": "x", Price: "100" }, mapping);
+    expect(r.currency).toBe("SAR");
+  });
+
+  it("uses the mapped currency column when provided, uppercased", () => {
+    const withCurrency: ColumnMapping = { ...mapping, currency: "Currency" };
+    const r = normalizeRow({ "Item Name": "x", Price: "100", Currency: "usd" }, withCurrency);
+    expect(r.currency).toBe("USD");
+  });
+
+  it("a rejected row still carries a currency value, never undefined", () => {
+    const r = normalizeRow({}, mapping);
+    expect(r.currency).toBe("SAR");
+  });
+});
+
+// Timezone-safety fix: the previous implementation round-tripped a date-only value through
+// JS's local-timezone Date parsing then toISOString() (UTC) — a mismatch that can shift the
+// calendar date by a day. An ISO-shaped input is now used verbatim (already covered by the
+// "maps a well-formed row" test above); this covers the non-ISO fallback path explicitly.
+describe("normalizeRow — date parsing is timezone-safe", () => {
+  const mapping: ColumnMapping = { itemName: "Item Name", orderDate: "Order Date" };
+
+  it("an ISO-shaped date (with or without a time component) is used verbatim, never shifted by a day", () => {
+    expect(normalizeRow({ "Item Name": "x", "Order Date": "2026-09-15" }, mapping).order_date).toBe("2026-09-15");
+    expect(normalizeRow({ "Item Name": "x", "Order Date": "2026-09-15T23:59:00Z" }, mapping).order_date).toBe("2026-09-15");
+  });
+
+  it("a non-ISO date format still parses to a real calendar date, not null", () => {
+    const r = normalizeRow({ "Item Name": "x", "Order Date": "September 15, 2026" }, mapping);
+    expect(r.order_date).toBe("2026-09-15");
+  });
+
+  it("an unparseable date returns null, never a fabricated date", () => {
+    const r = normalizeRow({ "Item Name": "x", "Order Date": "not a date" }, mapping);
+    expect(r.order_date).toBeNull();
+  });
+
+  it("a missing date column returns null", () => {
+    const r = normalizeRow({ "Item Name": "x" }, mapping);
+    expect(r.order_date).toBeNull();
+  });
+});

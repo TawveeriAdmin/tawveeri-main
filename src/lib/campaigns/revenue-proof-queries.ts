@@ -264,7 +264,11 @@ export type MerchantReportedAmazon =
       shippedItems: number;
       cancelledOrReturned: number;
       qualifyingRevenueSar: number | null;
+      /** CONFIRMED or PAID rows only — see the reversal-safety fix on getMerchantReportedByTrackingId. */
       commissionSar: number;
+      /** PAID rows only — a strict subset of commissionSar (Affiliate Money Proof mission, 2026-09-10,
+       *  §13: CONFIRMED and PAID commission must be reported as distinct fields, never merged). */
+      paidCommissionSar: number;
       reportPeriodStart: string | null;
       reportPeriodEnd: string | null;
       lastImportedAt: string | null;
@@ -285,7 +289,67 @@ export type MerchantReportedAmazon =
  * those states happens at CSV-import column-mapping time, per report, already generic).
  * Renamed to `getMerchantReportedByTrackingId`; `getMerchantReportedAmazon` kept as an
  * unchanged-signature alias so no existing caller/test needs to change.
+ *
+ * REVERSAL-SAFETY FIX (Affiliate Money Proof mission, 2026-09-10, §6/§7): this previously
+ * summed `commission_amount` into `commissionSar` UNCONDITIONALLY, regardless of `state` —
+ * a CANCELLED or RETURNED row whose source report still carries a (pre-reversal, or
+ * negative-adjustment) commission_amount would have silently inflated "confirmed
+ * commission." The founder's own explicit rule — "if there is a real order but commission
+ * is not confirmed: ORDER_PROVEN = YES, COMMISSION_PROVEN = NO" — requires commissionSar to
+ * reflect ONLY genuinely confirmed money, never a cancelled/returned/still-pending row.
+ * commissionSar now sums COMMISSION_CONFIRMED + PAID rows only; paidCommissionSar (new,
+ * additive field) sums PAID rows only, giving CONFIRMED and PAID as the two genuinely
+ * distinct figures the mission's §13 report requires — never merged into one number.
  */
+export interface ConversionRowLike {
+  state?: string | null;
+  commission_amount?: number | null;
+  price?: number | null;
+  quantity?: number | null;
+  affiliate_reports?: { report_period_start?: string | null; report_period_end?: string | null; created_at?: string | null } | { report_period_start?: string | null; report_period_end?: string | null; created_at?: string | null }[] | null;
+}
+
+/**
+ * Pure aggregation over already-fetched conversion rows — extracted so the reversal-safety
+ * rule is directly unit-testable without a live Supabase client (same precedent as
+ * deriveBusinessDecisionState/deriveReconciliationStatus above). See the doc comment on
+ * getMerchantReportedByTrackingId for why CONFIRMED/PAID-only commission summing matters.
+ */
+export function aggregateConversionRows(conversions: ConversionRowLike[]): Omit<Extract<MerchantReportedAmazon, { status: 'known' }>, 'status' | 'trackingId' | 'networkReportedClicks'> {
+  let ordered = 0, shipped = 0, cancelledOrReturned = 0, commission = 0, paidCommission = 0, revenue = 0;
+  let periodStart: string | null = null, periodEnd: string | null = null, lastImported: string | null = null;
+  for (const row of conversions) {
+    const state = String(row.state || '').toUpperCase();
+    if (state === 'ORDERED' || state === 'COMMISSION_PENDING') ordered += 1;
+    if (state === 'SHIPPED' || state === 'COMMISSION_CONFIRMED' || state === 'PAID') shipped += 1;
+    if (state === 'CANCELLED' || state === 'RETURNED') cancelledOrReturned += 1;
+    const amount = typeof row.commission_amount === 'number' ? row.commission_amount : 0;
+    // REVERSAL SAFETY: only a genuinely confirmed/paid row may ever contribute to
+    // commissionSar — a cancelled/returned/still-pending row's commission_amount (present
+    // in some source reports even for reversed rows) must never inflate confirmed money.
+    if (state === 'COMMISSION_CONFIRMED' || state === 'PAID') commission += amount;
+    if (state === 'PAID') paidCommission += amount;
+    // Revenue is tracked from ORDERED onward (still useful for "an order happened"), but
+    // commission never is — this is the exact distinction the reversal-safety fix protects.
+    if (typeof row.price === 'number' && typeof row.quantity === 'number') revenue += row.price * row.quantity;
+    const report = Array.isArray(row.affiliate_reports) ? row.affiliate_reports[0] : row.affiliate_reports;
+    if (report?.report_period_start && (!periodStart || report.report_period_start < periodStart)) periodStart = report.report_period_start;
+    if (report?.report_period_end && (!periodEnd || report.report_period_end > periodEnd)) periodEnd = report.report_period_end;
+    if (report?.created_at && (!lastImported || report.created_at > lastImported)) lastImported = report.created_at;
+  }
+  return {
+    orderedItems: ordered,
+    shippedItems: shipped,
+    cancelledOrReturned,
+    qualifyingRevenueSar: revenue > 0 ? revenue : null,
+    commissionSar: commission,
+    paidCommissionSar: paidCommission,
+    reportPeriodStart: periodStart,
+    reportPeriodEnd: periodEnd,
+    lastImportedAt: lastImported,
+  };
+}
+
 export async function getMerchantReportedByTrackingId(trackingId: string): Promise<MerchantReportedAmazon> {
   const supabase = untypedClient();
   const { data: conversions, error } = await supabase
@@ -295,33 +359,11 @@ export async function getMerchantReportedByTrackingId(trackingId: string): Promi
 
   if (error || !conversions || conversions.length === 0) return { status: 'unknown' };
 
-  let ordered = 0, shipped = 0, cancelledOrReturned = 0, commission = 0, revenue = 0;
-  let periodStart: string | null = null, periodEnd: string | null = null, lastImported: string | null = null;
-  for (const row of conversions as Record<string, any>[]) {
-    const state = String(row.state || '').toUpperCase();
-    if (state === 'ORDERED' || state === 'COMMISSION_PENDING') ordered += 1;
-    if (state === 'SHIPPED' || state === 'COMMISSION_CONFIRMED' || state === 'PAID') shipped += 1;
-    if (state === 'CANCELLED' || state === 'RETURNED') cancelledOrReturned += 1;
-    if (typeof row.commission_amount === 'number') commission += row.commission_amount;
-    if (typeof row.price === 'number' && typeof row.quantity === 'number') revenue += row.price * row.quantity;
-    const report = Array.isArray(row.affiliate_reports) ? row.affiliate_reports[0] : row.affiliate_reports;
-    if (report?.report_period_start && (!periodStart || report.report_period_start < periodStart)) periodStart = report.report_period_start;
-    if (report?.report_period_end && (!periodEnd || report.report_period_end > periodEnd)) periodEnd = report.report_period_end;
-    if (report?.created_at && (!lastImported || report.created_at > lastImported)) lastImported = report.created_at;
-  }
-
   return {
     status: 'known',
     trackingId,
     networkReportedClicks: null, // Amazon's Earnings/Orders report exports do not carry a per-row click count
-    orderedItems: ordered,
-    shippedItems: shipped,
-    cancelledOrReturned,
-    qualifyingRevenueSar: revenue > 0 ? revenue : null,
-    commissionSar: commission,
-    reportPeriodStart: periodStart,
-    reportPeriodEnd: periodEnd,
-    lastImportedAt: lastImported,
+    ...aggregateConversionRows(conversions as ConversionRowLike[]),
   };
 }
 
@@ -390,6 +432,8 @@ export interface PortfolioRow {
   merchantStatus: MerchantReportedAmazon['status'];
   merchantOrderedItems: number | null;
   merchantCommissionSar: number | null;
+  /** PAID rows only — a strict subset of merchantCommissionSar, kept separate per §13. */
+  merchantPaidCommissionSar: number | null;
   merchantReportPeriodEnd: string | null;
   reconciliation: ReconciliationStatus;
 }
@@ -454,6 +498,7 @@ export async function getPortfolioSummary(): Promise<PortfolioRow[]> {
       merchantStatus: merchant.status,
       merchantOrderedItems: merchant.status === 'known' ? merchant.orderedItems : null,
       merchantCommissionSar: merchant.status === 'known' ? merchant.commissionSar : null,
+      merchantPaidCommissionSar: merchant.status === 'known' ? merchant.paidCommissionSar : null,
       merchantReportPeriodEnd: merchant.status === 'known' ? merchant.reportPeriodEnd : null,
       reconciliation,
     });
@@ -477,6 +522,8 @@ export interface MerchantSummary {
   /** null when NO campaign for this merchant has an imported report yet — never 0. */
   ordersKnown: number | null;
   commissionSarKnown: number | null;
+  /** PAID rows only — a strict subset of commissionSarKnown, kept separate per §13. */
+  paidCommissionSarKnown: number | null;
   revenuePer100Exposures: number | null;
   anyReportImported: boolean;
 }
@@ -494,6 +541,7 @@ export function summarizeByMerchant(rows: PortfolioRow[]): MerchantSummary[] {
     const anyReportImported = knownRows.length > 0;
     const ordersKnown = anyReportImported ? knownRows.reduce((s, r) => s + (r.merchantOrderedItems ?? 0), 0) : null;
     const commissionSarKnown = anyReportImported ? knownRows.reduce((s, r) => s + (r.merchantCommissionSar ?? 0), 0) : null;
+    const paidCommissionSarKnown = anyReportImported ? knownRows.reduce((s, r) => s + (r.merchantPaidCommissionSar ?? 0), 0) : null;
     return {
       merchant,
       campaignCount: mine.length,
@@ -504,6 +552,7 @@ export function summarizeByMerchant(rows: PortfolioRow[]): MerchantSummary[] {
       clickThroughRate: eligibleExposures30d > 0 ? cleanClicks30d / eligibleExposures30d : null,
       ordersKnown,
       commissionSarKnown,
+      paidCommissionSarKnown,
       revenuePer100Exposures: commissionSarKnown !== null && eligibleExposures30d > 0 ? (commissionSarKnown / eligibleExposures30d) * 100 : null,
       anyReportImported,
     };

@@ -5,8 +5,8 @@
 // these pure functions' explicit inputs, matching this codebase's existing
 // convention of not mocking a live NextRequest/route handler (see
 // tests/campaigns/click-route-contract.test.ts).
-import { deriveBusinessDecisionState, computeOperatingCostCoverage, deriveReconciliationStatus, isPaidOriginAcquisition, deriveDifferentiationBreakdown, summarizeByMerchant, compareByCategory, filterEligibleClicks } from '@/lib/campaigns/revenue-proof-queries';
-import type { TawveeriObserved, MerchantReportedAmazon, PortfolioRow } from '@/lib/campaigns/revenue-proof-queries';
+import { deriveBusinessDecisionState, computeOperatingCostCoverage, deriveReconciliationStatus, isPaidOriginAcquisition, deriveDifferentiationBreakdown, summarizeByMerchant, compareByCategory, filterEligibleClicks, aggregateConversionRows } from '@/lib/campaigns/revenue-proof-queries';
+import type { TawveeriObserved, MerchantReportedAmazon, PortfolioRow, ConversionRowLike } from '@/lib/campaigns/revenue-proof-queries';
 
 const ZERO_OBSERVED: TawveeriObserved = {
   cleanEligibleExposures: 0, visibleImpressions: 0, cleanCampaignClicks: 0,
@@ -21,7 +21,7 @@ function knownMerchant(commissionSar: number): MerchantReportedAmazon {
   return {
     status: 'known', trackingId: 'tawveeri0f-tablet-21', networkReportedClicks: null,
     orderedItems: 1, shippedItems: 1, cancelledOrReturned: 0, qualifyingRevenueSar: 500,
-    commissionSar, reportPeriodStart: '2026-09-01', reportPeriodEnd: '2026-09-30', lastImportedAt: '2026-10-01T00:00:00Z',
+    commissionSar, paidCommissionSar: 0, reportPeriodStart: '2026-09-01', reportPeriodEnd: '2026-09-30', lastImportedAt: '2026-10-01T00:00:00Z',
   };
 }
 
@@ -114,9 +114,74 @@ describe('deriveReconciliationStatus — Amazon Decision Layer V2 §8 founder po
     const noItems: MerchantReportedAmazon = {
       status: 'known', trackingId: 'tawveeri0f-tablet-21', networkReportedClicks: null,
       orderedItems: 0, shippedItems: 0, cancelledOrReturned: 0, qualifyingRevenueSar: null,
-      commissionSar: 0, reportPeriodStart: '2026-09-01', reportPeriodEnd: '2026-09-30', lastImportedAt: '2026-10-01T00:00:00Z',
+      commissionSar: 0, paidCommissionSar: 0, reportPeriodStart: '2026-09-01', reportPeriodEnd: '2026-09-30', lastImportedAt: '2026-10-01T00:00:00Z',
     };
     expect(deriveReconciliationStatus(noItems)).toBe('PARTIAL');
+  });
+});
+
+// Affiliate Money Proof mission (2026-09-10), §6/§7 — reversal-safety fix: commissionSar
+// previously summed commission_amount UNCONDITIONALLY regardless of state, so a
+// CANCELLED/RETURNED row could silently inflate "confirmed commission." Fixed to only
+// count COMMISSION_CONFIRMED/PAID rows; paidCommissionSar tracks PAID separately.
+describe('aggregateConversionRows — reversal safety (zero revenue must stay zero)', () => {
+  function conv(overrides: Partial<ConversionRowLike> = {}): ConversionRowLike {
+    return { state: 'PAID', commission_amount: 10, price: 100, quantity: 1, ...overrides };
+  }
+
+  it('MEASURED regression case: a CANCELLED row with a non-null commission_amount contributes ZERO to commissionSar', () => {
+    const result = aggregateConversionRows([conv({ state: 'CANCELLED', commission_amount: 15 })]);
+    expect(result.commissionSar).toBe(0);
+    expect(result.paidCommissionSar).toBe(0);
+    expect(result.cancelledOrReturned).toBe(1);
+  });
+
+  it('a RETURNED row with a commission_amount also contributes ZERO', () => {
+    const result = aggregateConversionRows([conv({ state: 'RETURNED', commission_amount: 20 })]);
+    expect(result.commissionSar).toBe(0);
+  });
+
+  it('a still-PENDING (ORDERED/COMMISSION_PENDING) row does not count toward commissionSar — order proven, commission not yet', () => {
+    const result = aggregateConversionRows([conv({ state: 'ORDERED', commission_amount: 12 })]);
+    expect(result.orderedItems).toBe(1);
+    expect(result.commissionSar).toBe(0);
+  });
+
+  it('COMMISSION_CONFIRMED counts toward commissionSar but NOT paidCommissionSar', () => {
+    const result = aggregateConversionRows([conv({ state: 'COMMISSION_CONFIRMED', commission_amount: 30 })]);
+    expect(result.commissionSar).toBe(30);
+    expect(result.paidCommissionSar).toBe(0);
+  });
+
+  it('PAID counts toward BOTH commissionSar and paidCommissionSar', () => {
+    const result = aggregateConversionRows([conv({ state: 'PAID', commission_amount: 40 })]);
+    expect(result.commissionSar).toBe(40);
+    expect(result.paidCommissionSar).toBe(40);
+  });
+
+  it('a realistic mixed batch: only confirmed+paid rows contribute, cancelled/pending do not', () => {
+    const rows = [
+      conv({ state: 'PAID', commission_amount: 50 }),
+      conv({ state: 'COMMISSION_CONFIRMED', commission_amount: 25 }),
+      conv({ state: 'CANCELLED', commission_amount: 999 }), // must never leak into the total
+      conv({ state: 'ORDERED', commission_amount: 999 }),   // still pending — must not count yet
+    ];
+    const result = aggregateConversionRows(rows);
+    expect(result.commissionSar).toBe(75); // 50 + 25 only
+    expect(result.paidCommissionSar).toBe(50);
+  });
+
+  it('revenue (price*quantity) is still tracked for ordered items even though commission is not — a real order can be proven without confirmed commission', () => {
+    const result = aggregateConversionRows([conv({ state: 'ORDERED', commission_amount: 12, price: 200, quantity: 2 })]);
+    expect(result.qualifyingRevenueSar).toBe(400);
+    expect(result.commissionSar).toBe(0);
+  });
+
+  it('an empty row set returns all-zero/null, never fabricated', () => {
+    const result = aggregateConversionRows([]);
+    expect(result.commissionSar).toBe(0);
+    expect(result.paidCommissionSar).toBe(0);
+    expect(result.qualifyingRevenueSar).toBeNull();
   });
 });
 
@@ -253,7 +318,7 @@ function row(overrides: Partial<PortfolioRow>): PortfolioRow {
   return {
     campaignId: 'c1', merchant: 'amazon', category: 'tablet', trackingId: 'x', enabled: true,
     tawveeriClicks30d: 0, tawveeriExposures30d: 0, merchantStatus: 'unknown',
-    merchantOrderedItems: null, merchantCommissionSar: null, merchantReportPeriodEnd: null,
+    merchantOrderedItems: null, merchantCommissionSar: null, merchantPaidCommissionSar: null, merchantReportPeriodEnd: null,
     reconciliation: 'NOT_YET_AVAILABLE', ...overrides,
   };
 }

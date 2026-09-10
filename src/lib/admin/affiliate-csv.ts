@@ -58,15 +58,32 @@ export function parseCsv(text: string): ParsedCsv {
 // everything else degrades gracefully to null rather than rejecting the row.
 export const CANONICAL_FIELDS = [
   'trackingId', 'asinOrSku', 'itemName', 'orderDate', 'shipDate',
-  'quantity', 'price', 'commissionAmount', 'state',
+  'quantity', 'price', 'commissionAmount', 'state', 'currency',
 ] as const;
 export type CanonicalField = typeof CANONICAL_FIELDS[number];
 export type ColumnMapping = Partial<Record<CanonicalField, string>>;
 
+/**
+ * Affiliate Money Proof mission (2026-09-10), §6/§10 — timezone-safety fix: the previous
+ * implementation (`new Date(raw).toISOString().slice(0,10)`) round-trips a DATE-ONLY value
+ * (no time-of-day meaning) through JS's local-timezone-dependent Date parsing, then back to
+ * UTC — a well-known bug class that can shift the calendar date by ±1 day depending on the
+ * server's runtime timezone offset relative to whatever offset (if any) the source string
+ * implied. A YYYY-MM-DD string is now used VERBATIM, with no Date object involved at all —
+ * no timezone conversion can occur on a value that's already the exact calendar date. Only
+ * genuinely ambiguous formats (e.g. "09/15/2026", "Sep 15, 2026") fall back to Date parsing,
+ * and that parsing explicitly reads UTC Y/M/D components rather than trusting toISOString's
+ * local-to-UTC conversion.
+ */
 function parseDate(raw: string | undefined): string | null {
   if (!raw) return null;
-  const d = new Date(raw);
-  return Number.isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10);
+  const trimmed = raw.trim();
+  const isoMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (isoMatch) return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+  const d = new Date(trimmed);
+  if (Number.isNaN(d.getTime())) return null;
+  const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, '0'), day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 function parseNumber(raw: string | undefined): number | null {
@@ -88,6 +105,16 @@ const STATE_ALIASES: Record<string, string> = {
   returned: 'RETURNED', refunded: 'RETURNED',
 };
 
+// Affiliate Money Proof mission (2026-09-10), §6/§10 — currency-handling fix: the
+// `affiliate_conversions.currency` column (schema, migration 30) was never populated by
+// this normalizer at all, so every future imported row would silently carry `currency:
+// null` on a financial record. Both real merchants in scope today (Amazon.sa Associates,
+// Noon's Saudi affiliate program) report in SAR — no foreign-currency conversion is
+// fabricated here, this is the merchant's own actual reporting currency. A future
+// merchant reporting in a different currency can override it via the same column-mapping
+// mechanism as every other field (CANONICAL_FIELDS now includes 'currency').
+const DEFAULT_CURRENCY = 'SAR';
+
 export interface NormalizedRow {
   tracking_id_raw: string | null;
   sub_id: string | null;
@@ -98,6 +125,7 @@ export interface NormalizedRow {
   quantity: number | null;
   price: number | null;
   commission_amount: number | null;
+  currency: string;
   state: string;
   rejected: boolean;
   rejectReason?: string;
@@ -109,12 +137,13 @@ export function normalizeRow(row: Record<string, string>, mapping: ColumnMapping
   const itemName = get('itemName')?.trim() || null;
   const rawState = get('state')?.trim().toLowerCase() || '';
   const state = STATE_ALIASES[rawState] || (rawState ? rawState.toUpperCase() : null);
+  const currency = get('currency')?.trim().toUpperCase() || DEFAULT_CURRENCY;
 
   if (!itemName && !trackingId) {
     return {
       tracking_id_raw: trackingId, sub_id: null, asin_or_sku: null, item_name: null,
       order_date: null, ship_date: null, quantity: null, price: null, commission_amount: null,
-      state: 'UNKNOWN', rejected: true, rejectReason: 'missing both trackingId and itemName',
+      currency, state: 'UNKNOWN', rejected: true, rejectReason: 'missing both trackingId and itemName',
     };
   }
 
@@ -131,6 +160,7 @@ export function normalizeRow(row: Record<string, string>, mapping: ColumnMapping
     quantity: parseNumber(get('quantity')),
     price: parseNumber(get('price')),
     commission_amount: parseNumber(get('commissionAmount')),
+    currency,
     state: state || 'ORDERED',
     rejected: false,
   };

@@ -6,12 +6,32 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/database';
 import { requireRequestAdmin } from '@/lib/auth/api-auth';
 import { parseCsv, normalizeRow, sha256, type ColumnMapping } from '@/lib/admin/affiliate-csv';
+import { resolveApprovedSlug } from '@/lib/retailers/approved-retailers';
 
 // affiliate_reports/affiliate_conversions aren't in the generated Database types (raw-migration
 // tables, same convention as usage_events/outbound_clicks — see command-center-queries.ts).
 type AnyClient = { from: (table: string) => any };
 
 const MATCH_WINDOW_DAYS = 30;
+
+/**
+ * Affiliate Money Proof mission (2026-09-10), §6 — proven silent-mis-attribution defect:
+ * the PROBABLE match tier's "exactly one candidate in the date window" query had NO
+ * merchant/store filter at all — a Noon commission-report row could match an unrelated
+ * Amazon (or any other store's) click purely by date coincidence, and vice versa. At
+ * today's low platform-wide click volume (single digits to low tens per week) this is not
+ * a rare edge case; a 30-day window frequently contains exactly one click platform-wide.
+ * `outbound_clicks.store_name` holds THREE different conventions depending on write path
+ * (numeric store id, Arabic display name, English name — ADR-135's exact defect class,
+ * just not yet applied here) — resolveApprovedSlug() is the existing single authority for
+ * normalizing all three, reused rather than re-derived.
+ */
+export function sourceToMerchantSlug(source: string): string | null {
+  const s = source.toLowerCase();
+  if (s.includes('amazon')) return 'amazon';
+  if (s.includes('noon')) return 'noon';
+  return null;
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -175,14 +195,24 @@ export async function POST(request: NextRequest) {
         windowStart.setDate(windowStart.getDate() - MATCH_WINDOW_DAYS);
         const { data: candidates } = await supabase
           .from('outbound_clicks')
-          .select('id')
+          .select('id, store_name')
           .eq('is_test', false)
           .gte('clicked_at', windowStart.toISOString())
           .lte('clicked_at', new Date(r.order_date).toISOString())
-          .limit(2);
-        if (candidates && candidates.length === 1) {
+          .limit(200);
+        // Scoped to the report's OWN merchant — a candidate from a different store must
+        // never win a PROBABLE match just because it is the only click platform-wide in
+        // the window (see doc comment on sourceToMerchantSlug above). When the source
+        // string doesn't resolve to a known merchant, fall back to the unscoped set rather
+        // than silently matching zero rows — "unknown beats incorrect" cuts both ways: an
+        // unrecognized source must not be treated as un-matchable by construction either.
+        const merchantSlug = sourceToMerchantSlug(source);
+        const scoped = merchantSlug
+          ? (candidates ?? []).filter((c: { store_name: string }) => resolveApprovedSlug(c.store_name) === merchantSlug)
+          : (candidates ?? []);
+        if (scoped.length === 1) {
           matchTier = 'PROBABLE';
-          matchedClickId = candidates[0].id;
+          matchedClickId = scoped[0].id;
         }
       }
 
@@ -198,6 +228,7 @@ export async function POST(request: NextRequest) {
         quantity: r.quantity,
         price: r.price,
         commission_amount: r.commission_amount,
+        currency: r.currency,
         state: r.state,
         match_tier: matchTier,
         matched_click_id: matchedClickId,

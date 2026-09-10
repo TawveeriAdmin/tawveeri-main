@@ -7,6 +7,7 @@
 // than mocking Supabase end-to-end.
 import fs from 'fs';
 import path from 'path';
+import { sourceToMerchantSlug } from '@/app/api/admin/affiliate/reports/route';
 
 const source = fs.readFileSync(path.join(process.cwd(), 'src/app/api/admin/affiliate/reports/route.ts'), 'utf8');
 
@@ -47,5 +48,43 @@ describe('affiliate report importer — dry-run + tracking-id contract', () => {
     const occurrences = source.split('unknownTrackingIds,').length - 1;
     expect(occurrences).toBeGreaterThanOrEqual(1);
     expect(source).toMatch(/dryRun:\s*true,[\s\S]{0,200}unknownTrackingIds/);
+  });
+});
+
+// Affiliate Money Proof mission (2026-09-10), §6 — proven defect: the PROBABLE match tier
+// had no merchant/store scope at all, so a Noon (or any store's) commission row could match
+// an unrelated Amazon click purely by date-window coincidence, and vice versa. Fixed by
+// scoping candidates to the report's own merchant via the existing resolveApprovedSlug()
+// authority (ADR-135's exact defect class, applied here for the first time).
+describe('sourceToMerchantSlug', () => {
+  it('resolves an Amazon-flavoured source string', () => {
+    expect(sourceToMerchantSlug('amazon_associates')).toBe('amazon');
+    expect(sourceToMerchantSlug('Amazon Earnings Report')).toBe('amazon');
+  });
+  it('resolves a Noon-flavoured source string', () => {
+    expect(sourceToMerchantSlug('noon_affiliate')).toBe('noon');
+    expect(sourceToMerchantSlug('Noon Partner Report')).toBe('noon');
+  });
+  it('returns null for an unrecognized source rather than guessing', () => {
+    expect(sourceToMerchantSlug('jarir_program')).toBeNull();
+    expect(sourceToMerchantSlug('')).toBeNull();
+  });
+});
+
+describe('PROBABLE match tier is scoped to the report\'s own merchant', () => {
+  it('the candidates query selects store_name (needed to filter by merchant)', () => {
+    const idx = source.indexOf("matchTier = 'PROBABLE'");
+    const before = source.slice(Math.max(0, idx - 1600), idx);
+    expect(before).toMatch(/\.select\('id,\s*store_name'\)/);
+  });
+  it('candidates are filtered through resolveApprovedSlug before counting as an ambiguous/unique match', () => {
+    const idx = source.indexOf("matchTier = 'PROBABLE'");
+    const before = source.slice(Math.max(0, idx - 1600), idx);
+    expect(before).toMatch(/resolveApprovedSlug\(c\.store_name\)\s*===\s*merchantSlug/);
+  });
+  it('an unrecognized source falls back to the unscoped set rather than matching nothing', () => {
+    const idx = source.indexOf("matchTier = 'PROBABLE'");
+    const before = source.slice(Math.max(0, idx - 1600), idx);
+    expect(before).toMatch(/merchantSlug\s*\?[\s\S]*?:\s*\(candidates\s*\?\?\s*\[\]\)/);
   });
 });
