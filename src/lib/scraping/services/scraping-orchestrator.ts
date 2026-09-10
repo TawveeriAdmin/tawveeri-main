@@ -429,12 +429,18 @@ export class ScrapingOrchestrator {
           if (scrapedProduct) {
             const oldPrice = productStore.current_price;
             const newPrice = scrapedProduct.current_price;
+            // A marketplace SKU's winning offer can rotate to a different seller between
+            // refreshes (Noon price-contract review, 2026-09-10) — only write a new
+            // product_url when the provider actually returned a different one, keeping
+            // this a no-op for every store whose scraper never changes the URL.
+            const urlChanged = scrapedProduct.product_url && scrapedProduct.product_url !== productUrl;
 
             await this.productService.updateProductPrice(
               productId,
               storeId,
               newPrice,
-              scrapedProduct.availability
+              scrapedProduct.availability,
+              urlChanged ? scrapedProduct.product_url : undefined,
             );
 
             // A REFRESHED PRICE MUST ALSO BECOME AN OBSERVATION.

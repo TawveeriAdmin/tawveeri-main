@@ -469,7 +469,20 @@ async function runPriceUpdate() {
     // the cap sets the CYCLE TIME: healthy retailers hold ~9,000 offers, so 120/store/6h is a
     // ~3.8-day lap and a price a customer sees could be that old. 300 makes it ~1.5 days.
     // Bounded and reversible: INGEST_PRICE_MAX_PRODUCTS=120 restores the old behaviour.
-    const maxProducts = parseInt(process.env.INGEST_PRICE_MAX_PRODUCTS || '300', 10);
+    //
+    // NOON OVERRIDE (Apify production scale-up mission, 2026-09-10 — financial gate): Noon's
+    // price_update now costs real money per product (Apify/saswave, ~$0.002/result), unlike
+    // every other INGEST_STORES member which still uses the free HTML scraper. The global
+    // 300/run default at this 6h cadence would spend ~$0.60/run × 4 runs/day ≈ $72/month —
+    // far beyond the account's $5/month FREE Apify credit — the instant this shipped. Capped
+    // here, per-store, so Extra/Samsung KSA's existing free-scraper cadence is untouched.
+    // 15/run × 4 runs/day × 30 days = 1,800 products/month × $0.002 ≈ $3.60/month, safely
+    // under the $5 free credit with headroom for ad-hoc testing. Raise via
+    // NOON_PRICE_MAX_PRODUCTS only after the founder approves a paid Apify plan (ADR-335).
+    const NOON_PRICE_MAX_PRODUCTS = parseInt(process.env.NOON_PRICE_MAX_PRODUCTS || '15', 10);
+    const maxProducts = slug === 'noon'
+      ? NOON_PRICE_MAX_PRODUCTS
+      : parseInt(process.env.INGEST_PRICE_MAX_PRODUCTS || '300', 10);
     const r = await cronPost('/api/cron/update-prices', { store_slug: slug, max_products: maxProducts, older_than_hours: 12 });
     if (r) console.log(`[ingest] price-update ${slug}: ${JSON.stringify(r).slice(0, 120)}`);
     await sleep(STAGGER_MS);

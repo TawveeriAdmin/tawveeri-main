@@ -336,7 +336,16 @@ export class ProductService {
     productId: string,
     storeId: string,
     price: number,
-    availability: string
+    availability: string,
+    /**
+     * Noon commerce data truth mission, price-contract review (2026-09-10): a Noon
+     * marketplace SKU's winning offer can rotate to a different seller between refreshes
+     * (measured: 9/18 sampled SKUs had 2+ competing offers). When the provider had to fall
+     * back off the originally-stored offer, it returns the NEW offer's own URL here so the
+     * /go exit link stays consistent with the price Tawveeri is displaying — optional so
+     * every other store's call site (which never passes this) is unaffected.
+     */
+    newProductUrl?: string,
   ): Promise<void> {
     const { data: existing, error: fetchError } = await this.supabase
       .from('product_stores')
@@ -389,6 +398,10 @@ export class ProductService {
       availability: availability as ProductStoreRow['availability'],
       last_checked_at: new Date().toISOString(),
     };
+
+    if (newProductUrl) {
+      updateData.product_url = newProductUrl;
+    }
 
     // A confirmed transition clears any prior quarantine/pending state — the price
     // is now trusted and should be visible again.
