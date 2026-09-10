@@ -414,10 +414,116 @@ export class ScrapingOrchestrator {
         const minDelayMs: number = rateLimit?.min_delay_ms ?? 1000;
         const maxDelayMs: number = rateLimit?.max_delay_ms ?? minDelayMs;
 
-        for (const productStore of products) {
+        // Applies the SAME side effects (persist, observe, stamp, notify, count) regardless
+        // of whether the scraped product came from the per-URL loop or a batch provider —
+        // one place, not duplicated between the two paths below.
+        const applyResult = async (
+          productStore: PriceUpdateStoreRow,
+          scrapedProduct: ScrapedProduct | null,
+        ): Promise<void> => {
           const productStoreId = productStore.id;
           const productId = productStore.product_id;
           const storeId = productStore.store_id;
+          const productUrl = productStore.product_url;
+
+          if (scrapedProduct) {
+            const oldPrice = productStore.current_price;
+            const newPrice = scrapedProduct.current_price;
+
+            await this.productService.updateProductPrice(
+              productId,
+              storeId,
+              newPrice,
+              scrapedProduct.availability
+            );
+
+            // A REFRESHED PRICE MUST ALSO BECOME AN OBSERVATION.
+            //
+            // `ingestBatch` was called only in the DISCOVERY path, so the price loop
+            // refreshed the storefront `product_stores` row and wrote NOTHING the
+            // knowledge layer could see. Canonicals, the projection, and therefore every
+            // one of the 801 comparisons are fed exclusively by raw_observations — so
+            // the loop whose entire purpose is price freshness was invisible to the
+            // surface that shows prices. Measured 2026-08-02: 6 of 801 comparable
+            // products inside the 26h SLO, median 173.6h, while the storefront rows for
+            // the same retailers were being refreshed.
+            //
+            // Bounded by construction: the price loop is capped at max_products per
+            // store per cycle, so this cannot outrun normalization.
+            await this.ingestion
+              .ingestBatch(storeSlug, [scrapedProduct], Number(storeId), null)
+              .catch((e) => console.error('[price] observation ingest failed:', e instanceof Error ? e.message : e));
+            await this.stampChecked(productStoreId, true);
+            productsUpdated++;
+            if (oldPrice !== newPrice) priceChanges++;
+
+            const oldAvailability = productStore.availability;
+            const newAvailability = scrapedProduct.availability;
+            if (oldAvailability && oldAvailability !== 'in_stock' && newAvailability === 'in_stock') {
+              const store = productStore.stores;
+              this.notifyBackInStock(
+                supabase, productId, storeId, newPrice,
+                { name_ar: store.name_ar, name_en: store.name_en }
+              ).catch((err) => console.error('Back-in-stock notification error:', err));
+            }
+          } else {
+            // ADR-149: an unexplained null is how Noon's 100% failure stayed invisible for
+            // an unknown period. `recordFailure` is a no-op (the columns do not exist in
+            // production and DDL is not safe before launch), so the reason is emitted as a
+            // single structured line instead — greppable in Railway logs and aggregatable
+            // without a migration. Post-launch this becomes a real column; see HANDOVER.
+            this.logPriceAttempt({
+              retailer: storeSlug, offer_id: productStoreId, url: productUrl,
+              result: 'FAILED', reason: 'scraper returned null (no price parsed)',
+              price_before: productStore.current_price, price_after: null,
+              next_action: 'diagnose parser for this retailer',
+            });
+            await this.recordFailure(productStoreId, 'scraper returned null');
+            await this.stampChecked(productStoreId, false);
+            errors++;
+          }
+        };
+
+        // Batch path (Noon commerce data truth mission, 2026-09-10; ADR-334): a scraper
+        // that implements updateProductPricesBatch is fetched ONCE for the whole store
+        // batch instead of once per product — the managed-provider transport (Apify) pays
+        // real per-run overhead, so one call for N products is materially cheaper and
+        // faster than N calls. Every OTHER store keeps the exact per-URL loop below,
+        // completely untouched.
+        const batchScraper = scraper as unknown as {
+          updateProductPricesBatch?: (urls: string[]) => Promise<Map<string, ScrapedProduct | null>>;
+        };
+        if (typeof batchScraper.updateProductPricesBatch === 'function') {
+          const urls = products.map((p) => p.product_url);
+          let results: Map<string, ScrapedProduct | null>;
+          try {
+            results = await batchScraper.updateProductPricesBatch(urls);
+          } catch (err) {
+            console.error(`[price] batch fetch failed for ${storeSlug}:`, err instanceof Error ? err.message : err);
+            results = new Map();
+          }
+          for (const productStore of products) {
+            try {
+              await applyResult(productStore, results.get(productStore.product_url) ?? null);
+            } catch (err) {
+              const msg = err instanceof Error ? err.message.slice(0, 500) : String(err).slice(0, 500);
+              this.logPriceAttempt({
+                retailer: storeSlug, offer_id: productStore.id, url: productStore.product_url,
+                result: 'RETRYABLE', reason: msg,
+                price_before: productStore.current_price, price_after: null,
+                next_action: 'batch result apply threw; inspect persistence path',
+              });
+              await this.recordFailure(productStore.id, msg);
+              await this.stampChecked(productStore.id, false);
+              errors++;
+            }
+          }
+          storesUpdated++;
+          continue;
+        }
+
+        for (const productStore of products) {
+          const productStoreId = productStore.id;
           const productUrl = productStore.product_url;
 
           try {
@@ -425,63 +531,7 @@ export class ScrapingOrchestrator {
               () => scraper.updateProductPrice(productUrl),
               { maxAttempts: 3, baseDelayMs: 500 }
             );
-
-            if (scrapedProduct) {
-              const oldPrice = productStore.current_price;
-              const newPrice = scrapedProduct.current_price;
-
-              await this.productService.updateProductPrice(
-                productId,
-                storeId,
-                newPrice,
-                scrapedProduct.availability
-              );
-
-              // A REFRESHED PRICE MUST ALSO BECOME AN OBSERVATION.
-              //
-              // `ingestBatch` was called only in the DISCOVERY path, so the price loop
-              // refreshed the storefront `product_stores` row and wrote NOTHING the
-              // knowledge layer could see. Canonicals, the projection, and therefore every
-              // one of the 801 comparisons are fed exclusively by raw_observations — so
-              // the loop whose entire purpose is price freshness was invisible to the
-              // surface that shows prices. Measured 2026-08-02: 6 of 801 comparable
-              // products inside the 26h SLO, median 173.6h, while the storefront rows for
-              // the same retailers were being refreshed.
-              //
-              // Bounded by construction: the price loop is capped at max_products per
-              // store per cycle, so this cannot outrun normalization.
-              await this.ingestion
-                .ingestBatch(storeSlug, [scrapedProduct], Number(storeId), null)
-                .catch((e) => console.error('[price] observation ingest failed:', e instanceof Error ? e.message : e));
-              await this.stampChecked(productStoreId, true);
-              productsUpdated++;
-              if (oldPrice !== newPrice) priceChanges++;
-
-              const oldAvailability = productStore.availability;
-              const newAvailability = scrapedProduct.availability;
-              if (oldAvailability && oldAvailability !== 'in_stock' && newAvailability === 'in_stock') {
-                const store = productStore.stores;
-                this.notifyBackInStock(
-                  supabase, productId, storeId, newPrice,
-                  { name_ar: store.name_ar, name_en: store.name_en }
-                ).catch((err) => console.error('Back-in-stock notification error:', err));
-              }
-            } else {
-              // ADR-149: an unexplained null is how Noon's 100% failure stayed invisible for
-              // an unknown period. `recordFailure` is a no-op (the columns do not exist in
-              // production and DDL is not safe before launch), so the reason is emitted as a
-              // single structured line instead — greppable in Railway logs and aggregatable
-              // without a migration. Post-launch this becomes a real column; see HANDOVER.
-              this.logPriceAttempt({
-                retailer: storeSlug, offer_id: productStoreId, url: productUrl,
-                result: 'FAILED', reason: 'scraper returned null (no price parsed)',
-                price_before: productStore.current_price, price_after: null,
-                next_action: 'diagnose parser for this retailer',
-              });
-              await this.recordFailure(productStoreId, 'scraper returned null');
-              await this.stampChecked(productStoreId, false);
-              errors++;
-            }
+            await applyResult(productStore, scrapedProduct);
           } catch (err) {
             const msg = err instanceof Error ? err.message.slice(0, 500) : String(err).slice(0, 500);
             this.logPriceAttempt({

@@ -3,6 +3,7 @@ import type { ProductCategory } from '@/lib/database/types';
 import { BaseScraper } from '../base/base-scraper';
 import { loadStoreConfig } from '../config/scraper-config';
 import { classifyFromTitle, determineCategory } from '../utils/category-utils';
+import { fetchNoonProductsBatch } from '../providers/apify-noon-provider';
 
 const NOON_API_URL = 'https://www.noon.com/_svc/catalog/api/v3/u/en-sa/search';
 const NOON_CDN = 'https://f.nooncdn.com/p';
@@ -125,6 +126,21 @@ export class NoonScraper extends BaseScraper {
       });
       return null;
     }
+  }
+
+  /**
+   * Noon managed-provider retrieval layer (2026-09-10 mission; ADR-333/334): Noon's Akamai
+   * Bot Manager blocks `updateProductPrice`'s direct HTML path essentially completely
+   * (measured: ~0.2% success rate) — proven not safely fixable from Tawveeri's own
+   * infrastructure, including a genuine residential-proxy browser session. Live-benchmarked
+   * against 18 known Noon SKUs: 100% fetch success, 100% SKU identity match, 100% confirmed
+   * Saudi market on every priced item. Detected and preferred by scraping-orchestrator.ts's
+   * `runPriceUpdateJob` ONLY for stores whose scraper implements this method — every other
+   * store's per-URL loop is untouched. One Apify run per batch, not one per product
+   * (measured: 18 URLs in ~18s vs. per-URL calls that would each pay actor-startup cost).
+   */
+  async updateProductPricesBatch(productUrls: string[]): Promise<Map<string, ScrapedProduct | null>> {
+    return fetchNoonProductsBatch(productUrls);
   }
 
   private extractCategoryQuery(baseUrl: string, category: ProductCategory): string {
