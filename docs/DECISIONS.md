@@ -4,6 +4,73 @@
 
 Status legend: **Accepted** · **Superseded** · **Proposed**.
 
+### ADR-335 — Noon Apify production scale-up: price contract corrected, cost guards live, urgent scheduler cost risk closed before it fired · Accepted (2026-09-10)
+
+**Context.** ADR-334 proved and shipped the Apify (saswave) retrieval path. Founder follow-up: the source question is closed — the task is now making it safe, economical, and operationally correct at scale, gated on independently proving the actual price contract (not assuming which field is the real price) and calculating real cost from the real Apify account before any spend commitment.
+
+**Price contract — proven, not assumed.** Deep-inspected the full raw saswave response for all 18 benchmark SKUs (not the summarized fields from before). Findings:
+- A Noon SKU is a **marketplace listing**: 9 of 18 sampled SKUs (50%) carried 2+ competing seller offers under one `variants[0].offers[]` array; one SKU had 8. Genuine price spreads were measured across offers on the same SKU (e.g. 579–639 SAR, ~10%).
+- `price` = the seller's own list/reference price; `sale_price` = the current payable price when the seller is running a discount (null when not on sale, in which case `price` itself is what the shopper pays).
+- `offer_code` is the exact identifier Noon's own `?o=` URL parameter uses to deep-link a shopper to one specific seller's offer — confirmed by direct comparison: Tawveeri's stored `product_url` already carries this parameter for every sampled product.
+- **The defect this review caught:** the ADR-334 implementation took `offers[0]` unconditionally — on the 50% of SKUs with multiple offers, this was array-order luck, not a rule, and could just as easily have picked a materially more expensive competing seller than the one Tawveeri's own URL pointed to.
+
+**Fix — `selectBestOffer()` (`apify-noon-provider.ts`).** Prefers the offer whose `offer_code` matches what Tawveeri's stored URL already points to (price and `/go` exit-link continuity — never show one price and land the shopper on another). Only when that exact offer has rotated away (no longer returned by Noon) does the CURRENT cheapest currently-buyable offer win — and in that case `product_stores.product_url` is updated to the new offer's own URL (new optional parameter on `productService.updateProductPrice`, additive and a no-op for every other store's call site) so the displayed price and the exit link never silently diverge going forward. Never selects a non-buyable offer under any circumstance.
+
+**Classifying the "40%" (§5).** Re-ran with the fix live and added explicit, greppable outcome logging instead of one blended number: a controlled 10-product run classified as `requested=10 retrieved=10 active_offers=6`, with the other 4 explicitly logged `NO_ACTIVE_OFFER` (a real commercial state — the founder's own point: a delisted product is not a scraper failure) rather than folded into an undifferentiated "errors: 4". `WRONG_MARKET`, `SKU_MISMATCH`, and `ACTOR_SCHEMA_CHANGED` (§7, below) are now distinct, loggable outcomes.
+
+**Schema-contract safety (§7).** `detectSchemaDrift()` distinguishes a genuinely-empty, correctly-identified delisted item (`variants: [{offers: []}]` — normal, not an error) from the actor's response shape changing upstream (`product_title` or `variants` missing entirely) — the latter fails closed (`null`, logged `ACTOR_SCHEMA_CHANGED`) rather than risking a malformed write.
+
+**Actor build pinned (§6).** Verified via `GET /v2/acts/saswave~noon-product-scraper`: exactly one build exists today (`0.0.3`). Pinned it explicitly (`build=0.0.3` on every call) rather than following Apify's mutable `latest` tag — costs nothing now, prevents a future silent upstream change from reaching production unannounced. Upgrade path documented in code: shadow-test a new build's output against the known-good shape before bumping the constant, never auto-follow `latest`.
+
+**Cost guards (§9) — Apify's own native run-level controls, not a Tawveeri-invented mechanism.** Every call now sets `maxItems` (caps charged results at exactly what was requested) and `maxTotalChargeUsd` (a hard platform-enforced spend ceiling per run) — confirmed via Apify's own API docs that these are real, server-enforced caps, not client-side suggestions. `MAX_BATCH_SIZE = 250` is a Tawveeri-side hard cap independent of Apify's limits — a misconfigured `max_products` can never balloon into one unbounded, expensive call; it fails closed and logs loudly rather than silently truncating.
+
+**Real cost model — the actual account, not published headline pricing.** Queried `GET /v2/users/me` and `GET /v2/users/me/usage/monthly` directly:
+```
+CURRENT_APIFY_PLAN            = FREE ($0 base, isPaying: false)
+CURRENT_AVAILABLE_CREDIT      = $5.00/month (does not roll over)
+ACTUAL_SASWAVE_RATE           = $0.002/result (saswave's own FREE-tier rate — this
+                                 account's cumulative spend on this specific actor is
+                                 far too low to have reached its BRONZE/SILVER/GOLD
+                                 volume discounts; the earlier $0.0008 figure cited
+                                 before the plan was confirmed was WRONG for this
+                                 account and is corrected here)
+ACTUAL_SPEND_TO_DATE           = $0.0862 this billing cycle (all mission testing:
+                                 5-item + 18-item + 15-item + 10-item saswave runs,
+                                 plus one 3-query thirdwatch test)
+STARTER_PLAN_CREDIT            = $19/month included usage (confirmed via apify.com/
+                                 pricing) — NOT additive with FREE's $5; upgrading
+                                 raises the ceiling, it does not lower the per-unit
+                                 rate (saswave's own per-event price is unrelated to
+                                 Apify's platform subscription tier)
+```
+Monthly cost at various daily volumes (at the real $0.002/result rate, actor cost only):
+```
+500/day    = 15,000/mo  → $30.00/mo   (exceeds FREE $5 credit)
+1,000/day  = 30,000/mo  → $60.00/mo   (exceeds FREE $5 credit)
+2,000/day  = 60,000/mo  → $120.00/mo  (exceeds FREE $5 credit)
+4,434/day  = 133,020/mo → $266.04/mo  (full catalog daily — exceeds FREE $5 credit)
+Full catalog, once      = 4,434 × $0.002 = $8.87           (exceeds FREE $5 credit in one run)
+Full catalog, weekly    ≈ 19,066/mo → $38.13/mo             (exceeds FREE $5 credit)
+```
+
+**URGENT finding during this review — a real, time-sensitive cost risk, closed same-session.** `scripts/scheduler.js` already runs Noon's `price_update` automatically every 6 hours at `max_products=300` (shared `INGEST_PRICE_MAX_PRODUCTS` default, applied identically to Extra and Samsung KSA on the same loop). With ADR-334's Apify integration now live, that default would have cost ≈$0.60/run × 4 runs/day ≈ **$72/month** — 14× the account's entire $5/month FREE credit — starting from the next scheduled tick, with no founder approval and no warning. Added a Noon-specific override (`NOON_PRICE_MAX_PRODUCTS`, default **15**) so only Noon is throttled; Extra and Samsung KSA's existing free-scraper cadence on the same shared loop is untouched. 15/run × 4 runs/day × 30 days ≈ 1,800 products/month ≈ **$3.60/month**, safely inside the FREE credit with headroom for ad-hoc testing. This was found and shipped in the same pass as the price-contract review specifically because that review required understanding the actual production trigger mechanism — it would not have surfaced from a code-only inspection of the provider file alone.
+
+**Decision — financial gate respected: no plan upgrade, no new commitment.** Per the founder's explicit instruction, no Apify plan upgrade, no new paid subscription, and no unbounded pay-as-you-go exposure was created. Noon's automatic refresh now runs entirely within the existing $5/month FREE credit at the throttled cadence above. Scaling beyond ~15 products/6h-cycle (~60/day, ~2.2% of the 4,434-product catalog per day) requires either the founder approving continued pay-as-you-go spend on FREE (small, bounded overages are possible but not yet authorized) or upgrading to STARTER ($19/month, $19 included credit) — a separate billing decision, not made here.
+
+**Inventory census (§10).** 4,434 total Noon `product_stores` rows (unchanged from ADR-330). Of these: 11 rows show a genuine price change in the last 168h (this mission's testing, not yet a steady-state cadence); 933 rows (21%) have never recorded a price change at all since that column existed — a mix of "genuinely never repriced" and "never yet successfully refreshed," not distinguishable without a live check of each. No new persistent classification table was built for this (ACTIVE_KNOWN/STALE_KNOWN/etc.) — the founder's own "keep architecture simple" instruction and the fact that the real lever (a working, cost-bounded refresh loop) was a bigger and more urgent gap than a inventory-tiering schema.
+
+**Refresh strategy (§11) — recommended, not built.** The founder's HOT/WARM/COLD demand-signal model is sound in principle (prioritize refresh spend where search/compare/view/exit activity already shows commercial relevance) but was not implemented in this pass: with the account bounded to ~60 products/day by the FREE credit, the existing oldest-`last_checked_at`-first queue rotation (already live, unchanged, the same mechanism every other store uses) naturally cycles the whole catalog roughly every ~74 days at this rate — slow, but safe, zero-cost-commitment, and a reasonable starting cadence to gather real signal from before investing in demand-weighted prioritization logic. Recommended as the next lever once either (a) real usage data shows which Noon products actually matter to search/compare traffic, or (b) the founder approves a paid tier that makes a faster blanket cadence affordable regardless.
+
+**Tests.** 20 new regression tests (offer rotation and exit-link continuity, cost-guard batch refusal, schema-drift fail-closed, cheapest-buyable fallback, matched-offer-wins-even-when-not-cheapest). Full suite: 224 suites / 3,452 tests, zero regressions.
+
+**Production verification.** Two live controlled runs post-fix (10 and prior 15 products) both succeeded end-to-end; outcome logging confirmed accurate (`NO_ACTIVE_OFFER` count matched the API's own `errors` count exactly in the 10-product run). No WRONG_MARKET, SKU_MISMATCH, or ACTOR_SCHEMA_CHANGED observed in any run to date.
+
+**Consequences.** `src/lib/scraping/providers/apify-noon-provider.ts`, `src/lib/scraping/services/product-service.ts`, `src/lib/scraping/services/scraping-orchestrator.ts`, `scripts/scheduler.js` changed. No second product authority, no parallel catalog, no affiliate-tag change, no ranking/deal-formula change — Apify remains retrieval-only. Noon's automatic price-refresh is live, safe, and bounded; a 7-day operating measurement (products refreshed, success rate, price changes, freshness coverage, verified drops, cost/fresh-product) is the natural next checkpoint before any cadence or budget increase is considered.
+
+**Products 2 status.** Not touched.
+
+---
+
 ### ADR-334 — Noon managed data source proven and adopted: Apify (saswave/noon-product-scraper) as retrieval-only transport · Accepted (2026-09-10)
 
 **Context.** ADR-333 proved every direct-infrastructure path to Noon blocked by Akamai Bot Manager, with no safe evasion-free fix. Founder directive: benchmark 2-3 credible Apify Noon actors against Tawveeri's own known Saudi products, prove market/identity/price/availability accuracy live, and only implement a clearly-proven winner — Apify as transport only, Tawveeri remains the truth/decision layer.
