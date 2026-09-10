@@ -1,3 +1,4 @@
+# retrigger: report endpoint now deployed
 name: Noon Egress Probe (temporary diagnostic)
 
 on:
