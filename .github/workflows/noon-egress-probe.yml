@@ -25,10 +25,10 @@ jobs:
             elapsed=$((t1-t0))
             echo "probe=$name http_code=$code elapsed_ms=$elapsed body_length=$len"
 
-            cat > /tmp/payload.json <<PAYLOAD_EOF
-          {"source":"github-actions","probe":"$name","http_code":"$code","elapsed_ms":$elapsed,"body_length":$len}
-          PAYLOAD_EOF
+            printf '{"source":"github-actions","probe":"%s","http_code":"%s","elapsed_ms":%s,"body_length":%s}' \
+              "$name" "$code" "$elapsed" "$len" > /tmp/payload.json
             cat /tmp/payload.json
+            echo ""
             curl -s -X POST "https://tawveeri.com/api/admin/diagnostics/egress-report" \
               -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
               -H "Content-Type: application/json" \
