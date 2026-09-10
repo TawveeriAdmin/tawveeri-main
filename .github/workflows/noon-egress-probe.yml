@@ -1,4 +1,4 @@
-# retrigger: report endpoint now deployed
+# retrigger 2: GET route confirmed live before this push
 name: Noon Egress Probe (temporary diagnostic)
 
 on:
