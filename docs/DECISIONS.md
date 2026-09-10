@@ -4,6 +4,26 @@
 
 Status legend: **Accepted** · **Superseded** · **Proposed**.
 
+### ADR-332 — Noon fixed-alternate-worker test: a second, unrelated cloud network is ALSO instantly blocked — evidence points to a categorical datacenter-ASN block, not IP-specific reputation · Accepted (2026-09-10)
+
+**Context.** Founder follow-up to ADR-331, explicitly distinguishing (A) fragile IP-rotation/evasion behavior — rejected — from (B) a normal, fixed infrastructure choice (a different stable worker, hosting environment, region, or provider) — a legitimate candidate not to be dismissed without proof. Required a controlled test of (B) before ruling it out.
+
+**Controlled test.** Built a temporary GitHub Actions workflow (`workflow_dispatch`/`push`-triggered, three single non-retrying requests, 3s apart, standard browser headers, no proxies, no header rotation, no evasion) that probed Noon's homepage, JSON catalog-search API, and a real product-detail page directly from GitHub's own runner network — a genuinely different, already-used-by-this-project infrastructure category (Microsoft Azure-hosted, unrelated to Railway) that has never made a single request to Noon before. Results were reported to a temporary logging endpoint and read from production logs. (Getting reliable results took three iterations of the reporting mechanism itself — an inline-JSON shell-escaping bug, then a heredoc terminator broken by YAML indentation — before switching to GET+query-params, which has no escaping surface to get wrong; none of this affected the actual Noon-facing test, only how its result was reported back.)
+
+**Result — worse than production's block, not better.** All three requests returned `http_code=000` (curl could not complete the request at all) in 53–143ms — a near-instant connection failure, not a 15–20s timeout and not an application-layer 403. Production's own probe (ADR-331) at least got as far as an attempted connection before stalling; GitHub Actions' network was refused before a response of any kind. This is the signature of a block operating below the HTTP layer — most consistent with a WAF/CDN vendor's published datacenter/hosting-provider ASN denylist (a standard, common anti-bot feature: block traffic from AWS/GCP/Azure/Railway/DigitalOcean/etc. wholesale, since almost no genuine shopper traffic originates there), not a reputation score built up specifically against Tawveeri's own IP over time.
+
+**Why this matters for candidate (B).** If the block is ASN-category-based rather than IP-specific-reputation-based, then essentially any standard, legitimate hosting choice — a new Railway region, a different cloud provider, a dedicated scraping worker on AWS/GCP/Azure/Render/Fly.io/DigitalOcean/Vercel — would very likely hit the identical wall, because all of them present as "datacenter" traffic to the same class of WAF vendor logic. This is not proven for every conceivable provider (only two were directly tested: Railway/production and GitHub Actions/Azure), but two independent, unrelated datacenter networks both failing — one via stall, one via instant refusal — is a strong, convergent signal against investing in a third.
+
+**Decision — candidate (B) is not rejected on principle, but on now-proven evidence.** The founder's instruction to test rather than assume was followed exactly, and the fixed-alternate-worker path failed the test. `FIXED_ALTERNATE_EGRESS = TESTED_AND_BLOCKED` (not `REJECTED_WITHOUT_EVIDENCE`). Genuinely non-datacenter egress (e.g., a residential/mobile IP relay) was not tested and is explicitly out of scope: procuring one specifically to route around an anti-bot ASN block is squarely inside the founder's own evasion red line, not a normal infrastructure choice.
+
+**Cleanup.** Both temporary pieces (the GitHub Actions workflow and its reporting endpoint) were removed (`59f7d02c`) immediately after producing this evidence.
+
+**Consequences.** ADR-330's two engineering fixes (freshness gate, success-rate alert) remain the correct, complete response. The founder's affiliate-feed lever (ADR-331) remains the one concrete path not yet closed, and is unaffected by this ADR. No code, schema, or scraper changes in this ADR beyond the diagnostic scaffolding added and removed.
+
+**Products 2 status.** Not touched.
+
+---
+
 ### ADR-331 — Noon data-source re-evaluation: JSON endpoint proven unreachable from production's actual egress; block is IP-scoped, not URL-pattern-scoped · Accepted (2026-09-10)
 
 **Context.** Founder follow-up to ADR-330, explicit that the old HTML scraper must not be assumed as the permanent source: investigate every practical Noon data path — including the JSON search-API endpoint ADR-330 had confirmed returns HTTP 200 with real data — before accepting "no fix" as final. Red line: no CAPTCHA-defeat, no auth bypass, no continuous evasion of access controls; otherwise, choose the best available architecture.
