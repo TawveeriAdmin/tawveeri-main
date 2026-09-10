@@ -378,6 +378,57 @@ export async function getHomeVerifiedDeals(limit = 4, locale = 'ar'): Promise<Ho
 }
 
 /**
+ * Merchant Offer Revenue Loop mission (Anker × Amazon pilot, 2026-09-10) — a HAND-CURATED
+ * set of specific, already-verified deals, for a merchant campaign where the campaign's
+ * own strongest items (found by inspecting real product pages, not the generic recency
+ * ranking) need to be shown regardless of where they'd land in getMerchantVerifiedDeals'
+ * top-N-by-recency ordering. Every URL passed in MUST already carry a genuine
+ * `verdict = 'verified_drop'` row (never bypasses that gate — this is a SELECTION of
+ * already-true facts, not a new trust computation) or it is silently dropped, same
+ * fail-closed behavior as the destination-resolution filter below. Reuses the exact same
+ * mapping/href-resolution path as every other deal card on the platform — no second deal
+ * authority, no parallel catalog.
+ */
+export async function getCuratedVerifiedDeals(urls: string[], locale = 'ar'): Promise<HomeVerifiedDeal[]> {
+  if (urls.length === 0) return [];
+  try {
+    const supabase = createServerClient();
+    const { data, error } = await supabase
+      .from('tps_listing_price_facts')
+      .select('name, url, store_name, current_price, observed_max, real_saving_pct, distinct_days, category, last_seen')
+      .eq('verdict', 'verified_drop')
+      .in('url', urls);
+    if (error || !data?.length) return [];
+    const rows = data as unknown as VerifiedDropRow[];
+
+    const byUrl = new Map(rows.map((d) => [d.url as string, d]));
+    // Preserve the CURATED order (the order urls[] was passed in), not whatever order the
+    // database happens to return — this is an editorial selection, not a ranked query.
+    const ordered = urls.map((u) => byUrl.get(u)).filter((d): d is VerifiedDropRow => !!d);
+
+    const dest = await resolveDestinations(supabase, ordered.map((d) => d.url as string), locale);
+    return ordered
+      .filter((d) => dest.has(d.url as string))
+      .map((d) => {
+        const { href, internal } = dest.get(d.url as string)!;
+        return {
+          name: d.name as string,
+          url: d.url as string,
+          storeName: d.store_name,
+          price: Number(d.current_price),
+          observedMax: Number(d.observed_max),
+          savingPct: Number(d.real_saving_pct),
+          trackedDays: Number(d.distinct_days),
+          href,
+          internal,
+        };
+      });
+  } catch {
+    return [];
+  }
+}
+
+/**
  * MEASURED (Affiliate Opportunity Recovery mission, 2026-09-09) — POOL-STARVATION
  * DEFECT, now fixed: this query used to fetch the top 300 `verified_drop` rows
  * GLOBALLY (across every merchant combined) by `last_seen`, and only afterward filter
