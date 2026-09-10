@@ -4,6 +4,28 @@
 
 Status legend: **Accepted** · **Superseded** · **Proposed**.
 
+### ADR-331 — Noon data-source re-evaluation: JSON endpoint proven unreachable from production's actual egress; block is IP-scoped, not URL-pattern-scoped · Accepted (2026-09-10)
+
+**Context.** Founder follow-up to ADR-330, explicit that the old HTML scraper must not be assumed as the permanent source: investigate every practical Noon data path — including the JSON search-API endpoint ADR-330 had confirmed returns HTTP 200 with real data — before accepting "no fix" as final. Red line: no CAPTCHA-defeat, no auth bypass, no continuous evasion of access controls; otherwise, choose the best available architecture.
+
+**What ADR-330's evidence actually proved (re-examined honestly).** The 200 OK on Noon's JSON endpoint was captured from an unrelated sandbox network with zero prior Noon scraping history — a clean IP. It never proved anything about Tawveeri's actual production egress, which carries ~25 days of Noon HTML-page 403s. That gap needed a direct answer, not an inference.
+
+**Direct production test (the decisive evidence).** Built a temporary, single-purpose diagnostic route (`/api/admin/diagnostics/noon-probe`, CRON_SECRET-authenticated, one request per call, no retry) and called it twice from Tawveeri's real production deployment. Both calls to the identical JSON endpoint that returned 200 from the clean sandbox IP instead **timed out after 15s** from production — reproducible, not a one-off blip. The sandbox's own IP was separately re-tested after a cooldown and found freshly blocked too (a handful of exploratory requests — robots.txt, product page, JSON API, homepage — was enough to trip a broader IP-level restriction there as well), consistent with a bot-reputation system that scores the IP/session as a whole rather than gating individual URL patterns in isolation.
+
+**Conclusion: the block is IP-level, not URL-pattern-level.** Switching Tawveeri's scraper code from the HTML product page to the JSON search API would not have restored Noon data — production's current egress is constrained on both paths. Rotating or otherwise obtaining a new egress IP specifically to route around this was considered and explicitly rejected: doing so *because* the current IP is blocked is exactly the "continuously evading access controls" pattern the founder's own red line forbids, not a one-time infrastructure change.
+
+**Existing affiliate integration checked — confirmed link-decoration only, not a data feed.** Noon's entry in `src/lib/providers/registry.ts` (`sourcing: "scraper"`, `affiliate.network: "param"`) and `src/lib/providers/networks/param.ts` show Tawveeri's only live Noon integration is URL query-parameter attribution at `/go` exit time (real tracking codes are configured — `utm_source=C1000264L` etc. — and the founder has a working affiliate dashboard login, per ADR-224's history). No product/price data feed or API credential for Noon exists anywhere in the codebase or environment today (`grep` for `NOON_*` env vars: none).
+
+**Decision — no engineering-only fix exists; the live, safe next lever is a business one.** Every machine-readable path investigated (HTML product/listing pages, the JSON catalog-search API) is unreachable from Tawveeri's current production infrastructure without crossing the founder's stated evasion boundary. The one concrete, legitimate avenue not yet ruled out is whether Noon's existing affiliate program (the same dashboard that already issued Tawveeri's tracking codes) offers a registered-publisher product feed — this requires the founder to check their own affiliate account, since Claude has no login for it and none is stored anywhere in this codebase.
+
+**Cleanup.** The diagnostic probe route was removed (`f14c2345`) immediately after producing this evidence, per its own doc comment promising temporary-only status. No other code changed in this ADR.
+
+**Consequences.** `NOON_SCRAPER_CHANGE` remains `DO_NOT_IMPLEMENT_YET`, now on stronger, direct-production evidence rather than inference from a third-party sandbox test. ADR-330's two fixes (freshness gate, success-rate alert) are unaffected and remain the correct, complete engineering response until a legitimate new Noon data source (an affiliate feed, or the block lifting) becomes available.
+
+**Products 2 status.** Not touched.
+
+---
+
 ### ADR-330 — Noon commerce data truth: root cause proven (merchant-side anti-bot block on HTML pages), not safely fixable; two real cross-cutting defects found and fixed instead · Accepted (2026-09-10)
 
 **Context.** Founder mission ("NOON COMMERCE DATA TRUTH & RECOVERY") required proving — not assuming — the root cause of Noon's staleness across every customer-facing surface (search, compare, product page, best-price selection, affiliate exit), with a strict read-only Phase A gate: no implementation without HIGH-confidence, multi-signal proof, and "unknown beats a wrong fix."
