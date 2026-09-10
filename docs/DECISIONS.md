@@ -4,6 +4,57 @@
 
 Status legend: **Accepted** · **Superseded** · **Proposed**.
 
+### ADR-334 — Noon managed data source proven and adopted: Apify (saswave/noon-product-scraper) as retrieval-only transport · Accepted (2026-09-10)
+
+**Context.** ADR-333 proved every direct-infrastructure path to Noon blocked by Akamai Bot Manager, with no safe evasion-free fix. Founder directive: benchmark 2-3 credible Apify Noon actors against Tawveeri's own known Saudi products, prove market/identity/price/availability accuracy live, and only implement a clearly-proven winner — Apify as transport only, Tawveeri remains the truth/decision layer.
+
+**Credential.** No Apify account existed anywhere in the project (checked `.env.local`, production Railway vars, all GitHub Actions workflows, `docs/`, `src/` — confirmed clean before asking). Founder provided a token from an existing personal Apify account; stored as `APIFY_API_TOKEN` in Railway production (`railway variable set --stdin`, not committed to any file, not triggering a deploy on its own).
+
+**Ground truth.** Same 18 real Noon SKUs from ADR-333 (production `product_stores`, smartphones/TVs/audio, 6 brands, 23–4,109 SAR, 8–30 days stale at test time).
+
+**Candidate architecture check (before spending anything).** Public input-schema research on the four founder-named actors surfaced a decisive, non-cost factor: `saswave/noon-product-scraper` accepts `product_urls` (direct known-product refresh — exactly Tawveeri's need); `thirdwatch/noon-scraper` accepts only `queries`/category browsing (search-only, no SKU/URL input) — architecturally the wrong tool for "refresh an existing known SKU" regardless of its own reliability stats.
+
+**Live benchmark — saswave/noon-product-scraper, all 18 SKUs, one Apify run (18.3s):**
+```
+FETCH_SUCCESS_RATE        = 100.0% (18/18 requested URLs returned a matched record)
+IDENTITY_ACCURACY         = 100.0% (every returned SKU matched a requested SKU)
+SAUDI_MARKET_ACCURACY     = 100.0% (of items with an offer, /en-sa/ return-policy URL
+                             confirmed on every one — zero UAE/Egypt contamination)
+OFFER_PRESENT_RATE        = 83.3% (15/18); the 3 empty-offer items all showed a
+                             correctly-matched title/brand/specs with a cleanly empty
+                             offers array — consistent with genuine delisting/
+                             out-of-stock after 25+ days of Tawveeri staleness, not a
+                             tool defect (spot-checked two directly)
+PRICE_EXACT_MATCH_RATE    = 46.7% (7/15) — more than half showed a real difference
+                             from Tawveeri's stale stored price, which is the EXPECTED,
+                             desired signal (a ~100% match rate would have been the
+                             suspicious result)
+PRICE_SANITY_RATE         = 93.3% (14/15 within 50% of stored price; the one outlier,
+                             +53.8%, matched on SKU/brand/title — a plausible real
+                             promo-ending price swing over 26 days, not a mismatch)
+COST                      = $0.0008/result (saswave GOLD-tier rate) — cheapest of the
+                             four candidates researched, and the only one tested with
+                             direct-URL support
+```
+
+**Fallback candidate — thirdwatch/noon-scraper — tested, confirmed unsuitable for the same job.** Queried by product title (its only input mode) for 3 target products, country=sa-en: returned 5 real Saudi vinyl-record-player results, but not one matched the requested SKU — search substituted similar competing products instead of finding the exact target. This confirms the architectural read: thirdwatch is a discovery tool, not a refresh tool, and is not adopted as an active fallback for known-SKU refresh (its higher reliability stats measure "does search return results," not "does it find the specific product needed"). No further vendor (get_anything, crawlergang, Bright Data) was live-tested — the evidence gate was already decisively passed by saswave, and the founder's own efficiency principle ("the purpose is not to maximize methods") argues against further spend once a clear winner is proven.
+
+**Decision — PROVEN_WORKING, implemented.** `saswave/noon-product-scraper` passes every required evidence-gate criterion. Implemented as a pure retrieval/transport layer:
+- `src/lib/scraping/providers/apify-noon-provider.ts` (new) — maps the actor's rich response into Tawveeri's existing `ScrapedProduct` shape, the SAME contract every other store's scraper already produces. Two safety rules enforced in code, not just intent: an empty `offers` array returns `null` (no fabricated price for a delisted item); a return-policy URL not confirmed `/en-sa/` returns `null` even on a successful fetch (HTTP 200 alone is never proof of market — the founder's own explicit requirement).
+- `NoonScraper.updateProductPricesBatch()` (new method, `noon-scraper.ts`) — delegates to the provider. The existing single-URL `updateProductPrice()` (HTML path, ~0.2% success) is left in place, untouched, as a documented-broken fallback rather than deleted.
+- `scraping-orchestrator.ts`'s `runPriceUpdateJob()` — added an opt-in branch: a store whose scraper implements `updateProductPricesBatch` is fetched ONCE per run for its whole batch (measured cheaper/faster than one Apify run per product); every other store keeps the exact pre-existing per-URL loop, verified unchanged by the full test suite passing with zero regressions (224 suites / 3,432 tests, 17 of them new).
+- No second product authority, no parallel catalog table, no new ranking/deal logic, no affiliate-tag change — Noon's existing `param`-network affiliate link (`src/lib/providers/registry.ts`) is untouched; Apify only ever supplies price/availability/identity facts that flow through the SAME normalization → Product Truth → price_history → search/compare → `/go` path as every other store.
+
+**Refresh strategy adopted (per the founder's own priority order).** Only the KNOWN-SKU price-refresh path (`runPriceUpdateJob`) was switched to Apify in this ADR — the highest-priority, most cost-effective lever. Broader category discovery (`discoverProducts`) is explicitly left on its current (still-broken, Akamai-blocked) HTML path for now; saswave also accepts `search_urls` and could serve discovery too, but that is materially higher, less-calibrated volume and is deferred to a separate, cost-measured pass rather than bundled into this one.
+
+**Cost incurred this mission:** three live Apify runs (5-item validation, 18-item full benchmark, 3-query thirdwatch test) — a few hundred results total, well under $0.05.
+
+**Consequences.** Production's Noon price-refresh cron will now route through Apify on its next scheduled run. Monthly cost is a function of actual refresh cadence × catalog size at $0.0008/result — not yet measured in a live production cycle; the founder's own "measure before scaling" instruction applies before any cadence increase. Failover: if saswave becomes unhealthy, Tawveeri's existing stale-data safety rules (ADR-330's freshness gates, already live on compare/search/product-page) govern — no automatic silent display of old Noon prices, and no automatic failover to an unverified second vendor without a fresh evaluation pass.
+
+**Products 2 status.** Not touched.
+
+---
+
 ### ADR-333 — Noon final technical path test: root cause identified as Akamai Bot Manager; Browserless (standard + residential) proven blocked; no PROVEN_WORKING path found · Accepted (2026-09-10)
 
 **Context.** Founder follow-up explicitly reopening ADR-332's "datacenter ASN" theory as a hypothesis, not a conclusion, citing external research suggesting (1) Noon's HTTP 000 failures might be TLS-fingerprint-driven rather than IP-driven, and (2) Tawveeri's existing Browserless integration (with documented residential-proxy + Saudi country-targeting + sticky-session support) had not yet been tested — the mandated first experiment before any third-party vendor. Evidence gate: only PROVEN_WORKING may enter production; live Tawveeri×Noon evidence overrides external articles.
