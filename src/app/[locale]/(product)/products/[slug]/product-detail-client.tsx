@@ -43,6 +43,7 @@ import {
  Loader2,
 } from 'lucide-react';
 import type { AvailabilityStatus, Database, DiscountType } from '@/lib/database/types';
+import { selectBestPriceOffer } from '@/lib/catalog/select-best-price-offer';
 import { CouponBadge } from '@/components/ui/coupon-badge';
 import { Ticket } from 'lucide-react';
 import { AdvisorAnswer } from '@/components/agent/advisor-answer';
@@ -79,6 +80,7 @@ interface ProductStore
  | 'is_deal'
  | 'deal_expires_at'
  | 'coupon_code'
+ | 'updated_at'
  > {
  stores: StoreSummary;
 }
@@ -110,6 +112,7 @@ const mapProductRecord = (record: ProductQueryResult): Product => ({
  is_deal: ps.is_deal,
  deal_expires_at: ps.deal_expires_at,
  coupon_code: ps.coupon_code,
+ updated_at: ps.updated_at,
  stores: ps.stores as StoreSummary,
  })),
 });
@@ -234,6 +237,7 @@ export default function ProductDetailClient() {
  is_deal,
  deal_expires_at,
  coupon_code,
+ updated_at,
  stores(
  id,
  slug,
@@ -301,6 +305,7 @@ export default function ProductDetailClient() {
  is_deal,
  deal_expires_at,
  coupon_code,
+ updated_at,
  stores(
  id,
  slug,
@@ -385,6 +390,7 @@ export default function ProductDetailClient() {
  is_deal,
  deal_expires_at,
  coupon_code,
+ updated_at,
  stores(
  id,
  slug,
@@ -445,6 +451,7 @@ export default function ProductDetailClient() {
  is_deal,
  deal_expires_at,
  coupon_code,
+ updated_at,
  stores(
  id,
  slug,
@@ -777,12 +784,10 @@ export default function ProductDetailClient() {
  const images = product.image_urls || [];
  const currentImage = images[currentImageIndex] || PRODUCT_PLACEHOLDER_IMAGE;
 
- // Get best price
- const storesWithPrices = product.product_stores
- .filter((ps) => ps.availability !== 'out_of_stock')
- .sort((a, b) => a.current_price - b.current_price);
- const bestPriceStore = storesWithPrices[0];
- const highestPrice = storesWithPrices[storesWithPrices.length - 1]?.current_price ?? 0;
+ // Get best price — prefers a fresh (<=168h) offer over a stale one even when the stale
+ // price is numerically lower; falls back to the full set only when NONE are fresh (Noon
+ // commerce data truth mission, 2026-09-10; see select-best-price-offer.ts).
+ const { sorted: storesWithPrices, best: bestPriceStore, highestPrice } = selectBestPriceOffer(product.product_stores);
  const priceRange = bestPriceStore && highestPrice > bestPriceStore.current_price
    ? highestPrice - bestPriceStore.current_price
    : 0;

@@ -17,16 +17,34 @@ import { createServerClient } from '@/lib/database';
  * queries per store now, regardless of how many labels a store has ever been
  * written under. store_name remains in the data as provenance and is never
  * read for identity.
+ *
+ * `low_price_update_success_rate` (Noon commerce data truth mission, 2026-09-10): a
+ * near-total scraping failure can still show `is_stale: false` and
+ * `consecutive_failures: 0` indefinitely, because both are derived from the SINGLE
+ * freshest observation and the run's own `status` — and one lucky success out of
+ * hundreds of attempts (a) writes a fresh raw_observations/price_history row and (b) an
+ * otherwise near-total-failure run is still recorded `status: 'partial'`, not `'failed'`,
+ * so it never advances the consecutive-failure counter either. Measured live 2026-09-10:
+ * Noon's price_update runs succeeded on 2 of ~900 attempts in 24h (0.2%) while showing
+ * `ingestion_age_hours` under 2 and `consecutive_failures: 0` — genuinely invisible to
+ * every existing signal. Threshold (5%) is set from the OTHER actively-scraped stores'
+ * own measured 24h rates the same day — Jarir 29.0%, Amazon 26.7%, Extra 81.3% — with a
+ * wide margin below the lowest healthy value, not an invented number. Only computed with
+ * a minimum sample size so a store with few/no recent runs is `null` (no signal), never a
+ * false positive.
  */
 
 const STALE_HOURS = 24;
 const CONSECUTIVE_FAILURE_ALERT = 2;
+const LOW_SUCCESS_RATE_THRESHOLD = 0.05;
+const LOW_SUCCESS_RATE_MIN_SAMPLE = 20;
 
 
 type RunRow = {
   id: number;
   store_name: string | null;
   store_id: number | null;
+  run_type: string | null;
   status: string;
   started_at: string | null;
   finished_at: string | null;
@@ -42,6 +60,27 @@ type RunRow = {
 
 const hoursSince = (iso: string | null | undefined): number | null =>
   iso ? Math.round(((Date.now() - new Date(iso).getTime()) / 3_600_000) * 10) / 10 : null;
+
+/**
+ * price_update-specific success rate over a set of runs already filtered to the
+ * relevant window (e.g. the last 24h) — pure and independently testable, per this
+ * codebase's precedent for extracting the decision logic out of a Supabase-backed route
+ * (see rankVerifiedDropRows in home-verified-deals.ts). Discovery runs are intentionally
+ * excluded: discovery has its own all_runs_zero_result alert and a very different
+ * attempt/success shape. Returns null (no signal, never a false positive) below
+ * LOW_SUCCESS_RATE_MIN_SAMPLE attempts.
+ */
+export function computePriceUpdateSuccessRate(
+  runs: Pick<RunRow, 'run_type' | 'products_new' | 'products_updated' | 'errors_count'>[],
+): number | null {
+  const priceUpdateRuns = runs.filter((r) => r.run_type === 'price_update');
+  const succeeded = priceUpdateRuns.reduce(
+    (a, r) => a + (Number(r.products_new) || 0) + (Number(r.products_updated) || 0), 0,
+  );
+  const errors = priceUpdateRuns.reduce((a, r) => a + (Number(r.errors_count) || 0), 0);
+  const attempts = succeeded + errors;
+  return attempts >= LOW_SUCCESS_RATE_MIN_SAMPLE ? succeeded / attempts : null;
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -60,7 +99,7 @@ export async function GET(request: NextRequest) {
     (supabase as any)
       .from('scraping_runs')
       .select(
-        'id, store_name, store_id, status, started_at, finished_at, duration_ms, products_discovered, products_new, products_updated, products_failed, price_changes_detected, errors_count, error_summary'
+        'id, store_name, store_id, run_type, status, started_at, finished_at, duration_ms, products_discovered, products_new, products_updated, products_failed, price_changes_detected, errors_count, error_summary'
       )
       .order('started_at', { ascending: false })
       .limit(500),
@@ -96,6 +135,10 @@ export async function GET(request: NextRequest) {
 
       const sum = (k: keyof RunRow) =>
         runs24h.reduce((a, r) => a + (Number(r[k]) || 0), 0);
+
+      // price_update-specific success rate — see the low_price_update_success_rate doc
+      // comment at the top of this file.
+      const priceUpdateSuccessRate24h = computePriceUpdateSuccessRate(runs24h);
 
       // Four queries per store, keyed on canonical store_id. No fan-out.
       const [rawNew, priceNew, rawCount, priceCount] = await Promise.all([
@@ -141,6 +184,9 @@ export async function GET(request: NextRequest) {
       if (runs24h.length > 0 && zeroResultRuns24h === runs24h.length) alerts.push('all_runs_zero_result');
       if (runs24h.length === 0 && storeRuns.length > 0) alerts.push('no_runs_last_24h');
       if (syncState?.last_error) alerts.push('adapter_error');
+      if (priceUpdateSuccessRate24h !== null && priceUpdateSuccessRate24h < LOW_SUCCESS_RATE_THRESHOLD) {
+        alerts.push('low_price_update_success_rate');
+      }
 
       return {
         store_id: store.id,
@@ -165,6 +211,7 @@ export async function GET(request: NextRequest) {
             ? Math.round(runs24h.reduce((a, r) => a + (r.duration_ms ?? 0), 0) / runs24h.length)
             : null,
         consecutive_failures: consecutiveFailures,
+        price_update_success_rate_24h: priceUpdateSuccessRate24h,
 
         // Volumes over the last 24h. `inserted` counts NEW products only and is
         // NOT a success rate — `persisted` is inserted + updated.

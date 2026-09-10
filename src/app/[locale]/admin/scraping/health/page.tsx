@@ -58,6 +58,7 @@ const TEXT = {
       all_runs_zero_result: 'all runs returned nothing',
       no_runs_last_24h: 'no runs in 24h',
       adapter_error: 'adapter error',
+      low_price_update_success_rate: 'near-total price update failure',
     } as Record<string, string>,
   },
   ar: {
@@ -89,6 +90,7 @@ const TEXT = {
       all_runs_zero_result: 'كل التشغيلات بلا نتائج',
       no_runs_last_24h: 'لا تشغيل خلال 24س',
       adapter_error: 'خطأ في الموصل',
+      low_price_update_success_rate: 'فشل شبه كامل في تحديث الأسعار',
     } as Record<string, string>,
   },
 };
