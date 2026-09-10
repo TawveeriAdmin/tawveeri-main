@@ -4,6 +4,76 @@
 
 Status legend: **Accepted** · **Superseded** · **Proposed**.
 
+### ADR-336 — Noon 7-day operating proof: checkpoint opened, honest day-0 baseline, metric definitions fixed · Proposed (2026-09-10)
+
+**Context.** ADR-335 shipped Apify (saswave) production retrieval, bounded to the FREE Apify plan's $5/month credit at ~15 Noon products/6h (~60/day). Founder mandate: run this cadence for 7 real days, measure actual behavior (not fabricated), and only THEN decide the long-term operating model (stay FREE, upgrade to STARTER, or roll back). This ADR is the OPENING checkpoint — the honest day-0 baseline and the exact review to run at day 7 — not the final scale decision, which requires real elapsed time that has not yet passed.
+
+**Why this is a checkpoint, not a completed review.** A durable session-only reminder mechanism (CronCreate) exists but does not survive past this terminal session ending, which will almost certainly happen before 7 real days elapse — using it here would create a false sense of an automated follow-up that will not actually fire. Per the mission's own explicit fallback ("if no such mechanism is available, record the checkpoint in the existing decision docs"), this ADR IS that record.
+
+**METRIC DEFINITIONS FIXED (§3) — no new number invented, existing ones properly separated:**
+```
+FETCH SUCCESS      = "did Apify return a matched record for this SKU" (independent of price)
+PRICE WRITE        = "did that record contain a buyable offer with a valid Saudi price"
+  (a delisted item can fetch-succeed and still have zero price-write — NO_ACTIVE_OFFER,
+  not a failure — see ADR-335's outcome logging)
+UNCHANGED_PRICE     = products_updated − price_changes (already returned by the API,
+  just not previously named) — a successful refresh that confirmed the SAME price is
+  NOT a failed refresh
+CHANGED_PRICE       = price_changes (as already returned)
+SANITY CONSISTENCY  = the ADR-334 93.3% figure — a comparison against Tawveeri's OWN
+  stale prior data, never re-labeled as PRICE_ACCURACY again
+PRICE_ACCURACY      = requires an INDEPENDENT ground truth (a live Noon page check
+  outside Tawveeri's own stored data) — not yet measured; §4 of this mission calls for
+  a 20–30 product bounded validation DURING the 7-day window, not fabricated today
+HISTORICAL PRODUCT  = any of the 4,434 total product_stores rows regardless of freshness
+CURRENT ACTIVE OFFER = a row with a live, buyable Apify-confirmed offer within the last
+  168h — see the honest baseline below for why this is NOT yet the same as "not
+  out_of_stock" in Tawveeri's own stored data
+```
+
+**Honest day-0 baseline (measured just now, NOT a 7-day result).**
+```
+TOTAL Noon product_stores rows          = 4,434 (unchanged)
+Rows Tawveeri's OWN data marks in_stock  = 4,434 (100%) — NOT a reliable "active" signal:
+  the pre-Apify broken scraper never successfully wrote an out_of_stock state in ~25+
+  days, so this field currently means "never disproven," not "confirmed active"
+Rows with a live-Apify-confirmed price change in the last 168h = 16
+Fresh raw_observations (<=168h)          = 20
+FRESHNESS_COVERAGE (day 0)               = 16/4,434 ≈ 0.36% — expected to be tiny this
+  early; two small controlled test batches have run, not a week of the real cadence
+```
+
+**Cost guards verified via existing non-destructive tests, not a live overage attempt** (the founder's own "do not perform destructive cost testing" instruction). `MAX_BATCH_SIZE` refusal is covered by an existing unit test (a 251-item batch returns immediately with no network call). Apify's `maxItems`/`maxTotalChargeUsd` are documented, platform-enforced hard caps (verified against Apify's own API docs in ADR-335) — deliberately triggering one live would itself risk real spend for no new information the documentation doesn't already provide.
+
+**Actor version safety (§17).** Still pinned to `saswave` build `0.0.3` — verified again via `GET /v2/acts/saswave~noon-product-scraper`: no new build has appeared since ADR-335. No action needed; will be re-checked at the day-7 review.
+
+**Refresh-strategy research (§7) — informs, does not trigger an implementation.** Current industry practice (2026) for commerce-feed freshness confirms the general direction of the founder's proposed HOT/WARM/COLD model: allocate refresh/crawl budget toward the highest commercial-impact items rather than uniform blanket coverage, and treat freshness thresholds as an explicit, monitored contract rather than an assumption. This validates the MODEL in principle but is not, by itself, evidence for Tawveeri's specific cadence numbers — those must come from this mission's own 7-day data (§8/§9), not from general literature.
+
+**Decision — REMAIN_IN_PROOF_MODE for the next 7 days.** No cadence change, no plan upgrade, no queue-prioritization rewrite in this ADR — the founder's own instruction is explicit that premature optimization without proof is out of scope. The oldest-`last_checked_at`-first queue (unchanged, shared with every other store) continues to run at the ADR-335 Noon-specific cap.
+
+**THE CHECKPOINT.**
+```
+START_DATE    = 2026-09-10
+REVIEW_DATE   = 2026-09-17 (7 days later)
+REQUIRED_METRICS (exact list from the founder's §21, to be measured live at review time):
+  TOTAL_APIFY_REQUESTED, TOTAL_APIFY_RETRIEVED, RETRIEVAL_SUCCESS_RATE,
+  ACTIVE_OFFER_RATE, NO_ACTIVE_OFFER_RATE, REAL_PRICE_ACCURACY (from a bounded 20-30
+  product independent validation per §4), IDENTITY_ACCURACY, AVAILABILITY_ACCURACY,
+  NOON_FRESHNESS_COVERAGE, NOON_PRICE_CHANGES_FOUND, PRICE_CHANGE_YIELD,
+  NOON_VERIFIED_DROPS, NOON_LOWEST_PRICE_WINS, NOON_AFFILIATE_CAPABLE_FRESH_PRODUCTS,
+  NOON_QUALIFIED_OUTBOUND_CLICKS, TOTAL_APIFY_COST_USD/SAR, COST_PER_USEFUL_FRESH_PRODUCT
+HOW TO TRIGGER  = ask a future Claude session to "run the Noon 7-day operating proof
+  review, ADR-336" on or after 2026-09-17 — all source queries (scraping_runs,
+  product_stores, raw_observations, price_history, Apify usage API) are the same ones
+  already used throughout ADR-334/335/336, nothing new needs to be built to run it.
+```
+
+**Consequences.** No code changed in this ADR — this is a measurement/documentation checkpoint only, exactly as scoped. The actual scale decision (KEEP_FREE_AND_OPTIMIZE_QUEUE / UPGRADE_TO_STARTER_AND_* / REMAIN_IN_PROOF_MODE / ROLL_BACK_APIFY) is deferred to the 2026-09-17 review and must be evidence-based, not decided today.
+
+**Products 2 status.** Not touched.
+
+---
+
 ### ADR-335 — Noon Apify production scale-up: price contract corrected, cost guards live, urgent scheduler cost risk closed before it fired · Accepted (2026-09-10)
 
 **Context.** ADR-334 proved and shipped the Apify (saswave) retrieval path. Founder follow-up: the source question is closed — the task is now making it safe, economical, and operationally correct at scale, gated on independently proving the actual price contract (not assuming which field is the real price) and calculating real cost from the real Apify account before any spend commitment.
