@@ -4,6 +4,48 @@
 
 Status legend: **Accepted** · **Superseded** · **Proposed**.
 
+### ADR-333 — Noon final technical path test: root cause identified as Akamai Bot Manager; Browserless (standard + residential) proven blocked; no PROVEN_WORKING path found · Accepted (2026-09-10)
+
+**Context.** Founder follow-up explicitly reopening ADR-332's "datacenter ASN" theory as a hypothesis, not a conclusion, citing external research suggesting (1) Noon's HTTP 000 failures might be TLS-fingerprint-driven rather than IP-driven, and (2) Tawveeri's existing Browserless integration (with documented residential-proxy + Saudi country-targeting + sticky-session support) had not yet been tested — the mandated first experiment before any third-party vendor. Evidence gate: only PROVEN_WORKING may enter production; live Tawveeri×Noon evidence overrides external articles.
+
+**Ground truth set.** 18 real Noon SKUs pulled from production `product_stores` (smartphones, TVs, audio accessories, 6 brands, 23–4,109 SAR), each with its stored price/availability/last-update timestamp, to compare candidate sources against.
+
+**Candidate B/C — Browserless standard (real Chromium, no proxy) — PROVEN_FAILED.** Confirmed `BROWSERLESS_API_KEY` exists in production (Railway). Connected successfully (2.8s), navigated to `noon.com/saudi-en/` with a genuine Chromium browser (real TLS handshake, not a spoofed client): **HTTP 403 in 339ms.** A real, authentic browser fingerprint — not a raw HTTP client — was blocked just as fast as the earlier curl-based tests. This weakens the "it's just TLS fingerprinting" hypothesis: a genuine browser handshake from a datacenter IP still failed.
+
+**Candidate D — Browserless residential + Saudi targeting — blocked at the PLAN level, then PROVEN_FAILED on the fallback.** `proxyCountry=sa` was rejected outright by Browserless's own API (`'proxyCountry' of "sa" is not allowed`, confirmed via direct REST check) — Saudi Arabia is not in this account's covered country list (`proxyCountry=us` on the same account works fine, isolating the rejection to Saudi specifically, not the mechanism). Falling back to the default (non-country-pinned) residential pool to at least test reachability: **HTTP 403 in 1.5–1.9s**, on both the homepage and a direct navigation to the JSON catalog-search API. A genuine residential IP, through a real browser, still failed — disproving "just needs to look human" as sufficient.
+
+**Root cause identified, not just inferred.** The JSON API's 403 response body was Akamai's standard bot-management block page, explicitly referencing `errors.edgesuite.net` (Akamai's own CDN error domain) with a live Akamai reference ID. **Noon runs Akamai Bot Manager** — a commercial, multi-signal detection platform (IP reputation across datacenter AND known commercial-proxy pools, TLS/HTTP fingerprinting, behavioral signals), not a simple ASN denylist. This is now a directly observed fact, not a theory: four independent infrastructure paths (Railway, GitHub Actions/Azure, Browserless standard, Browserless residential) all failed against the same underlying system, two of them (Browserless standard and residential) using a completely authentic browser TLS/JS fingerprint.
+
+**Answering the founder's three closing questions directly.**
+- Was ADR-332's "blocks cloud/datacenter IPs broadly" conclusion CONFIRMED / PARTIALLY_CORRECT / DISPROVEN? **PARTIALLY_CORRECT.** Datacenter IPs are indeed blocked, but the mechanism is broader and more sophisticated than ASN-only: a known-commercial-residential-proxy pool (Browserless's) is *also* blocked, which a pure datacenter-ASN denylist would not explain.
+- What actually prevented Tawveeri from refreshing Noon? **Noon's Akamai Bot Manager deployment**, confirmed via its own error-page signature, not a Tawveeri-side defect, IP-reputation accident, or fixable code/config issue.
+- What is the lowest-cost reliable production path now? **None proven.** Every technically-reachable, evasion-free path available through Tawveeri's existing infrastructure and credentials has been tested and failed. The only two paths not yet closed are (a) Noon's own affiliate product feed (ADR-331, a founder-side business check) and (b) a specialized third-party data vendor whose full business is staying ahead of platforms like Akamai (research-only in this ADR — Apify publishes multiple actively-maintained, Saudi-market-aware Noon actors, e.g. `thirdwatch/noon-scraper`, `parseforge/noon-mena-scraper`, at roughly $0.0012–0.002/result with automatic currency detection; Bright Data's offering in this space is its general-purpose Web Scraper API, $3–8/1,000 page loads, with no Noon-specific tooling found — Apify is the stronger fit on maintenance burden and Saudi-specificity from public information alone, but NEITHER has been live-tested; no account/credential exists for either).
+
+**Evidence-gate classification (per the founder's own rubric — only PROVEN_WORKING may enter production):**
+```
+A. Existing production direct HTTP           = PROVEN_FAILED (ADR-330)
+B. Browser-compatible TLS client              = PROVEN_FAILED (candidate C is exactly this test)
+C. Browserless standard                       = PROVEN_FAILED (403, real Chromium, 339ms)
+D. Browserless residential + Saudi targeting  = PROVEN_FAILED (SA unsupported by plan;
+                                                  default-pool residential also 403, Akamai-confirmed)
+E. Noon JSON catalog/product endpoint         = PROVEN_FAILED from every tested path (the
+                                                  endpoint itself is real and well-formed — the
+                                                  block is at the WAF layer, not the API)
+Third-party vendor (Apify/Bright Data)        = INCONCLUSIVE (research only, no live test —
+                                                  requires a founder-provisioned account)
+Noon affiliate product feed                   = INCONCLUSIVE (founder-side check, ADR-331)
+```
+
+**Decision — NO IMPLEMENTATION.** No candidate reached PROVEN_WORKING. Per the founder's own gate, no production pipeline change is authorized from this ADR. ADR-330's two engineering fixes (freshness gate, success-rate alert) remain the correct, complete response until either the affiliate-feed check or a vendor evaluation (a separate, founder-initiated, budgeted decision) produces a PROVEN_WORKING source.
+
+**Cost incurred.** Two Browserless residential-proxy test runs, each navigating one small page and issuing 1–2 lightweight JSON requests (a few hundred KB total) — a low single-digit number of residential proxy units, well within routine diagnostic cost.
+
+**Consequences.** No code, schema, scraper, or pipeline changes in this ADR. No third-party vendor account was created or evaluated live — that remains a distinct, explicit founder decision (budget + account setup) if they choose to pursue it after checking the affiliate feed.
+
+**Products 2 status.** Not touched.
+
+---
+
 ### ADR-332 — Noon fixed-alternate-worker test: a second, unrelated cloud network is ALSO instantly blocked — evidence points to a categorical datacenter-ASN block, not IP-specific reputation · Accepted (2026-09-10)
 
 **Context.** Founder follow-up to ADR-331, explicitly distinguishing (A) fragile IP-rotation/evasion behavior — rejected — from (B) a normal, fixed infrastructure choice (a different stable worker, hosting environment, region, or provider) — a legitimate candidate not to be dismissed without proof. Required a controlled test of (B) before ruling it out.
