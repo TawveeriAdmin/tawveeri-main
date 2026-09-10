@@ -4,6 +4,45 @@
 
 Status legend: **Accepted** · **Superseded** · **Proposed**.
 
+### ADR-330 — Noon commerce data truth: root cause proven (merchant-side anti-bot block on HTML pages), not safely fixable; two real cross-cutting defects found and fixed instead · Accepted (2026-09-10)
+
+**Context.** Founder mission ("NOON COMMERCE DATA TRUTH & RECOVERY") required proving — not assuming — the root cause of Noon's staleness across every customer-facing surface (search, compare, product page, best-price selection, affiliate exit), with a strict read-only Phase A gate: no implementation without HIGH-confidence, multi-signal proof, and "unknown beats a wrong fix."
+
+**Root cause — proven HIGH confidence, ANTI_BOT, scoped precisely.** `scraping_runs` shows Noon's discovery and price_update cron jobs returning literal `HTTP 403: Forbidden` for 11+ consecutive days across every sampled run. Cross-store comparison of `product_stores.updated_at` (the storefront layer) shows Noon uniquely stale at ~587h (~25 days, since 2026-08-16) versus 3–71h for every other actively-scraped peer (Jarir, Amazon, Extra, Almanea, LuLu) on the same day — proving isolation (no other merchant affected) and specificity (Noon alone is broken). An independent live replication test from a separate network reproduced the exact 403 in 180ms on Noon's product-detail-page URL pattern (`/saudi-en/.../p/`, the exact target of `scrapeProductPageHtml()`) — but the SAME test against Noon's separate JSON search-API endpoint (`/_svc/catalog/api/v3/...`, used only by the live user-search scraper) returned a clean 200 with real data. The block is a merchant-side WAF rule keyed on the HTML-page URL pattern the cron scraper uses (both discovery's listing pages and price-update's product pages), not a blanket IP ban and not an internal scheduler/pagination/persistence bug.
+
+**A subtler finding that reconciled an apparent contradiction.** `raw_observations`/`price_history` (TPS layer) showed a write as recent as 1.6h before the check — seemingly healthy. Reconciled via full run history: Noon's price_update runs succeed on a tiny trickle (2 of ~900 attempts in the last 24h, 0.2%) while ~99.8% still 403. That trickle is enough to keep the single "freshest observation" metric looking current, while the catalog as a whole is not refreshing. Discovery is 100% blocked (zero exceptions in every sampled run) — no new Noon products have been added since the block began.
+
+**No safe fix exists for the root cause itself.** The mission explicitly forbids bypassing a merchant's active anti-bot measures. The scraper already uses the robots-compliant path (product-detail HTML pages, per a 2026-08-02 fix; ADR-149's history). The only legitimate remedies — an official Noon affiliate/data-feed partnership, or waiting for the block to lift — are business/partnership decisions outside engineering's authority, not code defects. `NOON_SCRAPER_CHANGE = DO_NOT_IMPLEMENT_YET` (root cause proven, but no safe engineering fix exists).
+
+**Two real, proven, safe defects found and fixed (PROVEN_FIX_READY, both merged in `74dbdc9b`):**
+1. **`/products/[slug]` best-price selection had no freshness gate.** It picked "best price" from raw `product_stores.current_price`, unlike the compare page and search (both already gate via `isFreshObservation`, the 2026-08-07 P0 stale-price-safety precedent). A full-catalog census (24,427 `product_stores` rows, correctly paginated — the ADR-172/285 `db-max-rows` trap was hit and corrected mid-investigation) found only 16 genuinely multi-store products platform-wide and **zero** live cases where this currently flips a "cheapest" verdict — the fix (`src/lib/catalog/select-best-price-offer.ts`, mirroring `deriveComparisonSummary`'s fresh-first/stale-fallback rule) closes a latent gap with proven zero behavioral impact today, for every store including Amazon.
+2. **A near-total price-update failure could hide indefinitely.** `ingestion_age_hours`/`consecutive_failures` in the existing `/api/admin/scraping/health` endpoint both derive from a single freshest row / the run's own `status` (`'partial'`, never `'failed'`, when even one product succeeds) — exactly how Noon's 0.2% success rate stayed invisible to every existing signal. Added `price_update_success_rate_24h` + a `low_price_update_success_rate` alert (threshold 5%, calibrated from the other active stores' own same-day rates: Jarir 29.0%, Amazon 26.7%, Extra 81.3% — a wide margin below the lowest healthy value, not an invented number).
+
+**Section 2 verdicts (independently derived, not inferred from one another):**
+```
+NOON_SEARCH_PRICE_FRESHNESS   = HEALTHY   (live search hits the unblocked JSON API, confirmed live)
+NOON_COMPARE_PRICE_FRESHNESS  = PARTIAL   (isFreshObservation gate already correct; Noon rarely
+                                            HAS fresh evidence to contribute, given the 0.2% rate)
+NOON_PRODUCT_PAGE_FRESHNESS   = STALE → FIXED (this mission's defect #1)
+NOON_BEST_PRICE_SELECTION     = AT_RISK on the product-page surface only (0 live incidents found)
+                                 → TRUSTWORTHY everywhere after the fix
+NOON_AFFILIATE_EXIT           = HEALTHY   (/go mechanism untouched and functional; constrained by
+                                            upstream data eligibility, not the exit path itself)
+```
+
+**Commercial reality (Section 28) — honest, not padded.** Current fresh (<=168h) Noon `verified_drop` rows: ~2, out of 7,845 total Noon rows in `tps_listing_price_facts` (matching the founder's original "3,024 historical, ~2 fresh" report almost exactly). This is the CORRECT, trust-preserving state given Noon's real block — no backfill or recovery was performed (Section 14 is explicitly gated on the root cause being fixed, which it cannot safely be here) and none of the historical stale rows were marked current.
+
+**Answers to the mission's three closing questions:**
+- Were users missing better Noon prices because of stale internal data? **NO** — proven via full-catalog census: 0 of 16 multi-store products currently show a wrong winner; the P0 freshness gate already protected compare/search, and the product-page gap (now fixed) had zero live incidents.
+- Did Tawveeri lose valid Noon affiliate opportunities to an internal problem? **NO** — the opportunity loss is caused by Noon's own merchant-side block, not a Tawveeri defect; nothing internal was suppressing eligible fresh Noon offers.
+- Did any fix make Noon rank higher because it pays Tawveeri? **NO.**
+
+**Consequences.** `src/lib/catalog/select-best-price-offer.ts` (new), `product-detail-client.tsx`, `/api/admin/scraping/health` route + page updated. 15 new regression tests; full suite green (223 suites / 3,415 tests). Zero schema changes, zero data migrations, zero scraper/scheduler changes. Deployed to production (`74dbdc9b`), verified live (200 OK on a real multi-store product page).
+
+**Products 2 status.** Not touched.
+
+---
+
 ### ADR-329 — Grok × Claude bridge truth audit: ADR-297's "no automation, shared-registry-plus-manual-relay" verdict re-verified live, unchanged, no bridge built · Accepted (2026-09-09)
 
 **Context.** Founder mission ("MARKET PROOF BRIDGE TRUTH AUDIT") required proving — not assuming — what ADR-297 (2026-09-05) actually implemented before any Grok↔Claude integration work, ahead of dispatching Grok's own Market Proof Phase 1 research brief.
