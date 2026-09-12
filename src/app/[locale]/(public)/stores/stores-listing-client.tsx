@@ -6,7 +6,7 @@ import { useTranslations } from '@/lib/simple-intl-provider';
 import { getSupabaseBrowserClient } from '@/lib/database';
 import { StoreLogo } from '@/components/ui/store-logo';
 import { getStoreDisplayName } from '@/lib/logos';
-import { isDisplayableRetailer, resolveApprovedSlug, retailerDisplayName } from '@/lib/retailers/approved-retailers';
+import { isDisplayableRetailer } from '@/lib/retailers/approved-retailers';
 import {
   Select,
   SelectContent,
@@ -162,90 +162,21 @@ export default function StoresListingClient() {
         // separate, larger ingestion work, not a read-model fix.
         const tpsCounts = new Map<number, number>();
         try {
-          // Measured directly against production (2026-09-12, Samsung split-brain mission).
-          // Two findings shaped this set — NOT simply "every displayable store":
-          //
-          // 1. jarir/amazon/noon's LEGACY count is larger than their TPS count by a wide
-          //    margin (jarir 1180 vs 433, amazon 3726 vs 2760, noon 4424 vs 1695) — legacy
-          //    already wins under Math.max() below regardless, so re-checking TPS for them
-          //    can never change the displayed total. Excluded to avoid pure, avoidable IO.
-          //
-          // 2. almanea and extra have 101,359 and 35,107 price_history rows respectively —
-          //    this query's own pagination cap (`phPages` below, min(…, 40) = max 40,000
-          //    rows) would SILENTLY TRUNCATE either one, undercounting exactly the way
-          //    ADR-172 already burned this codebase once. Proven real (their TPS count IS
-          //    higher than legacy: extra 5601 vs 4461, almanea 2834 vs 1454) but NOT safely
-          //    fixable by widening this client-side row-pagination pattern — it needs a
-          //    server-side `COUNT(DISTINCT canonical_product_id) GROUP BY store_id` (an RPC/
-          //    edge function), which stays correct regardless of row count. Excluded here
-          //    deliberately, flagged for that follow-up, not silently left wrong AND not
-          //    papered over with a truncated approximation.
-          //
-          // samsung_ksa (305 rows) and shaker (4,613 rows) are the only nonzero-legacy,
-          // TPS-ahead stores small enough for the existing pagination cap to fetch in full —
-          // included here, alongside the original zero-legacy stores this block already
-          // covered safely.
-          const SKIP_TPS_CHECK = new Set(['jarir', 'amazon', 'noon', 'almanea', 'extra']);
-          const candidateSlugs = new Set(
-            (rawStores || [])
-              .map((s: any) => s.slug || String(s.id))
-              .filter((slug: string) => isDisplayableRetailer(slug) && !SKIP_TPS_CHECK.has(slug)),
-          );
-          if (candidateSlugs.size > 0) {
-            // canonical_products/price_history are TPS-knowledge-layer tables, outside the
-            // generated storefront-layer types (same loose-cast pattern get-comparison.ts
-            // uses for these tables server-side).
-            const tpsSb = sb as unknown as { from: (table: string) => any };
-            // price_history is append-only (a row per PRICE CHANGE, not per store) — ~100k+
-            // rows platform-wide, so it must be filtered server-side to just the stores in
-            // question rather than paginated in full client-side. `store_name` carries known
-            // alias variants (resolveApprovedSlug handles this for arbitrary rows elsewhere);
-            // for a targeted `.in()` filter, the two locale display names plus the raw slug
-            // cover every variant this codebase actually writes.
-            const candidateNames = [...candidateSlugs].flatMap((slug) => [
-              retailerDisplayName(slug, 'ar'),
-              retailerDisplayName(slug, 'en'),
-              slug,
-            ].filter((v): v is string => Boolean(v)));
-            // Even scoped to a couple of stores, price_history's append-on-change history can
-            // exceed PostgREST's db-max-rows cap — paginate explicitly (same ADR-172 lesson
-            // as the product_stores fetch above) rather than trust a single `.limit()`.
-            const PH_PAGE = 1000;
-            const { count: phTotal } = await tpsSb.from('price_history').select('store_name', { count: 'exact', head: true }).in('store_name', candidateNames);
-            const phPages = Math.min(Math.ceil((phTotal ?? 0) / PH_PAGE), 40);
-            const phResults = await Promise.all(
-              Array.from({ length: phPages }, (_, i) =>
-                tpsSb.from('price_history').select('store_name, canonical_product_id').in('store_name', candidateNames).range(i * PH_PAGE, i * PH_PAGE + PH_PAGE - 1),
-              ),
-            );
-            const rows = phResults.flatMap((r) => (r.data || [])) as { store_name: string; canonical_product_id: string }[];
-            // Small, targeted is_active lookup — only for canonicals these specific stores
-            // actually reference, not the whole active catalogue.
-            const idsToCheck = [...new Set(rows.map((r) => r.canonical_product_id))];
-            // Chunked: an `.in()` filter with hundreds of UUIDs can build a query string long
-            // enough to fail at the edge/proxy layer — measured directly against this exact
-            // query (500+ ids in one call intermittently failed; 150-id chunks did not).
-            const activeIds = new Set<string>();
-            const ID_CHUNK = 150;
-            for (let i = 0; i < idsToCheck.length; i += ID_CHUNK) {
-              const chunk = idsToCheck.slice(i, i + ID_CHUNK);
-              const { data: activeRows } = await tpsSb.from('canonical_products').select('id').eq('is_active', true).in('id', chunk);
-              for (const c of (activeRows || []) as { id: string }[]) activeIds.add(c.id);
-            }
-            const bySlug = new Map<string, Set<string>>();
-            for (const r of rows) {
-              const slug = resolveApprovedSlug(r.store_name);
-              if (!slug || !candidateSlugs.has(slug)) continue;
-              if (!activeIds.has(r.canonical_product_id)) continue;
-              if (!bySlug.has(slug)) bySlug.set(slug, new Set());
-              bySlug.get(slug)!.add(r.canonical_product_id);
-            }
-            for (const s of rawStores || []) {
-              const slug = (s as any).slug || String((s as any).id);
-              const set = bySlug.get(slug);
-              if (set) tpsCounts.set((s as any).id, set.size);
-            }
-          }
+          // SUPERSEDES the prior client-side paginated price_history scan (ADR-343). That
+          // approach had to exclude extra/almanea (101,359 / 35,107 price_history rows —
+          // beyond the client-side pagination cap, a silent-truncation risk, ADR-172's exact
+          // failure class) and jarir/amazon/noon (no benefit, legacy already wins). A single
+          // server-side aggregate RPC (`get_tps_active_store_counts()`, migration 031,
+          // Samsung KSA global closure mission 2026-09-12) removes BOTH constraints at once:
+          // it returns one COUNT(DISTINCT canonical_product_id) GROUP BY store_id row per
+          // store in one server-side scan, correct regardless of table size, so every store
+          // can now be safely checked uniformly — no candidate list, no pagination, no
+          // per-store special-casing. Same exact semantics as before (only is_active
+          // canonicals counted), verified to reproduce the prior measured values exactly
+          // (extra 5601, almanea 2834, samsung_ksa 186, shaker 372) before this replaced it.
+          const tpsSb = sb as unknown as { rpc: (fn: string) => Promise<{ data: { store_id: number; product_count: number }[] | null; error: unknown }> };
+          const { data } = await tpsSb.rpc('get_tps_active_store_counts');
+          for (const row of data || []) tpsCounts.set(row.store_id, Number(row.product_count));
         } catch { /* TPS fallback is best-effort — legacy counts still stand */ }
 
         const mapped: StoreSummary[] = (rawStores || [])
