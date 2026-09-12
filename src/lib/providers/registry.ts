@@ -30,7 +30,13 @@ const BASE: Record<string, RetailerProvider> = {
   // storage/screen_size), which improves identity resolution → more comparisons (ADR-094).
   // Sourced via the Algolia adapter; override with PROVIDER_ALMANEA_SOURCING=scraper.
   almanea:     { slug: "almanea",     storeId: 5, displayName: "Almanea",           displayNameAr: "المنيع",           enabled: true, sourcing: "api", affiliate: null, algolia: { appId: "WCK19QC65I", apiKey: "be7745237f5f94f715b088f48b1708b8", index: "prod_headless_ar_products", indexEn: "prod_headless_en_products" } },
-  samsung_ksa: { slug: "samsung_ksa", storeId: 6, displayName: "Samsung Saudi",     displayNameAr: "سامسونج السعودية", enabled: true, sourcing: "scraper", affiliate: null },
+  // DCM Links Hub affiliate program (2026-09-12): founder manually generated + verified a
+  // real tracking link in DCM's dashboard (offer_id 1960 "Samsung | KSA | Link", aff_id
+  // 166088, 2.80% CPS) — confirmed live redirecting to the exact Samsung PDP. DCM is a
+  // WRAPPING redirect network (see networks/dcm.ts), not a param-decorator, so it gets its
+  // own adapter; trackingId carries offer_id, aff_id/source ride in `params` since they are
+  // DCM-specific, not a generic Amazon/Noon-style tag.
+  samsung_ksa: { slug: "samsung_ksa", storeId: 6, displayName: "Samsung Saudi",     displayNameAr: "سامسونج السعودية", enabled: true, sourcing: "scraper", affiliate: { network: "dcm", trackingId: "1960", params: [{ name: "aff_id", value: "166088" }, { name: "source", value: "tawveeri" }] } },
   // shaker is sourced from its public WooCommerce Store API (ADR-089) — verified cleaner
   // AND more complete than the HTML scraper (585 unique bilingual products via feed vs
   // 442 distinct scraped URLs), with no anti-bot fragility. The adapter collapses the

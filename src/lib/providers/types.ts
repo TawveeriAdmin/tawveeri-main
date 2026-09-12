@@ -11,7 +11,7 @@
 export type SourcingMode = "scraper" | "official_feed" | "affiliate_feed" | "api" | "csv_xml";
 
 /** Affiliate network adapters. Extend by adding a networks/<id>.ts + registering it. */
-export type AffiliateNetworkId = "amazon" | "param" | "direct";
+export type AffiliateNetworkId = "amazon" | "param" | "dcm" | "direct";
 
 /** A single query parameter appended to an affiliate URL (network 'param'). */
 export interface AffiliateParam {

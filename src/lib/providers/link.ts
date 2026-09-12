@@ -11,11 +11,13 @@ import { normalizeStoreUrl } from "@/lib/catalog/normalizeStoreUrl";
 import type { AffiliateConfig, AffiliateNetwork, AffiliateLinkResult, LinkContext, RetailerProvider } from "./types";
 import { amazonNetwork, isAmazonHost } from "./networks/amazon";
 import { paramNetwork } from "./networks/param";
+import { dcmNetwork } from "./networks/dcm";
 import { directNetwork } from "./networks/direct";
 
 const NETWORKS: Record<string, AffiliateNetwork> = {
   amazon: amazonNetwork,
   param: paramNetwork,
+  dcm: dcmNetwork,
   direct: directNetwork,
 };
 
