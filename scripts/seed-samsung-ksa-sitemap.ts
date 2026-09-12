@@ -70,6 +70,7 @@ async function main(): Promise<void> {
 
   const { SamsungKsaScraper, isSamsungKsaProductUrl, HIGH_VALUE_ACCESSORY_SLUG, KNOWN_CONSUMER_CATEGORY_PATH } = await import('../src/lib/scraping/stores/samsung-ksa-scraper');
   const { ProductService } = await import('../src/lib/scraping/services/product-service');
+  const { IngestionService } = await import('../src/lib/scraping/services/ingestion-service');
   const { createServerClient } = await import('../src/lib/database');
 
   const supabase = createServerClient();
@@ -120,6 +121,16 @@ async function main(): Promise<void> {
 
   const scraper = new SamsungKsaScraper();
   const productService = new ProductService();
+  // Samsung KSA official-catalog closure mission (2026-09-12): this script previously wrote
+  // ONLY to the legacy products/product_stores layer via ProductService — the SAME scraped
+  // result never reached `raw_observations`, so none of it could ever be normalized into
+  // canonical_products/price_history (the TPS layer this platform's own architecture treats
+  // as the product system of record, per this session's earlier missions). The production
+  // discovery route (ScrapingOrchestrator.runDiscoveryJob) always calls BOTH ProductService
+  // AND IngestionService for exactly this reason; this script only mirrored half of it. Found
+  // and fixed before the run reached any meaningful completion (stopped mid-audit, no prior
+  // partial run's legacy-only writes are treated as sufficient).
+  const ingestionService = new IngestionService();
 
   let processedNow = 0;
   let consecutiveNulls = 0;
@@ -148,6 +159,13 @@ async function main(): Promise<void> {
           console.log(`[${stamp()}] ∅ [${state.cursor}] archive (no price) (${Math.round((Date.now() - rowStart) / 1000)}s) — ${shortUrl(url)}`);
         } else {
           const { created } = await productService.createOrUpdateProduct(scraped, storeId);
+          // Feed the TPS pipeline too (see the header comment above `ingestionService`) --
+          // best-effort: a raw_observations write failure must not lose the legacy-layer
+          // write that already succeeded, so this is not inside the same try that would
+          // otherwise be indistinguishable from a real scrape failure.
+          await ingestionService.ingestBatch('samsung_ksa', [scraped], Number(storeId), null).catch((e) => {
+            console.warn(`[${stamp()}] WARN: raw_observations ingest failed for ${shortUrl(url)}: ${e instanceof Error ? e.message : e}`);
+          });
           if (created) state.created++;
           else state.updated++;
           consecutiveNulls = 0;
