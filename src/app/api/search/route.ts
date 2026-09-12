@@ -336,7 +336,19 @@ const ACCESSORY_HINTS_AR = ['حامل', 'فتحة', 'موجه', 'غطاء', 'ك�
   // keywords. A genuinely different item in the same result set ("زجاجة خلط البروتين
   // الكهربائية...خلاط محمول" — explicitly self-described as a PORTABLE ELECTRIC blender) was
   // deliberately left untouched: no evidence it is anything other than what it says.
-  'شيكر', 'كوب سفر'];
+  'شيكر', 'كوب سفر',
+  // PROVEN DEFECT (2026-09-12, Samsung search-visibility mission — reproduced live: «فرن
+  // سامسونج» made "BlueStars ... Microwave Oven Grease Filter ... Fit for GE & Samsung
+  // Over-the-Range Microwave Ovens" (a Noon replacement-part listing, brand "Unknown") the
+  // Tawveeri Choice, ahead of a real Samsung electric oven already in the same 3-result set).
+  // Root cause (part 2 of 2 — part 1 is the oven category-detection fix, OVEN_QUERY_WORDS
+  // above): neither this list nor `ACCESSORY_COMPAT_AR`/`_EN` recognized this listing as an
+  // accessory at all — no "فلتر"/"filter" hint existed here, and the compat regexes require
+  // "ل"+brand / "for "+brand IMMEDIATELY adjacent, which "Fit for GE & Samsung" never
+  // satisfies (the joiner brand "GE & " sits in between). Deliberately scoped to "فلتر شحوم"
+  // (grease filter), not bare "فلتر" — a bare hint would wrongly flag a genuine AC/vacuum
+  // whose OWN title legitimately mentions a HEPA/anti-bacterial filter as a feature.
+  'فلتر شحوم'];
 
 /**
  * MEASURED LIVE (2026-09-08, founder AC-relevance closure): `ACCESSORY_HINTS_AR` was
@@ -383,7 +395,10 @@ const ACCESSORY_HINTS_EN = ['accessory', 'accessories', 'cover', 'mount', 'holde
   // ACCESSORY_HINTS_EN_RE below) catches exactly this electrical-fixture naming without
   // touching a bare "switch" (which would false-positive "Nintendo Switch", "network
   // switch", "smart switch" — none of which are AC accessories).
-  'ac switch'];
+  'ac switch',
+  // See the matching ACCESSORY_HINTS_AR comment above (2026-09-12, Samsung search-visibility
+  // mission) for the full defect this closes.
+  'grease filter'];
 
 // MEASURED DEFECT (2026-08-20, founder taxonomy audit continued — «طباخ كهربائي» coverage
 // gap): `ACCESSORY_HINTS_EN` was matched with a bare `.includes(h)` substring check at every
@@ -496,6 +511,21 @@ export function isMainProductTypeQuery(raw: string): boolean {
 // Clearly-AC queries → air_conditioner. Everything else → mobile (preserves all
 // existing mobile behavior; non-matching queries simply return []).
 const AC_QUERY_WORDS = new Set(['مكيف', 'مكيفات', 'سبليت', 'شباك', 'كاسيت', 'دولابي', 'ac']);
+
+// PROVEN DEFECT (2026-09-12, Samsung search-visibility mission — reproduced live: «فرن
+// سامسونج» returned a Noon microwave-grease-filter accessory as Tawveeri Choice, ahead of a
+// real Samsung electric oven already present in the same 3-result candidate set). Root cause:
+// the oven entry in CATEGORY_QUERY_TERMS below deliberately excludes bare «فرن» from its
+// substring-matched terms — correctly, since a substring match on bare «فرن» would also hit
+// «فرنسي»/«فرنسا» ("French"/"France"). But that left «فرن» + a BRAND word ("فرن سامسونج", no
+// fuel-type qualifier) matching NONE of the oven terms, falling through every classifier to
+// the generic "unrecognised → mobile" default — so `isOvenQuery` was never true and no
+// oven-specific exclusion (`hasStrongOvenSignal` inside `excludeIneligibleCandidates`) ever
+// ran, leaving the accessory-contaminated set completely unfiltered. Same whole-word-only
+// fix already proven for AC_QUERY_WORDS above and the bare "tab" check below — checking for
+// the EXACT token «فرن» (never a substring) reaches "فرن سامسونج" without reintroducing the
+// «فرنسي»/«فرنسا» collision the terms-list comment above warns about.
+const OVEN_QUERY_WORDS = new Set(['فرن', 'oven']);
 
 /**
  * Query → canonical categories to search for a verified comparison.
@@ -619,6 +649,12 @@ export function detectCanonicalCategories(raw: string): string[] | null {
   // taxonomy audit — same reasoning as `task-parser.ts`'s own cooker branch, checked first
   // there for the identical reason).
   if (parseShoppingTask(raw).category === 'cooker') return ['cooker'];
+
+  // Bare «فرن»/"oven" as a whole word — checked AFTER the cooker/burner-count signal above
+  // (so "فرن كهربائي 4 عيون" still correctly resolves to cooker, unchanged) but BEFORE the
+  // generic substring loop, whose oven entry deliberately excludes bare «فرن» to avoid
+  // matching inside «فرنسي»/«فرنسا». See OVEN_QUERY_WORDS's own comment for the full defect.
+  if (words.some((w) => OVEN_QUERY_WORDS.has(w))) return ['oven'];
 
   for (const entry of CATEGORY_QUERY_TERMS) {
     if (entry.terms.some((t) => norm.includes(normalizeArabic(t)))) return entry.cats;
