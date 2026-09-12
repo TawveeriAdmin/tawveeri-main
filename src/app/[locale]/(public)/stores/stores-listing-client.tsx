@@ -143,26 +143,55 @@ export default function StoresListingClient() {
           seen.forEach((set, storeId) => counts.set(storeId, set.size));
         } catch { /* counts are best-effort */ }
 
-        // TPS-layer fallback (P1, 2026-08-07): a retailer can be genuinely
-        // display-approved and customer-visible in comparison (compare/search — both
-        // already gate on `isDisplayableRetailer`, proven live for Black Box) while
-        // holding ZERO `product_stores` rows, because its offers were onboarded through
-        // the TPS pipeline (raw_observations → normalized_product_observations →
-        // price_history) and never backfilled into the older storefront schema.
-        // `counts` above answers "how many legacy-layer products" — this answers "does
-        // this retailer have ANY real comparison presence at all" for the retailers the
-        // legacy count reports zero for, so a real, approved retailer is never silently
-        // dropped from its own directory just because it lives on the newer layer.
-        // Not a duplicate-count risk: only consulted for stores whose legacy count is 0,
-        // so a store's total is EITHER the legacy count OR the TPS count, never both.
+        // TPS-layer count, per store (WIDENED 2026-09-12 — Samsung split-brain mission,
+        // measured production evidence). Originally only ran for stores whose LEGACY count
+        // was zero, on the assumption a nonzero legacy count was always at least as complete
+        // as the TPS layer. Measured directly against production and found FALSE for three
+        // approved, displayable retailers: samsung_ksa (127 legacy vs 186 TPS), extra (4,461
+        // vs 5,601), almanea (1,454 vs 2,834) — all three were silently showing the SMALLER,
+        // stale legacy number to customers because "legacy wins whenever nonzero" never
+        // reconsiders once a retailer has ANY legacy rows. Widened to compute the TPS count
+        // for every displayable store and take whichever count is larger (below) — this
+        // can only ever show a customer the SAME or a LARGER, more accurate total than
+        // today, never fewer (verified: for every store where legacy currently exceeds TPS —
+        // jarir, amazon, noon, lulu, sharafdg — legacy still wins unchanged). This is a
+        // read-model correction, not a claim that the TPS layer is now the sole system of
+        // record: for jarir/amazon/noon, the legacy `product_stores` layer still holds more
+        // distinct products than the TPS pipeline has processed, a genuine ingestion-depth
+        // gap on the newer pipeline's side, not a legacy-data defect — closing that gap is
+        // separate, larger ingestion work, not a read-model fix.
         const tpsCounts = new Map<number, number>();
         try {
-          const zeroLegacySlugs = new Set(
+          // Measured directly against production (2026-09-12, Samsung split-brain mission).
+          // Two findings shaped this set — NOT simply "every displayable store":
+          //
+          // 1. jarir/amazon/noon's LEGACY count is larger than their TPS count by a wide
+          //    margin (jarir 1180 vs 433, amazon 3726 vs 2760, noon 4424 vs 1695) — legacy
+          //    already wins under Math.max() below regardless, so re-checking TPS for them
+          //    can never change the displayed total. Excluded to avoid pure, avoidable IO.
+          //
+          // 2. almanea and extra have 101,359 and 35,107 price_history rows respectively —
+          //    this query's own pagination cap (`phPages` below, min(…, 40) = max 40,000
+          //    rows) would SILENTLY TRUNCATE either one, undercounting exactly the way
+          //    ADR-172 already burned this codebase once. Proven real (their TPS count IS
+          //    higher than legacy: extra 5601 vs 4461, almanea 2834 vs 1454) but NOT safely
+          //    fixable by widening this client-side row-pagination pattern — it needs a
+          //    server-side `COUNT(DISTINCT canonical_product_id) GROUP BY store_id` (an RPC/
+          //    edge function), which stays correct regardless of row count. Excluded here
+          //    deliberately, flagged for that follow-up, not silently left wrong AND not
+          //    papered over with a truncated approximation.
+          //
+          // samsung_ksa (305 rows) and shaker (4,613 rows) are the only nonzero-legacy,
+          // TPS-ahead stores small enough for the existing pagination cap to fetch in full —
+          // included here, alongside the original zero-legacy stores this block already
+          // covered safely.
+          const SKIP_TPS_CHECK = new Set(['jarir', 'amazon', 'noon', 'almanea', 'extra']);
+          const candidateSlugs = new Set(
             (rawStores || [])
-              .filter((s: any) => (counts.get(s.id) || 0) === 0)
-              .map((s: any) => s.slug || String(s.id)),
+              .map((s: any) => s.slug || String(s.id))
+              .filter((slug: string) => isDisplayableRetailer(slug) && !SKIP_TPS_CHECK.has(slug)),
           );
-          if (zeroLegacySlugs.size > 0) {
+          if (candidateSlugs.size > 0) {
             // canonical_products/price_history are TPS-knowledge-layer tables, outside the
             // generated storefront-layer types (same loose-cast pattern get-comparison.ts
             // uses for these tables server-side).
@@ -173,7 +202,7 @@ export default function StoresListingClient() {
             // alias variants (resolveApprovedSlug handles this for arbitrary rows elsewhere);
             // for a targeted `.in()` filter, the two locale display names plus the raw slug
             // cover every variant this codebase actually writes.
-            const candidateNames = [...zeroLegacySlugs].flatMap((slug) => [
+            const candidateNames = [...candidateSlugs].flatMap((slug) => [
               retailerDisplayName(slug, 'ar'),
               retailerDisplayName(slug, 'en'),
               slug,
@@ -206,7 +235,7 @@ export default function StoresListingClient() {
             const bySlug = new Map<string, Set<string>>();
             for (const r of rows) {
               const slug = resolveApprovedSlug(r.store_name);
-              if (!slug || !zeroLegacySlugs.has(slug)) continue;
+              if (!slug || !candidateSlugs.has(slug)) continue;
               if (!activeIds.has(r.canonical_product_id)) continue;
               if (!bySlug.has(slug)) bySlug.set(slug, new Set());
               bySlug.get(slug)!.add(r.canonical_product_id);
@@ -230,7 +259,7 @@ export default function StoresListingClient() {
           // would have kept showing noon, lulu, sharafdg and blackbox as live retailers.
           .filter((s: any) => {
             const slug = s.slug || String(s.id);
-            const total = (counts.get(s.id) || 0) || (tpsCounts.get(s.id) || 0);
+            const total = Math.max(counts.get(s.id) || 0, tpsCounts.get(s.id) || 0);
             return isDisplayableRetailer(slug) && total > 0;
           })
           .map((s: any) => {
@@ -244,9 +273,10 @@ export default function StoresListingClient() {
             website_url: s.link || null,
             average_rating: null,
             total_reviews: null,
-            // Legacy (product_stores) count when present, else the TPS-layer count —
+            // Whichever of the legacy (product_stores) or TPS-layer count is larger —
             // never summed (see the tpsCounts computation above for why that's safe).
-            total_products: (counts.get(s.id) || 0) || (tpsCounts.get(s.id) || 0),
+            // Never smaller than the legacy-only number this page showed before.
+            total_products: Math.max(counts.get(s.id) || 0, tpsCounts.get(s.id) || 0),
             is_featured: false,
             is_premium: false,
             status: 'active',

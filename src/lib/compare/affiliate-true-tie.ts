@@ -82,11 +82,22 @@ export function isAffiliateMerchant(storeSlug: string): boolean {
  *  deterministic, or design the smallest explicit rule"). Real per-conversion commission
  *  is not on file for any product today (ADR-294: NETWORK_REPORTED is UNKNOWN platform-
  *  wide) — reusing commercial-tiebreak.ts's commission-amount comparison here would always
- *  be a no-op, so the smallest safe, explicit, already-established rule is used instead:
- *  the provider registry's own storeId order (Amazon=2, Noon=3) — the SAME amazon-then-noon
- *  convention selectEligibleCampaigns() (campaigns/eligibility.ts) already applies. */
+ *  be a no-op, so the smallest safe, explicit, already-established rule is used instead.
+ *
+ *  EXTENDED 2026-09-12 (Founder-approved, Samsung split-brain mission §16): Amazon > Samsung
+ *  Saudi > Noon, explicitly — not the provider registry's raw storeId order, which would put
+ *  Samsung (storeId 6) AFTER Noon (storeId 3) and not match the approved sequence. An
+ *  explicit priority list, not a storeId sort, because the desired order and storeId
+ *  assignment order are two independent things that happened to coincide for Amazon/Noon
+ *  only. Any OTHER affiliate merchant (none exist today) falls back to the original
+ *  storeId-ascending rule, so this never needs touching again just to onboard one. */
+const EXPLICIT_TIE_ORDER: Record<string, number> = { amazon: 0, samsung_ksa: 1, noon: 2 };
 function affiliateOrderKey(storeSlug: string): number {
-  return getProvider(storeSlug)?.storeId ?? Number.MAX_SAFE_INTEGER;
+  const explicit = EXPLICIT_TIE_ORDER[storeSlug];
+  if (explicit !== undefined) return explicit;
+  // Fallback keeps ranking after every explicitly-ordered merchant, then by storeId —
+  // preserves prior behavior for any future affiliate merchant not listed above.
+  return 1000 + (getProvider(storeSlug)?.storeId ?? Number.MAX_SAFE_INTEGER);
 }
 
 /**

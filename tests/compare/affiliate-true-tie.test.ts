@@ -22,9 +22,10 @@ const candidate = (over: Partial<TrueTieCandidate> = {}): TrueTieCandidate => ({
 });
 
 describe("isAffiliateMerchant — registry-driven, never hardcoded", () => {
-  it("amazon and noon are affiliate merchants today", () => {
+  it("amazon, noon, and samsung_ksa are affiliate merchants today", () => {
     expect(isAffiliateMerchant("amazon")).toBe(true);
     expect(isAffiliateMerchant("noon")).toBe(true);
+    expect(isAffiliateMerchant("samsung_ksa")).toBe(true);
   });
   it("a non-affiliate merchant (extra, jarir, almanea) is not", () => {
     expect(isAffiliateMerchant("extra")).toBe(false);
@@ -119,6 +120,35 @@ describe("CASE G — two affiliates true-tied: deterministic shared policy, not 
     ];
     const ordered = applyAffiliateTrueTieOrder(offers);
     expect(ordered.map((o) => o.store_slug)).toEqual(["amazon", "noon", "jarir"]);
+  });
+});
+
+describe("CASE G2 — Samsung inserted at Amazon > Samsung > Noon (Founder-approved, 2026-09-12)", () => {
+  it("Almanea 798 beats Samsung 799 — a cheaper non-tied offer always wins, no exception for Samsung", () => {
+    const offers = [
+      candidate({ store_slug: "almanea", price: 798 }),
+      candidate({ store_slug: "samsung_ksa", price: 799 }),
+    ];
+    const ordered = applyAffiliateTrueTieOrder(offers);
+    expect(ordered.map((o) => o.store_slug)).toEqual(["almanea", "samsung_ksa"]);
+  });
+  it("Samsung 799 precedes eXtra 799 under a genuine true tie", () => {
+    const offers = [
+      candidate({ store_slug: "extra", price: 799 }),
+      candidate({ store_slug: "samsung_ksa", price: 799 }),
+    ];
+    const ordered = applyAffiliateTrueTieOrder(offers);
+    expect(ordered.map((o) => o.store_slug)).toEqual(["samsung_ksa", "extra"]);
+  });
+  it("Amazon > Samsung > Noon > eXtra when all four are genuinely tied", () => {
+    const offers = [
+      candidate({ store_slug: "extra", price: 799 }),
+      candidate({ store_slug: "noon", price: 799 }),
+      candidate({ store_slug: "samsung_ksa", price: 799 }),
+      candidate({ store_slug: "amazon", price: 799 }),
+    ];
+    const ordered = applyAffiliateTrueTieOrder(offers);
+    expect(ordered.map((o) => o.store_slug)).toEqual(["amazon", "samsung_ksa", "noon", "extra"]);
   });
 });
 
