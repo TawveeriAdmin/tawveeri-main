@@ -177,6 +177,14 @@ const SAMSUNG_SITEMAPS_BY_CATEGORY: Partial<Record<ProductCategory, string[]>> =
   // are searched; the category-path filter below keeps them from bleeding into each other.
   audio: ['https://www.samsung.com/sa_en/vd-sitemap.xml', 'https://www.samsung.com/sa_en/im-sitemap.xml'],
   appliance: ['https://www.samsung.com/sa_en/da-sitemap.xml'],
+  // Samsung KSA official catalog closure mission (2026-09-12): vacuum cleaners are a real,
+  // current, standalone consumer line — `da-sitemap.xml` carries 2 genuine PDPs
+  // (`/vacuum-cleaners/stick/bespoke-jet-ai-...`, `/vacuum-cleaners/stick/vs9000rl-...`) plus
+  // one correctly-excluded `/compare/` page. The prior "pure accessory/vacuum lines are
+  // excluded" note below predates this mission's explicit requirement (§9) to cover vacuum
+  // cleaners as a core category — this is a scope correction, not a re-litigation of that
+  // decision. Matches the TPS layer's existing `vacuum` category (category-registry.ts).
+  vacuum: ['https://www.samsung.com/sa_en/da-sitemap.xml'],
 };
 
 /**
@@ -189,8 +197,10 @@ const SAMSUNG_SITEMAPS_BY_CATEGORY: Partial<Record<ProductCategory, string[]>> =
  * `smartphone` returned Galaxy Buds — `audio-sound` sorts before `smartphones` alphabetically).
  * One path-segment allowlist per category line, so each request only ever sees its own line.
  * appliance is bounded to the residential lines the platform's categories cover — commercial
- * `system-air-conditioners` and pure accessory/vacuum lines are excluded, same bounded-category
- * pattern as `NextjsSsrConfig.categoryKeywords` (ADR-179/219).
+ * `system-air-conditioners` (VRF/ducted building systems, not consumer) is deliberately
+ * excluded, same bounded-category pattern as `NextjsSsrConfig.categoryKeywords`
+ * (ADR-179/219). Vacuum cleaners get their own `vacuum` line (added 2026-09-12) rather than
+ * folding into `appliance` — a separate TPS category already exists for it.
  */
 const CATEGORY_PATH_FILTERS: Partial<Record<ProductCategory, RegExp>> = {
   smartphone: /\/smartphones\//i,
@@ -201,7 +211,49 @@ const CATEGORY_PATH_FILTERS: Partial<Record<ProductCategory, RegExp>> = {
   audio: /\/(audio-devices|audio-sound\/galaxy-buds)\//i,
   appliance: /\/(air-conditioners|home-appliances|washers-and-dryers|refrigerators|dishwashers|cooking-appliances|microwave-ovens)\//i,
   accessories: /\/(mobile-accessories|tv-accessories|home-appliance-accessories|display-accessories|projector-accessories|audio-accessories)\//i,
+  vacuum: /\/vacuum-cleaners\//i,
 };
+
+// Samsung KSA official-catalog closure mission (2026-09-12): only HIGH-VALUE standalone
+// accessories are worth ingesting now (founder-named examples: SmartTag, standalone S Pen —
+// Galaxy Buds are already a genuine separate `audio` line, not filtered here). All 378 of
+// Samsung's `mobile-accessories` sitemap URLs pass the path filter above, and the great
+// majority are exactly the low-value long-tail the mission says must not consume it (cases,
+// chargers, cables, screen protectors). Filtered by name at the URL-slug level — cheap,
+// avoids fetching hundreds of PDPs to find ~23 that matter — not a full accessory-catalog
+// ingestion. Broader accessory expansion (cases, chargers, etc.) is out of scope, unchanged.
+const HIGH_VALUE_ACCESSORY_SLUG = /\/mobile-accessories\/.*(smarttag|s-pen)/i;
+
+/**
+ * All of Samsung's `mobile-accessories` PDP URLs are exactly 3 path segments
+ * (`/sa_en/mobile-accessories/PRODUCT-SLUG/`), one shallower than every other category's
+ * `/sa_en/CATEGORY/FAMILY/PRODUCT-SLUG/` shape. `isSamsungKsaProductUrl`'s `parts.length < 4`
+ * check was silently rejecting ALL of them — including the founder-named high-value
+ * standalone accessories (SmartTag, S Pen) — found while re-auditing source coverage for
+ * this mission. Every one of the 378 sampled terminals is a genuine product slug (verified:
+ * none match a generic/index word), so relaxing to 3 segments specifically for `accessories`
+ * carries negligible false-positive risk; every other category keeps its 4-segment floor.
+ */
+function isSamsungKsaProductUrl(url: string, category?: ProductCategory): boolean {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return false;
+  }
+
+  if (!/samsung\.com$/i.test(parsed.hostname)) return false;
+  const parts = parsed.pathname.split('/').filter(Boolean);
+  const minSegments = category === 'accessories' ? 3 : 4;
+  if (parts.length < minSegments) return false;
+  if (parts[0].toLowerCase() !== 'sa_en') return false;
+
+  const terminal = parts[parts.length - 1].toLowerCase();
+  if (!terminal || NON_PRODUCT_SLUGS.has(terminal)) return false;
+  if (terminal.startsWith('all-') || terminal.startsWith('see-all')) return false;
+
+  return true;
+}
 
 async function fetchSamsungSitemapUrls(category: ProductCategory): Promise<string[]> {
   const sitemapUrls = SAMSUNG_SITEMAPS_BY_CATEGORY[category] ?? [];
@@ -212,8 +264,9 @@ async function fetchSamsungSitemapUrls(category: ProductCategory): Promise<strin
     const xml = await fetchXml(sitemapUrl);
     for (const loc of extractLocs(xml)) {
       const cleaned = loc.replace(/["\\\s]+$/, '').trim();
-      if (!isSamsungKsaProductUrl(cleaned)) continue;
+      if (!isSamsungKsaProductUrl(cleaned, category)) continue;
       if (pathFilter && !pathFilter.test(cleaned)) continue;
+      if (category === 'accessories' && !HIGH_VALUE_ACCESSORY_SLUG.test(cleaned)) continue;
       urlSet.add(cleaned);
     }
   }
@@ -248,26 +301,6 @@ const NON_PRODUCT_SLUGS = new Set([
   'see-all',
   'index',
 ]);
-
-function isSamsungKsaProductUrl(url: string): boolean {
-  let parsed: URL;
-  try {
-    parsed = new URL(url);
-  } catch {
-    return false;
-  }
-
-  if (!/samsung\.com$/i.test(parsed.hostname)) return false;
-  const parts = parsed.pathname.split('/').filter(Boolean);
-  if (parts.length < 4) return false;
-  if (parts[0].toLowerCase() !== 'sa_en') return false;
-
-  const terminal = parts[parts.length - 1].toLowerCase();
-  if (!terminal || NON_PRODUCT_SLUGS.has(terminal)) return false;
-  if (terminal.startsWith('all-') || terminal.startsWith('see-all')) return false;
-
-  return true;
-}
 
 function findProductJsonLd($: cheerio.CheerioAPI): Record<string, unknown> | null {
   const scripts = $('script[type="application/ld+json"]');

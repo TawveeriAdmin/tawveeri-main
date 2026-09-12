@@ -340,7 +340,15 @@ const INGEST_CATEGORIES = {
   // against production: 62 distinct products total, 0 new since 2026-08-17, category counts
   // 0 smartphone / 0 tablet / 19 audio / 10 tv / 2 appliance despite Samsung's own sitemap
   // holding 165 smartphone + 197 tablet + 140 tv + 144 monitor + 45 watch URLs.
-  samsung_ksa: ['smartphone', 'tablet', 'tv', 'monitor', 'audio', 'appliance', 'wearable'],
+  // 'vacuum' added (Samsung KSA official-catalog closure mission, 2026-09-12): da-sitemap.xml
+  // carries 2 genuine current vacuum-cleaner PDPs, previously excluded on purpose (see the old
+  // note in samsung-ksa-scraper.ts) — corrected now that vacuum is an explicit required
+  // category. Maps to the TPS layer's existing `vacuum` category, no new plugin needed.
+  // 'accessories' added same mission: was never scheduled at all (0 accessory discovery ever
+  // ran) — the scraper now name-filters this down to only the founder-named high-value
+  // standalone items (SmartTag, S Pen; Galaxy Buds already ingest via `audio`), not the full
+  // 378-URL accessory catalog.
+  samsung_ksa: ['smartphone', 'tablet', 'tv', 'monitor', 'audio', 'appliance', 'wearable', 'vacuum', 'accessories'],
   // swsg (Sheta & Saif) activated 2026-08-02. Its catalogue is appliances/kitchen-led;
   // `tv` is included because that is where cross-retailer overlap actually exists.
   swsg: ['tv', 'appliance', 'kitchen', 'smartphone'],
