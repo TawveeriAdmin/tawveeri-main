@@ -46,6 +46,7 @@ function fakeSupabase(tables: FakeTables, rpcCalls: Record<string, unknown>[][])
       select: chain(() => {}),
       eq: chain((col: string, v: unknown) => { filtered = filtered.filter((r) => (r as Record<string, unknown>)[col] === v); }),
       in: chain((col: string, vs: unknown[]) => { const s = new Set(vs); filtered = filtered.filter((r) => s.has((r as Record<string, unknown>)[col])); }),
+      not: chain((col: string, op: string, v: unknown) => { if (op === "is" && v === null) filtered = filtered.filter((r) => (r as Record<string, unknown>)[col] != null); }),
       order: chain(() => {}),
       range: chain((f: number, t: number) => { from = f; to = t; }),
       upsert: () => Promise.resolve({ data: null, error: null }),

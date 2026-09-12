@@ -14,6 +14,7 @@ import { TPS_MAX_OBSERVATIONS } from "./tps-batch";
 import { isValidGtin } from "../../src/lib/enrichment/icecat";
 import { isAccessoryOnlyAudioTitle } from "../../src/lib/scraping/utils/category-utils";
 import { assessPriceTransition } from "../../src/lib/intelligence/price-truth-gate";
+import { fetchAllPaginated } from "../../src/lib/database/paginated-fetch";
 
 function stableUuid(seed: string): string {
   const h = createHash("sha256").update(seed).digest("hex");
@@ -198,7 +199,7 @@ export async function normalizeSweep(sb: SupabaseClient, defs: CategoryDef[], li
   return m;
 }
 
-export interface CorroborateMetrics { keysConsidered: number; corroborated: number; singleStore: number; canonicalsWritten: number; normalized: number; matches: number; prices: number; priceTransitionsRejected: number; }
+export interface CorroborateMetrics { keysConsidered: number; corroborated: number; singleStore: number; canonicalsWritten: number; normalized: number; matches: number; prices: number; priceTransitionsRejected: number; pairDeferred: number; }
 
 export interface CorroborateOpts {
   singleStore?: boolean; // singleStore=true writes the resolved-single (Layer 2, has_comparison=false) products
@@ -216,7 +217,7 @@ export interface CorroborateOpts {
 //    known identity, one offer, comparison_available=false). Both via
 //    write_ac_batch. Idempotent; only touched keys are (re)written per run. ──
 export async function corroboratePass(sb: SupabaseClient, def: CategoryDef, touchedKeys: string[], opts: CorroborateOpts = {}): Promise<CorroborateMetrics> {
-  const R: CorroborateMetrics = { keysConsidered: touchedKeys.length, corroborated: 0, singleStore: 0, canonicalsWritten: 0, normalized: 0, matches: 0, prices: 0, priceTransitionsRejected: 0 };
+  const R: CorroborateMetrics = { keysConsidered: touchedKeys.length, corroborated: 0, singleStore: 0, canonicalsWritten: 0, normalized: 0, matches: 0, prices: 0, priceTransitionsRejected: 0, pairDeferred: 0 };
   if (!touchedKeys.length) return R;
   const single = !!opts.singleStore;
 
@@ -355,6 +356,53 @@ export async function corroboratePass(sb: SupabaseClient, def: CategoryDef, touc
     }
   }
 
+  // BRAND+MODEL COLLISION GUARD (2026-09-12, Samsung KSA global closure mission).
+  // `canonical_products_brand_model_number_idx` is a GLOBAL unique index on
+  // (category, brand, model_number). write-resolved-single.ts already guards its OWN
+  // single-store candidates against it (first found on `laptop`, ADR-241/2841-class
+  // defect) — but THIS function is also the primary multi-store/corroborated write path
+  // that normalize-incremental.ts's runSweepUnit calls every hour via the "normalize"
+  // step, and it never had the same guard. PROVEN live via the production debug endpoint
+  // (2026-09-12, GET /api/debug/scheduler): `write_ac_batch(microwave): duplicate key
+  // value violates ... canonical_products_brand_model_number_idx` FATALs this step on
+  // repeated hourly runs, aborting the ENTIRE refresh chain downstream (resolved-single,
+  // storefront-link, projection, presentation, search, edges all SKIP every time) — this
+  // was mischaracterized as a scheduling/throughput anomaly across three prior sessions;
+  // it is this exact unguarded crash. Same policy as the existing guard: defer, never
+  // force. A genuinely new canonical whose (brand, model) pair already belongs to a
+  // DIFFERENT identity is skipped THIS run (left unwritten, retried next run) rather than
+  // crashing every other category's progress in the same hourly batch.
+  //
+  // Full set required (fetchAllPaginated, not a bare .limit()) — CLAUDE.md's ADR-172
+  // pagination rule: a truncated set here would let real collisions slip through
+  // unfiltered, recreating the exact crash this guard exists to prevent. ~4k rows today.
+  const takenPair = new Set<string>(
+    (
+      await fetchAllPaginated<{ brand: string | null; model_number: string | null }>((from, to) =>
+        sb
+          .from("canonical_products")
+          .select("brand, model_number")
+          .not("model_number", "is", null)
+          .order("id")
+          .range(from, to),
+      )
+    ).map((r) => `${(r.brand ?? "").toLowerCase()}|${r.model_number}`),
+  );
+
+  // SAME DEFECT CLASS, A SECOND GLOBAL UNIQUE INDEX (found running the one-time recovery
+  // for the guard above): `idx_canonical_products_name_brand_unique` on
+  // (lower(trim(name_ar)), lower(trim(brand))) — DB-owner-applied, not in scripts/database/,
+  // discovered live when `write_ac_batch(mobile)` FATALed on it (a "Samsung Galaxy Z Flip7"
+  // observation whose computed name_ar+brand pair already belonged to a different identity —
+  // e.g. a "Renewed" variant keyed separately). Same policy: defer, never force.
+  const takenNameBrand = new Set<string>(
+    (
+      await fetchAllPaginated<{ name_ar: string | null; brand: string | null }>((from, to) =>
+        sb.from("canonical_products").select("name_ar, brand").order("id").range(from, to),
+      )
+    ).map((r) => `${(r.name_ar ?? "").trim().toLowerCase()}|${(r.brand ?? "").trim().toLowerCase()}`),
+  );
+
   const now = new Date().toISOString();
   const canonicalRows: Record<string, unknown>[] = [], normalizedRows: Record<string, unknown>[] = [], matchRows: Record<string, unknown>[] = [], priceRows: Record<string, unknown>[] = [], canonicalIds: string[] = [];
   const implausibilitySignalRows: Record<string, unknown>[] = [];
@@ -406,6 +454,24 @@ export async function corroboratePass(sb: SupabaseClient, def: CategoryDef, touc
     // one-time incident (`canonical_products.created_at` spread across 5+ days). `isNewCanonical`
     // is this sweep's ONLY explicit signal that a founding price event is still owed.
     const isNewCanonical = !existing;
+    const parts = key.split("|");
+    const isPrimary = parts[1]?.startsWith("MODEL:");
+    const rep = offers[0].payload || {};
+    const { nameAr, nameEn } = def.names(key, rep);
+    // See the takenPair/takenNameBrand guards' header comments above this loop. Only a
+    // genuinely NEW canonical can create a fresh pair on either global unique index — an
+    // existing canonical being re-touched already owns whatever pair(s) it has, so neither
+    // check ever blocks it.
+    if (isNewCanonical) {
+      if (isPrimary) {
+        const pairKey = `${parts[0].toLowerCase()}|${parts[1].slice(6)}`;
+        if (takenPair.has(pairKey)) { R.pairDeferred++; continue; }
+        takenPair.add(pairKey);
+      }
+      const nameBrandKey = `${nameAr.trim().toLowerCase()}|${parts[0].toLowerCase()}`;
+      if (takenNameBrand.has(nameBrandKey)) { R.pairDeferred++; continue; }
+      takenNameBrand.add(nameBrandKey);
+    }
     const canonicalId = existing?.id ?? stableUuid(def.canonSeed(key)); canonicalIds.push(canonicalId);
     // MEASURED DEFECT (2026-09-07, Amazon AC normalization-drop mission): a rejected price
     // transition's signal references `canonicalId` — for a brand-new (isNewCanonical) key
@@ -436,10 +502,6 @@ export async function corroboratePass(sb: SupabaseClient, def: CategoryDef, touc
         });
       }
     }
-    const rep = offers[0].payload || {};
-    const { nameAr, nameEn } = def.names(key, rep);
-    const parts = key.split("|");
-    const isPrimary = parts[1]?.startsWith("MODEL:");
     const groupConf = single
       ? Math.min(75, Math.round(offers.reduce((a, b) => a + (b.confidence || 0), 0) / offers.length))
       : Math.min(95, Math.round(offers.reduce((a, b) => a + (b.confidence || 0), 0) / offers.length) + 5);
@@ -613,6 +675,7 @@ export async function runSweepUnit(sb: SupabaseClient, defs: CategoryDef[], limi
         matches: multi.matches + singles.matches,
         prices: multi.prices + singles.prices,
         priceTransitionsRejected: multi.priceTransitionsRejected + singles.priceTransitionsRejected,
+        pairDeferred: multi.pairDeferred + singles.pairDeferred,
       };
     }
   }
