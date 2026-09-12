@@ -332,7 +332,15 @@ const INGEST_FIRST_DELAY_MS = parseInt(process.env.INGEST_FIRST_DELAY_MS || Stri
 // Broad category buckets each store's cron scraper knows how to crawl.
 const INGEST_CATEGORIES = {
   shaker: ['tv', 'appliance', 'kitchen'],
-  samsung_ksa: ['tv', 'mobile'],
+  // CORRECTED (Samsung KSA recovery mission, 2026-09-12): 'mobile' is the CANONICAL/TPS-plane
+  // category name (ADR-017); the scraper's own category→sitemap map uses the SEARCH/UI-plane
+  // name 'smartphone'. Every scheduled "mobile" discovery call therefore matched nothing and
+  // returned 0 products, silently, since ADR-082 (2026-07-24) — Samsung's phones and tablets
+  // (never previously requested at all) had zero scheduled discovery for 7 weeks. Verified live
+  // against production: 62 distinct products total, 0 new since 2026-08-17, category counts
+  // 0 smartphone / 0 tablet / 19 audio / 10 tv / 2 appliance despite Samsung's own sitemap
+  // holding 165 smartphone + 197 tablet + 140 tv + 144 monitor + 45 watch URLs.
+  samsung_ksa: ['smartphone', 'tablet', 'tv', 'monitor', 'audio', 'appliance', 'wearable'],
   // swsg (Sheta & Saif) activated 2026-08-02. Its catalogue is appliances/kitchen-led;
   // `tv` is included because that is where cross-retailer overlap actually exists.
   swsg: ['tv', 'appliance', 'kitchen', 'smartphone'],
@@ -450,7 +458,19 @@ async function runDiscovery() {
   try {
     for (const slug of INGEST_STORES) {
       for (const cat of (INGEST_CATEGORIES[slug] || ['tv'])) {
-        const r = await cronPost('/api/cron/discover-products', { store_slug: slug, category: cat, max_pages: 2 });
+        // SAMSUNG_KSA OVERRIDE (2026-09-12): discoverProducts slices the first
+        // maxPages*12 URLs off a freshly re-sorted sitemap list every run, with no
+        // persisted cursor — so the default max_pages=2 (24) permanently re-fetches the
+        // SAME first 24 URLs forever and can never grow past them. Samsung's own site is
+        // free to crawl (own-site SSR+JSON-LD, no paid API, unlike Noon's Apify path), and
+        // every real category line is well under 200 URLs (measured live: tablets 197 is
+        // the largest), so a bounded max_pages high enough to cover a whole line in one
+        // pass converges to full category coverage instead of a frozen partial slice.
+        // Reversible: SAMSUNG_DISCOVERY_MAX_PAGES=2 restores the old (broken) ceiling.
+        const maxPages = slug === 'samsung_ksa'
+          ? parseInt(process.env.SAMSUNG_DISCOVERY_MAX_PAGES || '18', 10)
+          : 2;
+        const r = await cronPost('/api/cron/discover-products', { store_slug: slug, category: cat, max_pages: maxPages });
         if (r) console.log(`[ingest] discovery ${slug}/${cat}: discovered=${r.products_discovered} created=${r.products_created} linked=${r.products_linked}`);
         await sleep(STAGGER_MS);
       }

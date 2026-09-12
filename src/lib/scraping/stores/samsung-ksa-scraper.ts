@@ -167,23 +167,50 @@ import type * as cheerio from 'cheerio';
 const SAMSUNG_SITEMAPS_BY_CATEGORY: Partial<Record<ProductCategory, string[]>> = {
   smartphone: ['https://www.samsung.com/sa_en/im-sitemap.xml'],
   tablet: ['https://www.samsung.com/sa_en/im-sitemap.xml'],
+  wearable: ['https://www.samsung.com/sa_en/im-sitemap.xml'],
   accessories: ['https://www.samsung.com/sa_en/im-sitemap.xml'],
   tv: ['https://www.samsung.com/sa_en/vd-sitemap.xml'],
+  monitor: ['https://www.samsung.com/sa_en/vd-sitemap.xml'],
   audio: ['https://www.samsung.com/sa_en/vd-sitemap.xml'],
   appliance: ['https://www.samsung.com/sa_en/da-sitemap.xml'],
 };
 
+/**
+ * Samsung shares ONE sitemap file across several unrelated product lines (im-sitemap.xml
+ * alone mixes smartphones/tablets/watches/rings/mobile-accessories under one file — measured
+ * live: 165 smartphone URLs, 197 tablet, 45 watch, 35 ring, 378 mobile-accessories, all in the
+ * same 839-URL document). `isSamsungKsaProductUrl` only checks that a URL is SHAPED like a
+ * product page — without this filter, `discoverProducts`'s alphabetical slice returns whatever
+ * sorts first in the shared file, which is never actually "smartphones" (e.g. requesting
+ * `smartphone` returned Galaxy Buds — `audio-sound` sorts before `smartphones` alphabetically).
+ * One path-segment allowlist per category line, so each request only ever sees its own line.
+ * appliance is bounded to the residential lines the platform's categories cover — commercial
+ * `system-air-conditioners` and pure accessory/vacuum lines are excluded, same bounded-category
+ * pattern as `NextjsSsrConfig.categoryKeywords` (ADR-179/219).
+ */
+const CATEGORY_PATH_FILTERS: Partial<Record<ProductCategory, RegExp>> = {
+  smartphone: /\/smartphones\//i,
+  tablet: /\/tablets\//i,
+  wearable: /\/(watches|rings)\//i,
+  tv: /\/(tvs|lifestyle-tvs|commercial-tvs)\//i,
+  monitor: /\/monitors\//i,
+  audio: /\/audio-devices\//i,
+  appliance: /\/(air-conditioners|home-appliances|washers-and-dryers|refrigerators|dishwashers|cooking-appliances|microwave-ovens)\//i,
+  accessories: /\/(mobile-accessories|tv-accessories|home-appliance-accessories|display-accessories|projector-accessories|audio-accessories)\//i,
+};
+
 async function fetchSamsungSitemapUrls(category: ProductCategory): Promise<string[]> {
   const sitemapUrls = SAMSUNG_SITEMAPS_BY_CATEGORY[category] ?? [];
+  const pathFilter = CATEGORY_PATH_FILTERS[category];
   const urlSet = new Set<string>();
 
   for (const sitemapUrl of sitemapUrls) {
     const xml = await fetchXml(sitemapUrl);
     for (const loc of extractLocs(xml)) {
       const cleaned = loc.replace(/["\\\s]+$/, '').trim();
-      if (isSamsungKsaProductUrl(cleaned)) {
-        urlSet.add(cleaned);
-      }
+      if (!isSamsungKsaProductUrl(cleaned)) continue;
+      if (pathFilter && !pathFilter.test(cleaned)) continue;
+      urlSet.add(cleaned);
     }
   }
 
