@@ -99,13 +99,22 @@ function startIntelligenceScheduler() {
       stdio: ['ignore', 'pipe', 'pipe'],
       env: process.env,
     });
+    // OBSERVABILITY (Samsung KSA global closure mission, 2026-09-12): the child's stdio was
+    // captured ONLY into these in-memory globals, never forwarded to the parent's own
+    // stdout/stderr — so `railway logs` never showed a single `[scheduler]`/`[refresh]`/
+    // `[governor]` line, and three prior sessions independently concluded "no Railway log
+    // access" for a mystery that GET /api/debug/scheduler could answer the whole time (see
+    // ADR-344). Also write straight through to the parent's own stdio so Railway's log
+    // stream captures it going forward — the 2000-char capped globals stay as the
+    // zero-Railway-access fallback, this is additive, not a replacement.
     const gg = globalThis as Record<string, unknown>;
-    const capture = (key: string) => (buf: Buffer) => {
+    const capture = (key: string, mirror: NodeJS.WritableStream) => (buf: Buffer) => {
       const prev = (gg[key] as string) || '';
       gg[key] = (prev + buf.toString()).slice(-2000);
+      mirror.write(buf);
     };
-    child.stdout?.on('data', capture('__tawveeriSchedulerStdout'));
-    child.stderr?.on('data', capture('__tawveeriSchedulerStderr'));
+    child.stdout?.on('data', capture('__tawveeriSchedulerStdout', process.stdout));
+    child.stderr?.on('data', capture('__tawveeriSchedulerStderr', process.stderr));
     child.on('exit', (code, signal) => {
       gg.__tawveeriSchedulerExit = { code, signal, at: new Date().toISOString() };
     });
