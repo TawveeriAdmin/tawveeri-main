@@ -140,10 +140,17 @@ export class ProductMatcher {
   }
 
   /**
-   * Normalize text for matching (lowercase, remove special chars)
+   * Normalize text for matching (lowercase, remove special chars).
+   *
+   * Defensive null-safety (Samsung KSA official-catalog closure mission, 2026-09-12):
+   * generic, shared matching code — callers pass DB-row `brand`/`model` values through
+   * (e.g. `matchByBrandModel`'s exact-match `.find()`), and those columns are nullable in
+   * production regardless of what a narrower call-site type may claim. Missing text
+   * normalizes to '', which can never falsely equal a real (always non-empty) scraped
+   * value it's compared against — never a false match, never a crash.
    */
-  normalizeForMatching(text: string): string {
-    return text
+  normalizeForMatching(text: string | null | undefined): string {
+    return (text ?? '')
       .toLowerCase()
       .trim()
       .replace(/[^\w\s]/g, '')

@@ -71,33 +71,50 @@ export function extractKeyFeatures(name: string): string[] {
 /**
  * Match two products and return similarity score
  */
+// Samsung KSA official-catalog closure mission (2026-09-12, ADR pending): `brand`/`model`
+// are typed as required `string` here, but the real callers pass a DB row's `products.brand`
+// / `products.model` straight through — and live production data has null values in both,
+// found live when Samsung's recovery run crashed on "Cannot read properties of null (reading
+// 'toLowerCase')" for every product whose fuzzy-match candidate pool included an existing
+// row with model=null (`ProductMatcher.fuzzyMatch`'s `.ilike('brand', ...)` prefilter has no
+// model condition, so null-model rows are never excluded before reaching here). This is
+// GENERIC matching code shared by every merchant, not Samsung-specific — the fix widens the
+// accepted type to what production actually sends and is null-safe for ANY caller, never
+// merchant-specific. Confirmed with the fuzzy-matcher.test.ts regression suite.
 export function matchProducts(
-  name1: string,
-  brand1: string,
-  model1: string,
-  name2: string,
-  brand2: string,
-  model2: string
+  name1: string | null | undefined,
+  brand1: string | null | undefined,
+  model1: string | null | undefined,
+  name2: string | null | undefined,
+  brand2: string | null | undefined,
+  model2: string | null | undefined
 ): number {
   // Normalize inputs
-  const normName1 = normalizeProductName(name1);
-  const normName2 = normalizeProductName(name2);
-  const normBrand1 = brand1.toLowerCase().trim();
-  const normBrand2 = brand2.toLowerCase().trim();
-  const normModel1 = model1.toLowerCase().trim();
-  const normModel2 = model2.toLowerCase().trim();
+  const normName1 = normalizeProductName(name1 ?? '');
+  const normName2 = normalizeProductName(name2 ?? '');
+  const normBrand1 = (brand1 ?? '').toLowerCase().trim();
+  const normBrand2 = (brand2 ?? '').toLowerCase().trim();
 
-  // Brand must match (exact)
-  if (normBrand1 !== normBrand2) {
+  // Brand must match (exact). An empty/missing brand on either side is UNKNOWN, not a
+  // wildcard — required so two products that both happen to lack a brand never tie on that
+  // alone (the founder's own "missing must not create a false match" invariant, applied here
+  // too since it is the same defect class as the model case below).
+  if (!normBrand1 || !normBrand2 || normBrand1 !== normBrand2) {
     return 0;
   }
 
-  // Model similarity
-  const modelSimilarity = calculateSimilarity(normModel1, normModel2);
-  
+  // Model similarity. UNKNOWN != EQUAL: a missing model on either side contributes ZERO
+  // similarity, never a perfect one — `calculateSimilarity('', '')` returns 1 by its own
+  // contract (maxLength===0), which would otherwise let two DIFFERENT products that both
+  // simply lack a parsed model tie on a fabricated "100% model match" and silently merge.
+  // A present model still compares normally, unaffected.
+  const rawModel1 = (model1 ?? '').toLowerCase().trim();
+  const rawModel2 = (model2 ?? '').toLowerCase().trim();
+  const modelSimilarity = (rawModel1 && rawModel2) ? calculateSimilarity(rawModel1, rawModel2) : 0;
+
   // Name similarity
   const nameSimilarity = calculateSimilarity(normName1, normName2);
-  
+
   // Feature-based similarity
   const features1 = extractKeyFeatures(normName1);
   const features2 = extractKeyFeatures(normName2);
