@@ -171,7 +171,11 @@ const SAMSUNG_SITEMAPS_BY_CATEGORY: Partial<Record<ProductCategory, string[]>> =
   accessories: ['https://www.samsung.com/sa_en/im-sitemap.xml'],
   tv: ['https://www.samsung.com/sa_en/vd-sitemap.xml'],
   monitor: ['https://www.samsung.com/sa_en/vd-sitemap.xml'],
-  audio: ['https://www.samsung.com/sa_en/vd-sitemap.xml'],
+  // Galaxy Buds are genuine standalone earbud PRODUCTS, not accessories — they live under
+  // im-sitemap.xml's `/audio-sound/galaxy-buds/` (4 path segments, already shape-valid),
+  // separate from vd-sitemap.xml's `/audio-devices/` (soundbars/sound towers). Both sitemaps
+  // are searched; the category-path filter below keeps them from bleeding into each other.
+  audio: ['https://www.samsung.com/sa_en/vd-sitemap.xml', 'https://www.samsung.com/sa_en/im-sitemap.xml'],
   appliance: ['https://www.samsung.com/sa_en/da-sitemap.xml'],
 };
 
@@ -194,7 +198,7 @@ const CATEGORY_PATH_FILTERS: Partial<Record<ProductCategory, RegExp>> = {
   wearable: /\/(watches|rings)\//i,
   tv: /\/(tvs|lifestyle-tvs|commercial-tvs)\//i,
   monitor: /\/monitors\//i,
-  audio: /\/audio-devices\//i,
+  audio: /\/(audio-devices|audio-sound\/galaxy-buds)\//i,
   appliance: /\/(air-conditioners|home-appliances|washers-and-dryers|refrigerators|dishwashers|cooking-appliances|microwave-ovens)\//i,
   accessories: /\/(mobile-accessories|tv-accessories|home-appliance-accessories|display-accessories|projector-accessories|audio-accessories)\//i,
 };
