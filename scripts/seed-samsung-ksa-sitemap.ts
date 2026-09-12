@@ -24,6 +24,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as dotenv from 'dotenv';
+import { Client } from 'pg';
 
 dotenv.config({ path: path.join(__dirname, '..', '.env.local') });
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
@@ -31,6 +32,62 @@ dotenv.config({ path: path.join(__dirname, '..', '.env') });
 if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
   console.error('Missing Supabase env vars. Expected NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY in .env');
   process.exit(1);
+}
+
+// SINGLETON GUARD (Samsung KSA official-catalog closure mission, 2026-09-12, founder-
+// authorized incident response). A `TaskStop` on this script's own harness task was found to
+// NOT reliably terminate its underlying OS process tree on this platform (npx/tsx spawns a
+// multi-process chain whose members are not all descendants of the tracked root — verified
+// directly via `Get-CimInstance Win32_Process`), which let THREE copies of this exact script
+// run concurrently for a meaningful stretch, racing to write the same shared checkpoint file
+// and to scrape the same URLs. The fix does not depend on the external task harness at all —
+// it is a database-level guard, so a second invocation refuses to start safely no matter what
+// launched it (a stray shell, a retried CI step, a future scheduled trigger).
+//
+// A Postgres session-level advisory lock is the smallest robust mechanism for this: one
+// atomic `pg_try_advisory_lock()` call, no schema migration, no new table, and it is held by
+// the DATABASE CONNECTION itself — if this process crashes or is killed outright (not just
+// asked to stop), Postgres releases the lock the instant the connection drops, so a future
+// run is never permanently blocked by a dead prior one. Existing `scraping_runs`-based
+// exclusivity was considered and rejected for this purpose: its unique index is scoped to
+// `(schedule_id, job_type) WHERE schedule_id IS NOT NULL` (17-scraping-production-
+// hardening.sql) — a one-time manual script has no `schedule_id`, so that guard does not
+// cover it at all, and the alternative (`hasActiveRun`'s own SELECT-then-decide check) is a
+// classic check-then-act race, not an atomic one — exactly the shape of race that caused this
+// incident in the first place.
+const SAMSUNG_RECOVERY_LOCK_KEY = 'samsung_ksa_full_recovery'; // fed through pg's hashtext() for a stable bigint key
+let lockClient: Client | null = null;
+
+async function acquireSingletonLockOrExit(): Promise<void> {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { toPoolerDbUrl } = require('./tps-core/pooler-url.js') as { toPoolerDbUrl: (raw: string) => string };
+  const dbUrl = process.env.SUPABASE_DB_URL;
+  if (!dbUrl) {
+    console.error('SUPABASE_DB_URL not set — cannot acquire the recovery singleton lock. Refusing to start unguarded.');
+    process.exit(1);
+  }
+  lockClient = new Client({ connectionString: toPoolerDbUrl(dbUrl), ssl: { rejectUnauthorized: false } });
+  await lockClient.connect();
+  const { rows } = await lockClient.query('select pg_try_advisory_lock(hashtext($1)::bigint) as acquired', [SAMSUNG_RECOVERY_LOCK_KEY]);
+  if (!rows[0]?.acquired) {
+    console.error(
+      `[singleton-guard] REFUSED — another Samsung full-recovery instance already holds the lock ` +
+      `(key="${SAMSUNG_RECOVERY_LOCK_KEY}"). This is the exact protection added after the 2026-09-12 ` +
+      `three-concurrent-processes incident. If you are certain no other instance is really running, ` +
+      `the lock releases itself automatically once that connection closes — do not force-clear it.`,
+    );
+    await lockClient.end().catch(() => {});
+    process.exit(1);
+  }
+  console.log(`[singleton-guard] lock acquired (key="${SAMSUNG_RECOVERY_LOCK_KEY}") — this is now the sole recovery instance.`);
+}
+
+async function releaseSingletonLock(): Promise<void> {
+  if (!lockClient) return;
+  try {
+    await lockClient.query('select pg_advisory_unlock(hashtext($1)::bigint)', [SAMSUNG_RECOVERY_LOCK_KEY]);
+  } catch { /* connection may already be gone — the lock releases with it regardless */ }
+  await lockClient.end().catch(() => {});
 }
 
 type SeedState = {
@@ -59,6 +116,8 @@ const SUB_SITEMAPS = [
 ];
 
 async function main(): Promise<void> {
+  await acquireSingletonLockOrExit();
+
   const LIMIT = parseInt(process.env.SEED_LIMIT || '999999', 10);
   const RESET_STATE = (process.env.SEED_RESET_STATE || 'false').toLowerCase() === 'true';
   const STATE_FILE = process.env.SEED_STATE_FILE
@@ -211,6 +270,7 @@ async function main(): Promise<void> {
     + `  cooldowns=${cooldownsHit}  elapsed=${Math.round(elapsed / 60000)}m`
   );
   console.log(`  cursor=${state.cursor} / ${urls.length}  remaining=${Math.max(0, urls.length - state.cursor)}`);
+  await releaseSingletonLock();
 }
 
 // ── Sitemap ────────────────────────────────────────────────────────────────
@@ -326,7 +386,14 @@ function shortUrl(url: string): string {
   }
 }
 
-main().catch((err) => {
+// Best-effort clean release on a fatal error or an interrupt (Ctrl+C / kill) — not required
+// for correctness (Postgres releases the lock the instant this connection drops regardless,
+// crash or clean exit), but avoids holding it a few extra seconds on the common paths.
+process.on('SIGINT', async () => { await releaseSingletonLock(); process.exit(130); });
+process.on('SIGTERM', async () => { await releaseSingletonLock(); process.exit(143); });
+
+main().catch(async (err) => {
   console.error('Fatal error:', err);
+  await releaseSingletonLock();
   process.exit(1);
 });
