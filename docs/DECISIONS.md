@@ -4,6 +4,29 @@
 
 Status legend: **Accepted** · **Superseded** · **Proposed**.
 
+### ADR-341 — Live Samsung outbound incident closed: DCM's redirect service decodes its `url` param ONCE, not twice — a real production defect, found and fixed by live-tracing the endpoint itself, not by trusting a prior "byte-for-byte proven" transcript · Accepted (2026-09-12)
+
+**Context.** Founder-observed production incident: tapping "اذهب إلى سامسونج السعودية" on a real multi-store Samsung product, in mobile Safari, reached `go.urtrackinglink.com` and showed a blank white page — no visible completion to the Samsung destination. Mandated: investigate this FIRST, gate all further Samsung work on it, and explicitly do not trust ADR-339's prior test-fixture proof over real user-journey evidence if they conflict.
+
+**1.1–1.2 Trace.** Confirmed `/go/[offerId]` (`src/app/go/[offerId]/route.ts`) resolves the offer, builds the exit link via the provider framework, and issues a genuine server-side `302` directly to the DCM URL — verified live with a real `normalized_product_observations` row (`store_id='6'`, a Samsung soundbar): `curl -D-` on `https://tawveeri.com/go/<offerId>` returned exactly the expected `Location: https://go.urtrackinglink.com/aff_c?offer_id=1960&aff_id=166088&url=<double-encoded>&source=tawveeri` — Tawveeri's own layer was proven correct and not the fault.
+
+**1.3–1.6 Root cause, proven live, not guessed.** Fetching that exact DCM URL directly (`curl -D- -A "<iPhone Safari UA>"`) showed DCM's redirect service returns a `302` whose `Location` header is **still percent-encoded**: `Location: https%3A%2F%2Fwww.samsung.com%2F...` — not a valid URI a browser can navigate, which is precisely the blank-page symptom (curl following it literally landed on a `404`). Re-tested with the SAME destination **single**-encoded instead of double: DCM correctly substituted its postback macro (`Tracking_id` header + `sid=<real-id>-166088` in the output) and returned a valid, absolute `Location` header that resolved to a genuine `200 OK` Samsung page. **Classification: `ENCODING_DEFECT`.** `PLACEHOLDER_HANDLING = VALID` (once single-encoded — DCM's own macro substitution works correctly). ADR-339's "byte-for-byte reproduced" proof was real but had proven the wrong thing: it matched a copy of the founder's link that had picked up one extra encoding pass somewhere between DCM's dashboard and being pasted into that mission — a transcript-matching test that never actually round-tripped through DCM's live server. This mission's own instruction — real user journey over test fixture — is exactly what caught it.
+
+**1.5 Real-endpoint verification (4 categories, live, 100% pass — no browser automation available in this environment, so the strongest available proxy was used: `curl` with an authentic iPhone Safari UA string following the actual HTTP redirect chain, which is what a browser mechanically does for a plain 302 with no JS/cookie dependency in the chain).**
+
+| Category | Destination | Result |
+|---|---|---|
+| Audio (soundbar) | `audio-devices/soundbar/q600f-black-hw-q600f-sa` | 302 → 200 OK, correct PDP |
+| Appliance (fridge) | `refrigerators/.../brb80f-mono-264l-white-...` | 302 → 200 OK, correct PDP |
+| TV | `lifestyle-tvs/the-frame/75-the-frame-qled-...` | 302 → 200 OK, correct PDP |
+| Smartphone | `smartphones/galaxy-a/galaxy-a07-black-128gb-...` | 302 → 200 OK, correct PDP |
+
+**Fix.** `src/lib/providers/networks/dcm.ts` — single `encodeURIComponent` pass over the destination (was double). One file, no schema change, no ranking/identity/other-retailer impact. `tests/providers/affiliate-framework.test.ts` updated to the live-verified format (23/23 provider tests green).
+
+**SAMSUNG_OUTBOUND_USER_JOURNEY = FIXED_AND_PASS_PROVEN** (pending post-deploy production re-verification, tracked as a same-day follow-up in the next unit). **Founder manual-verification checklist** (since no real iPhone was available this session): open any Samsung multi-store product on tawveeri.com on an actual iPhone, tap the Samsung store CTA, confirm the page lands on the exact Samsung PDP (not a blank page, not the Samsung homepage) within a couple of seconds.
+
+**Consequences.** Every existing Samsung exit link generated before this fix (any click since ADR-339 shipped) was silently broken in real browsers — this was live for approximately 3.5 hours before the founder caught it. No other retailer's affiliate link uses this network or is affected. Not touched: ranking, identity, `/go` analytics/attribution (unchanged), any other provider.
+
 ### ADR-340 — Samsung KSA full-catalog recovery: controlled manual batch (62→450 products), a real Galaxy Buds coverage gap fixed, an unresolved scheduler-continuation anomaly disclosed · Accepted (2026-09-12)
 
 **Context.** Founder mandate: reconcile the prior study's Option-B architecture verdict (accepted) with a separate coverage question — should every current, commercially-valid Samsung KSA product be eligible to exist in Tawveeri even single-store, independent of manufacturer-authority scope. Explicitly out of scope: DCM/affiliate/commission (handled separately, ADR-339).
