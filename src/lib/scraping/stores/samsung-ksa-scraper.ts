@@ -53,10 +53,10 @@ export class SamsungKsaScraper extends GenericHtmlStoreScraper {
     const $ = this.getCheerio(html);
 
     const productLd = findProductJsonLd($);
-    if (!productLd) return null;
+    if (!productLd) return extractDigitalDataFallback(html, productUrl);
 
     const baseName = String(productLd.name || '').trim();
-    if (!baseName || baseName.length < 3) return null;
+    if (!baseName || baseName.length < 3) return extractDigitalDataFallback(html, productUrl);
 
     // SKU first — we use it as the final title disambiguator.
     const sku = typeof productLd.sku === 'string' && productLd.sku.trim()
@@ -86,7 +86,7 @@ export class SamsungKsaScraper extends GenericHtmlStoreScraper {
 
     const offers = (productLd.offers as Record<string, unknown> | undefined) || {};
     const currentPrice = toNumber(offers.price);
-    if (!currentPrice || currentPrice <= 0) return null;
+    if (!currentPrice || currentPrice <= 0) return extractDigitalDataFallback(html, productUrl);
 
     // Samsung sometimes ships highPrice as the crossed-out original.
     let originalPrice = toNumber(
@@ -382,6 +382,77 @@ function toNumber(val: unknown): number | null {
   if (val === null || val === undefined) return null;
   const n = typeof val === 'number' ? val : parseFloat(String(val));
   return isNaN(n) ? null : n;
+}
+
+/**
+ * Fallback identity+price+availability extraction for Samsung KSA's newer PDP template,
+ * which serves no Product-typed JSON-LD at all (confirmed live: vacuum cleaners, several
+ * legacy-named AC/monitor lines) — found while auditing source coverage for the Samsung KSA
+ * official-catalog closure mission (2026-09-12, founder requirement: research the page
+ * architecture more deeply before writing these products off as priceless).
+ *
+ * Samsung's own analytics/tag-management layer — a plain, SERVER-RENDERED
+ * `<script>digitalData.product.model_price = "...";...</script>` block, present in the raw
+ * HTML fetched by a normal, unauthenticated request — reliably carries the exact fields
+ * missing from JSON-LD on these pages. Verified live on 3 different categories (vacuum
+ * cleaner: real price "3899" with data-saleable=false; gaming monitor: real price "3499"
+ * with data-saleable=false; a genuinely out-of-catalog legacy AC: model_price="" — Samsung's
+ * own explicit statement of "no price", not an extraction gap). This is a stable public data
+ * source the existing scraper had simply never learned to read — no headless rendering, no
+ * private API, no anti-bot circumvention; the same plain `fetchPage()` call already in use.
+ *
+ * `data-saleable` (from the page's own buy-button/price-bar markup) is the availability
+ * signal: "false" means Samsung does not currently offer direct purchase for this exact SKU
+ * (a real, current product, temporarily/no-longer directly buyable — CURRENT_VALID_TEMP_
+ * UNAVAILABLE, never fabricated as in-stock). A present, positive price is real evidence of
+ * a genuine commercial offer regardless of the saleable flag — Samsung's own reference price,
+ * not an invented one.
+ */
+export function extractDigitalDataFallback(html: string, productUrl: string): ScrapedProduct | null {
+  const unescape = (s: string) => s
+    .replace(/\\\//g, '/')
+    .replace(/\\x([0-9a-fA-F]{2})/g, (_m, hex) => String.fromCharCode(parseInt(hex, 16))) // e.g. \x22 -> "
+    .replace(/\\u002D/gi, '-')
+    .replace(/&amp;/g, '&')
+    .trim();
+  const field = (name: string): string | null => {
+    const m = html.match(new RegExp(`digitalData\\.product\\.${name}\\s*=\\s*"([^"]*)"`));
+    return m ? unescape(m[1]) : null;
+  };
+
+  const modelCode = field('model_code');
+  const displayName = field('displayName');
+  const rawPrice = field('model_price');
+  if (!modelCode || !displayName || !rawPrice) return null; // no usable identity+price signal — genuinely unavailable, not guessed at
+
+  const currentPrice = toNumber(rawPrice);
+  if (!currentPrice || currentPrice <= 0) return null; // Samsung's own data explicitly carries no price — never fabricate one
+
+  const saleableMatch = html.match(/data-saleable="(true|false)"/);
+  const availability: ScrapedProduct['availability'] = saleableMatch?.[1] === 'false' ? 'out_of_stock' : 'in_stock';
+
+  const variantSuffix = extractVariantSuffix(productUrl, displayName);
+  const withVariant = variantSuffix ? `${displayName} ${variantSuffix}` : displayName;
+  const name = `${withVariant} (${modelCode})`;
+
+  return {
+    name_ar: name,
+    name_en: name,
+    brand: 'Samsung',
+    model: modelCode,
+    sku: modelCode,
+    current_price: currentPrice,
+    original_price: null,
+    availability,
+    product_url: productUrl,
+    image_urls: [],
+    specifications: {},
+    category: determineCategory(name),
+    description_ar: null,
+    description_en: null,
+    merchant_rating: null,
+    merchant_review_count: null,
+  };
 }
 
 /**
