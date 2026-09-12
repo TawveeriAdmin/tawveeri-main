@@ -222,19 +222,27 @@ const CATEGORY_PATH_FILTERS: Partial<Record<ProductCategory, RegExp>> = {
 // chargers, cables, screen protectors). Filtered by name at the URL-slug level — cheap,
 // avoids fetching hundreds of PDPs to find ~23 that matter — not a full accessory-catalog
 // ingestion. Broader accessory expansion (cases, chargers, etc.) is out of scope, unchanged.
-const HIGH_VALUE_ACCESSORY_SLUG = /\/mobile-accessories\/.*(smarttag|s-pen)/i;
+// Exported so scripts/seed-samsung-ksa-sitemap.ts's unified (category-agnostic) sweep can
+// apply the exact same scope decision instead of drifting from it.
+export const HIGH_VALUE_ACCESSORY_SLUG = /\/mobile-accessories\/.*(smarttag|s-pen)/i;
 
 /**
  * All of Samsung's `mobile-accessories` PDP URLs are exactly 3 path segments
  * (`/sa_en/mobile-accessories/PRODUCT-SLUG/`), one shallower than every other category's
- * `/sa_en/CATEGORY/FAMILY/PRODUCT-SLUG/` shape. `isSamsungKsaProductUrl`'s `parts.length < 4`
- * check was silently rejecting ALL of them — including the founder-named high-value
+ * `/sa_en/CATEGORY/FAMILY/PRODUCT-SLUG/` shape. This check used a flat `parts.length < 4`
+ * floor and silently rejected ALL of them — including the founder-named high-value
  * standalone accessories (SmartTag, S Pen) — found while re-auditing source coverage for
  * this mission. Every one of the 378 sampled terminals is a genuine product slug (verified:
- * none match a generic/index word), so relaxing to 3 segments specifically for `accessories`
- * carries negligible false-positive risk; every other category keeps its 4-segment floor.
+ * none match a generic/index word), so detecting the accessory path shape directly (rather
+ * than requiring an explicit category argument neither caller always has — this function is
+ * also reused by the category-agnostic seed script) and relaxing to 3 segments only for it
+ * carries negligible false-positive risk; every other path shape keeps the 4-segment floor.
+ *
+ * Exported (was module-private) so `scripts/seed-samsung-ksa-sitemap.ts` can import this
+ * instead of keeping its own second, independently-drifting copy — the exact defect class
+ * this mission spent most of its time finding elsewhere in the same file.
  */
-function isSamsungKsaProductUrl(url: string, category?: ProductCategory): boolean {
+export function isSamsungKsaProductUrl(url: string): boolean {
   let parsed: URL;
   try {
     parsed = new URL(url);
@@ -244,7 +252,7 @@ function isSamsungKsaProductUrl(url: string, category?: ProductCategory): boolea
 
   if (!/samsung\.com$/i.test(parsed.hostname)) return false;
   const parts = parsed.pathname.split('/').filter(Boolean);
-  const minSegments = category === 'accessories' ? 3 : 4;
+  const minSegments = /\/mobile-accessories\//i.test(parsed.pathname) ? 3 : 4;
   if (parts.length < minSegments) return false;
   if (parts[0].toLowerCase() !== 'sa_en') return false;
 
@@ -264,7 +272,7 @@ async function fetchSamsungSitemapUrls(category: ProductCategory): Promise<strin
     const xml = await fetchXml(sitemapUrl);
     for (const loc of extractLocs(xml)) {
       const cleaned = loc.replace(/["\\\s]+$/, '').trim();
-      if (!isSamsungKsaProductUrl(cleaned, category)) continue;
+      if (!isSamsungKsaProductUrl(cleaned)) continue;
       if (pathFilter && !pathFilter.test(cleaned)) continue;
       if (category === 'accessories' && !HIGH_VALUE_ACCESSORY_SLUG.test(cleaned)) continue;
       urlSet.add(cleaned);

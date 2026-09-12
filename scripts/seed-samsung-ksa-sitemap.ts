@@ -47,12 +47,15 @@ type SeedState = {
   sitemap_fingerprint: string | null;
 };
 
-// Sub-sitemaps that hold actual product URLs. `assorted-sitemap.xml` is
-// marketing/landing pages — skip.
+// Sub-sitemaps that hold actual product URLs. `assorted-sitemap.xml` is overwhelmingly
+// marketing/landing pages — skip (re-audited 2026-09-12, Samsung KSA official-catalog
+// closure mission: 481 URLs, exactly one genuine current standalone product found in it,
+// a projector-class "movable screen" with no matching category plugin — documented, not
+// worth a 4th sitemap fetch + new category support for one SKU).
 const SUB_SITEMAPS = [
-  'https://www.samsung.com/sa_en/im-sitemap.xml',  // ~2.2k: phones, buds, watches, mobile accessories
-  'https://www.samsung.com/sa_en/da-sitemap.xml',  // ~250: ACs, fridges, washers, air care
-  'https://www.samsung.com/sa_en/vd-sitemap.xml',  // ~450: TVs, monitors, audio
+  'https://www.samsung.com/sa_en/im-sitemap.xml',  // ~839: phones, tablets, watches, rings, buds, mobile accessories
+  'https://www.samsung.com/sa_en/da-sitemap.xml',  // ~265: ACs, fridges, washers, vacuum cleaners, air care
+  'https://www.samsung.com/sa_en/vd-sitemap.xml',  // ~396: TVs, monitors, audio
 ];
 
 async function main(): Promise<void> {
@@ -65,7 +68,7 @@ async function main(): Promise<void> {
   const COOLDOWN_MS = parseInt(process.env.SEED_COOLDOWN_MS || '120000', 10);
   const MAX_CONSECUTIVE_NULLS = parseInt(process.env.SEED_MAX_CONSECUTIVE_NULLS || '5', 10);
 
-  const { SamsungKsaScraper } = await import('../src/lib/scraping/stores/samsung-ksa-scraper');
+  const { SamsungKsaScraper, isSamsungKsaProductUrl, HIGH_VALUE_ACCESSORY_SLUG } = await import('../src/lib/scraping/stores/samsung-ksa-scraper');
   const { ProductService } = await import('../src/lib/scraping/services/product-service');
   const { createServerClient } = await import('../src/lib/database');
 
@@ -101,7 +104,7 @@ async function main(): Promise<void> {
 
   if (urls.length === 0) {
     console.log(`[${stamp()}] fetching sitemaps...`);
-    const built = await fetchAllProductUrls(SUB_SITEMAPS);
+    const built = await fetchAllProductUrls(SUB_SITEMAPS, isSamsungKsaProductUrl, HIGH_VALUE_ACCESSORY_SLUG);
     urls = built.urls;
     sitemapFingerprint = built.fingerprint;
     fs.mkdirSync(path.dirname(URL_CACHE_FILE), { recursive: true });
@@ -196,6 +199,8 @@ async function main(): Promise<void> {
 
 async function fetchAllProductUrls(
   submapUrls: string[],
+  isSamsungKsaProductUrl: (url: string) => boolean,
+  HIGH_VALUE_ACCESSORY_SLUG: RegExp,
 ): Promise<{ urls: string[]; fingerprint: string }> {
   const urlSet = new Set<string>();
   let totalSeen = 0;
@@ -210,7 +215,11 @@ async function fetchAllProductUrls(
         // Strip stray trailing quotes / attr-ish garbage we saw in vd-sitemap.
         const cleaned = loc.replace(/["\\\s]+$/, '').trim();
         totalSeen++;
-        if (isSamsungKsaProductUrl(cleaned)) {
+        // mobile-accessories URLs pass the shape check (accessory paths get a 3-segment
+        // floor) but are scoped to only the founder-named high-value items — same policy
+        // as samsung-ksa-scraper.ts's own discovery path, not a full accessory ingestion.
+        const isLowValueAccessory = /\/mobile-accessories\//i.test(cleaned) && !HIGH_VALUE_ACCESSORY_SLUG.test(cleaned);
+        if (isSamsungKsaProductUrl(cleaned) && !isLowValueAccessory) {
           urlSet.add(cleaned);
         } else {
           skippedByPattern++;
@@ -226,38 +235,6 @@ async function fetchAllProductUrls(
   const urls = Array.from(urlSet).sort();
   const fingerprint = `count=${urls.length};first=${urls[0] || ''};last=${urls[urls.length - 1] || ''}`;
   return { urls, fingerprint };
-}
-
-/**
- * Accept only KSA-locale product pages:
- *   /sa_en/<category>/<sub>/<model-slug>/
- *
- * Reject:
- *   - Other locales (/ae/, /us/, /global/ polluting vd-sitemap).
- *   - Category/overview pages (path depth ≤ 3 after locale).
- *   - Known non-product terminals (compare, all-*, tips, learn-about, explore).
- */
-const NON_PRODUCT_SLUGS = new Set([
-  'compare', 'buying-guide', 'tips', 'learn-about', 'explore',
-  'all', 'overview', 'offers', 'see-all', 'index',
-]);
-
-function isSamsungKsaProductUrl(url: string): boolean {
-  let parsed: URL;
-  try {
-    parsed = new URL(url);
-  } catch {
-    return false;
-  }
-  if (!/samsung\.com$/i.test(parsed.hostname)) return false;
-  const parts = parsed.pathname.split('/').filter(Boolean);
-  // Expected shape: [sa_en, <category>, <sub>, <sku-slug>, ...]
-  if (parts.length < 4) return false;
-  if (parts[0].toLowerCase() !== 'sa_en') return false;
-  const terminal = parts[parts.length - 1].toLowerCase();
-  if (!terminal || NON_PRODUCT_SLUGS.has(terminal)) return false;
-  if (terminal.startsWith('all-') || terminal.startsWith('see-all')) return false;
-  return true;
 }
 
 async function httpGet(url: string): Promise<string> {
