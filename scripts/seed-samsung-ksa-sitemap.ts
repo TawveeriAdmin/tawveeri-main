@@ -68,7 +68,7 @@ async function main(): Promise<void> {
   const COOLDOWN_MS = parseInt(process.env.SEED_COOLDOWN_MS || '120000', 10);
   const MAX_CONSECUTIVE_NULLS = parseInt(process.env.SEED_MAX_CONSECUTIVE_NULLS || '5', 10);
 
-  const { SamsungKsaScraper, isSamsungKsaProductUrl, HIGH_VALUE_ACCESSORY_SLUG } = await import('../src/lib/scraping/stores/samsung-ksa-scraper');
+  const { SamsungKsaScraper, isSamsungKsaProductUrl, HIGH_VALUE_ACCESSORY_SLUG, KNOWN_CONSUMER_CATEGORY_PATH } = await import('../src/lib/scraping/stores/samsung-ksa-scraper');
   const { ProductService } = await import('../src/lib/scraping/services/product-service');
   const { createServerClient } = await import('../src/lib/database');
 
@@ -104,7 +104,7 @@ async function main(): Promise<void> {
 
   if (urls.length === 0) {
     console.log(`[${stamp()}] fetching sitemaps...`);
-    const built = await fetchAllProductUrls(SUB_SITEMAPS, isSamsungKsaProductUrl, HIGH_VALUE_ACCESSORY_SLUG);
+    const built = await fetchAllProductUrls(SUB_SITEMAPS, isSamsungKsaProductUrl, HIGH_VALUE_ACCESSORY_SLUG, KNOWN_CONSUMER_CATEGORY_PATH);
     urls = built.urls;
     sitemapFingerprint = built.fingerprint;
     fs.mkdirSync(path.dirname(URL_CACHE_FILE), { recursive: true });
@@ -201,6 +201,7 @@ async function fetchAllProductUrls(
   submapUrls: string[],
   isSamsungKsaProductUrl: (url: string) => boolean,
   HIGH_VALUE_ACCESSORY_SLUG: RegExp,
+  KNOWN_CONSUMER_CATEGORY_PATH: RegExp,
 ): Promise<{ urls: string[]; fingerprint: string }> {
   const urlSet = new Set<string>();
   let totalSeen = 0;
@@ -219,7 +220,7 @@ async function fetchAllProductUrls(
         // floor) but are scoped to only the founder-named high-value items — same policy
         // as samsung-ksa-scraper.ts's own discovery path, not a full accessory ingestion.
         const isLowValueAccessory = /\/mobile-accessories\//i.test(cleaned) && !HIGH_VALUE_ACCESSORY_SLUG.test(cleaned);
-        if (isSamsungKsaProductUrl(cleaned) && !isLowValueAccessory) {
+        if (isSamsungKsaProductUrl(cleaned) && KNOWN_CONSUMER_CATEGORY_PATH.test(cleaned) && !isLowValueAccessory) {
           urlSet.add(cleaned);
         } else {
           skippedByPattern++;

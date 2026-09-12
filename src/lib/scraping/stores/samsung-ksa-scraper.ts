@@ -214,6 +214,25 @@ const CATEGORY_PATH_FILTERS: Partial<Record<ProductCategory, RegExp>> = {
   vacuum: /\/vacuum-cleaners\//i,
 };
 
+/**
+ * Every consumer category path recognized above, OR'd into one regex. Exported so
+ * `scripts/seed-samsung-ksa-sitemap.ts`'s unified (category-agnostic) sweep can require a
+ * URL match a KNOWN consumer line, not merely be shape-valid — shape alone cannot tell a
+ * residential `/air-conditioners/` PDP from a commercial `/system-air-conditioners/` one
+ * (both are genuine 4-segment PDPs). Found live (2026-09-12): the seed script's first run
+ * pulled in 68 `system-air-conditioners` (VRF/ducted building systems) and 11
+ * `smart-signage` (B2B commercial displays) URLs — both correctly excluded from the
+ * per-category discovery path via `CATEGORY_PATH_FILTERS.appliance`'s allowlist, but the
+ * seed script had no equivalent scope check at all, only the shape check. Caught before any
+ * of those rows were written (state file checkpoints every 25; the run was stopped at
+ * cursor=1). One allowlist, reused by both entry points — this is the same "two independent
+ * copies drift" defect class this mission repeatedly found elsewhere in this file.
+ */
+export const KNOWN_CONSUMER_CATEGORY_PATH = new RegExp(
+  Object.values(CATEGORY_PATH_FILTERS).filter((r): r is RegExp => r != null).map((r) => r.source).join('|'),
+  'i',
+);
+
 // Samsung KSA official-catalog closure mission (2026-09-12): only HIGH-VALUE standalone
 // accessories are worth ingesting now (founder-named examples: SmartTag, standalone S Pen —
 // Galaxy Buds are already a genuine separate `audio` line, not filtered here). All 378 of
