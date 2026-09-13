@@ -35,23 +35,27 @@ async function main() {
     detectedCategory: string | null;
     productionIdentityKey: string | null;
     productionStatus: string | null;
+    currentPrice: number | null;
   }> = [];
 
   for (let i = 0; i < urls.length; i++) {
     const url = urls[i];
-    let row: { scraped: boolean; specCount: number; detectedCategory: string | null; productionIdentityKey: string | null; productionStatus: string | null };
+    let row: { scraped: boolean; specCount: number; detectedCategory: string | null; productionIdentityKey: string | null; productionStatus: string | null; currentPrice: number | null };
     try {
       const product = await scraper.updateProductPrice(url);
       if (!product) {
-        row = { scraped: false, specCount: 0, detectedCategory: null, productionIdentityKey: null, productionStatus: null };
+        row = { scraped: false, specCount: 0, detectedCategory: null, productionIdentityKey: null, productionStatus: null, currentPrice: null };
       } else {
         const specCount = Object.keys((product.specifications as { raw?: Record<string, unknown> })?.raw ?? {}).length;
-        const payload: Record<string, unknown> = {
-          name_en: product.name_en,
-          name_ar: product.name_ar,
-          brand: product.brand,
-          specifications: product.specifications,
-        };
+        // Spread the FULL scraped product — this must match IngestionService.ingestBatch's
+        // own `payload: { ...p, ... }` exactly (src/lib/scraping/services/ingestion-service.ts),
+        // or this script tests a weaker input than real production ever does. PROVEN BUG
+        // (2026-09-13): an earlier version of this script only passed
+        // {name_en,name_ar,brand,specifications} — omitting `model`/`sku` — which made every
+        // audio identity relying on `extractManufacturerModel(payload)` (the shared
+        // key-integrity authority, ADR-058) appear "blocked" here when real production,
+        // which DOES receive the full object, was never actually blocked at all.
+        const payload: Record<string, unknown> = { ...product };
         const { nameAr, nameEn, brand } = adaptRow(payload, null);
         let detectedCategory: string | null = null;
         let productionIdentityKey: string | null = null;
@@ -67,10 +71,10 @@ async function main() {
           productionStatus = identity.status;
           break;
         }
-        row = { scraped: true, specCount, detectedCategory, productionIdentityKey, productionStatus };
+        row = { scraped: true, specCount, detectedCategory, productionIdentityKey, productionStatus, currentPrice: product.current_price };
       }
     } catch (e) {
-      row = { scraped: false, specCount: 0, detectedCategory: null, productionIdentityKey: null, productionStatus: null };
+      row = { scraped: false, specCount: 0, detectedCategory: null, productionIdentityKey: null, productionStatus: null, currentPrice: null };
       console.warn(`  [${i + 1}/${urls.length}] FETCH ERROR: ${url}`, e instanceof Error ? e.message : e);
     }
     results.push({ url, ...row });

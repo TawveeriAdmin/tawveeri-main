@@ -35,6 +35,41 @@ describe("AC identity — LG design series distinguish products", () => {
   });
 });
 
+// Proven live (2026-09-13, Phase 1 execution): Samsung KSA's own residential wall-split
+// line is titled "Wall Mounted [name]" (samsung.com/sa_en/air-conditioners/wall-mount/...)
+// and never says "split"/"جداري" — ac_type came back null (a hard `invalid`, per
+// identity.ts's `if (!p.ac_type) return invalid`) for otherwise fully-identified Samsung ACs.
+describe("ac_type — Samsung's 'Wall Mounted' phrasing is recognized as split", () => {
+  const build = (en: string) => {
+    const n = acN("", en, "Samsung");
+    return { ...acPlugin.buildIdentityKey("Samsung", n.payload, { model_number: n.model_number }), p: n.payload as Record<string, unknown> };
+  };
+  it.each([
+    "Samsung WindFree Wall-Mounted Air Conditioner 12000 BTU Cool Only",
+    "Digital Inverter Wall Mount Air Conditioner 24000 BTU Cool Only",
+  ])("resolves ac_type=split for: %s", (en) => {
+    const r = build(en);
+    expect(r.p.ac_type).toBe("split");
+    expect(r.status).not.toBe("invalid");
+  });
+
+  // A real Samsung title with NO recognized capacity notation ("18K" instead of "18000 BTU")
+  // and no other AC_SIGNALS word: ac_type now correctly resolves to "split", but the
+  // identity is still correctly withheld (capacity_btu unknown) — this fix closes the
+  // ac_type gap specifically, it does not (and must not) invent a capacity that was never
+  // stated. A separate, disclosed gap — not fixed here.
+  it("does not fabricate capacity_btu when only a bare '18K' shorthand is present (correctly still invalid)", () => {
+    const r = build("Wall Mounted AC Cooling Only 18K Energy Saving (AR18TRHQHWK/MG)");
+    expect(r.p.ac_type).toBe("split");
+    expect(r.p.capacity_btu).toBeNull();
+  });
+
+  it("does not affect a genuinely portable AC that happens to mention a wall-mount bracket accessory", () => {
+    const r = build("Portable AC 9000 BTU Cool Only with optional wall mount bracket");
+    expect(r.p.ac_type).toBe("portable");
+  });
+});
+
 describe("ADR-079 — technology is optional (NO_TECH), so budget/window ACs identify", () => {
   const buildB = (en: string, brand: string) => {
     const n = acN("", en, brand);

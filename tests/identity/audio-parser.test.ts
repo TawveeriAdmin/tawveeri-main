@@ -16,6 +16,20 @@ const m = (ar: string, en: string, brand: string | null) => {
 };
 const identified = (r: { status: string; key: string | null }) => r.status !== "invalid" && !!r.key;
 
+// Proven live (2026-09-13, Phase 1 execution): "TV Hard Bundle 27 F-FA01COMBO27" (a Samsung
+// TV + soundbar hard bundle) contains real AUDIO_SIGNALS text (the bundled soundbar), which
+// would have claimed the whole multi-item bundle as a single speaker. Same doctrine as
+// vacuum (ADR-350), TV and monitor (ADR-356).
+describe("detector — a TV+soundbar bundle page is never a single speaker", () => {
+  it.each([
+    "TV Hard Bundle 27 F-FA01COMBO27",
+    "Samsung TV + Soundbar Combo Bundle",
+    "حزمة تلفزيون ومكبر صوت",
+  ])("rejects bundle/combo page: %s", (title) => {
+    expect(detect("", title)).toBe(false);
+  });
+});
+
 describe("Huawei — FreeClip / FreeArc / FreeBuds SE (Arabic-heavy)", () => {
   it("FreeClip (ear-cuff) reads as earbuds, not a JBL Clip speaker", () => {
     const r = m("", "Huawei FreeClip Earbuds, Bluetooth, USB (Charging), Built-in Microphone, Black", "Huawei");

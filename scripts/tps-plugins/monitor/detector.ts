@@ -18,6 +18,12 @@ const ACCESSORY_SIGNALS = [
   "wall mount", "screen protector", "واقي شاشة", "dust cover", "غطاء شاشة",
   "privacy filter", "cleaning", "منظف",
 ];
+// A merchandising bundle/combo page (a TV + a monitor, e.g. Samsung's own "83-inch OLED
+// S85H 4K, 32-inch Smart Monitor M8-M80F Bundle") is a multi-item listing, never a single
+// monitor — same doctrine as the vacuum (ADR-350) and TV (ADR-356) plugins' "bundle" reject.
+// Proven live (2026-09-13 Phase 1 execution): this exact bundle title contains "monitor",
+// "32 inch" and a real hz/panel cue, so MONITOR_SIGNALS alone would have claimed it.
+const BUNDLE_SIGNALS = ["bundle", "combo", "f-fa01combo", "حزمة", "طقم"];
 // A monitor is never any of these. `شاشة تلفزيون`/`smart tv` are TVs; a laptop or
 // tablet has a built-in screen but is its own category.
 const WRONG_DEVICE =
@@ -29,6 +35,7 @@ const WEARABLE_HEALTH =
 
 export function detect(nameAr: string, nameEn: string): boolean {
   const text = (nameAr + " " + nameEn).toLowerCase();
+  if (BUNDLE_SIGNALS.some((s) => text.includes(s))) return false;
   if (ACCESSORY_SIGNALS.some((s) => text.includes(s))) return false;
   if (WRONG_DEVICE.test(text)) return false;
   if (WEARABLE_HEALTH.test(text)) return false;

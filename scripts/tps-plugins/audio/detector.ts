@@ -22,6 +22,11 @@ const ACCESSORY_SIGNALS = [
   "بديل", "mount", "holder", "strap", "حزام", "sticker", "ملصق", "skin",
   "protector", "واقي", "belt clip", "clip holder", "carrying case", "hard case",
 ];
+// A merchandising bundle (a TV + a soundbar sold as one hard-bundle SKU, e.g. Samsung's own
+// "TV Hard Bundle 27 F-FA01COMBO27") is a multi-item listing, never a single speaker — same
+// doctrine as vacuum (ADR-350), TV and monitor (ADR-356). Proven live (2026-09-13, Phase 1
+// execution): this exact bundle's real soundbar component satisfied AUDIO_SIGNALS.
+const BUNDLE_SIGNALS = ["bundle", "combo", "f-fa01combo", "حزمة", "طقم"];
 // ADR-070: monitors and TVs advertise "Built-in Dual Speaker", which matched the
 // bare "speaker" signal — BenQ and Asus MONITORS were being claimed as audio.
 const WRONG_DEVICE = ['smartphone', 'laptop', 'لابتوب', 'tablet', 'تابلت', 'smartwatch', 'ساعة',
@@ -30,6 +35,7 @@ const WRONG_DEVICE = ['smartphone', 'laptop', 'لابتوب', 'tablet', 'تاب�
 
 export function detect(nameAr: string, nameEn: string): boolean {
   const text = (nameAr + " " + nameEn).toLowerCase();
+  if (BUNDLE_SIGNALS.some((s) => text.includes(s.toLowerCase()))) return false;
   if (!AUDIO_SIGNALS.some((s) => text.includes(s.toLowerCase()))) return false;
   if (ACCESSORY_SIGNALS.some((s) => text.includes(s.toLowerCase()))) return false;
   if (WRONG_DEVICE.some((s) => text.includes(s.toLowerCase()))) return false;

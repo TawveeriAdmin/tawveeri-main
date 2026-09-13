@@ -47,6 +47,16 @@ describe("detector — monitors, not TVs / laptops / accessories", () => {
     ["Samsung Galaxy Tab S9 11 inch Tablet"],
     ["Monitor Arm Desk Mount for 27 inch screen"],
   ])("rejects non-monitor: %s", (en) => { expect(detect("", en)).toBe(false); });
+
+  // Proven live (2026-09-13, Phase 1 execution): a TV+monitor merchandising bundle
+  // ("83-inch OLED S85H 4K, 32-inch Smart Monitor M8-M80F Bundle F-FA01COMBO61") contains
+  // "monitor", a real inch figure and an hz/panel cue — MONITOR_SIGNALS alone would have
+  // claimed it as a single monitor identity. Same doctrine as the TV/vacuum bundle rejects.
+  it.each([
+    ["83-inch OLED S85H 4K, 32-inch Smart Monitor M8-M80F Bundle F-FA01COMBO61"],
+    ["TV + Monitor Combo Bundle 32 inch 144Hz"],
+    ["حزمة شاشة قيمنج 27 بوصة 165 هرتز"],
+  ])("rejects a bundle/combo page: %s", (en) => { expect(detect("", en)).toBe(false); });
 });
 
 describe("identity — brand | size | resolution | refresh | panel", () => {

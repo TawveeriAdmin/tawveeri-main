@@ -25,6 +25,15 @@ export function normalize(nameAr: string, nameEn: string, _rawBrand: string | nu
   else if (combined.includes("كاسيت")||combined.includes("cassette"))      ac_type="cassette";
   else if (combined.includes("مخفي")||combined.includes("ducted")||combined.includes("ceiling")) ac_type="ducted";
   else if (combined.includes("سبليت")||combined.includes("جداري")||combined.includes("split")) ac_type="split";
+  // Samsung KSA's own residential wall-split line is titled "Wall Mounted [AC name]"
+  // (samsung.com/sa_en/air-conditioners/wall-mount/...) and never says "split"/"جداري" in
+  // the title itself — PROVEN LIVE (2026-09-13, Phase 1 execution): this is the exact,
+  // sole reason ac_type came back null (a hard "invalid", per identity.ts) for otherwise
+  // fully-identified Samsung ACs. Checked ordering: this branch is LAST, after every more
+  // specific type (window/portable/evaporative/cabinet/cassette/ducted) already had its
+  // chance to match — a genuinely non-split unit that merely mentions a wall-mount
+  // bracket accessory would already have been claimed by one of those first.
+  else if (combined.includes("wall mounted")||combined.includes("wall mount")||combined.includes("wall-mounted")||combined.includes("wall-mount")) ac_type="split";
 
   // MEASURED DEFECT (2026-09-07, Amazon AC normalization-drop mission): the digit class used
   // to include `\s` (a bare space), so it could cross a WORD boundary and swallow a model
