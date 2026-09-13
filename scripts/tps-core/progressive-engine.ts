@@ -21,12 +21,45 @@ function stableUuid(seed: string): string {
   return [h.slice(0, 8), h.slice(8, 12), "4" + h.slice(13, 16), ((parseInt(h.slice(16, 17), 16) & 0x3) | 0x8).toString(16) + h.slice(17, 20), h.slice(20, 32)].join("-");
 }
 const asString = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v.trim() : null);
+/**
+ * Linearize a captured PDP spec table (`{ raw: { label: value } }`, currently
+ * populated only by the Samsung KSA scraper — ADR-354/355) into extra
+ * detectable text, appended to `nameEn` so a category plugin's EXISTING regex
+ * extractors can see it. No parallel identity logic — this only gives real
+ * plugins more of the same evidence a fuller title would have carried.
+ *
+ * Two guards, both proven necessary on real Samsung spec tables during the
+ * audit that preceded this: a "No"/"0" value describes an ABSENT feature
+ * (e.g. "Wall Mount Bracket: No") — including it verbatim would introduce
+ * that feature's name as if it were present. "External Storage Support"
+ * states an optional card slot's MAXIMUM capacity, never the device's own
+ * built-in storage — proven to silently override a tablet's real "256GB" with
+ * a card slot's "2TB" ceiling when included.
+ *
+ * For every store that does not populate `specifications.raw` (everyone
+ * except Samsung KSA today), this returns "" and `adaptRow` is unchanged.
+ */
+function specTableToText(specifications: unknown): string {
+  const raw = (specifications as { raw?: Record<string, unknown> } | null | undefined)?.raw;
+  if (!raw || typeof raw !== "object") return "";
+  const parts: string[] = [];
+  for (const [label, rawValue] of Object.entries(raw)) {
+    if (typeof rawValue !== "string") continue;
+    const value = rawValue.trim();
+    if (!value || /^(no|0)$/i.test(value)) continue;
+    if (/external storage support/i.test(label)) continue;
+    parts.push(`${label} ${value}`);
+  }
+  return parts.join(" | ");
+}
 // Exported (ADR-351) so the one-time historical gap backfill (backfill-gap-scan.ts) can reuse
 // the EXACT SAME row-adaptation/price/image extraction the normal sweep uses, instead of a
 // second hand-maintained copy that could silently drift from this one.
 export function adaptRow(p: Record<string, unknown>, rawName: string | null) {
   const nameAr = asString(p.nameAr) ?? asString(p.name_ar) ?? asString(p.name) ?? asString(rawName) ?? "";
-  const nameEn = asString(p.nameEn) ?? asString(p.name_en) ?? asString(p.title) ?? "";
+  const baseNameEn = asString(p.nameEn) ?? asString(p.name_en) ?? asString(p.title) ?? "";
+  const specText = specTableToText(p.specifications);
+  const nameEn = specText ? `${baseNameEn} ${specText}`.trim() : baseNameEn;
   // ADR-191: a merchant feed that puts its OWN shop name in the brand field would otherwise
   // become the first segment of the identity key, fencing that listing off from every other
   // retailer selling the identical product. Rejected to null — unknown beats incorrect.

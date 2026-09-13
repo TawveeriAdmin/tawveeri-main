@@ -51,6 +51,7 @@ export class SamsungKsaScraper extends GenericHtmlStoreScraper {
     // scraper usable on hosts where Chrome for Testing misbehaves.
     const html = await this.fetchPage(productUrl);
     const $ = this.getCheerio(html);
+    const specifications = extractSpecTable($, productUrl);
 
     const productLd = findProductJsonLd($);
     if (!productLd) return extractDigitalDataFallback(html, productUrl);
@@ -148,7 +149,7 @@ export class SamsungKsaScraper extends GenericHtmlStoreScraper {
       availability,
       product_url: productUrl,
       image_urls: imageUrls,
-      specifications: {},
+      specifications,
       category: determineCategory(name),
       description_ar: isArabicUrl ? description : null,
       description_en: isArabicUrl ? null : description,
@@ -162,7 +163,39 @@ export class SamsungKsaScraper extends GenericHtmlStoreScraper {
 // Duplicated from ExtraScraper for now. When Almanea gets the same
 // treatment, lift these into src/lib/scraping/utils/json-ld-extractor.ts.
 
-import type * as cheerio from 'cheerio';
+import * as cheerio from 'cheerio';
+
+/**
+ * Samsung KSA's PDP template ships a structured spec table — consistent
+ * label:value pairs across virtually every category (monitors, tablets, AC,
+ * refrigerators, audio, washers) — under `.pdd32-product-spec__content-item-*`.
+ * Production never captured this before (2026-09-13 audit: `specifications`
+ * was hardcoded to `{}`), which meant the audit-only classifier's own
+ * spec-table extraction was the ONLY thing that could ever see this data —
+ * an audit-only identity, not a production-ingestable one.
+ *
+ * Raw label/value pairs are preserved EXACTLY as Samsung renders them
+ * (Section 6 requirement: never overwrite the manufacturer's raw value). Any
+ * normalization a plugin needs (e.g. monitor's comma/× resolution tolerance)
+ * happens in that plugin, reading this raw value — never here.
+ */
+export function extractSpecTable(
+  $: cheerio.CheerioAPI,
+  productUrl: string,
+): { raw: Record<string, string>; source: string; source_url: string; observed_at: string } {
+  const raw: Record<string, string> = {};
+  $('.pdd32-product-spec__content-item').each((_i, el) => {
+    const label = $(el).find('.pdd32-product-spec__content-item-title').text().replace(/\s+/g, ' ').trim();
+    const value = $(el).find('.pdd32-product-spec__content-item-desc').text().replace(/\s+/g, ' ').trim();
+    if (label && value) raw[label] = value;
+  });
+  return {
+    raw,
+    source: 'samsung_ksa_pdp_spec_table',
+    source_url: productUrl,
+    observed_at: new Date().toISOString(),
+  };
+}
 
 const SAMSUNG_SITEMAPS_BY_CATEGORY: Partial<Record<ProductCategory, string[]>> = {
   smartphone: ['https://www.samsung.com/sa_en/im-sitemap.xml'],
@@ -434,6 +467,11 @@ export function extractDigitalDataFallback(html: string, productUrl: string): Sc
   const variantSuffix = extractVariantSuffix(productUrl, displayName);
   const withVariant = variantSuffix ? `${displayName} ${variantSuffix}` : displayName;
   const name = `${withVariant} (${modelCode})`;
+  // Archive/legacy SKUs reaching this fallback still ship the same spec-table
+  // markup as the main JSON-LD path — build a local cheerio root (this function
+  // only receives the raw HTML string, not the caller's `$`) so the fallback
+  // path is not silently spec-blind.
+  const specifications = extractSpecTable(cheerio.load(html), productUrl);
 
   return {
     name_ar: name,
@@ -446,7 +484,7 @@ export function extractDigitalDataFallback(html: string, productUrl: string): Sc
     availability,
     product_url: productUrl,
     image_urls: [],
-    specifications: {},
+    specifications,
     category: determineCategory(name),
     description_ar: null,
     description_en: null,

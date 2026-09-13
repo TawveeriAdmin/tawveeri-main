@@ -69,6 +69,45 @@ describe("detector — accessories and other categories are hard-rejected", () =
     expect(detect("", "Xiaomi Redmi Note 14 128GB")).toBe(true);
   });
 
+  // Proven live-production defect (2026-09-13): Samsung's own S Pen accessory
+  // listings matched no accessory signal at all (only bare "stylus"/"قلم" were
+  // listed, never English "Pen"), so both were staged AS the phone itself,
+  // corrupting the phone's Samsung offer with a ~219 SAR stylus price instead
+  // of no offer. A bare "pen" substring reject would be too broad — see the
+  // companion "must not reject a real phone" case below — so this is a
+  // storage-tier-aware phrase check: an S Pen accessory page never states a
+  // storage capacity, a real phone SKU always does.
+  it.each([
+    ["S Pen for Galaxy S25 Ultra Black (GH96-18791D)", "S Pen for Galaxy — explicit 'for' phrasing"],
+    ["S Pen for Galaxy S24 Ultra Black (GH96-16577B)", "S Pen for Galaxy — the exact live-production defect"],
+    ["Galaxy S26 Ultra S Pen Black (EJ-PS948BBEGWW)", "Galaxy X S Pen — phone-name-first phrasing"],
+  ])("rejects the official S Pen accessory: %s (%s)", (title) => {
+    expect(detect("", title)).toBe(false);
+  });
+
+  it("does NOT reject a genuine phone title merely because it mentions S Pen as a feature", () => {
+    // Storage tier present ⇒ this is a real phone SKU, not the standalone stylus.
+    expect(detect("", "Samsung Galaxy S24 Ultra 256GB, S Pen Included, Titanium Black")).toBe(true);
+    expect(detect("", "Samsung Galaxy S25 Ultra 512GB with S Pen, Titanium Gray")).toBe(true);
+  });
+
+  // Reprojection safety: corroboratePass (progressive-engine.ts) only ever
+  // upserts tps_current_offers from THIS SWEEP's freshly-staged rows — it
+  // never re-reads old staging history. A row's identity_key is decided
+  // exclusively by whether detect() accepts it. Proving detect() now rejects
+  // the exact titles that caused the live S24/S25 Ultra contamination is
+  // therefore the complete, sufficient guarantee that no future normalize
+  // sweep (including a fresh re-scrape of the same S-Pen URLs) can ever
+  // re-create that wrong Samsung-offer relationship.
+  it("guarantees the exact live-contaminated titles can never re-stage under the phone's identity again", () => {
+    expect(detect("", "S Pen for Galaxy S24 Ultra Black (GH96-16577B)")).toBe(false);
+    expect(detect("", "S Pen for Galaxy S24 Ultra Gray (GH96-16577A)")).toBe(false);
+    expect(detect("", "S Pen for Galaxy S24 Ultra Yellow (GH96-16577C)")).toBe(false);
+    expect(detect("", "S Pen for Galaxy S25 Ultra Black (GH96-18791D)")).toBe(false);
+    expect(detect("", "S Pen for Galaxy S25 Ultra Gold (GH96-18791A)")).toBe(false);
+    expect(detect("", "S Pen for Galaxy S25 Ultra Light Silver (GH96-18791C)")).toBe(false);
+  });
+
   it("the 20\"+ monitor guard must NOT reject a fractional phone size like 6.67 بوصة", () => {
     // Regression: an early guard read the "67" of "6.67 بوصة" as a 67-inch display
     // and rejected real 6.6x-inch phones. A phone screen size is never whole-≥20.

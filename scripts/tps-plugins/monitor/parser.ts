@@ -20,16 +20,30 @@ function extractSize(x: string): number | null {
 
 // Resolution — most specific first. Ultrawide widths (2560x1080, 3440x1440) get
 // their own tokens so a 27" QHD flat and a 34" UWQHD ultrawide never merge.
+//
+// A manufacturer spec table writes big resolution numbers with a thousands
+// comma ("3,840 x 2,160"); normalizeArabic's generic comma-to-space fold
+// (applied upstream, before this function ever sees the text) turns that
+// into "3 840 x 2 160", and some sources use "×" instead of "x". None of
+// these are a different resolution from "3840x2160" — collapse the
+// thousands-grouping and normalize the separator before matching, so
+// "3,840 x 2,160", "3840 x 2160" and "3840×2160" all resolve identically.
+// Proven live defect (2026-09-13): an M8 32" UHD monitor's un-collapsed
+// "3,840 x 2,160" fell through to no resolution match at all and silently
+// merged onto an unrelated FHD monitor's identity — a real cross-product
+// collapse, not a duplicate. Generic fix (not Samsung-specific): any future
+// spec-table source feeding this parser gets the same protection.
 function extractResolution(x: string): string | null {
-  if (/\b8k\b|7680\s*x\s*4320/.test(x)) return "8k";
-  if (/\b5k\b|5120\s*x\s*2880/.test(x)) return "5k";
-  if (/\b4k\b|uhd|3840\s*x\s*2160/.test(x)) return "4k";
-  if (/3440\s*x\s*1440|uwqhd/.test(x)) return "uwqhd";
-  if (/2560\s*x\s*1080|\bwfhd\b/.test(x)) return "wfhd";
-  if (/2560\s*x\s*1440|wqhd|\bqhd\b|\b2k\b|1440p/.test(x)) return "qhd";
-  if (/1920\s*x\s*1200|wuxga/.test(x)) return "wuxga";
-  if (/1920\s*x\s*1080|full\s*hd|\bfhd\b|1080p/.test(x)) return "fhd";
-  if (/1366\s*x\s*768|1280\s*x\s*720|\bhd\b|720p/.test(x)) return "hd";
+  const r = x.replace(/(\d)[,\s](\d{3})\b/g, "$1$2").replace(/×/g, "x");
+  if (/\b8k\b|7680\s*x\s*4320/.test(r)) return "8k";
+  if (/\b5k\b|5120\s*x\s*2880/.test(r)) return "5k";
+  if (/\b4k\b|uhd|3840\s*x\s*2160/.test(r)) return "4k";
+  if (/3440\s*x\s*1440|uwqhd/.test(r)) return "uwqhd";
+  if (/2560\s*x\s*1080|\bwfhd\b/.test(r)) return "wfhd";
+  if (/2560\s*x\s*1440|wqhd|\bqhd\b|\b2k\b|1440p/.test(r)) return "qhd";
+  if (/1920\s*x\s*1200|wuxga/.test(r)) return "wuxga";
+  if (/1920\s*x\s*1080|full\s*hd|\bfhd\b|1080p/.test(r)) return "fhd";
+  if (/1366\s*x\s*768|1280\s*x\s*720|\bhd\b|720p/.test(r)) return "hd";
   return null;
 }
 

@@ -117,8 +117,26 @@ const PHONE_SIGNALS = [
 
 const hit = (text: string, list: string[]) => list.some((s) => text.includes(normalizeArabic(s)));
 
+// Samsung's own S Pen accessory listings are NOT caught by the bare "stylus"/
+// "قلم" tokens in ACCESSORY_SIGNALS above — Samsung writes the English word
+// "Pen", never "stylus". Proven live-production defect (2026-09-13): "S Pen
+// for Galaxy S24 Ultra Black" and "...S25 Ultra..." (and the same-shaped
+// "Galaxy S26 Ultra S Pen Black") matched no accessory/foreign-category
+// signal at all, so both were staged AS the phone itself — corrupting each
+// phone's Samsung offer with a ~219 SAR stylus price instead of no offer.
+//
+// A bare "pen" or "s pen" substring reject would be too broad: a genuine
+// phone listing legitimately says "...256GB, S Pen Included, Titanium
+// Black". The reliable structural difference is that a standalone S Pen
+// accessory page NEVER states a storage capacity — a real phone SKU always
+// does. So this only rejects when "s pen" appears WITHOUT any accompanying
+// storage-tier evidence, never merely because the phrase is present.
+const S_PEN_MENTION = /\bs\s?pen\b/;
+const HAS_STORAGE_TIER_HINT = /\b(?:16|32|64|128|256|512|1024|2048)\s?(?:gb|جيجا|تيرا|tb)\b/;
+
 export function detect(nameAr: string, nameEn: string): boolean {
   const text = normalizeArabic(`${nameAr} ${nameEn}`);
+  if (S_PEN_MENTION.test(text) && !HAS_STORAGE_TIER_HINT.test(text)) return false;
   if (hit(text, ACCESSORY_SIGNALS)) return false;
   if (hit(text, FOREIGN_CATEGORY_SIGNALS)) return false;
   // A WHOLE-inch screen size of 20"+ is a monitor/TV/large display, never a phone.

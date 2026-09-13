@@ -86,6 +86,27 @@ describe("component extraction", () => {
     expect(p("MSI 27 inch QHD 240Hz OLED Gaming Monitor").panel).toBe("oled");
     expect(p("Samsung Odyssey 32 inch 4K 165Hz VA Curved").panel).toBe("va");
   });
+
+  // Proven live-production defect (2026-09-13): Samsung's own spec table writes
+  // big resolution numbers with a thousands comma ("3,840 x 2,160"). Upstream
+  // Arabic normalization folds that comma to a space ("3 840 x 2 160"), which
+  // the resolution regex never matched — the monitor silently fell through to
+  // NO_RES and merged onto an unrelated FHD monitor's identity, a real
+  // cross-product collapse, not a duplicate. All three real-world spellings
+  // below must resolve identically.
+  it("resolution is comma/space/× tolerant (comma-resolution protection)", () => {
+    expect(p("Samsung Smart Monitor M8 32 inch Resolution 3,840 x 2,160 60Hz VA").resolution).toBe("4k");
+    expect(p("Samsung Smart Monitor M8 32 inch Resolution 3840 x 2160 60Hz VA").resolution).toBe("4k");
+    expect(p("Samsung Smart Monitor M8 32 inch Resolution 3840×2160 60Hz VA").resolution).toBe("4k");
+  });
+
+  it("a comma-formatted 4K monitor no longer collapses onto an unrelated FHD monitor's identity", () => {
+    const uhd = build("", "Samsung Smart Monitor M8 32 inch Resolution 3,840 x 2,160 60Hz VA", "samsung");
+    const fhd = build("", "Samsung Smart Monitor M5 32 inch Resolution 1,920 x 1,080 60Hz VA", "samsung");
+    expect(uhd.key).not.toBeNull();
+    expect(fhd.key).not.toBeNull();
+    expect(uhd.key).not.toBe(fhd.key);
+  });
 });
 
 describe("precision — too-weak identities are not asserted", () => {

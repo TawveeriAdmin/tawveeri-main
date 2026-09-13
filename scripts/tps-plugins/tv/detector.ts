@@ -24,6 +24,18 @@ const ACCESSORY_SIGNALS = [
   "receiver", "رسيفر", "ريسيفر", "antenna", "هوائي", "soundbar", "مكبر",
   "سماعة", "box tv", "tv box", "media player", "chromecast", "شاحن", "adapter",
 ];
+// A merchandising bundle/combo page (a TV + a monitor, a TV + a Frame bezel kit,
+// a TV + an accessory) is a multi-item listing, never a single-product TV —
+// same doctrine as the vacuum plugin's "bundle" reject (ADR-350). Confirmed
+// live defect (2026-09-13): Samsung's own bundle SKUs ("...Frame Bezel Bundle
+// F-FA01COMBO55", "...Frame + Odyssey G5 QHD Frame Bezel Bundle F-FA01COMBO48")
+// were never rejectable by production (detect() correctly never saw them, since
+// no bypass exists here) — the risk was specific to a one-off audit script's own
+// URL-path override, not this file. This reject exists so that override
+// technique, if ever reused, can never mint a bundle as a single TV either, and
+// so a future generic TV signal addition doesn't accidentally start claiming
+// bundle titles. Matches on Samsung's own internal bundle SKU prefix too.
+const BUNDLE_SIGNALS = ["bundle", "combo", "f-fa01combo", "حزمة", "طقم"];
 // ADR-074: also the Arabic computer-screen phrases, so a monitor written only in
 // Arabic (e.g. "شاشة كمبيوتر ... 4K") is claimed by the monitor plugin alone and
 // never double-detected as a TV. No real television carries these phrases.
@@ -32,6 +44,7 @@ const MONITOR_SIGNALS = ["monitor", "مونيتور", "gaming monitor", "curved 
 
 export function detect(nameAr: string, nameEn: string): boolean {
   const text = (nameAr + " " + nameEn).toLowerCase();
+  if (BUNDLE_SIGNALS.some((s) => text.includes(s.toLowerCase()))) return false;
   if (ACCESSORY_SIGNALS.some((s) => text.includes(s.toLowerCase()))) return false;
   if (MONITOR_SIGNALS.some((s) => text.includes(s.toLowerCase()))) return false;
   if (TV_SIGNALS.some((s) => text.includes(s.toLowerCase()))) return true;

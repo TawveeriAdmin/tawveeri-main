@@ -70,6 +70,12 @@ function extractResolution(text: string): string | null {
 function extractPanel(text: string): string | null {
   const x = text.toLowerCase();
   const ar = normalizeArabic(text);
+  // Proven collision (2026-09-13 audit): "The Frame" (LS03FW) and "Micro RGB"
+  // (R95H) are two structurally different, differently-priced Samsung TV
+  // lines that shared one identity because neither's panel technology was
+  // extractable — Micro RGB is Samsung's own stable, explicit technology
+  // name (same evidentiary bar as Neo QLED/QLED/OLED above), not a guess.
+  if (/micro[\s-]*rgb/.test(x) || /مايكرو\s*ار\s*جي\s*بي/.test(ar)) return "micro_rgb";
   if (/neo[\s-]*qled/.test(x) || /نيو\s*كيو\s*ليد/.test(ar)) return "neo_qled";
   if (/qd[\s-]*oled/.test(x)) return "oled";
   if (/\boled\b/.test(x) || /او\s*ال\s*اي\s*دي|او\s*ليد|اوليد/.test(ar)) return "oled";
