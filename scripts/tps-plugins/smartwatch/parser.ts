@@ -39,7 +39,23 @@ const BRAND_FAMILIES: Record<string, FamilyRule[]> = {
       // model YEAR rather than a generation number, and the word order puts
       // "ساعة" between the line and the variant. 10 measured misses on a
       // five-merchant brand, so each one is a lost comparison.
-      named: [{ re: new RegExp(`(?:جالكسي|جالاكسي|galaxy)\\s*(?:ساعه|watch)\\s*(?:الترا|اولترا|ultra)`), generation: "Ultra" }],
+      //
+      // MEASURED DEFECT (2026-09-13, Samsung KSA official-gateway residual closure
+      // mission): the real successor "Galaxy Watch Ultra2" (Samsung's own title, model
+      // prefix SM-L715F — genuinely distinct from the original Ultra's SM-L705F, first-
+      // party model-code evidence, not title similarity) was silently collapsing onto
+      // the SAME generation="Ultra" as the original (SM-L705F) Watch Ultra, because the
+      // bare "ultra" named pattern below had no right boundary and matched "ultra2" as a
+      // prefix. That merged two genuinely different physical products (a real price gap:
+      // the original ~1400-2200 SAR vs. Ultra2's own 2799 SAR) into one identity key,
+      // which the platform's (name+brand) uniqueness guard then correctly refused to
+      // re-canonicalize as a duplicate — masking a real MISSING generation, not a genuine
+      // ambiguity. "Ultra2" is now checked FIRST, as its own generation; the original
+      // "ultra" pattern gained a trailing boundary so it can never match "ultra2" too.
+      named: [
+        { re: new RegExp(`(?:جالكسي|جالاكسي|galaxy)\\s*(?:ساعه|watch)\\s*(?:الترا\\s*2|اولترا\\s*2|ultra\\s*2)${RB}`), generation: "Ultra2" },
+        { re: new RegExp(`(?:جالكسي|جالاكسي|galaxy)\\s*(?:ساعه|watch)\\s*(?:الترا|اولترا|ultra)${RB}`), generation: "Ultra" },
+      ],
     },
     // "ساعة سامسونج جالكسي 8 كلاسيك" — the line number follows Galaxy, not "watch".
     { family: "Galaxy Watch", gen: new RegExp(`(?:جالكسي|جالاكسي|galaxy)\\s*(?:watch|ووتش)?\\s*(\\d{1,2})${RB}`) },

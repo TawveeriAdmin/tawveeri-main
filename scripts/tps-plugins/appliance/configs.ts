@@ -199,6 +199,24 @@ export const APPLIANCE_CONFIGS: ApplianceCfg[] = [
       ["air_fry", "قلاي[ةه] هوائي[ةه]|مقلاة هوائي[ةه]|air ?fry"],
     ],
     namesOverride: (key: string) => {
+      // PROVEN LIVE (2026-09-13, Samsung KSA official-gateway residual closure mission):
+      // this override never special-cased a MODEL:-primary key (ADR-058's extractManufacturerModel
+      // tier, used when a real MPN is available) the way the generic factory's own `names()`
+      // already does. `key.split("|")` on "samsung|MODEL:NE63C6317SS/ZA" put the whole
+      // "MODEL:..." string into `ty`, matched none of the fuel-type branches, and `cap` was
+      // undefined — producing the literal, identical name "طباخ غاز samsung undefined سم" for
+      // EVERY MODEL:-primary Samsung cooker regardless of model number. Two different real
+      // Samsung ranges (NE63C6317SG/ZA — already canonicalized under this exact broken name —
+      // and NE63C6317SS/ZA, a genuinely different physical SKU) then collided on the platform's
+      // (name_ar, brand) uniqueness guard, permanently blocking the second one from ever
+      // canonicalizing even though it had a real, corroborated 4,199 SAR price. Fixed by
+      // mirroring the factory's own MODEL: branch — the model number now makes every such name
+      // unique, exactly as it already does for dishwasher/microwave's un-overridden names().
+      const modelMatch = key.match(/^([^|]+)\|MODEL:(.+)$/);
+      if (modelMatch) {
+        const [, b, model] = modelMatch;
+        return { nameAr: `طباخ ${b} ${model}`.replace(/\s+/g, " ").trim(), nameEn: `${b} ${model} cooker`.replace(/\s+/g, " ").trim() };
+      }
       const [b, ty, cap] = key.split("|");
       const burners = ty?.match(/_(\d)$/)?.[1] ?? null;
       const fuel = ty === "mixed_fuel" ? "mixed" : ty?.startsWith("electric") ? "electric" : ty?.startsWith("burners") ? "gas" : null;

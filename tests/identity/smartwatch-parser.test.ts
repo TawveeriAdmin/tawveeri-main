@@ -161,7 +161,7 @@ describe("identity — case size read from the declared spec table when absent f
     expect(n.payload.size_mm).toBe(47);
     const r = buildIdentityKey("Samsung", n.payload, {});
     expect(r.status).toBe("valid");
-    expect(r.key).toBe("samsung|Galaxy Watch Ultra|Ultra|Standard|47|cellular");
+    expect(r.key).toBe("samsung|Galaxy Watch Ultra|Ultra2|Standard|47|cellular");
   });
   it("a title-stated case size still wins over the spec table (title is checked first)", () => {
     const n = normalize("", "Samsung Galaxy Watch 6 44mm", "Samsung", specPayload);
@@ -170,5 +170,31 @@ describe("identity — case size read from the declared spec table when absent f
   it("an absent/malformed Body Dimension field does not fabricate a size", () => {
     const n = normalize("", "Galaxy Watch Ultra2 Titanium Silver Lte (SM-L715FZSAKSA)", "Samsung", { specifications: { raw: { "Body Dimension (HxWxD, mm)": "n/a" } } });
     expect(n.payload.size_mm).toBeNull();
+  });
+});
+
+// MEASURED DEFECT (2026-09-13, Samsung KSA official-gateway residual closure mission):
+// "Galaxy Watch Ultra2" (Samsung's own real successor line, model prefix SM-L715F — proven
+// distinct from the original Ultra's SM-L705F by first-party model code, not title
+// similarity) was silently merging onto generation="Ultra" because the old named pattern had
+// no right boundary and matched "ultra2" as a prefix of "ultra". That made a real second
+// generation invisible and blocked it from ever canonicalizing (a genuine missing product
+// disguised as an identity collision).
+describe("identity — Galaxy Watch Ultra2 is its own generation, not a collision with the original Ultra", () => {
+  it("'Ultra2' resolves as its own generation, distinct from 'Ultra'", () => {
+    const n = normalize("", "Galaxy Watch Ultra2 Titanium Silver Lte (SM-L715FZSAKSA)", "Samsung");
+    expect(n.payload.generation).toBe("Ultra2");
+  });
+  it("the original Watch Ultra ('Ultra', model SM-L705F) is unaffected — still resolves 'Ultra'", () => {
+    const n = normalize("", "Galaxy Watch Ultra (LTE 47mm) Titanium White (SM-L705FZWAKSA)", "Samsung");
+    expect(n.payload.generation).toBe("Ultra");
+  });
+  it("Ultra and Ultra2 produce genuinely different identity keys (no false merge, no collision)", () => {
+    const n1 = normalize("", "Galaxy Watch Ultra 47mm (Middle East Version) Smartwatch, LTE", "Samsung");
+    const n2 = normalize("", "Galaxy Watch Ultra2 Titanium Silver Lte (SM-L715FZSAKSA)", "Samsung", { specifications: { raw: { "Body Dimension (HxWxD, mm)": "47.4 x 47.1 x 10.7" } } });
+    const k1 = buildIdentityKey("Samsung", n1.payload, {});
+    const k2 = buildIdentityKey("Samsung", n2.payload, {});
+    expect(k1.key).not.toBe(k2.key);
+    expect(k2.key).toContain("Ultra2");
   });
 });

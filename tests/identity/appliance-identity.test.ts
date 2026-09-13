@@ -237,6 +237,24 @@ describe("cooker fuel identity — gas, electric, and mixed can never merge", ()
     expect(names("glem gas|mixed_fuel|90").nameAr).toBe("طباخ غاز وكهرباء glem gas 90 سم");
     expect(names("starway|burners_5|90").nameAr).toBe("طباخ غاز starway 5 شعلات 90 سم");
   });
+
+  // MEASURED DEFECT (2026-09-13, Samsung KSA official-gateway residual closure mission):
+  // the cooker `namesOverride` never special-cased a MODEL:-primary key — every such key
+  // produced the literal, identical name "طباخ غاز <brand> undefined سم" regardless of
+  // model number, so two genuinely different Samsung ranges (NE63C6317SG/ZA, already
+  // canonicalized, and NE63C6317SS/ZA, a real corroborated 4,199 SAR observation) collided
+  // on the platform's (name_ar, brand) uniqueness guard and the second could never
+  // canonicalize. The name must be unique per model, exactly like every other category's
+  // un-overridden MODEL: branch already is.
+  it("a MODEL:-primary key's name includes the model number (no 'undefined', no collision)", () => {
+    const names = APPLIANCE_BUNDLES["cooker"].names;
+    const sg = names("samsung|MODEL:NE63C6317SG/ZA");
+    const ss = names("samsung|MODEL:NE63C6317SS/ZA");
+    expect(sg.nameAr).not.toContain("undefined");
+    expect(ss.nameAr).not.toContain("undefined");
+    expect(sg.nameAr).not.toBe(ss.nameAr);
+    expect(ss.nameAr).toContain("NE63C6317SS/ZA");
+  });
 });
 
 // ADR-350 (2026-09-13, Samsung KSA official-catalog closure mission): Samsung's own PDPs
