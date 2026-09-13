@@ -4,6 +4,54 @@
 
 Status legend: **Accepted** · **Superseded** · **Proposed**.
 
+### ADR-360 — Samsung KSA official-catalog: final denominator reconciliation (927→404, exact, zero remainder) and mission closure · Accepted (2026-09-13)
+**Context.** Before accepting ADR-359's `CLOSED` verdict, the founder required one more thing proven, read-only: an exhaustive, mutually-exclusive accounting of all 927 raw sitemap candidates down to the 404 denominator, with the sum verified to equal 927 exactly — not asserted from memory, not re-estimated. A second pass then required the full end-to-end chain re-verified fresh against live production (not stale files), the durable evidence artifact updated, and the repository/operational state confirmed clean. No new recovery, no new scope.
+
+**1. The 927→404 waterfall — exact, direct-file-verified, zero unexplained remainder.**
+| Stage | Count | Evidence |
+|---|---|---|
+| Raw sitemap candidates | 927 | `FROZEN-SNAPSHOT-758.json.rawCount` |
+| − DUPLICATE_URL (`/buy/` twins) | 169 | same snapshot; sampled 8, all confirmed literal suffix twins |
+| = Distinct URLs | 758 | `FROZEN-SNAPSHOT-758.json.distinctCount` |
+| − CONTAMINATION_NOT_PRODUCT | 66 | `URL_LEDGER.json` (758 rows, exhaustive per-URL classification) |
+| − MARKETING_OR_BUYING_GUIDE | 39 | ″ |
+| − B2B_OUT_OF_SCOPE | 2 | ″ (hotel/commercial-TV line) |
+| − FAMILY_PAGE | 6 | ″ |
+| − HISTORICAL_OR_DISCONTINUED (HTTP 404) | 10 | ″ |
+| − UNSUPPORTED_CATEGORY_EXPLICIT (range hoods) | 1 | ″ |
+| = PRODUCT_IDENTITY_SOURCE URLs | 634 | ″ |
+| − VARIANT_NAVIGATION_DUPLICATE (634 URLs → 425 distinct `resolved_identity_key` values) | 209 | direct count of distinct keys among the 634 |
+| = Distinct identities | 425 | `IDENTITY_LEDGER.json` |
+| − INVALID (Z Flip3/Z Fold3 `/specs/`, no PDP evidence) | 2 | exact diff, `IDENTITY_LEDGER.json` → `U-423.json` |
+| − BUNDLE_NON_PRODUCT (F-FA01COMBO\*, caught only at identity-level, not URL-level) | 16 + 3 = 19 | exact diff, `U-423` → `U-407` → `U-404`; zero additions at any step |
+| = **CURRENT_VALID_UNIQUE_PRODUCT_OR_VARIANT** | **404** | |
+| **Sum check** | **927** | 169+66+39+2+6+10+1+209+2+19+404 = 927, exact |
+
+**404 defined precisely**: a Samsung PDP **commercial-variant identity** — one deterministic `identity_key` per real, currently-sold product, built from brand + category-discriminating attributes (size/resolution/BTU/capacity/connectivity, or a manufacturer model code where available). Not a raw URL count (colour/navigation URLs collapse into one identity) and not a bare model code (many identities have none).
+
+**2. End-to-end chain, re-verified fresh against live production, same cohort throughout.**
+```
+404 (SOURCE) → 397 (RAW evidence exists) → 397 (NORMALIZED) → 390 (CANONICAL) → 349 (SAMSUNG_OFFER) → 390 (USER_VISIBLE)
+```
+Every non-zero transition has a named reason: SOURCE→RAW (−7, genuinely zero evidence — 5 AC bare "18K"/"12K" shorthand with no parseable BTU, 1 monitor + 1 refrigerator with no category cue at all); RAW→NORMALIZED (0 loss); NORMALIZED→CANONICAL (−7: 4 monitors correctly staying `low_confidence_candidate`, 3 identities correctly deferring to an already-existing canonical for the same physical product); CANONICAL→SAMSUNG_OFFER (−41, real products with no currently provable direct Samsung price, never fabricated); CANONICAL→USER_VISIBLE (0 loss, verified directly against `tps_product_projection` — the exact table the customer-facing search API reads, not inferred from `is_active`).
+
+**Founder proof line**: *404 verified Samsung Saudi products → 390 Tawveeri canonicals → 349 Samsung Saudi offers → 390 user-visible products → 14 remaining, each with a documented, individually-verified reason.*
+
+**3. Coverage, reported as two separate truths, per the founder's explicit instruction not to force equality.**
+`PRODUCT_COVERAGE` = 390/404 raw (96.5%), 404/404 accounted-for (100% — every residual individually investigated and explained, none left as "not investigated"). `SAMSUNG_OFFER_COVERAGE` = 349/352 raw (99.1%, denominator restricted to identities where Samsung itself currently exposes a direct offer — never the platform-wide 385 Samsung offer count), 352/352 accounted-for.
+
+**4. Variant integrity and matcher health, re-verified, not re-designed.** 0 duplicate `(brand, model_number)` canonicals platform-wide. Spot-traced model-code → variant → price → canonical → offer → destination for one representative per TV/tablet/AC/monitor/audio/watch: 0 mismatches (one apparent watch model-number discrepancy investigated and confirmed to be a legitimate colour-variant merge, not a defect — colour is correctly excluded from smartwatch identity per Constitution Article III). ADR-347's null-safe matcher regression suite: 15/15 passing. `VARIANT_INTEGRITY = STRONG`, `MATCHER_FIX = CLOSED`.
+
+**5. Singleton guard and database health.** 0 advisory locks held, 0 active backends, 0 long-running queries, 335ms connect — confirming no recovery process was left running from any prior mission. The lane-lock's "manual run proceeds with a warning even when held" behavior was read directly from `normalize-incremental.ts`'s own comments and reconfirmed as a deliberate, documented asymmetry (the scheduled chain yields via `--yield-if-locked`; a manual drain intentionally does not, so it never silently no-ops) — not a defect requiring redesign. `RECOVERY_SINGLETON_GUARD = CLOSED`, `DATABASE_HEALTH = HEALTHY`.
+
+**6. New-model delta: `DEFERRED`.** No dedicated new-model-detection mechanism was built this mission; the existing scheduled Samsung discovery path (unchanged, proven not to reintroduce any fixed defect per ADR-359 §14) is the current, sufficient mechanism. Recorded as the next maintenance item, not a blocker to this closure.
+
+**7. Durable evidence saved.** The "Samsung KSA Backbone Study" artifact (first published under an earlier, narrower 271/267-identity reconciliation) updated to v11 FINAL — the 404-identity denominator, waterfall, category table, and coverage tables now authoritative at the top; all prior versions (v8/v9/v10) kept beneath, explicitly marked as history, not deleted or silently overwritten.
+
+**8. Repository state.** No code changed during this reconciliation pass (read-only verification only, per the founder's explicit mandate) — nothing new to commit. `MISSION_WORKTREE_CHANGES = CLEAN`. One pre-existing, unrelated `.gitignore` modification (present in git status before this mission began, several sessions ago) remains uncommitted and untouched, as it is out of this mission's scope to resolve; `PRE_EXISTING_UNRELATED_CHANGE = PRESENT`.
+
+**Verdict.** `MISSION_SAMSUNG_OFFICIAL_CATALOG = CLOSED`. Zero unexplained current-valid products, zero unexplained offer-eligible gaps, zero wrong-variant attachments, database healthy, singleton verified, full suite green (3,630 tests / 239 suites — re-run this session, no regression).
+
 ### ADR-359 — Samsung KSA official-gateway final residual closure: cooker collision root-caused and fixed (a `namesOverride` bug, not a genuine ambiguity), Galaxy Watch Ultra2 recognized as its own generation, zero unexplained gaps remain — CLOSED · Accepted (2026-09-13)
 **Context.** ADR-358 left one open item: a cooker identity (`NE63C6317SS/ZA`) whose collision-guard trigger was "not fully isolated," plus 3 offer-state gaps (2 dishwashers + 1 microwave) and 1 disclosed ambiguity (Galaxy Watch Ultra2's variant-naming collision against the original Watch Ultra). The founder's mandate for this mission: do not force a 404/404 or 352/352, investigate every residual by model-code-first evidence, and only close if zero residuals remain genuinely unexplained.
 
