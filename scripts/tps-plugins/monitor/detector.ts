@@ -8,6 +8,10 @@ const MONITOR_SIGNALS = [
   "monitor", "مونيتور", "شاشة كمبيوتر", "شاشة حاسوب", "شاشة مكتب",
   "شاشة قيمنج", "شاشة العاب", "شاشة ألعاب", "شاشة الألعاب",
   "gaming monitor", "curved monitor", "ultrawide monitor", "portable monitor",
+  // ADR-350 (2026-09-13): "monintor" — a confirmed Samsung KSA source-side title typo
+  // (samsung.com/sa_en, model LS22A336NHMXUE: "22\" FHD Flat Monintor..."), verified as the
+  // ONLY occurrence of this spelling platform-wide before adding — not a guessed pattern.
+  "monintor",
 ];
 const ACCESSORY_SIGNALS = [
   "monitor arm", "monitor stand", "حامل شاشة", "ذراع شاشة", "desk mount",
@@ -29,13 +33,21 @@ export function detect(nameAr: string, nameEn: string): boolean {
   if (WRONG_DEVICE.test(text)) return false;
   if (WEARABLE_HEALTH.test(text)) return false;
   if (MONITOR_SIGNALS.some((s) => text.includes(s))) return true;
-  // Arabic gaming/spec screen with no explicit "monitor" word: a "شاشة" that
-  // states a gaming cue and a size, or both a refresh rate and a size, is a monitor.
-  if (/شاشة|شاشه/.test(text)) {
-    const gaming = /العاب|ألعاب|قيمنج|gaming/.test(text);
-    const hz = /\d{2,3}\s*(?:hz|هرتز)/.test(text);
-    const inch = /\d{2}(?:\.\d)?\s*(?:inch|"|”|بوصة|انش|إنش)/.test(text);
-    if ((gaming && (hz || inch)) || (hz && inch)) return true;
-  }
+  // Gaming/spec screen with no explicit "monitor" word — e.g. Samsung's own "Odyssey
+  // Neo G9"/"Odyssey OLED G6/G9" gaming-monitor line names carry no "monitor"/"screen"
+  // word at all, just the model line + a gaming cue + hz/inch spec. A device with a
+  // gaming cue and a size, or both a refresh rate and a size, is a monitor — UNLESS it
+  // was already caught above as a TV/laptop/tablet/phone/projector/wearable/accessory.
+  // ADR-350 (2026-09-13): this used to require the Arabic word "شاشة" ("screen") to
+  // appear before even checking gaming/hz/inch at all — but Samsung KSA's English-locale
+  // (sa_en) scrape duplicates name_en into name_ar verbatim (proven: raw_observations
+  // for "Odyssey Neo G9" has name_ar === name_en, no Arabic characters), so that gate
+  // structurally could never fire for an English-only title. The gate applied an
+  // Arabic-only evidentiary bar to an English-sourced store; removing it makes the same
+  // hz/inch/gaming evidence available in both languages, not a new, looser bar.
+  const gaming = /العاب|ألعاب|قيمنج|gaming/.test(text);
+  const hz = /\d{2,3}\s*(?:hz|هرتز)/.test(text);
+  const inch = /\d{2}(?:\.\d)?\s*(?:inch|"|”|بوصة|انش|إنش)/.test(text);
+  if ((gaming && (hz || inch)) || (hz && inch)) return true;
   return false;
 }

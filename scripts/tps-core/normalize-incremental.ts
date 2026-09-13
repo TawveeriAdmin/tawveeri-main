@@ -155,13 +155,14 @@ const arg = (name: string, dflt: number) => {
   const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } });
   const defs = Object.values(CATEGORY_DEFS);
 
-  let fetched = 0, staged = 0, canonicals = 0, corroborated = 0;
+  let fetched = 0, staged = 0, canonicals = 0, corroborated = 0, gapRecovered = 0;
   // Dry-run accounting. Skip reasons are the engine's own classification, not an estimate.
   const dryTotals = { detected: 0, valid: 0, lowConfidence: 0, invalid: 0, singleStore: 0, normalized: 0, matches: 0, prices: 0, priceTransitionsRejected: 0, keys: new Set<string>() };
   for (let i = 0; i < effBatches; i++) {
     const r = await runSweepUnit(sb, defs, limit, onlyStores, dryRun, replayFrom);
     fetched += r.normalize.fetched;
     staged += r.normalize.staged;
+    gapRecovered += r.normalize.gapRecovered ?? 0;
     for (const [cat, c] of Object.entries(r.normalize.byCategory)) {
       dryTotals.detected += c.detected; dryTotals.valid += c.valid;
       dryTotals.lowConfidence += c.lowConfidence; dryTotals.invalid += c.invalid;
@@ -212,6 +213,11 @@ const arg = (name: string, dflt: number) => {
   // response cap. This line makes that class of loss visible in the scheduler log the day
   // it starts: staged>0 with normalized«staged is the alarm shape.
   console.log(`  normalized observations written=${dryTotals.normalized} (staged this run=${staged})`);
+  // GUARDRAIL (ADR-351): the trailing gap re-scan found and staged rows that were already
+  // BEHIND the cursor but had never been staged in any category — proof a durability gap
+  // (concurrent out-of-order commits, see ADR-351) actually happened and was self-healed.
+  // Zero is the expected steady state; any nonzero run here is worth a look, not an alarm.
+  if (gapRecovered > 0) console.log(`  GAP-RESCAN: recovered ${gapRecovered} previously-stranded observation(s) behind the cursor`);
 
   // DELIVERY GUARANTEE (2026-07-30): the aggregate "backlog" hides which STORE is behind,
   // and it is not a queue position — sweeps advance a cursor PER STORE, so a single lagging

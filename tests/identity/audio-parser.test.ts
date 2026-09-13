@@ -7,6 +7,7 @@
 // v1 left null — the zero-churn discipline this suite pins down.
 import { normalize } from "../../scripts/tps-plugins/audio/parser";
 import { buildIdentityKey } from "../../scripts/tps-plugins/audio/identity";
+import { detect } from "../../scripts/tps-plugins/audio/detector";
 
 const m = (ar: string, en: string, brand: string | null) => {
   const n = normalize(ar, en, brand, {});
@@ -79,4 +80,14 @@ describe("precision — no fabricated identity", () => {
   it("a generic wired earbud with no line stays unidentified", () => {
     expect(identified(m("جي بي إل ,سماعة أذن سلكية رياضية مقاومة للعرق , أسود", "", "JBL"))).toBe(false);
   });
+});
+
+// ADR-350 (2026-09-13): Samsung's "Sound Tower" party-speaker line name never says
+// "speaker" or "soundbar" — verified as the only genuine speaker titles platform-wide
+// carrying this exact phrase before adding it as a signal.
+describe("detector — Samsung 'Sound Tower' naming (ADR-350)", () => {
+  it.each([
+    ["MX-T70 1500W Sound Tower Black Zn (MX-T70/ZN)"],
+    ["Sound Tower MX-ST50B Black Sa (MX-ST50B/SA)"],
+  ])("detects: %s", (en) => { expect(detect("", en)).toBe(true); });
 });

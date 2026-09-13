@@ -9,6 +9,11 @@ const AUDIO_SIGNALS = [
   "headphone", "headphones", "سماعة", "سماعات", "earbuds", "earbud", "earphone",
   "airpods", "ايربودز", "ايربود", "speaker", "مكبر صوت", "buds", "soundbar",
   "ساوند بار", "headset", "in-ear", "over-ear", "on-ear", "freebuds",
+  // ADR-350 (2026-09-13): "sound tower" — Samsung's own party-speaker product-line name
+  // (samsung.com/sa_en, MX-T70/ZN and MX-ST50B/SA), which never says "speaker" or
+  // "soundbar" in its title. Verified as appearing on exactly these 2 genuine speaker
+  // SKUs platform-wide before adding — no false-positive risk found.
+  "sound tower",
 ];
 const ACCESSORY_SIGNALS = [
   "charger", "شاحن", "charging case for", "case for", "كفر", "cover for", "غطاء",

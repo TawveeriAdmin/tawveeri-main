@@ -32,11 +32,28 @@ export function buildIdentityKey(
   const conn = (p.connectivity as string) || "gps";
   const key = `${cb}|${family}|${generation}|${variant}|${size}|${conn}`;
 
-  // Case size is the main price discriminator; without it the identity is weaker
-  // and must not silently claim full confidence.
+  // ADR-350 (2026-09-13): band-type families (Galaxy Fit, Huawei Band, Honor Band, Huawei
+  // Watch Fit, ...) are sold in ONE physical size — unlike round-watch families (Galaxy
+  // Watch, Galaxy Watch Ultra, Huawei Watch GT, Honor Watch, ...) where a 40mm and a 44mm
+  // of the same generation are genuinely different SKUs at different prices. For those,
+  // a missing size really is missing price-discriminating information and must stay
+  // low-confidence. For a band-type family, "no size" isn't missing evidence — there is no
+  // size axis to miss, the same way mobile's NO_STORAGE sentinel is a legitimate, confident
+  // identity for a phone that genuinely has no storage variants. Proven case: Samsung's own
+  // "Galaxy Fit3 Gray/Pink Gold/Silver, Bluetooth v5.3" titles never carry a case-size
+  // spec at all — treating that as low-confidence would leave every Galaxy Fit3 unable to
+  // ever corroborate into a canonical. Generic — applies to any brand's Fit/Band family, not
+  // a Samsung-only carve-out.
+  const isBandTypeFamily = /\bfit\b|\bband\b/i.test(family);
+  const sizeIsFullyResolved = p.size_mm != null || isBandTypeFamily;
+
+  // Case size is the main price discriminator for round watches; without it (and without
+  // being a band-type family) the identity is weaker and must not silently claim full confidence.
   return {
     key,
-    status: p.size_mm != null ? "valid" : "low_confidence_candidate",
-    reason: p.size_mm != null ? "full: family+gen+size+connectivity" : "size missing",
+    status: sizeIsFullyResolved ? "valid" : "low_confidence_candidate",
+    reason: sizeIsFullyResolved
+      ? (p.size_mm != null ? "full: family+gen+size+connectivity" : "band-type family — no size axis, NO_SIZE is a confident identity")
+      : "size missing",
   };
 }

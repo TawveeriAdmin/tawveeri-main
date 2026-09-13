@@ -18,6 +18,8 @@ import { mobilePlugin, normalize as mobileN } from "../tps-plugins/mobile";
 import { smartwatchPlugin, normalize as smartwatchN } from "../tps-plugins/smartwatch";
 import { refrigeratorPlugin } from "../tps-plugins/refrigerator";
 import { washingMachinePlugin } from "../tps-plugins/washing_machine";
+import { ringPlugin } from "../tps-plugins/ring";
+import { trackerPlugin } from "../tps-plugins/tracker";
 import { APPLIANCE_BUNDLES, APPLIANCE_CATEGORIES } from "../tps-plugins/appliance";
 import { buildNames as tvNames } from "../tps-matcher/tv-matcher-v1-dry";
 import { buildNames as tabletNames } from "../tps-matcher/tablet-matcher-v1-dry";
@@ -239,11 +241,52 @@ export const CATEGORY_DEFS: Record<string, CategoryDef> = {
   washing_machine: {
     category: "washing_machine", detected: "washing_machine", plugin: washingMachinePlugin,
     normalize: (a, b, br) => washingMachinePlugin.normalize(a, b, br), version: "washing_machine-v1",
-    filterKeywords: ["غسالة", "washing machine", "washer"],
-    // key = brand|type|capacity_kg|dryer(combo|washer)
-    names: (k) => { const p = k.split("|"); const b = p[0], ty = p[1].replace(/_/g, " "), kg = p[2], combo = p[3] === "combo"; return { nameAr: `غسالة ${b} ${ty} ${kg} كجم${combo ? " ونشافة" : ""}`.trim(), nameEn: `${b} ${ty} ${combo ? "washer/dryer" : "washer"} ${kg}kg`.trim() }; },
-    attrs: (k) => { const p = k.split("|"); return { washer_type: p[1], capacity_kg: Number(p[2]), has_dryer: p[3] === "combo" }; },
+    // ADR-350 (2026-09-13): "dryer"/"نشاف"/"مجفف ملابس" added — a standalone dryer's raw
+    // title never contains "غسالة"/"washing machine"/"washer" at all, so none of the
+    // original keywords could ever surface it to the detector.
+    filterKeywords: ["غسالة", "washing machine", "washer", "dryer", "نشاف", "مجفف ملابس"],
+    // key = brand|type|capacity_kg|dryer(combo|washer|standalone_dryer)
+    names: (k) => {
+      const p = k.split("|"); const b = p[0], ty = p[1].replace(/_/g, " "), kg = p[2];
+      const combo = p[3] === "combo", standaloneDryer = p[3] === "standalone_dryer";
+      if (standaloneDryer) return { nameAr: `مجفف ملابس ${b} ${kg} كجم`.trim(), nameEn: `${b} clothes dryer ${kg}kg`.trim() };
+      return { nameAr: `غسالة ${b} ${ty} ${kg} كجم${combo ? " ونشافة" : ""}`.trim(), nameEn: `${b} ${ty} ${combo ? "washer/dryer" : "washer"} ${kg}kg`.trim() };
+    },
+    attrs: (k) => { const p = k.split("|"); return { washer_type: p[1], capacity_kg: Number(p[2]), has_dryer: p[3] === "combo", is_standalone_dryer: p[3] === "standalone_dryer" }; },
     canonSeed: (k) => `canonical:washing_machine:${k}`, normSeed: (o) => `norm:washing_machine:raw_observations:${o}`, requireValidTier: false, priceBand: null,
+  },
+  // ADR-351 (2026-09-13) — smart rings (Galaxy Ring, Oura, RingConn, Circular, Ultrahuman).
+  // Deliberately registered even though today's evidence is mostly UNPRICED: canonical
+  // creation in `corroboratePass` has no price requirement anywhere — a product's identity
+  // and its current commercial offer are already separate concerns at the schema level. A
+  // ring product is real, current, and worth representing in Product Truth (PRODUCT_SUPPORTED)
+  // even on the days no store publishes a price for it (SAMSUNG_OFFER_UNAVAILABLE is then a
+  // fact about the offer, not a reason to make the product itself invisible). Multi-merchant
+  // evidence checked before building: Galaxy Ring listed on both samsung.com and Amazon SA.
+  ring: {
+    category: "ring", detected: "ring", plugin: ringPlugin,
+    normalize: (a, b, br) => ringPlugin.normalize(a, b, br), version: "ring-v1",
+    filterKeywords: ["ring", "خاتم", "galaxy ring", "oura", "ringconn"],
+    // key = brand|family|material
+    names: (k) => { const p = k.split("|"); const b = p[0], fam = p[1], mat = p[2]; return { nameAr: `${fam} ${b} ${mat !== "Standard" ? mat : ""}`.trim(), nameEn: `${b} ${fam}${mat !== "Standard" ? ` ${mat}` : ""}`.trim() }; },
+    attrs: (k) => { const p = k.split("|"); return { family: p[1], material: p[2] }; },
+    canonSeed: (k) => `canonical:ring:${k}`, normSeed: (o) => `norm:ring:raw_observations:${o}`, requireValidTier: false, priceBand: null,
+  },
+  // ADR-351 (2026-09-13) — Bluetooth item-finders (Samsung SmartTag, Apple AirTag, Tile,
+  // Aukey Track Mate). Multi-merchant evidence checked before building: Jarir, Noon and
+  // Almanea all carry real, priced tracker SKUs distinct from Samsung's own — this is a
+  // genuine comparison-value category, not a Samsung-only completeness exercise. Colour is
+  // kept as part of identity (unlike ring's material) because production evidence showed a
+  // real price difference between Samsung's own SmartTag2 colours — collapsing them risked
+  // merging two SKUs that may be legitimately priced differently.
+  tracker: {
+    category: "tracker", detected: "tracker", plugin: trackerPlugin,
+    normalize: (a, b, br) => trackerPlugin.normalize(a, b, br), version: "tracker-v1",
+    filterKeywords: ["smarttag", "airtag", "tile", "item locator", "bluetooth tracker", "track mate", "سمارت تاج"],
+    // key = brand|family|variant
+    names: (k) => { const p = k.split("|"); const b = p[0], fam = p[1], v = p[2]; return { nameAr: `${fam} ${b} ${v !== "Standard" ? v : ""}`.trim(), nameEn: `${b} ${fam}${v !== "Standard" ? ` ${v}` : ""}`.trim() }; },
+    attrs: (k) => { const p = k.split("|"); return { family: p[1], variant: p[2] }; },
+    canonSeed: (k) => `canonical:tracker:${k}`, normSeed: (o) => `norm:tracker:raw_observations:${o}`, requireValidTier: false, priceBand: null,
   },
 };
 

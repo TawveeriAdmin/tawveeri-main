@@ -33,6 +33,18 @@ describe("detector — accessories and other categories are hard-rejected", () =
     expect(detect(title, "")).toBe(false);
   });
 
+  // ADR-351 (2026-09-13): "Galaxy Ring Titanium Black Size 12" matched on bare "galaxy" —
+  // harmless in practice (buildIdentityKey then correctly rejects it downstream, since ring
+  // text has no phone family/generation to extract, so no bad canonical was ever written)
+  // but a real false-positive worth closing at the source, same as smartwatch/tablet above.
+  it.each([
+    ["Galaxy Ring Titanium Black Size 12 (SM-Q502NZKAMEA)", "Galaxy Ring matched bare 'galaxy'"],
+    ["Smart Ring health tracker, titanium finish", "generic smart ring"],
+    ["خاتم ذكي لمراقبة الصحة", "Arabic 'smart ring' (no watch word present)"],
+  ])("rejects Galaxy Ring / smart ring: %s (%s)", (title) => {
+    expect(detect("", title)).toBe(false);
+  });
+
   // ADR-071: each of these was a MEASURED false claim costing a comparison slot
   // in the largest Saudi category.
   it.each([

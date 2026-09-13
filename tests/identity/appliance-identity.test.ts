@@ -230,3 +230,18 @@ describe("cooker fuel identity — gas, electric, and mixed can never merge", ()
     expect(names("starway|burners_5|90").nameAr).toBe("طباخ غاز starway 5 شعلات 90 سم");
   });
 });
+
+// ADR-350 (2026-09-13, Samsung KSA official-catalog closure mission): Samsung's own PDPs
+// never say "vacuum" — their in-house naming is "Bespoke Jet AI Stick VC..." ("VC" = their
+// house abbreviation for Vacuum Cleaner, "Jet"/"Bespoke Jet" the sub-brand). Proven the ONLY
+// two platform-wide titles containing "stick vc"/"bespoke jet" are this real vacuum and one
+// TV+vacuum bundle SKU — the bundle must stay excluded (its price is the bundle's, not the
+// vacuum's alone).
+describe("vacuum detector — Samsung's 'VC'/'Bespoke Jet' naming (ADR-350)", () => {
+  it("detects Samsung's real Bespoke Jet AI Stick VC listing", () => {
+    expect(vacuum.detect("", "Bespoke Jet AI Stick VC with Powerfull Performance, 250W White Yl (VS25C9754QG/YL)")).toBe(true);
+  });
+  it("still rejects a TV+vacuum hard bundle (compound price, not the vacuum's own)", () => {
+    expect(vacuum.detect("", "75\" The Frame Pro 4K Samsung Vision AI Smart TV (2025) and Jet65 Stick VC Hard Bundle 33 F (F-FA01COMBO33)")).toBe(false);
+  });
+});

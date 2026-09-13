@@ -118,3 +118,30 @@ describe("precision — rejects rather than guesses", () => {
     expect(idOf("", "Honor Watch 5", "Honor").key).not.toBe(idOf("", "Huawei Watch 5", "Huawei").key);
   });
 });
+
+// ADR-350 (2026-09-13): band-type families (Galaxy Fit, Huawei Band, Honor Band, Huawei
+// Watch Fit, ...) are sold in ONE physical size — unlike round-watch families (Galaxy Watch,
+// Galaxy Watch Ultra, Huawei Watch GT, Honor Watch, ...) where a 40mm vs. 44mm of the same
+// generation really is a different SKU at a different price. Proven case: Samsung's own
+// "Galaxy Fit3 Gray/Pink Gold/Silver, Bluetooth v5.3" titles never carry a case-size spec at
+// all — before this fix every Galaxy Fit3 observation stayed low_confidence_candidate forever
+// and could never corroborate into a canonical, purely because it belongs to a family that
+// structurally has no size axis (not because evidence was actually missing).
+describe("identity — band-type families don't need a case size to be confident (ADR-350)", () => {
+  it("Galaxy Fit3 with no case-size spec is VALID (NO_SIZE is a confident identity for a band)", () => {
+    const r = idOf("", "Galaxy Fit3 Gray Bluetooth V5 3 (SM-R390NZAAMEA)", "Samsung");
+    expect(r.status).toBe("valid");
+    expect(r.key).toBe("samsung|Galaxy Fit|3|Standard|NO_SIZE|gps");
+  });
+
+  it("a round Galaxy Watch with no case-size spec STAYS low_confidence (size genuinely discriminates price there)", () => {
+    const r = idOf("", "Samsung Galaxy Watch 6, Bluetooth", "Samsung");
+    expect(r.status).toBe("low_confidence_candidate");
+  });
+
+  it("a Huawei Band with no case-size spec is also VALID (generic fix, not Samsung-only)", () => {
+    const r = idOf("", "Huawei Band 9, Bluetooth, Black", "Huawei");
+    expect(r.status).toBe("valid");
+    expect(r.key).toContain("|NO_SIZE|");
+  });
+});

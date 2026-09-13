@@ -30,8 +30,18 @@ export const APPLIANCE_CONFIGS: ApplianceCfg[] = [
     techFlags: [["convection", "convection|كونفكشن|حراري"], ["grill", "grill|جريل|شواية"], ["inverter", "inverter|انفرتر"]],
   },
   {
-    category: "vacuum", version: "vacuum-v1", nounAr: "مكنسة", nounEn: "vacuum cleaner", metricAr: "واط", metricEn: "W",
-    signals: "vacuum cleaner|vacuum|مكنسة|مكنسه|hoover",
+    category: "vacuum", version: "vacuum-v2", nounAr: "مكنسة", nounEn: "vacuum cleaner", metricAr: "واط", metricEn: "W",
+    // ADR-350 (2026-09-13, Samsung KSA official-catalog closure mission): samsung.com's own
+    // PDPs never say "vacuum" — Samsung's in-house naming is "Bespoke Jet AI Stick VC with
+    // Powerfull Performance, 250W" (VS25C9754QG/YL), using "VC" (their house abbreviation for
+    // Vacuum Cleaner) and the "Jet"/"Bespoke Jet" sub-brand name instead. Proven: this exact
+    // title matched the URL path /vacuum-cleaners/stick/, correctly cleared rejectWrong (no
+    // refrigerator/AC/washer/blender collision), and was the ONLY standalone Samsung vacuum
+    // observation in production — so this is a narrow, evidence-scoped addition, not a guess.
+    // Checked platform-wide before adding: "stick vc" and "bespoke jet" appear nowhere else in
+    // raw_observations outside Samsung's own vacuum line, so this cannot newly capture an
+    // unrelated product from any other store/brand.
+    signals: "vacuum cleaner|vacuum|مكنسة|مكنسه|hoover|\\bstick vc\\b|\\bbespoke jet\\b",
     // MEASURED DEFECT (2026-08-22): "kyvol|robot|NA" and "philips|robot|NA" each merged
     // several GENUINE robot vacuum models with their own mopping-cloth/kit accessory
     // listings into one canonical (identity has no model discriminator for "robot" type),
@@ -42,7 +52,13 @@ export const APPLIANCE_CONFIGS: ApplianceCfg[] = [
     // `accessor(?:y|ies) kit` and `mop(?:ping)? (?:pad|cloth)s?` cover both forms without
     // matching a genuine "...Vacuum & Mop..." device title (no pad/cloth follows "Mop").
     rejectAccessory: "\\bbag[s]?\\b|dust bag|filter\\b|فلتر|كيس|brush\\b|فرشاة|hose\\b|خرطوم|battery|بطارية|charger|شاحن|belt|mop(?:ping)? (?:pad|cloth)s?|replacement|spare|nozzle|فوهة|accessor(?:y|ies) kit",
-    rejectWrong: "refrigerator|ثلاجة|fridge|freezer|beverage|cooler|مبرد|air ?condition|مكيف|washer|غسالة|blender|خلاط",
+    // "bundle"/"hard bundle" rejected (2026-09-13, ADR-350): the new "stick vc"/"bespoke jet"
+    // signals above also match Samsung's "...TV...and Jet65 Stick VC Hard Bundle..." SKU
+    // (F-FA01COMBO33) — a compound TV+vacuum multi-product listing whose price is the bundle's,
+    // not the vacuum's alone. Treating it as a standalone vacuum identity would fabricate that
+    // product's price. Verified platform-wide: only these 2 titles contain "stick vc"/"bespoke
+    // jet" at all, so this exclusion narrowly removes the bundle without affecting any other match.
+    rejectWrong: "refrigerator|ثلاجة|fridge|freezer|beverage|cooler|مبرد|air ?condition|مكيف|washer|غسالة|blender|خلاط|\\bbundle\\b",
     brandGuess: "samsung|سامسون|\\blg\\b|dyson|دايسون|xiaomi|شاومي|ezviz|philips|فيليبس|black[+ ]?decker|بلاك|hitachi|هيتاشي|panasonic|باناسونيك|bissell|kärcher|karcher|كارشر|nikai|نيكاي|midea|ميديا|eufy|roborock|deerma|toshiba|توشيبا",
     types: [["robot", "robot|روبوت|روبوتيك|robotic"], ["upright", "upright|عمودية|قائمة"], ["cylinder", "cylinder|canister|أسطوانية|اسطوانية"], ["handheld", "handheld|hand-?held|يدوية|يدويه|portable|car vacuum|مكنسة سيارة"], ["wet_dry", "wet.?dry|wet & dry|wet and dry|رطب.*جاف|water filtration"], ["stick", "stick|cordless stick|عصا"]],
     capacity: { regex: "(\\d{3,4})\\s*(?:w\\b|watt|watts|واط|وات)", min: 200, max: 3000 },

@@ -20,6 +20,26 @@ describe("detector — monitors, not TVs / laptops / accessories", () => {
     ["شاشة ألعاب داهوا 27 بوصة FHD، لوحة IPS، 200Hz"],
   ])("detects monitor: %s", (en) => { expect(detect("", en)).toBe(true); });
 
+  // ADR-350 (2026-09-13): Samsung's own gaming-monitor line names ("Odyssey Neo G9",
+  // "Odyssey OLED G6/G9") carry no "monitor"/"screen" word at all — just the model line +
+  // hz/inch. The old fallback gated this hz/inch/gaming check behind requiring the Arabic
+  // word "شاشة" first, which could never fire for Samsung KSA's English-locale (sa_en)
+  // scrape — proven live: its name_ar field is a verbatim duplicate of name_en, no Arabic
+  // characters at all. This is a same-language-symmetry fix (English gets the same
+  // evidentiary bar Arabic already had), not a new, looser one.
+  it.each([
+    ["57\" Odyssey Neo G9 G95NC Inch 240hz Curved Dual Uhd (LS57CG952NMXUE)"],
+    ["27\" Odyssey OLED G6 G61SD QHD Inch 240hz (LS27DG612SMXUE)"],
+  ])("detects English-only gaming monitor with no 'monitor' word: %s", (en) => {
+    expect(detect(en, en)).toBe(true); // name_ar === name_en, as Samsung KSA's sa_en scrape actually stores it
+  });
+
+  // ADR-350: confirmed Samsung KSA source-side title typo (model LS22A336NHMXUE) — the
+  // ONLY occurrence of this spelling platform-wide.
+  it("detects Samsung's own 'Monintor' title typo", () => {
+    expect(detect("", "22\" FHD Flat Monintor with Wide Viewing Angle S33a Inch (LS22A336NHMXUE)")).toBe(true);
+  });
+
   it.each([
     ["Samsung 55 Inch QLED 4K Smart TV 2024"],
     ["LG OLED evo 65 Inch 4K Smart TV"],

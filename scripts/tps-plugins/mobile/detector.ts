@@ -43,6 +43,12 @@ const ACCESSORY_SIGNALS = [
 const FOREIGN_CATEGORY_SIGNALS = [
   // wearables
   "watch", "ساعه", "smartwatch", "band", "galaxy fit", "سوار ذكي",
+  // ADR-351 (2026-09-13): "Galaxy Ring Titanium Black Size 12" matched on "galaxy" alone —
+  // detect() returned true (harmless in practice: buildIdentityKey then correctly rejects it,
+  // since it can't extract a phone family/generation from ring-specific text, so no bad
+  // canonical is ever written) but it's still a wasted false-positive worth closing at the
+  // source, the same way smartwatch/tablet get their own explicit exclusion here.
+  "galaxy ring", "smart ring", "خاتم ذكي",
   // audio
   "airpods", "buds", "سماعه", "سماعات", "headphone", "headset", "earbud", "earphone", "speaker", "مكبر صوت",
   // tablets

@@ -21,7 +21,10 @@ function stableUuid(seed: string): string {
   return [h.slice(0, 8), h.slice(8, 12), "4" + h.slice(13, 16), ((parseInt(h.slice(16, 17), 16) & 0x3) | 0x8).toString(16) + h.slice(17, 20), h.slice(20, 32)].join("-");
 }
 const asString = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v.trim() : null);
-function adaptRow(p: Record<string, unknown>, rawName: string | null) {
+// Exported (ADR-351) so the one-time historical gap backfill (backfill-gap-scan.ts) can reuse
+// the EXACT SAME row-adaptation/price/image extraction the normal sweep uses, instead of a
+// second hand-maintained copy that could silently drift from this one.
+export function adaptRow(p: Record<string, unknown>, rawName: string | null) {
   const nameAr = asString(p.nameAr) ?? asString(p.name_ar) ?? asString(p.name) ?? asString(rawName) ?? "";
   const nameEn = asString(p.nameEn) ?? asString(p.name_en) ?? asString(p.title) ?? "";
   // ADR-191: a merchant feed that puts its OWN shop name in the brand field would otherwise
@@ -30,7 +33,7 @@ function adaptRow(p: Record<string, unknown>, rawName: string | null) {
   const brand = brandOrNull(asString(p.brandEn) ?? asString(p.brand) ?? asString(p.brandAr));
   return { nameAr, nameEn, brand, url: pickBestUrl(p) };
 }
-function extractPrice(p: Record<string, unknown>): number | null {
+export function extractPrice(p: Record<string, unknown>): number | null {
   for (const c of [p.current_price, p.sellingPrice, p.price, p.wasPrice, p.original_price]) {
     const n = typeof c === "number" ? c : Number(asString(c));
     if (Number.isFinite(n) && n > 0) return Math.round(n);
@@ -40,7 +43,7 @@ function extractPrice(p: Record<string, unknown>): number | null {
 /** First usable http(s) product image the observation carries (never fabricated). 59% of
  *  observations have one; the canonical previously dropped them (image_url:null), so every
  *  comparison card rendered imageless. Thread it through staging so corroboration can set it. */
-function extractImage(p: Record<string, unknown>): string | null {
+export function extractImage(p: Record<string, unknown>): string | null {
   const arr = p.image_urls ?? p.images ?? p.image;
   const list = Array.isArray(arr) ? arr : [arr];
   for (const cand of list) {
@@ -57,7 +60,11 @@ export interface SweepMetrics { fetched: number; staged: number; saturated: bool
    *  they are persisted instead. Threaded to corroboratePass so a dry run can see the work it
    *  just computed; without this the dry pass reads only previously-persisted staging and
    *  under-reports its own effect to zero. */
-  pendingStaging?: Record<string, unknown>[]; }
+  pendingStaging?: Record<string, unknown>[];
+  /** ADR-351: rows recovered by the trailing gap re-scan (already behind the cursor, never
+   *  previously staged in any category) — a non-zero count here on a real run means the
+   *  self-heal actually found and fixed a durability gap, not just headroom that was never used. */
+  gapRecovered?: number; }
 
 const GLOBAL = "_all_"; // cursor category for the single-pass scan
 
@@ -129,29 +136,105 @@ export async function normalizeSweep(sb: SupabaseClient, defs: CategoryDef[], li
   // almanea was worth if jarir drained in the same pass. Absent = every store, i.e.
   // unchanged behaviour for the scheduler and for a plain `normalize-incremental`.
   const pending: { store: typeof TPS_STORES[number]; last: number }[] = [];
+  // ADR-351: EVERY candidate store gets a gap re-scan below, not only ones with new forward
+  // work — a store whose cursor believes it is fully caught up (zero forward work) is
+  // EXACTLY the shape of a store hiding a stranded gap behind it, so gating the re-scan on
+  // "has pending forward work" would skip the one case this fix exists for.
+  const gapCandidateStores: { store: typeof TPS_STORES[number]; last: number }[] = [];
   for (const s of TPS_STORES) {
     if (onlyStores && !onlyStores.includes(s.id)) continue;
     const last = replayFrom != null ? replayFrom : (cursorOf.get(s.id) ?? 0);
+    gapCandidateStores.push({ store: s, last });
     const { data: probe } = await sb
       .from("raw_observations").select("id").eq("store_id", s.id).gt("id", last).limit(1);
     if ((probe ?? []).length) pending.push({ store: s, last });
   }
 
   const perStore = Math.max(1, Math.floor(limit / Math.max(1, pending.length)));
-  const m: SweepMetrics = { fetched: 0, staged: 0, saturated: false, byCategory: {} };
+  const m: SweepMetrics = { fetched: 0, staged: 0, saturated: false, byCategory: {}, gapRecovered: 0 };
   for (const d of defs) m.byCategory[d.category] = { detected: 0, valid: 0, lowConfidence: 0, invalid: 0, touched: new Set() };
   const stagingRows: Record<string, unknown>[] = [];
-  for (const { store: s, last } of pending) {
-    // `scraped_at` is WHEN WE ACTUALLY SAW THE PRICE. It must travel with the row: the
-    // pipeline previously stamped every downstream timestamp with the processing time, which
-    // is on average 6.4 DAYS later than the observation (measured 2026-07-31 across 296,339
-    // staged rows; 71.9% staged >24h after the scrape, max 43.3 days).
-    const { data, error } = await sb.from("raw_observations").select("id, store_id, raw_name, payload, scraped_at").eq("store_id", s.id).gt("id", last).order("id", { ascending: true }).limit(perStore);
-    if (error) throw new Error(`fetch store ${s.id}: ${error.message}`);
-    const rows = (data ?? []) as { id: number; store_id: number | null; raw_name: string | null; payload: Record<string, unknown> | null; scraped_at: string | null }[];
+  // ADR-351 (2026-09-13, durability fix): `raw_observations.id` is a real Postgres
+  // `GENERATED ALWAYS AS IDENTITY` sequence. Under concurrent writers (proven: the Samsung
+  // recovery mission's manual script running alongside the normal scheduled ingestion for
+  // the same store), transactions can COMMIT out of id order — a snapshot read can see id
+  // 101 before id 100's transaction becomes visible. The OLD code set the cursor to
+  // `MAX(id)` seen in the batch and never looked back, which permanently strands id 100 the
+  // moment the cursor passes 101: no future `WHERE id > cursor` scan can ever see it again.
+  // Measured, live: ~95 Samsung raw_observations rows (spanning a full month) were never
+  // staged under any category despite the store's cursor already sitting at the exact max
+  // id — proving this is a real, not theoretical, silent-skip class.
+  //
+  // Fix (self-healing, no schema migration, PostgreSQL-native): on every sweep, in addition
+  // to advancing forward past the cursor, also RE-SCAN a small trailing window immediately
+  // BEHIND the cursor for any raw_observations row with no staging row in ANY category at
+  // all, and process it. This is cheap (one indexed anti-join over a small fixed window,
+  // not the whole backlog) and self-corrects any gap within a few sweeps, regardless of how
+  // it was created — it does not depend on guessing a "safe" time delay. Reprocessing a row
+  // that was legitimately never detected by any plugin is harmless and idempotent (staging
+  // upserts on `(category, raw_obs_id)`); the window is fixed-size, so the added cost is
+  // bounded per sweep, not proportional to total backlog.
+  const TRAILING_GAP_WINDOW = 5000;
+  const TRAILING_GAP_LIMIT = 300;
+
+  type RawRow = { id: number; store_id: number | null; raw_name: string | null; payload: Record<string, unknown> | null; scraped_at: string | null };
+  const pendingByStore = new Map(pending.map((p) => [p.store.id, p.last]));
+
+  // ADR-351: outer loop is the SUPERSET (every candidate store, gap-rescan always runs),
+  // not just `pending` (stores with new forward work) — see the comment above
+  // `gapCandidateStores`. A store absent from `pending` still gets its gap re-scan; it just
+  // has no forward fetch and therefore no cursor change.
+  for (const { store: s, last } of gapCandidateStores) {
+    const hasForwardWork = pendingByStore.has(s.id);
+    let rows: RawRow[] = [];
+    if (hasForwardWork) {
+      // `scraped_at` is WHEN WE ACTUALLY SAW THE PRICE. It must travel with the row: the
+      // pipeline previously stamped every downstream timestamp with the processing time, which
+      // is on average 6.4 DAYS later than the observation (measured 2026-07-31 across 296,339
+      // staged rows; 71.9% staged >24h after the scrape, max 43.3 days).
+      const { data, error } = await sb.from("raw_observations").select("id, store_id, raw_name, payload, scraped_at").eq("store_id", s.id).gt("id", last).order("id", { ascending: true }).limit(perStore);
+      if (error) throw new Error(`fetch store ${s.id}: ${error.message}`);
+      rows = (data ?? []) as RawRow[];
+    }
+
+    // Trailing gap re-scan (ADR-351): rows already behind this store's cursor that never
+    // produced ANY staging row at all. Bounded window, does not move the cursor (they are
+    // already behind it) — purely a self-heal for rows a past sweep's snapshot missed. Runs
+    // for EVERY candidate store, including one with zero forward work — that is exactly the
+    // "cursor believes it is fully caught up" shape the production incident had.
+    let gapRows: RawRow[] = [];
+    if (!dry && last > 0) {
+      const windowFloor = Math.max(0, last - TRAILING_GAP_WINDOW);
+      const { data: gapCandidates, error: gapErr } = await sb
+        .from("raw_observations").select("id, store_id, raw_name, payload, scraped_at")
+        .eq("store_id", s.id).gt("id", windowFloor).lte("id", last)
+        .order("id", { ascending: true }).limit(TRAILING_GAP_LIMIT * 4);
+      if (gapErr) throw new Error(`gap-rescan fetch store ${s.id}: ${gapErr.message}`);
+      const candidates = (gapCandidates ?? []) as RawRow[];
+      if (candidates.length) {
+        const ids = candidates.map((r) => r.id);
+        const { data: stagedIds, error: stagedErr } = await sb
+          .from("tps_identity_staging").select("raw_obs_id").in("raw_obs_id", ids);
+        if (stagedErr) throw new Error(`gap-rescan staging check store ${s.id}: ${stagedErr.message}`);
+        const stagedSet = new Set((stagedIds ?? []).map((r: { raw_obs_id: number }) => r.raw_obs_id));
+        gapRows = candidates.filter((r) => !stagedSet.has(r.id)).slice(0, TRAILING_GAP_LIMIT);
+      }
+    }
+
+    if (!hasForwardWork && !gapRows.length) continue; // nothing to do for this store this sweep
+
     m.fetched += rows.length;
+    // Only count a gap row as "recovered" if it actually produces at least one staging row
+    // this pass — NOT merely "was re-examined." A row no plugin's detect() ever claims (a
+    // genuine non-product, e.g. an accessory) is legitimately re-tested every sweep for as
+    // long as it sits in the trailing window (harmless, cheap, and correct — the same row
+    // would be re-tested on its very first forward-fetch pass too), and counting THAT as
+    // "recovered" would falsely alarm on every single run forever instead of only when this
+    // fix actually finds and fills a real durability gap.
+    const gapIds = new Set(gapRows.map((r) => r.id));
+    const stagingCountBeforeThisStore = stagingRows.length;
     let maxId = last;
-    for (const row of rows) {
+    for (const row of [...rows, ...gapRows]) {
       if (row.id > maxId) maxId = row.id;
       const p = row.payload ?? {};
       const { nameAr, nameEn, brand, url } = adaptRow(p, row.raw_name);
@@ -179,6 +262,17 @@ export async function normalizeSweep(sb: SupabaseClient, defs: CategoryDef[], li
         });
       }
     }
+    if (gapIds.size) {
+      const recoveredIds = new Set(
+        stagingRows.slice(stagingCountBeforeThisStore)
+          .map((r) => (r as { raw_obs_id: number }).raw_obs_id)
+          .filter((id) => gapIds.has(id)),
+      );
+      m.gapRecovered = (m.gapRecovered ?? 0) + recoveredIds.size;
+    }
+    // maxId is derived ONLY from `rows` (the forward fetch, id > last) — gapRows are already
+    // behind `last` by construction (id <= last) so they can never move maxId past where the
+    // forward fetch itself established it is safe to advance to.
     if (!dry) {
       const { error: ce } = await sb.from("tps_progress_cursors").upsert({ category: GLOBAL, store_id: s.id, last_raw_id: maxId, updated_at: new Date().toISOString() }, { onConflict: "category,store_id" });
       if (ce) throw new Error(`cursor upsert store ${s.id}: ${ce.message}`);
