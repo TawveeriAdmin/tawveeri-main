@@ -145,3 +145,30 @@ describe("identity — band-type families don't need a case size to be confident
     expect(r.key).toContain("|NO_SIZE|");
   });
 });
+
+// PROVEN LIVE (2026-09-13, Official Gateway Closure mission): two real Samsung KSA
+// "Galaxy Watch Ultra2" PDPs (Silver LTE SM-L715FZSAKSA, Gray LTE SM-L715FZKAKSA) —
+// titles never state a case size, staying low_confidence_candidate forever, even
+// though Samsung's own declared spec table states "Body Dimension (HxWxD, mm):
+// 47.4 x 47.1 x 10.7" on both. This is genuinely different from the ADR-350 band-type
+// case (no size axis at all): Watch Ultra DOES have a real, stated, evidence-backed
+// case size — it's just not printed in the title, so it belongs in the spec table
+// fallback, not the family-wide NO_SIZE exception.
+describe("identity — case size read from the declared spec table when absent from the title", () => {
+  const specPayload = { specifications: { raw: { "Body Dimension (HxWxD, mm)": "47.4 x 47.1 x 10.7" } } };
+  it("Galaxy Watch Ultra2 with no title case-size resolves size_mm=47 from the spec table", () => {
+    const n = normalize("", "Galaxy Watch Ultra2 Titanium Silver Lte (SM-L715FZSAKSA)", "Samsung", specPayload);
+    expect(n.payload.size_mm).toBe(47);
+    const r = buildIdentityKey("Samsung", n.payload, {});
+    expect(r.status).toBe("valid");
+    expect(r.key).toBe("samsung|Galaxy Watch Ultra|Ultra|Standard|47|cellular");
+  });
+  it("a title-stated case size still wins over the spec table (title is checked first)", () => {
+    const n = normalize("", "Samsung Galaxy Watch 6 44mm", "Samsung", specPayload);
+    expect(n.payload.size_mm).toBe(44);
+  });
+  it("an absent/malformed Body Dimension field does not fabricate a size", () => {
+    const n = normalize("", "Galaxy Watch Ultra2 Titanium Silver Lte (SM-L715FZSAKSA)", "Samsung", { specifications: { raw: { "Body Dimension (HxWxD, mm)": "n/a" } } });
+    expect(n.payload.size_mm).toBeNull();
+  });
+});

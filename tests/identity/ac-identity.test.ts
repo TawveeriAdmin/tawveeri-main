@@ -150,4 +150,20 @@ describe("ADR-306 (2026-09-07) — cooling_mode is optional (NO_MODE), so undisc
     expect(buildB("YORK Taurus Inverter Window Air Conditioner 19,448 BTU Max (~1.6 Ton) Cooling and Heating", "YORK").p.capacity_btu).toBe(19448);
     expect(buildB("YORK ICEBERG High Wall Split Inverter 39,238 BTU Max (~3.27 Ton) Cool and Heat Air Conditioner", "YORK").p.capacity_btu).toBe(39238);
   });
+
+  // MEASURED DEFECT, found live in production (2026-09-13, Official Gateway Closure
+  // mission): Samsung KSA's own title "Split AC Rotary On/Off 21 400 BTU Cold Wind Free
+  // (AR24TRHQGWK/MG)" uses a bare SPACE as the thousands separator — the old regex read
+  // capacity_btu=400 (a physically impossible residential capacity), and that wrong value
+  // had already reached a live canonical before this fix. Must not regress the 2026-09-07
+  // TCL fix (a 5-digit trailing run like "...HW1 24000" must still resolve to 24000, not
+  // 124000 or 1240000).
+  it("a space-grouped thousands separator resolves the real BTU value, not just the last 3 digits", () => {
+    const r = buildB("Split AC Rotary On/Off 21 400 BTU Cold Wind Free (AR24TRHQGWK/MG)", "Samsung");
+    expect(r.p.capacity_btu).toBe(21400);
+  });
+  it("the space-grouped fix does not regress the TCL trailing-digit-bleed fix", () => {
+    const r = buildB("TCL CW-TW18HW1 24000 BTU Heat and Cool Window Air Conditioner, 2 Ton Capacity, White", "TCL");
+    expect(r.p.capacity_btu).toBe(24000);
+  });
 });

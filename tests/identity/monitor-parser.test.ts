@@ -129,3 +129,31 @@ describe("precision — too-weak identities are not asserted", () => {
     expect(r.key).toBe("lg|27|NO_RES|180|NO_PANEL");
   });
 });
+
+// Official Gateway Closure mission (2026-09-13): a SECOND, distinct Samsung KSA source-side
+// title typo (samsung.com/sa_en, model LS24H850QFNXZA: "24\" WQHD Business Montior with
+// bezeless design..."), verified as the sole platform-wide occurrence before adding — the
+// same evidence standard as "monintor" (ADR-350).
+describe("detector — a second Samsung KSA source typo ('Montior') is still recognized", () => {
+  it("detects the row despite the 'Montior' misspelling", () => {
+    expect(detect("", "24\" WQHD Business Montior with bezeless design Inch (LS24H850QFNXZA)")).toBe(true);
+  });
+});
+
+// PROVEN LIVE (2026-09-13, Official Gateway Closure mission): Samsung's own "Smart
+// Monitor M7/M8" line advertises "Smart TV Apps" as a built-in FEATURE — the bare
+// "smart tv" substring inside WRONG_DEVICE wrongly rejected these real monitors.
+describe("detector — 'TV Apps' is a Smart Monitor feature, not a television", () => {
+  it("still detects a Smart Monitor that advertises 'Smart TV Apps'", () => {
+    expect(detect("", "43\" Smart Monitor With Smart TV Apps and UHD M7 Inch (LS43AM700UMXUE)")).toBe(true);
+  });
+  it("detects a Smart Monitor even when 'Tv Apps' isn't adjacent to 'Smart' (real Samsung title, LS43DM703UMXUE)", () => {
+    expect(detect("", "43\" Smart Monitor M7 M70D UHD White Inch Tv Apps (LS43DM703UMXUE)")).toBe(true);
+  });
+  it("still rejects a genuine Smart TV (no regression)", () => {
+    expect(detect("", "Samsung 55 inch Crystal UHD 4K Smart TV")).toBe(false);
+  });
+  it("a projector referencing 'Android TV Apps' still stays a projector (no regression)", () => {
+    expect(detect("", "4K Ultra HD Daylight Projector Smart LED Home Theater Projector HDR WiFi6 Bluetooth NFC Android TV Apps HDMI for Video Gaming")).toBe(false);
+  });
+});

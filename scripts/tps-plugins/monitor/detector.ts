@@ -12,6 +12,11 @@ const MONITOR_SIGNALS = [
   // (samsung.com/sa_en, model LS22A336NHMXUE: "22\" FHD Flat Monintor..."), verified as the
   // ONLY occurrence of this spelling platform-wide before adding — not a guessed pattern.
   "monintor",
+  // Official Gateway Closure mission (2026-09-13): "montior" — a SECOND, DIFFERENT Samsung
+  // KSA source-side typo (samsung.com/sa_en, model LS24H850QFNXZA: "24\" WQHD Business
+  // Montior with bezeless design..."), verified as the ONLY occurrence platform-wide before
+  // adding — same evidence standard as "monintor" above, not a guessed pattern.
+  "montior",
 ];
 const ACCESSORY_SIGNALS = [
   "monitor arm", "monitor stand", "حامل شاشة", "ذراع شاشة", "desk mount",
@@ -37,7 +42,18 @@ export function detect(nameAr: string, nameEn: string): boolean {
   const text = (nameAr + " " + nameEn).toLowerCase();
   if (BUNDLE_SIGNALS.some((s) => text.includes(s))) return false;
   if (ACCESSORY_SIGNALS.some((s) => text.includes(s))) return false;
-  if (WRONG_DEVICE.test(text)) return false;
+  // PROVEN LIVE (2026-09-13, Official Gateway Closure mission): Samsung's own "Smart
+  // Monitor M5/M7/M8" line advertises "TV Apps" as a built-in FEATURE (an app store on the
+  // monitor) — e.g. "43\" Smart Monitor With Smart TV Apps and UHD M7" and, on a different
+  // SKU, "...UHD White Inch Tv Apps" (not adjacent to "smart" at all — the bare `\btv\b` in
+  // WRONG_DEVICE fired on its own). Stripped before the TV check ONLY as this exact
+  // feature-description phrase — verified platform-wide: the one other non-monitor listing
+  // that mentions "tv apps" is a projector referencing the separate "Android TV Apps"
+  // platform, and stays correctly excluded by WRONG_DEVICE's own `\bprojector\b` check,
+  // which this strip does not touch. A genuine TV's own name never phrases itself as
+  // having "TV Apps" (it simply is one), so this cannot admit a real TV.
+  const textForDeviceCheck = text.replace(/tv apps/g, "");
+  if (WRONG_DEVICE.test(textForDeviceCheck)) return false;
   if (WEARABLE_HEALTH.test(text)) return false;
   if (MONITOR_SIGNALS.some((s) => text.includes(s))) return true;
   // Gaming/spec screen with no explicit "monitor" word — e.g. Samsung's own "Odyssey

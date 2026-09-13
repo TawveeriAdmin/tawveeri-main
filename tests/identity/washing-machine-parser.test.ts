@@ -70,4 +70,14 @@ describe("identity — standalone dryer gets its own type, never confused with w
     const n = normalize("", "Bespoke AI Laundry Combo All-in-One 25kg + 18kg Wd80h27 White (WD80H25BHWYL)", "Samsung");
     expect(n.payload.capacity_kg).toBe(25);
   });
+
+  // MEASURED DEFECT, found live (2026-09-13, Official Gateway Closure mission): Samsung's
+  // own title hyphenates "Front-load" — the old `\s*` separator never matched a hyphen, so
+  // this real, fully-described combo stayed "type missing"/invalid.
+  it("a hyphenated 'Front-load' still resolves washer_type (real Samsung title, WD25DB8995BZYL)", () => {
+    const r = build("", "Bespoke AI Laundry Combo Front-load Washer & Dryer All-in-one combo 25kg +15kg Super Speed Gray (WD25DB8995BZYL)", "Samsung");
+    expect(r.p.washer_type).toBe("front_load");
+    expect(r.status).toBe("valid");
+    expect(r.key).toContain("front_load");
+  });
 });

@@ -6,7 +6,10 @@ function extractType(x: string): string | null {
   if (/side\s*by\s*side|جنباً|جنبا|باب لباب/.test(x)) return "side_by_side";
   if (/bottom\s*mount|bottom\s*freezer|فريزر سفلي|مجمد سفلي/.test(x)) return "bottom_mount";
   if (/top\s*mount|top\s*freezer|فريزر علوي|مجمد علوي|بابين|2\s*door|double door/.test(x)) return "top_mount";
-  if (/single\s*door|باب واحد|باب مفرد|mini|compact|صغيرة|ميني/.test(x)) return "single_door";
+  // PROVEN LIVE (2026-09-13, Official Gateway Closure mission): Samsung's own title "One
+  // Door Refrigerator Precise Cooling 330L Ri80h24 Silver (RZ40H32P1TZA)" says "One Door",
+  // not "single door" — same physical layout, different wording.
+  if (/single\s*door|one\s*door|باب واحد|باب مفرد|mini|compact|صغيرة|ميني/.test(x)) return "single_door";
   return null;
 }
 function extractLiters(x: string): number | null {

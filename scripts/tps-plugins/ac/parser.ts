@@ -43,7 +43,18 @@ export function normalize(nameAr: string, nameEn: string, _rawBrand: string | nu
   // 24000 stated two words later. A legitimately comma-grouped number ("19,448 BTU") still
   // works unchanged — only a bare space inside the digit run is no longer allowed, and a
   // trailing space before "BTU"/"وحدة" is still matched by the `\s*` outside the group.
-  const btu = fullText.match(/\b(\d[\d,]*)\s*(?:BTU|وحدة\s*حرارية|وحدة\s*تبريد|وحدة)/i);
+  // PROVEN LIVE (2026-09-13, Official Gateway Closure mission): Samsung KSA's own title
+  // "Split AC Rotary On/Off 21 400 BTU Cold Wind Free (AR24TRHQGWK/MG)" uses a bare SPACE
+  // as the thousands separator (Gulf/European convention) — captured capacity_btu=400,
+  // not 21400, and that wrong value reached a live canonical. Cannot simply allow `\s`
+  // back into the digit class above (that reintroduced the 2026-09-07 TCL bleed defect,
+  // see the comment above). Instead, same fix shape as monitor's comma/space-tolerant
+  // `extractResolution` (ADR-355): collapse ONLY a single digit + separator + EXACTLY 3
+  // trailing digits at a word boundary — "21 400" -> "21400" — which a 5+-digit trailing
+  // run like "...HW1 24000" never matches (the boundary requires exactly 3 digits after
+  // the separator), so the TCL fix stays intact.
+  const btuText = fullText.replace(/(\d)[,\s](\d{3})\b/g, "$1$2");
+  const btu = btuText.match(/\b(\d[\d,]*)\s*(?:BTU|وحدة\s*حرارية|وحدة\s*تبريد|وحدة)/i);
   if (btu) capacity_btu = parseInt(btu[1].replace(/,/g, ""));
   if (!capacity_btu) {
     const short = fullText.match(/\b(\d{2})\s*(?:وحدة\s*حرارية|وحدة\s*تبريد)/);

@@ -146,6 +146,28 @@ function readCaseSize(text: string): number | null {
   return null;
 }
 
+// PROVEN LIVE (2026-09-13, Official Gateway Closure mission): Samsung KSA's own PDP
+// title for "Galaxy Watch Ultra2" SKUs never states a case size in the title (the Ultra
+// line ships in one size only, so Samsung doesn't bother printing it there) — the size
+// IS present in the declared spec table's "Body Dimension (HxWxD, mm)" field (e.g.
+// "47.4 x 47.1 x 10.7"), just never as a bare "NNmm" token `readCaseSize` looks for.
+// Mirrors monitor/tv's `declaredSpecText` pattern (category-scoped, own detect() already
+// accepted the row on title alone) but targets one specific field rather than a generic
+// text blob, since the raw value's shape ("47.4 x 47.1 x 10.7") has no adjacent "mm" unit
+// per-number for a blob-merge to match against.
+function readCaseSizeFromSpecTable(payload: Record<string, unknown>): number | null {
+  const raw = (payload.specifications as { raw?: Record<string, unknown> } | null | undefined)?.raw;
+  if (!raw || typeof raw !== "object") return null;
+  for (const [label, value] of Object.entries(raw)) {
+    if (!/body dimension/i.test(label) || typeof value !== "string") continue;
+    const m = /^\s*(\d{2}(?:\.\d+)?)/.exec(value);
+    if (!m) continue;
+    const n = Math.round(Number(m[1]));
+    if (CASE_SIZES.has(n)) return n;
+  }
+  return null;
+}
+
 /** Cellular is a different SKU at a different price — identity, not commercial. */
 function readConnectivity(text: string): string {
   if (bounded("cellular|esim|الاتصال|جي اس ام|lte").test(text)) return "cellular";
@@ -162,7 +184,7 @@ const VARIANTS: [RegExp, string][] = [
 ];
 
 export function normalize(
-  nameAr: string, nameEn: string, rawBrand: string | null, _payload?: Record<string, unknown>
+  nameAr: string, nameEn: string, rawBrand: string | null, payload?: Record<string, unknown>
 ): NormalizeResult {
   const text = normalizeArabic(`${nameAr} ${nameEn}`);
   let brand = canonicalizeBrand(rawBrand);
@@ -185,7 +207,7 @@ export function normalize(
   let variant: string | null = null;
   if (family) { for (const [re, v] of VARIANTS) if (re.test(text)) { variant = v; break; } }
 
-  const size_mm = readCaseSize(text);
+  const size_mm = readCaseSize(text) ?? readCaseSizeFromSpecTable(payload ?? {});
   const connectivity = readConnectivity(text);
 
   const ambiguity_flags: string[] = [];

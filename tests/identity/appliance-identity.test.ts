@@ -62,6 +62,14 @@ describe("appliance identity — real model_number as PRIMARY tier (P6)", () => 
     expect(norm.model_number).toBe("DW-14F7ME");
   });
 
+  // MEASURED DEFECT (2026-09-13, Official Gateway Closure mission): Samsung KSA's own
+  // title "DW8500AM High Energy Efficiency 14 Place Settings Phantom Black (DW60A8050FS/YL)"
+  // never says "dishwasher" at all — "place setting(s)" is a dishwasher-only capacity unit,
+  // verified platform-wide before adding as a standalone detect signal.
+  it("detects a dishwasher from 'place settings' alone, with no 'dishwasher' word in the title", () => {
+    expect(dishwasher.detect("", "DW8500AM High Energy Efficiency 14 Place Settings Phantom Black (DW60A8050FS/YL)")).toBe(true);
+  });
+
   it("zero churn: no payload model number falls through to brand|type|capacity unchanged", () => {
     const norm = vacuum.normalize("", "Xiaomi Robot Vacuum Cleaner, 550ml", "Xiaomi", { brand: "Xiaomi" });
     expect(norm.model_number).toBeNull();

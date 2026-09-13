@@ -11,7 +11,13 @@ import type { ApplianceCfg } from "./factory";
 export const APPLIANCE_CONFIGS: ApplianceCfg[] = [
   {
     category: "dishwasher", version: "dishwasher-v1", nounAr: "غسالة صحون", nounEn: "dishwasher", metricAr: "مكان", metricEn: "place-settings",
-    signals: "dishwasher|dish washer|غسالة صحون|غسّالة صحون|غسالة أطباق|غساله صحون",
+    // "place setting(s)" is added as a standalone signal — PROVEN LIVE (2026-09-13,
+    // Official Gateway Closure mission): Samsung KSA's own title "DW8500AM High Energy
+    // Efficiency 14 Place Settings Phantom Black (DW60A8050FS/YL)" never says
+    // "dishwasher" at all, relying on the model-line prefix + capacity metric alone.
+    // "place setting(s)" is an industry-standard dishwasher-only capacity unit — verified
+    // platform-wide: every other listing that mentions it is this exact same dishwasher.
+    signals: "dishwasher|dish washer|غسالة صحون|غسّالة صحون|غسالة أطباق|غساله صحون|place settings?",
     rejectAccessory: "detergent|منظف|rinse aid|salt\\b|ملح|tablet[s]?\\b|basket only|rack only|filter\\b|فلتر|cutlery tray",
     rejectWrong: "washing machine|clothes|ملابس|portable dish rack",
     brandGuess: "samsung|سامسون|\\blg\\b|hisense|هايسنس|toshiba|توشيبا|midea|ميديا|haier|هاير|bosch|بوش|beko|بيكو|gorenje|ariston|اريستون|white ?westinghouse|daewoo|دايو|classpro|كلاس برو|simfer|candy|كاندي",

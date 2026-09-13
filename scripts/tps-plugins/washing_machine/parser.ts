@@ -2,8 +2,13 @@
 import type { NormalizeResult } from "../../tps-core/types";
 import { canonicalizeBrand } from "../../tps-core/brand-map";
 function extractType(x: string): string | null {
-  if (/front\s*load|أمامي|تحميل أمامي|فرونت/.test(x)) return "front_load";
-  if (/top\s*load|علوي|تحميل علوي|توب/.test(x)) return "top_load";
+  // PROVEN LIVE (2026-09-13, Official Gateway Closure mission): Samsung's own title
+  // "Bespoke AI Laundry Combo Front-load Washer & Dryer..." hyphenates "Front-load" — the
+  // old `\s*` separator only matched a space (or nothing), never a hyphen, so washer_type
+  // stayed null and the identity was rejected as "type missing" despite the type being
+  // stated. `[\s-]*` accepts either separator (or none) for both front/top variants.
+  if (/front[\s-]*load|أمامي|تحميل أمامي|فرونت/.test(x)) return "front_load";
+  if (/top[\s-]*load|علوي|تحميل علوي|توب/.test(x)) return "top_load";
   return null;
 }
 function extractKg(x: string): number | null {

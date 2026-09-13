@@ -24,10 +24,16 @@ import { resolve } from 'path';
 config({ path: resolve(process.cwd(), '.env.local') });
 import { readFileSync } from 'fs';
 import { createClient } from '@supabase/supabase-js';
-import { SamsungKsaScraper } from '../../src/lib/scraping/stores/samsung-ksa-scraper';
-import { IngestionService } from '../../src/lib/scraping/services/ingestion-service';
+// Dynamic imports, deliberately: these modules read process.env.NEXT_PUBLIC_SUPABASE_URL
+// etc. at MODULE-LOAD time (top-level const in src/lib/database/supabase.ts). A static
+// `import` is hoisted above the `config()` call above regardless of source order, so the
+// env would still be empty when the module initializes. seed-samsung-ksa-sitemap.ts
+// already established this exact pattern for the same reason.
 
 async function main() {
+  const { SamsungKsaScraper } = await import('../../src/lib/scraping/stores/samsung-ksa-scraper');
+  const { IngestionService } = await import('../../src/lib/scraping/services/ingestion-service');
+
   const inputFile = process.argv[2];
   if (!inputFile) { console.error('Usage: ingest-samsung-gated-cohort.ts <urls.json array file>'); process.exit(1); }
   const urls: string[] = JSON.parse(readFileSync(inputFile, 'utf8'));
