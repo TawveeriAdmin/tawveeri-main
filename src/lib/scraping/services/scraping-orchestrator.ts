@@ -426,6 +426,23 @@ export class ScrapingOrchestrator {
           const storeId = productStore.store_id;
           const productUrl = productStore.product_url;
 
+          // Product-Truth vs Offer-Truth (2026-09-13, Phase 0 hardening — ADR-356). A scraper
+          // may now confirm a product is still current with strong identity evidence but NO
+          // provable current price (Samsung's own no-longer-purchasable/archived PDPs). This is
+          // NOT a scrape failure — `productStore.current_price` must NEVER be nulled out or run
+          // through the price-quarantine transition gate over a genuinely missing signal (that
+          // gate exists for a suspicious NUMBER, not an honest absence). Skip the legacy
+          // `product_stores` price write entirely here — the last known price/availability
+          // stays exactly as it was — but still feed the TPS knowledge layer below so Product
+          // Truth reflects "still current, no active offer" (STATE B/D in the mission's model).
+          if (scrapedProduct && scrapedProduct.current_price == null) {
+            await this.ingestion
+              .ingestBatch(storeSlug, [scrapedProduct], Number(storeId), null)
+              .catch((e) => console.error('[price] no-offer observation ingest failed:', e instanceof Error ? e.message : e));
+            await this.stampChecked(productStoreId, true);
+            return;
+          }
+
           if (scrapedProduct) {
             const oldPrice = productStore.current_price;
             const newPrice = scrapedProduct.current_price;

@@ -85,19 +85,6 @@ export class SamsungKsaScraper extends GenericHtmlStoreScraper {
     const withVariant = variantSuffix ? `${baseName} ${variantSuffix}` : baseName;
     const name = sku ? `${withVariant} (${sku})` : withVariant;
 
-    const offers = (productLd.offers as Record<string, unknown> | undefined) || {};
-    const currentPrice = toNumber(offers.price);
-    if (!currentPrice || currentPrice <= 0) return extractDigitalDataFallback(html, productUrl);
-
-    // Samsung sometimes ships highPrice as the crossed-out original.
-    let originalPrice = toNumber(
-      (offers as { highPrice?: unknown; listPrice?: unknown }).highPrice
-      ?? (offers as { listPrice?: unknown }).listPrice,
-    );
-    if (originalPrice !== null && originalPrice <= currentPrice) {
-      originalPrice = null;
-    }
-
     // Brand — Samsung's JSON-LD nests brand as `{@id, name}` sometimes,
     // plain string other times.
     const brandRaw = productLd.brand as Record<string, unknown> | string | undefined;
@@ -105,10 +92,9 @@ export class SamsungKsaScraper extends GenericHtmlStoreScraper {
       ? brandRaw.trim()
       : (typeof brandRaw?.name === 'string' ? brandRaw.name.trim() : 'Samsung');
 
-    const availability = parseLdAvailability(offers.availability);
-
     // aggregateRating is on the Product root (Samsung's shape) OR nested
     // under offers (Extra/spec-compliant shape). Try both.
+    const offers = (productLd.offers as Record<string, unknown> | undefined) || {};
     const agg = (productLd.aggregateRating
       ?? offers.aggregateRating) as Record<string, unknown> | undefined;
     const ratingValue = toNumber(agg?.ratingValue);
@@ -138,15 +124,13 @@ export class SamsungKsaScraper extends GenericHtmlStoreScraper {
     // merge lets a future run on the other locale fill the missing side.
     const isArabicUrl = /\/sa(_ar)?\//i.test(productUrl) && !/\/sa_en\//i.test(productUrl);
 
-    return {
+    const base = {
       name_ar: name,
       name_en: name,
       brand,
       model: sku || name,
       sku,
-      current_price: currentPrice,
-      original_price: originalPrice,
-      availability,
+      original_price: null,
       product_url: productUrl,
       image_urls: imageUrls,
       specifications,
@@ -155,6 +139,46 @@ export class SamsungKsaScraper extends GenericHtmlStoreScraper {
       description_en: isArabicUrl ? null : description,
       merchant_rating: hasRating ? merchantRating : null,
       merchant_review_count: hasRating ? reviewCount : null,
+    };
+
+    const currentPrice = toNumber(offers.price);
+    if (currentPrice && currentPrice > 0) {
+      // Samsung sometimes ships highPrice as the crossed-out original.
+      let originalPrice = toNumber(
+        (offers as { highPrice?: unknown; listPrice?: unknown }).highPrice
+        ?? (offers as { listPrice?: unknown }).listPrice,
+      );
+      if (originalPrice !== null && originalPrice <= currentPrice) {
+        originalPrice = null;
+      }
+      return {
+        ...base,
+        current_price: currentPrice,
+        original_price: originalPrice,
+        availability: parseLdAvailability(offers.availability),
+      };
+    }
+
+    // No price in JSON-LD's own `offers` block. Try the digitalData analytics layer next
+    // (ADR-349) — a genuinely different data source that sometimes carries a price JSON-LD
+    // doesn't. Only if THAT also finds nothing do we fall through to a no-offer identity.
+    const fallback = extractDigitalDataFallback(html, productUrl);
+    if (fallback) return fallback;
+
+    // PRODUCT TRUTH vs OFFER TRUTH (ADR-356, 2026-09-13). No price found anywhere, but the
+    // identity bar (Section 10) is met: a real Product JSON-LD node with a genuine name AND a
+    // verified Samsung SKU/MPN (`sku`, computed above from `productLd.sku`/`mpn`) — not a
+    // relaxed identity, the SAME bar a priced product on this exact code path already clears.
+    // Return the product with `current_price: null` rather than discarding it: this is a
+    // current, valid, identified Samsung product Samsung is not currently selling directly —
+    // never fabricate a price/availability for it. If `sku` is missing, identity is not strong
+    // enough — defer to unknown (fall through to the digitalData-only path's own, stricter bar)
+    // rather than create a weak canonical.
+    if (!sku) return null;
+    return {
+      ...base,
+      current_price: null,
+      availability: 'out_of_stock',
     };
   }
 }
@@ -239,7 +263,12 @@ const CATEGORY_PATH_FILTERS: Partial<Record<ProductCategory, RegExp>> = {
   smartphone: /\/smartphones\//i,
   tablet: /\/tablets\//i,
   wearable: /\/(watches|rings)\//i,
-  tv: /\/(tvs|lifestyle-tvs|commercial-tvs)\//i,
+  // `commercial-tvs` (hotel-tv, hospitality) is B2B — Samsung sells it through a separate
+  // commercial channel, not to consumers. Removed from this discovery allowlist (2026-09-13
+  // Phase 0 hardening): a classification-time exclusion (B2B_OUT_OF_SCOPE) already caught the
+  // 2 live URLs this admitted, but the founder's mandate is to fix the SOURCE cohort-generating
+  // rule, not rely on a later pass to save it every time.
+  tv: /\/(tvs|lifestyle-tvs)\//i,
   monitor: /\/monitors\//i,
   audio: /\/(audio-devices|audio-sound\/galaxy-buds)\//i,
   appliance: /\/(air-conditioners|home-appliances|washers-and-dryers|refrigerators|dishwashers|cooking-appliances|microwave-ovens)\//i,
@@ -311,6 +340,22 @@ export function isSamsungKsaProductUrl(url: string): boolean {
   const terminal = parts[parts.length - 1].toLowerCase();
   if (!terminal || NON_PRODUCT_SLUGS.has(terminal)) return false;
   if (terminal.startsWith('all-') || terminal.startsWith('see-all')) return false;
+
+  // PROVEN LIVE DEFECT (2026-09-13 Phase 0 hardening): the checks above only ever looked at
+  // the TERMINAL segment. Samsung's real buying-guide/editorial content is shaped
+  // `/sa_en/<real-category>/<buying-guide-marker>/<article-slug>/` — e.g.
+  // `/sa_en/home-appliances/buying-guide/dishwashers/` or
+  // `/sa_en/monitors/monitor-buying-guide/best-monitor-size/` — where the TERMINAL segment
+  // ("dishwashers", "best-monitor-size") looks exactly like a real product/category word, but
+  // an EARLIER segment names the page as editorial. A terminal-only check can never catch
+  // this; 34 such URLs were confirmed live in the current Samsung KSA sitemap, all admitted by
+  // this function before this fix. Checking every interior segment (not just the terminal one)
+  // closes it at the source instead of relying on a later JSON-LD/price check to save it.
+  const hasNonProductInteriorSegment = parts.some((seg) => {
+    const s = seg.toLowerCase();
+    return NON_PRODUCT_SLUGS.has(s) || /(^|-)buying-guide$/.test(s) || s === 'learn';
+  });
+  if (hasNonProductInteriorSegment) return false;
 
   return true;
 }
@@ -456,13 +501,8 @@ export function extractDigitalDataFallback(html: string, productUrl: string): Sc
   const modelCode = field('model_code');
   const displayName = field('displayName');
   const rawPrice = field('model_price');
-  if (!modelCode || !displayName || !rawPrice) return null; // no usable identity+price signal — genuinely unavailable, not guessed at
-
-  const currentPrice = toNumber(rawPrice);
-  if (!currentPrice || currentPrice <= 0) return null; // Samsung's own data explicitly carries no price — never fabricate one
-
-  const saleableMatch = html.match(/data-saleable="(true|false)"/);
-  const availability: ScrapedProduct['availability'] = saleableMatch?.[1] === 'false' ? 'out_of_stock' : 'in_stock';
+  // No identity information at all — genuinely nothing to work with, not guessed at.
+  if (!modelCode || !displayName) return null;
 
   const variantSuffix = extractVariantSuffix(productUrl, displayName);
   const withVariant = variantSuffix ? `${displayName} ${variantSuffix}` : displayName;
@@ -472,16 +512,13 @@ export function extractDigitalDataFallback(html: string, productUrl: string): Sc
   // only receives the raw HTML string, not the caller's `$`) so the fallback
   // path is not silently spec-blind.
   const specifications = extractSpecTable(cheerio.load(html), productUrl);
-
-  return {
+  const base = {
     name_ar: name,
     name_en: name,
     brand: 'Samsung',
     model: modelCode,
     sku: modelCode,
-    current_price: currentPrice,
     original_price: null,
-    availability,
     product_url: productUrl,
     image_urls: [],
     specifications,
@@ -491,6 +528,19 @@ export function extractDigitalDataFallback(html: string, productUrl: string): Sc
     merchant_rating: null,
     merchant_review_count: null,
   };
+
+  const currentPrice = toNumber(rawPrice);
+  if (currentPrice && currentPrice > 0) {
+    const saleableMatch = html.match(/data-saleable="(true|false)"/);
+    const availability: ScrapedProduct['availability'] = saleableMatch?.[1] === 'false' ? 'out_of_stock' : 'in_stock';
+    return { ...base, current_price: currentPrice, availability };
+  }
+
+  // PRODUCT TRUTH vs OFFER TRUTH (ADR-356, 2026-09-13). `model_price` is explicitly empty —
+  // Samsung's own statement of "no price", not an extraction gap (ADR-349). `modelCode` is a
+  // verified Samsung model code — the identity bar (Section 10) is met. Never fabricate a
+  // price/availability; return the identified product with no offer instead of discarding it.
+  return { ...base, current_price: null, availability: 'out_of_stock' };
 }
 
 /**

@@ -18,7 +18,16 @@ export interface ScrapedProduct {
    * never fabricated. Flows into raw_observations.payload.gtin via IngestionService.
    */
   gtin?: string | null;
-  current_price: number;
+  /**
+   * `null` means: a real, current, strongly-identified product with NO provable current
+   * price anywhere on the source (Product Truth without Offer Truth — ADR-356, 2026-09-13).
+   * NEVER fabricate 0 or a stale price for this case. Every consumer that performs price
+   * arithmetic or ranking MUST null-check first — a scraper should only return this for a
+   * genuinely no-price PDP, and only the Samsung KSA scraper does today. Every other scraper
+   * continues to return a real positive number or `null` outright from its calling method
+   * (unchanged behavior).
+   */
+  current_price: number | null;
   original_price: number | null;
   availability: 'in_stock' | 'out_of_stock' | 'limited_stock' | 'pre_order';
   product_url: string;

@@ -84,12 +84,45 @@ function extractColor(x: string): string | null {
   return null;
 }
 
+/**
+ * Reads a captured PDP spec table (`payload.specifications.raw`, currently populated only by
+ * the Samsung KSA scraper) into extra text for THIS plugin's OWN extractors only — mirrors
+ * `tv/parser.ts`'s `declaredSpecText`/`DECLARED_SPEC_FIELDS` pattern exactly, the platform's
+ * existing generic mechanism for category-scoped spec consumption. This is deliberately called
+ * ONLY from within monitor's own `normalize()`, after monitor's own `detect()` has already
+ * accepted the row on title text alone (`progressive-engine.ts` never puts spec text in the
+ * shared `nameEn` any plugin's `detect()` sees — ADR-356) — so a foreign category's spec table
+ * can never reach this function at all.
+ *
+ * Two guards, proven necessary on real Samsung spec tables: a "No"/"0" value describes an
+ * ABSENT feature (e.g. "Wall Mount Bracket: No") — including it verbatim would introduce that
+ * feature's name as if it were present; "External Storage Support" states an optional card
+ * slot's ceiling, never relevant to a monitor's own identity.
+ */
+function declaredSpecText(payload: Record<string, unknown>): string {
+  const raw = (payload.specifications as { raw?: Record<string, unknown> } | null | undefined)?.raw;
+  if (!raw || typeof raw !== "object") return "";
+  const parts: string[] = [];
+  for (const [label, rawValue] of Object.entries(raw)) {
+    if (typeof rawValue !== "string") continue;
+    const value = rawValue.trim();
+    if (!value || /^(no|0)$/i.test(value)) continue;
+    if (/external storage support/i.test(label)) continue;
+    parts.push(`${label} ${value}`);
+  }
+  return parts.join(" | ");
+}
+
 export function normalize(nameAr: string, nameEn: string, rawBrand: string | null, rawPayload?: Record<string, unknown>): NormalizeResult {
   const payload = rawPayload ?? {};
   const fullText = `${nameAr} ${nameEn}`;
   // Preserve the inch mark BEFORE folding: normalizeArabic strips " ” ″ '', so a
   // size written 27" (very common for monitors) would otherwise lose its unit.
   const x = normalizeArabic(fullText.replace(/(\d)\s*(?:["”″“]|'')/g, "$1 inch"));
+  // Title first (what the shopper is shown), then the declared spec table — a declared spec
+  // never OVERRIDES a stated title value, it only fills a gap the title left (same precedence
+  // TV's parser already established for Extra's featureAr* fields).
+  const specX = normalizeArabic(declaredSpecText(payload).replace(/(\d)\s*(?:["”″“]|'')/g, "$1 inch"));
 
   let brand = canonicalizeBrand(rawBrand);
   if (brand === "unknown" || brand === "other") {
@@ -97,10 +130,10 @@ export function normalize(nameAr: string, nameEn: string, rawBrand: string | nul
     if (guess) brand = canonicalizeBrand(guess[0].trim());
   }
 
-  const screen_size = extractSize(x);
-  const resolution = extractResolution(x);
-  const refresh_rate = extractRefresh(x);
-  const panel = extractPanel(x);
+  const screen_size = extractSize(x) ?? extractSize(specX);
+  const resolution = extractResolution(x) ?? extractResolution(specX);
+  const refresh_rate = extractRefresh(x) ?? extractRefresh(specX);
+  const panel = extractPanel(x) ?? extractPanel(specX);
   const line = extractLine(x);
   const curved = /curved|منحني|منحنيه|منحنيه|مقوس/.test(x);
   const ultrawide = /ultra\s*wide|ultrawide|الترا\s*وايد|21:9|32:9/.test(x);

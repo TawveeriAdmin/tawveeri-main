@@ -58,13 +58,26 @@ describe('extractDigitalDataFallback — reads Samsung\'s own server-rendered an
     expect(p!.model).toBe('LS27DG602SMXUE');
   });
 
-  it('NEVER fabricates a price: digitalData explicitly stating an empty price returns null, not a guess', () => {
+  // PRODUCT TRUTH vs OFFER TRUTH (ADR-356, 2026-09-13): a genuinely no-price PDP with a real
+  // verified model code is a current, valid Samsung product Samsung is not currently selling
+  // directly — it must exist in Product Truth without a fabricated offer, not be discarded.
+  it('NEVER fabricates a price, but keeps the identified product: digitalData explicitly stating an empty price returns current_price: null, not null itself', () => {
     const p = extractDigitalDataFallback(genuinelyNoPriceHtml, NO_PRICE_URL);
-    expect(p).toBeNull();
+    expect(p).not.toBeNull();
+    expect(p!.current_price).toBeNull();
+    expect(p!.availability).toBe('out_of_stock');
+    expect(p!.model).toBe('AR18TRHQHWK/MG');
+    expect(p!.sku).toBe('AR18TRHQHWK/MG');
+    expect(p!.name_en).toContain('Wall Mounted');
   });
 
   it('returns null (not a crash) when digitalData is entirely absent', () => {
     expect(extractDigitalDataFallback('<html><body>no analytics layer here</body></html>', VACUUM_URL)).toBeNull();
+  });
+
+  it('returns null when there is no identity at all (no model code, no display name)', () => {
+    const html = `<script>digitalData.product.model_price = "500";</script>`;
+    expect(extractDigitalDataFallback(html, VACUUM_URL)).toBeNull();
   });
 
   it('defaults to in_stock only when data-saleable is absent (never assumes false = safer default)', () => {
@@ -73,8 +86,10 @@ describe('extractDigitalDataFallback — reads Samsung\'s own server-rendered an
     expect(p!.availability).toBe('in_stock');
   });
 
-  it('never returns a zero or negative price', () => {
+  it('never treats 0 as a real price — returns the identified product with current_price: null instead', () => {
     const html = `<script>digitalData.product.model_code = "X1"; digitalData.product.displayName = "Test"; digitalData.product.model_price = "0";</script>`;
-    expect(extractDigitalDataFallback(html, VACUUM_URL)).toBeNull();
+    const p = extractDigitalDataFallback(html, VACUUM_URL);
+    expect(p).not.toBeNull();
+    expect(p!.current_price).toBeNull();
   });
 });

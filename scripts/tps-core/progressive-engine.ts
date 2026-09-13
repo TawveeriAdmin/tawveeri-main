@@ -21,45 +21,29 @@ function stableUuid(seed: string): string {
   return [h.slice(0, 8), h.slice(8, 12), "4" + h.slice(13, 16), ((parseInt(h.slice(16, 17), 16) & 0x3) | 0x8).toString(16) + h.slice(17, 20), h.slice(20, 32)].join("-");
 }
 const asString = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v.trim() : null);
-/**
- * Linearize a captured PDP spec table (`{ raw: { label: value } }`, currently
- * populated only by the Samsung KSA scraper — ADR-354/355) into extra
- * detectable text, appended to `nameEn` so a category plugin's EXISTING regex
- * extractors can see it. No parallel identity logic — this only gives real
- * plugins more of the same evidence a fuller title would have carried.
- *
- * Two guards, both proven necessary on real Samsung spec tables during the
- * audit that preceded this: a "No"/"0" value describes an ABSENT feature
- * (e.g. "Wall Mount Bracket: No") — including it verbatim would introduce
- * that feature's name as if it were present. "External Storage Support"
- * states an optional card slot's MAXIMUM capacity, never the device's own
- * built-in storage — proven to silently override a tablet's real "256GB" with
- * a card slot's "2TB" ceiling when included.
- *
- * For every store that does not populate `specifications.raw` (everyone
- * except Samsung KSA today), this returns "" and `adaptRow` is unchanged.
- */
-function specTableToText(specifications: unknown): string {
-  const raw = (specifications as { raw?: Record<string, unknown> } | null | undefined)?.raw;
-  if (!raw || typeof raw !== "object") return "";
-  const parts: string[] = [];
-  for (const [label, rawValue] of Object.entries(raw)) {
-    if (typeof rawValue !== "string") continue;
-    const value = rawValue.trim();
-    if (!value || /^(no|0)$/i.test(value)) continue;
-    if (/external storage support/i.test(label)) continue;
-    parts.push(`${label} ${value}`);
-  }
-  return parts.join(" | ");
-}
 // Exported (ADR-351) so the one-time historical gap backfill (backfill-gap-scan.ts) can reuse
 // the EXACT SAME row-adaptation/price/image extraction the normal sweep uses, instead of a
 // second hand-maintained copy that could silently drift from this one.
+//
+// REVERTED (2026-09-13, Phase 0 hardening — ADR-356): a prior mission (ADR-355) had this
+// function append a captured PDP spec-table's raw label/value text onto `nameEn` so every
+// category plugin's `detect()` could see it. That text is architecturally UNSCOPED — it
+// becomes visible to EVERY plugin's `detect()` in the registry sweep (`for (const def of
+// Object.values(CATEGORY_DEFS)) { if (!def.plugin.detect(nameAr, nameEn)) continue; ... }`),
+// not just the plugin whose category the row actually belongs to. PROVEN LIVE REGRESSION: a
+// dishwasher's own spec table (`Size 24"`, generic control/display labels) satisfied the
+// monitor plugin's weak inch+cue fallback, producing a spurious `monitor` identity candidate
+// for a dishwasher. The correct architecture (Section 4, ADR-356): attribute meaning = source
+// fact + PRODUCT CATEGORY + attribute definition — never a global text label read by every
+// category indiscriminately. `adaptRow` decides nothing about category, so it must not carry
+// spec text into the shared `detect()` input at all. A plugin that needs spec-table evidence
+// for its OWN attribute extraction reads `payload.specifications.raw` directly inside its own
+// `normalize()`, scoped to itself and only reachable after ITS OWN `detect()` already accepted
+// on title text alone — see `scripts/tps-plugins/monitor/parser.ts`'s `declaredSpecText`,
+// mirroring the same pattern `tv/parser.ts` already used for Extra's `featureAr*` fields.
 export function adaptRow(p: Record<string, unknown>, rawName: string | null) {
   const nameAr = asString(p.nameAr) ?? asString(p.name_ar) ?? asString(p.name) ?? asString(rawName) ?? "";
-  const baseNameEn = asString(p.nameEn) ?? asString(p.name_en) ?? asString(p.title) ?? "";
-  const specText = specTableToText(p.specifications);
-  const nameEn = specText ? `${baseNameEn} ${specText}`.trim() : baseNameEn;
+  const nameEn = asString(p.nameEn) ?? asString(p.name_en) ?? asString(p.title) ?? "";
   // ADR-191: a merchant feed that puts its OWN shop name in the brand field would otherwise
   // become the first segment of the identity key, fencing that listing off from every other
   // retailer selling the identical product. Rejected to null — unknown beats incorrect.

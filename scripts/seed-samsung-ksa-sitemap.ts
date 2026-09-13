@@ -209,13 +209,23 @@ async function main(): Promise<void> {
       try {
         const scraped = await scraper.updateProductPrice(url);
         if (!scraped) {
-          // Page was fetched OK but had no purchasable price (archive SKU).
-          // This is expected for legacy Samsung AC models and a few VD
-          // products. Log it as "archive" and deliberately do NOT bump
-          // consecutiveNulls — these clusters shouldn't trigger the
-          // rate-limit safety cooldown.
+          // No usable identity at all — genuinely nothing to work with.
           state.archived++;
-          console.log(`[${stamp()}] ∅ [${state.cursor}] archive (no price) (${Math.round((Date.now() - rowStart) / 1000)}s) — ${shortUrl(url)}`);
+          console.log(`[${stamp()}] ∅ [${state.cursor}] no identity (${Math.round((Date.now() - rowStart) / 1000)}s) — ${shortUrl(url)}`);
+        } else if (scraped.current_price == null) {
+          // PRODUCT TRUTH vs OFFER TRUTH (ADR-356, 2026-09-13): a real, identified, current
+          // Samsung product with no provable price. `productService.createOrUpdateProduct`
+          // (the legacy storefront `products`/`product_stores` layer) is NOT designed for a
+          // null price — unlike the production orchestrator's discovery path, this manual seed
+          // script has no validator gate in front of that call, so it must skip it explicitly
+          // here rather than write a broken storefront row. Still feed the TPS knowledge layer
+          // below — that is the ONLY layer this state is meant to exist in.
+          await ingestionService.ingestBatch('samsung_ksa', [scraped], Number(storeId), null).catch((e) => {
+            console.warn(`[${stamp()}] WARN: raw_observations ingest failed for ${shortUrl(url)}: ${e instanceof Error ? e.message : e}`);
+          });
+          state.archived++;
+          consecutiveNulls = 0;
+          console.log(`[${stamp()}] ∅ [${state.cursor}] ${shortCat(scraped.category)} ${shortName(scraped.name_en)} no current offer (product truth only) (${Math.round((Date.now() - rowStart) / 1000)}s) — ${shortUrl(url)}`);
         } else {
           const { created } = await productService.createOrUpdateProduct(scraped, storeId);
           // Feed the TPS pipeline too (see the header comment above `ingestionService`) --
