@@ -60,6 +60,30 @@ The residual concentrates exactly where already reason-coded: monitor (stalled-i
 
 `MISSION_SAMSUNG_OFFICIAL_CATALOG = NEAR_COMPLETE`. `OVERALL_SAMSUNG_MISSION = CLOSED`. The Samsung KSA workstream (ADR-354 through ADR-364) is closed.
 
+**FOUNDER RECONCILIATION PASS (same day, reporting corrections only — no new research, no new recovery, no implementation).**
+
+*User visibility, both denominators, stated explicitly (never blend the two):* `VISIBLE_OF_CANONICALIZED = 390/390 = 100%` — visibility is a downstream consequence of canonicalization, not an independent achievement; every canonical Samsung product is visible, with zero drop between canonicalization and the customer-facing projection. `VISIBLE_OF_CURRENT_VALID = 390/407 = 95.8%` — this is the correct headline "overall Samsung catalog visibility" figure; the 100% figure must never be quoted as such.
+
+*Offer coverage, commercially-meaningful denominator attempted and found not reliably derivable from existing data.* Two independent attempts to derive `CURRENT_DIRECT_BUYABLE_SAMSUNG` as a denominator narrower than 407 (excluding identities where Samsung structurally shows no buy path, as opposed to ones where we simply failed to capture a price) used `tps_identity_staging.price IS NOT NULL` history as the buyability signal. Both attempts produced "never priced" lists containing identities already confirmed elsewhere in this closure to carry real, live, valid offers (e.g. `SmartTag2`, `Galaxy Ring`, several TVs and soundbars) — proving `tps_identity_staging.price` is not a trustworthy completeness signal for this purpose (likely populated inconsistently across code paths, not a true price-history ledger). Rather than report a number built on a signal already proven wrong by cross-reference, this is left unresolved: **`CURRENT_DIRECT_BUYABLE_SAMSUNG` and `DIRECT_BUYABLE_WITH_PROVEN_SAMSUNG_OFFER` are NOT_RELIABLY_DERIVABLE from existing closure data without new verification work, which is out of scope for this reconciliation.** The conservative `SAMSUNG_OFFER_LINKED = 358/407 = 88.0%` (already established, verified directly against the authoritative `tps_current_offers` table) remains the only trustworthy offer-coverage figure and should be used for both the conservative and "commercially meaningful" framings until a properly-scoped follow-up can build a real buyability signal (e.g., from `raw_observations`/`normalized_product_observations` price history directly, not the staging table's `price` column).
+
+*Variant integrity — precise label.* `VARIANT_INTEGRITY = STRONG_EXCEPT_MONITOR_COHORT`, not blanket `STRONG` and not `PARTIAL_OVERALL`. Every category other than monitor has zero known collapsed-variant or duplicate-canonical issues (TV, tablet, mobile, AC, washing machine, audio, refrigerator, dishwasher, microwave, vacuum, ring, cooker, tracker, stylus — all clean). Within monitor specifically, 19 of ~72 active canonicals (≈26% of the monitor cohort, ≈4.9% of the whole 390-canonical catalog) carry an unresolved `COLLAPSED_VARIANTS` risk (two-to-three URLs merged under one canonical that may be genuinely different SKUs, e.g. different product lines at the same screen size) — real, non-trivial within monitor, but not diffuse enough across the whole catalog to justify `PARTIAL_OVERALL`, which would misrepresent every other category's proven-clean state. Left unfixed this mission, per explicit instruction — belongs to the general, cross-merchant monitor-plugin follow-up already recorded above.
+
+*17 residuals, exact category × reason-code map (verified against samsung_official_url_baseline row-by-row; every one of the 17 confirmed present as CURRENT_VALID_PRODUCT and confirmed to have zero canonical_products row, active or inactive):*
+
+| Category | CANONICALIZATION_DEFERRED | TECHNICAL_BLOCKER | VARIANT_UNCERTAIN | NORMALIZATION_DEFERRED | Row total |
+|---|---|---|---|---|---|
+| Monitor | 3 | 1 | 2 | 1 | 7 |
+| Air conditioner | — | 5 | — | — | 5 |
+| Dishwasher | 2 | — | — | — | 2 |
+| Microwave | 1 | — | — | — | 1 |
+| Refrigerator | — | 1 | — | — | 1 |
+| Tablet | — | — | 1 | — | 1 |
+| **Column total** | **6** | **7** | **3** | **1** | **17** |
+
+This corrects the prior closure addendum's category table, which used a lenient linking convention (any-sibling-resolved counts as linked) that under-attributed 3 of the 17 residuals to "linked" rather than "missing" for monitor (×2) and tablet (×1). The strict 390/407 canonical figure was always the authoritative headline number; only the per-category breakdown is corrected here to sum exactly to 17.
+
+**SAMSUNG_OFFICIAL_CATALOG_WORKSTREAM = ARCHIVED_NEAR_COMPLETE.**
+
 ### ADR-363 — New-Model Delta Watch final verification: the 4th Samsung sitemap was a real, proven blind spot, fixed narrowly · Accepted (2026-09-14)
 **Context.** ADR-362's "steady-state cost = 3 XML fetches per run" prompted one final question: Samsung Saudi has 4 official sitemaps (im/da/vd/assorted), and a prior mission (`seed-samsung-ksa-sitemap.ts`'s own header comment) had already found exactly one genuine current consumer product inside `assorted-sitemap.xml`. The founder explicitly forbade closing the mission on "assorted is mostly marketing" — the standard was "can a valid future product be missed."
 
