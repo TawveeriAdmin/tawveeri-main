@@ -380,7 +380,11 @@ function parseBudget(x: string): number | null | undefined {
   // present, is genuinely ambiguous — could be a destination/approximation about ANYTHING, not
   // necessarily price; "unknown beats incorrect" argues for leaving them unrecognized rather
   // than risking a false budget extraction from an unrelated number elsewhere in the sentence).
-  const m = x.match(/(?:تحت|أقل من|اقل من|ميزانية|ميزانيتي|في حدود|بحدود|بحد أقصى|بحد اقصى|حد أقصى|حد اقصى|حدود|يتعدى|يتجاوز|under|below|budget|max)\s*(?:الى|إلى|to|حول|تقريبا|تقريباً|around|about)?\s*([\d,]{3,7})/) ||
+  // A model suffix is not a price constraint: live search read "Pro Max 256" as
+  // a 256 SAR ceiling and returned accessories. Mask only this suffix for budget
+  // parsing; keep the original query for identity/retrieval and any later budget.
+  const budgetText = x.replace(/\bpro[\s-]+max\b/g, 'pro');
+  const m = budgetText.match(/(?:تحت|أقل من|اقل من|ميزانية|ميزانيتي|في حدود|بحدود|بحد أقصى|بحد اقصى|حد أقصى|حد اقصى|حدود|يتعدى|يتجاوز|under|below|budget|max)\s*(?:الى|إلى|to|حول|تقريبا|تقريباً|around|about)?\s*([\d,]{3,7})/) ||
             x.match(/([\d,]{3,7})\s*(?:ريال|sar\b|sr\b)/);
   if (m) { const n = Number(m[1].replace(/,/g, "")); if (n >= 100 && n <= 500000) return n; }
   return undefined;

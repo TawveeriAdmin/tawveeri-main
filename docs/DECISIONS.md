@@ -4,6 +4,16 @@
 
 Status legend: **Accepted** · **Superseded** · **Proposed**.
 
+### ADR-365 — Product-name `Pro Max` must not become a shopping budget · Accepted, deployment authorized (2026-09-14)
+
+**Evidence.** Live `iPhone 16 Pro Max 256` searches displayed a false 256 SAR ceiling and 18 accessory results in both languages and viewport sizes. The shared budget parser read `Max` in the model name as a ceiling. References: ADR-205, ADR-291; baseline ADR-364.
+
+**Decision.** Mask only `Pro Max` in the budget parser's temporary input. Preserve the original query and all other budget-marker behavior. Explicit `under 5000`, `تحت 5000`, and subsequent `max 5000` remain budgets. No product-pipeline, ranking, affiliate, tracking, destination or production-data change. The earlier local whole-word generalization is excluded from this deployment.
+
+**Alternatives.** Hiding the banner leaves retrieval incorrectly constrained; a search-only exception leaves other parser consumers inconsistent. Matching changes and AI calls are unnecessary.
+
+**Validation.** 173 parser/router assertions pass, including unchanged original text. Full-suite results and post-deployment verification are recorded in the dated execution report. The owner explicitly authorized only this fix for deployment. Existing coverage/typecheck debt remains disclosed; no threshold is weakened. This does not fix secondary model relevance, AC price divergence, or commercial-condition disclosure.
+
 ### ADR-364 — Samsung KSA FINAL production audit, affiliate verification, and mission closure: two proven residual defects found and fixed (12 duplicate canonicals, DCM redirect chain re-verified end-to-end), catalog closed NEAR_COMPLETE · Accepted (2026-09-14)
 **Context.** Founder-mandated final closure mission spanning the whole Samsung KSA workstream (ADR-354 through ADR-363): re-verify current-state catalog truth, prove the affiliate/DCM journey is genuinely operational end-to-end (not just code-reviewed), run an exhaustive variant-integrity audit, fix any proven residual defect, and close. Explicit scope boundary: no new Samsung study, no expansion into other merchants, no speculative feature work.
 
