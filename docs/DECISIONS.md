@@ -4,6 +4,34 @@
 
 Status legend: **Accepted** · **Superseded** · **Proposed**.
 
+### ADR-361 — New generic `stylus` category closes the S-Pen platform-capability gap; Samsung KSA official-gateway mission fully closed including high-value standalone accessories · Accepted (2026-09-14)
+**Context.** The prior denominator audit (this mission chain) proved ~20 real, live, HTTP-200 Samsung KSA S Pen PDPs — real manufacturer part numbers (GH96-xxxxx / EJ-PSxxx), real ~SAR 219–259 prices, zero live incorrect offer attached to any phone canonical — had no path into Tawveeri. Root cause: mobile's own detector correctly refuses to claim them as a phone (`S_PEN_MENTION && !HAS_STORAGE_TIER_HINT`), and no OTHER category existed to claim them as what they actually are. The founder ruled this `PLATFORM_CAPABILITY_GAP`, not `SOURCE_ABSENCE` — genuine current products excluded only because no accessory category plugin existed anywhere on the platform — and required the smallest general fix, not a Samsung-specific hack.
+
+**1. Decision: a new, generic `stylus` category — not a Samsung-only carve-out.** Same precedent and file shape as ring/tracker (ADR-351): `scripts/tps-plugins/stylus/{detector,parser,identity,validator,index}.ts`, registered in `category-registry.ts`. Considered and rejected: a broad `accessory` catch-all (the founder explicitly forbade ingesting the low-value long tail — replacement tips/nibs/cases are excluded in the detector, never ingested); a Samsung-specific S-Pen module (violates "do not create Samsung-specific hacks" and the established generic-category discipline).
+
+**2. Identity contract: `brand | stylus | compatible_family | compatible_generation`.** Colour excluded from identity — verified live on real Samsung KSA evidence: every colour of "S Pen for Galaxy S23 Ultra" (Beige/Green/Phantom Black) prices identically at 219 SAR, so keying on colour would fragment one comparable product for zero pricing signal (same principle as ring's material choice). Compatible generation IS kept: different generations are genuinely different manufactured units (distinct part-number series — GH96-15658\* for S23 Ultra vs. GH96-20906\*/EJ-PS948\* for S26 Ultra).
+
+**3. Identity safety — the founder's explicit, non-negotiable requirement — proven, not assumed.** An accessory product identity must never equal its compatible device's identity. Enforced by construction: the stylus key format (`brand|stylus|family|generation`) is structurally disjoint from mobile's own key format (`brand|family|generation|variant|storage`), and the detector accepts *exactly* the titles mobile's own S-Pen-reject already refuses — a stylus can never even reach mobile's identity builder. Regression-tested against the exact four previously-proven failure titles (S23/S24/S25/S26 Ultra S Pens): each confirmed to (a) still fail `mobile.detect()`, (b) resolve to a `stylus|`-prefixed key, never a `Galaxy S|`-prefixed one, and (c) the four generations produce four genuinely distinct identities, not one merged phone-line identity.
+
+**4. Ingested through the existing, unmodified Samsung official-source pipeline — no new mechanism.** All 20 URLs (19 phone-line S Pens + 1 tablet S Pen) run through the same `SamsungKsaScraper.updateProductPrice()` → `IngestionService.ingestBatch()` → `normalize-incremental.ts` chain every other identity in this mission used. Result: **20 URLs → 5 real commercial identities** (S23/S24/S25/S26 Ultra styluses + Tab S11 stylus — deduplicated by identity, not counted as raw URLs), all canonical, active, Samsung-offer-linked (4 at 219 SAR, 1 at 259 SAR), founding price event complete (`price_history`/`normalized_product_observations` populated automatically since this ran through the real sweep, not an isolated call). `tps_product_projection` rebuilt (7,945 rows, 0 skipped/pruned) and all 5 verified present. User-visibility verified live on production, not inferred: `https://tawveeri.com/ar/compare/samsung%7Cstylus%7CGalaxy%20S%7CS26%20Ultra` returns HTTP 200 with the correct title and price.
+
+**5. Verification.** 16 new tests (`tests/identity/stylus-parser.test.ts`), full suite green: 3,646 tests / 240 suites (was 3,630/239). 0 duplicate `(brand, model_number)` canonicals platform-wide (re-checked after this change). 0 advisory locks, 0 active backends. Committed `75daeb73`, pushed, deployed, health verified live (fresh uptime post-deploy).
+
+**6. Final denominators.**
+| | Value |
+|---|---|
+| `CORE_CURRENT_VALID_SAMSUNG` | 404 |
+| `HIGH_VALUE_ACCESSORIES_CURRENT_VALID` | 5 |
+| `FULL_CURRENT_VALID_SAMSUNG_INCLUDING_HIGH_VALUE_STANDALONE_ACCESSORIES` | **409** |
+| `HIGH_VALUE_ACCESSORIES_CANONICAL_LINKED` | 5 |
+| `HIGH_VALUE_ACCESSORIES_SAMSUNG_OFFER_LINKED` | 5 |
+| `HIGH_VALUE_ACCESSORIES_USER_VISIBLE` | 5 |
+| `HIGH_VALUE_ACCESSORIES_MISSING` | 0 |
+
+SmartTag was already correctly counted within the core 404 (category `tracker`, ADR-351) — no double-counting risk; only the S-Pen-class gap required new work.
+
+**Verdict.** `CORE_SAMSUNG_CATALOG = CLOSED`. `HIGH_VALUE_STANDALONE_ACCESSORIES = CLOSED` (0 missing, identity-safety proven, not merely asserted). `MISSION_SAMSUNG_OFFICIAL_CATALOG = CLOSED` — final denominator **409**, not 404; the difference is fully accounted for by a genuine platform-capability fix, not a definitional shortcut.
+
 ### ADR-360 — Samsung KSA official-catalog: final denominator reconciliation (927→404, exact, zero remainder) and mission closure · Accepted (2026-09-13)
 **Context.** Before accepting ADR-359's `CLOSED` verdict, the founder required one more thing proven, read-only: an exhaustive, mutually-exclusive accounting of all 927 raw sitemap candidates down to the 404 denominator, with the sum verified to equal 927 exactly — not asserted from memory, not re-estimated. A second pass then required the full end-to-end chain re-verified fresh against live production (not stale files), the durable evidence artifact updated, and the repository/operational state confirmed clean. No new recovery, no new scope.
 
