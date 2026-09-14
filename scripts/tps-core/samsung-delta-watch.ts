@@ -92,11 +92,20 @@ async function main() {
   };
 
   try {
-    // ── 1. Fetch the CURRENT official set (cheap — 3 XML documents, no PDP fetches yet) ──
+    // ── 1. Fetch the CURRENT official set (cheap — 4 XML documents, no PDP fetches yet) ──
+    // PROVEN LIVE (2026-09-14, final verification): assorted-sitemap.xml is overwhelmingly
+    // marketing/FAQ/news/care-pack content (of 482 URLs, only 1 is a real consumer product
+    // — see the `movable_screen` path filter above) but it is NOT redundant with the other
+    // 3 — that one real product exists in NO other sitemap. Excluding it entirely would be
+    // a genuine, provable future-product blind spot (this exact product was already once
+    // missed for this reason). Included here with the SAME shape + known-category filters
+    // as the other 3 — not a broad ingestion source: only 2 of 482 URLs currently survive
+    // both filters, and both are validated (not trusted) before anything is written.
     const SUB_SITEMAPS = [
       "https://www.samsung.com/sa_en/im-sitemap.xml",
       "https://www.samsung.com/sa_en/da-sitemap.xml",
       "https://www.samsung.com/sa_en/vd-sitemap.xml",
+      "https://www.samsung.com/sa_en/assorted-sitemap.xml",
     ];
     const currentSet = new Set<string>();
     for (const smUrl of SUB_SITEMAPS) {

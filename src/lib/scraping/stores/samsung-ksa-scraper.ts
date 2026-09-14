@@ -274,6 +274,16 @@ const CATEGORY_PATH_FILTERS: Partial<Record<ProductCategory, RegExp>> = {
   appliance: /\/(air-conditioners|home-appliances|washers-and-dryers|refrigerators|dishwashers|cooking-appliances|microwave-ovens)\//i,
   accessories: /\/(mobile-accessories|tv-accessories|home-appliance-accessories|display-accessories|projector-accessories|audio-accessories)\//i,
   vacuum: /\/vacuum-cleaners\//i,
+  // PROVEN LIVE (2026-09-14, New-Model Delta Watch final verification): the one real
+  // consumer product ever confirmed inside assorted-sitemap.xml — Samsung's "Moving Style"
+  // portable screen line (`/movable-screens/the-movingstyle/lsm7f-27-inch-ua27lsm7faxxsa/`)
+  // — has its OWN distinct URL path, present in NO other sitemap (checked all 4: im/da/vd
+  // sitemaps have zero `movable-screens` URLs; assorted has exactly one). No TPS category
+  // plugin exists for this line yet (a real, disclosed, deliberately out-of-scope gap for
+  // this mission) — recognizing the PATH only ensures a future new model in this same line
+  // reaches real validation (and surfaces as an honest UNKNOWN, never silently invisible)
+  // rather than being filtered out before anyone ever looks at it.
+  movable_screen: /\/movable-screens\//i,
 };
 
 /**

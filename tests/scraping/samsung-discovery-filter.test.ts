@@ -41,3 +41,32 @@ describe('Samsung KSA discovery filter — path-segment-aware, not terminal-only
     expect(admitted(url)).toBe(true);
   });
 });
+
+// New-Model Delta Watch final verification (2026-09-14). PROVEN LIVE: assorted-sitemap.xml
+// (482 URLs, previously never fetched by the delta watch) contains exactly ONE real
+// consumer product — Samsung's "Moving Style" movable-screen line — that exists in NO
+// other sitemap. Excluding assorted entirely was a genuine, provable future-product blind
+// spot (this exact product was the historical example that first surfaced it). The other
+// 481 URLs (care-pack service subscriptions, news articles, shop-faq, sustainability pages)
+// must continue to be rejected — this is not a broad ingestion source.
+describe('Samsung KSA discovery filter — assorted-sitemap.xml candidates (movable-screens)', () => {
+  it('admits the one real product line found in assorted-sitemap.xml', () => {
+    expect(admitted('https://www.samsung.com/sa_en/movable-screens/the-movingstyle/lsm7f-27-inch-ua27lsm7faxxsa/')).toBe(true);
+  });
+  it.each([
+    ['https://www.samsung.com/sa_en/care-pack/smartphones-care-pack/galaxy-s24-screen-repair-p-gt-lcxos1hw/', 'care-pack service subscription, not a product'],
+    ['https://www.samsung.com/sa_en/news/local/samsung-galaxy-z-fold7-raising-the-bar-for-smartphones/', 'news article'],
+    ['https://www.samsung.com/sa_en/shop-faq/payment-and-financing/can-i-pay-in-installments/', 'shop FAQ'],
+  ])('still rejects assorted-sitemap non-product noise: %s (%s)', (url) => {
+    expect(admitted(url)).toBe(false);
+  });
+
+  // Two of the 482 assorted-sitemap URLs pass the path filter today independent of this
+  // fix ('/offer/tvs/pre-order/' contains a real "/tvs/" segment; the sustainability page
+  // sits under '/home-appliances/') — a small, pre-existing, disclosed imprecision, not
+  // something this fix introduces or is required to close. Both are genuinely non-product
+  // landing pages with no Product JSON-LD, so the delta watch's own real-PDP validation
+  // step (never trusting the path filter alone) correctly resolves them to INVALID/UNKNOWN
+  // on first sight, at which point the baseline remembers them and they are never
+  // re-validated again — the one-time cost stays bounded, nothing is silently fabricated.
+});
