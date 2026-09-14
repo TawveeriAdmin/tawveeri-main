@@ -645,6 +645,41 @@ if (REOBSERVE_LIMIT > 0) {
   setInterval(runReobserve, REOBSERVE_MS);
 }
 
+// ── Samsung KSA New-Model Delta Watch (2026-09-14, maintenance-of-closure mission) ──
+// The Samsung Saudi official catalog is CLOSED (927 raw candidates -> 409 current-valid
+// identities, ADR-354..361). This loop keeps it current: a cheap sitemap-vs-baseline diff
+// (samsung_official_url_baseline), PDP validation ONLY for genuinely new URLs, model-code-
+// first dedup before anything is written. It never re-touches the closed catalog's existing
+// products. Its own PostgreSQL advisory lock (independent of this in-process flag) is the
+// real cross-process singleton guard — the same pattern proven in the closed recovery.
+// Additive-only, same shape as the reobserve loop above: SAMSUNG_DELTA_WATCH_MS<=0 disables it.
+const SAMSUNG_DELTA_WATCH_MS = parseInt(process.env.SAMSUNG_DELTA_WATCH_MS || String(6 * 60 * 60 * 1000), 10); // 6h default
+let samsungDeltaWatchRunning = false;
+async function runSamsungDeltaWatch() {
+  if (SAMSUNG_DELTA_WATCH_MS <= 0) return;
+  if (!(await pressureOk('samsung-delta-watch'))) return;
+  if (samsungDeltaWatchRunning) { console.log('[samsung-delta-watch] previous run still in progress — skipping'); return; }
+  if (refreshRunning || feedIngestRunning || ingestRunning) { console.log('[samsung-delta-watch] busy — deferring'); return; }
+  samsungDeltaWatchRunning = true;
+  const child = spawn('npx', ['tsx', 'scripts/tps-core/samsung-delta-watch.ts'], { cwd: process.cwd(), shell: true, env: process.env });
+  let tail = '';
+  const cap = (b) => { tail = (tail + b.toString()).slice(-1500); };
+  child.stdout.on('data', cap);
+  child.stderr.on('data', cap);
+  child.on('close', (code) => {
+    samsungDeltaWatchRunning = false;
+    if (code === 0) jobDone('samsung-delta-watch', 'ok');
+    const last = tail.split('\n').map((l) => l.trim()).filter((l) => l && !l.includes('injected env')).slice(-3).join(' | ') || '';
+    console.log(`[samsung-delta-watch] exit ${code}: ${last}`);
+  });
+  child.on('error', (err) => { samsungDeltaWatchRunning = false; console.error('[samsung-delta-watch] could not start:', err?.message || err); });
+}
+if (SAMSUNG_DELTA_WATCH_MS > 0) {
+  console.log(`[samsung-delta-watch] enabled — every ${(SAMSUNG_DELTA_WATCH_MS / 3600000).toFixed(1)}h`);
+  setTimeout(async () => { if (await jobDue('samsung-delta-watch', SAMSUNG_DELTA_WATCH_MS)) runSamsungDeltaWatch(); else console.log('[governor] boot samsung-delta-watch kick skipped'); }, INGEST_FIRST_DELAY_MS + 10 * 60 * 1000 + jitterMs(5));
+  setInterval(runSamsungDeltaWatch, SAMSUNG_DELTA_WATCH_MS);
+}
+
 process.on('SIGTERM', () => {
   console.log('[scheduler] SIGTERM received — exiting');
   process.exit(0);
