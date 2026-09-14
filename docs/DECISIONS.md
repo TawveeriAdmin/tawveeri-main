@@ -4,6 +4,16 @@
 
 Status legend: **Accepted** · **Superseded** · **Proposed**.
 
+### ADR-366 — Show the observed offer's condition and full description before comparison exits · Accepted (2026-09-14)
+
+**Evidence.** The live iPhone comparison includes Jarir's Renewed Grade B offer at 3599 SAR. Its price matches the merchant, but it is not a new device. Store titles are truncated in offer rows and absent from the featured offer. An eXtra title also differs in colour from its destination. See `docs/report/SAUDI-PURCHASE-REFERENCE-2026-09-14.md`.
+
+**Decision.** Render the full observed title and a localized condition label using the existing `classifyCondition` authority, before the featured and individual offer exits. Missing condition stays unconfirmed. Attribute labels to the description and ask shoppers to confirm colour, condition and warranty. Preserve all prices, ordering, destinations, tracking and product pipelines.
+
+**Alternatives.** A second classifier would duplicate evidence logic; assuming new from missing markers violates ADR-299/300. Hiding renewed offers would alter selection. A methodology drawer alone would leave commercial details obscured.
+
+**Consequences.** More vertical space buys visible purchase-critical details. This does not repair stale data, destination mismatches or the older ADR-304 tie policy. Regression and bilingual viewport evidence are recorded in the report. The owner's later instruction explicitly authorizes deployment after validation.
+
 ### ADR-365 — Product-name `Pro Max` must not become a shopping budget · Accepted, deployment authorized (2026-09-14)
 
 **Evidence.** Live `iPhone 16 Pro Max 256` searches displayed a false 256 SAR ceiling and 18 accessory results in both languages and viewport sizes. The shared budget parser read `Max` in the model name as a ceiling. References: ADR-205, ADR-291; baseline ADR-364.

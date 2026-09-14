@@ -1,0 +1,174 @@
+{
+  "date": "2026-09-14",
+  "scope": "Public buyer journey. Browser viewport emulation, not physical phones. No purchases or messages.",
+  "adr365": {
+    "commit": "8aef6383c80ec86999ace9c2988b8e5088732014",
+    "deployment": "1726bcc1-b9b4-4def-8680-ff5539bddc69",
+    "status": "SUCCESS",
+    "checks": [
+      {
+        "locale": "ar",
+        "width": 390,
+        "at": "2026-09-14T14:30:18.499Z",
+        "url": "https://tawveeri.com/ar/search?q=iPhone+16+Pro+Max+256",
+        "overflow": false,
+        "comparisonCount": 2,
+        "correctModelPresent": true,
+        "secondaryMismatchStillPresent": true
+      },
+      {
+        "locale": "ar",
+        "width": 1366,
+        "at": "2026-09-14T14:30:38.157Z",
+        "url": "https://tawveeri.com/ar/search?q=iPhone+16+Pro+Max+256",
+        "overflow": false,
+        "comparisonCount": 1,
+        "correctModelPresent": true,
+        "secondaryMismatchStillPresent": true
+      },
+      {
+        "locale": "en",
+        "width": 390,
+        "at": "2026-09-14T14:30:57.153Z",
+        "url": "https://tawveeri.com/en/search?q=iPhone+16+Pro+Max+256",
+        "overflow": false,
+        "comparisonCount": 1,
+        "correctModelPresent": true,
+        "secondaryMismatchStillPresent": true
+      },
+      {
+        "locale": "en",
+        "width": 1366,
+        "at": "2026-09-14T14:31:15.168Z",
+        "url": "https://tawveeri.com/en/search?q=iPhone+16+Pro+Max+256",
+        "overflow": false,
+        "comparisonCount": 1,
+        "correctModelPresent": true,
+        "secondaryMismatchStillPresent": true
+      }
+    ]
+  },
+  "adr366": {
+    "stage": "local preview; production pending",
+    "checks": [
+      {
+        "locale": "ar",
+        "width": 390,
+        "overflow": false,
+        "linksUnchanged": true,
+        "descriptionCount": 4
+      },
+      {
+        "locale": "ar",
+        "width": 1366,
+        "overflow": false,
+        "linksUnchanged": true,
+        "descriptionCount": 4
+      },
+      {
+        "locale": "en",
+        "width": 390,
+        "overflow": false,
+        "linksUnchanged": true,
+        "descriptionCount": 4
+      },
+      {
+        "locale": "en",
+        "width": 1366,
+        "overflow": false,
+        "linksUnchanged": true,
+        "descriptionCount": 4
+      }
+    ],
+    "unitTests": 8
+  },
+  "researchVisits": [
+    {
+      "name": "idealo",
+      "url": "https://www.idealo.co.uk/",
+      "status": 403,
+      "error": null,
+      "at": "2026-09-14T14:30:49.001Z"
+    },
+    {
+      "name": "pricerunner",
+      "url": "https://www.pricerunner.com/",
+      "status": 403,
+      "error": null,
+      "at": "2026-09-14T14:30:54.810Z"
+    },
+    {
+      "name": "camel",
+      "url": "https://camelcamelcamel.com/features",
+      "status": 403,
+      "error": null,
+      "at": "2026-09-14T14:30:59.096Z"
+    },
+    {
+      "name": "keepa",
+      "url": "https://keepa.com/",
+      "status": 403,
+      "error": null,
+      "at": "2026-09-14T14:31:03.254Z"
+    },
+    {
+      "name": "google",
+      "url": "https://shopping.google.com/",
+      "status": 200,
+      "error": null,
+      "at": "2026-09-14T14:31:08.979Z"
+    },
+    {
+      "name": "wirecutter",
+      "url": "https://www.nytimes.com/wirecutter/about/",
+      "status": 200,
+      "error": null,
+      "at": "2026-09-14T14:31:14.725Z"
+    },
+    {
+      "name": "amazon",
+      "url": "https://www.amazon.sa/s?k=iphone+16+pro+max+256",
+      "status": 503,
+      "error": null,
+      "at": "2026-09-14T14:31:19.207Z"
+    },
+    {
+      "name": "noon",
+      "url": "https://www.noon.com/saudi-en/search/?q=iphone%2016%20pro%20max%20256",
+      "status": null,
+      "error": "Error",
+      "at": "2026-09-14T14:31:19.694Z"
+    },
+    {
+      "name": "ikea",
+      "url": "https://www.ikea.com/sa/en/planners/",
+      "status": 200,
+      "error": null,
+      "at": "2026-09-14T14:31:24.928Z"
+    },
+    {
+      "name": "houzz",
+      "url": "https://www.houzz.com/magazine/how-to-create-and-use-ideabooks-stsetivw-vs~19764256",
+      "status": 429,
+      "error": null,
+      "at": "2026-09-14T14:31:29.203Z"
+    }
+  ],
+  "home": {
+    "scenario": "Existing newlyweds example",
+    "width": 390,
+    "budget": 12000,
+    "allocated": 11879,
+    "remaining": 121,
+    "resolvedItems": 4,
+    "totalItems": 5,
+    "unresolved": "Missing area for one AC",
+    "overflow": false,
+    "notVerified": [
+      "merchant prices for Home recommendations",
+      "collaborative sharing",
+      "purchases",
+      "commission"
+    ]
+  }
+}

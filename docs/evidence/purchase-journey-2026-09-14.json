@@ -1,0 +1,524 @@
+{
+  "measuredAt": "2026-09-14T10:21:34.387Z",
+  "scope": "Chrome headless, mobile viewport 390x844 and desktop 1366x844; no network/CPU throttling; no deployment",
+  "method": "Live UI baseline. Modified local search POST executed against real read-only data with tw_test=1. Its real JSON response substituted for /api/search in the audit browser only; compare pages remained live. This is not a deployed end-to-end test.",
+  "before": [
+    {
+      "locale": "ar",
+      "width": 390,
+      "falseBudget": true,
+      "query": "iPhone 16 Pro Max 256",
+      "visibleResultCount": 18
+    },
+    {
+      "locale": "ar",
+      "width": 1366,
+      "falseBudget": true,
+      "query": "iPhone 16 Pro Max 256",
+      "visibleResultCount": 18
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "falseBudget": true,
+      "query": "iPhone 16 Pro Max 256",
+      "visibleResultCount": 18
+    },
+    {
+      "locale": "en",
+      "width": 1366,
+      "falseBudget": true,
+      "query": "iPhone 16 Pro Max 256",
+      "visibleResultCount": 18
+    }
+  ],
+  "after": [
+    {
+      "locale": "ar",
+      "width": 390,
+      "falseBudget": false,
+      "correctPhoneVisible": true,
+      "overflow": false
+    },
+    {
+      "locale": "ar",
+      "width": 1366,
+      "falseBudget": false,
+      "correctPhoneVisible": true,
+      "overflow": false
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "falseBudget": false,
+      "correctPhoneVisible": true,
+      "overflow": false
+    },
+    {
+      "locale": "en",
+      "width": 1366,
+      "falseBudget": false,
+      "correctPhoneVisible": true,
+      "overflow": false
+    }
+  ],
+  "routeAfter": [
+    {
+      "query": "iPhone 16 Pro Max 256",
+      "status": 200,
+      "inferredMaxPrice": null,
+      "count": 2,
+      "firstProduct": "Apple iPhone 16 Pro Max 256GB",
+      "firstPrice": 4599
+    },
+    {
+      "query": "iPhone 16 Pro Max 256 under 5000",
+      "status": 200,
+      "inferredMaxPrice": 5000,
+      "count": 2,
+      "firstProduct": "Apple iPhone 16 Pro Max 256GB",
+      "firstPrice": 4599
+    },
+    {
+      "query": "مكيف لغرفة 30 متر هادئ تحت 4000",
+      "status": 200,
+      "inferredMaxPrice": 4000,
+      "count": 426,
+      "firstProduct": "Lg FreshDV Split AC 18000 BTU Inverter hot cold",
+      "firstPrice": 3499
+    }
+  ],
+  "residualSearch": "The local response still includes iPhone 16e 256 GB as a secondary result. Only false budget interpretation and restoration of the correct first result are fixed.",
+  "livePages": [
+    {
+      "stage": "phone",
+      "locale": "ar",
+      "width": 390,
+      "url": "https://tawveeri.com/ar/search?q=%D8%A7%D9%8A%D9%81%D9%88%D9%86+16+%D8%A8%D8%B1%D9%88+%D9%85%D8%A7%D9%83%D8%B3+256",
+      "overflow": false,
+      "robots": "noindex, follow",
+      "canonical": "https://tawveeri.com/ar/search",
+      "ttfbMs": 1479.5999999046326,
+      "lcpMs": 2516
+    },
+    {
+      "stage": "phone-compare",
+      "locale": "ar",
+      "width": 390,
+      "url": "https://tawveeri.com/ar/compare/apple%7CiPhone%7C16%7CPro%20Max%7C256",
+      "overflow": false,
+      "robots": "index, follow",
+      "canonical": "https://tawveeri.com/ar/compare/apple%7CiPhone%7C16%7CPro%20Max%7C256",
+      "ttfbMs": 999.0999999046326,
+      "lcpMs": 2556
+    },
+    {
+      "stage": "ac",
+      "locale": "ar",
+      "width": 390,
+      "url": "https://tawveeri.com/ar/search?q=%D9%85%D9%83%D9%8A%D9%81+%D9%84%D8%BA%D8%B1%D9%81%D8%A9+30+%D9%85%D8%AA%D8%B1+%D9%87%D8%A7%D8%AF%D8%A6+%D8%AA%D8%AD%D8%AA+4000",
+      "overflow": false,
+      "robots": "noindex, follow",
+      "canonical": "https://tawveeri.com/ar/search",
+      "ttfbMs": 1255.3999999761581,
+      "lcpMs": 1732
+    },
+    {
+      "stage": "ac-compare",
+      "locale": "ar",
+      "width": 390,
+      "url": "https://tawveeri.com/ar/compare/lg%7Csplit%7CFreshDV%7C18000%7CInverter%7Chot_cold",
+      "overflow": false,
+      "robots": "index, follow",
+      "canonical": "https://tawveeri.com/ar/compare/lg%7Csplit%7CFreshDV%7C18000%7CInverter%7Chot_cold",
+      "ttfbMs": 1151.3999999761581,
+      "lcpMs": 1596
+    },
+    {
+      "stage": "phone",
+      "locale": "ar",
+      "width": 1366,
+      "url": "https://tawveeri.com/ar/search?q=%D8%A7%D9%8A%D9%81%D9%88%D9%86+16+%D8%A8%D8%B1%D9%88+%D9%85%D8%A7%D9%83%D8%B3+256",
+      "overflow": false,
+      "robots": "noindex, follow",
+      "canonical": "https://tawveeri.com/ar/search",
+      "ttfbMs": 1048.2999999523163,
+      "lcpMs": 1344
+    },
+    {
+      "stage": "phone-compare",
+      "locale": "ar",
+      "width": 1366,
+      "url": "https://tawveeri.com/ar/compare/apple%7CiPhone%7C16%7CPro%20Max%7C256",
+      "overflow": false,
+      "robots": "index, follow",
+      "canonical": "https://tawveeri.com/ar/compare/apple%7CiPhone%7C16%7CPro%20Max%7C256",
+      "ttfbMs": 1068.2999999523163,
+      "lcpMs": 1944
+    },
+    {
+      "stage": "ac",
+      "locale": "ar",
+      "width": 1366,
+      "url": "https://tawveeri.com/ar/search?q=%D9%85%D9%83%D9%8A%D9%81+%D9%84%D8%BA%D8%B1%D9%81%D8%A9+30+%D9%85%D8%AA%D8%B1+%D9%87%D8%A7%D8%AF%D8%A6+%D8%AA%D8%AD%D8%AA+4000",
+      "overflow": false,
+      "robots": "noindex, follow",
+      "canonical": "https://tawveeri.com/ar/search",
+      "ttfbMs": 1040.7999999523163,
+      "lcpMs": 1252
+    },
+    {
+      "stage": "ac-compare",
+      "locale": "ar",
+      "width": 1366,
+      "url": "https://tawveeri.com/ar/compare/lg%7Csplit%7CFreshDV%7C18000%7CInverter%7Chot_cold",
+      "overflow": false,
+      "robots": "index, follow",
+      "canonical": "https://tawveeri.com/ar/compare/lg%7Csplit%7CFreshDV%7C18000%7CInverter%7Chot_cold",
+      "ttfbMs": 1269.3999999761581,
+      "lcpMs": 1652
+    },
+    {
+      "stage": "phone",
+      "locale": "en",
+      "width": 390,
+      "url": "https://tawveeri.com/en/search?q=%D8%A7%D9%8A%D9%81%D9%88%D9%86+16+%D8%A8%D8%B1%D9%88+%D9%85%D8%A7%D9%83%D8%B3+256",
+      "overflow": false,
+      "robots": "noindex, follow",
+      "canonical": "https://tawveeri.com/en/search",
+      "ttfbMs": 947,
+      "lcpMs": 1216
+    },
+    {
+      "stage": "phone-compare",
+      "locale": "en",
+      "width": 390,
+      "url": "https://tawveeri.com/ar/compare/apple%7CiPhone%7C16%7CPro%20Max%7C256",
+      "overflow": false,
+      "robots": "index, follow",
+      "canonical": "https://tawveeri.com/ar/compare/apple%7CiPhone%7C16%7CPro%20Max%7C256",
+      "ttfbMs": 1046.2999999523163,
+      "lcpMs": 1916
+    },
+    {
+      "stage": "ac",
+      "locale": "en",
+      "width": 390,
+      "url": "https://tawveeri.com/en/search?q=a+quiet+AC+for+a+30+m%C2%B2+room+under+4000",
+      "overflow": false,
+      "robots": "noindex, follow",
+      "canonical": "https://tawveeri.com/en/search",
+      "ttfbMs": 880.6000000238419,
+      "lcpMs": 1132
+    },
+    {
+      "stage": "phone",
+      "locale": "en",
+      "width": 1366,
+      "url": "https://tawveeri.com/en/search?q=%D8%A7%D9%8A%D9%81%D9%88%D9%86+16+%D8%A8%D8%B1%D9%88+%D9%85%D8%A7%D9%83%D8%B3+256",
+      "overflow": false,
+      "robots": "noindex, follow",
+      "canonical": "https://tawveeri.com/en/search",
+      "ttfbMs": 863,
+      "lcpMs": 1052
+    },
+    {
+      "stage": "phone-compare",
+      "locale": "en",
+      "width": 1366,
+      "url": "https://tawveeri.com/ar/compare/apple%7CiPhone%7C16%7CPro%20Max%7C256",
+      "overflow": false,
+      "robots": "index, follow",
+      "canonical": "https://tawveeri.com/ar/compare/apple%7CiPhone%7C16%7CPro%20Max%7C256",
+      "ttfbMs": 854.5,
+      "lcpMs": 1636
+    },
+    {
+      "stage": "ac",
+      "locale": "en",
+      "width": 1366,
+      "url": "https://tawveeri.com/en/search?q=a+quiet+AC+for+a+30+m%C2%B2+room+under+4000",
+      "overflow": false,
+      "robots": "noindex, follow",
+      "canonical": "https://tawveeri.com/en/search",
+      "ttfbMs": 861.9000000953674,
+      "lcpMs": 1012
+    }
+  ],
+  "dataReadOnly": [
+    {
+      "label": "projection",
+      "status": 206,
+      "count": "7934"
+    },
+    {
+      "label": "projection_observed_within_72h",
+      "status": 206,
+      "count": "3611"
+    },
+    {
+      "label": "projection_comparable",
+      "status": 206,
+      "count": "1519"
+    },
+    {
+      "label": "affiliate_reports",
+      "status": 200,
+      "count": "0"
+    },
+    {
+      "label": "affiliate_conversions",
+      "status": 200,
+      "count": "0"
+    }
+  ],
+  "seoAndTrust": [
+    {
+      "path": "/robots.txt",
+      "status": 200,
+      "url": "https://tawveeri.com/robots.txt",
+      "elapsedMs": 1025
+    },
+    {
+      "path": "/sitemap.xml",
+      "status": 200,
+      "url": "https://tawveeri.com/sitemap.xml",
+      "elapsedMs": 3041,
+      "sitemapEntries": 18512
+    },
+    {
+      "path": "/ar/about",
+      "status": 200,
+      "url": "https://tawveeri.com/ar/about",
+      "elapsedMs": 917,
+      "robots": "index, follow",
+      "canonical": "https://tawveeri.com/ar/about"
+    },
+    {
+      "path": "/en/about",
+      "status": 200,
+      "url": "https://tawveeri.com/en/about",
+      "elapsedMs": 835,
+      "robots": "index, follow",
+      "canonical": "https://tawveeri.com/en/about"
+    },
+    {
+      "path": "/ar/how-it-works",
+      "status": 200,
+      "url": "https://tawveeri.com/ar/how-it-works",
+      "elapsedMs": 875,
+      "robots": "index, follow",
+      "canonical": "https://tawveeri.com/ar/how-it-works"
+    },
+    {
+      "path": "/en/how-it-works",
+      "status": 200,
+      "url": "https://tawveeri.com/en/how-it-works",
+      "elapsedMs": 1016,
+      "robots": "index, follow",
+      "canonical": "https://tawveeri.com/en/how-it-works"
+    },
+    {
+      "path": "/ar/faq",
+      "status": 200,
+      "url": "https://tawveeri.com/ar/faq",
+      "elapsedMs": 858,
+      "robots": "index, follow",
+      "canonical": "https://tawveeri.com/ar/faq"
+    },
+    {
+      "path": "/en/faq",
+      "status": 200,
+      "url": "https://tawveeri.com/en/faq",
+      "elapsedMs": 960,
+      "robots": "index, follow",
+      "canonical": "https://tawveeri.com/en/faq"
+    },
+    {
+      "path": "/ar/home-mission",
+      "status": 200,
+      "url": "https://tawveeri.com/ar/home-mission",
+      "elapsedMs": 845,
+      "robots": "index, follow",
+      "canonical": "https://tawveeri.com/ar/home-mission"
+    },
+    {
+      "path": "/en/home-mission",
+      "status": 200,
+      "url": "https://tawveeri.com/en/home-mission",
+      "elapsedMs": 838,
+      "robots": "index, follow",
+      "canonical": "https://tawveeri.com/en/home-mission"
+    }
+  ],
+  "category": [
+    {
+      "url": "https://tawveeri.com/ar/categories/air-conditioners",
+      "status": 200,
+      "robots": "index, follow",
+      "canonical": "https://tawveeri.com/ar/categories/air-conditioners",
+      "jsonLdTypes": [
+        "WebSite",
+        "Organization",
+        "CollectionPage",
+        "FAQPage"
+      ]
+    }
+  ],
+  "merchantChecks": [
+    {
+      "name": "haier-extra",
+      "width": 390,
+      "at": "2026-09-14T13:39:58.302Z",
+      "tawveeriPrice": 3049,
+      "merchantPrice": 3399,
+      "status": 200,
+      "destination": "https://www.extra.com/en-sa/large-appliances-/air-conditioner/split-air-conditioner/haier-split-ac-24-000-btu-cool-only-nano-sterilization-wifi-ultra-inverter/p/100496427",
+      "testMode": true,
+      "error": null
+    },
+    {
+      "name": "iphone-extra",
+      "width": 390,
+      "at": "2026-09-14T13:40:20.269Z",
+      "tawveeriPrice": 4599,
+      "merchantPrice": 4599,
+      "status": 200,
+      "destination": "https://www.extra.com/en-sa/mobiles-tablets/mobiles/smartphone/apple-iphone-16-pro-max-5g-6-9-inch-256gb-desert-titanium/p/100376379",
+      "testMode": true,
+      "error": null
+    },
+    {
+      "name": "iphone-jarir-renewed",
+      "width": 390,
+      "at": "2026-09-14T13:40:42.608Z",
+      "tawveeriPrice": 3599,
+      "merchantPrice": 3599,
+      "status": 200,
+      "destination": "https://www.jarir.com/sa-en/apple-iphone-16-pro-max-renewed-smartphones-648455.html",
+      "testMode": true,
+      "error": null
+    },
+    {
+      "name": "lg-shaker",
+      "width": 390,
+      "at": "2026-09-14T13:41:04.677Z",
+      "tawveeriPrice": 3499,
+      "merchantPrice": 3498.54,
+      "status": 200,
+      "destination": "https://shakersa.com/product/%d8%a5%d9%84-%d8%ac%d9%8a-%d9%85%d9%83%d9%8a%d9%81-%d8%b3%d8%a8%d9%84%d9%8a%d8%aa-%d8%a7%d9%84%d8%b0%d9%83%d9%8a-18000-%d9%88%d8%ad%d8%af%d8%a9-%d8%ad%d8%a7%d8%b1-%d9%88-%d8%a8%d8%a7%d8%b1/",
+      "testMode": true,
+      "error": null
+    },
+    {
+      "name": "haier-extra",
+      "width": 1366,
+      "at": "2026-09-14T13:41:38.148Z",
+      "tawveeriPrice": 3049,
+      "merchantPrice": null,
+      "status": null,
+      "destination": null,
+      "testMode": true,
+      "error": "Offer link not found on fresh page"
+    },
+    {
+      "name": "iphone-extra",
+      "width": 1366,
+      "at": "2026-09-14T13:41:48.890Z",
+      "tawveeriPrice": 4599,
+      "merchantPrice": 4599,
+      "status": 200,
+      "destination": "https://www.extra.com/en-sa/mobiles-tablets/mobiles/smartphone/apple-iphone-16-pro-max-5g-6-9-inch-256gb-desert-titanium/p/100376379",
+      "testMode": true,
+      "error": null
+    },
+    {
+      "name": "iphone-jarir-renewed",
+      "width": 1366,
+      "at": "2026-09-14T13:42:11.025Z",
+      "tawveeriPrice": 3599,
+      "merchantPrice": 3599,
+      "status": 200,
+      "destination": "https://www.jarir.com/sa-en/apple-iphone-16-pro-max-renewed-smartphones-648455.html",
+      "testMode": true,
+      "error": null
+    },
+    {
+      "name": "lg-shaker",
+      "width": 1366,
+      "at": "2026-09-14T13:42:32.465Z",
+      "tawveeriPrice": 3499,
+      "merchantPrice": 3498.54,
+      "status": 200,
+      "destination": "https://shakersa.com/product/%d8%a5%d9%84-%d8%ac%d9%8a-%d9%85%d9%83%d9%8a%d9%81-%d8%b3%d8%a8%d9%84%d9%8a%d8%aa-%d8%a7%d9%84%d8%b0%d9%83%d9%8a-18000-%d9%88%d8%ad%d8%af%d8%a9-%d8%ad%d8%a7%d8%b1-%d9%88-%d8%a8%d8%a7%d8%b1/",
+      "testMode": true,
+      "error": null
+    }
+  ],
+  "haierDesktopFollowup": [
+    {
+      "status": 200,
+      "destination": "https://www.extra.com/en-sa/large-appliances-/air-conditioner/split-air-conditioner/haier-split-ac-24-000-btu-cool-only-nano-sterilization-wifi-ultra-inverter/p/100496427",
+      "at": "2026-09-14T13:45:00.615Z",
+      "merchantPrice": 3399,
+      "method": "Opened the same recorded /go link with tw_test=1 after a fresh advisor response did not contain that observation ID."
+    }
+  ],
+  "englishComparisonDirect": [
+    {
+      "case": "english-compare-direct",
+      "width": 390,
+      "url": "https://tawveeri.com/en/compare/apple%7CiPhone%7C16%7CPro%20Max%7C256",
+      "overflow": false,
+      "canonical": "https://tawveeri.com/en/compare/apple%7CiPhone%7C16%7CPro%20Max%7C256",
+      "robots": "index, follow"
+    },
+    {
+      "case": "english-compare-direct",
+      "width": 1366,
+      "url": "https://tawveeri.com/en/compare/apple%7CiPhone%7C16%7CPro%20Max%7C256",
+      "overflow": false,
+      "canonical": "https://tawveeri.com/en/compare/apple%7CiPhone%7C16%7CPro%20Max%7C256",
+      "robots": "index, follow"
+    }
+  ],
+  "tests": {
+    "regressionBefore": {
+      "failed": 11,
+      "passed": 6
+    },
+    "targetedAfter": {
+      "suites": 3,
+      "passed": 172
+    },
+    "full": {
+      "suites": 241,
+      "passed": 3667
+    },
+    "coverage": {
+      "statements": 89.36,
+      "branches": 67.6,
+      "functions": 100,
+      "lines": 97.33,
+      "branchGate": 70,
+      "status": "FAIL",
+      "collection": "src/lib/utils.ts and src/lib/scraping/product-filter.ts only; neither changed"
+    },
+    "lint": "PASS for the two changed TypeScript files",
+    "typecheck": {
+      "errors": 762,
+      "baseline": 556,
+      "baselineDate": "2026-08-08",
+      "status": "FAIL; neither changed TypeScript file appears in the increase report"
+    }
+  },
+  "notVerified": [
+    "Checkout totals and completed orders",
+    "Affiliate-network attribution, confirmed or paid commission",
+    "Real-device Core Web Vitals and load capacity",
+    "Search Console indexing and search impressions",
+    "Live alert delivery and a persisted/shared home mission",
+    "Post-deployment behavior: not deployed",
+    "Underlying cause of Haier price divergence in the protected product pipeline"
+  ]
+}

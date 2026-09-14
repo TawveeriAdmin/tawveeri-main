@@ -17,6 +17,7 @@ import { CompareStateSync } from '@/components/agent/compare-state-sync';
 import { readCategoryAttribution } from '@/lib/catalog/category-link';
 import { CategoryExitLink } from '@/components/catalog/category-exit-link';
 import { ExitLink } from '@/components/catalog/exit-link';
+import { OfferDescription } from '@/components/compare/offer-description';
 
 interface CampaignEligibility {
   eligible: true;
@@ -457,6 +458,7 @@ export default async function TpsComparePage({
               </div>
             </div>
 
+            <OfferDescription rawName={cheapestOffer.raw_name} isAr={isAr} />
             <CampaignEligibilityNote offer={cheapestOffer} isAr={isAr} />
             <StaleEvidenceNote offer={cheapestOffer} isAr={isAr} />
 
@@ -509,12 +511,10 @@ export default async function TpsComparePage({
                   key={`${offer.store_name}-${idx}`}
                   className="px-4 py-4 hover:bg-[color:var(--color-surface-container-low)] transition-colors"
                 >
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex flex-col min-w-0">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                  <div className="flex flex-col min-w-0 flex-1">
                     <span className="text-sm font-semibold text-on-surface">{offer.store_name}</span>
-                    <span className="text-xs text-on-surface-variant truncate max-w-[200px] mt-0.5">
-                      {offer.raw_name}
-                    </span>
+                    <OfferDescription rawName={offer.raw_name} isAr={isAr} />
                     {offer.availability === 'in_stock' && (
                       <span className="text-xs text-[var(--brand-green)] font-medium mt-0.5">
                         {isAr ? '● متوفر' : '● In Stock'}
