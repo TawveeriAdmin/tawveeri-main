@@ -3,7 +3,7 @@
   "scope": "Public buyer journey. Browser viewport emulation, not physical phones. No purchases or messages.",
   "adr365": {
     "commit": "8aef6383c80ec86999ace9c2988b8e5088732014",
-    "deployment": "1726bcc1-b9b4-4def-8680-ff5539bddc69",
+    "deployment": "9fbabbce-bece-45bd-8aae-f11a472514c9",
     "status": "SUCCESS",
     "checks": [
       {
@@ -46,10 +46,11 @@
         "correctModelPresent": true,
         "secondaryMismatchStillPresent": true
       }
-    ]
+    ],
+    "service": "tawveeri-main"
   },
   "adr366": {
-    "stage": "local preview; production pending",
+    "stage": "production verified",
     "checks": [
       {
         "locale": "ar",
@@ -80,7 +81,183 @@
         "descriptionCount": 4
       }
     ],
-    "unitTests": 8
+    "unitTests": 8,
+    "commit": "93622fa47fdb89ebd209505216905ab403125660",
+    "service": "tawveeri-main",
+    "deployment": "2ca4b14d-9395-4439-8d84-3b6db26712ed",
+    "status": "SUCCESS",
+    "fullTests": 3676,
+    "fullSuites": 242,
+    "productionChecks": [
+      {
+        "locale": "ar",
+        "width": 390,
+        "status": 200,
+        "at": "2026-09-14T19:03:18.771Z",
+        "url": "https://tawveeri.com/ar/compare/apple%7CiPhone%7C16%7CPro%20Max%7C256?test=1",
+        "overflow": false,
+        "descriptions": [
+          {
+            "text": "حالة المنتج غير مؤكدة\n\nوصف العرض المرصود:\n\nApple iPhone 16 Pro Max, 5G, 6.9 inch, 256GB, Black Titanium\n\nتحقق من الحالة واللون والضمان لدى المتجر قبل الشراء؛ قد تختلف شروط العروض.",
+            "width": 286,
+            "scrollWidth": 286
+          },
+          {
+            "text": "مجدّد بحسب الوصف\n\nوصف العرض المرصود:\n\nRenewed Grade B Apple iPhone 16 Pro Max, 256 GB, Desert Titanium, 5G\n\nتحقق من الحالة واللون والضمان لدى المتجر قبل الشراء؛ قد تختلف شروط العروض.",
+            "width": 294,
+            "scrollWidth": 294
+          },
+          {
+            "text": "حالة المنتج غير مؤكدة\n\nوصف العرض المرصود:\n\niPhone 16 Pro Max 256GB Desert Titanium 5G With FaceTime - International Version\n\nتحقق من الحالة واللون والضمان لدى المتجر قبل الشراء؛ قد تختلف شروط العروض.",
+            "width": 294,
+            "scrollWidth": 294
+          },
+          {
+            "text": "حالة المنتج غير مؤكدة\n\nوصف العرض المرصود:\n\nApple iPhone 16 Pro Max, 5G, 6.9 inch, 256GB, Black Titanium\n\nتحقق من الحالة واللون والضمان لدى المتجر قبل الشراء؛ قد تختلف شروط العروض.",
+            "width": 294,
+            "scrollWidth": 294
+          },
+          {
+            "text": "حالة المنتج غير مؤكدة\n\nوصف العرض المرصود:\n\nابل ايفون 16 برو ماكس، 256 جيجابايت، 5G – تيتانيوم صحراوي\n\nتحقق من الحالة واللون والضمان لدى المتجر قبل الشراء؛ قد تختلف شروط العروض.",
+            "width": 294,
+            "scrollWidth": 294
+          }
+        ],
+        "goPaths": [
+          "/go/d83bf279-f1e5-4352-a432-7f96693b8a5b",
+          "/go/b9937744-237f-41ba-8ca0-9fda6b334565",
+          "/go/19926b8c-8683-4b66-ae23-595cccf3d2e8",
+          "/go/d83bf279-f1e5-4352-a432-7f96693b8a5b",
+          "/go/291d4353-af06-47b0-97fc-8552ff8f5033"
+        ]
+      },
+      {
+        "locale": "ar",
+        "width": 1366,
+        "status": 200,
+        "at": "2026-09-14T19:03:23.763Z",
+        "url": "https://tawveeri.com/ar/compare/apple%7CiPhone%7C16%7CPro%20Max%7C256?test=1",
+        "overflow": false,
+        "descriptions": [
+          {
+            "text": "حالة المنتج غير مؤكدة\n\nوصف العرض المرصود:\n\nApple iPhone 16 Pro Max, 5G, 6.9 inch, 256GB, Black Titanium\n\nتحقق من الحالة واللون والضمان لدى المتجر قبل الشراء؛ قد تختلف شروط العروض.",
+            "width": 720,
+            "scrollWidth": 720
+          },
+          {
+            "text": "مجدّد بحسب الوصف\n\nوصف العرض المرصود:\n\nRenewed Grade B Apple iPhone 16 Pro Max, 256 GB, Desert Titanium, 5G\n\nتحقق من الحالة واللون والضمان لدى المتجر قبل الشراء؛ قد تختلف شروط العروض.",
+            "width": 482.046875,
+            "scrollWidth": 482
+          },
+          {
+            "text": "حالة المنتج غير مؤكدة\n\nوصف العرض المرصود:\n\niPhone 16 Pro Max 256GB Desert Titanium 5G With FaceTime - International Version\n\nتحقق من الحالة واللون والضمان لدى المتجر قبل الشراء؛ قد تختلف شروط العروض.",
+            "width": 527.15625,
+            "scrollWidth": 527
+          },
+          {
+            "text": "حالة المنتج غير مؤكدة\n\nوصف العرض المرصود:\n\nApple iPhone 16 Pro Max, 5G, 6.9 inch, 256GB, Black Titanium\n\nتحقق من الحالة واللون والضمان لدى المتجر قبل الشراء؛ قد تختلف شروط العروض.",
+            "width": 506.65625,
+            "scrollWidth": 507
+          },
+          {
+            "text": "حالة المنتج غير مؤكدة\n\nوصف العرض المرصود:\n\nابل ايفون 16 برو ماكس، 256 جيجابايت، 5G – تيتانيوم صحراوي\n\nتحقق من الحالة واللون والضمان لدى المتجر قبل الشراء؛ قد تختلف شروط العروض.",
+            "width": 511.625,
+            "scrollWidth": 512
+          }
+        ],
+        "goPaths": [
+          "/go/d83bf279-f1e5-4352-a432-7f96693b8a5b",
+          "/go/b9937744-237f-41ba-8ca0-9fda6b334565",
+          "/go/19926b8c-8683-4b66-ae23-595cccf3d2e8",
+          "/go/d83bf279-f1e5-4352-a432-7f96693b8a5b",
+          "/go/291d4353-af06-47b0-97fc-8552ff8f5033"
+        ]
+      },
+      {
+        "locale": "en",
+        "width": 390,
+        "status": 200,
+        "at": "2026-09-14T19:03:28.427Z",
+        "url": "https://tawveeri.com/en/compare/apple%7CiPhone%7C16%7CPro%20Max%7C256?test=1",
+        "overflow": false,
+        "descriptions": [
+          {
+            "text": "Product condition unconfirmed\n\nObserved offer description:\n\nApple iPhone 16 Pro Max, 5G, 6.9 inch, 256GB, Black Titanium\n\nConfirm condition, colour and warranty with the retailer before buying; offer terms may differ.",
+            "width": 286,
+            "scrollWidth": 286
+          },
+          {
+            "text": "Renewed according to description\n\nObserved offer description:\n\nRenewed Grade B Apple iPhone 16 Pro Max, 256 GB, Desert Titanium, 5G\n\nConfirm condition, colour and warranty with the retailer before buying; offer terms may differ.",
+            "width": 294,
+            "scrollWidth": 294
+          },
+          {
+            "text": "Product condition unconfirmed\n\nObserved offer description:\n\niPhone 16 Pro Max 256GB Desert Titanium 5G With FaceTime - International Version\n\nConfirm condition, colour and warranty with the retailer before buying; offer terms may differ.",
+            "width": 294,
+            "scrollWidth": 294
+          },
+          {
+            "text": "Product condition unconfirmed\n\nObserved offer description:\n\nApple iPhone 16 Pro Max, 5G, 6.9 inch, 256GB, Black Titanium\n\nConfirm condition, colour and warranty with the retailer before buying; offer terms may differ.",
+            "width": 294,
+            "scrollWidth": 294
+          },
+          {
+            "text": "Product condition unconfirmed\n\nObserved offer description:\n\nابل ايفون 16 برو ماكس، 256 جيجابايت، 5G – تيتانيوم صحراوي\n\nConfirm condition, colour and warranty with the retailer before buying; offer terms may differ.",
+            "width": 294,
+            "scrollWidth": 294
+          }
+        ],
+        "goPaths": [
+          "/go/d83bf279-f1e5-4352-a432-7f96693b8a5b",
+          "/go/b9937744-237f-41ba-8ca0-9fda6b334565",
+          "/go/19926b8c-8683-4b66-ae23-595cccf3d2e8",
+          "/go/d83bf279-f1e5-4352-a432-7f96693b8a5b",
+          "/go/291d4353-af06-47b0-97fc-8552ff8f5033"
+        ]
+      },
+      {
+        "locale": "en",
+        "width": 1366,
+        "status": 200,
+        "at": "2026-09-14T19:03:33.038Z",
+        "url": "https://tawveeri.com/en/compare/apple%7CiPhone%7C16%7CPro%20Max%7C256?test=1",
+        "overflow": false,
+        "descriptions": [
+          {
+            "text": "Product condition unconfirmed\n\nObserved offer description:\n\nApple iPhone 16 Pro Max, 5G, 6.9 inch, 256GB, Black Titanium\n\nConfirm condition, colour and warranty with the retailer before buying; offer terms may differ.",
+            "width": 720,
+            "scrollWidth": 720
+          },
+          {
+            "text": "Renewed according to description\n\nObserved offer description:\n\nRenewed Grade B Apple iPhone 16 Pro Max, 256 GB, Desert Titanium, 5G\n\nConfirm condition, colour and warranty with the retailer before buying; offer terms may differ.",
+            "width": 507.890625,
+            "scrollWidth": 508
+          },
+          {
+            "text": "Product condition unconfirmed\n\nObserved offer description:\n\niPhone 16 Pro Max 256GB Desert Titanium 5G With FaceTime - International Version\n\nConfirm condition, colour and warranty with the retailer before buying; offer terms may differ.",
+            "width": 541.265625,
+            "scrollWidth": 541
+          },
+          {
+            "text": "Product condition unconfirmed\n\nObserved offer description:\n\nApple iPhone 16 Pro Max, 5G, 6.9 inch, 256GB, Black Titanium\n\nConfirm condition, colour and warranty with the retailer before buying; offer terms may differ.",
+            "width": 527.265625,
+            "scrollWidth": 527
+          },
+          {
+            "text": "Product condition unconfirmed\n\nObserved offer description:\n\nابل ايفون 16 برو ماكس، 256 جيجابايت، 5G – تيتانيوم صحراوي\n\nConfirm condition, colour and warranty with the retailer before buying; offer terms may differ.",
+            "width": 529.484375,
+            "scrollWidth": 529
+          }
+        ],
+        "goPaths": [
+          "/go/d83bf279-f1e5-4352-a432-7f96693b8a5b",
+          "/go/b9937744-237f-41ba-8ca0-9fda6b334565",
+          "/go/19926b8c-8683-4b66-ae23-595cccf3d2e8",
+          "/go/d83bf279-f1e5-4352-a432-7f96693b8a5b",
+          "/go/291d4353-af06-47b0-97fc-8552ff8f5033"
+        ]
+      }
+    ]
   },
   "researchVisits": [
     {
