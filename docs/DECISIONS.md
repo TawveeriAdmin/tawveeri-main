@@ -31,6 +31,35 @@ Also found, explicitly **not fixed** (same reasoning — general monitor-plugin 
 
 **Verdict.** `MISSION_SAMSUNG_OFFICIAL_CATALOG = NEAR_COMPLETE` (390/407 canonical, consistent with ADR-358's own prior finding — never claimed 100%). `MISSION_SAMSUNG_AFFILIATE = CLOSED` (proven operational end-to-end, live, for every required category plus every newly-recovered accessory). `OVERALL_SAMSUNG_MISSION = CLOSED` — the great majority of the current-valid catalog is correctly represented, every residual is reason-coded, the one proven customer-visible integrity defect found in this final pass was fixed and verified, variant integrity is proven strong (0 wrong-variant redirects, 0 affiliate bypasses, 0 genuine duplicate canonicals remaining), outbound/affiliate attribution is live and operational, scheduler/recovery reliability is proven, DB health is normal, and durable documentation (this entry) captures the full truth. No further Samsung KSA mission should be opened on the strength of this audit alone; the two explicitly out-of-scope findings (general monitor/AC panel-duplication root cause, and the 19 unresolved `COLLAPSED_VARIANTS`) are recorded here as the honest, bounded remainder for a future, separately-scoped, cross-merchant monitor/AC category-plugin mission — not a Samsung defect.
 
+**FINAL CLOSURE ADDENDUM (same day, re-verified live).** `CURRENT_VALID_SAMSUNG_SAUDI` re-confirmed as **407** distinct identities (not 408 — see the double-count correction above). Category-by-category closure, reusing the corrected 407 population (a small ~3-identity counting-convention difference from the strict 390 exists here because this table counts a baseline identity "linked" if *any* of its live-resolved siblings is canonical, whereas the strict aggregate above required *all* siblings resolved for the 3 genuinely partial-split cases — both are internally consistent, the strict 390/407 remains the authoritative headline number):
+
+| Category | Valid | Canonical | Offer | Visible | Missing | Coverage |
+|---|---|---|---|---|---|---|
+| TV | 102 | 102 | 98 | 102 | 0 | 100.0% |
+| Tablet | 85 | 85 | 79 | 85 | 0 | 100.0% |
+| Monitor | 76 | 72 | 63 | 72 | 4 | 94.7% |
+| Mobile | 30 | 30 | 18 | 30 | 0 | 100.0% |
+| Audio | 30 | 30 | 30 | 30 | 0 | 100.0% |
+| Washing machine | 20 | 20 | 18 | 20 | 0 | 100.0% |
+| Air conditioner | 14 | 14 | 13 | 14 | 0 | 100.0% |
+| Smartwatch | 8 | 8 | 8 | 8 | 0 | 100.0% |
+| Refrigerator | 8 | 8 | 6 | 8 | 0 | 100.0% |
+| No live observation since baseline (spans AC×5, refrigerator×1, monitor×1 — never re-scraped) | 7 | 0 | 0 | 0 | 7 | 0.0% |
+| Dishwasher | 7 | 5 | 6 | 5 | 2 | 71.4% |
+| Stylus (high-value accessory) | 5 | 5 | 5 | 5 | 0 | 100.0% |
+| Ring | 4 | 4 | 4 | 4 | 0 | 100.0% |
+| Cooker | 4 | 4 | 4 | 4 | 0 | 100.0% |
+| Tracker | 3 | 3 | 3 | 3 | 0 | 100.0% |
+| Microwave | 2 | 1 | 2 | 1 | 1 | 50.0% |
+| Vacuum | 2 | 2 | 2 | 2 | 0 | 100.0% |
+| **Total** | **407** | **393** (lenient) / **390** (strict) | 359 / 358 | 393 / 390 | 14 / 17 | — |
+
+The residual concentrates exactly where already reason-coded: monitor (stalled-in-staging + one orphaned-drift), dishwasher and microwave (staged valid, never canonicalized), and 7 items across AC/refrigerator/monitor never re-observed since the baseline snapshot was frozen — no unexplained bucket remains.
+
+**Live re-verification at closure time:** 0 advisory locks held, 0 orphan `tsx`/recovery processes, `samsung_delta_watch_runs` 3/3 `status='completed'`, DB reachable (cold pooler connect 3.0s, warm queries normal), git working tree clean for the Samsung workstream, `origin/main..HEAD` empty. No code or further data changes were required beyond this addendum.
+
+`MISSION_SAMSUNG_OFFICIAL_CATALOG = NEAR_COMPLETE`. `OVERALL_SAMSUNG_MISSION = CLOSED`. The Samsung KSA workstream (ADR-354 through ADR-364) is closed.
+
 ### ADR-363 — New-Model Delta Watch final verification: the 4th Samsung sitemap was a real, proven blind spot, fixed narrowly · Accepted (2026-09-14)
 **Context.** ADR-362's "steady-state cost = 3 XML fetches per run" prompted one final question: Samsung Saudi has 4 official sitemaps (im/da/vd/assorted), and a prior mission (`seed-samsung-ksa-sitemap.ts`'s own header comment) had already found exactly one genuine current consumer product inside `assorted-sitemap.xml`. The founder explicitly forbade closing the mission on "assorted is mostly marketing" — the standard was "can a valid future product be missed."
 
