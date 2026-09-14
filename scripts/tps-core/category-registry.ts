@@ -20,6 +20,7 @@ import { refrigeratorPlugin } from "../tps-plugins/refrigerator";
 import { washingMachinePlugin } from "../tps-plugins/washing_machine";
 import { ringPlugin } from "../tps-plugins/ring";
 import { trackerPlugin } from "../tps-plugins/tracker";
+import { stylusPlugin } from "../tps-plugins/stylus";
 import { APPLIANCE_BUNDLES, APPLIANCE_CATEGORIES } from "../tps-plugins/appliance";
 import { buildNames as tvNames } from "../tps-matcher/tv-matcher-v1-dry";
 import { buildNames as tabletNames } from "../tps-matcher/tablet-matcher-v1-dry";
@@ -287,6 +288,25 @@ export const CATEGORY_DEFS: Record<string, CategoryDef> = {
     names: (k) => { const p = k.split("|"); const b = p[0], fam = p[1], v = p[2]; return { nameAr: `${fam} ${b} ${v !== "Standard" ? v : ""}`.trim(), nameEn: `${b} ${fam}${v !== "Standard" ? ` ${v}` : ""}`.trim() }; },
     attrs: (k) => { const p = k.split("|"); return { family: p[1], variant: p[2] }; },
     canonSeed: (k) => `canonical:tracker:${k}`, normSeed: (o) => `norm:tracker:raw_observations:${o}`, requireValidTier: false, priceBand: null,
+  },
+  // High-value standalone accessory (2026-09-14, Samsung KSA official-gateway closure).
+  // Generic across brands (Samsung S Pen today; any other brand's standalone stylus is
+  // structurally the same shape), not a Samsung-only carve-out — same precedent as
+  // ring/tracker (ADR-351). IDENTITY SAFETY: this category's key format
+  // (`brand|stylus|family|generation`) can never collide with mobile's own key format, and
+  // its detector accepts EXACTLY the titles mobile's own S-Pen-reject already refuses (no
+  // storage-tier hint) — a stylus can never resolve to the phone it is compatible with.
+  // Deliberately narrow scope: standalone, independently-purchasable, high-value units
+  // only (verified real Samsung KSA price ~200+ SAR) — replacement tips/nibs/cases are
+  // explicitly excluded in the detector, not ingested.
+  stylus: {
+    category: "stylus", detected: "stylus", plugin: stylusPlugin,
+    normalize: (a, b, br) => stylusPlugin.normalize(a, b, br), version: "stylus-v1",
+    filterKeywords: ["s pen", "stylus", "قلم"],
+    // key = brand|stylus|family|generation
+    names: (k) => { const p = k.split("|"); const b = p[0], fam = p[2], gen = p[3]; return { nameAr: `قلم ${fam} ${gen} ${b}`.trim(), nameEn: `${b} ${fam} ${gen} Stylus`.trim() }; },
+    attrs: (k) => { const p = k.split("|"); return { compatible_family: p[2], compatible_generation: p[3] }; },
+    canonSeed: (k) => `canonical:stylus:${k}`, normSeed: (o) => `norm:stylus:raw_observations:${o}`, requireValidTier: false, priceBand: null,
   },
 };
 
