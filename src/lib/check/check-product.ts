@@ -4,7 +4,7 @@ import { getProvider } from '@/lib/providers/registry';
 import { isDisplayableRetailer, resolveApprovedSlug, retailerDisplayName } from '@/lib/retailers/approved-retailers';
 import { buildGoUrl } from '@/lib/analytics/build-go-url';
 import { isFreshObservation } from '@/lib/intelligence/evidence-engine';
-import { parseProductLink, sameProductLink } from './product-link';
+import { parseProductLink, sameProductLink, isKnownShortLink, resolveShortLink } from './product-link';
 import { summarizeOffers, assessCheckHistory, classifyCondition, type CheckOffer } from './assessment';
 
 interface CurrentOffer {
@@ -16,14 +16,22 @@ interface Observation {
   normalized_payload: { _url?: string; _raw_id?: number };
 }
 export interface CheckResult {
-  state: 'matched' | 'unknown' | 'unsupported' | 'ambiguous';
+  state: 'matched' | 'unknown' | 'unsupported' | 'ambiguous' | 'short_link_unresolved';
   canonicalId?: string; title?: string; offers?: CheckOffer[]; cheaperCount?: number;
   conditionDifference?: boolean; history?: ReturnType<typeof assessCheckHistory>;
   alertProductId?: string | null;
 }
 
 export async function checkProduct(input: string, locale: 'ar' | 'en'): Promise<CheckResult> {
-  const link = parseProductLink(input);
+  let link = parseProductLink(input);
+  if (!link && isKnownShortLink(input)) {
+    // Redirect-only resolution (ADR-367 addendum): follow a KNOWN short-link host to its
+    // destination, then hand that destination to the exact same parser and matching path
+    // below — the short link never bypasses identity resolution or tps_current_offers.
+    const destination = await resolveShortLink(input);
+    if (!destination) return { state: 'short_link_unresolved' };
+    link = parseProductLink(destination);
+  }
   if (!link) return { state: 'unsupported' };
   const db = createServerClient() as unknown as SupabaseClient;
   const storeId = getProvider(link.store)?.storeId;

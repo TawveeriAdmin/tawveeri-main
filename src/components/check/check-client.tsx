@@ -71,15 +71,19 @@ export function CheckClient({ locale }: { locale: 'ar' | 'en' }) {
       <p className="mt-3 leading-7 text-on-surface-variant">{ar ? 'حط رابطه بتوفيري وشوف إذا نفسه أرخص بمكان ثاني. نعرض ما رصدناه، ونوضح متى لا نستطيع إثبات التطابق.' : 'Paste its link to check other Saudi offers. We show our observations and say when an exact match is unconfirmed.'}</p>
       <form onSubmit={submit} className="mt-6 rounded-2xl border border-outline-variant bg-surface p-4">
         <label htmlFor="check-url" className="block text-sm font-semibold">{ar ? 'رابط المنتج' : 'Product link'}</label>
-        <input id="check-url" type="url" dir="ltr" required maxLength={2048} autoComplete="off" autoCapitalize="none" spellCheck={false} value={url} onChange={e => setUrl(e.target.value)} placeholder="https://…" className="mt-2 min-h-12 w-full min-w-0 rounded-xl border border-outline-variant bg-transparent px-3 text-base" />
-        <p className="mt-2 text-xs leading-6 text-on-surface-variant">{ar ? 'رابط صفحة المنتج الكامل من أمازون السعودية، نون السعودية، جرير أو إكسترا. الروابط المختصرة غير مدعومة حاليًا.' : 'Full product-page links from Amazon.sa, Noon Saudi, Jarir or eXtra. Short links are not supported yet.'}</p>
+        <input id="check-url" type="text" inputMode="url" dir="ltr" required maxLength={2200} autoComplete="off" autoCapitalize="none" spellCheck={false} value={url} onChange={e => setUrl(e.target.value)} placeholder="https://…" className="mt-2 min-h-12 w-full min-w-0 rounded-xl border border-outline-variant bg-transparent px-3 text-base" />
+        <p className="mt-2 text-xs leading-6 text-on-surface-variant">{ar ? 'رابط صفحة المنتج الكامل من أمازون السعودية، نون السعودية، جرير أو إكسترا — يمكنك لصق النص كما نسخه تطبيق المتجر، حتى لو سبقه كلام إضافي. رابط أمازون المختصر من زر المشاركة (link.amazon) مدعوم أيضًا؛ الروابط المختصرة من متاجر أخرى غير مدعومة حاليًا.' : "Full product-page links from Amazon.sa, Noon Saudi, Jarir or eXtra — you can paste exactly what the store app copied, even with extra text before it. Amazon's short share link (link.amazon) is also supported; short links from other stores are not supported yet."}</p>
         <button disabled={busy} className="mt-3 min-h-12 w-full rounded-xl bg-primary-600 px-4 py-3 font-bold text-white disabled:opacity-60">{busy ? (ar ? 'نفحص سجلنا…' : 'Checking our records…') : (ar ? 'افحص الرابط' : 'Check link')}</button>
       </form>
       <div aria-live="polite" aria-busy={busy} className="mt-6">
         {error && <p role="alert">{ar ? 'تعذر الفحص مؤقتًا. حاول مرة أخرى؛ لم نحكم على المنتج.' : 'Check temporarily unavailable. Please retry; no product verdict was made.'}</p>}
         {result && result.state !== 'matched' && <section className="rounded-xl border border-outline-variant p-4">
-          <h2 className="font-bold">{ar ? 'لم نثبت هوية المنتج من هذا الرابط' : 'We could not confirm the product from this link'}</h2>
-          <p className="mt-2 leading-7">{result.state === 'unsupported'
+          <h2 className="font-bold">{result.state === 'short_link_unresolved'
+            ? (ar ? 'تعذر تتبع الرابط المختصر' : 'Could not resolve the short link')
+            : (ar ? 'لم نثبت هوية المنتج من هذا الرابط' : 'We could not confirm the product from this link')}</h2>
+          <p className="mt-2 leading-7">{result.state === 'short_link_unresolved'
+            ? (ar ? 'لم نصل لوجهة الرابط المختصر خلال الوقت المتاح، فلن نخمّن المنتج. حاول مرة أخرى، أو افتح الرابط في التطبيق حتى تصل لصفحة المنتج ثم الصق عنوانها هنا.' : "We could not reach the short link's destination in time, so we will not guess the product. Try again, or open it in the app until the product page loads, then paste its address here.")
+            : result.state === 'unsupported'
             ? (ar ? 'استخدم رابط صفحة المنتج الكامل من المتاجر المدعومة، دون خيارات تغيّر النسخة. افتح الرابط المختصر في المتجر ثم انسخ عنوان الصفحة.' : 'Use a full supported product-page link without variant selectors. Open short links at the store first, then copy the page address.')
             : (ar ? 'الرابط غير مغطى أو الأدلة غير كافية. لن نستبدله بمنتج مشابه أو نخترع مقارنة.' : 'The link is not covered or evidence is insufficient. We will not substitute a similar product or invent a comparison.')}</p>
           <Link className="mt-3 inline-block underline" href={`/${locale}/search`}>{ar ? 'ابحث باسم الموديل' : 'Search by model name'}</Link>

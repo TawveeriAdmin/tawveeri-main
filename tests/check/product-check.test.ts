@@ -1,4 +1,4 @@
-import { parseProductLink, sameProductLink } from '@/lib/check/product-link';
+import { parseProductLink, sameProductLink, extractUrlFromText, isKnownShortLink } from '@/lib/check/product-link';
 import { assessCheckHistory, summarizeOffers, type CheckOffer } from '@/lib/check/assessment';
 
 describe('Check link identity boundary', () => {
@@ -20,6 +20,32 @@ describe('Check link identity boundary', () => {
     const link = parseProductLink('https://www.extra.com/en-sa/iphone16/p/100376379')!;
     expect(sameProductLink('https://www.extra.com/en-sa/iphone16/p/100376380', link)).toBe(false);
   });
+});
+
+describe('Check accepts a link embedded in real share-sheet text', () => {
+  it.each([
+    ['Share product link https://www.extra.com/en-sa/phone/p/100376379', 'extra', '100376379'],
+    ['شارك رابط المنتج https://www.jarir.com/sa-en/apple-iphone-renewed-648455.html', 'jarir', '648455'],
+    ['Check this out: https://www.amazon.sa/dp/B0D1234567?tag=example-21 amazing deal', 'amazon', 'B0D1234567'],
+  ])('extracts the merchant link from surrounding text: %s', (input, store, productCode) => {
+    expect(parseProductLink(input)).toMatchObject({ store, productCode });
+  });
+  it('strips share-sentence trailing punctuation without touching the URL path', () => {
+    expect(extractUrlFromText('رابط المنتج: https://www.jarir.com/sa-en/apple-iphone-renewed-648455.html.')).toBe('https://www.jarir.com/sa-en/apple-iphone-renewed-648455.html');
+  });
+  it('still rejects plain text with no embedded URL, unchanged', () => {
+    expect(parseProductLink('Share product link')).toBeNull();
+    expect(extractUrlFromText('Share product link')).toBe('Share product link');
+  });
+});
+
+describe('Check recognizes only a verified short-link host', () => {
+  it.each([
+    'https://link.amazon/B0jhDmiKd', 'Share: https://link.amazon/B0jhDmiKd via Amazon',
+  ])('recognizes the verified Amazon share short link: %s', input => expect(isKnownShortLink(input)).toBe(true));
+  it.each([
+    'https://amzn.eu/example', 'https://www.amazon.sa/dp/B0D1234567', 'https://noon.com/x', 'not a url at all',
+  ])('does not treat an unverified or full link as a short link: %s', input => expect(isKnownShortLink(input)).toBe(false));
 });
 
 const offer = (patch: Partial<CheckOffer> = {}): CheckOffer => ({ store: 'extra', storeName: 'eXtra', title: 'New phone 256GB Black', price: 3000, observedAt: new Date().toISOString(), condition: 'NEW', href: '/go/test', source: true, availability: 'in_stock', stale: false, ...patch });

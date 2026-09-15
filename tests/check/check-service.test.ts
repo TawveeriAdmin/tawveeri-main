@@ -45,3 +45,37 @@ describe('Check resolves only a complete unambiguous source identity', () => {
     await expect(checkProduct(url, 'ar')).rejects.toThrow('check unavailable');
   });
 });
+
+describe('Check resolves a known short link by redirect only, before matching', () => {
+  const shortUrl = 'https://link.amazon/B0jhDmiKd';
+  const destination = 'https://www.amazon.sa/dp/B0D1234567?tag=t';
+  const amazonSource = { identity_key: 'phone|amazon', store_id: 2, url: 'https://www.amazon.sa/dp/B0D1234567', status: 'valid', price: 4599 };
+  afterEach(() => { jest.restoreAllMocks(); });
+  it('follows the redirect with HEAD, never reads a body, then reuses the normal matching path', async () => {
+    const from = setup([amazonSource], 1);
+    const fetchMock = jest.fn().mockResolvedValue({ url: destination });
+    global.fetch = fetchMock as unknown as typeof fetch;
+    const result = await checkProduct(shortUrl, 'ar');
+    expect(fetchMock).toHaveBeenCalledWith(shortUrl, expect.objectContaining({ method: 'HEAD', redirect: 'follow' }));
+    expect(fetchMock.mock.calls[0][1]).not.toHaveProperty('body');
+    expect(from).toHaveBeenCalled();
+    expect(result.state).not.toBe('unsupported');
+    expect(result.state).not.toBe('short_link_unresolved');
+  });
+  it('gives a precise tracking-failure state, not a generic or fabricated match, when resolution fails', async () => {
+    const from = setup([], 0);
+    global.fetch = jest.fn().mockRejectedValue(new Error('network unreachable')) as unknown as typeof fetch;
+    expect(await checkProduct(shortUrl, 'ar')).toEqual({ state: 'short_link_unresolved' });
+    expect(from).not.toHaveBeenCalled();
+  });
+  it('gives the same precise state when the short link never actually redirects', async () => {
+    global.fetch = jest.fn().mockResolvedValue({ url: shortUrl }) as unknown as typeof fetch;
+    expect(await checkProduct(shortUrl, 'ar')).toEqual({ state: 'short_link_unresolved' });
+  });
+  it('never attempts resolution for a domain that is not a verified short link', async () => {
+    const fetchMock = jest.fn();
+    global.fetch = fetchMock as unknown as typeof fetch;
+    expect(await checkProduct('https://amzn.eu/example', 'ar')).toEqual({ state: 'unsupported' });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+});

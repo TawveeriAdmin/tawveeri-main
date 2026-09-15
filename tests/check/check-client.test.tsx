@@ -35,4 +35,20 @@ describe('Check monitoring and telemetry', () => {
     fireEvent.click(screen.getByText('save alert for storefront-id'));
     await waitFor(() => expect(jest.mocked(track).mock.calls.some(c => c[1]?.source === 'check_watch_saved')).toBe(true));
   });
+  it('does not use a native type=url input, so pasted share-sheet text is never blocked before it reaches the app', () => {
+    jest.mocked(useAuth).mockReturnValue({ user: null } as ReturnType<typeof useAuth>);
+    render(<CheckClient locale="ar" />);
+    const input = screen.getByLabelText('رابط المنتج') as HTMLInputElement;
+    expect(input.type).toBe('text');
+    expect(input.inputMode).toBe('url');
+  });
+  it('shows a precise short-link tracking message, distinct from the generic unsupported message', async () => {
+    jest.mocked(useAuth).mockReturnValue({ user: null } as ReturnType<typeof useAuth>);
+    global.fetch = jest.fn().mockResolvedValue({ ok: true, json: async () => ({ state: 'short_link_unresolved' }) });
+    render(<CheckClient locale="ar" />);
+    fireEvent.change(screen.getByLabelText('رابط المنتج'), { target: { value: 'https://link.amazon/B0jhDmiKd' } });
+    fireEvent.click(screen.getByText('افحص الرابط'));
+    await screen.findByText('تعذر تتبع الرابط المختصر');
+    expect(screen.queryByText('لم نثبت هوية المنتج من هذا الرابط')).toBeNull();
+  });
 });
