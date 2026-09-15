@@ -39,8 +39,11 @@ export function parseProductLink(input: string): ProductLink | null {
     if (!code) return null;
     // Variant selectors can change the item without changing the URL path. Unknown
     // parameters fail closed; only well-known tracking/presentation parameters pass.
+    // linkId/btn_type/btn_ref: observed live 2026-09-15 on the real destination a
+    // link.amazon short link resolves to (Amazon's Button-powered redirect chain) —
+    // pure click-tracking artifacts, stripped below like tag/ascsubtag, never used for identity.
     for (const key of u.searchParams.keys()) {
-      if (!/^utm_/i.test(key) && !['tag', 'ref', 'ref_', 'qid', 'sr', 'linkCode', 'ascsubtag', 'th', 'psc', 'gclid', 'fbclid'].includes(key)) return null;
+      if (!/^utm_/i.test(key) && !['tag', 'ref', 'ref_', 'qid', 'sr', 'linkCode', 'ascsubtag', 'th', 'psc', 'gclid', 'fbclid', 'linkId', 'btn_type', 'btn_ref'].includes(key)) return null;
     }
     u.search = ''; u.hash = '';
     return { store, productCode: code, url: u.toString() };
@@ -69,19 +72,39 @@ export function isKnownShortLink(input: string): boolean {
   } catch { return false; }
 }
 
+/** "0; url=<value>" -> <value>, with an app-deep-link scheme rewritten to https. */
+export function extractRefreshTarget(header: string): string | null {
+  const match = header.match(/url\s*=\s*(.+)$/i);
+  if (!match) return null;
+  const value = match[1].trim();
+  // Amazon's redirect chain hands a browser a "com.amazon.mobile.shopping.web://host/path"
+  // app-deep-link, wrapping a normal https destination after the "://" — verified live
+  // 2026-09-15 (ADR-369). Rewriting the scheme is a no-op when it is already https.
+  const afterScheme = value.match(/^[a-z0-9.+-]+:\/\/(.+)$/i);
+  return afterScheme ? `https://${afterScheme[1]}` : value;
+}
+
 /**
- * Follows the redirect chain for a KNOWN short-link domain only, using HTTP HEAD so the
- * destination page's body is never fetched or read — this is a link-resolution step,
- * not a page fetch, and its output still goes through parseProductLink()/tps_current_offers
- * unchanged. Returns the final destination URL, or null if the domain is not a
- * recognized short link, no redirect happened, or resolution failed/timed out.
+ * Follows the redirect chain for a KNOWN short-link domain only. Amazon's link.amazon
+ * endpoint does not support HTTP HEAD — verified live 2026-09-15: it returns 404
+ * regardless of User-Agent, not a bot block (ADR-369) — so this uses GET instead. The
+ * response body is never read or parsed: resolution relies only on response headers,
+ * either the Location chain fetch() follows automatically, or (Amazon's own redirect
+ * service ends its chain with a 200 carrying a non-standard Refresh header instead of a
+ * 3xx) the Refresh header read explicitly below. Its output still goes through
+ * parseProductLink()/tps_current_offers unchanged. Returns the final destination URL, or
+ * null if the domain is not a recognized short link, no redirect happened, or resolution
+ * failed/timed out.
  */
 export async function resolveShortLink(input: string): Promise<string | null> {
   if (!isKnownShortLink(input)) return null;
   const candidate = extractUrlFromText(input);
   try {
-    const response = await fetch(candidate, { method: 'HEAD', redirect: 'follow', signal: AbortSignal.timeout(8000) });
-    if (!response.url || response.url === candidate) return null;
-    return response.url;
+    const response = await fetch(candidate, { method: 'GET', redirect: 'follow', signal: AbortSignal.timeout(8000) });
+    if (response.body) { try { await response.body.cancel(); } catch { /* stream already closed */ } }
+    if (response.url && response.url !== candidate && parseProductLink(response.url)) return response.url;
+    const refresh = response.headers.get('refresh');
+    const target = refresh ? extractRefreshTarget(refresh) : null;
+    return target && target !== candidate ? target : null;
   } catch { return null; }
 }

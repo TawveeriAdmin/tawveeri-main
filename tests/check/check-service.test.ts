@@ -50,14 +50,36 @@ describe('Check resolves a known short link by redirect only, before matching', 
   const shortUrl = 'https://link.amazon/B0jhDmiKd';
   const destination = 'https://www.amazon.sa/dp/B0D1234567?tag=t';
   const amazonSource = { identity_key: 'phone|amazon', store_id: 2, url: 'https://www.amazon.sa/dp/B0D1234567', status: 'valid', price: 4599 };
+  const mockResponse = (url: string, refresh: string | null = null) => ({
+    url, headers: { get: (name: string) => (name.toLowerCase() === 'refresh' ? refresh : null) },
+    body: { cancel: jest.fn().mockResolvedValue(undefined) },
+  });
   afterEach(() => { jest.restoreAllMocks(); });
-  it('follows the redirect with HEAD, never reads a body, then reuses the normal matching path', async () => {
+  it('uses GET, not HEAD — link.amazon returns 404 on HEAD regardless of User-Agent (ADR-369, live-verified)', async () => {
     const from = setup([amazonSource], 1);
-    const fetchMock = jest.fn().mockResolvedValue({ url: destination });
+    const fetchMock = jest.fn().mockResolvedValue(mockResponse(destination));
     global.fetch = fetchMock as unknown as typeof fetch;
     const result = await checkProduct(shortUrl, 'ar');
-    expect(fetchMock).toHaveBeenCalledWith(shortUrl, expect.objectContaining({ method: 'HEAD', redirect: 'follow' }));
-    expect(fetchMock.mock.calls[0][1]).not.toHaveProperty('body');
+    expect(fetchMock).toHaveBeenCalledWith(shortUrl, expect.objectContaining({ method: 'GET', redirect: 'follow' }));
+    expect(from).toHaveBeenCalled();
+    expect(result.state).not.toBe('unsupported');
+    expect(result.state).not.toBe('short_link_unresolved');
+  });
+  it('never reads the response body — only cancels it — for a resolved single-hop redirect', async () => {
+    setup([amazonSource], 1);
+    const response = mockResponse(destination);
+    global.fetch = jest.fn().mockResolvedValue(response) as unknown as typeof fetch;
+    await checkProduct(shortUrl, 'ar');
+    expect(response.body.cancel).toHaveBeenCalled();
+  });
+  it('resolves Amazon\'s real two-hop chain via the Refresh header alone, reconstructing the app-deep-link as https (ADR-369)', async () => {
+    const from = setup([amazonSource], 1);
+    // fetch() auto-follows the first 3xx (link.amazon -> amzlinks.in) and lands here: a
+    // 200 that is not itself a supported merchant link, carrying the real destination in
+    // a Refresh header as an app-deep-link, exactly as observed live 2026-09-15.
+    const refresh = '0; url=com.amazon.mobile.shopping.web://www.amazon.sa/dp/B0D1234567/ref=x?tag=t';
+    global.fetch = jest.fn().mockResolvedValue(mockResponse('https://amzlinks.in/B0jhDmiKd', refresh)) as unknown as typeof fetch;
+    const result = await checkProduct(shortUrl, 'ar');
     expect(from).toHaveBeenCalled();
     expect(result.state).not.toBe('unsupported');
     expect(result.state).not.toBe('short_link_unresolved');
@@ -69,7 +91,11 @@ describe('Check resolves a known short link by redirect only, before matching', 
     expect(from).not.toHaveBeenCalled();
   });
   it('gives the same precise state when the short link never actually redirects', async () => {
-    global.fetch = jest.fn().mockResolvedValue({ url: shortUrl }) as unknown as typeof fetch;
+    global.fetch = jest.fn().mockResolvedValue(mockResponse(shortUrl)) as unknown as typeof fetch;
+    expect(await checkProduct(shortUrl, 'ar')).toEqual({ state: 'short_link_unresolved' });
+  });
+  it('gives the same precise state for a dead-end intermediate hop with no Refresh header and no known merchant', async () => {
+    global.fetch = jest.fn().mockResolvedValue(mockResponse('https://amzlinks.in/B0jhDmiKd')) as unknown as typeof fetch;
     expect(await checkProduct(shortUrl, 'ar')).toEqual({ state: 'short_link_unresolved' });
   });
   it('never attempts resolution for a domain that is not a verified short link', async () => {

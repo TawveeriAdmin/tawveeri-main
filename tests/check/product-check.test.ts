@@ -1,4 +1,4 @@
-import { parseProductLink, sameProductLink, extractUrlFromText, isKnownShortLink } from '@/lib/check/product-link';
+import { parseProductLink, sameProductLink, extractUrlFromText, isKnownShortLink, extractRefreshTarget } from '@/lib/check/product-link';
 import { assessCheckHistory, summarizeOffers, type CheckOffer } from '@/lib/check/assessment';
 
 describe('Check link identity boundary', () => {
@@ -16,6 +16,9 @@ describe('Check link identity boundary', () => {
     'https://www.noon.com/uae-en/phone/N12345678A/p/', 'https://www.extra.com/en-sa/p/100376379?variant=other',
     'https://www.jarir.com/search?q=phone', 'javascript:alert(1)', 'https://www.extra.com:444/en-sa/p/100376379',
   ])('does not fetch or guess for an unsafe/unsupported reference: %s', url => expect(parseProductLink(url)).toBeNull());
+  it('accepts the real Button/Amazon tracking params observed on a resolved short link (ADR-369)', () => {
+    expect(parseProductLink('https://www.amazon.sa/dp/B0GQC47HKT/ref=x?linkCode=ml1&tag=tawveeri0f-21&linkId=d256e9424eedbd2827e1a2bc60f37dc3&ascsubtag=srctok-1&btn_type=ss&btn_ref=srctok-1')).toMatchObject({ store: 'amazon', productCode: 'B0GQC47HKT' });
+  });
   it('cannot confuse a model in the slug with the merchant item code', () => {
     const link = parseProductLink('https://www.extra.com/en-sa/iphone16/p/100376379')!;
     expect(sameProductLink('https://www.extra.com/en-sa/iphone16/p/100376380', link)).toBe(false);
@@ -36,6 +39,21 @@ describe('Check accepts a link embedded in real share-sheet text', () => {
   it('still rejects plain text with no embedded URL, unchanged', () => {
     expect(parseProductLink('Share product link')).toBeNull();
     expect(extractUrlFromText('Share product link')).toBe('Share product link');
+  });
+});
+
+describe('Check rewrites the Refresh-header app-deep-link to a plain https destination (ADR-369)', () => {
+  it('extracts the real Amazon URL from the live-observed app-scheme deep link', () => {
+    expect(extractRefreshTarget('0; url=com.amazon.mobile.shopping.web://www.amazon.sa/dp/B0GQC47HKT/ref=x?tag=t')).toBe('https://www.amazon.sa/dp/B0GQC47HKT/ref=x?tag=t');
+  });
+  it('leaves an already-https target unchanged', () => {
+    expect(extractRefreshTarget('0; url=https://www.amazon.sa/dp/B0GQC47HKT')).toBe('https://www.amazon.sa/dp/B0GQC47HKT');
+  });
+  it('is tolerant of case and spacing in the header', () => {
+    expect(extractRefreshTarget('0;URL = https://www.amazon.sa/dp/B0GQC47HKT')).toBe('https://www.amazon.sa/dp/B0GQC47HKT');
+  });
+  it('returns null for a header with no url= at all', () => {
+    expect(extractRefreshTarget('0')).toBeNull();
   });
 });
 
