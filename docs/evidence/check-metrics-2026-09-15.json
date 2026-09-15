@@ -1,0 +1,12 @@
+{
+  "at": "2026-09-15T02:12:27.682Z",
+  "scope": "Only this QA run attempt IDs; no real-user sample",
+  "persisted": 12,
+  "counts": {
+    "submit": 4,
+    "result": 4,
+    "watch": 4
+  },
+  "allMarkedTest": true,
+  "rawUrlInMetadata": false
+}

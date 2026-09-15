@@ -1,0 +1,42 @@
+{
+  "date": "2026-09-15",
+  "codeCommit": "fb27108f48acf32dcf33c481de558cad0fd57768",
+  "adr": 367,
+  "fullSuite": {
+    "command": "npm test -- --runInBand",
+    "suitesPassed": 246,
+    "testsPassed": 3718,
+    "exitCode": 0,
+    "runsThisTask": 1,
+    "warning": "Jest warned about async handles before exiting normally"
+  },
+  "addedTests": 42,
+  "eslintChangedFiles": "passed",
+  "diffCheck": "passed",
+  "typescript": {
+    "overall": "existing failures",
+    "newCheckFileDiagnostics": 0
+  },
+  "coverage": {
+    "notRerun": true,
+    "previousBranches": 67.6,
+    "requiredBranches": 70
+  },
+  "localComponentFixture": {
+    "viewports": [
+      390,
+      1366
+    ],
+    "locales": [
+      "ar",
+      "en"
+    ],
+    "horizontalOverflow": false,
+    "pastedUrlInEvents": false,
+    "auth": "guest fixture",
+    "results": "saved live read-only DB response"
+  },
+  "realUsersMeasured": null,
+  "realAlertDeliveryVerified": false,
+  "confirmedCommissionVerified": false
+}

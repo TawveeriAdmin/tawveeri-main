@@ -1,0 +1,41 @@
+{
+  "at": "2026-09-15T02:12:03.130Z",
+  "additionalSources": [
+    {
+      "storeId": 1,
+      "publicSourceUrl": "https://www.jarir.com/sa-en/sony-headsets-658241.html",
+      "http": 200,
+      "state": "matched",
+      "offers": 2
+    },
+    {
+      "storeId": 2,
+      "publicSourceUrl": "https://www.amazon.sa/dp/B0DGJ7M995?tag=tawveeri-21",
+      "http": 200,
+      "state": "matched",
+      "offers": 2
+    },
+    {
+      "storeId": 3,
+      "publicSourceUrl": "https://www.noon.com/saudi-en/digital-air-fryer-with-8-pre-sets-for-air-fry-roast-bake-reheat-quick-easy-meals-easy-to-clean-non-stick-basket-with-crisper-5-6-l-1700-w-35075-me-silver/N53419028A/p/?o=cc0f6f073881b17c",
+      "http": 200,
+      "state": "unsupported",
+      "offers": 0
+    }
+  ],
+  "merchantCheck": {
+    "http": 200,
+    "destination": "https://www.extra.com/en-sa/mobiles-tablets/mobiles/smartphone/apple-iphone-16-pro-max-5g-6-9-inch-256gb-desert-titanium/p/100376379",
+    "title": "Apple iPhone 16 Pro Max, 5G, 6.9 inch, 256GB, Desert Titanium - eXtra",
+    "tawveeriObservedPrice": 4599,
+    "merchantVisiblePrice": 4599,
+    "currency": "SAR",
+    "deltaSAR": 0,
+    "visiblePriceExcerpt": "4599 Incl. VAT",
+    "sameSourcePath": true,
+    "testCookie": true,
+    "purchaseMade": false,
+    "viewport": 390,
+    "scope": "One live eXtra destination sample; not catalog-wide price accuracy"
+  }
+}
