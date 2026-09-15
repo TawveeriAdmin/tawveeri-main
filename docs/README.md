@@ -1,5 +1,7 @@
 # Tawveeri Documentation — Index & Precedence
 
+**خريطة Check (ADR-367، 15 سبتمبر 2026):** `/[locale]/check` → `/api/check` → `src/lib/check/` يربط رابط المتجر الكامل بعرض HOT وهوية نشطة واحدة. السعر والوصف من نفس العرض، الرصد من raw المرتبط، والخروج من NPO المطابق؛ التاريخ مقيد برابط المصدر ووصفه. يعيد استخدام الحالة ومحرك التاريخ والتنبيهات والإحالة القائمة دون تغييرها. الاختبارات `tests/check/`؛ [تقرير التنفيذ والحدود](report/TAWVEERI-CHECK-2026-09-15.md). لا دعم للاختصارات أو بدائل مشابهة؛ الحالة غير الصريحة لا تعني جديدًا، والضغط على المراقبة لا يثبت الحفظ أو وصول إشعار.
+
 This repository is governed by a constitutional document set. This index defines what each document is, and — critically — **which wins when two disagree.**
 
 ---

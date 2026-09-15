@@ -40,6 +40,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // unlisted) to a public, indexable strategic capability — now advertised here like any
     // other real content page.
     '/home-mission',
+    '/check',
     '/contact',
     '/faq',
     '/privacy',

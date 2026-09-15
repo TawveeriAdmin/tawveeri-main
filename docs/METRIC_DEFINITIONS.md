@@ -1,5 +1,21 @@
 # Metric Definitions — Founder Commerce Command Center
 
+## Tawveeri Check — ADR-367 (2026-09-15)
+
+Source: `usage_events`, event type `product_check`; metadata contains `step` and a per-submission `attempt_id`, never the pasted URL. All audience metrics exclude `is_test=true`. These definitions govern future reporting; no dashboard or real-user cohort is claimed by this change.
+
+| Metric | Definition and limitation |
+|---|---|
+| Links submitted | Distinct nonempty `meta.attempt_id` where `meta.step='submit'`. Counts attempts, not distinct URLs or people. |
+| Completed / matched | Distinct attempts with `step='result'`; matched requires `meta.state='matched'`. Report errors and unfinished attempts separately; never remove them silently from coverage denominators. |
+| Cheaper equivalent found | Matched attempts with `meta.cheaper_count > 0`: fresh, observed in-stock offers with identical explicit condition and description. A lower displayed price alone is insufficient. |
+| Condition difference / disclosure | `condition_difference=true` requires two known differing conditions. `condition_disclosed=true` means a renewed/refurbished/used offer was shown, including when the source condition is unknown. Keep separate. |
+| Other-store exit | Existing `go_click` with `source='check_other'`; source-store exits use `check_source`. Click telemetry can repeat and does not prove qualified purchase intent, merchant receipt, conversion or commission. Apply the existing outbound reconciliation contract before revenue claims. |
+| Watch chosen / saved | `step='watch'` records intent; `step='watch_saved'` occurs only after the existing alert dialog reports successful persistence. Deduplicate by attempt for funnel reporting. Neither proves delivery. |
+| Return | `step='return'` means a browser reopened Check at least 30 minutes after its stored visit timestamp. Same-browser proxy, not cross-device identity, unique humans or retention by acquisition cohort. |
+
+Aggregate examples: group `product_check` by `meta->>'step'`, then count distinct `meta->>'attempt_id'` for submission/result/watch steps, with a fixed time window and `is_test=false`. Return events do not carry attempt IDs; report their event count separately. Affiliate reports and confirmed commissions remain separate authorities. Test events demonstrate plumbing only.
+
 _Single governed dictionary for every metric shown in `/admin/command-center`. If a metric isn't defined here, it doesn't ship. Sources: `usage_events`, `outbound_clicks` (production `vyceqrzttspyycdpojtn`). Companion: [DATA_QUALITY_CONTRACT.md](DATA_QUALITY_CONTRACT.md), [ANALYTICS_ATTRIBUTION_AUDIT.md](ANALYTICS_ATTRIBUTION_AUDIT.md)._
 
 Every metric below is computed **REAL-only** (`is_test = false`) unless stated otherwise. TEST volume is always shown alongside, never blended in.

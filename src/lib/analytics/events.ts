@@ -10,6 +10,7 @@
 // sites against this list and fails on drift in either direction.
 
 export const USAGE_EVENT_TYPES = [
+  "product_check",                       // Check: submit/result/watch/watch_saved/return/error; no pasted URLs.
   "landing_view",                        // Landing engagement: which entry arm was shown
   "advisor_query", "advisor_result",     // advisor surface: Search / Results
   "advisor_clarified",                   // shopper answered the ONE clarification question (asked-vs-answered)

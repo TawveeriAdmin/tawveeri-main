@@ -4,6 +4,14 @@
 
 Status legend: **Accepted** · **Superseded** · **Proposed**.
 
+### ADR-367 — Tawveeri Check: pasted merchant link to evidence-bound buying check · Accepted (2026-09-15)
+
+**Context.** Search detects external references but cannot verify them. ShopSavvy already supports product-link comparison; this is a Saudi distribution entry, not a claim of global novelty. The owner authorizes building and deploying this mission.
+
+**Decision.** Add bilingual `/check`, a homepage entry and existing-event telemetry. Resolve supported full merchant links by merchant product identifier against HOT current offers, then require one active canonical. No arbitrary URL fetch, redirects, scraping or fuzzy substitutes. Each offer keeps its own title, price, observation and existing `/go` builder. Check sorts solely by price then store key, without the older commercial tie policy. Count cheaper equivalents only with fresh available offers and identical explicit condition/description. Restrict history to the submitted offer's URL and title; insufficient evidence gets no verdict. Reuse existing alerts only after resolving the matching storefront product ID; guest/unresolved states never claim a saved alert.
+
+**Alternatives and consequences.** Extensions and native share targets wait for measured demand. Short links and unverified variants fail closed, reducing coverage deliberately. No protected product code, affiliate configuration, schema, paid API or production-data mutation. Report: `docs/report/TAWVEERI-CHECK-2026-09-15.md`; regression, viewport checks and production evidence gate deployment.
+
 ### ADR-366 — Show the observed offer's condition and full description before comparison exits · Accepted (2026-09-14)
 
 **Evidence.** The live iPhone comparison includes Jarir's Renewed Grade B offer at 3599 SAR. Its price matches the merchant, but it is not a new device. Store titles are truncated in offer rows and absent from the featured offer. An eXtra title also differs in colour from its destination. See `docs/report/SAUDI-PURCHASE-REFERENCE-2026-09-14.md`.
