@@ -19,9 +19,24 @@ describe('Check link identity boundary', () => {
   it('accepts the real Button/Amazon tracking params observed on a resolved short link (ADR-369)', () => {
     expect(parseProductLink('https://www.amazon.sa/dp/B0GQC47HKT/ref=x?linkCode=ml1&tag=tawveeri0f-21&linkId=d256e9424eedbd2827e1a2bc60f37dc3&ascsubtag=srctok-1&btn_type=ss&btn_ref=srctok-1')).toMatchObject({ store: 'amazon', productCode: 'B0GQC47HKT' });
   });
+  it('accepts a real stored Amazon search-results-page URL, not just a clean product link (ADR-370)', () => {
+    // The actual stored offer URL for a real, valid, 878 SAR Midea 6kg washer offer,
+    // unmatchable before this fix because our scraper captured it from a search-results
+    // page rather than a clean product page.
+    const stored = 'https://www.amazon.sa/-/en/Midea-Washer-Top-Load-MA200W60WKSA/dp/B0F1TMN532/ref=sr_1_36?dib=eyJ2IjoiMSJ9.xyz&dib_tag=se&keywords=%D8%BA%D8%B3%D8%A7%D9%84%D8%A9&qid=1789474083&sr=8-36';
+    expect(parseProductLink(stored)).toMatchObject({ store: 'amazon', productCode: 'B0F1TMN532' });
+  });
+  it('still fails closed for a genuinely unrecognized param, even on amazon.sa (ADR-370 does not open the allowlist wide)', () => {
+    expect(parseProductLink('https://www.amazon.sa/dp/B0D1234567?sbo=1')).toBeNull();
+  });
   it('cannot confuse a model in the slug with the merchant item code', () => {
     const link = parseProductLink('https://www.extra.com/en-sa/iphone16/p/100376379')!;
     expect(sameProductLink('https://www.extra.com/en-sa/iphone16/p/100376380', link)).toBe(false);
+  });
+  it('sameProductLink now recognizes a stored search-results offer as the same product a clean link resolves to (ADR-370)', () => {
+    const resolved = parseProductLink('https://www.amazon.sa/dp/B0F1TMN532')!;
+    const storedSearchResultUrl = 'https://www.amazon.sa/-/en/Midea-Washer-Top-Load-MA200W60WKSA/dp/B0F1TMN532/ref=sr_1_36?dib=x&dib_tag=se&keywords=washer&qid=1&sr=8-36';
+    expect(sameProductLink(storedSearchResultUrl, resolved)).toBe(true);
   });
 });
 

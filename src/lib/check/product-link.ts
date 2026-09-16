@@ -42,8 +42,14 @@ export function parseProductLink(input: string): ProductLink | null {
     // linkId/btn_type/btn_ref: observed live 2026-09-15 on the real destination a
     // link.amazon short link resolves to (Amazon's Button-powered redirect chain) —
     // pure click-tracking artifacts, stripped below like tag/ascsubtag, never used for identity.
+    // dib/dib_tag/keywords: Amazon's own internal search-results-page tracking params,
+    // present on the majority of our stored Amazon offer URLs because the scraper
+    // captures search-result links verbatim (measured 2026-09-16: 719/829 = 86.7% of
+    // valid Amazon offers carried these and were unmatchable by sameProductLink() before
+    // this — see ADR-370). Query string is always stripped below; these never affect
+    // which product an offer resolves to.
     for (const key of u.searchParams.keys()) {
-      if (!/^utm_/i.test(key) && !['tag', 'ref', 'ref_', 'qid', 'sr', 'linkCode', 'ascsubtag', 'th', 'psc', 'gclid', 'fbclid', 'linkId', 'btn_type', 'btn_ref'].includes(key)) return null;
+      if (!/^utm_/i.test(key) && !['tag', 'ref', 'ref_', 'qid', 'sr', 'linkCode', 'ascsubtag', 'th', 'psc', 'gclid', 'fbclid', 'linkId', 'btn_type', 'btn_ref', 'dib', 'dib_tag', 'keywords'].includes(key)) return null;
     }
     u.search = ''; u.hash = '';
     return { store, productCode: code, url: u.toString() };
