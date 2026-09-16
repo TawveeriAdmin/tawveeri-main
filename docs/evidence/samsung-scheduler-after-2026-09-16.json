@@ -1,0 +1,34 @@
+{
+  "commit": "64c7d2a3d77c71dcc847408c84e84ee9716108de",
+  "instrumentationRan": "2026-09-16T06:15:57.100Z",
+  "schedulerSpawned": {
+    "pid": 37,
+    "path": "/app/.next/standalone/scripts/scheduler.js",
+    "at": "2026-09-16T06:15:57.123Z"
+  },
+  "schedulerError": null,
+  "schedulerExit": null,
+  "schedulerStdout": "◇ injected env (0) from .env.local // tip: ⌁ auth for agents [www.vestauth.com]\n◇ injected env (0) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }\n[scheduler] started — polling https://tawveeri.com/api/cron/dispatch every 60000ms\n[refresh]   full intelligence chain every 60m (~4.6 min per run since ADR-067)\n[ingest] merchant ingestion enabled for [noon, lulu, sharafdg, extra, amazon, jarir, samsung_ksa] — discovery every 12h, prices every 6h\n[recovery] product recovery enabled — every 10m\n[feed-ingest] feed ingestion enabled for [almanea, shaker, najm, alnakheelk, swsg, blackbox] — every 6h\n[reobserve] comparable re-observation enabled — every 6h, limit 60/run\n[samsung-delta-watch] enabled — every 6.0h\n[governor] refresh deferred — post-boot cooldown (6m left)\n[recovery] processed 0 recovery request(s)\n[recovery] processed 0 recovery request(s)\n[feed-ingest] almanea exit 0: [ingest] wrote 3659/3659 raw observations for almanea (store 5).\n[feed-ingest] shaker exit 0: [ingest] wrote 480/480 raw observations for shaker (store 7).\n[feed-ingest] najm exit 0: [ingest] wrote 568/568 raw observations for najm (store 9).\n[ingest] refresh/feed active — deferring discovery\n[ingest] busy — deferring price-update\n[feed-ingest] alnakheelk exit 0: [ingest] wrote 1161/1161 raw observations for alnakheelk (store 18).\n[feed-ingest] swsg exit 0: [ingest] no offers to write.\n[feed-ingest] blackbox exit 0: [ingest] wrote 492/492 raw observations for blackbox (store 10).\n[governor] boot product-recovery kick skipped\n[recovery] processed 0 recovery request(s)\n[samsung-delta-watch] runtime cwd=/app\n[reobserve] exit 1: ERR Cannot find module '/app/.next/standalone/node_modules/puppeteer/lib/cjs/puppeteer/puppeteer.js'\n[samsung-delta-watch] exit 0: \"duration_ms\": 6915 | } | No new products this run. Quiet, recorded.\n",
+  "schedulerStderr": null,
+  "env": {
+    "cronSecret": true,
+    "appUrl": "https://tawveeri.com",
+    "nodeEnv": "production"
+  },
+  "hasSupabaseDbUrl": true,
+  "dbTest": {
+    "ok": true,
+    "ms": 1044,
+    "host": "aws-1-ap-southeast-2.pooler.supabase.com:5432"
+  },
+  "heartbeat": {
+    "pid": 37,
+    "booted_at": "2026-09-16T06:15:58.602Z",
+    "last_tick": "2026-09-16T06:46:58.157Z",
+    "last_refresh_at": "2026-09-16T04:52:03.220Z",
+    "last_refresh_status": "ok",
+    "db_now": "2026-09-16T06:47:43.025Z"
+  },
+  "nextRuntime": "nodejs",
+  "now": "2026-09-16T06:47:43.257Z"
+}

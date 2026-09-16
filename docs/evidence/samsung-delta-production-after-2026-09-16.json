@@ -1,0 +1,17 @@
+[
+  {
+    "level": "info",
+    "message": "[samsung-delta-watch] enabled — every 6.0h",
+    "timestamp": "2026-09-16T06:15:57.489032582Z"
+  },
+  {
+    "message": "[samsung-delta-watch] runtime cwd=/app",
+    "timestamp": "2026-09-16T06:46:43.911575033Z",
+    "level": "info"
+  },
+  {
+    "timestamp": "2026-09-16T06:46:49.420939602Z",
+    "message": "[samsung-delta-watch] exit 0: \"duration_ms\": 6915 | } | No new products this run. Quiet, recorded.",
+    "level": "info"
+  }
+]

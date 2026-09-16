@@ -1,0 +1,36 @@
+{
+  "scope": "Real Samsung source and production database read-only, locally invoked; not a production worker run",
+  "before": {
+    "sitemap_urls_seen": 895,
+    "known_urls": 943,
+    "delta_urls": 1,
+    "new_products": 0,
+    "new_variants": 0,
+    "new_url_same_product": 1,
+    "updated_existing": 0,
+    "duplicates": 0,
+    "invalid": 0,
+    "failed": 0,
+    "user_visible_completed": 0,
+    "started_at": "2026-09-16T05:59:43.544Z",
+    "finished_at": "2026-09-16T06:00:01.977Z",
+    "duration_ms": 18433
+  },
+  "after": {
+    "sitemap_urls_seen": 895,
+    "known_urls": 943,
+    "delta_urls": 1,
+    "new_products": 0,
+    "new_variants": 0,
+    "new_url_same_product": 1,
+    "updated_existing": 0,
+    "duplicates": 0,
+    "invalid": 0,
+    "failed": 0,
+    "user_visible_completed": 0,
+    "started_at": "2026-09-16T06:07:36.331Z",
+    "finished_at": "2026-09-16T06:07:43.501Z",
+    "duration_ms": 7170
+  },
+  "alias_identity": "samsung|MODEL:QA55LS03HEUXSA"
+}

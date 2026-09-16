@@ -1,0 +1,359 @@
+{
+  "measured_at": "2026-09-16T06:24:09.529Z",
+  "method": "Independent browser reads of the same frozen ten Samsung source pages; no cart or purchase actions.",
+  "rows": [
+    {
+      "url": "https://www.samsung.com/sa_en/tvs/qled-tv/qn80h-75-inch-neo-qled-4k-mini-led-smart-tv-qa75qn80hauxsa/",
+      "stored_price": "6999",
+      "status": 200,
+      "final_url": "https://www.samsung.com/sa_en/tvs/qled-tv/qn80h-75-inch-neo-qled-4k-mini-led-smart-tv-qa75qn80hauxsa/",
+      "measured_at": "2026-09-16T06:25:02.626Z",
+      "title": "Discover 75\" Neo QLED QN80H 4K Smart TV | Samsung Saudi",
+      "headings": [
+        "75\" Neo QLED QN80H 4K Samsung Vision AI Smart TV (2026)"
+      ],
+      "priceTexts": [
+        "From ⃁ 6,999.00 or ⃁ 291.63/mo for 24mo at 0% interest with selected banks*.\nAdd to cart",
+        "From ⃁ 6,999.00 or ⃁ 291.63/mo for 24mo at 0% interest with selected banks*.\nAdd to cart",
+        "From ⃁ 6,999.00 or ⃁ 291.63/mo for 24mo at 0% interest with selected banks*.",
+        "From ⃁ 6,999.00 or ⃁ 291.63/mo for 24mo at 0% interest with selected banks*.",
+        "From ⃁ 6,999.00 or ⃁ 291.63/mo for 24mo at 0% interest with selected banks*.",
+        "⃁ 6,999.00",
+        "From ⃁ 6,999.00 or ⃁ 291.63/mo for 24mo at 0% interest with selected banks*.\n\nAdd to cart",
+        "From ⃁ 6,999.00 or ⃁ 291.63/mo for 24mo at 0% interest with selected banks*.",
+        "From ⃁ 6,999.00 or ⃁ 291.63/mo for 24mo at 0% interest with selected banks*."
+      ],
+      "actions": [
+        {
+          "text": "Add to cart",
+          "disabled": false
+        },
+        {
+          "text": "Add to cart",
+          "disabled": false
+        }
+      ]
+    },
+    {
+      "url": "https://www.samsung.com/sa_en/tvs/oled-tv/s85h-77-inch-4k-smart-tv-qa77s85haexsa/",
+      "error": "Navigation timeout of 60000 ms exceeded"
+    },
+    {
+      "url": "https://www.samsung.com/sa_en/tablets/galaxy-tab-s/galaxy-tab-s11-ultra-gray-256gb-sm-x936bzaamea/buy/",
+      "stored_price": "4799",
+      "status": 200,
+      "final_url": "https://www.samsung.com/sa_en/tablets/galaxy-tab-s/galaxy-tab-s11-ultra-gray-256gb-sm-x936bzaamea/buy/",
+      "measured_at": "2026-09-16T06:26:48.037Z",
+      "title": "Galaxy Tab S11 Ultra 5G 256GB Gray | Samsung Saudi Arabia",
+      "headings": [
+        "Galaxy Tab S11 Ultra 5G"
+      ],
+      "priceTexts": [
+        "⃁ 1,799.00",
+        "⃁ 1,799.00",
+        "⃁ 1,799.00",
+        "⃁ 3,149.00",
+        "⃁ 3,149.00",
+        "⃁ 3,149.00",
+        "⃁ 2,549.00",
+        "⃁ 2,549.00",
+        "⃁ 2,549.00",
+        "⃁ 1,399.00",
+        "⃁ 1,399.00",
+        "⃁ 1,399.00",
+        "⃁ 3,799.00",
+        "⃁ 3,799.00",
+        "⃁ 3,799.00",
+        "⃁ 2,349.00",
+        "⃁ 2,349.00",
+        "⃁ 2,349.00"
+      ],
+      "actions": [
+        {
+          "text": "Buy now",
+          "disabled": false
+        },
+        {
+          "text": "Where to buy",
+          "disabled": false
+        },
+        {
+          "text": "Where to buy",
+          "disabled": false
+        }
+      ]
+    },
+    {
+      "url": "https://www.samsung.com/sa_en/air-conditioners/wall-mount/ar9500t-wind-free-ar18tseccwk-mg/",
+      "stored_price": "3499",
+      "status": 200,
+      "final_url": "https://www.samsung.com/sa_en/air-conditioners/wall-mount/ar9500t-wind-free-ar18tseccwk-mg/",
+      "measured_at": "2026-09-16T06:27:38.979Z",
+      "title": "Shop Wind-Free Wall Air Conditioner - 1.4Tons | Samsung KSA",
+      "headings": [
+        "WindFree Smart Split AC Digital Inverter 17500 BTU Hot/Cold Thailand"
+      ],
+      "priceTexts": [
+        "⃁ 3,799.00",
+        "⃁ 3,799.00",
+        "⃁ 3,799.00",
+        "⃁ 4,599.00",
+        "⃁ 4,599.00",
+        "⃁ 4,599.00",
+        "⃁ 4,299.00",
+        "⃁ 4,299.00",
+        "⃁ 4,299.00",
+        "⃁ 2,899.00",
+        "⃁ 2,899.00",
+        "⃁ 2,899.00",
+        "⃁ 3,549.00",
+        "⃁ 3,549.00",
+        "⃁ 3,549.00",
+        "⃁ 3,699.00",
+        "⃁ 3,699.00",
+        "⃁ 3,699.00"
+      ],
+      "actions": [
+        {
+          "text": "Buy now",
+          "disabled": false
+        },
+        {
+          "text": "Where to buy",
+          "disabled": false
+        },
+        {
+          "text": "Where to buy",
+          "disabled": false
+        }
+      ]
+    },
+    {
+      "url": "https://www.samsung.com/sa_en/tablets/galaxy-tab-s/galaxy-tab-s10-lite-silver-128gb-sm-x400nzsamea/buy/",
+      "stored_price": "1399",
+      "status": 200,
+      "final_url": "https://www.samsung.com/sa_en/tablets/galaxy-tab-s/galaxy-tab-s10-lite-silver-128gb-sm-x400nzsamea/buy/",
+      "measured_at": "2026-09-16T06:28:16.293Z",
+      "title": "Buy Galaxy Tab S10 Lite Wifi Silver 128 GB | Samsung Saudi Arabia",
+      "headings": [
+        "Galaxy Tab S10 Lite (Wi-Fi)"
+      ],
+      "priceTexts": [
+        "From ⃁ 1,399.00 or ⃁ 58.29/mo for 24mo at 0% interest with selected banks*.\nSave ⃁ 350.00\nOriginal Price:\n, Was ⃁ 1,749.00\nBuy now",
+        "From ⃁ 1,399.00 or ⃁ 58.29/mo for 24mo at 0% interest with selected banks*.\nSave ⃁ 350.00\nOriginal Price:\n, Was ⃁ 1,749.00\nBuy now",
+        "From ⃁ 1,399.00 or ⃁ 58.29/mo for 24mo at 0% interest with selected banks*.\nSave ⃁ 350.00\nOriginal Price:\n, Was ⃁ 1,749.00",
+        "From ⃁ 1,399.00 or ⃁ 58.29/mo for 24mo at 0% interest with selected banks*.",
+        "From ⃁ 1,399.00 or ⃁ 58.29/mo for 24mo at 0% interest with selected banks*.",
+        "⃁ 1,399.00",
+        "Save ⃁ 350.00\nOriginal Price:\n, Was ⃁ 1,749.00",
+        "Save ⃁ 350.00",
+        "Original Price:\n, Was ⃁ 1,749.00",
+        "⃁ 25.00",
+        "⃁ 179.00",
+        "⃁ 449.00",
+        "From ⃁ 1,399.00 or ⃁ 58.29/mo for 24mo at 0% interest with selected banks*.\n\nPrice\nSave ⃁ 350.00 \nWas Price\n, Was ⃁ 1,749.00\n\nBuy now",
+        "From ⃁ 1,399.00 or ⃁ 58.29/mo for 24mo at 0% interest with selected banks*.",
+        "From ⃁ 1,399.00 or ⃁ 58.29/mo for 24mo at 0% interest with selected banks*.",
+        "Price\nSave ⃁ 350.00 \nWas Price\n, Was ⃁ 1,749.00",
+        "Price\nSave ⃁ 350.00",
+        "Was Price\n, Was ⃁ 1,749.00"
+      ],
+      "actions": [
+        {
+          "text": "Buy now",
+          "disabled": false
+        },
+        {
+          "text": "Buy now",
+          "disabled": false
+        },
+        {
+          "text": "Buy now",
+          "disabled": false
+        }
+      ]
+    },
+    {
+      "url": "https://www.samsung.com/sa_en/monitors/gaming/odyssey-g5-g51f-32-inch-180hz-qhd-ls32fg510emxue/",
+      "stored_price": "1099",
+      "status": 200,
+      "final_url": "https://www.samsung.com/sa_en/monitors/gaming/odyssey-g5-g51f-32-inch-180hz-qhd-ls32fg510emxue/",
+      "measured_at": "2026-09-16T06:29:01.155Z",
+      "title": "32\" Odyssey G5 G51F QHD 180Hz Gaming Monitor LS32FG510EMXUE | Samsung Saudi Arabia",
+      "headings": [
+        "32\" Odyssey G5 G51F QHD 180Hz Gaming Monitor"
+      ],
+      "priceTexts": [
+        "⃁ 1,399.00",
+        "⃁ 1,399.00",
+        "⃁ 1,399.00",
+        "⃁ 4,599.00",
+        "⃁ 4,599.00",
+        "⃁ 4,599.00",
+        "⃁ 2,509.00",
+        "⃁ 2,509.00",
+        "⃁ 2,509.00",
+        "⃁ 3,519.00",
+        "⃁ 3,519.00",
+        "⃁ 3,519.00",
+        "⃁ 2,099.00",
+        "⃁ 2,099.00",
+        "⃁ 2,099.00",
+        "⃁ 3,999.00",
+        "⃁ 3,999.00",
+        "⃁ 3,999.00"
+      ],
+      "actions": [
+        {
+          "text": "Where to buy",
+          "disabled": false
+        },
+        {
+          "text": "Where to buy",
+          "disabled": false
+        }
+      ]
+    },
+    {
+      "url": "https://www.samsung.com/sa_en/air-conditioners/wall-mount/ar9500t-wind-free-ar24csfcbwk-mg/",
+      "stored_price": "3449",
+      "status": 200,
+      "final_url": "https://www.samsung.com/sa_en/air-conditioners/wall-mount/ar9500t-wind-free-ar24csfcbwk-mg/",
+      "measured_at": "2026-09-16T06:29:46.287Z",
+      "title": "WindFree Smart Split AC 20500 BTU | Samsung Saudi Arabia",
+      "headings": [
+        "WindFree Smart Split AC Digital Inverter 20 500 BTU Hot/Cold Thailand"
+      ],
+      "priceTexts": [
+        "⃁ 3,799.00",
+        "⃁ 3,799.00",
+        "⃁ 3,799.00",
+        "⃁ 4,599.00",
+        "⃁ 4,599.00",
+        "⃁ 4,599.00",
+        "⃁ 4,299.00",
+        "⃁ 4,299.00",
+        "⃁ 4,299.00",
+        "⃁ 2,899.00",
+        "⃁ 2,899.00",
+        "⃁ 2,899.00",
+        "⃁ 3,549.00",
+        "⃁ 3,549.00",
+        "⃁ 3,549.00",
+        "⃁ 3,699.00",
+        "⃁ 3,699.00",
+        "⃁ 3,699.00"
+      ],
+      "actions": [
+        {
+          "text": "Buy now",
+          "disabled": false
+        },
+        {
+          "text": "Where to buy",
+          "disabled": false
+        },
+        {
+          "text": "Where to buy",
+          "disabled": false
+        }
+      ]
+    },
+    {
+      "url": "https://www.samsung.com/sa_en/washers-and-dryers/washer-dryer-combo/wd7300t-front-loading-12kg-platinum-silver-wd12tp34dsx-yl/",
+      "stored_price": "4099",
+      "status": 200,
+      "final_url": "https://www.samsung.com/sa_en/washers-and-dryers/washer-dryer-combo/wd7300t-front-loading-12kg-platinum-silver-wd12tp34dsx-yl/",
+      "measured_at": "2026-09-16T06:30:31.896Z",
+      "title": "12kg Front Load Washer Dryer Combo | Samsung Saudi Arabia",
+      "headings": [
+        "12kg Washer with 8kg dryer Inox Color AI Control WIFI DIT Auto Dispense Eco Bubble"
+      ],
+      "priceTexts": [
+        "From ⃁ 4,099.00 or ⃁ 170.79/mo for 24mo at 0% interest with selected banks*.\nSave ⃁ 3,050.00\nOriginal Price:\n, Was ⃁ 7,149.00\nAdd to cart",
+        "From ⃁ 4,099.00 or ⃁ 170.79/mo for 24mo at 0% interest with selected banks*.\nSave ⃁ 3,050.00\nOriginal Price:\n, Was ⃁ 7,149.00\nAdd to cart",
+        "From ⃁ 4,099.00 or ⃁ 170.79/mo for 24mo at 0% interest with selected banks*.\nSave ⃁ 3,050.00\nOriginal Price:\n, Was ⃁ 7,149.00",
+        "From ⃁ 4,099.00 or ⃁ 170.79/mo for 24mo at 0% interest with selected banks*.",
+        "From ⃁ 4,099.00 or ⃁ 170.79/mo for 24mo at 0% interest with selected banks*.",
+        "⃁ 4,099.00",
+        "Save ⃁ 3,050.00\nOriginal Price:\n, Was ⃁ 7,149.00",
+        "Save ⃁ 3,050.00",
+        "Original Price:\n, Was ⃁ 7,149.00",
+        "From ⃁ 4,099.00 or ⃁ 170.79/mo for 24mo at 0% interest with selected banks*.\n\nPrice\nSave ⃁ 3,050.00 \nWas Price\n, Was ⃁ 7,149.00\n\nAdd to cart",
+        "From ⃁ 4,099.00 or ⃁ 170.79/mo for 24mo at 0% interest with selected banks*.",
+        "From ⃁ 4,099.00 or ⃁ 170.79/mo for 24mo at 0% interest with selected banks*.",
+        "Price\nSave ⃁ 3,050.00 \nWas Price\n, Was ⃁ 7,149.00",
+        "Price\nSave ⃁ 3,050.00",
+        "Was Price\n, Was ⃁ 7,149.00"
+      ],
+      "actions": [
+        {
+          "text": "Buy now",
+          "disabled": false
+        },
+        {
+          "text": "Add to cart",
+          "disabled": false
+        },
+        {
+          "text": "Add to cart",
+          "disabled": false
+        }
+      ]
+    },
+    {
+      "url": "https://www.samsung.com/sa_en/rings/galaxy-ring/galaxy-ring-titanium-black-size-8-sm-q508nzkamea/",
+      "stored_price": "999",
+      "status": 200,
+      "final_url": "https://www.samsung.com/sa_en/rings/galaxy-ring/galaxy-ring-titanium-black-size-8-sm-q508nzkamea/",
+      "measured_at": "2026-09-16T06:31:18.251Z",
+      "title": "Samsung Galaxy Ring in Titanium Black - Size 8 | Samsung KSA",
+      "headings": [
+        "Galaxy Ring"
+      ],
+      "priceTexts": [],
+      "actions": [
+        {
+          "text": "Buy now",
+          "disabled": false
+        }
+      ]
+    },
+    {
+      "url": "https://www.samsung.com/sa_en/lifestyle-tvs/the-frame/ls03hw-65-inch-qa65ls03hwuxsa/",
+      "stored_price": "7699",
+      "status": 200,
+      "final_url": "https://www.samsung.com/sa_en/lifestyle-tvs/the-frame/ls03hw-65-inch-qa65ls03hwuxsa/",
+      "measured_at": "2026-09-16T06:32:05.504Z",
+      "title": "Discover 65\" The Frame LS03HW 4K TV | Samsung Saudi",
+      "headings": [
+        "65\" The Frame Pro LS03HW 4K Samsung Vision AI Smart TV (2026)"
+      ],
+      "priceTexts": [
+        "From ⃁ 7,699.00 or ⃁ 320.79/mo for 24mo at 0% interest with selected banks*.\nAdd to cart",
+        "From ⃁ 7,699.00 or ⃁ 320.79/mo for 24mo at 0% interest with selected banks*.\nAdd to cart",
+        "From ⃁ 7,699.00 or ⃁ 320.79/mo for 24mo at 0% interest with selected banks*.",
+        "From ⃁ 7,699.00 or ⃁ 320.79/mo for 24mo at 0% interest with selected banks*.",
+        "From ⃁ 7,699.00 or ⃁ 320.79/mo for 24mo at 0% interest with selected banks*.",
+        "⃁ 7,699.00",
+        "From ⃁ 7,699.00 or ⃁ 320.79/mo for 24mo at 0% interest with selected banks*.\n\nAdd to cart\nWhere to buy",
+        "From ⃁ 7,699.00 or ⃁ 320.79/mo for 24mo at 0% interest with selected banks*.",
+        "From ⃁ 7,699.00 or ⃁ 320.79/mo for 24mo at 0% interest with selected banks*."
+      ],
+      "actions": [
+        {
+          "text": "Add to cart",
+          "disabled": false
+        },
+        {
+          "text": "Add to cart",
+          "disabled": false
+        },
+        {
+          "text": "Where to buy",
+          "disabled": false
+        }
+      ]
+    }
+  ]
+}

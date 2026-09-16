@@ -1,0 +1,179 @@
+{
+  "before": [
+    {
+      "query": "QA75QN80HAUXSA",
+      "http_status": 200,
+      "source_url": "https://www.samsung.com/sa_en/tvs/qled-tv/qn80h-75-inch-neo-qled-4k-mini-led-smart-tv-qa75qn80hauxsa/",
+      "exact_samsung_url_present": true,
+      "prices": [
+        6999
+      ]
+    },
+    {
+      "query": "QA77S85HAEXSA",
+      "http_status": 200,
+      "source_url": "https://www.samsung.com/sa_en/tvs/oled-tv/s85h-77-inch-4k-smart-tv-qa77s85haexsa/",
+      "exact_samsung_url_present": true,
+      "prices": [
+        8999
+      ]
+    },
+    {
+      "query": "SM-X936BZAAMEA",
+      "http_status": 200,
+      "source_url": "https://www.samsung.com/sa_en/tablets/galaxy-tab-s/galaxy-tab-s11-ultra-gray-256gb-sm-x936bzaamea/buy/",
+      "exact_samsung_url_present": true,
+      "prices": [
+        4799
+      ]
+    },
+    {
+      "query": "AR18TSECCWK/MG",
+      "http_status": 200,
+      "source_url": "https://www.samsung.com/sa_en/air-conditioners/wall-mount/ar9500t-wind-free-ar18tseccwk-mg/",
+      "exact_samsung_url_present": false,
+      "prices": []
+    },
+    {
+      "query": "SM-X400NZSAMEA",
+      "http_status": 200,
+      "source_url": "https://www.samsung.com/sa_en/tablets/galaxy-tab-s/galaxy-tab-s10-lite-silver-128gb-sm-x400nzsamea/buy/",
+      "exact_samsung_url_present": true,
+      "prices": [
+        1399
+      ]
+    },
+    {
+      "query": "LS32FG510EMXUE",
+      "http_status": 200,
+      "source_url": "https://www.samsung.com/sa_en/monitors/gaming/odyssey-g5-g51f-32-inch-180hz-qhd-ls32fg510emxue/",
+      "exact_samsung_url_present": true,
+      "prices": [
+        1099
+      ]
+    },
+    {
+      "query": "AR24CSFCBWK/MG",
+      "http_status": 200,
+      "source_url": "https://www.samsung.com/sa_en/air-conditioners/wall-mount/ar9500t-wind-free-ar24csfcbwk-mg/",
+      "exact_samsung_url_present": false,
+      "prices": []
+    },
+    {
+      "query": "WD12TP34DSX/YL",
+      "http_status": 200,
+      "source_url": "https://www.samsung.com/sa_en/washers-and-dryers/washer-dryer-combo/wd7300t-front-loading-12kg-platinum-silver-wd12tp34dsx-yl/",
+      "exact_samsung_url_present": true,
+      "prices": [
+        4099
+      ]
+    },
+    {
+      "query": "SM-Q508NZKAMEA",
+      "http_status": 200,
+      "source_url": "https://www.samsung.com/sa_en/rings/galaxy-ring/galaxy-ring-titanium-black-size-8-sm-q508nzkamea/",
+      "exact_samsung_url_present": true,
+      "prices": [
+        999
+      ]
+    },
+    {
+      "query": "QA65LS03HWUXSA",
+      "http_status": 200,
+      "source_url": "https://www.samsung.com/sa_en/lifestyle-tvs/the-frame/ls03hw-65-inch-qa65ls03hwuxsa/",
+      "exact_samsung_url_present": true,
+      "prices": [
+        7699
+      ]
+    }
+  ],
+  "after": [
+    {
+      "query": "QA75QN80HAUXSA",
+      "http_status": 200,
+      "source_url": "https://www.samsung.com/sa_en/tvs/qled-tv/qn80h-75-inch-neo-qled-4k-mini-led-smart-tv-qa75qn80hauxsa/",
+      "exact_samsung_url_present": true,
+      "prices": [
+        6999
+      ]
+    },
+    {
+      "query": "QA77S85HAEXSA",
+      "http_status": 200,
+      "source_url": "https://www.samsung.com/sa_en/tvs/oled-tv/s85h-77-inch-4k-smart-tv-qa77s85haexsa/",
+      "exact_samsung_url_present": true,
+      "prices": [
+        8999
+      ]
+    },
+    {
+      "query": "SM-X936BZAAMEA",
+      "http_status": 200,
+      "source_url": "https://www.samsung.com/sa_en/tablets/galaxy-tab-s/galaxy-tab-s11-ultra-gray-256gb-sm-x936bzaamea/buy/",
+      "exact_samsung_url_present": true,
+      "prices": [
+        4799
+      ]
+    },
+    {
+      "query": "AR18TSECCWK/MG",
+      "http_status": 200,
+      "source_url": "https://www.samsung.com/sa_en/air-conditioners/wall-mount/ar9500t-wind-free-ar18tseccwk-mg/",
+      "exact_samsung_url_present": false,
+      "prices": []
+    },
+    {
+      "query": "SM-X400NZSAMEA",
+      "http_status": 200,
+      "source_url": "https://www.samsung.com/sa_en/tablets/galaxy-tab-s/galaxy-tab-s10-lite-silver-128gb-sm-x400nzsamea/buy/",
+      "exact_samsung_url_present": true,
+      "prices": [
+        1399
+      ]
+    },
+    {
+      "query": "LS32FG510EMXUE",
+      "http_status": 200,
+      "source_url": "https://www.samsung.com/sa_en/monitors/gaming/odyssey-g5-g51f-32-inch-180hz-qhd-ls32fg510emxue/",
+      "exact_samsung_url_present": true,
+      "prices": [
+        1099
+      ]
+    },
+    {
+      "query": "AR24CSFCBWK/MG",
+      "http_status": 200,
+      "source_url": "https://www.samsung.com/sa_en/air-conditioners/wall-mount/ar9500t-wind-free-ar24csfcbwk-mg/",
+      "exact_samsung_url_present": false,
+      "prices": []
+    },
+    {
+      "query": "WD12TP34DSX/YL",
+      "http_status": 200,
+      "source_url": "https://www.samsung.com/sa_en/washers-and-dryers/washer-dryer-combo/wd7300t-front-loading-12kg-platinum-silver-wd12tp34dsx-yl/",
+      "exact_samsung_url_present": true,
+      "prices": [
+        4099
+      ]
+    },
+    {
+      "query": "SM-Q508NZKAMEA",
+      "http_status": 200,
+      "source_url": "https://www.samsung.com/sa_en/rings/galaxy-ring/galaxy-ring-titanium-black-size-8-sm-q508nzkamea/",
+      "exact_samsung_url_present": true,
+      "prices": [
+        999
+      ]
+    },
+    {
+      "query": "QA65LS03HWUXSA",
+      "http_status": 200,
+      "source_url": "https://www.samsung.com/sa_en/lifestyle-tvs/the-frame/ls03hw-65-inch-qa65ls03hwuxsa/",
+      "exact_samsung_url_present": true,
+      "prices": [
+        7699
+      ]
+    }
+  ],
+  "interpretation": "Same fixed ten model queries and exact Samsung source URLs. No search gain attributed to the runtime fix."
+}

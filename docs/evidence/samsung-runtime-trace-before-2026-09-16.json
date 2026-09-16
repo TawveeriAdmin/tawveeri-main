@@ -14,5 +14,6 @@
     "Error: Failed to resolve dependency \"pg-native\":\nCannot find module 'pg-native' loaded from C:\\Users\\Hp\\Downloads\\Tawveeri-Official\\node_modules\\pg\\lib\\native\\client.js",
     "Error: Failed to resolve dependency \"cloudflare:sockets\":\nCannot find module 'cloudflare:sockets' loaded from C:\\Users\\Hp\\Downloads\\Tawveeri-Official\\node_modules\\pg-cloudflare\\dist\\index.js",
     "Error: Failed to resolve dependency \"pnpapi\":\nCannot find module 'pnpapi' loaded from C:\\Users\\Hp\\Downloads\\Tawveeri-Official\\node_modules\\esbuild\\lib\\main.js"
-  ]
+  ],
+  "phase": "After local implementation, before deployment; static trace, not direct production filesystem access"
 }

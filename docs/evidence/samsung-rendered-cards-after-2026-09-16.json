@@ -1,0 +1,72 @@
+{
+  "measured_at": "2026-09-16T06:20:12.593Z",
+  "method": "Read rendered Samsung retailer label independently; usual harness omits Samsung from FULL_STORE regex. No outbound clicks.",
+  "rows": [
+    {
+      "query": "QA75QN80HAUXSA",
+      "url": "https://tawveeri.com/ar/search?q=QA75QN80HAUXSA",
+      "status": 200,
+      "cards": [
+        {
+          "kind": "smart-pick",
+          "price": "6999",
+          "stores": "1",
+          "text": "اختيار توفيري\n75\" Neo QLED QN80H 4K Samsung Vision AI Smart TV (2026) Inch Mini (QA75QN80HAUXSA)\n\nأرخص سعر\n\nأفضل سعر عند سامسونج السعودية\n\nأفضل سعر\n٦٬٩٩٩\nاعرض العرض",
+          "samsung_retailer_label": true,
+          "links": [
+            {
+              "text": "اعرض العرض",
+              "href": "https://www.samsung.com/sa_en/tvs/qled-tv/qn80h-75-inch-neo-qled-4k-mini-led-smart-tv-qa75qn80hauxsa/"
+            }
+          ]
+        },
+        {
+          "kind": "product-card",
+          "price": "6999",
+          "stores": "1",
+          "text": "75\" Neo QLED QN80H 4K Samsung Vision AI Smart TV (2026) Inch Mini (QA75QN80HAUXSA)\n\nSamsung\n\n٦٬٩٩٩\nسامسونج السعودية\nعرض في المتجر\nإضافة للمقارنة",
+          "samsung_retailer_label": true,
+          "links": [
+            {
+              "text": "عرض في المتجر",
+              "href": "https://www.samsung.com/sa_en/tvs/qled-tv/qn80h-75-inch-neo-qled-4k-mini-led-smart-tv-qa75qn80hauxsa/"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "query": "SM-X400NZSAMEA",
+      "url": "https://tawveeri.com/ar/search?q=SM-X400NZSAMEA",
+      "status": 200,
+      "cards": [
+        {
+          "kind": "smart-pick",
+          "price": "1399",
+          "stores": "1",
+          "text": "اختيار توفيري\nGalaxy Tab S10 Lite (Wi-Fi) Silver 128GB (SM-X400NZSAMEA)\n\nأرخص سعر\n\nأفضل سعر عند سامسونج السعودية\n\nأفضل سعر\n١٬٣٩٩\nاعرض العرض",
+          "samsung_retailer_label": true,
+          "links": [
+            {
+              "text": "اعرض العرض",
+              "href": "https://www.samsung.com/sa_en/tablets/galaxy-tab-s/galaxy-tab-s10-lite-silver-128gb-sm-x400nzsamea/buy/"
+            }
+          ]
+        },
+        {
+          "kind": "product-card",
+          "price": "1399",
+          "stores": "1",
+          "text": "Galaxy Tab S10 Lite (Wi-Fi) Silver 128GB (SM-X400NZSAMEA)\n\nSamsung\n\n١٬٣٩٩\nسامسونج السعودية\nعرض في المتجر\nإضافة للمقارنة",
+          "samsung_retailer_label": true,
+          "links": [
+            {
+              "text": "عرض في المتجر",
+              "href": "https://www.samsung.com/sa_en/tablets/galaxy-tab-s/galaxy-tab-s10-lite-silver-128gb-sm-x400nzsamea/buy/"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

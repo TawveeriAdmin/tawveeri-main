@@ -1,0 +1,62 @@
+{
+  "measured_at": "2026-09-16T06:42:39.629Z",
+  "queries": {
+    "counts": {
+      "sql": "select count(*) offers,count(distinct product_id) products from product_stores where store_id=6",
+      "rows": [
+        {
+          "offers": "423",
+          "products": "423"
+        }
+      ]
+    },
+    "hot": {
+      "sql": "select status,count(*) offers from tps_current_offers where store_id=6 group by status",
+      "rows": [
+        {
+          "status": "valid",
+          "offers": "403"
+        },
+        {
+          "status": "low_confidence_candidate",
+          "offers": "10"
+        }
+      ]
+    },
+    "baseline": {
+      "sql": "select count(*) urls from samsung_official_url_baseline",
+      "rows": [
+        {
+          "urls": "943"
+        }
+      ]
+    },
+    "runs": {
+      "sql": "select * from samsung_delta_watch_runs order by started_at desc limit 1",
+      "rows": [
+        {
+          "id": "3",
+          "run_id": "0fc5aa9b-3ae0-4c1d-a784-6e2df98531be",
+          "started_at": "2026-09-14T04:27:15.932Z",
+          "finished_at": "2026-09-14T04:27:22.187Z",
+          "sitemap_urls_seen": 894,
+          "known_urls": 943,
+          "delta_urls": 0,
+          "new_products": 0,
+          "new_variants": 0,
+          "new_url_same_product": 0,
+          "updated_existing": 0,
+          "duplicates": 0,
+          "invalid": 0,
+          "failed": 0,
+          "user_visible_completed": 0,
+          "status": "completed",
+          "notes": {
+            "discoveries": [],
+            "missing_this_run": 1
+          }
+        }
+      ]
+    }
+  }
+}

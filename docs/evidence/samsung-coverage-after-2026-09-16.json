@@ -1,0 +1,1248 @@
+{
+  "measured_at": "2026-09-16T06:47:19.858Z",
+  "database": "vyceqrzttspyycdpojtn",
+  "queries": {
+    "store": {
+      "sql": "select id,name,slug from stores where slug='samsung_ksa'",
+      "rows": [
+        {
+          "id": 6,
+          "name": "سامسونج السعودية",
+          "slug": "samsung_ksa"
+        }
+      ]
+    },
+    "legacy_counts": {
+      "sql": "select count(*) offers,count(distinct product_id) products,count(distinct product_url) urls,max(last_scraped_at) last_scraped,max(updated_at) last_updated from product_stores where store_id=6",
+      "rows": [
+        {
+          "offers": "423",
+          "products": "423",
+          "urls": "423",
+          "last_scraped": "2026-09-16T01:50:43.705Z",
+          "last_updated": "2026-09-14T05:26:39.114Z"
+        }
+      ]
+    },
+    "legacy_categories": {
+      "sql": "select p.category,count(distinct p.id) products,count(*) offers,count(distinct p.id) filter(where p.canonical_product_id is not null) linked_products from product_stores ps join products p on p.id=ps.product_id where ps.store_id=6 group by p.category order by p.category",
+      "rows": [
+        {
+          "category": "accessories",
+          "products": "52",
+          "offers": "52",
+          "linked_products": "17"
+        },
+        {
+          "category": "air_conditioner",
+          "products": "21",
+          "offers": "21",
+          "linked_products": "5"
+        },
+        {
+          "category": "appliance",
+          "products": "39",
+          "offers": "39",
+          "linked_products": "21"
+        },
+        {
+          "category": "audio",
+          "products": "19",
+          "offers": "19",
+          "linked_products": "19"
+        },
+        {
+          "category": "kitchen",
+          "products": "2",
+          "offers": "2",
+          "linked_products": "2"
+        },
+        {
+          "category": "monitor",
+          "products": "45",
+          "offers": "45",
+          "linked_products": "34"
+        },
+        {
+          "category": "smartphone",
+          "products": "82",
+          "offers": "82",
+          "linked_products": "35"
+        },
+        {
+          "category": "smartwatch",
+          "products": "9",
+          "offers": "9",
+          "linked_products": "3"
+        },
+        {
+          "category": "tablet",
+          "products": "67",
+          "offers": "67",
+          "linked_products": "67"
+        },
+        {
+          "category": "tv",
+          "products": "87",
+          "offers": "87",
+          "linked_products": "79"
+        }
+      ]
+    },
+    "completeness": {
+      "sql": "with p as (select distinct p.* from products p join product_stores ps on ps.product_id=p.id where ps.store_id=6) select count(*) denominator,count(*) filter(where nullif(name_ar,'') is not null or nullif(name_en,'') is not null) named,count(*) filter(where nullif(image_url,'') is not null) imaged,count(*) filter(where nullif(brand,'') is not null) branded,count(*) filter(where nullif(model,'') is not null) modelled,count(*) filter(where specifications is not null and specifications <> '{}'::jsonb) specifications_present,count(*) filter(where canonical_product_id is not null) linked from p",
+      "rows": [
+        {
+          "denominator": "423",
+          "named": "423",
+          "imaged": "6",
+          "branded": "423",
+          "modelled": "423",
+          "specifications_present": "384",
+          "linked": "282"
+        }
+      ]
+    },
+    "offers": {
+      "sql": "select category,status,count(*) offers,count(distinct identity_key) identities,min(observed_at) oldest,max(observed_at) newest,count(*) filter(where url like '%?%') with_query from tps_current_offers where store_id=6 group by category,status order by category,status",
+      "rows": [
+        {
+          "category": "air_conditioner",
+          "status": "low_confidence_candidate",
+          "offers": "10",
+          "identities": "10",
+          "oldest": "2026-09-12T18:40:06.665Z",
+          "newest": "2026-09-15T13:51:15.281Z",
+          "with_query": "0"
+        },
+        {
+          "category": "air_conditioner",
+          "status": "valid",
+          "offers": "5",
+          "identities": "5",
+          "oldest": "2026-09-13T08:13:41.986Z",
+          "newest": "2026-09-15T13:50:56.020Z",
+          "with_query": "0"
+        },
+        {
+          "category": "air_fryer",
+          "status": "valid",
+          "offers": "2",
+          "identities": "2",
+          "oldest": "2026-09-15T13:53:52.431Z",
+          "newest": "2026-09-15T13:53:58.273Z",
+          "with_query": "0"
+        },
+        {
+          "category": "audio",
+          "status": "valid",
+          "offers": "39",
+          "identities": "39",
+          "oldest": "2026-09-12T18:29:27.725Z",
+          "newest": "2026-09-15T13:53:32.560Z",
+          "with_query": "0"
+        },
+        {
+          "category": "cooker",
+          "status": "valid",
+          "offers": "4",
+          "identities": "4",
+          "oldest": "2026-09-15T13:53:39.768Z",
+          "newest": "2026-09-15T13:53:58.273Z",
+          "with_query": "0"
+        },
+        {
+          "category": "dishwasher",
+          "status": "valid",
+          "offers": "7",
+          "identities": "7",
+          "oldest": "2026-08-21T12:22:10.653Z",
+          "newest": "2026-09-15T13:54:18.426Z",
+          "with_query": "0"
+        },
+        {
+          "category": "microwave",
+          "status": "valid",
+          "offers": "3",
+          "identities": "3",
+          "oldest": "2026-09-13T13:59:04.838Z",
+          "newest": "2026-09-15T13:56:54.342Z",
+          "with_query": "0"
+        },
+        {
+          "category": "mobile",
+          "status": "valid",
+          "offers": "20",
+          "identities": "20",
+          "oldest": "2026-09-15T06:32:09.147Z",
+          "newest": "2026-09-15T19:55:37.970Z",
+          "with_query": "0"
+        },
+        {
+          "category": "monitor",
+          "status": "valid",
+          "offers": "73",
+          "identities": "73",
+          "oldest": "2026-09-13T08:21:30.575Z",
+          "newest": "2026-09-15T14:03:58.193Z",
+          "with_query": "0"
+        },
+        {
+          "category": "refrigerator",
+          "status": "valid",
+          "offers": "12",
+          "identities": "12",
+          "oldest": "2026-09-13T16:50:50.131Z",
+          "newest": "2026-09-15T14:05:49.931Z",
+          "with_query": "0"
+        },
+        {
+          "category": "ring",
+          "status": "valid",
+          "offers": "3",
+          "identities": "3",
+          "oldest": "2026-09-15T14:06:30.323Z",
+          "newest": "2026-09-15T14:08:19.256Z",
+          "with_query": "0"
+        },
+        {
+          "category": "smartwatch",
+          "status": "valid",
+          "offers": "9",
+          "identities": "9",
+          "oldest": "2026-09-12T20:04:06.746Z",
+          "newest": "2026-09-16T01:50:25.019Z",
+          "with_query": "0"
+        },
+        {
+          "category": "stylus",
+          "status": "valid",
+          "offers": "5",
+          "identities": "5",
+          "oldest": "2026-09-15T13:57:37.351Z",
+          "newest": "2026-09-15T13:58:53.145Z",
+          "with_query": "0"
+        },
+        {
+          "category": "tablet",
+          "status": "valid",
+          "offers": "86",
+          "identities": "86",
+          "oldest": "2026-09-13T14:04:59.661Z",
+          "newest": "2026-09-15T14:15:48.567Z",
+          "with_query": "0"
+        },
+        {
+          "category": "tracker",
+          "status": "valid",
+          "offers": "2",
+          "identities": "2",
+          "oldest": "2026-09-15T13:57:07.677Z",
+          "newest": "2026-09-15T13:57:14.990Z",
+          "with_query": "0"
+        },
+        {
+          "category": "tv",
+          "status": "valid",
+          "offers": "113",
+          "identities": "113",
+          "oldest": "2026-09-02T20:10:03.279Z",
+          "newest": "2026-09-16T01:50:43.505Z",
+          "with_query": "0"
+        },
+        {
+          "category": "vacuum",
+          "status": "valid",
+          "offers": "2",
+          "identities": "2",
+          "oldest": "2026-09-13T14:08:00.736Z",
+          "newest": "2026-09-16T01:46:43.567Z",
+          "with_query": "0"
+        },
+        {
+          "category": "washing_machine",
+          "status": "valid",
+          "offers": "18",
+          "identities": "18",
+          "oldest": "2026-09-12T20:00:36.828Z",
+          "newest": "2026-09-16T01:49:11.591Z",
+          "with_query": "0"
+        }
+      ]
+    },
+    "runs": {
+      "sql": "select id,run_type,status,products_discovered,products_new,products_updated,products_failed,started_at,finished_at,error_message,job_type from scraping_runs where store_id=6 or store_name='samsung_ksa' order by started_at desc limit 50",
+      "rows": [
+        {
+          "id": "7216",
+          "run_type": "price_update",
+          "status": "partial",
+          "products_discovered": 0,
+          "products_new": 0,
+          "products_updated": 54,
+          "products_failed": 0,
+          "started_at": "2026-09-16T01:45:03.770Z",
+          "finished_at": "2026-09-16T01:50:45.984Z",
+          "error_message": null,
+          "job_type": "price_update"
+        },
+        {
+          "id": "7195",
+          "run_type": "price_update",
+          "status": "success",
+          "products_discovered": 0,
+          "products_new": 0,
+          "products_updated": 108,
+          "products_failed": 0,
+          "started_at": "2026-09-15T19:43:45.824Z",
+          "finished_at": "2026-09-15T19:55:41.223Z",
+          "error_message": null,
+          "job_type": "price_update"
+        },
+        {
+          "id": "7193",
+          "run_type": "price_update",
+          "status": "success",
+          "products_discovered": 0,
+          "products_new": 0,
+          "products_updated": 108,
+          "products_failed": 0,
+          "started_at": "2026-09-15T19:43:45.053Z",
+          "finished_at": "2026-09-15T19:55:39.801Z",
+          "error_message": null,
+          "job_type": "price_update"
+        },
+        {
+          "id": "7169",
+          "run_type": "price_update",
+          "status": "success",
+          "products_discovered": 0,
+          "products_new": 0,
+          "products_updated": 259,
+          "products_failed": 0,
+          "started_at": "2026-09-15T13:48:30.980Z",
+          "finished_at": "2026-09-15T14:17:54.509Z",
+          "error_message": null,
+          "job_type": "price_update"
+        },
+        {
+          "id": "7157",
+          "run_type": "price_update",
+          "status": "partial",
+          "products_discovered": 0,
+          "products_new": 0,
+          "products_updated": 54,
+          "products_failed": 0,
+          "started_at": "2026-09-15T08:09:56.233Z",
+          "finished_at": "2026-09-15T08:16:14.666Z",
+          "error_message": null,
+          "job_type": "price_update"
+        },
+        {
+          "id": "7150",
+          "run_type": "discovery",
+          "status": "partial",
+          "products_discovered": 135,
+          "products_new": 0,
+          "products_updated": 108,
+          "products_failed": 0,
+          "started_at": "2026-09-15T06:19:19.706Z",
+          "finished_at": "2026-09-15T06:32:29.549Z",
+          "error_message": null,
+          "job_type": "discovery"
+        },
+        {
+          "id": "7114",
+          "run_type": "price_update",
+          "status": "success",
+          "products_discovered": 0,
+          "products_new": 0,
+          "products_updated": 299,
+          "products_failed": 0,
+          "started_at": "2026-09-15T01:23:00.044Z",
+          "finished_at": "2026-09-15T01:52:38.409Z",
+          "error_message": null,
+          "job_type": "price_update"
+        },
+        {
+          "id": "7103",
+          "run_type": "discovery",
+          "status": "partial",
+          "products_discovered": 144,
+          "products_new": 0,
+          "products_updated": 109,
+          "products_failed": 0,
+          "started_at": "2026-09-14T19:50:22.227Z",
+          "finished_at": "2026-09-14T20:02:55.065Z",
+          "error_message": null,
+          "job_type": "discovery"
+        },
+        {
+          "id": "7067",
+          "run_type": "price_update",
+          "status": "partial",
+          "products_discovered": 0,
+          "products_new": 0,
+          "products_updated": 119,
+          "products_failed": 0,
+          "started_at": "2026-09-14T12:29:15.262Z",
+          "finished_at": "2026-09-14T12:41:34.054Z",
+          "error_message": null,
+          "job_type": "price_update"
+        },
+        {
+          "id": "7055",
+          "run_type": "discovery",
+          "status": "partial",
+          "products_discovered": 144,
+          "products_new": 0,
+          "products_updated": 105,
+          "products_failed": 0,
+          "started_at": "2026-09-14T05:13:54.136Z",
+          "finished_at": "2026-09-14T05:26:50.456Z",
+          "error_message": null,
+          "job_type": "discovery"
+        },
+        {
+          "id": "7022",
+          "run_type": "price_update",
+          "status": "success",
+          "products_discovered": 0,
+          "products_new": 0,
+          "products_updated": 300,
+          "products_failed": 0,
+          "started_at": "2026-09-14T01:00:53.205Z",
+          "finished_at": "2026-09-14T01:31:27.832Z",
+          "error_message": null,
+          "job_type": "price_update"
+        },
+        {
+          "id": "7011",
+          "run_type": "price_update",
+          "status": "success",
+          "products_discovered": 0,
+          "products_new": 0,
+          "products_updated": 0,
+          "products_failed": 0,
+          "started_at": "2026-09-13T19:23:26.544Z",
+          "finished_at": "2026-09-13T19:23:27.459Z",
+          "error_message": null,
+          "job_type": "price_update"
+        },
+        {
+          "id": "6972",
+          "run_type": "discovery",
+          "status": "failed",
+          "products_discovered": 0,
+          "products_new": 0,
+          "products_updated": 0,
+          "products_failed": 0,
+          "started_at": "2026-09-13T17:56:00.198Z",
+          "finished_at": "2026-09-14T05:13:53.688Z",
+          "error_message": "run never completed — reaped after 120m",
+          "job_type": "discovery"
+        },
+        {
+          "id": "6939",
+          "run_type": "price_update",
+          "status": "partial",
+          "products_discovered": 0,
+          "products_new": 0,
+          "products_updated": 53,
+          "products_failed": 0,
+          "started_at": "2026-09-13T13:18:08.826Z",
+          "finished_at": "2026-09-13T13:23:35.508Z",
+          "error_message": null,
+          "job_type": "price_update"
+        },
+        {
+          "id": "6928",
+          "run_type": "price_update",
+          "status": "success",
+          "products_discovered": 0,
+          "products_new": 0,
+          "products_updated": 300,
+          "products_failed": 0,
+          "started_at": "2026-09-13T08:12:06.777Z",
+          "finished_at": "2026-09-13T08:40:48.303Z",
+          "error_message": null,
+          "job_type": "price_update"
+        },
+        {
+          "id": "6921",
+          "run_type": "discovery",
+          "status": "success",
+          "products_discovered": 105,
+          "products_new": 0,
+          "products_updated": 105,
+          "products_failed": 0,
+          "started_at": "2026-09-13T07:22:56.602Z",
+          "finished_at": "2026-09-13T07:33:10.105Z",
+          "error_message": null,
+          "job_type": "discovery"
+        },
+        {
+          "id": "6885",
+          "run_type": "price_update",
+          "status": "partial",
+          "products_discovered": 0,
+          "products_new": 0,
+          "products_updated": 0,
+          "products_failed": 0,
+          "started_at": "2026-09-13T00:50:07.699Z",
+          "finished_at": "2026-09-13T00:50:26.626Z",
+          "error_message": null,
+          "job_type": "price_update"
+        },
+        {
+          "id": "6874",
+          "run_type": "discovery",
+          "status": "partial",
+          "products_discovered": 103,
+          "products_new": 0,
+          "products_updated": 0,
+          "products_failed": 0,
+          "started_at": "2026-09-12T18:05:09.371Z",
+          "finished_at": "2026-09-12T18:16:17.389Z",
+          "error_message": null,
+          "job_type": "discovery"
+        },
+        {
+          "id": "6841",
+          "run_type": "discovery",
+          "status": "partial",
+          "products_discovered": 56,
+          "products_new": 0,
+          "products_updated": 18,
+          "products_failed": 0,
+          "started_at": "2026-09-12T17:04:03.485Z",
+          "finished_at": "2026-09-12T17:08:37.036Z",
+          "error_message": null,
+          "job_type": "discovery"
+        },
+        {
+          "id": "6817",
+          "run_type": "price_update",
+          "status": "success",
+          "products_discovered": 0,
+          "products_new": 0,
+          "products_updated": 0,
+          "products_failed": 0,
+          "started_at": "2026-09-12T14:44:23.442Z",
+          "finished_at": "2026-09-12T14:44:24.151Z",
+          "error_message": null,
+          "job_type": "price_update"
+        },
+        {
+          "id": "6805",
+          "run_type": "price_update",
+          "status": "partial",
+          "products_discovered": 0,
+          "products_new": 0,
+          "products_updated": 10,
+          "products_failed": 0,
+          "started_at": "2026-09-12T07:50:48.882Z",
+          "finished_at": "2026-09-12T07:52:03.481Z",
+          "error_message": null,
+          "job_type": "price_update"
+        },
+        {
+          "id": "6796",
+          "run_type": "discovery",
+          "status": "partial",
+          "products_discovered": 10,
+          "products_new": 0,
+          "products_updated": 8,
+          "products_failed": 0,
+          "started_at": "2026-09-12T06:02:41.939Z",
+          "finished_at": "2026-09-12T06:04:06.300Z",
+          "error_message": null,
+          "job_type": "discovery"
+        },
+        {
+          "id": "6794",
+          "run_type": "discovery",
+          "status": "partial",
+          "products_discovered": 56,
+          "products_new": 0,
+          "products_updated": 17,
+          "products_failed": 0,
+          "started_at": "2026-09-12T05:57:20.820Z",
+          "finished_at": "2026-09-12T06:01:49.088Z",
+          "error_message": null,
+          "job_type": "discovery"
+        },
+        {
+          "id": "6793",
+          "run_type": "discovery",
+          "status": "partial",
+          "products_discovered": 44,
+          "products_new": 0,
+          "products_updated": 2,
+          "products_failed": 0,
+          "started_at": "2026-09-12T05:49:39.763Z",
+          "finished_at": "2026-09-12T05:57:00.335Z",
+          "error_message": null,
+          "job_type": "discovery"
+        },
+        {
+          "id": "6792",
+          "run_type": "discovery",
+          "status": "partial",
+          "products_discovered": 18,
+          "products_new": 0,
+          "products_updated": 0,
+          "products_failed": 0,
+          "started_at": "2026-09-12T05:41:57.426Z",
+          "finished_at": "2026-09-12T05:48:58.904Z",
+          "error_message": null,
+          "job_type": "discovery"
+        },
+        {
+          "id": "6791",
+          "run_type": "discovery",
+          "status": "partial",
+          "products_discovered": 83,
+          "products_new": 0,
+          "products_updated": 12,
+          "products_failed": 0,
+          "started_at": "2026-09-12T05:32:31.948Z",
+          "finished_at": "2026-09-12T05:41:27.404Z",
+          "error_message": null,
+          "job_type": "discovery"
+        },
+        {
+          "id": "6790",
+          "run_type": "discovery",
+          "status": "partial",
+          "products_discovered": 122,
+          "products_new": 0,
+          "products_updated": 0,
+          "products_failed": 0,
+          "started_at": "2026-09-12T05:21:35.691Z",
+          "finished_at": "2026-09-12T05:32:12.410Z",
+          "error_message": null,
+          "job_type": "discovery"
+        },
+        {
+          "id": "6789",
+          "run_type": "discovery",
+          "status": "partial",
+          "products_discovered": 103,
+          "products_new": 0,
+          "products_updated": 0,
+          "products_failed": 0,
+          "started_at": "2026-09-12T04:56:20.543Z",
+          "finished_at": "2026-09-12T05:07:45.190Z",
+          "error_message": null,
+          "job_type": "discovery"
+        },
+        {
+          "id": "6756",
+          "run_type": "price_update",
+          "status": "success",
+          "products_discovered": 0,
+          "products_new": 0,
+          "products_updated": 0,
+          "products_failed": 0,
+          "started_at": "2026-09-12T00:44:02.019Z",
+          "finished_at": "2026-09-12T00:44:02.840Z",
+          "error_message": null,
+          "job_type": "price_update"
+        },
+        {
+          "id": "6745",
+          "run_type": "discovery",
+          "status": "success",
+          "products_discovered": 0,
+          "products_new": 0,
+          "products_updated": 0,
+          "products_failed": 0,
+          "started_at": "2026-09-11T18:49:46.420Z",
+          "finished_at": "2026-09-11T18:49:46.992Z",
+          "error_message": null,
+          "job_type": "discovery"
+        },
+        {
+          "id": "6744",
+          "run_type": "discovery",
+          "status": "partial",
+          "products_discovered": 10,
+          "products_new": 0,
+          "products_updated": 8,
+          "products_failed": 0,
+          "started_at": "2026-09-11T18:48:07.037Z",
+          "finished_at": "2026-09-11T18:49:25.586Z",
+          "error_message": null,
+          "job_type": "discovery"
+        },
+        {
+          "id": "6736",
+          "run_type": "price_update",
+          "status": "success",
+          "products_discovered": 0,
+          "products_new": 0,
+          "products_updated": 0,
+          "products_failed": 0,
+          "started_at": "2026-09-11T18:44:26.234Z",
+          "finished_at": "2026-09-11T18:44:26.819Z",
+          "error_message": null,
+          "job_type": "price_update"
+        },
+        {
+          "id": "6706",
+          "run_type": "price_update",
+          "status": "partial",
+          "products_discovered": 0,
+          "products_new": 0,
+          "products_updated": 31,
+          "products_failed": 0,
+          "started_at": "2026-09-11T12:48:07.004Z",
+          "finished_at": "2026-09-11T12:51:27.197Z",
+          "error_message": null,
+          "job_type": "price_update"
+        },
+        {
+          "id": "6695",
+          "run_type": "discovery",
+          "status": "success",
+          "products_discovered": 0,
+          "products_new": 0,
+          "products_updated": 0,
+          "products_failed": 0,
+          "started_at": "2026-09-11T06:49:00.527Z",
+          "finished_at": "2026-09-11T06:49:01.130Z",
+          "error_message": null,
+          "job_type": "discovery"
+        },
+        {
+          "id": "6694",
+          "run_type": "discovery",
+          "status": "partial",
+          "products_discovered": 10,
+          "products_new": 0,
+          "products_updated": 8,
+          "products_failed": 0,
+          "started_at": "2026-09-11T06:47:18.017Z",
+          "finished_at": "2026-09-11T06:48:39.612Z",
+          "error_message": null,
+          "job_type": "discovery"
+        },
+        {
+          "id": "6692",
+          "run_type": "price_update",
+          "status": "success",
+          "products_discovered": 0,
+          "products_new": 0,
+          "products_updated": 8,
+          "products_failed": 0,
+          "started_at": "2026-09-11T06:45:52.673Z",
+          "finished_at": "2026-09-11T06:46:40.455Z",
+          "error_message": null,
+          "job_type": "price_update"
+        },
+        {
+          "id": "6660",
+          "run_type": "price_update",
+          "status": "success",
+          "products_discovered": 0,
+          "products_new": 0,
+          "products_updated": 0,
+          "products_failed": 0,
+          "started_at": "2026-09-11T00:44:09.113Z",
+          "finished_at": "2026-09-11T00:44:09.957Z",
+          "error_message": null,
+          "job_type": "price_update"
+        },
+        {
+          "id": "6649",
+          "run_type": "price_update",
+          "status": "partial",
+          "products_discovered": 0,
+          "products_new": 0,
+          "products_updated": 31,
+          "products_failed": 0,
+          "started_at": "2026-09-10T19:11:01.594Z",
+          "finished_at": "2026-09-10T19:14:16.925Z",
+          "error_message": null,
+          "job_type": "price_update"
+        },
+        {
+          "id": "6639",
+          "run_type": "discovery",
+          "status": "success",
+          "products_discovered": 0,
+          "products_new": 0,
+          "products_updated": 0,
+          "products_failed": 0,
+          "started_at": "2026-09-10T17:11:44.749Z",
+          "finished_at": "2026-09-10T17:11:45.381Z",
+          "error_message": null,
+          "job_type": "discovery"
+        },
+        {
+          "id": "6638",
+          "run_type": "discovery",
+          "status": "partial",
+          "products_discovered": 10,
+          "products_new": 0,
+          "products_updated": 8,
+          "products_failed": 0,
+          "started_at": "2026-09-10T17:10:01.809Z",
+          "finished_at": "2026-09-10T17:11:23.793Z",
+          "error_message": null,
+          "job_type": "discovery"
+        },
+        {
+          "id": "6603",
+          "run_type": "price_update",
+          "status": "success",
+          "products_discovered": 0,
+          "products_new": 0,
+          "products_updated": 8,
+          "products_failed": 0,
+          "started_at": "2026-09-10T12:33:29.937Z",
+          "finished_at": "2026-09-10T12:34:23.593Z",
+          "error_message": null,
+          "job_type": "price_update"
+        },
+        {
+          "id": "6561",
+          "run_type": "discovery",
+          "status": "failed",
+          "products_discovered": 0,
+          "products_new": 0,
+          "products_updated": 0,
+          "products_failed": 0,
+          "started_at": "2026-09-10T06:22:14.102Z",
+          "finished_at": "2026-09-10T17:10:01.421Z",
+          "error_message": "run never completed — reaped after 120m",
+          "job_type": "discovery"
+        },
+        {
+          "id": "6525",
+          "run_type": "price_update",
+          "status": "partial",
+          "products_discovered": 0,
+          "products_new": 0,
+          "products_updated": 32,
+          "products_failed": 0,
+          "started_at": "2026-09-10T01:33:27.380Z",
+          "finished_at": "2026-09-10T01:37:13.319Z",
+          "error_message": null,
+          "job_type": "price_update"
+        },
+        {
+          "id": "6514",
+          "run_type": "discovery",
+          "status": "success",
+          "products_discovered": 0,
+          "products_new": 0,
+          "products_updated": 0,
+          "products_failed": 0,
+          "started_at": "2026-09-09T20:01:42.669Z",
+          "finished_at": "2026-09-09T20:01:43.267Z",
+          "error_message": null,
+          "job_type": "discovery"
+        },
+        {
+          "id": "6513",
+          "run_type": "discovery",
+          "status": "partial",
+          "products_discovered": 10,
+          "products_new": 0,
+          "products_updated": 9,
+          "products_failed": 0,
+          "started_at": "2026-09-09T19:59:37.555Z",
+          "finished_at": "2026-09-09T20:01:20.369Z",
+          "error_message": null,
+          "job_type": "discovery"
+        },
+        {
+          "id": "6481",
+          "run_type": "price_update",
+          "status": "success",
+          "products_discovered": 0,
+          "products_new": 0,
+          "products_updated": 8,
+          "products_failed": 0,
+          "started_at": "2026-09-09T18:04:21.476Z",
+          "finished_at": "2026-09-09T18:05:11.710Z",
+          "error_message": null,
+          "job_type": "price_update"
+        },
+        {
+          "id": "6472",
+          "run_type": "price_update",
+          "status": "partial",
+          "products_discovered": 0,
+          "products_new": 0,
+          "products_updated": 32,
+          "products_failed": 0,
+          "started_at": "2026-09-09T12:20:36.555Z",
+          "finished_at": "2026-09-09T12:23:57.423Z",
+          "error_message": null,
+          "job_type": "price_update"
+        },
+        {
+          "id": "6459",
+          "run_type": "discovery",
+          "status": "success",
+          "products_discovered": 0,
+          "products_new": 0,
+          "products_updated": 0,
+          "products_failed": 0,
+          "started_at": "2026-09-09T05:56:22.271Z",
+          "finished_at": "2026-09-09T05:56:22.817Z",
+          "error_message": null,
+          "job_type": "discovery"
+        },
+        {
+          "id": "6458",
+          "run_type": "discovery",
+          "status": "success",
+          "products_discovered": 10,
+          "products_new": 0,
+          "products_updated": 10,
+          "products_failed": 0,
+          "started_at": "2026-09-09T05:54:42.459Z",
+          "finished_at": "2026-09-09T05:56:01.001Z",
+          "error_message": null,
+          "job_type": "discovery"
+        },
+        {
+          "id": "6425",
+          "run_type": "price_update",
+          "status": "success",
+          "products_discovered": 0,
+          "products_new": 0,
+          "products_updated": 0,
+          "products_failed": 0,
+          "started_at": "2026-09-09T01:46:07.871Z",
+          "finished_at": "2026-09-09T01:46:08.844Z",
+          "error_message": null,
+          "job_type": "price_update"
+        }
+      ]
+    },
+    "delta_runs": {
+      "sql": "select * from samsung_delta_watch_runs order by started_at desc limit 20",
+      "rows": [
+        {
+          "id": "4",
+          "run_id": "1735696a-6c03-475e-bb5c-bb4dc8323154",
+          "started_at": "2026-09-16T06:46:41.876Z",
+          "finished_at": "2026-09-16T06:46:48.859Z",
+          "sitemap_urls_seen": 895,
+          "known_urls": 943,
+          "delta_urls": 1,
+          "new_products": 0,
+          "new_variants": 0,
+          "new_url_same_product": 1,
+          "updated_existing": 0,
+          "duplicates": 0,
+          "invalid": 0,
+          "failed": 0,
+          "user_visible_completed": 0,
+          "status": "completed",
+          "notes": {
+            "discoveries": [],
+            "missing_this_run": 1
+          }
+        },
+        {
+          "id": "3",
+          "run_id": "0fc5aa9b-3ae0-4c1d-a784-6e2df98531be",
+          "started_at": "2026-09-14T04:27:15.932Z",
+          "finished_at": "2026-09-14T04:27:22.187Z",
+          "sitemap_urls_seen": 894,
+          "known_urls": 943,
+          "delta_urls": 0,
+          "new_products": 0,
+          "new_variants": 0,
+          "new_url_same_product": 0,
+          "updated_existing": 0,
+          "duplicates": 0,
+          "invalid": 0,
+          "failed": 0,
+          "user_visible_completed": 0,
+          "status": "completed",
+          "notes": {
+            "discoveries": [],
+            "missing_this_run": 1
+          }
+        },
+        {
+          "id": "2",
+          "run_id": "b0da5189-d888-4a4f-833b-58c9fc3b8c2c",
+          "started_at": "2026-09-14T04:26:15.646Z",
+          "finished_at": "2026-09-14T04:26:32.093Z",
+          "sitemap_urls_seen": 894,
+          "known_urls": 940,
+          "delta_urls": 3,
+          "new_products": 0,
+          "new_variants": 0,
+          "new_url_same_product": 0,
+          "updated_existing": 0,
+          "duplicates": 0,
+          "invalid": 3,
+          "failed": 0,
+          "user_visible_completed": 0,
+          "status": "completed",
+          "notes": {
+            "discoveries": [],
+            "missing_this_run": 1
+          }
+        },
+        {
+          "id": "1",
+          "run_id": "3db801aa-9eb3-4c1e-8afb-52bcc54c45a7",
+          "started_at": "2026-09-14T03:13:53.036Z",
+          "finished_at": "2026-09-14T03:13:59.210Z",
+          "sitemap_urls_seen": 891,
+          "known_urls": 940,
+          "delta_urls": 0,
+          "new_products": 0,
+          "new_variants": 0,
+          "new_url_same_product": 0,
+          "updated_existing": 0,
+          "duplicates": 0,
+          "invalid": 0,
+          "failed": 0,
+          "user_visible_completed": 0,
+          "status": "completed",
+          "notes": {
+            "discoveries": [],
+            "missing_this_run": 1
+          }
+        }
+      ]
+    },
+    "baseline": {
+      "sql": "select category,classification,lifecycle_state,count(*) urls,count(distinct identity_key) identities from samsung_official_url_baseline group by category,classification,lifecycle_state order by classification,category",
+      "rows": [
+        {
+          "category": null,
+          "classification": "B2B",
+          "lifecycle_state": "CURRENT",
+          "urls": "2",
+          "identities": "0"
+        },
+        {
+          "category": null,
+          "classification": "BUNDLE_NON_PRODUCT",
+          "lifecycle_state": "CURRENT",
+          "urls": "19",
+          "identities": "0"
+        },
+        {
+          "category": null,
+          "classification": "CONTAMINATION",
+          "lifecycle_state": "CURRENT",
+          "urls": "65",
+          "identities": "0"
+        },
+        {
+          "category": "stylus",
+          "classification": "CURRENT_VALID_PRODUCT",
+          "lifecycle_state": "CURRENT",
+          "urls": "20",
+          "identities": "5"
+        },
+        {
+          "category": "tv",
+          "classification": "CURRENT_VALID_PRODUCT",
+          "lifecycle_state": "CURRENT",
+          "urls": "1",
+          "identities": "1"
+        },
+        {
+          "category": null,
+          "classification": "CURRENT_VALID_PRODUCT",
+          "lifecycle_state": "CURRENT",
+          "urls": "593",
+          "identities": "402"
+        },
+        {
+          "category": null,
+          "classification": "CURRENT_VALID_PRODUCT",
+          "lifecycle_state": "POSSIBLY_DISCONTINUED",
+          "urls": "1",
+          "identities": "1"
+        },
+        {
+          "category": null,
+          "classification": "DUPLICATE_URL",
+          "lifecycle_state": "CURRENT",
+          "urls": "182",
+          "identities": "0"
+        },
+        {
+          "category": null,
+          "classification": "FAMILY_PAGE",
+          "lifecycle_state": "CURRENT",
+          "urls": "6",
+          "identities": "0"
+        },
+        {
+          "category": null,
+          "classification": "HISTORICAL",
+          "lifecycle_state": "CURRENT",
+          "urls": "10",
+          "identities": "0"
+        },
+        {
+          "category": null,
+          "classification": "INVALID",
+          "lifecycle_state": "CURRENT",
+          "urls": "4",
+          "identities": "0"
+        },
+        {
+          "category": null,
+          "classification": "MARKETING",
+          "lifecycle_state": "CURRENT",
+          "urls": "39",
+          "identities": "0"
+        },
+        {
+          "category": null,
+          "classification": "UNKNOWN",
+          "lifecycle_state": "CURRENT",
+          "urls": "1",
+          "identities": "0"
+        },
+        {
+          "category": null,
+          "classification": "UNSUPPORTED_CATEGORY",
+          "lifecycle_state": "CURRENT",
+          "urls": "1",
+          "identities": "0"
+        }
+      ]
+    },
+    "baseline_links": {
+      "sql": "select b.category,count(distinct b.identity_key) identities,count(distinct b.identity_key) filter(where exists(select 1 from canonical_products cp where cp.tps_identity_key=b.identity_key and cp.is_active)) active_canonicals,count(distinct b.identity_key) filter(where exists(select 1 from tps_current_offers o where o.identity_key=b.identity_key and o.store_id=6 and o.status='valid')) valid_offers from samsung_official_url_baseline b where classification='CURRENT_VALID_PRODUCT' group by b.category order by b.category",
+      "rows": [
+        {
+          "category": "stylus",
+          "identities": "5",
+          "active_canonicals": "5",
+          "valid_offers": "5"
+        },
+        {
+          "category": "tv",
+          "identities": "1",
+          "active_canonicals": "1",
+          "valid_offers": "0"
+        },
+        {
+          "category": null,
+          "identities": "402",
+          "active_canonicals": "293",
+          "valid_offers": "264"
+        }
+      ]
+    },
+    "job_state": {
+      "sql": "select * from tps_job_state where job='samsung-delta-watch'",
+      "rows": [
+        {
+          "job": "samsung-delta-watch",
+          "last_success_at": "2026-09-16T06:46:50.464Z",
+          "last_note": "ok",
+          "updated_at": "2026-09-16T06:46:50.464Z"
+        }
+      ]
+    },
+    "sample": {
+      "sql": "select category,identity_key,price,url,name,observed_at from tps_current_offers where store_id=6 and status='valid' and price>0 order by random() limit 10",
+      "rows": [
+        {
+          "category": "tablet",
+          "identity_key": "samsung|MODEL:SM-X135GZSEMEA",
+          "price": "899",
+          "url": "https://www.samsung.com/sa_en/tablets/galaxy-tab-a/galaxy-tab-a11-silver-128gb-sm-x135gzsemea/buy/",
+          "name": "Galaxy Tab A11 (LTE) Silver 128GB (SM-X135GZSEMEA)",
+          "observed_at": "2026-09-15T14:09:39.038Z"
+        },
+        {
+          "category": "tracker",
+          "identity_key": "samsung|SmartTag2|Black",
+          "price": "99",
+          "url": "https://www.samsung.com/sa_en/mobile-accessories/galaxy-smarttag2-black-ei-t5600bbegww/",
+          "name": "Galaxy SmartTag2 Black Ei (EI-T5600BBEGWW)",
+          "observed_at": "2026-09-15T13:57:07.677Z"
+        },
+        {
+          "category": "tv",
+          "identity_key": "samsung|MODEL:QA75QEF1AUXSA",
+          "price": "2599",
+          "url": "https://www.samsung.com/sa_en/tvs/qled-tv/qef1-75-inch-qled-4k-smart-tv-qa75qef1auxsa/",
+          "name": "75\" QLED QEF1 4K Samsung Vision AI Smart TV (2025) Inch (QA75QEF1AUXSA)",
+          "observed_at": "2026-09-15T19:46:58.773Z"
+        },
+        {
+          "category": "tablet",
+          "identity_key": "samsung|MODEL:SM-X400NZAAMEA",
+          "price": "1399",
+          "url": "https://www.samsung.com/sa_en/tablets/galaxy-tab-s/galaxy-tab-s10-lite-gray-128gb-sm-x400nzaamea/buy/",
+          "name": "Galaxy Tab S10 Lite (Wi-Fi) Gray 128GB (SM-X400NZAAMEA)",
+          "observed_at": "2026-09-15T14:10:59.605Z"
+        },
+        {
+          "category": "tablet",
+          "identity_key": "samsung|MODEL:SM-X736BZAIMEA",
+          "price": "4099",
+          "url": "https://www.samsung.com/sa_en/tablets/galaxy-tab-s/galaxy-tab-s11-gray-512gb-sm-x736bzaimea/buy/",
+          "name": "Galaxy Tab S11 5G Gray 512GB (SM-X736BZAIMEA)",
+          "observed_at": "2026-09-15T14:14:09.675Z"
+        },
+        {
+          "category": "smartwatch",
+          "identity_key": "samsung|Galaxy Fit|3|Standard|NO_SIZE|gps",
+          "price": "229",
+          "url": "https://www.samsung.com/sa_en/watches/galaxy-fit/galaxy-fit3-silver-bluetooth-v5-3-sm-r390nzsamea/buy/",
+          "name": "Galaxy Fit3 Silver Bluetooth V5 3 (SM-R390NZSAMEA)",
+          "observed_at": "2026-09-16T01:49:29.066Z"
+        },
+        {
+          "category": "tv",
+          "identity_key": "samsung|MODEL:F-FA01COMBO34",
+          "price": "1438",
+          "url": "https://www.samsung.com/sa_en/lifestyle-tvs/the-frame/tv-hard-bundle-34-f-fa01combo34/",
+          "name": "65\" The Frame Pro 4K Samsung Vision AI Smart TV (2025) and Customizable Frame VG-SCFH Hard Bundle 34 F (F-FA01COMBO34)",
+          "observed_at": "2026-09-13T08:18:34.031Z"
+        },
+        {
+          "category": "monitor",
+          "identity_key": "samsung|57|4k|240|va",
+          "price": "7999",
+          "url": "https://www.samsung.com/sa_en/monitors/gaming/odyssey-neo-g9-g95nc-57-inch-240hz-curved-dual-uhd-ls57cg952nmxue/",
+          "name": "57\" Odyssey Neo G9 G95NC Inch 240hz Curved Dual Uhd (LS57CG952NMXUE)",
+          "observed_at": "2026-09-15T14:01:39.439Z"
+        },
+        {
+          "category": "tablet",
+          "identity_key": "samsung|MODEL:SM-X826BZAEMEA",
+          "price": "3999",
+          "url": "https://www.samsung.com/sa_en/tablets/galaxy-tab-s/galaxy-tab-s10-plus-gray-512gb-sm-x826bzaemea/buy/",
+          "name": "Galaxy Tab S10 Plus Gray 512GB (SM-X826BZAEMEA)",
+          "observed_at": "2026-09-15T14:12:01.180Z"
+        },
+        {
+          "category": "monitor",
+          "identity_key": "samsung|27|4k|180|NO_PANEL",
+          "price": "2099",
+          "url": "https://www.samsung.com/sa_en/monitors/gaming/odyssey-g7-g70f-27-inch-dual-mode-4k-180hz-fhd-360hz-ls27fg706emxue/",
+          "name": "27\" Odyssey G7 G70F 4K 180Hz / FHD 360Hz Gaming Monitor Inch Dual Mode (LS27FG706EMXUE)",
+          "observed_at": "2026-09-13T08:22:37.116Z"
+        }
+      ]
+    },
+    "query_urls": {
+      "sql": "select url from tps_current_offers where store_id=6 and url like '%?%'",
+      "rows": []
+    }
+  }
+}

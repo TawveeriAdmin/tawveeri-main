@@ -1,0 +1,44 @@
+{
+  "verified_at": "2026-09-16T06:48:44.618Z",
+  "commit": "64c7d2a3d77c71dcc847408c84e84ee9716108de",
+  "deployment_id": "5d197cf9-b7f4-4b47-9072-820f85096590",
+  "railway_status": "SUCCESS",
+  "production_url": "https://tawveeri.com",
+  "health_http_status": 200,
+  "health": {
+    "status": "ok",
+    "uptime": 1966,
+    "timestamp": "2026-09-16T06:48:44.449Z"
+  },
+  "worker_run": {
+    "id": "4",
+    "run_id": "1735696a-6c03-475e-bb5c-bb4dc8323154",
+    "started_at": "2026-09-16T06:46:41.876Z",
+    "finished_at": "2026-09-16T06:46:48.859Z",
+    "sitemap_urls_seen": 895,
+    "known_urls": 943,
+    "delta_urls": 1,
+    "new_products": 0,
+    "new_variants": 0,
+    "new_url_same_product": 1,
+    "updated_existing": 0,
+    "duplicates": 0,
+    "invalid": 0,
+    "failed": 0,
+    "user_visible_completed": 0,
+    "status": "completed",
+    "notes": {
+      "discoveries": [],
+      "missing_this_run": 1
+    }
+  },
+  "counts": {
+    "legacy_products_before": 423,
+    "legacy_products_after": 423,
+    "valid_offers_before": 403,
+    "valid_offers_after": 403,
+    "baseline_urls_before": 943,
+    "baseline_urls_after": 944
+  },
+  "scope": "Natural scheduled production run; no manual or synthetic worker invocation in production. One alias, zero new products; no catalog-growth claim."
+}

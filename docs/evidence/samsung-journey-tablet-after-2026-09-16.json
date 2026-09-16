@@ -1,0 +1,149 @@
+{
+  "summary": {
+    "base": "https://tawveeri.com",
+    "total": 2,
+    "passed": 0,
+    "pass_rate_pct": 0,
+    "by_check": {
+      "relevant": 2,
+      "sensible_pick": 2,
+      "store_visible": 0,
+      "price_consistent": 2,
+      "link_lands": 2
+    },
+    "link_buckets": {
+      "OK": 2,
+      "BLOCKED_excluded": 0,
+      "DEAD": 0
+    },
+    "link_trustable_pct": 100,
+    "comparison_journeys": 0,
+    "comparison_passed": 0,
+    "comparison_pass_rate_pct": null,
+    "cross_language_pick_mismatches": [],
+    "instrument": {
+      "journeys_with_a_card": 2,
+      "read_from_card_attributes": 2,
+      "subject_smart_pick": 1,
+      "subject_result_card": 1
+    },
+    "by_subject": {
+      "smart_pick": {
+        "journeys": 1,
+        "passed": 0,
+        "comparison_journeys": 0,
+        "comparison_passed": 0
+      },
+      "homepage": {
+        "journeys": 0,
+        "passed": 0,
+        "comparison_journeys": 0,
+        "comparison_passed": 0
+      },
+      "result_card": {
+        "journeys": 1,
+        "passed": 0,
+        "comparison_journeys": 0,
+        "comparison_passed": 0
+      }
+    },
+    "by_script": {
+      "arabic_queries": {
+        "journeys": 0,
+        "passed": 0,
+        "comparison_journeys": 0,
+        "comparison_passed": 0
+      },
+      "english_queries": {
+        "journeys": 2,
+        "passed": 0,
+        "comparison_journeys": 0,
+        "comparison_passed": 0
+      }
+    },
+    "exact_model": {
+      "journeys": 0,
+      "correct_product": 0,
+      "correct_variant": 0,
+      "full_journey_pass": 0
+    },
+    "retailer_visibility": {
+      "journeys": 2,
+      "store_name_visible": 0
+    },
+    "outbound": {
+      "resolved_to_product_page": 2,
+      "blocked_excluded": 0,
+      "dead": 0
+    },
+    "unhonoured_store_claims": {
+      "pages_with_a_violation": 0,
+      "pages_checked": 1,
+      "cards_violating": 0
+    }
+  },
+  "rows": [
+    {
+      "query": "SM-X400NZSAMEA",
+      "locale": "ar",
+      "subject": "smart-pick",
+      "relevant": true,
+      "sensiblePick": true,
+      "storeVisible": false,
+      "priceConsistent": true,
+      "linkLands": true,
+      "linkBucket": "ok",
+      "excluded": false,
+      "isComparison": false,
+      "pass": false,
+      "pickName": "Galaxy Tab S10 Lite (Wi-Fi) Silver 128GB (SM-X400NZSAMEA)",
+      "cardPrice": 1399,
+      "comparePrice": null,
+      "cardStores": 1,
+      "compareStores": null,
+      "surface": "smart-pick",
+      "attrRead": true,
+      "unhonouredClaims": [],
+      "exactModel": null,
+      "exactVariant": null,
+      "isModelQuery": false,
+      "destination": "https://www.samsung.com/sa_en/tablets/galaxy-tab-s/galaxy-tab-s10-lite-silver-128gb-sm-x400nzsamea/buy/",
+      "notes": [
+        "no store name on card",
+        "no compare link on the top pick",
+        "single-store (no compare page) — price check vacuous"
+      ]
+    },
+    {
+      "query": "SM-X400NZSAMEA",
+      "locale": "ar",
+      "subject": "result-card",
+      "relevant": true,
+      "sensiblePick": true,
+      "storeVisible": false,
+      "priceConsistent": true,
+      "linkLands": true,
+      "linkBucket": "ok",
+      "excluded": false,
+      "isComparison": false,
+      "pass": false,
+      "pickName": "Galaxy Tab S10 Lite (Wi-Fi) Silver 128GB (SM-X400NZSAMEA)",
+      "cardPrice": 1399,
+      "comparePrice": null,
+      "cardStores": 1,
+      "compareStores": null,
+      "surface": "card",
+      "attrRead": true,
+      "unhonouredClaims": [],
+      "exactModel": null,
+      "exactVariant": null,
+      "isModelQuery": false,
+      "destination": "https://www.samsung.com/sa_en/tablets/galaxy-tab-s/galaxy-tab-s10-lite-silver-128gb-sm-x400nzsamea/buy/",
+      "notes": [
+        "no store name — only stubs: في",
+        "no compare link on the first result card",
+        "single-store (no compare page) — price check vacuous"
+      ]
+    }
+  ]
+}
