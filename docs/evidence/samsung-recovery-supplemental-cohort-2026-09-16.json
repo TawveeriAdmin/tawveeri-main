@@ -1,0 +1,702 @@
+{
+  "frozenAt": "2026-09-16T09:24:08.388Z",
+  "method": "Additional product families and up to three distinct shared categories per retailer, selected from frozen source evidence before recovery; no journey-result selection.",
+  "rows": [
+    {
+      "category": "mobile",
+      "model": "SM-S948BZVOMEA",
+      "label": "flagship",
+      "sourceProduct": {
+        "name_ar": "Galaxy S26 Ultra Cobalt Violet 512 GB (SM-S948BZVOMEA)",
+        "name_en": "Galaxy S26 Ultra Cobalt Violet 512 GB (SM-S948BZVOMEA)",
+        "brand": "Samsung",
+        "model": "SM-S948BZVOMEA",
+        "sku": "SM-S948BZVOMEA",
+        "current_price": 4899,
+        "original_price": 6299,
+        "availability": "in_stock",
+        "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-s26-ultra/buy/?modelCode=SM-S948BZVOMEA",
+        "image_urls": [
+          "https://images.samsung.com/is/image/samsung/p6pim/sa_en/s2602/gallery/sa-en-galaxy-s26-ultra-s948-sm-s948bzvomea-thumb-550802569"
+        ],
+        "category": "smartphone",
+        "description_ar": null,
+        "description_en": null,
+        "specifications": {
+          "raw": {
+            "Weight (g)": "214",
+            "CPU Speed": "4.74GHz, 3.6GHz"
+          },
+          "samsung_catalog": {
+            "type": "01010000",
+            "subcategory": "Galaxy S",
+            "model_code": "SM-S948BZVOMEA",
+            "variant": [
+              {
+                "fmyChipType": "COLOR",
+                "optionTypeSeq": "1",
+                "optionTypeCode": "CM001",
+                "fmyChipCode": "#686884",
+                "fmyChipName": "Cobalt Violet",
+                "fmyChipLocalName": "Cobalt Violet",
+                "multiColorYN": "N",
+                "multiColorList": null
+              },
+              {
+                "fmyChipType": "MOBILE MEMORY",
+                "optionTypeSeq": "1",
+                "optionTypeCode": "IM003",
+                "fmyChipCode": "512 GB",
+                "fmyChipName": "512 GB",
+                "fmyChipLocalName": "512 GB",
+                "multiColorYN": "N",
+                "multiColorList": null
+              }
+            ],
+            "stock_status": "inStock",
+            "purchase_cta": "buy",
+            "origin_url": "https://www.samsung.com/sa_en/smartphones/galaxy-s/galaxy-s26-ultra-cobalt-violet-512gb-sm-s948bzvomea/",
+            "source_url": "https://searchapi.samsung.com/v6/front/b2c/product/finder/global?type=01010000&siteCode=sa_en&start=1&num=12&sort=newest&onlyFilterInfoYN=N&keySummaryYN=Y",
+            "observed_at": "2026-09-16T07:23:07.408Z",
+            "source_method": "samsung_public_finder"
+          }
+        }
+      }
+    },
+    {
+      "category": "mobile",
+      "model": "SM-A276BLIIMEA",
+      "label": "midrange",
+      "sourceProduct": {
+        "name_ar": "Galaxy A27 5G Light Pink 128 GB (SM-A276BLIIMEA)",
+        "name_en": "Galaxy A27 5G Light Pink 128 GB (SM-A276BLIIMEA)",
+        "brand": "Samsung",
+        "model": "SM-A276BLIIMEA",
+        "sku": "SM-A276BLIIMEA",
+        "current_price": 1149,
+        "original_price": null,
+        "availability": "in_stock",
+        "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a27-5g-light-pink-128gb-sm-a276bliimea/",
+        "image_urls": [
+          "https://images.samsung.com/is/image/samsung/p6pim/sa_en/sm-a276bliimea/gallery/sa-en-galaxy-a27-5g-sm-a276-sm-a276bliimea-thumb-553569526"
+        ],
+        "category": "smartphone",
+        "description_ar": null,
+        "description_en": null,
+        "specifications": {
+          "raw": {
+            "Weight (g)": "200",
+            "CPU Speed": "2.4GHz, 1.8GHz"
+          },
+          "samsung_catalog": {
+            "type": "01010000",
+            "subcategory": "Galaxy A",
+            "model_code": "SM-A276BLIIMEA",
+            "variant": [
+              {
+                "fmyChipType": "COLOR",
+                "optionTypeSeq": "1",
+                "optionTypeCode": "CM001",
+                "fmyChipCode": "#f2dee9",
+                "fmyChipName": "Light Pink",
+                "fmyChipLocalName": "Light Pink",
+                "multiColorYN": "N",
+                "multiColorList": null
+              },
+              {
+                "fmyChipType": "MOBILE MEMORY",
+                "optionTypeSeq": "1",
+                "optionTypeCode": "IM003",
+                "fmyChipCode": "128 GB",
+                "fmyChipName": "128 GB",
+                "fmyChipLocalName": "128 GB",
+                "multiColorYN": "N",
+                "multiColorList": null
+              }
+            ],
+            "stock_status": "inStock",
+            "purchase_cta": null,
+            "origin_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a27-5g-light-pink-128gb-sm-a276bliimea/",
+            "source_url": "https://searchapi.samsung.com/v6/front/b2c/product/finder/global?type=01010000&siteCode=sa_en&start=1&num=12&sort=newest&onlyFilterInfoYN=N&keySummaryYN=Y",
+            "observed_at": "2026-09-16T07:23:07.408Z",
+            "source_method": "samsung_public_finder"
+          }
+        }
+      }
+    },
+    {
+      "category": "audio",
+      "model": "HW-Q930H/SA",
+      "label": "soundbar",
+      "sourceProduct": {
+        "name_ar": "Q-series Soundbar HW-Q930H 9.1.4ch Subwoofer & Rear Speaker (2026) Black (HW-Q930H/SA)",
+        "name_en": "Q-series Soundbar HW-Q930H 9.1.4ch Subwoofer & Rear Speaker (2026) Black (HW-Q930H/SA)",
+        "brand": "Samsung",
+        "model": "HW-Q930H/SA",
+        "sku": "HW-Q930H/SA",
+        "current_price": 2599,
+        "original_price": null,
+        "availability": "out_of_stock",
+        "product_url": "https://www.samsung.com/sa_en/audio-devices/soundbar/q930h-black-hw-q930h-sa/",
+        "image_urls": [
+          "https://images.samsung.com/is/image/samsung/p6pim/sa_en/hw-q930h-sa/gallery/sa-en-q-series-soundbar-hw-q930h-hw-q930h-sa-thumb-551587622"
+        ],
+        "category": "audio",
+        "description_ar": null,
+        "description_en": null,
+        "specifications": {
+          "raw": {},
+          "samsung_catalog": {
+            "type": "05010000",
+            "subcategory": "Soundbar",
+            "model_code": "HW-Q930H/SA",
+            "variant": [
+              {
+                "fmyChipType": "COLOR",
+                "optionTypeSeq": "1",
+                "optionTypeCode": "CM001",
+                "fmyChipCode": "#000000",
+                "fmyChipName": "Black",
+                "fmyChipLocalName": "Black",
+                "multiColorYN": "N",
+                "multiColorList": null
+              }
+            ],
+            "stock_status": "outOfStock",
+            "purchase_cta": null,
+            "origin_url": "https://www.samsung.com/sa_en/audio-devices/soundbar/q930h-black-hw-q930h-sa/",
+            "source_url": "https://searchapi.samsung.com/v6/front/b2c/product/finder/global?type=05010000&siteCode=sa_en&start=1&num=12&sort=newest&onlyFilterInfoYN=N&keySummaryYN=Y",
+            "observed_at": "2026-09-16T07:23:07.408Z",
+            "source_method": "samsung_public_finder"
+          }
+        }
+      }
+    },
+    {
+      "category": "washing_machine",
+      "model": "WW90DB8U94GBYL",
+      "label": "washer",
+      "sourceProduct": {
+        "name_ar": "9kg WW8400D Front load Washer with SmartThings AI Energy Mode and A-30% Extra Energy Efficiency Black 9 kg (WW90DB8U94GBYL)",
+        "name_en": "9kg WW8400D Front load Washer with SmartThings AI Energy Mode and A-30% Extra Energy Efficiency Black 9 kg (WW90DB8U94GBYL)",
+        "brand": "Samsung",
+        "model": "WW90DB8U94GBYL",
+        "sku": "WW90DB8U94GBYL",
+        "current_price": 3199,
+        "original_price": 5559,
+        "availability": "in_stock",
+        "product_url": "https://www.samsung.com/sa_en/washers-and-dryers/washing-machines/ww8400d-front-loading-smartthings-ai-energy-made-a-30-percent-extra-energy-efficiency-ai-ecobubble-9kg-black-ww90db8u94gbyl/",
+        "image_urls": [
+          "https://images.samsung.com/is/image/samsung/p6pim/sa_en/ww90db8u94gbyl/gallery/sa-en-ww8400d-ww90db8u94gbyl-thumb-548599469"
+        ],
+        "category": "appliance",
+        "description_ar": null,
+        "description_en": null,
+        "specifications": {
+          "raw": {
+            "Washing Capacity (kg)": "9.0 ",
+            "Bubble technology": "Yes",
+            "Net Dimension (WxHxD)(mm)": "600 x 850 x 595 ",
+            "Net Weight (kg)": "68 "
+          },
+          "samsung_catalog": {
+            "type": "08010000",
+            "subcategory": "Washing Machines",
+            "model_code": "WW90DB8U94GBYL",
+            "variant": [
+              {
+                "fmyChipType": "COLOR",
+                "optionTypeSeq": "1",
+                "optionTypeCode": "CM001",
+                "fmyChipCode": "#000000",
+                "fmyChipName": "Black",
+                "fmyChipLocalName": "Black",
+                "multiColorYN": "N",
+                "multiColorList": null
+              },
+              {
+                "fmyChipType": "WASHER AND DRYERS CAPACITY",
+                "optionTypeSeq": "1",
+                "optionTypeCode": "DA019",
+                "fmyChipCode": "9 kg",
+                "fmyChipName": "9 kg",
+                "fmyChipLocalName": "9 kg",
+                "multiColorYN": "N",
+                "multiColorList": null
+              }
+            ],
+            "stock_status": "inStock",
+            "purchase_cta": null,
+            "origin_url": "https://www.samsung.com/sa_en/washers-and-dryers/washing-machines/ww8400d-front-loading-smartthings-ai-energy-made-a-30-percent-extra-energy-efficiency-ai-ecobubble-9kg-black-ww90db8u94gbyl/",
+            "source_url": "https://searchapi.samsung.com/v6/front/b2c/product/finder/global?type=08010000&siteCode=sa_en&start=1&num=12&sort=newest&onlyFilterInfoYN=N&keySummaryYN=Y",
+            "observed_at": "2026-09-16T07:23:07.408Z",
+            "source_method": "samsung_public_finder"
+          }
+        }
+      }
+    },
+    {
+      "category": "washing_machine",
+      "model": "DV80T7220BX/YL",
+      "label": "dryer",
+      "sourceProduct": {
+        "name_ar": "8kg Inverter Heatpump Dryer Inox Color AI Control WIFI Hygiene Care Platinum Silver 8 kg (DV80T7220BX/YL)",
+        "name_en": "8kg Inverter Heatpump Dryer Inox Color AI Control WIFI Hygiene Care Platinum Silver 8 kg (DV80T7220BX/YL)",
+        "brand": "Samsung",
+        "model": "DV80T7220BX/YL",
+        "sku": "DV80T7220BX/YL",
+        "current_price": 2899,
+        "original_price": 4999,
+        "availability": "in_stock",
+        "product_url": "https://www.samsung.com/sa_en/washers-and-dryers/dryers/dv7000t-front-loading-ai-control-super-speed-hygiene-care-8kg-platinum-silver-dv80t7220bx-yl/",
+        "image_urls": [
+          "https://images.samsung.com/is/image/samsung/p6pim/sa_en/dv80t7220bx-yl/gallery/sa-en-dryer-dv90t7240bhs3-dv80t7220bx-yl-thumb-550492835"
+        ],
+        "category": "appliance",
+        "description_ar": null,
+        "description_en": null,
+        "specifications": {
+          "raw": {
+            "Drying Capacity (kg)": "8.0 kg",
+            "Energy Efficiency Class": "B",
+            "Physical specification": "600 x 850 x 600 mm",
+            "Net Weight (kg)": "50 kg"
+          },
+          "samsung_catalog": {
+            "type": "08010000",
+            "subcategory": "Dryers",
+            "model_code": "DV80T7220BX/YL",
+            "variant": [
+              {
+                "fmyChipType": "COLOR",
+                "optionTypeSeq": "1",
+                "optionTypeCode": "CM001",
+                "fmyChipCode": "#c3c3c3",
+                "fmyChipName": "Platinum Silver",
+                "fmyChipLocalName": "Inox Silver",
+                "multiColorYN": "N",
+                "multiColorList": null
+              },
+              {
+                "fmyChipType": "WASHER AND DRYERS CAPACITY",
+                "optionTypeSeq": "1",
+                "optionTypeCode": "DA019",
+                "fmyChipCode": "8 kg",
+                "fmyChipName": "8 kg",
+                "fmyChipLocalName": "8 kg",
+                "multiColorYN": "N",
+                "multiColorList": null
+              }
+            ],
+            "stock_status": "inStock",
+            "purchase_cta": null,
+            "origin_url": "https://www.samsung.com/sa_en/washers-and-dryers/dryers/dv7000t-front-loading-ai-control-super-speed-hygiene-care-8kg-platinum-silver-dv80t7220bx-yl/",
+            "source_url": "https://searchapi.samsung.com/v6/front/b2c/product/finder/global?type=08010000&siteCode=sa_en&start=1&num=12&sort=newest&onlyFilterInfoYN=N&keySummaryYN=Y",
+            "observed_at": "2026-09-16T07:23:07.408Z",
+            "source_method": "samsung_public_finder"
+          }
+        }
+      }
+    },
+    {
+      "category": "audio",
+      "model": "MX-ST50F/SA",
+      "label": "standalone-audio",
+      "sourceProduct": {
+        "name_ar": "Sound Tower MX-ST50F 240 watts Party Speaker Black (MX-ST50F/SA)",
+        "name_en": "Sound Tower MX-ST50F 240 watts Party Speaker Black (MX-ST50F/SA)",
+        "brand": "Samsung",
+        "model": "MX-ST50F/SA",
+        "sku": "MX-ST50F/SA",
+        "current_price": null,
+        "original_price": null,
+        "availability": "out_of_stock",
+        "product_url": "https://www.samsung.com/sa_en/audio-devices/sound-tower/st50f-black-mx-st50f-sa/",
+        "image_urls": [
+          "https://images.samsung.com/is/image/samsung/p6pim/sa_en/mx-st50f-sa/gallery/sa-en-mx-st50f-mx-st50f-sa-thumb-549787640"
+        ],
+        "category": "audio",
+        "description_ar": null,
+        "description_en": null,
+        "specifications": {
+          "raw": {},
+          "samsung_catalog": {
+            "type": "05010000",
+            "subcategory": "Sound Tower",
+            "model_code": "MX-ST50F/SA",
+            "variant": [
+              {
+                "fmyChipType": "COLOR",
+                "optionTypeSeq": "1",
+                "optionTypeCode": "CM001",
+                "fmyChipCode": "#000000",
+                "fmyChipName": "Black",
+                "fmyChipLocalName": "Black",
+                "multiColorYN": "N",
+                "multiColorList": null
+              }
+            ],
+            "stock_status": null,
+            "purchase_cta": null,
+            "origin_url": "https://www.samsung.com/sa_en/audio-devices/sound-tower/st50f-black-mx-st50f-sa/",
+            "source_url": "https://searchapi.samsung.com/v6/front/b2c/product/finder/global?type=05010000&siteCode=sa_en&start=1&num=12&sort=newest&onlyFilterInfoYN=N&keySummaryYN=Y",
+            "observed_at": "2026-09-16T07:23:07.408Z",
+            "source_method": "samsung_public_finder"
+          }
+        }
+      }
+    },
+    {
+      "category": "mobile",
+      "model": "SM-S942BZWOMEA",
+      "label": "shared-store-4",
+      "retailerUrl": "https://www.extra.com/en-sa/mobiles-tablets/mobiles/smartphone/samsung-galaxy-s26-5g-256-gb-white/p/100501231",
+      "retailerRawId": "2687304",
+      "sourceProduct": {
+        "name_ar": "Galaxy S26 White 256 GB (SM-S942BZWOMEA)",
+        "name_en": "Galaxy S26 White 256 GB (SM-S942BZWOMEA)",
+        "brand": "Samsung",
+        "model": "SM-S942BZWOMEA",
+        "sku": "SM-S942BZWOMEA",
+        "current_price": 3099,
+        "original_price": 3999,
+        "availability": "in_stock",
+        "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-s26/buy/?modelCode=SM-S942BZWOMEA",
+        "image_urls": [
+          "https://images.samsung.com/is/image/samsung/p6pim/sa_en/s2602/gallery/sa-en-galaxy-s26-s942-sm-s942bzwomea-thumb-550886225"
+        ],
+        "category": "smartphone",
+        "description_ar": null,
+        "description_en": null,
+        "specifications": {
+          "raw": {
+            "Weight (g)": "167",
+            "CPU Speed": "3.8GHz, 3.26GHz, 2.76GHz"
+          },
+          "samsung_catalog": {
+            "type": "01010000",
+            "subcategory": "Galaxy S",
+            "model_code": "SM-S942BZWOMEA",
+            "variant": [
+              {
+                "fmyChipType": "COLOR",
+                "optionTypeSeq": "1",
+                "optionTypeCode": "CM001",
+                "fmyChipCode": "#f3f4f5",
+                "fmyChipName": "White",
+                "fmyChipLocalName": "White",
+                "multiColorYN": "N",
+                "multiColorList": null
+              },
+              {
+                "fmyChipType": "MOBILE MEMORY",
+                "optionTypeSeq": "1",
+                "optionTypeCode": "IM003",
+                "fmyChipCode": "256 GB",
+                "fmyChipName": "256 GB",
+                "fmyChipLocalName": "256 GB",
+                "multiColorYN": "N",
+                "multiColorList": null
+              }
+            ],
+            "stock_status": "inStock",
+            "purchase_cta": "buy",
+            "origin_url": "https://www.samsung.com/sa_en/smartphones/galaxy-s/galaxy-s26-white-256gb-sm-s942bzwomea/",
+            "source_url": "https://searchapi.samsung.com/v6/front/b2c/product/finder/global?type=01010000&siteCode=sa_en&start=1&num=12&sort=newest&onlyFilterInfoYN=N&keySummaryYN=Y",
+            "observed_at": "2026-09-16T07:23:07.408Z",
+            "source_method": "samsung_public_finder"
+          }
+        }
+      }
+    },
+    {
+      "category": "monitor",
+      "model": "LS32FG502EMXUE",
+      "label": "shared-store-4",
+      "retailerUrl": "https://www.extra.com/en-sa/computer/monitors/gaming/samsung-odyssey-g5-g50f-gaming-flat-monitor-32-inch-qhd-180hz-ips-black/p/100487903",
+      "retailerRawId": "2578566",
+      "sourceProduct": {
+        "name_ar": "32\" Odyssey G5 G50F QHD 180Hz Gaming Monitor 32\" (LS32FG502EMXUE)",
+        "name_en": "32\" Odyssey G5 G50F QHD 180Hz Gaming Monitor 32\" (LS32FG502EMXUE)",
+        "brand": "Samsung",
+        "model": "LS32FG502EMXUE",
+        "sku": "LS32FG502EMXUE",
+        "current_price": 1399,
+        "original_price": null,
+        "availability": "in_stock",
+        "product_url": "https://www.samsung.com/sa_en/monitors/gaming/odyssey-g5-g50f-32-inch-180hz-qhd-ls32fg502emxue/",
+        "image_urls": [
+          "https://images.samsung.com/is/image/samsung/p6pim/sa_en/ls32fg502emxue/gallery/sa-en-odyssey-g5-g50f-ls32fg502emxue-thumb-550524683"
+        ],
+        "category": "monitor",
+        "description_ar": null,
+        "description_en": null,
+        "specifications": {
+          "raw": {
+            "Resolution": "QHD (2,560 x 1,440)",
+            "Aspect Ratio": "16:9",
+            "Brightness (Typical)": "300",
+            "Contrast Ratio Static": "1000 : 1 (Typ.)",
+            "Response Time": "1ms(GTG)"
+          },
+          "samsung_catalog": {
+            "type": "07010000",
+            "subcategory": "Gaming",
+            "model_code": "LS32FG502EMXUE",
+            "variant": [
+              {
+                "fmyChipType": "MONITOR SCREEN SIZE",
+                "optionTypeSeq": "1",
+                "optionTypeCode": "VD018",
+                "fmyChipCode": "32\"",
+                "fmyChipName": "32\"",
+                "fmyChipLocalName": "32\"",
+                "multiColorYN": "N",
+                "multiColorList": null
+              }
+            ],
+            "stock_status": "inStock",
+            "purchase_cta": null,
+            "origin_url": "https://www.samsung.com/sa_en/monitors/gaming/odyssey-g5-g50f-32-inch-180hz-qhd-ls32fg502emxue/",
+            "source_url": "https://searchapi.samsung.com/v6/front/b2c/product/finder/global?type=07010000&siteCode=sa_en&start=1&num=12&sort=newest&onlyFilterInfoYN=N&keySummaryYN=Y",
+            "observed_at": "2026-09-16T07:23:07.408Z",
+            "source_method": "samsung_public_finder"
+          }
+        }
+      }
+    },
+    {
+      "category": "smartwatch",
+      "model": "SM-L330NDAAMEA",
+      "label": "shared-store-4",
+      "retailerUrl": "https://www.extra.com/en-sa/mobiles-tablets/wearable/smart-watches/samsung-galaxy-watch-8-44mm-gray/p/100461090",
+      "retailerRawId": "2625067",
+      "sourceProduct": {
+        "name_ar": "Galaxy Watch8 (Bluetooth 44 mm) Graphite (SM-L330NDAAMEA)",
+        "name_en": "Galaxy Watch8 (Bluetooth 44 mm) Graphite (SM-L330NDAAMEA)",
+        "brand": "Samsung",
+        "model": "SM-L330NDAAMEA",
+        "sku": "SM-L330NDAAMEA",
+        "current_price": 1299,
+        "original_price": null,
+        "availability": "in_stock",
+        "product_url": "https://www.samsung.com/sa_en/watches/galaxy-watch/galaxy-watch8-44mm-graphite-bluetooth-sm-l330ndaamea/",
+        "image_urls": [
+          "https://images.samsung.com/is/image/samsung/p6pim/sa_en/f2507/gallery/sa-en-galaxy-watch8-l330-sm-l330ndaamea-thumb-547652619"
+        ],
+        "category": "wearable",
+        "description_ar": null,
+        "description_en": null,
+        "specifications": {
+          "raw": {},
+          "samsung_catalog": {
+            "type": "01030000",
+            "subcategory": "Galaxy Watch",
+            "model_code": "SM-L330NDAAMEA",
+            "variant": [
+              {
+                "fmyChipType": "COLOR",
+                "optionTypeSeq": "1",
+                "optionTypeCode": "CM001",
+                "fmyChipCode": "#5b6166",
+                "fmyChipName": "Graphite",
+                "fmyChipLocalName": "Graphite",
+                "multiColorYN": "N",
+                "multiColorList": null
+              }
+            ],
+            "stock_status": "inStock",
+            "purchase_cta": null,
+            "origin_url": "https://www.samsung.com/sa_en/watches/galaxy-watch/galaxy-watch8-44mm-graphite-bluetooth-sm-l330ndaamea/",
+            "source_url": "https://searchapi.samsung.com/v6/front/b2c/product/finder/global?type=01030000&siteCode=sa_en&start=1&num=12&sort=newest&onlyFilterInfoYN=N&keySummaryYN=Y",
+            "observed_at": "2026-09-16T07:23:07.408Z",
+            "source_method": "samsung_public_finder"
+          }
+        }
+      }
+    },
+    {
+      "category": "mobile",
+      "model": "SM-A176BZAEMEA",
+      "label": "shared-store-5",
+      "retailerUrl": "https://m.dev-almanea.com/samsung-galaxy-a17-5g-4gb-128gb-gray-p-170100501025155",
+      "retailerRawId": "2695103",
+      "sourceProduct": {
+        "name_ar": "Galaxy A17 5G Gray 128 GB (SM-A176BZAEMEA)",
+        "name_en": "Galaxy A17 5G Gray 128 GB (SM-A176BZAEMEA)",
+        "brand": "Samsung",
+        "model": "SM-A176BZAEMEA",
+        "sku": "SM-A176BZAEMEA",
+        "current_price": 949,
+        "original_price": null,
+        "availability": "in_stock",
+        "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a17-5g-gray-128gb-sm-a176bzaemea/",
+        "image_urls": [
+          "https://images.samsung.com/is/image/samsung/p6pim/sa_en/sm-a176bzaemea/gallery/sa-en-galaxy-a17-5g-sm-a176-sm-a176bzaemea-thumb-548547573"
+        ],
+        "category": "smartphone",
+        "description_ar": null,
+        "description_en": null,
+        "specifications": {
+          "raw": {
+            "Weight (g)": "192",
+            "CPU Speed": "2.4GHz, 2GHz"
+          },
+          "samsung_catalog": {
+            "type": "01010000",
+            "subcategory": "Galaxy A",
+            "model_code": "SM-A176BZAEMEA",
+            "variant": [
+              {
+                "fmyChipType": "COLOR",
+                "optionTypeSeq": "1",
+                "optionTypeCode": "CM001",
+                "fmyChipCode": "#9b9ca1",
+                "fmyChipName": "Gray",
+                "fmyChipLocalName": "Gray",
+                "multiColorYN": "N",
+                "multiColorList": null
+              },
+              {
+                "fmyChipType": "MOBILE MEMORY",
+                "optionTypeSeq": "1",
+                "optionTypeCode": "IM003",
+                "fmyChipCode": "128 GB",
+                "fmyChipName": "128 GB",
+                "fmyChipLocalName": "128 GB",
+                "multiColorYN": "N",
+                "multiColorList": null
+              }
+            ],
+            "stock_status": "inStock",
+            "purchase_cta": null,
+            "origin_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a17-5g-gray-128gb-sm-a176bzaemea/",
+            "source_url": "https://searchapi.samsung.com/v6/front/b2c/product/finder/global?type=01010000&siteCode=sa_en&start=1&num=12&sort=newest&onlyFilterInfoYN=N&keySummaryYN=Y",
+            "observed_at": "2026-09-16T07:23:07.408Z",
+            "source_method": "samsung_public_finder"
+          }
+        }
+      }
+    },
+    {
+      "category": "tablet",
+      "model": "SM-X620NZAAMEA",
+      "label": "shared-store-5",
+      "retailerUrl": "https://m.dev-almanea.com/samsung-galaxy-tab-s10-fe-plus-wifi-13-1-inch-128gb-grey-p-170100502025022",
+      "retailerRawId": "2500844",
+      "sourceProduct": {
+        "name_ar": "Galaxy Tab S10 FE+ (Wi-Fi) Gray 128 GB (SM-X620NZAAMEA)",
+        "name_en": "Galaxy Tab S10 FE+ (Wi-Fi) Gray 128 GB (SM-X620NZAAMEA)",
+        "brand": "Samsung",
+        "model": "SM-X620NZAAMEA",
+        "sku": "SM-X620NZAAMEA",
+        "current_price": 2549,
+        "original_price": 2999,
+        "availability": "in_stock",
+        "product_url": "https://www.samsung.com/sa_en/tablets/galaxy-tab-s/galaxy-tab-s10-fe-plus-gray-128gb-sm-x620nzaamea/",
+        "image_urls": [
+          "https://images.samsung.com/is/image/samsung/p6pim/sa_en/sm-x620nzaamea/gallery/sa-en-galaxy-tab-s10-fe-plus-sm-x626-545870-sm-x620nzaamea-thumb-550525376"
+        ],
+        "category": "tablet",
+        "description_ar": null,
+        "description_en": null,
+        "specifications": {
+          "raw": {
+            "Size (Main Display)": "13.1\" (332.8mm)",
+            "Main Camera - Resolution": "13.0 MP",
+            "Weight (g)": "664",
+            "CPU Speed": "2.9GHz, 2.6GHz, 1.9GHz"
+          },
+          "samsung_catalog": {
+            "type": "01020000",
+            "subcategory": "Galaxy Tab S",
+            "model_code": "SM-X620NZAAMEA",
+            "variant": [
+              {
+                "fmyChipType": "COLOR",
+                "optionTypeSeq": "1",
+                "optionTypeCode": "CM001",
+                "fmyChipCode": "#75787b",
+                "fmyChipName": "Gray",
+                "fmyChipLocalName": "Gray",
+                "multiColorYN": "N",
+                "multiColorList": null
+              },
+              {
+                "fmyChipType": "MOBILE MEMORY",
+                "optionTypeSeq": "1",
+                "optionTypeCode": "IM003",
+                "fmyChipCode": "128 GB",
+                "fmyChipName": "128 GB",
+                "fmyChipLocalName": "128 GB",
+                "multiColorYN": "N",
+                "multiColorList": null
+              }
+            ],
+            "stock_status": "inStock",
+            "purchase_cta": null,
+            "origin_url": "https://www.samsung.com/sa_en/tablets/galaxy-tab-s/galaxy-tab-s10-fe-plus-gray-128gb-sm-x620nzaamea/",
+            "source_url": "https://searchapi.samsung.com/v6/front/b2c/product/finder/global?type=01020000&siteCode=sa_en&start=1&num=12&sort=newest&onlyFilterInfoYN=N&keySummaryYN=Y",
+            "observed_at": "2026-09-16T07:23:07.408Z",
+            "source_method": "samsung_public_finder"
+          }
+        }
+      }
+    },
+    {
+      "category": "audio",
+      "model": "SM-R420NZAAMEA",
+      "label": "shared-store-5",
+      "retailerUrl": "https://www.almanea.sa/en/product/p-170100508999001",
+      "retailerRawId": "2689713",
+      "sourceProduct": {
+        "name_ar": "Galaxy Buds3 FE Gray (SM-R420NZAAMEA)",
+        "name_en": "Galaxy Buds3 FE Gray (SM-R420NZAAMEA)",
+        "brand": "Samsung",
+        "model": "SM-R420NZAAMEA",
+        "sku": "SM-R420NZAAMEA",
+        "current_price": 499,
+        "original_price": null,
+        "availability": "in_stock",
+        "product_url": "https://www.samsung.com/sa_en/audio-sound/galaxy-buds/galaxy-buds3-fe-gray-sm-r420nzaamea/",
+        "image_urls": [
+          "https://images.samsung.com/is/image/samsung/p6pim/sa_en/sm-r420nzaamea/gallery/sa-en-galaxy-buds3-fe-sm-r420nzaamea-thumb-548830782"
+        ],
+        "category": "audio",
+        "description_ar": null,
+        "description_en": null,
+        "specifications": {
+          "raw": {
+            "Earbud Weight (g)": "5",
+            "Bluetooth Version": "Bluetooth v5.4",
+            "Sensors": "Hall Sensor, Pressure Sensor, Proximity Sensor, Touch Sensor",
+            "Durability": "IP54"
+          },
+          "samsung_catalog": {
+            "type": "01040000",
+            "subcategory": "Galaxy Buds",
+            "model_code": "SM-R420NZAAMEA",
+            "variant": [
+              {
+                "fmyChipType": "COLOR",
+                "optionTypeSeq": "1",
+                "optionTypeCode": "CM001",
+                "fmyChipCode": "#c8ccca",
+                "fmyChipName": "Gray",
+                "fmyChipLocalName": "Gray",
+                "multiColorYN": "N",
+                "multiColorList": null
+              }
+            ],
+            "stock_status": "inStock",
+            "purchase_cta": null,
+            "origin_url": "https://www.samsung.com/sa_en/audio-sound/galaxy-buds/galaxy-buds3-fe-gray-sm-r420nzaamea/",
+            "source_url": "https://searchapi.samsung.com/v6/front/b2c/product/finder/global?type=01040000&siteCode=sa_en&start=1&num=12&sort=newest&onlyFilterInfoYN=N&keySummaryYN=Y",
+            "observed_at": "2026-09-16T07:23:07.408Z",
+            "source_method": "samsung_public_finder"
+          }
+        }
+      }
+    }
+  ]
+}

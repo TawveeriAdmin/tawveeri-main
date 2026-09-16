@@ -35,6 +35,8 @@ describe('Samsung manufacturer model identity', () => {
     const identity = samsungManufacturerIdentity(6, product('AR18TSECCWK/MG'))!;
     const verified = new Map([[identity.model, identity]]);
     expect(samsungDeclaredModelIdentity('samsung', { modelNumber: 'AR18TSECCWK/MG', sku: '123456789' }, verified)?.key).toBe(identity.key);
+    expect(samsungDeclaredModelIdentity('سامسونج', { model: 'AR18TSECCWK/MG', sku: '170200505432002' }, verified)?.key).toBe(identity.key);
+    expect(samsungDeclaredModelIdentity('سامسونج', { model: 'AR18TSECCWK' }, verified)).toBeNull();
     expect(samsungDeclaredModelIdentity('samsung', { model: 'AR18TSECCWK' }, verified)).toBeNull();
     expect(samsungDeclaredModelIdentity('samsung', { model: 'AR18TSECCWK/SA' }, verified)).toBeNull();
     expect(samsungDeclaredModelIdentity('lg', { model: identity.model }, verified)).toBeNull();

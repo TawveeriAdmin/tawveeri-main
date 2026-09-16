@@ -15,7 +15,7 @@ import { isValidGtin } from "../../src/lib/enrichment/icecat";
 import { isAccessoryOnlyAudioTitle } from "../../src/lib/scraping/utils/category-utils";
 import { assessPriceTransition } from "../../src/lib/intelligence/price-truth-gate";
 import { fetchAllPaginated } from "../../src/lib/database/paginated-fetch";
-import { samsungManufacturerIdentity, samsungCatalogExclusion, samsungDeclaredModelIdentity, type SamsungVerifiedModel } from "./samsung-manufacturer-identity";
+import { samsungManufacturerIdentity, samsungCatalogExclusion, samsungDeclaredModelIdentity, isSamsungManufacturerBrand, type SamsungVerifiedModel } from "./samsung-manufacturer-identity";
 
 export function stableUuid(seed: string): string {
   const h = createHash("sha256").update(seed).digest("hex");
@@ -285,7 +285,7 @@ export async function normalizeSweep(sb: SupabaseClient, defs: CategoryDef[], li
       }
       const { nameAr, nameEn, brand, url } = adaptRow(p, row.raw_name);
       let manufacturer = samsungManufacturerIdentity(row.store_id, p);
-      if (!manufacturer && row.store_id !== 6 && brand?.toLowerCase() === 'samsung'
+      if (!manufacturer && row.store_id !== 6 && isSamsungManufacturerBrand(brand)
           && [p.model, p.modelNumber, p.model_number, p.mpn, p.sku].some(value => typeof value === 'string' && value.length >= 8)) {
         manufacturer = samsungDeclaredModelIdentity(brand, p, await loadVerifiedSamsungModels());
       }

@@ -1,0 +1,1969 @@
+{
+  "startedAt": "2026-09-16T09:25:49.392Z",
+  "base": "https://tawveeri.com",
+  "phase": "supplemental-before",
+  "apiOnly": true,
+  "cohortFrozenAt": "2026-09-16T09:24:08.388Z",
+  "method": "Real search/compare APIs and rendered pages; merchant destination resolved through the exact NPO UUID without generating an outbound click.",
+  "rows": [
+    {
+      "model": "SM-S948BZVOMEA",
+      "category": "mobile",
+      "observedAt": "2026-09-16T09:25:49.398Z",
+      "sourceAtFreeze": {
+        "price": 4899,
+        "availability": "in_stock"
+      },
+      "searchStatus": 200,
+      "search": [
+        {
+          "name": "50 Inch Smart TV FX50FHD-SM | Full HD 1080p, Android, WiFi, 144Hz, Screen Sharing, HDMI & USB, 2 Year Warranty",
+          "price": 950,
+          "stores": [
+            {
+              "store": "نون",
+              "store_name": "نون",
+              "current_price": 950,
+              "original_price": 1299,
+              "availability": "in_stock",
+              "product_url": "https://www.noon.com/saudi-en/50-inch-smart-tv-fx50fhd-sm-full-hd-1080p-android-wifi-144hz-screen-sharing-hdmi-usb-2-year-warranty/Z6D86513A1B0345924CF5Z/p/"
+            }
+          ]
+        },
+        {
+          "name": "Samsung Galaxy Watch 8 Classic 46mm SM-L500NZWAMEA-White",
+          "price": 1398.998001,
+          "stores": [
+            {
+              "store": "المنيع",
+              "store_name": "المنيع",
+              "current_price": 1398.998001,
+              "original_price": 1948.997001,
+              "availability": "in_stock",
+              "product_url": "https://www.almanea.sa/en/product/p-170100503999032"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy Buds Core Black (SM-R410NZKAMEA)",
+          "price": 199,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 199,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/audio-sound/galaxy-buds/galaxy-buds-core-black-sm-r410nzkamea/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy Buds Core White (SM-R410NZWAMEA)",
+          "price": 199,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 199,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/audio-sound/galaxy-buds/galaxy-buds-core-white-sm-r410nzwamea/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy Fit3 Gray Bluetooth V5 3 (SM-R390NZAAMEA)",
+          "price": 229,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 229,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/watches/galaxy-fit/galaxy-fit3-gray-bluetooth-v5-3-sm-r390nzaamea/buy/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy Fit3 Silver Bluetooth V5 3 (SM-R390NZSAMEA)",
+          "price": 229,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 229,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/watches/galaxy-fit/galaxy-fit3-silver-bluetooth-v5-3-sm-r390nzsamea/buy/"
+            }
+          ]
+        },
+        {
+          "name": "Samsung Galaxy Watch 8 Ultra 2025 SM-L705FZA1KSA-Gray",
+          "price": 1799.002501,
+          "stores": [
+            {
+              "store": "المنيع",
+              "store_name": "المنيع",
+              "current_price": 1799.002501,
+              "original_price": 2498.996001,
+              "availability": "in_stock",
+              "product_url": "https://www.almanea.sa/en/product/p-170100503999034"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy Buds3 FE Black (SM-R420NZKAMEA)",
+          "price": 499,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 499,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/audio-sound/galaxy-buds/galaxy-buds3-fe-black-sm-r420nzkamea/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy Buds3 FE Gray (SM-R420NZAAMEA)",
+          "price": 499,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 499,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/audio-sound/galaxy-buds/galaxy-buds3-fe-gray-sm-r420nzaamea/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy A07 Black 64GB (SM-A075FZKDMEA)",
+          "price": 599,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 599,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a07-black-64gb-sm-a075fzkdmea/buy/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy A07 Green 64GB (SM-A075FZGDMEA)",
+          "price": 599,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 599,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a07-green-64gb-sm-a075fzgdmea/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy A07 Light Violet 64GB (SM-A075FLVDMEA)",
+          "price": 599,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 599,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a07-light-violet-64gb-sm-a075flvdmea/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy A16 Black 128GB (SM-A165FZKDMEA)",
+          "price": 619,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 619,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a16-black-128gb-sm-a165fzkdmea/buy/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy A16 Light Green 128GB (SM-A165FLGDMEA)",
+          "price": 619,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 619,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a16-light-green-128gb-sm-a165flgdmea/buy/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy A16 Light Gray 128GB (SM-A165FZADMEA)",
+          "price": 619,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 619,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a16-light-gray-128gb-sm-a165fzadmea/buy/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy Tab A11 (LTE) Gray 64GB (SM-X135GZAAMEA)",
+          "price": 649,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 649,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/tablets/galaxy-tab-a/galaxy-tab-a11-gray-64gb-sm-x135gzaamea/buy/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy Tab A11 (LTE) Silver 64GB (SM-X135GZSAMEA)",
+          "price": 649,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 649,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/tablets/galaxy-tab-a/galaxy-tab-a11-silver-64gb-sm-x135gzsamea/buy/"
+            }
+          ]
+        },
+        {
+          "name": "Tablet Samsung SM X130NZAAEUE GALAXY TAB A11 Gray",
+          "price": 688.92,
+          "stores": [
+            {
+              "store": "أمازون",
+              "store_name": "أمازون",
+              "current_price": 688.92,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.amazon.sa/-/en/Tablet-Samsung-X130NZAAEUE-GALAXY-Gray/dp/B0FWS4GKZ8/ref=sr_1_73?dib=eyJ2IjoiMSJ9.8TRnsm5j8WEMWAbr6PSdxlST5sWcloSuRG8Pw9rRNkWM7TGHOZGBoNxzmb8uJSiVSHUr50lRKhyE03s6FC0j90QlRJpS_IjCbCuQal_ALHEK5DB0aEjUKRPd2m1cwRC8kUQyzUjqWbEOkxdc3-z65bvGrhseFxOo2Sr8mmN8GEs1VIqVgztDNmQsuWQ87vSQv8KiL8nV02iLzwemQ3kZsP1aezi9GX9JopENUC1mmcwOGIPQynSOXcgRrDWhGj5JA9tPpo3neaRz3cvmWv_M0fpHw7raI-a80SiiQ6XwPCQ.EbMSM92qnLQmRhYsmkRphqZol44qohrM4ZCA43abyLI&dib_tag=se&keywords=%D8%AA%D8%A7%D8%A8%D9%84%D8%AA&qid=1789171728&sr=8-73"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy A07 Green 128GB (SM-A075FZGGMEA)",
+          "price": 739,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 739,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a07-green-128gb-sm-a075fzggmea/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy A07 Black 128GB (SM-A075FZKGMEA)",
+          "price": 739,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 739,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a07-black-128gb-sm-a075fzkgmea/buy/"
+            }
+          ]
+        }
+      ],
+      "samsungOffers": [],
+      "compareStatus": 404,
+      "comparison": {
+        "error": "Canonical product not found"
+      }
+    },
+    {
+      "model": "SM-A276BLIIMEA",
+      "category": "mobile",
+      "observedAt": "2026-09-16T09:25:52.208Z",
+      "sourceAtFreeze": {
+        "price": 1149,
+        "availability": "in_stock"
+      },
+      "searchStatus": 200,
+      "search": [
+        {
+          "name": "Galaxy A27 5G Light Pink 128GB (SM-A276BLIIMEA)",
+          "price": 1149,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 1149,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a27-5g-light-pink-128gb-sm-a276bliimea/"
+            }
+          ]
+        }
+      ],
+      "samsungOffers": [
+        {
+          "store": "سامسونج السعودية",
+          "store_name": "سامسونج السعودية",
+          "current_price": 1149,
+          "original_price": null,
+          "availability": "in_stock",
+          "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a27-5g-light-pink-128gb-sm-a276bliimea/"
+        }
+      ],
+      "compareStatus": 404,
+      "comparison": {
+        "error": "Canonical product not found"
+      }
+    },
+    {
+      "model": "HW-Q930H/SA",
+      "category": "audio",
+      "observedAt": "2026-09-16T09:25:53.326Z",
+      "sourceAtFreeze": {
+        "price": 2599,
+        "availability": "out_of_stock"
+      },
+      "searchStatus": 200,
+      "search": [
+        {
+          "name": "Sades SL-Sealion PRO 27\" FHD IPS Gaming Monitor | 144Hz, 1ms Response, Adaptive Sync | Full HD 1920x1080 | Black | HDR, Eye-Care Technology",
+          "price": 489,
+          "stores": [
+            {
+              "store": "نون",
+              "store_name": "نون",
+              "current_price": 489,
+              "original_price": 799,
+              "availability": "in_stock",
+              "product_url": "https://www.noon.com/saudi-en/sades-sl-sealion-pro-27-fhd-ips-gaming-monitor-144hz-1ms-response-adaptive-sync-full-hd-1920x1080-black-hdr-eye-care-technology/ZB3B8D3D0CA398E139378Z/p/"
+            },
+            {
+              "store": "أمازون",
+              "store_name": "أمازون",
+              "current_price": 489,
+              "original_price": null,
+              "availability": "limited_stock",
+              "product_url": "https://www.amazon.sa/-/en/SL-Sealion-Response-Adaptive-1920x1080-Technology/dp/B0FNKJXNJJ/ref=sr_1_96?dib=eyJ2IjoiMSJ9.1ObWnfoVY-eYnwWEKP6baO3YAfviPWAPiXPe5VazMm0jD3wTB4fXlEhHLuksioVccGNmVYcjZd9elqNPEAtI7O9Vqje2AP7c0rkyLBNuZgC9EI0c3QUZK6Y4zZlaVWZldj3usscr9MjP96eP_YPZCsDDzbMsxHjGtpsC4xW4fXHoULeigUecp-1n_3EElvqq-vtn2qCShHl_frCSZZfQzlIg2n-B0nSE_TOz1NeH-pKgbKHvNQMhBzkpT6s9r7TEeouoyrYd9obyWaLDgAdn2WxdziLpDI_rwLV5tD-fXto.Tplz7CFUaWNq0alTa1eIVoPHvK5SvG4wAwNl4Wiv1cw&dib_tag=se&keywords=%D8%B4%D8%A7%D8%B4%D8%A9&qid=1785737358&sr=8-96"
+            }
+          ]
+        },
+        {
+          "name": "SAFE by PanzerGlass Bling Bumper Apple Watch 3rd Gen, 45mm, Silver",
+          "price": 25,
+          "stores": [
+            {
+              "store": "اكسترا",
+              "store_name": "اكسترا",
+              "current_price": 25,
+              "original_price": 59,
+              "availability": "in_stock",
+              "product_url": "https://www.extra.com/en-sa/mobiles-tablets/wearable/accessories/safe-by-panzerglass-bling-bumper-apple-watch-3rd-gen-45mm-silver/p/100379509"
+            }
+          ]
+        },
+        {
+          "name": "SAFE by PanzerGlass Bling Bumper Apple Watch 3rd Gen, 41mm, Gold",
+          "price": 25,
+          "stores": [
+            {
+              "store": "اكسترا",
+              "store_name": "اكسترا",
+              "current_price": 25,
+              "original_price": 59,
+              "availability": "in_stock",
+              "product_url": "https://www.extra.com/en-sa/mobiles-tablets/wearable/accessories/safe-by-panzerglass-bling-bumper-apple-watch-3rd-gen-41mm-gold/p/100379669"
+            }
+          ]
+        },
+        {
+          "name": "SAMSUNG Galaxy Flip 6 Protection Film, Clear",
+          "price": 26,
+          "stores": [
+            {
+              "store": "اكسترا",
+              "store_name": "اكسترا",
+              "current_price": 26,
+              "original_price": 87,
+              "availability": "in_stock",
+              "product_url": "https://www.extra.com/en-sa/mobiles-tablets/mobile-accessories/screen-protector/samsung-galaxy-flip-6-protection-film-clear/p/100371079"
+            }
+          ]
+        },
+        {
+          "name": "SAFE by PanzerGlass Bling Bumper Apple Watch Ultra 3rd Gen, Silver",
+          "price": 35,
+          "stores": [
+            {
+              "store": "اكسترا",
+              "store_name": "اكسترا",
+              "current_price": 35,
+              "original_price": 59,
+              "availability": "in_stock",
+              "product_url": "https://www.extra.com/en-sa/mobiles-tablets/wearable/accessories/safe-by-panzerglass-bling-bumper-apple-watch-ultra-3rd-gen-silver/p/100379670"
+            }
+          ]
+        },
+        {
+          "name": "SanDisk Cruzer Blade USB Flash Drive 64GB, Black, SDCZ50-064G-B35",
+          "price": 37.48,
+          "stores": [
+            {
+              "store": "أمازون السعودية",
+              "store_name": "أمازون السعودية",
+              "current_price": 37.48,
+              "original_price": 56.41,
+              "availability": "in_stock",
+              "product_url": "https://www.amazon.sa/dp/B00BX5FOCK?tag=tawveeri-21"
+            }
+          ]
+        },
+        {
+          "name": "Samsung Galaxy S26 Plus Anti-Reflecting Film, Clear",
+          "price": 49,
+          "stores": [
+            {
+              "store": "اكسترا",
+              "store_name": "اكسترا",
+              "current_price": 49,
+              "original_price": 89,
+              "availability": "in_stock",
+              "product_url": "https://www.extra.com/en-sa/mobiles-tablets/mobile-accessories/screen-protector/samsung-galaxy-s26-plus-anti-reflecting-film-clear/p/100503823"
+            }
+          ]
+        },
+        {
+          "name": "Sandwich Maker With Grill Plate 2 Slices 750 W E05328 Black",
+          "price": 53.2,
+          "stores": [
+            {
+              "store": "نون",
+              "store_name": "نون",
+              "current_price": 53.2,
+              "original_price": 120,
+              "availability": "in_stock",
+              "product_url": "https://www.noon.com/saudi-en/sandwich-maker-with-grill-plate-2-slices-750-w-e05328-black/N45409743A/p/"
+            }
+          ]
+        },
+        {
+          "name": "Sandwich Maker 750 W DLC-600 Black",
+          "price": 63,
+          "stores": [
+            {
+              "store": "نون",
+              "store_name": "نون",
+              "current_price": 63,
+              "original_price": 68,
+              "availability": "in_stock",
+              "product_url": "https://www.noon.com/saudi-en/sandwich-maker-750-w-dlc-600-black/N70081024V/p/"
+            }
+          ]
+        },
+        {
+          "name": "Sandwich Maker 700 W NST1107A1 White",
+          "price": 63.17,
+          "stores": [
+            {
+              "store": "نون",
+              "store_name": "نون",
+              "current_price": 63.17,
+              "original_price": 179,
+              "availability": "in_stock",
+              "product_url": "https://www.noon.com/saudi-en/sandwich-maker-700-w-nst1107a1-white/N19520113A/p/"
+            }
+          ]
+        },
+        {
+          "name": "Sandwich maker multifunctional household light breakfast machine toast toaster waffle maker press toaster",
+          "price": 64,
+          "stores": [
+            {
+              "store": "نون",
+              "store_name": "نون",
+              "current_price": 64,
+              "original_price": 155,
+              "availability": "in_stock",
+              "product_url": "https://www.noon.com/saudi-en/sandwich-maker-multifunctional-household-light-breakfast-machine-toast-toaster-waffle-maker-press-toaster/ZE85374AACC56FF604B0CZ/p/"
+            }
+          ]
+        },
+        {
+          "name": "Samsung Galaxy S26 Anti-Reflecting Film, Clear",
+          "price": 69,
+          "stores": [
+            {
+              "store": "اكسترا",
+              "store_name": "اكسترا",
+              "current_price": 69,
+              "original_price": 89,
+              "availability": "in_stock",
+              "product_url": "https://www.extra.com/en-sa/mobiles-tablets/mobile-accessories/screen-protector/samsung-galaxy-s26-anti-reflecting-film-clear/p/100503829"
+            }
+          ]
+        },
+        {
+          "name": "Samsung Galaxy S26 Ultra Anti-Reflecting Film, Clear",
+          "price": 79,
+          "stores": [
+            {
+              "store": "اكسترا",
+              "store_name": "اكسترا",
+              "current_price": 79,
+              "original_price": 89,
+              "availability": "in_stock",
+              "product_url": "https://www.extra.com/en-sa/mobiles-tablets/mobile-accessories/screen-protector/samsung-galaxy-s26-ultra-anti-reflecting-film-clear/p/100503825"
+            }
+          ]
+        },
+        {
+          "name": "Samsung Entry 24-Inch 100Hz IPS Full HD Essential Flat Monitor, Black",
+          "price": 329,
+          "stores": [
+            {
+              "store": "أمازون",
+              "store_name": "أمازون",
+              "current_price": 329,
+              "original_price": 599,
+              "availability": "in_stock",
+              "product_url": "https://www.amazon.sa/-/en/Samsung-Entry-24-Inch-Essential-Monitor/dp/B0DX6STQQH/ref=sr_1_41?dib=eyJ2IjoiMSJ9.AROIv-61e4V7VcWGrv8gptIoJKyKTWuDM-0LaecEhnVER0z6ZQ46Kl_AAV41uSjTiJvxbPzjeQHEzaugJogiyHz9n6f7u-gNecOj3RTZKnd7LGgtxmN-R1JE11ocWf6-wQjEOacLfQi0c39ZhTOsmTtHC1KFozFgTCSdrdO8oknH2R1tgoyv4dhiILmFS8ph5wKl6Kw6osiKaN2KGHAb-04dRurfLORkwtzhLQWoM2x762w8sewm61kF3BdbluCGzmqlak02Fb4GtT655AcUVkBMwrMxEtI2LH4D8zWHz2Y.w2ln7i8gcKFWaIgpX1egkUhtTDlxEba1l4TK4GBQGtU&dib_tag=se&keywords=%D8%B4%D8%A7%D8%B4%D8%A9&qid=1785780520&sr=8-41"
+            }
+          ]
+        },
+        {
+          "name": "Samsung Galaxy A07 LTE, Android Smartphone, 64GB Storage, 4GB RAM, Black, 6x OS Upgrades, Large Display, 6nm Processor (KSA Version)",
+          "price": 359,
+          "stores": [
+            {
+              "store": "أمازون السعودية",
+              "store_name": "أمازون السعودية",
+              "current_price": 359,
+              "original_price": 379,
+              "availability": "in_stock",
+              "product_url": "https://www.amazon.sa/dp/B0FLDK4HHB?tag=tawveeri-21"
+            }
+          ]
+        },
+        {
+          "name": "Samsung Galaxy A16, Android Smartphone, Dual SIM Mobile Phone, 4GB RAM, 128GB Storage, Gray (KSA Version)",
+          "price": 459,
+          "stores": [
+            {
+              "store": "أمازون السعودية",
+              "store_name": "أمازون السعودية",
+              "current_price": 459,
+              "original_price": 619,
+              "availability": "in_stock",
+              "product_url": "https://www.amazon.sa/dp/B0DM1R9X2P?tag=tawveeri-21"
+            }
+          ]
+        },
+        {
+          "name": "Samsung Galaxy A17 LTE, Dual SIM, 128GB Expandable to 2TB, Smartphone, Android 14, 4GB RAM, Exynos, 6.7-inch AMOLED, 1080x2220, 90Hz (Gray)",
+          "price": 549,
+          "stores": [
+            {
+              "store": "أمازون السعودية",
+              "store_name": "أمازون السعودية",
+              "current_price": 549,
+              "original_price": 599,
+              "availability": "in_stock",
+              "product_url": "https://www.amazon.sa/dp/B0FNCZCHW5?tag=tawveeri-21"
+            }
+          ]
+        },
+        {
+          "name": "Samsung Galaxy Tab A11, LTE, Android Tablet, Silver, 4GB RAM, 64GB Storage, 8.7\" Screen (KSA Version)",
+          "price": 555.98,
+          "stores": [
+            {
+              "store": "أمازون السعودية",
+              "store_name": "أمازون السعودية",
+              "current_price": 555.98,
+              "original_price": 849,
+              "availability": "in_stock",
+              "product_url": "https://www.amazon.sa/dp/B0FQ5S4CR9?tag=tawveeri-21"
+            }
+          ]
+        },
+        {
+          "name": "Samsung Galaxy A17 LTE, Dual SIM, 128GB Expandable to 2TB, Smartphone, Android 14, 4GB RAM, Exynos, 6.7-inch AMOLED, 1080x2220, 90Hz (Black)",
+          "price": 564,
+          "stores": [
+            {
+              "store": "أمازون السعودية",
+              "store_name": "أمازون السعودية",
+              "current_price": 564,
+              "original_price": 599,
+              "availability": "in_stock",
+              "product_url": "https://www.amazon.sa/dp/B0FNCYB5N1?tag=tawveeri-21"
+            }
+          ]
+        },
+        {
+          "name": "Samsung Galaxy Tab A11, Wifi, Android Tablet, Gray, 8GB RAM, 128GB Storage, 8.7\" Screen (KSA Version)",
+          "price": 599,
+          "stores": [
+            {
+              "store": "أمازون",
+              "store_name": "أمازون",
+              "current_price": 599,
+              "original_price": 749,
+              "availability": "in_stock",
+              "product_url": "https://www.amazon.sa/-/en/Samsung-Galaxy-Android-Storage-Version/dp/B0FQ5XPNH7/ref=sr_1_1?dib=eyJ2IjoiMSJ9.o5lf9Inh63-eBrpaP43ES36E7J0DzVJ5Cael5wDXKwXONrXfPZG-1-_VIxDOG72cLiv4PGeD3v6qnwJocTau9aSKnQyhOEbY7fDxJgzSapGZnIboiwRRY5BLtR7MqdPF_mG1qpVAcS0-TN6nr9wB7MC6CxnNp7TyGychmwpChI6RqOnVwGx6LZ2HJ-g-s-iv1M0RczUYxBUtYnCE-q15Holittnfzvxp7MLStDcG1dnr2DWuHCyr8Fuc-tEHL62jrFpQDJB-ezORMmopc5lyzuiE0b7lwhUq4SD1qHeEdWg.Bl1GrcoDEailOFgo1xN6eIiQgQfmdVLw8rO3kb2rkAE&dib_tag=se&keywords=%D8%AA%D8%A7%D8%A8%D9%84%D8%AA&qid=1785542862&sr=8-1"
+            }
+          ]
+        }
+      ],
+      "samsungOffers": [],
+      "compareStatus": 404,
+      "comparison": {
+        "error": "Canonical product not found"
+      }
+    },
+    {
+      "model": "WW90DB8U94GBYL",
+      "category": "washing_machine",
+      "observedAt": "2026-09-16T09:25:54.722Z",
+      "sourceAtFreeze": {
+        "price": 3199,
+        "availability": "in_stock"
+      },
+      "searchStatus": 200,
+      "search": [
+        {
+          "name": "9kg WW8400D Front load Washer with SmartThings AI Energy Mode and A-30% Extra Energy Efficiency Loading Made Percent Ecobubble Black (WW90DB8U94GBYL)",
+          "price": 3199,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 3199,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/washers-and-dryers/washing-machines/ww8400d-front-loading-smartthings-ai-energy-made-a-30-percent-extra-energy-efficiency-ai-ecobubble-9kg-black-ww90db8u94gbyl/"
+            }
+          ]
+        }
+      ],
+      "samsungOffers": [
+        {
+          "store": "سامسونج السعودية",
+          "store_name": "سامسونج السعودية",
+          "current_price": 3199,
+          "original_price": null,
+          "availability": "in_stock",
+          "product_url": "https://www.samsung.com/sa_en/washers-and-dryers/washing-machines/ww8400d-front-loading-smartthings-ai-energy-made-a-30-percent-extra-energy-efficiency-ai-ecobubble-9kg-black-ww90db8u94gbyl/"
+        }
+      ],
+      "compareStatus": 404,
+      "comparison": {
+        "error": "Canonical product not found"
+      }
+    },
+    {
+      "model": "DV80T7220BX/YL",
+      "category": "washing_machine",
+      "observedAt": "2026-09-16T09:25:56.039Z",
+      "sourceAtFreeze": {
+        "price": 2899,
+        "availability": "in_stock"
+      },
+      "searchStatus": 200,
+      "search": [
+        {
+          "name": "سامسونج مجفف تحميل أمامي – 8 كجم – 17 برنامج – فضي – DV80T7220BX/YL",
+          "key": "سامسون|front_load|8|combo",
+          "price": 2799,
+          "stores": [
+            {
+              "store": "شاكر",
+              "store_name": "شاكر",
+              "current_price": 2799,
+              "original_price": 5348.65,
+              "availability": "in_stock",
+              "product_url": "https://shakersa.com/product/%d8%b3%d8%a7%d9%85%d8%b3%d9%88%d9%86%d8%ac-%d9%85%d8%ac%d9%81%d9%81-%d8%aa%d8%ad%d9%85%d9%8a%d9%84-%d8%a3%d9%85%d8%a7%d9%85%d9%8a-8-%d9%83%d8%ac%d9%85-17-%d8%a8%d8%b1%d9%86%d8%a7%d9%85%d8%ac/"
+            }
+          ]
+        },
+        {
+          "name": "8kg Inverter Heatpump Dryer Inox Color AI Control WIFI Hygiene Care Dv7000t Front Loading Super Speed Platinum Silver Yl (DV80T7220BX/YL)",
+          "key": "سامسون|front_load|8|combo",
+          "price": 2899,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 2899,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/washers-and-dryers/dryers/dv7000t-front-loading-ai-control-super-speed-hygiene-care-8kg-platinum-silver-dv80t7220bx-yl/"
+            }
+          ]
+        }
+      ],
+      "samsungOffers": [
+        {
+          "store": "سامسونج السعودية",
+          "store_name": "سامسونج السعودية",
+          "current_price": 2899,
+          "original_price": null,
+          "availability": "in_stock",
+          "product_url": "https://www.samsung.com/sa_en/washers-and-dryers/dryers/dv7000t-front-loading-ai-control-super-speed-hygiene-care-8kg-platinum-silver-dv80t7220bx-yl/"
+        }
+      ],
+      "compareStatus": 404,
+      "comparison": {
+        "error": "Canonical product not found"
+      }
+    },
+    {
+      "model": "MX-ST50F/SA",
+      "category": "audio",
+      "observedAt": "2026-09-16T09:25:57.320Z",
+      "sourceAtFreeze": {
+        "price": null,
+        "availability": "out_of_stock"
+      },
+      "searchStatus": 200,
+      "search": [
+        {
+          "name": "Sades SL-Sealion PRO 27\" FHD IPS Gaming Monitor | 144Hz, 1ms Response, Adaptive Sync | Full HD 1920x1080 | Black | HDR, Eye-Care Technology",
+          "price": 489,
+          "stores": [
+            {
+              "store": "نون",
+              "store_name": "نون",
+              "current_price": 489,
+              "original_price": 799,
+              "availability": "in_stock",
+              "product_url": "https://www.noon.com/saudi-en/sades-sl-sealion-pro-27-fhd-ips-gaming-monitor-144hz-1ms-response-adaptive-sync-full-hd-1920x1080-black-hdr-eye-care-technology/ZB3B8D3D0CA398E139378Z/p/"
+            },
+            {
+              "store": "أمازون",
+              "store_name": "أمازون",
+              "current_price": 489,
+              "original_price": null,
+              "availability": "limited_stock",
+              "product_url": "https://www.amazon.sa/-/en/SL-Sealion-Response-Adaptive-1920x1080-Technology/dp/B0FNKJXNJJ/ref=sr_1_96?dib=eyJ2IjoiMSJ9.1ObWnfoVY-eYnwWEKP6baO3YAfviPWAPiXPe5VazMm0jD3wTB4fXlEhHLuksioVccGNmVYcjZd9elqNPEAtI7O9Vqje2AP7c0rkyLBNuZgC9EI0c3QUZK6Y4zZlaVWZldj3usscr9MjP96eP_YPZCsDDzbMsxHjGtpsC4xW4fXHoULeigUecp-1n_3EElvqq-vtn2qCShHl_frCSZZfQzlIg2n-B0nSE_TOz1NeH-pKgbKHvNQMhBzkpT6s9r7TEeouoyrYd9obyWaLDgAdn2WxdziLpDI_rwLV5tD-fXto.Tplz7CFUaWNq0alTa1eIVoPHvK5SvG4wAwNl4Wiv1cw&dib_tag=se&keywords=%D8%B4%D8%A7%D8%B4%D8%A9&qid=1785737358&sr=8-96"
+            }
+          ]
+        },
+        {
+          "name": "SAFE by PanzerGlass Bling Bumper Apple Watch 3rd Gen, 45mm, Silver",
+          "price": 25,
+          "stores": [
+            {
+              "store": "اكسترا",
+              "store_name": "اكسترا",
+              "current_price": 25,
+              "original_price": 59,
+              "availability": "in_stock",
+              "product_url": "https://www.extra.com/en-sa/mobiles-tablets/wearable/accessories/safe-by-panzerglass-bling-bumper-apple-watch-3rd-gen-45mm-silver/p/100379509"
+            }
+          ]
+        },
+        {
+          "name": "SAFE by PanzerGlass Bling Bumper Apple Watch 3rd Gen, 41mm, Gold",
+          "price": 25,
+          "stores": [
+            {
+              "store": "اكسترا",
+              "store_name": "اكسترا",
+              "current_price": 25,
+              "original_price": 59,
+              "availability": "in_stock",
+              "product_url": "https://www.extra.com/en-sa/mobiles-tablets/wearable/accessories/safe-by-panzerglass-bling-bumper-apple-watch-3rd-gen-41mm-gold/p/100379669"
+            }
+          ]
+        },
+        {
+          "name": "SAMSUNG Galaxy Flip 6 Protection Film, Clear",
+          "price": 26,
+          "stores": [
+            {
+              "store": "اكسترا",
+              "store_name": "اكسترا",
+              "current_price": 26,
+              "original_price": 87,
+              "availability": "in_stock",
+              "product_url": "https://www.extra.com/en-sa/mobiles-tablets/mobile-accessories/screen-protector/samsung-galaxy-flip-6-protection-film-clear/p/100371079"
+            }
+          ]
+        },
+        {
+          "name": "SAFE by PanzerGlass Bling Bumper Apple Watch Ultra 3rd Gen, Silver",
+          "price": 35,
+          "stores": [
+            {
+              "store": "اكسترا",
+              "store_name": "اكسترا",
+              "current_price": 35,
+              "original_price": 59,
+              "availability": "in_stock",
+              "product_url": "https://www.extra.com/en-sa/mobiles-tablets/wearable/accessories/safe-by-panzerglass-bling-bumper-apple-watch-ultra-3rd-gen-silver/p/100379670"
+            }
+          ]
+        },
+        {
+          "name": "SanDisk Cruzer Blade USB Flash Drive 64GB, Black, SDCZ50-064G-B35",
+          "price": 37.48,
+          "stores": [
+            {
+              "store": "أمازون السعودية",
+              "store_name": "أمازون السعودية",
+              "current_price": 37.48,
+              "original_price": 56.41,
+              "availability": "in_stock",
+              "product_url": "https://www.amazon.sa/dp/B00BX5FOCK?tag=tawveeri-21"
+            }
+          ]
+        },
+        {
+          "name": "Samsung Galaxy S26 Plus Anti-Reflecting Film, Clear",
+          "price": 49,
+          "stores": [
+            {
+              "store": "اكسترا",
+              "store_name": "اكسترا",
+              "current_price": 49,
+              "original_price": 89,
+              "availability": "in_stock",
+              "product_url": "https://www.extra.com/en-sa/mobiles-tablets/mobile-accessories/screen-protector/samsung-galaxy-s26-plus-anti-reflecting-film-clear/p/100503823"
+            }
+          ]
+        },
+        {
+          "name": "Sandwich Maker With Grill Plate 2 Slices 750 W E05328 Black",
+          "price": 53.2,
+          "stores": [
+            {
+              "store": "نون",
+              "store_name": "نون",
+              "current_price": 53.2,
+              "original_price": 120,
+              "availability": "in_stock",
+              "product_url": "https://www.noon.com/saudi-en/sandwich-maker-with-grill-plate-2-slices-750-w-e05328-black/N45409743A/p/"
+            }
+          ]
+        },
+        {
+          "name": "Sandwich Maker 750 W DLC-600 Black",
+          "price": 63,
+          "stores": [
+            {
+              "store": "نون",
+              "store_name": "نون",
+              "current_price": 63,
+              "original_price": 68,
+              "availability": "in_stock",
+              "product_url": "https://www.noon.com/saudi-en/sandwich-maker-750-w-dlc-600-black/N70081024V/p/"
+            }
+          ]
+        },
+        {
+          "name": "Sandwich Maker 700 W NST1107A1 White",
+          "price": 63.17,
+          "stores": [
+            {
+              "store": "نون",
+              "store_name": "نون",
+              "current_price": 63.17,
+              "original_price": 179,
+              "availability": "in_stock",
+              "product_url": "https://www.noon.com/saudi-en/sandwich-maker-700-w-nst1107a1-white/N19520113A/p/"
+            }
+          ]
+        },
+        {
+          "name": "Sandwich maker multifunctional household light breakfast machine toast toaster waffle maker press toaster",
+          "price": 64,
+          "stores": [
+            {
+              "store": "نون",
+              "store_name": "نون",
+              "current_price": 64,
+              "original_price": 155,
+              "availability": "in_stock",
+              "product_url": "https://www.noon.com/saudi-en/sandwich-maker-multifunctional-household-light-breakfast-machine-toast-toaster-waffle-maker-press-toaster/ZE85374AACC56FF604B0CZ/p/"
+            }
+          ]
+        },
+        {
+          "name": "Samsung Galaxy S26 Anti-Reflecting Film, Clear",
+          "price": 69,
+          "stores": [
+            {
+              "store": "اكسترا",
+              "store_name": "اكسترا",
+              "current_price": 69,
+              "original_price": 89,
+              "availability": "in_stock",
+              "product_url": "https://www.extra.com/en-sa/mobiles-tablets/mobile-accessories/screen-protector/samsung-galaxy-s26-anti-reflecting-film-clear/p/100503829"
+            }
+          ]
+        },
+        {
+          "name": "Samsung Galaxy S26 Ultra Anti-Reflecting Film, Clear",
+          "price": 79,
+          "stores": [
+            {
+              "store": "اكسترا",
+              "store_name": "اكسترا",
+              "current_price": 79,
+              "original_price": 89,
+              "availability": "in_stock",
+              "product_url": "https://www.extra.com/en-sa/mobiles-tablets/mobile-accessories/screen-protector/samsung-galaxy-s26-ultra-anti-reflecting-film-clear/p/100503825"
+            }
+          ]
+        },
+        {
+          "name": "Sandwich Grill, Non-Stick Plate, 750W, Model HM-311",
+          "price": 95,
+          "stores": [
+            {
+              "store": "نون",
+              "store_name": "نون",
+              "current_price": 95,
+              "original_price": 115,
+              "availability": "in_stock",
+              "product_url": "https://www.noon.com/saudi-en/sandwich-grill-non-stick-plate-750w-model-hm-311/ZF1A565CAA99601831AA2Z/p/"
+            }
+          ]
+        },
+        {
+          "name": "Samsung Entry 24-Inch 100Hz IPS Full HD Essential Flat Monitor, Black",
+          "price": 329,
+          "stores": [
+            {
+              "store": "أمازون",
+              "store_name": "أمازون",
+              "current_price": 329,
+              "original_price": 599,
+              "availability": "in_stock",
+              "product_url": "https://www.amazon.sa/-/en/Samsung-Entry-24-Inch-Essential-Monitor/dp/B0DX6STQQH/ref=sr_1_41?dib=eyJ2IjoiMSJ9.AROIv-61e4V7VcWGrv8gptIoJKyKTWuDM-0LaecEhnVER0z6ZQ46Kl_AAV41uSjTiJvxbPzjeQHEzaugJogiyHz9n6f7u-gNecOj3RTZKnd7LGgtxmN-R1JE11ocWf6-wQjEOacLfQi0c39ZhTOsmTtHC1KFozFgTCSdrdO8oknH2R1tgoyv4dhiILmFS8ph5wKl6Kw6osiKaN2KGHAb-04dRurfLORkwtzhLQWoM2x762w8sewm61kF3BdbluCGzmqlak02Fb4GtT655AcUVkBMwrMxEtI2LH4D8zWHz2Y.w2ln7i8gcKFWaIgpX1egkUhtTDlxEba1l4TK4GBQGtU&dib_tag=se&keywords=%D8%B4%D8%A7%D8%B4%D8%A9&qid=1785780520&sr=8-41"
+            }
+          ]
+        },
+        {
+          "name": "Samsung Galaxy A07 LTE, Android Smartphone, 64GB Storage, 4GB RAM, Black, 6x OS Upgrades, Large Display, 6nm Processor (KSA Version)",
+          "price": 359,
+          "stores": [
+            {
+              "store": "أمازون السعودية",
+              "store_name": "أمازون السعودية",
+              "current_price": 359,
+              "original_price": 379,
+              "availability": "in_stock",
+              "product_url": "https://www.amazon.sa/dp/B0FLDK4HHB?tag=tawveeri-21"
+            }
+          ]
+        },
+        {
+          "name": "Samsung Galaxy A16, Android Smartphone, Dual SIM Mobile Phone, 4GB RAM, 128GB Storage, Gray (KSA Version)",
+          "price": 459,
+          "stores": [
+            {
+              "store": "أمازون السعودية",
+              "store_name": "أمازون السعودية",
+              "current_price": 459,
+              "original_price": 619,
+              "availability": "in_stock",
+              "product_url": "https://www.amazon.sa/dp/B0DM1R9X2P?tag=tawveeri-21"
+            }
+          ]
+        },
+        {
+          "name": "Samsung Galaxy A17 LTE, Dual SIM, 128GB Expandable to 2TB, Smartphone, Android 14, 4GB RAM, Exynos, 6.7-inch AMOLED, 1080x2220, 90Hz (Gray)",
+          "price": 549,
+          "stores": [
+            {
+              "store": "أمازون السعودية",
+              "store_name": "أمازون السعودية",
+              "current_price": 549,
+              "original_price": 599,
+              "availability": "in_stock",
+              "product_url": "https://www.amazon.sa/dp/B0FNCZCHW5?tag=tawveeri-21"
+            }
+          ]
+        },
+        {
+          "name": "Samsung Galaxy Tab A11, LTE, Android Tablet, Silver, 4GB RAM, 64GB Storage, 8.7\" Screen (KSA Version)",
+          "price": 555.98,
+          "stores": [
+            {
+              "store": "أمازون السعودية",
+              "store_name": "أمازون السعودية",
+              "current_price": 555.98,
+              "original_price": 849,
+              "availability": "in_stock",
+              "product_url": "https://www.amazon.sa/dp/B0FQ5S4CR9?tag=tawveeri-21"
+            }
+          ]
+        },
+        {
+          "name": "Samsung Galaxy A17 LTE, Dual SIM, 128GB Expandable to 2TB, Smartphone, Android 14, 4GB RAM, Exynos, 6.7-inch AMOLED, 1080x2220, 90Hz (Black)",
+          "price": 564,
+          "stores": [
+            {
+              "store": "أمازون السعودية",
+              "store_name": "أمازون السعودية",
+              "current_price": 564,
+              "original_price": 599,
+              "availability": "in_stock",
+              "product_url": "https://www.amazon.sa/dp/B0FNCYB5N1?tag=tawveeri-21"
+            }
+          ]
+        }
+      ],
+      "samsungOffers": [],
+      "compareStatus": 404,
+      "comparison": {
+        "error": "Canonical product not found"
+      }
+    },
+    {
+      "model": "SM-S942BZWOMEA",
+      "category": "mobile",
+      "observedAt": "2026-09-16T09:25:58.456Z",
+      "sourceAtFreeze": {
+        "price": 3099,
+        "availability": "in_stock"
+      },
+      "searchStatus": 200,
+      "search": [
+        {
+          "name": "50 Inch Smart TV FX50FHD-SM | Full HD 1080p, Android, WiFi, 144Hz, Screen Sharing, HDMI & USB, 2 Year Warranty",
+          "price": 950,
+          "stores": [
+            {
+              "store": "نون",
+              "store_name": "نون",
+              "current_price": 950,
+              "original_price": 1299,
+              "availability": "in_stock",
+              "product_url": "https://www.noon.com/saudi-en/50-inch-smart-tv-fx50fhd-sm-full-hd-1080p-android-wifi-144hz-screen-sharing-hdmi-usb-2-year-warranty/Z6D86513A1B0345924CF5Z/p/"
+            }
+          ]
+        },
+        {
+          "name": "Samsung Galaxy Watch 8 Classic 46mm SM-L500NZWAMEA-White",
+          "price": 1398.998001,
+          "stores": [
+            {
+              "store": "المنيع",
+              "store_name": "المنيع",
+              "current_price": 1398.998001,
+              "original_price": 1948.997001,
+              "availability": "in_stock",
+              "product_url": "https://www.almanea.sa/en/product/p-170100503999032"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy Buds Core Black (SM-R410NZKAMEA)",
+          "price": 199,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 199,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/audio-sound/galaxy-buds/galaxy-buds-core-black-sm-r410nzkamea/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy Buds Core White (SM-R410NZWAMEA)",
+          "price": 199,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 199,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/audio-sound/galaxy-buds/galaxy-buds-core-white-sm-r410nzwamea/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy Fit3 Gray Bluetooth V5 3 (SM-R390NZAAMEA)",
+          "price": 229,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 229,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/watches/galaxy-fit/galaxy-fit3-gray-bluetooth-v5-3-sm-r390nzaamea/buy/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy Fit3 Silver Bluetooth V5 3 (SM-R390NZSAMEA)",
+          "price": 229,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 229,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/watches/galaxy-fit/galaxy-fit3-silver-bluetooth-v5-3-sm-r390nzsamea/buy/"
+            }
+          ]
+        },
+        {
+          "name": "Samsung Galaxy Watch 8 Ultra 2025 SM-L705FZA1KSA-Gray",
+          "price": 1799.002501,
+          "stores": [
+            {
+              "store": "المنيع",
+              "store_name": "المنيع",
+              "current_price": 1799.002501,
+              "original_price": 2498.996001,
+              "availability": "in_stock",
+              "product_url": "https://www.almanea.sa/en/product/p-170100503999034"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy Buds3 FE Black (SM-R420NZKAMEA)",
+          "price": 499,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 499,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/audio-sound/galaxy-buds/galaxy-buds3-fe-black-sm-r420nzkamea/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy Buds3 FE Gray (SM-R420NZAAMEA)",
+          "price": 499,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 499,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/audio-sound/galaxy-buds/galaxy-buds3-fe-gray-sm-r420nzaamea/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy A07 Black 64GB (SM-A075FZKDMEA)",
+          "price": 599,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 599,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a07-black-64gb-sm-a075fzkdmea/buy/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy A07 Green 64GB (SM-A075FZGDMEA)",
+          "price": 599,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 599,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a07-green-64gb-sm-a075fzgdmea/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy A07 Light Violet 64GB (SM-A075FLVDMEA)",
+          "price": 599,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 599,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a07-light-violet-64gb-sm-a075flvdmea/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy A16 Black 128GB (SM-A165FZKDMEA)",
+          "price": 619,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 619,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a16-black-128gb-sm-a165fzkdmea/buy/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy A16 Light Green 128GB (SM-A165FLGDMEA)",
+          "price": 619,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 619,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a16-light-green-128gb-sm-a165flgdmea/buy/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy A16 Light Gray 128GB (SM-A165FZADMEA)",
+          "price": 619,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 619,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a16-light-gray-128gb-sm-a165fzadmea/buy/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy Tab A11 (LTE) Gray 64GB (SM-X135GZAAMEA)",
+          "price": 649,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 649,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/tablets/galaxy-tab-a/galaxy-tab-a11-gray-64gb-sm-x135gzaamea/buy/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy Tab A11 (LTE) Silver 64GB (SM-X135GZSAMEA)",
+          "price": 649,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 649,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/tablets/galaxy-tab-a/galaxy-tab-a11-silver-64gb-sm-x135gzsamea/buy/"
+            }
+          ]
+        },
+        {
+          "name": "Tablet Samsung SM X130NZAAEUE GALAXY TAB A11 Gray",
+          "price": 688.92,
+          "stores": [
+            {
+              "store": "أمازون",
+              "store_name": "أمازون",
+              "current_price": 688.92,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.amazon.sa/-/en/Tablet-Samsung-X130NZAAEUE-GALAXY-Gray/dp/B0FWS4GKZ8/ref=sr_1_73?dib=eyJ2IjoiMSJ9.8TRnsm5j8WEMWAbr6PSdxlST5sWcloSuRG8Pw9rRNkWM7TGHOZGBoNxzmb8uJSiVSHUr50lRKhyE03s6FC0j90QlRJpS_IjCbCuQal_ALHEK5DB0aEjUKRPd2m1cwRC8kUQyzUjqWbEOkxdc3-z65bvGrhseFxOo2Sr8mmN8GEs1VIqVgztDNmQsuWQ87vSQv8KiL8nV02iLzwemQ3kZsP1aezi9GX9JopENUC1mmcwOGIPQynSOXcgRrDWhGj5JA9tPpo3neaRz3cvmWv_M0fpHw7raI-a80SiiQ6XwPCQ.EbMSM92qnLQmRhYsmkRphqZol44qohrM4ZCA43abyLI&dib_tag=se&keywords=%D8%AA%D8%A7%D8%A8%D9%84%D8%AA&qid=1789171728&sr=8-73"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy A07 Green 128GB (SM-A075FZGGMEA)",
+          "price": 739,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 739,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a07-green-128gb-sm-a075fzggmea/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy A07 Black 128GB (SM-A075FZKGMEA)",
+          "price": 739,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 739,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a07-black-128gb-sm-a075fzkgmea/buy/"
+            }
+          ]
+        }
+      ],
+      "samsungOffers": [],
+      "compareStatus": 404,
+      "comparison": {
+        "error": "Canonical product not found"
+      }
+    },
+    {
+      "model": "LS32FG502EMXUE",
+      "category": "monitor",
+      "observedAt": "2026-09-16T09:25:59.726Z",
+      "sourceAtFreeze": {
+        "price": 1399,
+        "availability": "in_stock"
+      },
+      "searchStatus": 200,
+      "search": [
+        {
+          "name": "Samsung 32\" Odyssey G5 Gaming Monitor, QHD (2560 x 1440), 180Hz Refresh Rate, 1ms Response Time, Black, LS32FG502EMXUE",
+          "price": 934.98,
+          "stores": [
+            {
+              "store": "أمازون",
+              "store_name": "أمازون",
+              "current_price": 934.98,
+              "original_price": 1699,
+              "availability": "in_stock",
+              "product_url": "https://www.amazon.sa/-/en/Samsung-Odyssey-Monitor-Response-LS32FG502EMXUE/dp/B0G5J8D7LN/ref=sr_1_71?dib=eyJ2IjoiMSJ9.FEf8VVWQCCM48j5XG345QK-YHaXbmU19BeO6-TiEPsqU5anMoh7DWa3LYrjr3p0dGB6U8dHoK5JwqL6-qB0DWFdpQRRE_XkOSxvm3xt-uFlzPovxap9i2hFjTXV368umg-0ljT5jL7Ws8Md9OvSEZvbMRwTTw0mCzz7ImYoDOhTs5fGaN9mUJR3SmPWl1UIRqnMbkqwW2O0shwqVmMRoolioGLGfTBgVhVjXtICAxBUj2lAE-8qVnKjSjMqETwgkQ4dTR7VJKAwa54jhxBKJCJbELMbN5jpdswbpQ2mNLJA.6-rNYvQy4pgHO1_c4KwsF20yeFdgP0_6l36IhCvsrRs&dib_tag=se&keywords=%D8%B4%D8%A7%D8%B4%D8%A9&qid=1789301284&sr=8-71"
+            }
+          ]
+        },
+        {
+          "name": "32\" Odyssey G5 G50F QHD 180Hz Gaming Monitor Inch (LS32FG502EMXUE)",
+          "price": 1399,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 1399,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/monitors/gaming/odyssey-g5-g50f-32-inch-180hz-qhd-ls32fg502emxue/"
+            }
+          ]
+        },
+        {
+          "name": "Odyssey G5 G50F Gaming Monitor, 32-inch IPS Display, QHD Resolution, 180Hz Refresh Rate,1ms (GtG) Response Time, AMD FreeSync & G-Sync Compatible, 16.7m Color Display, Black | LS32FG502EMXUE Black",
+          "price": 1099,
+          "stores": [
+            {
+              "store": "نون",
+              "store_name": "نون",
+              "current_price": 1099,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.noon.com/saudi-en/odyssey-g5-g50f-gaming-monitor-32-ips-display-qhd-resolution-180hz-refresh-rate-1ms-gtg-response-time-amd-freesync-g-sync-compatible-16-7m-color-display-black-ls32fg502emxue-black/N70282235V/p/?o=e796f8de4e53a14e"
+            }
+          ]
+        }
+      ],
+      "samsungOffers": [
+        {
+          "store": "سامسونج السعودية",
+          "store_name": "سامسونج السعودية",
+          "current_price": 1399,
+          "original_price": null,
+          "availability": "in_stock",
+          "product_url": "https://www.samsung.com/sa_en/monitors/gaming/odyssey-g5-g50f-32-inch-180hz-qhd-ls32fg502emxue/"
+        }
+      ],
+      "compareStatus": 404,
+      "comparison": {
+        "error": "Canonical product not found"
+      }
+    },
+    {
+      "model": "SM-L330NDAAMEA",
+      "category": "smartwatch",
+      "observedAt": "2026-09-16T09:26:01.152Z",
+      "sourceAtFreeze": {
+        "price": 1299,
+        "availability": "in_stock"
+      },
+      "searchStatus": 200,
+      "search": [
+        {
+          "name": "50 Inch Smart TV FX50FHD-SM | Full HD 1080p, Android, WiFi, 144Hz, Screen Sharing, HDMI & USB, 2 Year Warranty",
+          "price": 950,
+          "stores": [
+            {
+              "store": "نون",
+              "store_name": "نون",
+              "current_price": 950,
+              "original_price": 1299,
+              "availability": "in_stock",
+              "product_url": "https://www.noon.com/saudi-en/50-inch-smart-tv-fx50fhd-sm-full-hd-1080p-android-wifi-144hz-screen-sharing-hdmi-usb-2-year-warranty/Z6D86513A1B0345924CF5Z/p/"
+            }
+          ]
+        },
+        {
+          "name": "Samsung Galaxy Watch 8 Classic 46mm SM-L500NZWAMEA-White",
+          "price": 1398.998001,
+          "stores": [
+            {
+              "store": "المنيع",
+              "store_name": "المنيع",
+              "current_price": 1398.998001,
+              "original_price": 1948.997001,
+              "availability": "in_stock",
+              "product_url": "https://www.almanea.sa/en/product/p-170100503999032"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy Buds Core Black (SM-R410NZKAMEA)",
+          "price": 199,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 199,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/audio-sound/galaxy-buds/galaxy-buds-core-black-sm-r410nzkamea/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy Buds Core White (SM-R410NZWAMEA)",
+          "price": 199,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 199,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/audio-sound/galaxy-buds/galaxy-buds-core-white-sm-r410nzwamea/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy Fit3 Gray Bluetooth V5 3 (SM-R390NZAAMEA)",
+          "price": 229,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 229,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/watches/galaxy-fit/galaxy-fit3-gray-bluetooth-v5-3-sm-r390nzaamea/buy/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy Fit3 Silver Bluetooth V5 3 (SM-R390NZSAMEA)",
+          "price": 229,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 229,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/watches/galaxy-fit/galaxy-fit3-silver-bluetooth-v5-3-sm-r390nzsamea/buy/"
+            }
+          ]
+        },
+        {
+          "name": "Samsung Galaxy Watch 8 Ultra 2025 SM-L705FZA1KSA-Gray",
+          "price": 1799.002501,
+          "stores": [
+            {
+              "store": "المنيع",
+              "store_name": "المنيع",
+              "current_price": 1799.002501,
+              "original_price": 2498.996001,
+              "availability": "in_stock",
+              "product_url": "https://www.almanea.sa/en/product/p-170100503999034"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy Buds3 FE Black (SM-R420NZKAMEA)",
+          "price": 499,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 499,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/audio-sound/galaxy-buds/galaxy-buds3-fe-black-sm-r420nzkamea/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy Buds3 FE Gray (SM-R420NZAAMEA)",
+          "price": 499,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 499,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/audio-sound/galaxy-buds/galaxy-buds3-fe-gray-sm-r420nzaamea/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy A07 Black 64GB (SM-A075FZKDMEA)",
+          "price": 599,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 599,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a07-black-64gb-sm-a075fzkdmea/buy/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy A07 Green 64GB (SM-A075FZGDMEA)",
+          "price": 599,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 599,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a07-green-64gb-sm-a075fzgdmea/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy A07 Light Violet 64GB (SM-A075FLVDMEA)",
+          "price": 599,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 599,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a07-light-violet-64gb-sm-a075flvdmea/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy A16 Black 128GB (SM-A165FZKDMEA)",
+          "price": 619,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 619,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a16-black-128gb-sm-a165fzkdmea/buy/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy A16 Light Green 128GB (SM-A165FLGDMEA)",
+          "price": 619,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 619,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a16-light-green-128gb-sm-a165flgdmea/buy/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy A16 Light Gray 128GB (SM-A165FZADMEA)",
+          "price": 619,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 619,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a16-light-gray-128gb-sm-a165fzadmea/buy/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy Tab A11 (LTE) Gray 64GB (SM-X135GZAAMEA)",
+          "price": 649,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 649,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/tablets/galaxy-tab-a/galaxy-tab-a11-gray-64gb-sm-x135gzaamea/buy/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy Tab A11 (LTE) Silver 64GB (SM-X135GZSAMEA)",
+          "price": 649,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 649,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/tablets/galaxy-tab-a/galaxy-tab-a11-silver-64gb-sm-x135gzsamea/buy/"
+            }
+          ]
+        },
+        {
+          "name": "Tablet Samsung SM X130NZAAEUE GALAXY TAB A11 Gray",
+          "price": 688.92,
+          "stores": [
+            {
+              "store": "أمازون",
+              "store_name": "أمازون",
+              "current_price": 688.92,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.amazon.sa/-/en/Tablet-Samsung-X130NZAAEUE-GALAXY-Gray/dp/B0FWS4GKZ8/ref=sr_1_73?dib=eyJ2IjoiMSJ9.8TRnsm5j8WEMWAbr6PSdxlST5sWcloSuRG8Pw9rRNkWM7TGHOZGBoNxzmb8uJSiVSHUr50lRKhyE03s6FC0j90QlRJpS_IjCbCuQal_ALHEK5DB0aEjUKRPd2m1cwRC8kUQyzUjqWbEOkxdc3-z65bvGrhseFxOo2Sr8mmN8GEs1VIqVgztDNmQsuWQ87vSQv8KiL8nV02iLzwemQ3kZsP1aezi9GX9JopENUC1mmcwOGIPQynSOXcgRrDWhGj5JA9tPpo3neaRz3cvmWv_M0fpHw7raI-a80SiiQ6XwPCQ.EbMSM92qnLQmRhYsmkRphqZol44qohrM4ZCA43abyLI&dib_tag=se&keywords=%D8%AA%D8%A7%D8%A8%D9%84%D8%AA&qid=1789171728&sr=8-73"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy A07 Green 128GB (SM-A075FZGGMEA)",
+          "price": 739,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 739,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a07-green-128gb-sm-a075fzggmea/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy A07 Black 128GB (SM-A075FZKGMEA)",
+          "price": 739,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 739,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a07-black-128gb-sm-a075fzkgmea/buy/"
+            }
+          ]
+        }
+      ],
+      "samsungOffers": [],
+      "compareStatus": 404,
+      "comparison": {
+        "error": "Canonical product not found"
+      }
+    },
+    {
+      "model": "SM-A176BZAEMEA",
+      "category": "mobile",
+      "observedAt": "2026-09-16T09:26:02.339Z",
+      "sourceAtFreeze": {
+        "price": 949,
+        "availability": "in_stock"
+      },
+      "searchStatus": 200,
+      "search": [
+        {
+          "name": "Galaxy A17 5G Gray 128GB (SM-A176BZAEMEA)",
+          "price": 949,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 949,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a17-5g-gray-128gb-sm-a176bzaemea/"
+            }
+          ]
+        }
+      ],
+      "samsungOffers": [
+        {
+          "store": "سامسونج السعودية",
+          "store_name": "سامسونج السعودية",
+          "current_price": 949,
+          "original_price": null,
+          "availability": "in_stock",
+          "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a17-5g-gray-128gb-sm-a176bzaemea/"
+        }
+      ],
+      "compareStatus": 404,
+      "comparison": {
+        "error": "Canonical product not found"
+      }
+    },
+    {
+      "model": "SM-X620NZAAMEA",
+      "category": "tablet",
+      "observedAt": "2026-09-16T09:26:03.571Z",
+      "sourceAtFreeze": {
+        "price": 2549,
+        "availability": "in_stock"
+      },
+      "searchStatus": 200,
+      "search": [
+        {
+          "name": "Samsung SM-X620NZAAMEA Tablet",
+          "key": "samsung|MODEL:SM-X620NZAAMEA",
+          "compareUrl": "/ar/compare/samsung%7CMODEL%3ASM-X620NZAAMEA",
+          "price": 2399,
+          "stores": [
+            {
+              "store": "almanea",
+              "store_name": "المنيع",
+              "current_price": 2399,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "/go/7054c3df-e6cd-44e4-b861-b0fc2272a7b0?gt=1789550765424.5b622163edc3e58ff364ca568f2415ad7845629553f4315a63d10a184763a675"
+            },
+            {
+              "store": "samsung_ksa",
+              "store_name": "سامسونج السعودية",
+              "current_price": 2549,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "/go/84a19004-1427-454d-bd4e-59ee9f512718?gt=1789550765423.d6eaaa7cc1d657f3b79e484f822bbc5f68d6070310cefd31a0368e88b742bfb2"
+            },
+            {
+              "store": "extra",
+              "store_name": "إكسترا",
+              "current_price": 2549,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "/go/2bc5368e-a972-4cfc-9b4d-e6567fa9de4e?gt=1789550765424.3f9ae6957220f525fc3418a18a605a6049d3fa69d9ef9f9dccbe4692e7e52e6f"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy Tab S10 FE+ (Wi-Fi) Gray 128GB (SM-X620NZAAMEA)",
+          "price": 2549,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 2549,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/tablets/galaxy-tab-s/galaxy-tab-s10-fe-plus-gray-128gb-sm-x620nzaamea/buy/"
+            }
+          ]
+        }
+      ],
+      "samsungOffers": [
+        {
+          "store": "samsung_ksa",
+          "store_name": "سامسونج السعودية",
+          "current_price": 2549,
+          "original_price": null,
+          "availability": "in_stock",
+          "product_url": "/go/84a19004-1427-454d-bd4e-59ee9f512718?gt=1789550765423.d6eaaa7cc1d657f3b79e484f822bbc5f68d6070310cefd31a0368e88b742bfb2"
+        },
+        {
+          "store": "سامسونج السعودية",
+          "store_name": "سامسونج السعودية",
+          "current_price": 2549,
+          "original_price": null,
+          "availability": "in_stock",
+          "product_url": "https://www.samsung.com/sa_en/tablets/galaxy-tab-s/galaxy-tab-s10-fe-plus-gray-128gb-sm-x620nzaamea/buy/"
+        }
+      ],
+      "compareStatus": 200,
+      "comparison": {
+        "canonical": {
+          "id": "7ac41011-aabe-44f5-8d58-b7dedd27637f",
+          "name_ar": "تابلت سامسونج SM-X620NZAAMEA",
+          "name_en": "Samsung SM-X620NZAAMEA Tablet",
+          "brand": "samsung",
+          "category": "tablet",
+          "tps_identity_key": "samsung|MODEL:SM-X620NZAAMEA",
+          "identity_confidence": 95,
+          "attributes": {
+            "source": "progressive",
+            "stores": [
+              5,
+              6,
+              4
+            ],
+            "identity_key": "samsung|MODEL:SM-X620NZAAMEA",
+            "offers_count": 3,
+            "identity_tier": "primary",
+            "parser_version": "tablet-v1",
+            "comparison_eligible": true
+          }
+        },
+        "summary": {
+          "cheapest_store": "المنيع",
+          "lowest_price": 2399,
+          "highest_price": 2549,
+          "saving": 150,
+          "store_count": 3,
+          "cheapest_stale": false
+        },
+        "offers": [
+          {
+            "store_slug": "almanea",
+            "store_name": "المنيع",
+            "raw_name": "Samsung Galaxy Tab S10 FE Plus WiFi 13.1 inch 128GB Grey",
+            "price": 2399,
+            "availability": "in_stock",
+            "product_url": "/go/62958fe2-8eed-408e-a862-66747ea1c279?gt=1789550767209.68ffd6a125d2abc7bc63131d1823bea91b27a4dbe3df1238fb21ec62a988980e",
+            "observed_at": "2026-09-16T06:39:18.475+00:00",
+            "stale": false,
+            "confidence": 100,
+            "is_verified": true,
+            "campaign_eligibility": null
+          },
+          {
+            "store_slug": "samsung_ksa",
+            "store_name": "سامسونج السعودية",
+            "raw_name": "Galaxy Tab S10 FE+ (Wi-Fi) Gray 128GB (SM-X620NZAAMEA)",
+            "price": 2549,
+            "availability": "in_stock",
+            "product_url": "/go/49e98de2-2939-42c6-afe2-176804461a50?gt=1789550767209.eb370e37ff175bffe81554789c02944e9ed260f68443341c8a5e0d5743d70725",
+            "observed_at": "2026-09-15T14:10:19.855+00:00",
+            "stale": false,
+            "confidence": 87,
+            "is_verified": true,
+            "campaign_eligibility": null
+          },
+          {
+            "store_slug": "extra",
+            "store_name": "إكسترا",
+            "raw_name": "SAMSUNG Galaxy Tab S10 FE Plus, WIFI, 128 GB, Gray",
+            "price": 2549,
+            "availability": null,
+            "product_url": "/go/56ee02b9-fd39-4dee-ba4d-6b274aaadf5b?gt=1789550767209.4383fd1fecd279a8aaf55bb00f535a60968b992bd4d204f03459fbab733ce45c",
+            "observed_at": "2026-09-14T12:04:03.515945+00:00",
+            "stale": false,
+            "confidence": 87,
+            "is_verified": true,
+            "campaign_eligibility": null
+          }
+        ]
+      }
+    },
+    {
+      "model": "SM-R420NZAAMEA",
+      "category": "audio",
+      "observedAt": "2026-09-16T09:26:07.375Z",
+      "sourceAtFreeze": {
+        "price": 499,
+        "availability": "in_stock"
+      },
+      "searchStatus": 200,
+      "search": [
+        {
+          "name": "Samsung SM-R420NZAAMEA Earbuds",
+          "key": "samsung|SM-R420NZAAMEA",
+          "compareUrl": null,
+          "price": 299,
+          "stores": [
+            {
+              "store": "almanea",
+              "store_name": "المنيع",
+              "current_price": 299,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "/go/93b3e7fc-6bfe-4f4b-b161-c7209fb6a94a?gt=1789550768835.8c706b9ad738c818590ea76677dd477ce0cac8853a93d5567a950cbcdba09f6f"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy Buds3 FE Gray (SM-R420NZAAMEA)",
+          "price": 499,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 499,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/audio-sound/galaxy-buds/galaxy-buds3-fe-gray-sm-r420nzaamea/"
+            }
+          ]
+        }
+      ],
+      "samsungOffers": [
+        {
+          "store": "سامسونج السعودية",
+          "store_name": "سامسونج السعودية",
+          "current_price": 499,
+          "original_price": null,
+          "availability": "in_stock",
+          "product_url": "https://www.samsung.com/sa_en/audio-sound/galaxy-buds/galaxy-buds3-fe-gray-sm-r420nzaamea/"
+        }
+      ],
+      "compareStatus": 404,
+      "comparison": {
+        "error": "Canonical product not found"
+      }
+    }
+  ],
+  "completedAt": "2026-09-16T09:26:09.807Z",
+  "summary": {
+    "tested": 12,
+    "searchHttp200": 12,
+    "samsungPresent": 7,
+    "exactMerchantVariantConfirmed": 0,
+    "errors": 0
+  }
+}

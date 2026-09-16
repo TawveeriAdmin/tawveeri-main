@@ -7,7 +7,7 @@ const base = arg('base', 'https://tawveeri.com');
 const phase = arg('phase', 'after');
 const apiOnly = process.argv.includes('--api-only');
 const output = `docs/evidence/samsung-recovery-journeys-${phase}-2026-09-16.json`;
-const cohort = JSON.parse(fs.readFileSync('docs/evidence/samsung-recovery-journey-cohort-2026-09-16.json'));
+const cohort = JSON.parse(fs.readFileSync(arg('cohort', 'docs/evidence/samsung-recovery-journey-cohort-2026-09-16.json')));
 const isSamsung = offer => offer.store === 'samsung_ksa' || offer.store_slug === 'samsung_ksa'
   || /سامسونج السعودية|Samsung Saudi|Samsung KSA/i.test(offer.store_name || offer.store_display_name || '');
 async function request(url, options = {}) {

@@ -1,5 +1,9 @@
 export { samsungCatalogExclusion } from '../../src/lib/scraping/stores/samsung-catalog';
 
+export function isSamsungManufacturerBrand(brand: string | null | undefined): boolean {
+  return ['samsung', 'سامسونج'].includes((brand || '').trim().toLowerCase());
+}
+
 /** Exact manufacturer identities for the manufacturer's own Saudi consumer feed.
  * No suffix removal, fuzzy matching, or merchant ranking rules. Other merchants
  * continue through their existing evidence contracts.
@@ -49,7 +53,7 @@ export type SamsungVerifiedModel = NonNullable<ReturnType<typeof samsungManufact
  * No image filenames, title fragments, region stripping, or fuzzy model guesses.
  */
 export function samsungDeclaredModelIdentity(brand: string | null, payload: Record<string, unknown>, verified: Map<string, SamsungVerifiedModel>): SamsungVerifiedModel | null {
-  if (brand?.toLowerCase() !== 'samsung') return null;
+  if (!isSamsungManufacturerBrand(brand)) return null;
   const candidates = [payload.model, payload.modelNumber, payload.model_number, payload.mpn, payload.sku]
     .filter((value): value is string => typeof value === 'string')
     .map(value => verified.get(value.trim().toUpperCase())).filter((value): value is SamsungVerifiedModel => !!value);
