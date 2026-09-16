@@ -76,6 +76,8 @@ export async function GET(req: Request) {
       hasSupabaseDbUrl: !!process.env.SUPABASE_DB_URL,
       dbTest,
       heartbeat,
+      // Authenticated resource evidence for observed Samsung spawn EAGAIN.
+      samsungRuntimeResources: require('../../../../../scripts/tps-core/samsung-runtime-resources').samsungRuntimeResources(),
       nextRuntime: process.env.NEXT_RUNTIME ?? null,
       now: new Date().toISOString(),
     },

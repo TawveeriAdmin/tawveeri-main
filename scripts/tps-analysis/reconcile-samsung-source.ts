@@ -21,9 +21,10 @@ async function main() {
   }
   // Re-evaluate saved products under the current identity rules without
   // pretending their old HTTP observation was fetched again.
-  for (const row of evidence.urls) if (row.product && !samsungCatalogExclusion(row.model || '')) {
+  for (const row of evidence.urls) if (row.product) {
     row.identity = samsungManufacturerIdentity(6, row.product);
-    if (row.identity) row.classification = 'PDP_SUPPLEMENT';
+    const exclusion = samsungCatalogExclusion(row.model || '');
+    if (exclusion || row.identity) row.classification = exclusion || 'PDP_SUPPLEMENT';
   }
   const done = new Map(evidence.urls.map((row: any) => [row.url, row]));
   const scraper = new SamsungKsaScraper();
@@ -57,8 +58,9 @@ async function main() {
     evidence.updatedAt = new Date().toISOString();
     writeFileSync(output, JSON.stringify(evidence, null, 2));
   }
-  for (const row of evidence.urls) if (row.classification === 'PDP_SUPPLEMENT' && !models.has(row.model)) {
-    models.set(row.model, { model: row.model, product: row.product, identity: row.identity, source: 'sitemap_pdp', exclusion: null });
+  for (const row of evidence.urls) if (row.product && row.identity && !models.has(row.model)) {
+    models.set(row.model, { model: row.model, product: row.product, identity: row.identity, source: 'sitemap_pdp',
+      exclusion: samsungCatalogExclusion(row.model) });
   }
   const legacyProof = 'docs/evidence/samsung-recovery-legacy-only-pdps-2026-09-16.json';
   if (existsSync(legacyProof)) {

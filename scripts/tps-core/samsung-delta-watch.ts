@@ -7,6 +7,7 @@
 import { config } from "dotenv";
 import { resolve } from "path";
 import { guardSamsungConnections } from './samsung-connection-guard';
+import { runSamsungWorkerChild } from './samsung-worker-child';
 config({ path: resolve(process.cwd(), ".env.local") });
 
 const DELTA_LOCK_KEY = "samsung_ksa_delta_watch";
@@ -110,6 +111,18 @@ async function main() {
     // ── 2. Load the KNOWN baseline ──────────────────────────────────────────────────
     const { rows: knownRows } = await pg.query("select official_url, model_code, identity_key, category, classification, lifecycle_state, consecutive_misses from samsung_official_url_baseline");
     const known = new Map<string, BaselineRow>((knownRows as BaselineRow[]).map((r) => [r.official_url, r]));
+    // A still-live exact PDP can predate this URL registry and disappear from
+    // both finder and sitemap (measured EO-IC100BBEGWW). Treat current merchant
+    // evidence as a refresh seed, never as proof that the PDP is still available.
+    const { rows: priorOffers } = await pg.query(`select o.url,r.payload->>'sku' model
+      from tps_current_offers o join raw_observations r on r.id=o.raw_obs_id
+      where o.store_id=6 and o.status='valid'`);
+    for (const row of priorOffers) {
+      if (known.has(row.url) || samsungCatalogExclusion(row.model || '')) continue;
+      const identity = samsungManufacturerIdentity(6, { brand: 'Samsung', sku: row.model, product_url: row.url });
+      if (identity) known.set(row.url, { official_url: row.url, model_code: identity.model, identity_key: identity.key,
+        category: identity.category, classification: 'CURRENT_VALID_PRODUCT', lifecycle_state: 'CURRENT', consecutive_misses: 0 });
+    }
     stats.known_urls = known.size;
     console.log(`[baseline] known URLs: ${known.size}`);
 
@@ -305,11 +318,11 @@ async function main() {
     let userVisibleAt: string | null = null;
     let realizationHealth: Record<string, unknown> | null = null;
     let storefrontHealth: Record<string, unknown> | null = null;
+    let discoveryVisibility: Record<string, number> = {};
     if (!DRY && (discoveries.length || finderIngested)) {
       connectionGuard.assertHealthy();
       console.log(`[canonicalize] ${discoveries.length} new product(s) — running the standard normalize-incremental (Samsung-scoped, forward-cursor, existing products untouched)...`);
-      const { execSync } = await import("child_process");
-      execSync("npx tsx scripts/tps-core/normalize-incremental.ts --stores 6 --batches 20 --limit 500 --require-lane", { stdio: "inherit" });
+      await runSamsungWorkerChild('scripts/tps-core/normalize-incremental.ts', ['--stores', '6', '--batches', '20', '--limit', '500', '--require-lane']);
       connectionGuard.assertHealthy();
       canonicalAt = new Date().toISOString();
 
@@ -317,23 +330,24 @@ async function main() {
       if (!(await pg.query('select pg_try_advisory_lock($1) ok', [8148148])).rows[0].ok) {
         throw new Error('Projection deferred: normalization lane occupied');
       }
-      execSync("npx tsx scripts/build-tps-projection.ts", { stdio: "inherit" });
+      await runSamsungWorkerChild('scripts/build-tps-projection.ts');
       connectionGuard.assertHealthy();
       const { syncSamsungStorefront } = await import('./sync-samsung-storefront');
       storefrontHealth = (await syncSamsungStorefront(pg, true)).summary;
       console.log('[storefront-health]', JSON.stringify(storefrontHealth));
-      for (const d of discoveries) {
-        const { rows: cp } = await pg.query(`select c.id from canonical_products c
-          join tps_product_projection p on p.canonical_id=c.id
-          join tps_current_offers o on o.identity_key=c.tps_identity_key and o.store_id=6
-          where c.tps_identity_key=$1 and c.is_active and o.status='valid' and o.price>0
-          and coalesce(o.payload->>'_availability','') <> 'out_of_stock'`, [d.identity_key]);
-        if (cp.length) {
-          stats.user_visible_completed++;
-        } else {
-          console.warn(`[discover] WARNING: ${d.identity_key} did not canonicalize/activate this run — needs investigation, not silently retried forever.`);
-        }
-      }
+      const { rows: visibility } = await pg.query(`with expected as (select unnest($1::text[]) identity_key)
+        select case when c.id is null then 'canonical_missing' when not c.is_active then 'canonical_inactive'
+          when p.canonical_id is null then 'projection_missing' when o.identity_key is null then 'current_offer_missing'
+          when o.price is null or o.price<=0 then 'unpriced'
+          when coalesce(o.payload->>'_availability','') not in ('in_stock','limited_stock','pre_order') then 'unavailable'
+          else 'purchasable' end reason,count(*)::int models
+        from expected e left join canonical_products c on c.tps_identity_key=e.identity_key
+        left join tps_product_projection p on p.canonical_id=c.id
+        left join tps_current_offers o on o.identity_key=e.identity_key and o.category=c.category and o.store_id=6 and o.status='valid'
+        group by 1`, [discoveries.map(d => d.identity_key)]);
+      discoveryVisibility = Object.fromEntries(visibility.map(row => [row.reason, row.models]));
+      stats.user_visible_completed = discoveryVisibility.purchasable || 0;
+      console.log('[discovery-visibility]', JSON.stringify(discoveryVisibility));
       // Rebuild the projection so new canonicals reach the customer surface.
       userVisibleAt = new Date().toISOString();
       const models = [...new Set([...catalogProducts.values()].map(p => p.sku).concat(newBaselineRows
@@ -383,6 +397,7 @@ async function main() {
             completed_full_discovery_at: finishedAt.toISOString(), completed_delta_discovery_at: finishedAt.toISOString(),
             completed_price_stock_refresh_at: finishedAt.toISOString(), realization_health: realizationHealth,
             storefront_health: storefrontHealth,
+            discovery_visibility_reasons: discoveryVisibility,
             visibility_measure: 'active canonical + projection + priced available Samsung offer; browser journeys measured separately' })]
       );
     }

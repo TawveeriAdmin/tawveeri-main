@@ -17,6 +17,8 @@ import { assessRecoveryEligibility } from '@/lib/agent/recovery-eligibility';
 import { resolveComparisonRoute } from '@/lib/agent/resolve-comparison';
 import { toStorefrontCategory } from '@/lib/search/canonical-category';
 import { exactModelQuery } from '@/lib/search/exact-model-query';
+import { linkRetrievedCanonicals } from '@/lib/search/linked-canonical-products';
+import { collectCanonicalCandidates } from '@/lib/search/canonical-candidates';
 import { hoursSince, PICK_FRESHNESS_MAX_HOURS, productTrust, isFreshObservation, type TrustAssessment } from '@/lib/intelligence/evidence-engine';
 
 export const maxDuration = 30;
@@ -1416,6 +1418,11 @@ export function expandWordTerms(word: string): string[] {
   const norm = normalizeArabic(word).toLowerCase();
   const terms = new Set<string>();
   if (norm) terms.add(norm);
+  // Saudi Samsung names its independently sold chargers "Power Adapter".
+  // Preserve the complete phrase: bare "power" or "adapter" is not a charger.
+  if (['charger', 'chargers', 'شاحن', 'شواحن'].includes(norm)) {
+    for (const term of ['charger', 'شاحن', 'power adapter']) terms.add(term);
+  }
   // English plural → singular as an ADDITIONAL term (never a replacement): catalogue titles
   // are singular ("Air Conditioner"), so a plural query word ("conditioners") formed a
   // relevance group no title could satisfy (measured 2026-08-04 — the EN mirror of the
@@ -1989,12 +1996,13 @@ async function searchTPSCanonical(
 ): Promise<GroupedSearchProduct[]> {
   try {
     if (!words.length || (!categories.length && !exactModel)) return [];
-    let canonicalQuery = supabase
-      .from('canonical_products')
-      .select('id, name_ar, name_en, brand, image_url, tps_identity_key, model_number, category')
-      .eq('is_active', true);
-    canonicalQuery = exactModel ? canonicalQuery.eq('model_number', exactModel) : canonicalQuery.in('category', categories);
-    const { data: prods } = await canonicalQuery;
+    const prods = await collectCanonicalCandidates((from, to) => {
+      let canonicalQuery = supabase.from('canonical_products')
+        .select('id, name_ar, name_en, brand, image_url, tps_identity_key, model_number, category')
+        .eq('is_active', true);
+      canonicalQuery = exactModel ? canonicalQuery.eq('model_number', exactModel) : canonicalQuery.in('category', categories);
+      return canonicalQuery.order('id').range(from, to);
+    });
 
     if (!prods?.length) return [];
 
@@ -2571,6 +2579,18 @@ export async function POST(request: NextRequest) {
     const mw = aw.filter((w) => !isWrapperWord(w) && !constraintNumbers.has(w));
     const tpsProducts = await searchTPSCanonical(mw.length ? mw : aw, supabase, tpsCategories || [], exactModel);
     if (tpsProducts.length) {
+      // Actual Samsung journey evidence: the same linked legacy SKU and TPS
+      // canonical appeared twice. Resolve persisted links before deduplication;
+      // title regex enrichment later in this route cannot prove this relationship.
+      const legacyIds = [...new Set(products.filter(p => !p.tps_identity_key && p.product_id).map(p => p.product_id))];
+      const links: Array<{ id: string; canonical_product_id: string | null }> = [];
+      for (let start = 0; start < legacyIds.length; start += 100) {
+        const { data, error } = await supabase.from('products').select('id,canonical_product_id')
+          .in('id', legacyIds.slice(start, start + 100));
+        if (error) console.warn('[TPS Search] persisted links unavailable:', error.message);
+        else links.push(...(data || []));
+      }
+      products = linkRetrievedCanonicals(products, tpsProducts, links);
       products = [...tpsProducts, ...products];
       console.log('[TPS Search] injected:', tpsProducts.length, '(', (tpsCategories || []).join('+'), ')');
     }

@@ -665,21 +665,32 @@ if (REOBSERVE_LIMIT > 0) {
 // The worker's advisory lock is the cross-process singleton guard.
 // SAMSUNG_DELTA_WATCH_MS<=0 disables this loop.
 const SAMSUNG_DELTA_WATCH_MS = parseInt(process.env.SAMSUNG_DELTA_WATCH_MS || String(6 * 60 * 60 * 1000), 10); // 6h default
+let samsungRetryTimer = null;
+function retrySamsungWhenDue() {
+  if (samsungRetryTimer || SAMSUNG_DELTA_WATCH_MS <= 0) return;
+  // A transient EAGAIN/busy boot is not a completed job and must not consume
+  // the entire six-hour slot. Preserve the existing pressure/serialization gates.
+  samsungRetryTimer = setTimeout(async () => {
+    samsungRetryTimer = null;
+    if (await jobDue('samsung-delta-watch', SAMSUNG_DELTA_WATCH_MS)) runSamsungDeltaWatch();
+  }, 5 * 60 * 1000);
+}
 async function runSamsungDeltaWatch() {
   if (SAMSUNG_DELTA_WATCH_MS <= 0) return;
-  if (!(await pressureOk('samsung-delta-watch'))) return;
+  if (!(await pressureOk('samsung-delta-watch'))) { retrySamsungWhenDue(); return; }
   if (samsungDeltaWatchRunning) { console.log('[samsung-delta-watch] previous run still in progress — skipping'); return; }
-  if (refreshRunning || feedIngestRunning || ingestRunning) { console.log('[samsung-delta-watch] busy — deferring'); return; }
+  if (refreshRunning || feedIngestRunning || ingestRunning) { console.log('[samsung-delta-watch] busy — deferring'); retrySamsungWhenDue(); return; }
   let runtime;
   try {
     runtime = require('./tps-core/samsung-delta-runtime').resolveSamsungDeltaRuntime(process.cwd());
   } catch (err) {
     console.error('[samsung-delta-watch]', err.message);
+    retrySamsungWhenDue();
     return;
   }
   samsungDeltaWatchRunning = true;
   console.log(`[samsung-delta-watch] runtime cwd=${runtime.cwd}`);
-  const child = spawn(process.execPath, [require.resolve('tsx/cli'), runtime.script], { cwd: runtime.cwd, env: process.env });
+  const child = spawn(process.execPath, ['--import', 'tsx', runtime.script], { cwd: runtime.cwd, env: process.env });
   let tail = '';
   let head = '';
   const cap = (b) => { head = (head + b.toString()).slice(0, 2000); tail = (tail + b.toString()).slice(-1500); };
@@ -688,11 +699,15 @@ async function runSamsungDeltaWatch() {
   child.on('close', (code) => {
     samsungDeltaWatchRunning = false;
     if (code === 0) jobDone('samsung-delta-watch', 'ok');
-    else console.error(`[samsung-delta-watch] failure context: ${head}`);
+    else { console.error(`[samsung-delta-watch] failure context: ${head}`); retrySamsungWhenDue(); }
     const last = tail.split('\n').map((l) => l.trim()).filter((l) => l && !l.includes('injected env')).slice(-3).join(' | ') || '';
     console.log(`[samsung-delta-watch] exit ${code}: ${last}`);
   });
-  child.on('error', (err) => { samsungDeltaWatchRunning = false; console.error('[samsung-delta-watch] could not start:', err?.message || err); });
+  child.on('error', (err) => { samsungDeltaWatchRunning = false;
+    console.error('[samsung-delta-watch] could not start:', err?.message || err,
+      require('./tps-core/samsung-runtime-resources').samsungRuntimeResources());
+    retrySamsungWhenDue();
+  });
 }
 if (SAMSUNG_DELTA_WATCH_MS > 0) {
   console.log(`[samsung-delta-watch] enabled — every ${(SAMSUNG_DELTA_WATCH_MS / 3600000).toFixed(1)}h`);

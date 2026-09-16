@@ -16,6 +16,8 @@ export function samsungCatalogExclusion(model: string): string | null {
   if (/^F-FA01COMBO\d+$/i.test(model)) return 'MULTI_PRODUCT_BUNDLE';
   if (/^(DA97|DC97)-/i.test(model)) return 'REPLACEMENT_ASSEMBLY_PART';
   if (model.toUpperCase() === 'F-FA00009LA0') return 'DECORATIVE_COLLABORATION_CASE';
+  if (['CY-TF65BRCXUE', 'STN-WM55RXUE'].includes(model.toUpperCase())) return 'BUSINESS_DISPLAY_ACCESSORY';
+  if (['PC4NBNMUN', 'PC4NUNMANDZ', 'PC4NBDMUN', 'PC4NUDMANDZ', 'PC4NUFDAN'].includes(model.toUpperCase())) return 'HVAC_INSTALLATION_PANEL';
   return null;
 }
 
@@ -45,6 +47,26 @@ export interface SamsungCatalogObservation {
   observedAt: string;
   sourceUrl: string;
   model: SamsungCatalogModel;
+}
+
+/** The public endpoint used by the PDP's rendered commerce price bar. Its exact
+ * current SKU can be newer than cached JSON-LD/digitalData (live washer evidence). */
+export async function fetchSamsungProductDetail(model: string, site: 'sa' | 'sa_en'): Promise<SamsungCatalogObservation | null> {
+  const url = new URL('https://searchapi.samsung.com/v6/front/b2c/product/card/detail/global');
+  url.search = new URLSearchParams({ commonCodeYN: 'N', siteCode: site, modelList: model,
+    saleSkuYN: 'N', onlyRequestSkuYN: 'Y' }).toString();
+  const response = await fetch(url, { signal: AbortSignal.timeout(30000) });
+  if (!response.ok) throw new Error(`Samsung commerce detail HTTP ${response.status}`);
+  const data = await response.json();
+  const families = data?.response?.resultData?.productList;
+  if (!Array.isArray(families)) throw new Error('Samsung commerce detail malformed');
+  const matches = families.flatMap(family => (family.modelList || [])
+    .filter((row: SamsungCatalogModel) => row.modelCode === model)
+    .map((row: SamsungCatalogModel) => ({ site, type: `${String(family.categorySubTypeCode || '').slice(0, 4)}0000`,
+      familyId: family.familyId, subcategory: family.categorySubTypeEngName || '', observedAt: new Date().toISOString(),
+      sourceUrl: url.href, model: row })));
+  if (matches.length > 1) throw new Error('Samsung commerce detail ambiguous exact SKU');
+  return matches[0] || null;
 }
 
 export const SAMSUNG_TYPE_CATEGORIES: Record<string, ProductCategory> = {

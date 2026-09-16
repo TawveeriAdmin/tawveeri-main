@@ -3,7 +3,7 @@ import type { ProductCategory } from '@/lib/database/types';
 import { loadStoreConfig } from '../config/scraper-config';
 import { determineCategory } from '../utils/category-utils';
 import { GenericHtmlStoreScraper } from './generic-html-store-scraper';
-import { fetchSamsungCatalog, samsungCatalogProduct, samsungCatalogExclusion, type SamsungCatalogObservation } from './samsung-catalog';
+import { fetchSamsungCatalog, fetchSamsungProductDetail, samsungCatalogProduct, samsungCatalogExclusion, type SamsungCatalogObservation } from './samsung-catalog';
 
 /**
  * Samsung KSA scraper.
@@ -78,6 +78,28 @@ export class SamsungKsaScraper extends GenericHtmlStoreScraper {
     // makes JS rendering unnecessary, and avoiding Puppeteer keeps this
     // scraper usable on hosts where Chrome for Testing misbehaves.
     const html = await this.fetchPage(productUrl);
+    const product = this.extractProductPage(html, productUrl);
+    // This marker belongs to Samsung's live commerce price-bar integration.
+    // Static/support-only pages without it retain their existing evidence path.
+    if (product?.sku && html.includes('gpvGetTypeCheck')) {
+      const site = requested.pathname.split('/')[1];
+      if (site === 'sa' || site === 'sa_en') {
+        const detail = await fetchSamsungProductDetail(product.sku, site);
+        if (detail) {
+          const current = samsungCatalogProduct(detail);
+          return { ...product, current_price: current.current_price, original_price: current.original_price,
+            availability: current.availability,
+            specifications: { ...product.specifications, samsung_commerce: {
+              source_url: detail.sourceUrl, observed_at: detail.observedAt, model: product.sku,
+              supersedes_cached_html_price: true,
+            } } };
+        }
+      }
+    }
+    return product;
+  }
+
+  private extractProductPage(html: string, productUrl: string): ScrapedProduct | null {
     const $ = this.getCheerio(html);
     const specifications = extractSpecTable($, productUrl);
 

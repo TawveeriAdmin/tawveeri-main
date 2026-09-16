@@ -1,4 +1,4 @@
-import { fetchSamsungCatalog, samsungSaudiUrl, samsungCatalogProduct, type SamsungCatalogObservation } from '../../src/lib/scraping/stores/samsung-catalog';
+import { fetchSamsungCatalog, samsungSaudiUrl, samsungCatalogProduct, samsungCatalogExclusion, type SamsungCatalogObservation } from '../../src/lib/scraping/stores/samsung-catalog';
 
 const family = (id: string, model = 'SM-X400NZSAMEA') => ({ familyId: id, modelCount: '1',
   categorySubTypeEngName: 'Galaxy Tab', modelList: [{ modelCode: model, displayName: 'Galaxy Tab',
@@ -7,6 +7,13 @@ const response = (start: number, end: number, total: number, families: unknown[]
   json: async () => ({ response: { resultData: { common: { fromRecord: String(start), toRecord: String(end), totalRecord: String(total) }, productList: families } } }) });
 
 describe('Samsung public catalog enumeration', () => {
+  it('excludes evidenced commercial installation parts while retaining household functional accessories', () => {
+    expect(samsungCatalogExclusion('CY-TF65BRCXUE')).toBe('BUSINESS_DISPLAY_ACCESSORY');
+    expect(samsungCatalogExclusion('PC4NUFDAN')).toBe('HVAC_INSTALLATION_PANEL');
+    for (const model of ['HAF-QIN/EXP', 'SKK-ALE/SC', 'MIM-H04NDZ', 'MWR-SH11N']) {
+      expect(samsungCatalogExclusion(model)).toBeNull();
+    }
+  });
   const originalFetch = global.fetch;
   afterEach(() => { global.fetch = originalFetch; jest.restoreAllMocks(); });
   it('advances by actual page bounds and preserves exact commercial variants', async () => {

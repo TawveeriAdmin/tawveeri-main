@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { adaptRow } from '../tps-core/progressive-engine';
 import { samsungDeclaredModelIdentity } from '../tps-core/samsung-manufacturer-identity';
 const source = JSON.parse(readFileSync('docs/evidence/samsung-recovery-source-reconciliation-2026-09-16.json', 'utf8'));
@@ -7,9 +7,11 @@ const verified = new Map(models.map((m: any) => [m.model, m.identity])) as Param
 const raw = JSON.parse(readFileSync('docs/evidence/samsung-recovery-cross-merchant-raw-2026-09-16.json', 'utf8'));
 const cross = raw.rows.map((row: any) => {
   const identity = samsungDeclaredModelIdentity(adaptRow(row.payload, row.name).brand, row.payload, verified);
+  const declaredModel = row.payload.model || row.payload.modelNumber || row.payload.mpn || null;
   return { store: row.store_id, rawId: row.raw_obs_id, oldKey: row.identity_key, url: row.url, price: row.price,
-    declaredModel: row.payload.model || row.payload.modelNumber || row.payload.mpn || null,
-    identity, classification: identity ? 'EXACT_MANUFACTURER_SOURCE_MATCH' : 'NO_EXACT_MATCH_IN_VERIFIED_SAUDI_SOURCE',
+    declaredModel,
+    identity, classification: identity ? 'EXACT_MANUFACTURER_SOURCE_MATCH' : !declaredModel ? 'RETAILER_MPN_MISSING'
+      : 'DECLARED_MODEL_NOT_IN_VERIFIED_SAUDI_SOURCE',
     source: identity ? models.find((m: any) => m.model === identity.model).product : null };
 });
 writeFileSync('docs/evidence/samsung-recovery-cross-merchant-classification-2026-09-16.json', JSON.stringify({
@@ -36,7 +38,7 @@ for (const store of [4, 5]) {
     if (categories.size === 3) break;
   }
 }
-writeFileSync('docs/evidence/samsung-recovery-supplemental-cohort-2026-09-16.json', JSON.stringify({
+if (!existsSync('docs/evidence/samsung-recovery-supplemental-cohort-2026-09-16.json')) writeFileSync('docs/evidence/samsung-recovery-supplemental-cohort-2026-09-16.json', JSON.stringify({
   frozenAt: new Date().toISOString(), method: 'Additional product families and up to three distinct shared categories per retailer, selected from frozen source evidence before recovery; no journey-result selection.', rows,
 }, null, 2));
 console.log(JSON.stringify({ crossRows: cross.length, exact: cross.filter((r: any) => r.identity).length, supplemental: rows.map(r => ({ label: r.label, model: r.model })) }));

@@ -12,6 +12,25 @@ const url = 'https://www.samsung.com/sa_en/washers-and-dryers/washer-dryer-combo
 describe('Samsung current and reference price truth', () => {
   const originalFetch = global.fetch;
   afterEach(() => { jest.restoreAllMocks(); global.fetch = originalFetch; });
+  it('uses the exact live commerce price over stale cached page analytics and preserves PDP specs', async () => {
+    const scraper = new SamsungKsaScraper();
+    jest.spyOn(scraper, 'fetchPage').mockResolvedValue(`${html}<input id="gpvGetTypeCheck" value="Y">`);
+    global.fetch = jest.fn().mockResolvedValue({ ok: true, json: async () => ({ response: { resultData: { productList: [{
+      familyId: 'washer', categorySubTypeCode: '08010200', modelList: [{ modelCode: 'WD12TP34DSX/YL',
+        displayName: 'Washer Dryer', pdpUrl: url, price: '7149', promotionPrice: '3999', priceCurrency: 'SAR',
+        stockStatusText: 'inStock', ctaType: 'whereToBuy' }],
+    }] } } }) });
+    expect(await scraper.updateProductPrice(url)).toMatchObject({ sku: 'WD12TP34DSX/YL',
+      current_price: 3999, original_price: 7149, availability: 'in_stock',
+      specifications: { samsung_commerce: { model: 'WD12TP34DSX/YL', supersedes_cached_html_price: true } } });
+    expect(String((global.fetch as jest.Mock).mock.calls[0][0])).toContain('onlyRequestSkuYN=Y');
+  });
+  it('fails visibly if the live commerce request fails instead of silently reintroducing the cached price', async () => {
+    const scraper = new SamsungKsaScraper();
+    jest.spyOn(scraper, 'fetchPage').mockResolvedValue(`${html}<input id="gpvGetTypeCheck" value="Y">`);
+    global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 503 });
+    await expect(scraper.updateProductPrice(url)).rejects.toThrow('commerce detail HTTP 503');
+  });
   it('refreshes the selected buying-tool variant and refuses another family or unknown model', async () => {
     const model = 'SM-F976BZVIMEA';
     const buy = 'https://www.samsung.com/sa_en/smartphones/galaxy-z-fold8-ultra/buy/';
