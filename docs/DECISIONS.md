@@ -18,7 +18,12 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 **Alternatives rejected.** Stripping all unrecognized query params instead of allowlisting was rejected — it would silently accept a future unknown variant-selector param (the exact risk the allowlist exists to prevent), not just tracking noise. Widening the allowlist to cover the residual 157 (`sbo`, `s`, `aref` etc.) now was explicitly deferred by the owner, since it wasn't part of this scoped fix and each new param needs the same evidence-first treatment.
 
-**Validation.** 3 new tests (70/70 Check tests total): the real stored search-results URL for the Midea offer now parses correctly; `sameProductLink()` confirmed to recognize it as the same product a clean link resolves to; a still-genuinely-unrecognized param (`sbo`) confirmed to still fail closed, proving the allowlist was not opened wide. Full suite: run once after the change, result recorded in the deployment note below. Live verification with two different real Amazon links (the Midea washer plus a second, unrelated product) recorded there too, per the owner's explicit requirement for two live proofs, not one.
+**Validation.** 3 new tests (70/70 Check tests total): the real stored search-results URL for the Midea offer now parses correctly; `sameProductLink()` confirmed to recognize it as the same product a clean link resolves to; a still-genuinely-unrecognized param (`sbo`) confirmed to still fail closed, proving the allowlist was not opened wide. Full suite: 247/247 suites, 3757/3757 tests, exit 0.
+
+**Deployed and live-verified with two different real Amazon products, per the owner's explicit requirement for two proofs, not one.** Code `2a9d3c04` on `main`, Railway `tawveeri-main` Online.
+- Proof 1 — the same short link investigated throughout this thread, `https://link.amazon/B093oJrgV`: production now returns a full **`matched`** result — Amazon (878 SAR, the source) plus 3 corroborating stores (blackbox 954, shaker 954, extra 959) — Amazon is genuinely the cheapest here, matching the founder's own observation from main search. This is the first full `matched` result achieved through a short link in this entire investigation.
+- Proof 2 — a second, unrelated product found among the newly-rescued offers (an LG 65" OLED TV, ASIN `B0GWM1JFWJ`, 5699 SAR, pasted as a direct full link rather than a short link): production also returns **`matched`**.
+- Both confirm the fix generalizes, not a one-off: 392+ distinct non-Midea offers among the rescued set were available to pick from for proof 2.
 
 ### ADR-370 — Amazon discovery: explicit category queries, resumable page tails, visible source failures; owner-approved non-regression coverage gate · Accepted (2026-09-15; deployment decision 2026-09-16)
 
