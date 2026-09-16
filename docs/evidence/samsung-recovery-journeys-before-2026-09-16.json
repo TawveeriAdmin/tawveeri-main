@@ -1,0 +1,2812 @@
+{
+  "startedAt": "2026-09-16T08:44:25.855Z",
+  "base": "https://tawveeri.com",
+  "phase": "before",
+  "apiOnly": true,
+  "cohortFrozenAt": "2026-09-16T08:38:32.039Z",
+  "method": "Real search/compare APIs and rendered pages; merchant destination resolved through the exact NPO UUID without generating an outbound click.",
+  "rows": [
+    {
+      "model": "SM-F976BZVOMEA",
+      "category": "mobile",
+      "observedAt": "2026-09-16T08:44:25.857Z",
+      "sourceAtFreeze": {
+        "price": 8999,
+        "availability": "in_stock"
+      },
+      "searchStatus": 200,
+      "search": [
+        {
+          "name": "50 Inch Smart TV FX50FHD-SM | Full HD 1080p, Android, WiFi, 144Hz, Screen Sharing, HDMI & USB, 2 Year Warranty",
+          "price": 950,
+          "stores": [
+            {
+              "store": "نون",
+              "store_name": "نون",
+              "current_price": 950,
+              "original_price": 1299,
+              "availability": "in_stock",
+              "product_url": "https://www.noon.com/saudi-en/50-inch-smart-tv-fx50fhd-sm-full-hd-1080p-android-wifi-144hz-screen-sharing-hdmi-usb-2-year-warranty/Z6D86513A1B0345924CF5Z/p/"
+            }
+          ]
+        },
+        {
+          "name": "Samsung Galaxy Watch 8 Classic 46mm SM-L500NZWAMEA-White",
+          "price": 1398.998001,
+          "stores": [
+            {
+              "store": "المنيع",
+              "store_name": "المنيع",
+              "current_price": 1398.998001,
+              "original_price": 1948.997001,
+              "availability": "in_stock",
+              "product_url": "https://www.almanea.sa/en/product/p-170100503999032"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy Buds Core Black (SM-R410NZKAMEA)",
+          "price": 199,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 199,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/audio-sound/galaxy-buds/galaxy-buds-core-black-sm-r410nzkamea/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy Buds Core White (SM-R410NZWAMEA)",
+          "price": 199,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 199,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/audio-sound/galaxy-buds/galaxy-buds-core-white-sm-r410nzwamea/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy Fit3 Gray Bluetooth V5 3 (SM-R390NZAAMEA)",
+          "price": 229,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 229,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/watches/galaxy-fit/galaxy-fit3-gray-bluetooth-v5-3-sm-r390nzaamea/buy/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy Fit3 Silver Bluetooth V5 3 (SM-R390NZSAMEA)",
+          "price": 229,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 229,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/watches/galaxy-fit/galaxy-fit3-silver-bluetooth-v5-3-sm-r390nzsamea/buy/"
+            }
+          ]
+        },
+        {
+          "name": "Samsung Galaxy Watch 8 Ultra 2025 SM-L705FZA1KSA-Gray",
+          "price": 1799.002501,
+          "stores": [
+            {
+              "store": "المنيع",
+              "store_name": "المنيع",
+              "current_price": 1799.002501,
+              "original_price": 2498.996001,
+              "availability": "in_stock",
+              "product_url": "https://www.almanea.sa/en/product/p-170100503999034"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy Buds3 FE Black (SM-R420NZKAMEA)",
+          "price": 499,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 499,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/audio-sound/galaxy-buds/galaxy-buds3-fe-black-sm-r420nzkamea/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy Buds3 FE Gray (SM-R420NZAAMEA)",
+          "price": 499,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 499,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/audio-sound/galaxy-buds/galaxy-buds3-fe-gray-sm-r420nzaamea/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy A07 Black 64GB (SM-A075FZKDMEA)",
+          "price": 599,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 599,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a07-black-64gb-sm-a075fzkdmea/buy/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy A07 Green 64GB (SM-A075FZGDMEA)",
+          "price": 599,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 599,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a07-green-64gb-sm-a075fzgdmea/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy A07 Light Violet 64GB (SM-A075FLVDMEA)",
+          "price": 599,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 599,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a07-light-violet-64gb-sm-a075flvdmea/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy A16 Black 128GB (SM-A165FZKDMEA)",
+          "price": 619,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 619,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a16-black-128gb-sm-a165fzkdmea/buy/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy A16 Light Green 128GB (SM-A165FLGDMEA)",
+          "price": 619,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 619,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a16-light-green-128gb-sm-a165flgdmea/buy/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy A16 Light Gray 128GB (SM-A165FZADMEA)",
+          "price": 619,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 619,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a16-light-gray-128gb-sm-a165fzadmea/buy/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy Tab A11 (LTE) Gray 64GB (SM-X135GZAAMEA)",
+          "price": 649,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 649,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/tablets/galaxy-tab-a/galaxy-tab-a11-gray-64gb-sm-x135gzaamea/buy/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy Tab A11 (LTE) Silver 64GB (SM-X135GZSAMEA)",
+          "price": 649,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 649,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/tablets/galaxy-tab-a/galaxy-tab-a11-silver-64gb-sm-x135gzsamea/buy/"
+            }
+          ]
+        },
+        {
+          "name": "Tablet Samsung SM X130NZAAEUE GALAXY TAB A11 Gray",
+          "price": 688.92,
+          "stores": [
+            {
+              "store": "أمازون",
+              "store_name": "أمازون",
+              "current_price": 688.92,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.amazon.sa/-/en/Tablet-Samsung-X130NZAAEUE-GALAXY-Gray/dp/B0FWS4GKZ8/ref=sr_1_73?dib=eyJ2IjoiMSJ9.8TRnsm5j8WEMWAbr6PSdxlST5sWcloSuRG8Pw9rRNkWM7TGHOZGBoNxzmb8uJSiVSHUr50lRKhyE03s6FC0j90QlRJpS_IjCbCuQal_ALHEK5DB0aEjUKRPd2m1cwRC8kUQyzUjqWbEOkxdc3-z65bvGrhseFxOo2Sr8mmN8GEs1VIqVgztDNmQsuWQ87vSQv8KiL8nV02iLzwemQ3kZsP1aezi9GX9JopENUC1mmcwOGIPQynSOXcgRrDWhGj5JA9tPpo3neaRz3cvmWv_M0fpHw7raI-a80SiiQ6XwPCQ.EbMSM92qnLQmRhYsmkRphqZol44qohrM4ZCA43abyLI&dib_tag=se&keywords=%D8%AA%D8%A7%D8%A8%D9%84%D8%AA&qid=1789171728&sr=8-73"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy A07 Green 128GB (SM-A075FZGGMEA)",
+          "price": 739,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 739,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a07-green-128gb-sm-a075fzggmea/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy A07 Black 128GB (SM-A075FZKGMEA)",
+          "price": 739,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 739,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a07-black-128gb-sm-a075fzkgmea/buy/"
+            }
+          ]
+        }
+      ],
+      "samsungOffers": [],
+      "compareStatus": 404,
+      "comparison": {
+        "error": "Canonical product not found"
+      }
+    },
+    {
+      "model": "SM-X236BZSEMEA",
+      "category": "tablet",
+      "observedAt": "2026-09-16T08:44:28.687Z",
+      "sourceAtFreeze": {
+        "price": 1499,
+        "availability": "in_stock"
+      },
+      "searchStatus": 200,
+      "search": [
+        {
+          "name": "Galaxy Tab A11+ 5G Silver 256GB (SM-X236BZSEMEA)",
+          "price": 1499,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 1499,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/tablets/galaxy-tab-a/galaxy-tab-a11-plus-silver-256gb-sm-x236bzsemea/buy/"
+            }
+          ]
+        }
+      ],
+      "samsungOffers": [
+        {
+          "store": "سامسونج السعودية",
+          "store_name": "سامسونج السعودية",
+          "current_price": 1499,
+          "original_price": null,
+          "availability": "in_stock",
+          "product_url": "https://www.samsung.com/sa_en/tablets/galaxy-tab-a/galaxy-tab-a11-plus-silver-256gb-sm-x236bzsemea/buy/"
+        }
+      ],
+      "compareStatus": 200,
+      "comparison": {
+        "canonical": {
+          "id": "18ac0095-1c55-481e-ae5a-82888b5c8cf9",
+          "name_ar": "تابلت سامسونج SM-X236BZSEMEA",
+          "name_en": "Samsung SM-X236BZSEMEA Tablet",
+          "brand": "samsung",
+          "category": "tablet",
+          "tps_identity_key": "samsung|MODEL:SM-X236BZSEMEA",
+          "identity_confidence": 92,
+          "attributes": {
+            "source": "progressive",
+            "stores": [
+              6,
+              4
+            ],
+            "identity_key": "samsung|MODEL:SM-X236BZSEMEA",
+            "offers_count": 2,
+            "identity_tier": "primary",
+            "parser_version": "tablet-v1",
+            "comparison_eligible": true
+          }
+        },
+        "summary": {
+          "cheapest_store": "سامسونج السعودية",
+          "lowest_price": 1499,
+          "highest_price": 1499,
+          "saving": null,
+          "store_count": 2,
+          "cheapest_stale": false
+        },
+        "offers": [
+          {
+            "store_slug": "samsung_ksa",
+            "store_name": "سامسونج السعودية",
+            "raw_name": "Galaxy Tab A11+ 5G Silver 256GB (SM-X236BZSEMEA)",
+            "price": 1499,
+            "availability": null,
+            "product_url": "/go/8f393eb2-9196-4a30-974f-5bacf6aab812?gt=1789548271216.3226854eb2403885312c62d4ab9334b65ba11233ebfa39ad55b5b485e255ee34",
+            "observed_at": "2026-09-15T14:09:27.168+00:00",
+            "stale": false,
+            "confidence": 87,
+            "is_verified": true,
+            "campaign_eligibility": null
+          },
+          {
+            "store_slug": "extra",
+            "store_name": "إكسترا",
+            "raw_name": "SAMSUNG Galaxy Tab A11 Plus, 5G, 256 GB, Silver",
+            "price": 1499,
+            "availability": null,
+            "product_url": "/go/429a2e87-1a94-4a8b-81d7-9d18a040fdc3?gt=1789548271217.f4009bde97825fe2f119175ed6a44ed3717c7cfd688b70d9f613964b070a7c24",
+            "observed_at": "2026-09-14T12:04:03.515945+00:00",
+            "stale": false,
+            "confidence": 87,
+            "is_verified": true,
+            "campaign_eligibility": null
+          }
+        ]
+      }
+    },
+    {
+      "model": "SM-L715FZSAKSA",
+      "category": "smartwatch",
+      "observedAt": "2026-09-16T08:44:31.425Z",
+      "sourceAtFreeze": {
+        "price": 2799,
+        "availability": "in_stock"
+      },
+      "searchStatus": 200,
+      "search": [
+        {
+          "name": "50 Inch Smart TV FX50FHD-SM | Full HD 1080p, Android, WiFi, 144Hz, Screen Sharing, HDMI & USB, 2 Year Warranty",
+          "price": 950,
+          "stores": [
+            {
+              "store": "نون",
+              "store_name": "نون",
+              "current_price": 950,
+              "original_price": 1299,
+              "availability": "in_stock",
+              "product_url": "https://www.noon.com/saudi-en/50-inch-smart-tv-fx50fhd-sm-full-hd-1080p-android-wifi-144hz-screen-sharing-hdmi-usb-2-year-warranty/Z6D86513A1B0345924CF5Z/p/"
+            }
+          ]
+        },
+        {
+          "name": "Samsung Galaxy Watch 8 Classic 46mm SM-L500NZWAMEA-White",
+          "price": 1398.998001,
+          "stores": [
+            {
+              "store": "المنيع",
+              "store_name": "المنيع",
+              "current_price": 1398.998001,
+              "original_price": 1948.997001,
+              "availability": "in_stock",
+              "product_url": "https://www.almanea.sa/en/product/p-170100503999032"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy Buds Core Black (SM-R410NZKAMEA)",
+          "price": 199,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 199,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/audio-sound/galaxy-buds/galaxy-buds-core-black-sm-r410nzkamea/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy Buds Core White (SM-R410NZWAMEA)",
+          "price": 199,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 199,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/audio-sound/galaxy-buds/galaxy-buds-core-white-sm-r410nzwamea/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy Fit3 Gray Bluetooth V5 3 (SM-R390NZAAMEA)",
+          "price": 229,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 229,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/watches/galaxy-fit/galaxy-fit3-gray-bluetooth-v5-3-sm-r390nzaamea/buy/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy Fit3 Silver Bluetooth V5 3 (SM-R390NZSAMEA)",
+          "price": 229,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 229,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/watches/galaxy-fit/galaxy-fit3-silver-bluetooth-v5-3-sm-r390nzsamea/buy/"
+            }
+          ]
+        },
+        {
+          "name": "Samsung Galaxy Watch 8 Ultra 2025 SM-L705FZA1KSA-Gray",
+          "price": 1799.002501,
+          "stores": [
+            {
+              "store": "المنيع",
+              "store_name": "المنيع",
+              "current_price": 1799.002501,
+              "original_price": 2498.996001,
+              "availability": "in_stock",
+              "product_url": "https://www.almanea.sa/en/product/p-170100503999034"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy Buds3 FE Black (SM-R420NZKAMEA)",
+          "price": 499,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 499,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/audio-sound/galaxy-buds/galaxy-buds3-fe-black-sm-r420nzkamea/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy Buds3 FE Gray (SM-R420NZAAMEA)",
+          "price": 499,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 499,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/audio-sound/galaxy-buds/galaxy-buds3-fe-gray-sm-r420nzaamea/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy A07 Black 64GB (SM-A075FZKDMEA)",
+          "price": 599,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 599,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a07-black-64gb-sm-a075fzkdmea/buy/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy A07 Green 64GB (SM-A075FZGDMEA)",
+          "price": 599,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 599,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a07-green-64gb-sm-a075fzgdmea/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy A07 Light Violet 64GB (SM-A075FLVDMEA)",
+          "price": 599,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 599,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a07-light-violet-64gb-sm-a075flvdmea/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy A16 Black 128GB (SM-A165FZKDMEA)",
+          "price": 619,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 619,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a16-black-128gb-sm-a165fzkdmea/buy/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy A16 Light Green 128GB (SM-A165FLGDMEA)",
+          "price": 619,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 619,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a16-light-green-128gb-sm-a165flgdmea/buy/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy A16 Light Gray 128GB (SM-A165FZADMEA)",
+          "price": 619,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 619,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a16-light-gray-128gb-sm-a165fzadmea/buy/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy Tab A11 (LTE) Gray 64GB (SM-X135GZAAMEA)",
+          "price": 649,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 649,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/tablets/galaxy-tab-a/galaxy-tab-a11-gray-64gb-sm-x135gzaamea/buy/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy Tab A11 (LTE) Silver 64GB (SM-X135GZSAMEA)",
+          "price": 649,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 649,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/tablets/galaxy-tab-a/galaxy-tab-a11-silver-64gb-sm-x135gzsamea/buy/"
+            }
+          ]
+        },
+        {
+          "name": "Tablet Samsung SM X130NZAAEUE GALAXY TAB A11 Gray",
+          "price": 688.92,
+          "stores": [
+            {
+              "store": "أمازون",
+              "store_name": "أمازون",
+              "current_price": 688.92,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.amazon.sa/-/en/Tablet-Samsung-X130NZAAEUE-GALAXY-Gray/dp/B0FWS4GKZ8/ref=sr_1_73?dib=eyJ2IjoiMSJ9.8TRnsm5j8WEMWAbr6PSdxlST5sWcloSuRG8Pw9rRNkWM7TGHOZGBoNxzmb8uJSiVSHUr50lRKhyE03s6FC0j90QlRJpS_IjCbCuQal_ALHEK5DB0aEjUKRPd2m1cwRC8kUQyzUjqWbEOkxdc3-z65bvGrhseFxOo2Sr8mmN8GEs1VIqVgztDNmQsuWQ87vSQv8KiL8nV02iLzwemQ3kZsP1aezi9GX9JopENUC1mmcwOGIPQynSOXcgRrDWhGj5JA9tPpo3neaRz3cvmWv_M0fpHw7raI-a80SiiQ6XwPCQ.EbMSM92qnLQmRhYsmkRphqZol44qohrM4ZCA43abyLI&dib_tag=se&keywords=%D8%AA%D8%A7%D8%A8%D9%84%D8%AA&qid=1789171728&sr=8-73"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy A07 Green 128GB (SM-A075FZGGMEA)",
+          "price": 739,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 739,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a07-green-128gb-sm-a075fzggmea/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy A07 Black 128GB (SM-A075FZKGMEA)",
+          "price": 739,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 739,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a07-black-128gb-sm-a075fzkgmea/buy/"
+            }
+          ]
+        }
+      ],
+      "samsungOffers": [],
+      "compareStatus": 404,
+      "comparison": {
+        "error": "Canonical product not found"
+      }
+    },
+    {
+      "model": "SM-R640NZWAMEA",
+      "category": "audio",
+      "observedAt": "2026-09-16T08:44:33.166Z",
+      "sourceAtFreeze": {
+        "price": 999,
+        "availability": "in_stock"
+      },
+      "searchStatus": 200,
+      "search": [
+        {
+          "name": "Galaxy Buds4 Pro White (SM-R640NZWAMEA)",
+          "price": 999,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 999,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/audio-sound/galaxy-buds/galaxy-buds4-pro-white-sm-r640nzwamea/"
+            }
+          ]
+        },
+        {
+          "name": "Samsung Galaxy Buds 4 Pro, TWS, White- SM-R640NZWAMEA",
+          "price": 848.999001,
+          "stores": [
+            {
+              "store": "المنيع",
+              "store_name": "المنيع",
+              "current_price": 848.999001,
+              "original_price": 999.005001,
+              "availability": "in_stock",
+              "product_url": "https://www.almanea.sa/en/product/p-170500502999002"
+            }
+          ]
+        }
+      ],
+      "samsungOffers": [
+        {
+          "store": "سامسونج السعودية",
+          "store_name": "سامسونج السعودية",
+          "current_price": 999,
+          "original_price": null,
+          "availability": "in_stock",
+          "product_url": "https://www.samsung.com/sa_en/audio-sound/galaxy-buds/galaxy-buds4-pro-white-sm-r640nzwamea/"
+        }
+      ],
+      "compareStatus": 404,
+      "comparison": {
+        "error": "Canonical product not found"
+      }
+    },
+    {
+      "model": "SM-Q506NZKAMEA",
+      "category": "ring",
+      "observedAt": "2026-09-16T08:44:35.051Z",
+      "sourceAtFreeze": {
+        "price": 1499,
+        "availability": "in_stock"
+      },
+      "searchStatus": 200,
+      "search": [
+        {
+          "name": "Galaxy Ring Titanium Black Size 6 (SM-Q506NZKAMEA)",
+          "price": 1499,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 1499,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/rings/galaxy-ring/galaxy-ring-titanium-black-size-6-sm-q506nzkamea/"
+            }
+          ]
+        }
+      ],
+      "samsungOffers": [
+        {
+          "store": "سامسونج السعودية",
+          "store_name": "سامسونج السعودية",
+          "current_price": 1499,
+          "original_price": null,
+          "availability": "in_stock",
+          "product_url": "https://www.samsung.com/sa_en/rings/galaxy-ring/galaxy-ring-titanium-black-size-6-sm-q506nzkamea/"
+        }
+      ],
+      "compareStatus": 404,
+      "comparison": {
+        "error": "Canonical product not found"
+      }
+    },
+    {
+      "model": "EF-PS721CBEGWW",
+      "category": "accessories",
+      "observedAt": "2026-09-16T08:44:36.505Z",
+      "sourceAtFreeze": {
+        "price": 50,
+        "availability": "in_stock"
+      },
+      "searchStatus": 200,
+      "search": [
+        {
+          "name": "BENOISON EF Lens for Canon - 85mm f1.8 Medium Telephoto Lenses Manual Camera Portrait Lens for Canon EOS Rebel T8i T7i T7 T6 T6s T6i T3i T2i SL3 SL2 90D 80D 77D 4000D,1DX 5D 6D Mark II/III/IV etc",
+          "price": 233.94,
+          "stores": [
+            {
+              "store": "أمازون السعودية",
+              "store_name": "أمازون السعودية",
+              "current_price": 233.94,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.amazon.sa/dp/B0CL255NSY?tag=tawveeri-21"
+            }
+          ]
+        },
+        {
+          "name": "Canon telephoto lens EF 75-300mm F4.0-5.6 III for EOS (58mm filter thread, autofocus) black",
+          "price": 1364.59,
+          "stores": [
+            {
+              "store": "أمازون السعودية",
+              "store_name": "أمازون السعودية",
+              "current_price": 1364.59,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.amazon.sa/dp/B00005K47Y?tag=tawveeri-21"
+            }
+          ]
+        },
+        {
+          "name": "Canon EF 75-300mm f/4-5.6 III Telephoto Zoom Lens, Black, 6473A003",
+          "price": 904.24,
+          "stores": [
+            {
+              "store": "أمازون السعودية",
+              "store_name": "أمازون السعودية",
+              "current_price": 904.24,
+              "original_price": null,
+              "availability": "limited_stock",
+              "product_url": "https://www.amazon.sa/dp/B00004THD0?tag=tawveeri-21"
+            }
+          ]
+        },
+        {
+          "name": "Canon EOS 2000D with EF-S 18-55mm IS, Lens and EF 75-300mm- black -KSA version with official warranty",
+          "price": 2799,
+          "stores": [
+            {
+              "store": "أمازون السعودية",
+              "store_name": "أمازون السعودية",
+              "current_price": 2799,
+              "original_price": null,
+              "availability": "limited_stock",
+              "product_url": "https://www.amazon.sa/dp/B07B39M2MJ?tag=tawveeri-21"
+            }
+          ]
+        }
+      ],
+      "samsungOffers": [],
+      "compareStatus": 404,
+      "comparison": {
+        "error": "Canonical product not found"
+      }
+    },
+    {
+      "model": "GH96-20268A",
+      "category": "stylus",
+      "observedAt": "2026-09-16T08:44:37.968Z",
+      "sourceAtFreeze": {
+        "price": 259,
+        "availability": "limited_stock"
+      },
+      "searchStatus": 200,
+      "search": [
+        {
+          "name": "S Pen for Galaxy Tab S11 and S11 Ultra Gh96 20268a (GH96-20268A)",
+          "price": 259,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 259,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/mobile-accessories/s-pen-for-galaxy-tab-s11-and-s11-ultra-gh96-20268a/"
+            }
+          ]
+        }
+      ],
+      "samsungOffers": [
+        {
+          "store": "سامسونج السعودية",
+          "store_name": "سامسونج السعودية",
+          "current_price": 259,
+          "original_price": null,
+          "availability": "in_stock",
+          "product_url": "https://www.samsung.com/sa_en/mobile-accessories/s-pen-for-galaxy-tab-s11-and-s11-ultra-gh96-20268a/"
+        }
+      ],
+      "compareStatus": 404,
+      "comparison": {
+        "error": "Canonical product not found"
+      }
+    },
+    {
+      "model": "EI-T5600BBEGWW",
+      "category": "tracker",
+      "observedAt": "2026-09-16T08:44:39.583Z",
+      "sourceAtFreeze": {
+        "price": 99,
+        "availability": "in_stock"
+      },
+      "searchStatus": 200,
+      "search": [
+        {
+          "name": "Galaxy SmartTag2 Black Ei (EI-T5600BBEGWW)",
+          "price": 99,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 99,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/mobile-accessories/galaxy-smarttag2-black-ei-t5600bbegww/"
+            }
+          ]
+        },
+        {
+          "name": "سمارت تاج 2 سامسونج جالكسي، اسود - EI-T5600BBEGWW",
+          "price": 99.003501,
+          "stores": [
+            {
+              "store": "المنيع",
+              "store_name": "المنيع",
+              "current_price": 99.003501,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.almanea.sa/ar/product/p-170100551999006"
+            }
+          ]
+        }
+      ],
+      "samsungOffers": [
+        {
+          "store": "سامسونج السعودية",
+          "store_name": "سامسونج السعودية",
+          "current_price": 99,
+          "original_price": null,
+          "availability": "in_stock",
+          "product_url": "https://www.samsung.com/sa_en/mobile-accessories/galaxy-smarttag2-black-ei-t5600bbegww/"
+        }
+      ],
+      "compareStatus": 404,
+      "comparison": {
+        "error": "Canonical product not found"
+      }
+    },
+    {
+      "model": "QA55QN1EHAUXSA",
+      "category": "tv",
+      "observedAt": "2026-09-16T08:44:41.173Z",
+      "sourceAtFreeze": {
+        "price": 2999,
+        "availability": "in_stock"
+      },
+      "searchStatus": 200,
+      "search": [
+        {
+          "name": "Samsung 55 Inch Neo QLED 4K TV, QN1EH, Quantum Mini LED, HDR 10+, Motion Xcelerator, Adpative Sound+, AirSlim, Real QLED with 100% Color Volume, Smart TV, QA55QN1EHAUXSA (2026 - KSA Version)",
+          "key": "samsung|MODEL:QA55QN1EHAUXSA",
+          "price": 2499,
+          "stores": [
+            {
+              "store": "أمازون السعودية",
+              "store_name": "أمازون السعودية",
+              "current_price": 2499,
+              "original_price": 2999,
+              "availability": "in_stock",
+              "product_url": "https://www.amazon.sa/-/en/Samsung-Quantum-Xcelerator-Adpative-QA55QN1EHAUXSA/dp/B0GZL53MRX/ref=sr_1_40?dib=eyJ2IjoiMSJ9.OOhpiRThQPJnqy7U8yL3u7vNHXLQiMaRt4_cSgXkYZaFQ82XBtgO40NCfj5FBN3TtCN6JPQIxyLjy8Fn8AGuouYkZtyJVq_UhwquOSZUJwwJBr6YQQX76p_79swWfzvtKXpQ9d8y6C_m7Fs9-yYMKD8NxsOSNPmfxDFDjL2sqqmHbophY5Bv3qZ24Hxu7mYoaB6gXBUB-awNnhS6qgcRr2J0eG7Y_fmRO2uMFMyIL23PobB18rAEbAlXBOYbODA5qCclgPPYzFgi1Wb30TT_Q41yUzcs8GRBZibE3rzw0xo.UJ9q7hWWiuvKhedhTkBpJKyy7-_ZHh9DbkYiT8rqmMY&dib_tag=se&keywords=qled+tv&qid=1789362718&s=electronics&sr=1-40"
+            }
+          ]
+        },
+        {
+          "name": "55\" Neo QLED QN1EH 4K Samsung Vision AI Smart TV (2026) Inch Mini (QA55QN1EHAUXSA)",
+          "key": "samsung|MODEL:QA55QN1EHAUXSA",
+          "price": 2999,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 2999,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/tvs/qled-tv/qn1eh-55-inch-neo-qled-4k-mini-led-smart-tv-qa55qn1ehauxsa/"
+            }
+          ]
+        }
+      ],
+      "samsungOffers": [
+        {
+          "store": "سامسونج السعودية",
+          "store_name": "سامسونج السعودية",
+          "current_price": 2999,
+          "original_price": null,
+          "availability": "in_stock",
+          "product_url": "https://www.samsung.com/sa_en/tvs/qled-tv/qn1eh-55-inch-neo-qled-4k-mini-led-smart-tv-qa55qn1ehauxsa/"
+        }
+      ],
+      "compareStatus": 200,
+      "comparison": {
+        "canonical": {
+          "id": "e1dd7774-1086-439f-824a-19153e01357b",
+          "name_ar": "تلفزيون سامسونج QA55QN1EHAUXSA",
+          "name_en": "Samsung QA55QN1EHAUXSA TV",
+          "brand": "samsung",
+          "category": "tv",
+          "tps_identity_key": "samsung|MODEL:QA55QN1EHAUXSA",
+          "identity_confidence": 95,
+          "attributes": {
+            "source": "progressive",
+            "stores": [
+              6,
+              2
+            ],
+            "identity_key": "samsung|MODEL:QA55QN1EHAUXSA",
+            "offers_count": 2,
+            "identity_tier": "primary",
+            "parser_version": "tv-v1",
+            "comparison_eligible": true
+          }
+        },
+        "summary": {
+          "cheapest_store": "أمازون السعودية",
+          "lowest_price": 2699,
+          "highest_price": 2999,
+          "saving": 300,
+          "store_count": 2,
+          "cheapest_stale": false
+        },
+        "offers": [
+          {
+            "store_slug": "amazon",
+            "store_name": "أمازون السعودية",
+            "raw_name": "Samsung 55 Inch Neo QLED 4K TV, QN1EH, Quantum Mini LED, HDR 10+, Motion Xcelerator, Adpative Sound+, AirSlim, Real QLED with 100% Color Volume, Smart TV, QA55QN1EHAUXSA (2026 - KSA Version)",
+            "price": 2699,
+            "availability": null,
+            "product_url": "/go/eed432e8-370f-4255-a5ae-20cce1f7bbbf?gt=1789548283535.73444fd21b2b6d33011b1204b0fba1074675b019c3dd6911717352434f8a4d37",
+            "observed_at": "2026-09-14T05:12:46.33+00:00",
+            "stale": false,
+            "confidence": 100,
+            "is_verified": true,
+            "campaign_eligibility": null
+          },
+          {
+            "store_slug": "samsung_ksa",
+            "store_name": "سامسونج السعودية",
+            "raw_name": "55\" Neo QLED QN1EH 4K Samsung Vision AI Smart TV (2026) Inch Mini (QA55QN1EHAUXSA)",
+            "price": 2999,
+            "availability": null,
+            "product_url": "/go/e9cb70c7-904a-4199-a94b-2b7da7dad88d?gt=1789548283535.ee75a7de0dee0a9e1d74b48924b22839f9bad546bb8056af0994c84a036e9866",
+            "observed_at": "2026-09-15T19:47:24.856+00:00",
+            "stale": false,
+            "confidence": 100,
+            "is_verified": true,
+            "campaign_eligibility": null
+          }
+        ]
+      }
+    },
+    {
+      "model": "RR40H39G1TZA",
+      "category": "refrigerator",
+      "observedAt": "2026-09-16T08:44:43.696Z",
+      "sourceAtFreeze": {
+        "price": 5999,
+        "availability": "in_stock"
+      },
+      "searchStatus": 200,
+      "search": [],
+      "samsungOffers": [],
+      "compareStatus": 404,
+      "comparison": {
+        "error": "Canonical product not found"
+      }
+    },
+    {
+      "model": "DW70H73YMFRYL",
+      "category": "dishwasher",
+      "observedAt": "2026-09-16T08:44:45.979Z",
+      "sourceAtFreeze": {
+        "price": 4299,
+        "availability": "in_stock"
+      },
+      "searchStatus": 200,
+      "search": [
+        {
+          "name": "FreeStanding Dishwasher Energy Efficiency Class C and Flex Load 14 Place Setting Dw70hm 24 Soft Railing Settings Silver (DW70H73YMFRYL)",
+          "key": "samsung|MODEL:DW70H73YMFRYL",
+          "price": 4299,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 4299,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/dishwashers/freestanding/dw70hm-24-dish-washer-energy-efficiency-class-c-flex-load-soft-railing-14-place-settings-silver-dw70h73ymfryl/"
+            }
+          ]
+        }
+      ],
+      "samsungOffers": [
+        {
+          "store": "سامسونج السعودية",
+          "store_name": "سامسونج السعودية",
+          "current_price": 4299,
+          "original_price": null,
+          "availability": "in_stock",
+          "product_url": "https://www.samsung.com/sa_en/dishwashers/freestanding/dw70hm-24-dish-washer-energy-efficiency-class-c-flex-load-soft-railing-14-place-settings-silver-dw70h73ymfryl/"
+        }
+      ],
+      "compareStatus": 200,
+      "comparison": {
+        "canonical": {
+          "id": "26df6881-5e05-4ace-b43e-d92ea2cac0a3",
+          "name_ar": "غسالة صحون samsung DW70H73YMFRYL",
+          "name_en": "samsung DW70H73YMFRYL dishwasher",
+          "brand": "samsung",
+          "category": "dishwasher",
+          "tps_identity_key": "samsung|MODEL:DW70H73YMFRYL",
+          "identity_confidence": 75,
+          "attributes": {
+            "source": "progressive",
+            "stores": [
+              6
+            ],
+            "aquastop": false,
+            "capacity": null,
+            "inverter": false,
+            "third_rack": false,
+            "identity_key": "samsung|MODEL:DW70H73YMFRYL",
+            "model_number": "DW70H73YMFRYL",
+            "offers_count": 1,
+            "capacity_unit": "place-settings",
+            "identity_tier": "primary",
+            "appliance_type": null,
+            "parser_version": "dishwasher-v1",
+            "comparison_eligible": false
+          }
+        },
+        "summary": {
+          "cheapest_store": null,
+          "lowest_price": null,
+          "highest_price": null,
+          "saving": null,
+          "store_count": 0,
+          "cheapest_stale": false
+        },
+        "offers": [],
+        "message": "No approved-retailer offers for this product yet"
+      }
+    },
+    {
+      "model": "MS23K3515AK/ZA",
+      "category": "microwave",
+      "observedAt": "2026-09-16T08:44:48.235Z",
+      "sourceAtFreeze": {
+        "price": 549,
+        "availability": "in_stock"
+      },
+      "searchStatus": 200,
+      "search": [
+        {
+          "name": "MS23K3515AK Microwave 23L800W Output PowerChild Safety Mw3500k Solo Mwo With Quick Defrost Za (MS23K3515AK/ZA)",
+          "key": "samsung|NA|23",
+          "price": 549,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 549,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/microwave-ovens/solo/mw3500k-solo-mwo-with-quick-defrost-23l-ms23k3515ak-za/"
+            }
+          ]
+        },
+        {
+          "name": "Samsung Microwave 23 L (0.8 cu.ft) with Quick Defrost, Easy-to-Clean Ceramic Inside™ 23 L 800 W MS23K3515AK/ZA Stainless Steel",
+          "key": "samsung|NA|23",
+          "price": 779,
+          "stores": [
+            {
+              "store": "نون",
+              "store_name": "نون",
+              "current_price": 779,
+              "original_price": 899,
+              "availability": "in_stock",
+              "product_url": "https://www.noon.com/saudi-en/samsung-microwave-23-l-0-8-cu-ft-with-quick-defrost-easy-to-clean-ceramic-inside-23-l-800-w-ms23k3515ak-za-stainless-steel/N70218291V/p/"
+            }
+          ]
+        }
+      ],
+      "samsungOffers": [
+        {
+          "store": "سامسونج السعودية",
+          "store_name": "سامسونج السعودية",
+          "current_price": 549,
+          "original_price": null,
+          "availability": "in_stock",
+          "product_url": "https://www.samsung.com/sa_en/microwave-ovens/solo/mw3500k-solo-mwo-with-quick-defrost-23l-ms23k3515ak-za/"
+        }
+      ],
+      "compareStatus": 404,
+      "comparison": {
+        "error": "Canonical product not found"
+      }
+    },
+    {
+      "model": "NE63C6517SG/ZA",
+      "category": "cooker",
+      "observedAt": "2026-09-16T08:44:49.866Z",
+      "sourceAtFreeze": {
+        "price": 4999,
+        "availability": "in_stock"
+      },
+      "searchStatus": 200,
+      "search": [
+        {
+          "name": "NE63C6517SG Electric Range 6.3 Cu.Ft Premium Stainless Design Air Fry Fan Convection Wifi Ne5000a Za (NE63C6517SG/ZA)",
+          "key": "samsung|MODEL:NE63C6517SG/ZA",
+          "price": 4999,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 4999,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/cooking-appliances/ranges/ne5000a-ne63a6511sw-ne63c6517sg-za/"
+            }
+          ]
+        }
+      ],
+      "samsungOffers": [
+        {
+          "store": "سامسونج السعودية",
+          "store_name": "سامسونج السعودية",
+          "current_price": 4999,
+          "original_price": null,
+          "availability": "in_stock",
+          "product_url": "https://www.samsung.com/sa_en/cooking-appliances/ranges/ne5000a-ne63a6511sw-ne63c6517sg-za/"
+        }
+      ],
+      "compareStatus": 200,
+      "comparison": {
+        "canonical": {
+          "id": "61ebfdfe-12ac-4750-b1c4-cc96f8948168",
+          "name_ar": "طباخ samsung NE63C6517SG/ZA",
+          "name_en": "samsung NE63C6517SG/ZA cooker",
+          "brand": "samsung",
+          "category": "cooker",
+          "tps_identity_key": "samsung|MODEL:NE63C6517SG/ZA",
+          "identity_confidence": 75,
+          "attributes": {
+            "fan": true,
+            "grill": false,
+            "source": "progressive",
+            "stores": [
+              6
+            ],
+            "air_fry": true,
+            "ceramic": false,
+            "capacity": null,
+            "full_safety": false,
+            "identity_key": "samsung|MODEL:NE63C6517SG/ZA",
+            "model_number": "NE63C6517SG/ZA",
+            "offers_count": 1,
+            "capacity_unit": "cm",
+            "identity_tier": "primary",
+            "self_ignition": false,
+            "appliance_type": null,
+            "parser_version": "cooker-v1",
+            "comparison_eligible": false
+          }
+        },
+        "summary": {
+          "cheapest_store": "سامسونج السعودية",
+          "lowest_price": 4999,
+          "highest_price": 4999,
+          "saving": null,
+          "store_count": 1,
+          "cheapest_stale": false
+        },
+        "offers": [
+          {
+            "store_slug": "samsung_ksa",
+            "store_name": "سامسونج السعودية",
+            "raw_name": "NE63C6517SG Electric Range 6.3 Cu.Ft Premium Stainless Design Air Fry Fan Convection Wifi Ne5000a Za (NE63C6517SG/ZA)",
+            "price": 4999,
+            "availability": null,
+            "product_url": "/go/6af6de7a-a207-48e0-8981-409568e92799?gt=1789548292055.dbfb03eb64650211772fa2d17bd6ee7538a92b66dd1ab7ca2652924c694fbf5f",
+            "observed_at": "2026-09-15T13:53:58.273+00:00",
+            "stale": false,
+            "confidence": 55,
+            "is_verified": true,
+            "campaign_eligibility": null
+          }
+        ]
+      }
+    },
+    {
+      "model": "WD90H25AHSYL",
+      "category": "washing_machine",
+      "observedAt": "2026-09-16T08:44:52.218Z",
+      "sourceAtFreeze": {
+        "price": 10499,
+        "availability": "in_stock"
+      },
+      "searchStatus": 200,
+      "search": [
+        {
+          "name": "Bespoke AI Laundry Combo All-in-One 25kg + 20kg Wd90h27 Dark Gray (WD90H25AHSYL)",
+          "price": 10499,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 10499,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/washers-and-dryers/washer-dryer-combo/wd90h27-25kg-dark-gray-wd90h25ahsyl/"
+            }
+          ]
+        }
+      ],
+      "samsungOffers": [
+        {
+          "store": "سامسونج السعودية",
+          "store_name": "سامسونج السعودية",
+          "current_price": 10499,
+          "original_price": null,
+          "availability": "in_stock",
+          "product_url": "https://www.samsung.com/sa_en/washers-and-dryers/washer-dryer-combo/wd90h27-25kg-dark-gray-wd90h25ahsyl/"
+        }
+      ],
+      "compareStatus": 404,
+      "comparison": {
+        "error": "Canonical product not found"
+      }
+    },
+    {
+      "model": "AR60F24EADW/ZA",
+      "category": "air_conditioner",
+      "observedAt": "2026-09-16T08:44:53.824Z",
+      "sourceAtFreeze": {
+        "price": 4599,
+        "availability": "in_stock"
+      },
+      "searchStatus": 200,
+      "search": [
+        {
+          "name": "ZAGG Glass Elite iPhone 16 Plus, Privacy",
+          "price": 36,
+          "stores": [
+            {
+              "store": "اكسترا",
+              "store_name": "اكسترا",
+              "current_price": 36,
+              "original_price": 119,
+              "availability": "in_stock",
+              "product_url": "https://www.extra.com/en-sa/mobiles-tablets/mobile-accessories/screen-protector/zagg-glass-elite-iphone-16-plus-privacy/p/100390112"
+            }
+          ]
+        },
+        {
+          "name": "Zamil Winow AC, Cool only,  17,600 BTU, Rotary Comperssor",
+          "price": 630,
+          "stores": [
+            {
+              "store": "اكسترا",
+              "store_name": "اكسترا",
+              "current_price": 630,
+              "original_price": 2099,
+              "availability": "in_stock",
+              "product_url": "https://www.extra.com/en-sa/large-appliances-/air-conditioner/window-air-conditioner/zamil-winow-ac-cool-only-17-600-btu-rotary-comperssor/p/100091436"
+            }
+          ]
+        },
+        {
+          "name": "Samsung Microwave 23 L (0.8 cu.ft) with Quick Defrost, Easy-to-Clean Ceramic Inside™ 23 L 800 W MS23K3515AK/ZA Stainless Steel",
+          "key": "samsung|NA|23",
+          "price": 779,
+          "stores": [
+            {
+              "store": "نون",
+              "store_name": "نون",
+              "current_price": 779,
+              "original_price": 899,
+              "availability": "in_stock",
+              "product_url": "https://www.noon.com/saudi-en/samsung-microwave-23-l-0-8-cu-ft-with-quick-defrost-easy-to-clean-ceramic-inside-23-l-800-w-ms23k3515ak-za-stainless-steel/N70218291V/p/"
+            }
+          ]
+        },
+        {
+          "name": "Zamil Window AC, 20,800 BTU, Heat & Cool, Rotary Compressor",
+          "price": 810,
+          "stores": [
+            {
+              "store": "اكسترا",
+              "store_name": "اكسترا",
+              "current_price": 810,
+              "original_price": 2699,
+              "availability": "in_stock",
+              "product_url": "https://www.extra.com/en-sa/large-appliances-/air-conditioner/window-air-conditioner/zamil-window-ac-20-800-btu-heat-cool-rotary-compressor/p/100347348"
+            }
+          ]
+        },
+        {
+          "name": "Zamil Comfort Split AC 18,000 BTU, Cool Only, Rotary Compressor, R410A, Anti-Corrosive Design",
+          "price": 900,
+          "stores": [
+            {
+              "store": "اكسترا",
+              "store_name": "اكسترا",
+              "current_price": 900,
+              "original_price": 2999,
+              "availability": "in_stock",
+              "product_url": "https://www.extra.com/en-sa/large-appliances-/air-conditioner/split-air-conditioner/zamil-comfort-split-ac-18-000-btu-cool-only-rotary-compressor-r410a-anti-corrosive-design/p/100392090"
+            }
+          ]
+        },
+        {
+          "name": "Lenovo TAB P12, 12-inch, STORM GREY, MediaTek® Dimensity 7050 OC 2.6GHz, 8GB, 128GB, WIFI, 10200 mAh, TB370FU, BT Active Pen, ZACH0130SA",
+          "price": 960,
+          "stores": [
+            {
+              "store": "أمازون",
+              "store_name": "أمازون",
+              "current_price": 960,
+              "original_price": 1599,
+              "availability": "in_stock",
+              "product_url": "https://www.amazon.sa/-/en/Lenovo-MediaTek%C2%AE-Dimensity-TB370FU-ZACH0130SA/dp/B0CSDDDFGW/ref=sr_1_66?dib=eyJ2IjoiMSJ9.JHZUmE5IpDPcwMQ3-GoXfuUtmPoi9C8vxqAlmIJk7yWiejRoCGoQPzuLza-cb4MGk8WrleQ5UVjtbKf3_gQXCoLlBsnTclLEk2VxdEe0WrZsMwinJwFtbDDFoPxFqcsTn0e0D6BQcw5Msv3nJmWR7-S1ejkL2HFZhK8Qpx87pfZJQG7VMj7johlIaKHb5HEOjFDRTwOZ_5xtYgQ3GUiTADiqMM2lzZABQGiWSNQ2f2EXKs8UBHcWGHGGbz2yVgjz6B7rJr-grBSiOTqymvRNSV7C09BqMtTyIDQpY7EcvnE.uikjYEG_-4NV0LkEZoH6-Bpyc7M1yg8omUqWX4jMCfk&dib_tag=se&keywords=%D8%AA%D8%A7%D8%A8%D9%84%D8%AA&qid=1789258071&sr=8-66"
+            }
+          ]
+        },
+        {
+          "name": "Zamil, Window AC, 18,000 BTU, Cold, Rotary Compressor, Cool, Grey",
+          "price": 1349,
+          "stores": [
+            {
+              "store": "اكسترا",
+              "store_name": "اكسترا",
+              "current_price": 1349,
+              "original_price": 2159,
+              "availability": "in_stock",
+              "product_url": "https://www.extra.com/en-sa/large-appliances-/air-conditioner/window-air-conditioner/zamil-window-ac-18-000-btu-cold-rotary-compressor-cool-grey/p/100434409"
+            }
+          ]
+        },
+        {
+          "name": "Zamil, Window AC, 17,800 BTU, Hot & Cold, Rotary Compressor, Cool, Grey",
+          "price": 1399,
+          "stores": [
+            {
+              "store": "اكسترا",
+              "store_name": "اكسترا",
+              "current_price": 1399,
+              "original_price": 2199,
+              "availability": "in_stock",
+              "product_url": "https://www.extra.com/en-sa/large-appliances-/air-conditioner/window-air-conditioner/zamil-window-ac-17-800-btu-hot-cold-rotary-compressor-cool-grey/p/100435711"
+            }
+          ]
+        },
+        {
+          "name": "Zamil Comfort Split AC 12,400 BTU, Cool Only, Rotary, R410A, Anti-Corrosive Design",
+          "price": 1434,
+          "stores": [
+            {
+              "store": "اكسترا",
+              "store_name": "اكسترا",
+              "current_price": 1434,
+              "original_price": 2049,
+              "availability": "in_stock",
+              "product_url": "https://www.extra.com/en-sa/large-appliances-/air-conditioner/split-air-conditioner/zamil-comfort-split-ac-12-400-btu-cool-only-rotary-r410a-anti-corrosive-design/p/100391959"
+            }
+          ]
+        },
+        {
+          "name": "Zamil, Window AC, 21,600 BTU, Cold, Rotary Compressor, Cool, Grey",
+          "price": 1799,
+          "stores": [
+            {
+              "store": "اكسترا",
+              "store_name": "اكسترا",
+              "current_price": 1799,
+              "original_price": 2449,
+              "availability": "in_stock",
+              "product_url": "https://www.extra.com/en-sa/large-appliances-/air-conditioner/window-air-conditioner/zamil-window-ac-21-600-btu-cold-rotary-compressor-cool-grey/p/100434410"
+            }
+          ]
+        },
+        {
+          "name": "Zamil, Window AC, Cool Only, Inverter, 18,500 BTU, Rotary Compressor",
+          "price": 1899,
+          "stores": [
+            {
+              "store": "اكسترا",
+              "store_name": "اكسترا",
+              "current_price": 1899,
+              "original_price": 2599,
+              "availability": "in_stock",
+              "product_url": "https://www.extra.com/en-sa/large-appliances-/air-conditioner/window-air-conditioner/zamil-window-ac-cool-only-inverter-18-500-btu-rotary-compressor/p/100524739"
+            }
+          ]
+        },
+        {
+          "name": "Zamil, Window AC, 21,600 BTU, Hot & Cold, Rotary Compressor, Cool, Grey",
+          "price": 1899,
+          "stores": [
+            {
+              "store": "اكسترا",
+              "store_name": "اكسترا",
+              "current_price": 1899,
+              "original_price": 3149,
+              "availability": "in_stock",
+              "product_url": "https://www.extra.com/en-sa/large-appliances-/air-conditioner/window-air-conditioner/zamil-window-ac-21-600-btu-hot-cold-rotary-compressor-cool-grey/p/100435712"
+            }
+          ]
+        },
+        {
+          "name": "Zamil, Split AC, 12,200 BTU, Cool, Wi-Fi, Inverter, Anti-Corrosive Design",
+          "price": 1899,
+          "stores": [
+            {
+              "store": "اكسترا",
+              "store_name": "اكسترا",
+              "current_price": 1899,
+              "original_price": 2999,
+              "availability": "in_stock",
+              "product_url": "https://www.extra.com/en-sa/large-appliances-/air-conditioner/split-air-conditioner/zamil-split-ac-12-200-btu-cool-wi-fi-inverter-anti-corrosive-design/p/100522659"
+            }
+          ]
+        },
+        {
+          "name": "Zamil Comfort Split AC 18,000 BTU, Heat & Cool, Rotary Compressor, R410A, Anti-Corrosive Design",
+          "price": 1987,
+          "stores": [
+            {
+              "store": "اكسترا",
+              "store_name": "اكسترا",
+              "current_price": 1987,
+              "original_price": 2649,
+              "availability": "in_stock",
+              "product_url": "https://www.extra.com/en-sa/large-appliances-/air-conditioner/split-air-conditioner/zamil-comfort-split-ac-18-000-btu-heat-cool-rotary-compressor-r410a-anti-corrosive-design/p/100392091"
+            }
+          ]
+        },
+        {
+          "name": "Zamil, Window AC, Hot and Cool Only, Inverter, 18500 BTU, Rotary Compressor",
+          "price": 1999,
+          "stores": [
+            {
+              "store": "اكسترا",
+              "store_name": "اكسترا",
+              "current_price": 1999,
+              "original_price": 2899,
+              "availability": "in_stock",
+              "product_url": "https://www.extra.com/en-sa/large-appliances-/air-conditioner/window-air-conditioner/zamil-window-ac-hot-and-cool-only-inverter-18500-btu-rotary-compressor/p/100524736"
+            }
+          ]
+        },
+        {
+          "name": "Zamil, Split AC, 12,200 BTU, Heat & Cool, Wi-Fi, Inverter, Anti-Corrosive Design",
+          "price": 1999,
+          "stores": [
+            {
+              "store": "اكسترا",
+              "store_name": "اكسترا",
+              "current_price": 1999,
+              "original_price": 3299,
+              "availability": "in_stock",
+              "product_url": "https://www.extra.com/en-sa/large-appliances-/air-conditioner/split-air-conditioner/zamil-split-ac-12-200-btu-heat-cool-wi-fi-inverter-anti-corrosive-design/p/100522657"
+            }
+          ]
+        },
+        {
+          "name": "Zamil Inverter Split AC 18,000 BTU Heat & Cool, Anti-Corrosive Design, Auto Swing",
+          "price": 2099,
+          "stores": [
+            {
+              "store": "اكسترا",
+              "store_name": "اكسترا",
+              "current_price": 2099,
+              "original_price": 3199,
+              "availability": "in_stock",
+              "product_url": "https://www.extra.com/en-sa/large-appliances-/air-conditioner/split-air-conditioner/zamil-inverter-split-ac-18-000-btu-heat-cool-anti-corrosive-design-auto-swing/p/100394246"
+            }
+          ]
+        },
+        {
+          "name": "Zamil Window AC, 18,000 BTU, Cool Only, Rotary Compressor",
+          "price": 2100,
+          "stores": [
+            {
+              "store": "اكسترا",
+              "store_name": "اكسترا",
+              "current_price": 2100,
+              "original_price": 2300,
+              "availability": "in_stock",
+              "product_url": "https://www.extra.com/en-sa/large-appliances-/air-conditioner/window-air-conditioner/zamil-window-ac-18-000-btu-cool-only-rotary-compressor/p/100347349"
+            }
+          ]
+        },
+        {
+          "name": "Zamil Comfort Split AC 22,200 BTU, Heat & Cool, Rotary Compressor, R410A, Anti-Corrosive Design",
+          "price": 2239,
+          "stores": [
+            {
+              "store": "اكسترا",
+              "store_name": "اكسترا",
+              "current_price": 2239,
+              "original_price": 3199,
+              "availability": "in_stock",
+              "product_url": "https://www.extra.com/en-sa/large-appliances-/air-conditioner/split-air-conditioner/zamil-comfort-split-ac-22-200-btu-heat-cool-rotary-compressor-r410a-anti-corrosive-design/p/100392093"
+            }
+          ]
+        },
+        {
+          "name": "Zamil, Split AC, 18,000 BTU, Heat & Cool, Wi-Fi, Inverter, Anti-Corrosive Design",
+          "price": 2399,
+          "stores": [
+            {
+              "store": "اكسترا",
+              "store_name": "اكسترا",
+              "current_price": 2399,
+              "original_price": 3899,
+              "availability": "in_stock",
+              "product_url": "https://www.extra.com/en-sa/large-appliances-/air-conditioner/split-air-conditioner/zamil-split-ac-18-000-btu-heat-cool-wi-fi-inverter-anti-corrosive-design/p/100522662"
+            }
+          ]
+        }
+      ],
+      "samsungOffers": [],
+      "compareStatus": 404,
+      "comparison": {
+        "error": "Canonical product not found"
+      }
+    },
+    {
+      "model": "VS15A60AGR5/YL",
+      "category": "vacuum",
+      "observedAt": "2026-09-16T08:44:55.543Z",
+      "sourceAtFreeze": {
+        "price": null,
+        "availability": "out_of_stock"
+      },
+      "searchStatus": 200,
+      "search": [
+        {
+          "name": "1500W Drum Vacuum Cleaner 10 L 1500 W MC-YL620KY47 Black",
+          "price": 375,
+          "stores": [
+            {
+              "store": "نون",
+              "store_name": "نون",
+              "current_price": 375,
+              "original_price": 489,
+              "availability": "in_stock",
+              "product_url": "https://www.noon.com/saudi-en/1500w-drum-vacuum-cleaner-10-l-1500-w-mc-yl620ky47-black/N70147503V/p/"
+            }
+          ]
+        },
+        {
+          "name": "Panasonic 21l electric drum vacuum cleaner – 2200w – black (mc-yl788ry47)",
+          "price": 649,
+          "stores": [
+            {
+              "store": "اكسترا",
+              "store_name": "اكسترا",
+              "current_price": 649,
+              "original_price": 1499,
+              "availability": "in_stock",
+              "product_url": "https://www.extra.com/en-sa/c/panasonic-21l-electric-drum-vacuum-cleaner-2200w-black-mc-yl788ry47-/p/MP00059677"
+            }
+          ]
+        },
+        {
+          "name": "Jet Stick Vacuum Cleaner 250.0 W VS25C9754QG/YL Black",
+          "key": "samsung|MODEL:VS25C9754QG/YL",
+          "price": 999,
+          "stores": [
+            {
+              "store": "نون",
+              "store_name": "نون",
+              "current_price": 999,
+              "original_price": 6189,
+              "availability": "in_stock",
+              "product_url": "https://www.noon.com/saudi-en/jet-stick-vacuum-cleaner-250-0-w-vs25c9754qg-yl-black/N70106529V/p/"
+            }
+          ]
+        },
+        {
+          "name": "سامسونج غسالة صحون – 14 مكان تخزين – 8 برامج – فضي – DW60A8050FS/YL",
+          "key": "samsung|MODEL:DW60A8050FS/YL",
+          "price": 2599,
+          "stores": [
+            {
+              "store": "شاكر",
+              "store_name": "شاكر",
+              "current_price": 2599,
+              "original_price": 5559.1,
+              "availability": "in_stock",
+              "product_url": "https://shakersa.com/product/%d8%b3%d8%a7%d9%85%d8%b3%d9%88%d9%86%d8%ac-%d8%ba%d8%b3%d8%a7%d9%84%d8%a9-%d8%b5%d8%ad%d9%88%d9%86-8-%d8%a8%d8%b1%d8%a7%d9%85%d8%ac-14-%d9%85%d9%83%d8%a7%d9%86-%d8%aa%d8%ae%d8%b2%d9%8a%d9%86/"
+            }
+          ]
+        },
+        {
+          "name": "سامسونج مجفف تحميل أمامي – 8 كجم – 17 برنامج – فضي – DV80T7220BX/YL",
+          "key": "سامسون|front_load|8|combo",
+          "price": 2799,
+          "stores": [
+            {
+              "store": "شاكر",
+              "store_name": "شاكر",
+              "current_price": 2799,
+              "original_price": 5348.65,
+              "availability": "in_stock",
+              "product_url": "https://shakersa.com/product/%d8%b3%d8%a7%d9%85%d8%b3%d9%88%d9%86%d8%ac-%d9%85%d8%ac%d9%81%d9%81-%d8%aa%d8%ad%d9%85%d9%8a%d9%84-%d8%a3%d9%85%d8%a7%d9%85%d9%8a-8-%d9%83%d8%ac%d9%85-17-%d8%a8%d8%b1%d9%86%d8%a7%d9%85%d8%ac/"
+            }
+          ]
+        },
+        {
+          "name": "سامسونج غسالة ومجفف تحميل أمامي – 9 كجم غسيل و 6 كجم تجفيف – 24 برنامج – فضي – WD90T654DBN/YL",
+          "price": 3099,
+          "stores": [
+            {
+              "store": "شاكر",
+              "store_name": "شاكر",
+              "current_price": 3099,
+              "original_price": 6398.6,
+              "availability": "in_stock",
+              "product_url": "https://shakersa.com/product/%d8%b3%d8%a7%d9%85%d8%b3%d9%88%d9%86%d8%ac-%d8%ba%d8%b3%d8%a7%d9%84%d8%a9-%d9%88%d9%85%d8%ac%d9%81%d9%81-%d8%aa%d8%ad%d9%85%d9%8a%d9%84-%d8%a3%d9%85%d8%a7%d9%85%d9%8a-9-%d9%83%d8%ac%d9%85-%d8%ba/"
+            }
+          ]
+        },
+        {
+          "name": "Samsung WA21A8376GV/YL Top Load Washing Machine 21kg, Heavy Duty +, Hygiene Steam, BubbleStorm, THAILAND",
+          "key": "سامسون|top_load|21|washer",
+          "price": 3379,
+          "stores": [
+            {
+              "store": "أمازون",
+              "store_name": "أمازون",
+              "current_price": 3379,
+              "original_price": 8099,
+              "availability": "in_stock",
+              "product_url": "https://www.amazon.sa/-/en/Samsung-WA21A8376GV-YL-BubbleStorm-THAILAND/dp/B09TBFWFBT/ref=sr_1_95?dib=eyJ2IjoiMSJ9.gNKQ-f2zUN4AyIvp_mTLffOmTzTsmSG6RJQ7Kd1G8RdokXUwQyXM-naVCVoRbZ6zYlMzoaOx1JiUPSXgJjwpO-twKjQ9zu6h1GvvT39sl1E4e-_q-ssaEHSx_jUoj5HPrDxc1SDv86KosPodspRfMkOwkJt7j-mTNk65cOdVRiWfinGsysiHqZpVEZp5hI6IUiDCO_09MSIq0cPu-oWI33vv5-WKvBxuQTjukUxEZ33tBcI92YPR4y2MLxDPYXZsygz0g5-96KPfz1SJ2XDMJ3gjhuS-8aZoIQrZjlL4OJk.q_Pvu8T5DCigFACQa-EfBowNPiXmeW6w2hLbn6Tzsbw&dib_tag=se&keywords=%D8%BA%D8%B3%D8%A7%D9%84%D8%A9&qid=1789128566&sr=8-95"
+            }
+          ]
+        },
+        {
+          "name": "WD12TP34DSX/YL Front Load Washer Dryer Combo,12kg Wash 8kg Dry,Eco Bubble, 1400 rpm, AI Control, VIETNAM",
+          "key": "سامسون|front_load|12|combo",
+          "price": 3566,
+          "stores": [
+            {
+              "store": "أمازون",
+              "store_name": "أمازون",
+              "current_price": 3566,
+              "original_price": 4999,
+              "availability": "in_stock",
+              "product_url": "https://www.amazon.sa/-/en/WD12TP34DSX-YL-Washer-Control-VIETNAM/dp/B09TBG445B/ref=sr_1_96?dib=eyJ2IjoiMSJ9.pajgrRrnODCXMiU8VlnQF_Pn2WpJB-zz4iaTMCH4lUL5nyBp0bjMt5OXw2_rCKTJQf7hQk8IOk87EZDxIvVbWutLkRDsMgwu7BtfVDXF-fsSXuraS9NvdWTZoaIIPcRYUaIDXijYNOHBB_U202Up1HTvcRNaBP2IFBjE7rQ0X0S0PN7-iE_lUMeotFfdFSpMeO9_VJaOCV3BcPaRegAp30jITFP1S2YnG308V8ww_HSQ_SvRzPHUYFo9HwOTvCBl9LLUhATpmwDvxUC3q-TPhoYujN-df38PeVMiZAPv9JM.3UF656c4-1h6NUgF-PcePe9PTX-M3v1bf8SQai2vhLg&dib_tag=se&keywords=%D8%BA%D8%B3%D8%A7%D9%84%D8%A9&qid=1789063738&sr=8-96"
+            }
+          ]
+        },
+        {
+          "name": "Bespoke AI Washer Dryer AI Front-load, 16kg + 10kg Dryer, SmartThings, Direct Drive , Neat White. WD16T6300GW/YL White 10 kg WD16T6300GW White",
+          "key": "samsung|front_load|16|washer",
+          "price": 3999,
+          "stores": [
+            {
+              "store": "نون",
+              "store_name": "نون",
+              "current_price": 3999,
+              "original_price": 10399,
+              "availability": "in_stock",
+              "product_url": "https://www.noon.com/saudi-en/bespoke-ai-washer-dryer-ai-front-load-16kg-10kg-dryer-smartthings-direct-drive-neat-white-wd16t6300gw-yl-white-10-kg-wd16t6300gw-white/N53349198A/p/"
+            }
+          ]
+        },
+        {
+          "name": "Samsung WD16T6300GW/YL Front Load Washer Dryer Combo 16kg Wash/10kg Dry, 1100 RPM, Bubble Technology, Drum Clean, Hygiene Steam, AI Control, VIETNAM",
+          "key": "samsung|front_load|16|washer",
+          "price": 4244.96,
+          "stores": [
+            {
+              "store": "أمازون",
+              "store_name": "أمازون",
+              "current_price": 4244.96,
+              "original_price": 6499,
+              "availability": "in_stock",
+              "product_url": "https://www.amazon.sa/-/en/Samsung-WD16T6300GW-YL-Technology-Hygiene/dp/B0B7P3JS25/ref=sr_1_92_mod_primary_new?dib=eyJ2IjoiMSJ9.2kDDleImgMPq_gkpmNmKKARGJr1NwohGH3OoZLT3fT60HEnaWK60K9ofi8qNtv-lcKyIDxXKrHplRghDYEjJNDjmDGzCg9t5_NpZZmPbnH8VtFR3Zd2UKpGTyMShe47rYd3u2HSn9SWP9Tmxulm4OI5o_yTKvyhksqdkRxlI4HnIHN2JNbj3FDnDQGbgPqNILJpV_G7_bEInX38cA66eBgOcCWObvH9aTtUIdIiIie3uSHqqauHHa6w_1ldPE51zJkYWcvP-cqBsUfMlf7IklDWd36fCrZ8n-cfn0mLaY9I.nZE86uQx3O1XSyNBCtLwCm68t3xZJbT-GtO5F-ZbmAk&dib_tag=se&keywords=%D8%BA%D8%B3%D8%A7%D9%84%D8%A9&qid=1789474085&sbo=RZvfv%2F%2FHxDF%2BO5021pAnSA%3D%3D&sr=8-92"
+            }
+          ]
+        },
+        {
+          "name": "سامسونج غسالة ومجفف تحميل أمامي –  16 كجم غسيل و 10 كجم تجفيف – 24 برنامج – أبيض – WD16T6300GW/YL",
+          "key": "samsung|front_load|16|washer",
+          "price": 4999,
+          "stores": [
+            {
+              "store": "شاكر",
+              "store_name": "شاكر",
+              "current_price": 4999,
+              "original_price": 10399.45,
+              "availability": "in_stock",
+              "product_url": "https://shakersa.com/product/%d8%b3%d8%a7%d9%85%d8%b3%d9%88%d9%86%d8%ac-%d8%ba%d8%b3%d8%a7%d9%84%d8%a9-%d9%88%d9%85%d8%ac%d9%81%d9%81-%d8%aa%d8%ad%d9%85%d9%8a%d9%84-%d8%a3%d9%85%d8%a7%d9%85%d9%8a-16-%d9%83%d8%ac%d9%85-%d8%ba/"
+            }
+          ]
+        },
+        {
+          "name": "Samsung Bespoke AI Washer Dryer AI Front-load, 18kg + 11kg, SmartThings, Direct Drive , Inox. WD18T6300GP/YL Inox",
+          "key": "samsung|front_load|18|washer",
+          "price": 5139,
+          "stores": [
+            {
+              "store": "نون",
+              "store_name": "نون",
+              "current_price": 5139,
+              "original_price": 12399,
+              "availability": "in_stock",
+              "product_url": "https://www.noon.com/saudi-en/samsung-bespoke-ai-washer-dryer-ai-front-load-18kg-11kg-smartthings-direct-drive-inox-wd18t6300gp-yl-inox/N70123566V/p/"
+            }
+          ]
+        },
+        {
+          "name": "سامسونج مجفف تحميل أمامي – تكثيف مضخة حرارية – 16 كجم تجفيف – 17 برنامج – أسود – DV16T8740BV/YL",
+          "key": "سامسون|front_load|16|washer",
+          "price": 5199,
+          "stores": [
+            {
+              "store": "شاكر",
+              "store_name": "شاكر",
+              "current_price": 5199,
+              "original_price": 9499,
+              "availability": "in_stock",
+              "product_url": "https://shakersa.com/product/%d8%b3%d8%a7%d9%85%d8%b3%d9%88%d9%86%d8%ac-%d9%85%d8%ac%d9%81%d9%81-%d8%aa%d8%ad%d9%85%d9%8a%d9%84-%d8%a3%d9%85%d8%a7%d9%85%d9%8a-%d8%aa%d9%83%d8%ab%d9%8a%d9%81-%d9%85%d8%b6%d8%ae%d8%a9-%d8%ad%d8%b1/"
+            }
+          ]
+        },
+        {
+          "name": "Samsung WD80T634DBE/YL Front Load Washer Dryer Combo 8Kg Wash/6Kg Dry,1400 RPM,Eco Bubble,Hygiene Steam,WIFI,AI Control",
+          "price": 2699,
+          "stores": [
+            {
+              "store": "أمازون",
+              "store_name": "أمازون",
+              "current_price": 2699,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.amazon.sa/-/en/Samsung-WD80T634DBE-YL-Hygiene-Control/dp/B09TBG31XY/ref=sr_1_92?dib=eyJ2IjoiMSJ9.PFMHpc1LWHuktnEg-1nZJqGJw7uPxN7IhzQdOEOXGc5ASJFEhl8l74GMO3Me6rRbC5fPEUn8iAK9BM3lnvI8g_dTrf2KOhL1Y7l493RMo9eHami1NrMA9exsuGN-rMxQQLlq9De8hMKjXmRSNB1HqNnK0w6L-WjeUqNrhvLC65WzWCMESkvSXNp2Xwzm8UmwVmLy9IJ9o4g6401JCw1n-Gl5aOKCAqnt957O_moomt4E9A1lzdlTHZtBTBV5p-0sbWxHQOS69bjfoPHZJfarjuk7FERD9FBzx2TUTHrKL6Y.ym9VO5HFPqIeCRRWTA3lmr7GKfJe7fB1Gf4SDSzUvc0&dib_tag=se&keywords=%D8%BA%D8%B3%D8%A7%D9%84%D8%A9&qid=1788912637&sr=8-92"
+            }
+          ]
+        },
+        {
+          "name": "سامسونج غسالة ومجفف تحميل أمامي – 18 كجم غسيل و 11 كجم تجفيف – 24 برنامج – فضي WD18T6300GP/YL",
+          "key": "samsung|front_load|18|washer",
+          "price": 5899.01,
+          "stores": [
+            {
+              "store": "شاكر",
+              "store_name": "شاكر",
+              "current_price": 5899.01,
+              "original_price": 12399.3,
+              "availability": "in_stock",
+              "product_url": "https://shakersa.com/product/%d8%b3%d8%a7%d9%85%d8%b3%d9%88%d9%86%d8%ac-%d8%ba%d8%b3%d8%a7%d9%84%d8%a9-%d9%88%d9%85%d8%ac%d9%81%d9%81-%d8%aa%d8%ad%d9%85%d9%8a%d9%84-%d8%a3%d9%85%d8%a7%d9%85%d9%8a-18-%d9%83%d8%ac%d9%85-%d8%ba/"
+            }
+          ]
+        },
+        {
+          "name": "8kg Inverter Heatpump Dryer Inox Color AI Control WIFI Hygiene Care Dv7000t Front Loading Super Speed Platinum Silver Yl (DV80T7220BX/YL)",
+          "key": "سامسون|front_load|8|combo",
+          "price": 2899,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 2899,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/washers-and-dryers/dryers/dv7000t-front-loading-ai-control-super-speed-hygiene-care-8kg-platinum-silver-dv80t7220bx-yl/"
+            }
+          ]
+        },
+        {
+          "name": "Samsung 9 kg Quick Drive Front Load Washing Machine with Knob Control| Model No WW90T754DBX/YL with 2 Years Warranty",
+          "price": 3349,
+          "stores": [
+            {
+              "store": "أمازون",
+              "store_name": "أمازون",
+              "current_price": 3349,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.amazon.sa/-/en/sspa/click?ie=UTF8&spc=MTozNDU3NDMyMTkwNTczMzE4OjE3ODk0NzQwODM6c3BfbXRmOjMwMTIyODg5MzE1MTYzMjo6MDo6&url=%2FSamsung-Washing-WW90T754DBX-YL-Warranty%2Fdp%2FB09TBJ25ZS%2Fref%3Dsr_1_24_sspa%3Fdib%3DeyJ2IjoiMSJ9.SJfkZtclkRZb7dQ80J_KKLvTC_8yr40v3LuqUcC0wGkJiTfxNJuqrvpSe-BLv3sYtwmsrMsHcSwF6jILut7yy6vMfZDU-7L3Sy-7C_2wyhg3ky1oJOswUDlm7bC8BAijZhUn-TpDquq47b7SeXbgkqtmI99odQD0V1g6qeW_ceWTqt7EW1SBlxQTi-JaNtst-k78fxvX4yYq-v35SLhu_aqxOyTFAYgT7WK2HKYPpyxTzGCXw2knYeLVZxIvhBt8iZC4QOnWTzoyvrryInrjkm5egaw8WF1ywQ6YURMiSMU.SwnsVtdDAwDIqC6Hsc4tXBEk_mWVwY09Z-xo3rdXHfA%26dib_tag%3Dse%26keywords%3D%25D8%25BA%25D8%25B3%25D8%25A7%25D9%2584%25D8%25A9%26qid%3D1789474083%26sr%3D8-24-spons%26aref%3DbNTXr5ROkM%26sp_csd%3Dd2lkZ2V0TmFtZT1zcF9tdGY%26psc%3D1&aref=bNTXr5ROkM&sp_cr=ZAZ"
+            }
+          ]
+        },
+        {
+          "name": "12kg Washer with 8kg dryer Inox Color AI Control WIFI DIT Auto Dispense Eco Bubble Wd7300t Front Loading Platinum Silver Yl (WD12TP34DSX/YL)",
+          "key": "سامسون|front_load|12|combo",
+          "price": 4099,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 4099,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/washers-and-dryers/washer-dryer-combo/wd7300t-front-loading-12kg-platinum-silver-wd12tp34dsx-yl/"
+            }
+          ]
+        },
+        {
+          "name": "16kg Washer with 10kg dryer White Color AI Control WIFI DD Motor Eco Bubble Wd6000t Yl (WD16T6300GW/YL)",
+          "key": "samsung|front_load|16|washer",
+          "price": 4499,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 4499,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/washers-and-dryers/washer-dryer-combo/wd6000t-16kg-white-wd16t6300gw-yl/"
+            }
+          ]
+        },
+        {
+          "name": "21kg Top Load Washer Black Color Rear Control panelDIT Bubble Storm Ww8800a Yl (WA21A8376GV/YL)",
+          "key": "سامسون|top_load|21|washer",
+          "price": 4799,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 4799,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/washers-and-dryers/washing-machines/ww8800a-21kg-black-wa21a8376gv-yl/"
+            }
+          ]
+        }
+      ],
+      "samsungOffers": [],
+      "compareStatus": 200,
+      "comparison": {
+        "canonical": {
+          "id": "a6866421-dbde-4cb7-a1f3-d333082958d8",
+          "name_ar": "مكنسة samsung VS15A60AGR5/YL",
+          "name_en": "samsung VS15A60AGR5/YL vacuum cleaner",
+          "brand": "samsung",
+          "category": "vacuum",
+          "tps_identity_key": "samsung|MODEL:VS15A60AGR5/YL",
+          "identity_confidence": 75,
+          "attributes": {
+            "mop": false,
+            "hepa": false,
+            "wifi": false,
+            "source": "progressive",
+            "stores": [
+              6
+            ],
+            "bagless": false,
+            "capacity": null,
+            "cordless": false,
+            "identity_key": "samsung|MODEL:VS15A60AGR5/YL",
+            "model_number": "VS15A60AGR5/YL",
+            "offers_count": 1,
+            "capacity_unit": "W",
+            "identity_tier": "primary",
+            "appliance_type": null,
+            "parser_version": "vacuum-v2",
+            "comparison_eligible": false
+          }
+        },
+        "summary": {
+          "cheapest_store": null,
+          "lowest_price": null,
+          "highest_price": null,
+          "saving": null,
+          "store_count": 0,
+          "cheapest_stale": false
+        },
+        "offers": [],
+        "message": "No approved-retailer offers for this product yet"
+      }
+    },
+    {
+      "model": "LS27HG402EMXUE",
+      "category": "monitor",
+      "observedAt": "2026-09-16T08:44:57.658Z",
+      "sourceAtFreeze": {
+        "price": 1199,
+        "availability": "in_stock"
+      },
+      "searchStatus": 200,
+      "search": [
+        {
+          "name": "27 Inch Odyssey G4 Gaming Monitor, 240Hz refresh rate, 1ms, FHD With HDR10 IPS Panel, Nvidia G-Sync, LS27BG402EMXUE Black",
+          "key": "samsung|27|fhd|240|ips",
+          "price": 849,
+          "stores": [
+            {
+              "store": "نون",
+              "store_name": "نون",
+              "current_price": 849,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.noon.com/saudi-en/27-inch-odyssey-g4-gaming-monitor-240hz-refresh-rate-1ms-fhd-with-hdr10-ips-panel-nvidia-g-sync-ls27bg402emxue-black/N53349534A/p/?o=ce956f7f6e74477f"
+            }
+          ]
+        }
+      ],
+      "samsungOffers": [],
+      "compareStatus": 404,
+      "comparison": {
+        "error": "Canonical product not found"
+      }
+    },
+    {
+      "model": "NK24C5070US/ZA",
+      "category": "hood",
+      "observedAt": "2026-09-16T08:44:59.398Z",
+      "sourceAtFreeze": {
+        "price": null,
+        "availability": "out_of_stock"
+      },
+      "searchStatus": 200,
+      "search": [
+        {
+          "name": "ZAGG Glass Elite iPhone 16 Plus, Privacy",
+          "price": 36,
+          "stores": [
+            {
+              "store": "اكسترا",
+              "store_name": "اكسترا",
+              "current_price": 36,
+              "original_price": 119,
+              "availability": "in_stock",
+              "product_url": "https://www.extra.com/en-sa/mobiles-tablets/mobile-accessories/screen-protector/zagg-glass-elite-iphone-16-plus-privacy/p/100390112"
+            }
+          ]
+        },
+        {
+          "name": "Zamil Winow AC, Cool only,  17,600 BTU, Rotary Comperssor",
+          "price": 630,
+          "stores": [
+            {
+              "store": "اكسترا",
+              "store_name": "اكسترا",
+              "current_price": 630,
+              "original_price": 2099,
+              "availability": "in_stock",
+              "product_url": "https://www.extra.com/en-sa/large-appliances-/air-conditioner/window-air-conditioner/zamil-winow-ac-cool-only-17-600-btu-rotary-comperssor/p/100091436"
+            }
+          ]
+        },
+        {
+          "name": "Samsung Microwave 23 L (0.8 cu.ft) with Quick Defrost, Easy-to-Clean Ceramic Inside™ 23 L 800 W MS23K3515AK/ZA Stainless Steel",
+          "key": "samsung|NA|23",
+          "price": 779,
+          "stores": [
+            {
+              "store": "نون",
+              "store_name": "نون",
+              "current_price": 779,
+              "original_price": 899,
+              "availability": "in_stock",
+              "product_url": "https://www.noon.com/saudi-en/samsung-microwave-23-l-0-8-cu-ft-with-quick-defrost-easy-to-clean-ceramic-inside-23-l-800-w-ms23k3515ak-za-stainless-steel/N70218291V/p/"
+            }
+          ]
+        },
+        {
+          "name": "Zamil Window AC, 20,800 BTU, Heat & Cool, Rotary Compressor",
+          "price": 810,
+          "stores": [
+            {
+              "store": "اكسترا",
+              "store_name": "اكسترا",
+              "current_price": 810,
+              "original_price": 2699,
+              "availability": "in_stock",
+              "product_url": "https://www.extra.com/en-sa/large-appliances-/air-conditioner/window-air-conditioner/zamil-window-ac-20-800-btu-heat-cool-rotary-compressor/p/100347348"
+            }
+          ]
+        },
+        {
+          "name": "Zamil Comfort Split AC 18,000 BTU, Cool Only, Rotary Compressor, R410A, Anti-Corrosive Design",
+          "price": 900,
+          "stores": [
+            {
+              "store": "اكسترا",
+              "store_name": "اكسترا",
+              "current_price": 900,
+              "original_price": 2999,
+              "availability": "in_stock",
+              "product_url": "https://www.extra.com/en-sa/large-appliances-/air-conditioner/split-air-conditioner/zamil-comfort-split-ac-18-000-btu-cool-only-rotary-compressor-r410a-anti-corrosive-design/p/100392090"
+            }
+          ]
+        },
+        {
+          "name": "Lenovo TAB P12, 12-inch, STORM GREY, MediaTek® Dimensity 7050 OC 2.6GHz, 8GB, 128GB, WIFI, 10200 mAh, TB370FU, BT Active Pen, ZACH0130SA",
+          "price": 960,
+          "stores": [
+            {
+              "store": "أمازون",
+              "store_name": "أمازون",
+              "current_price": 960,
+              "original_price": 1599,
+              "availability": "in_stock",
+              "product_url": "https://www.amazon.sa/-/en/Lenovo-MediaTek%C2%AE-Dimensity-TB370FU-ZACH0130SA/dp/B0CSDDDFGW/ref=sr_1_66?dib=eyJ2IjoiMSJ9.JHZUmE5IpDPcwMQ3-GoXfuUtmPoi9C8vxqAlmIJk7yWiejRoCGoQPzuLza-cb4MGk8WrleQ5UVjtbKf3_gQXCoLlBsnTclLEk2VxdEe0WrZsMwinJwFtbDDFoPxFqcsTn0e0D6BQcw5Msv3nJmWR7-S1ejkL2HFZhK8Qpx87pfZJQG7VMj7johlIaKHb5HEOjFDRTwOZ_5xtYgQ3GUiTADiqMM2lzZABQGiWSNQ2f2EXKs8UBHcWGHGGbz2yVgjz6B7rJr-grBSiOTqymvRNSV7C09BqMtTyIDQpY7EcvnE.uikjYEG_-4NV0LkEZoH6-Bpyc7M1yg8omUqWX4jMCfk&dib_tag=se&keywords=%D8%AA%D8%A7%D8%A8%D9%84%D8%AA&qid=1789258071&sr=8-66"
+            }
+          ]
+        },
+        {
+          "name": "Zamil, Window AC, 18,000 BTU, Cold, Rotary Compressor, Cool, Grey",
+          "price": 1349,
+          "stores": [
+            {
+              "store": "اكسترا",
+              "store_name": "اكسترا",
+              "current_price": 1349,
+              "original_price": 2159,
+              "availability": "in_stock",
+              "product_url": "https://www.extra.com/en-sa/large-appliances-/air-conditioner/window-air-conditioner/zamil-window-ac-18-000-btu-cold-rotary-compressor-cool-grey/p/100434409"
+            }
+          ]
+        },
+        {
+          "name": "Zamil, Window AC, 17,800 BTU, Hot & Cold, Rotary Compressor, Cool, Grey",
+          "price": 1399,
+          "stores": [
+            {
+              "store": "اكسترا",
+              "store_name": "اكسترا",
+              "current_price": 1399,
+              "original_price": 2199,
+              "availability": "in_stock",
+              "product_url": "https://www.extra.com/en-sa/large-appliances-/air-conditioner/window-air-conditioner/zamil-window-ac-17-800-btu-hot-cold-rotary-compressor-cool-grey/p/100435711"
+            }
+          ]
+        },
+        {
+          "name": "Zamil Comfort Split AC 12,400 BTU, Cool Only, Rotary, R410A, Anti-Corrosive Design",
+          "price": 1434,
+          "stores": [
+            {
+              "store": "اكسترا",
+              "store_name": "اكسترا",
+              "current_price": 1434,
+              "original_price": 2049,
+              "availability": "in_stock",
+              "product_url": "https://www.extra.com/en-sa/large-appliances-/air-conditioner/split-air-conditioner/zamil-comfort-split-ac-12-400-btu-cool-only-rotary-r410a-anti-corrosive-design/p/100391959"
+            }
+          ]
+        },
+        {
+          "name": "Zamil, Window AC, 21,600 BTU, Cold, Rotary Compressor, Cool, Grey",
+          "price": 1799,
+          "stores": [
+            {
+              "store": "اكسترا",
+              "store_name": "اكسترا",
+              "current_price": 1799,
+              "original_price": 2449,
+              "availability": "in_stock",
+              "product_url": "https://www.extra.com/en-sa/large-appliances-/air-conditioner/window-air-conditioner/zamil-window-ac-21-600-btu-cold-rotary-compressor-cool-grey/p/100434410"
+            }
+          ]
+        },
+        {
+          "name": "Zamil, Window AC, Cool Only, Inverter, 18,500 BTU, Rotary Compressor",
+          "price": 1899,
+          "stores": [
+            {
+              "store": "اكسترا",
+              "store_name": "اكسترا",
+              "current_price": 1899,
+              "original_price": 2599,
+              "availability": "in_stock",
+              "product_url": "https://www.extra.com/en-sa/large-appliances-/air-conditioner/window-air-conditioner/zamil-window-ac-cool-only-inverter-18-500-btu-rotary-compressor/p/100524739"
+            }
+          ]
+        },
+        {
+          "name": "Zamil, Window AC, 21,600 BTU, Hot & Cold, Rotary Compressor, Cool, Grey",
+          "price": 1899,
+          "stores": [
+            {
+              "store": "اكسترا",
+              "store_name": "اكسترا",
+              "current_price": 1899,
+              "original_price": 3149,
+              "availability": "in_stock",
+              "product_url": "https://www.extra.com/en-sa/large-appliances-/air-conditioner/window-air-conditioner/zamil-window-ac-21-600-btu-hot-cold-rotary-compressor-cool-grey/p/100435712"
+            }
+          ]
+        },
+        {
+          "name": "Zamil, Split AC, 12,200 BTU, Cool, Wi-Fi, Inverter, Anti-Corrosive Design",
+          "price": 1899,
+          "stores": [
+            {
+              "store": "اكسترا",
+              "store_name": "اكسترا",
+              "current_price": 1899,
+              "original_price": 2999,
+              "availability": "in_stock",
+              "product_url": "https://www.extra.com/en-sa/large-appliances-/air-conditioner/split-air-conditioner/zamil-split-ac-12-200-btu-cool-wi-fi-inverter-anti-corrosive-design/p/100522659"
+            }
+          ]
+        },
+        {
+          "name": "Zamil Comfort Split AC 18,000 BTU, Heat & Cool, Rotary Compressor, R410A, Anti-Corrosive Design",
+          "price": 1987,
+          "stores": [
+            {
+              "store": "اكسترا",
+              "store_name": "اكسترا",
+              "current_price": 1987,
+              "original_price": 2649,
+              "availability": "in_stock",
+              "product_url": "https://www.extra.com/en-sa/large-appliances-/air-conditioner/split-air-conditioner/zamil-comfort-split-ac-18-000-btu-heat-cool-rotary-compressor-r410a-anti-corrosive-design/p/100392091"
+            }
+          ]
+        },
+        {
+          "name": "Zamil, Window AC, Hot and Cool Only, Inverter, 18500 BTU, Rotary Compressor",
+          "price": 1999,
+          "stores": [
+            {
+              "store": "اكسترا",
+              "store_name": "اكسترا",
+              "current_price": 1999,
+              "original_price": 2899,
+              "availability": "in_stock",
+              "product_url": "https://www.extra.com/en-sa/large-appliances-/air-conditioner/window-air-conditioner/zamil-window-ac-hot-and-cool-only-inverter-18500-btu-rotary-compressor/p/100524736"
+            }
+          ]
+        },
+        {
+          "name": "Zamil, Split AC, 12,200 BTU, Heat & Cool, Wi-Fi, Inverter, Anti-Corrosive Design",
+          "price": 1999,
+          "stores": [
+            {
+              "store": "اكسترا",
+              "store_name": "اكسترا",
+              "current_price": 1999,
+              "original_price": 3299,
+              "availability": "in_stock",
+              "product_url": "https://www.extra.com/en-sa/large-appliances-/air-conditioner/split-air-conditioner/zamil-split-ac-12-200-btu-heat-cool-wi-fi-inverter-anti-corrosive-design/p/100522657"
+            }
+          ]
+        },
+        {
+          "name": "Zamil Inverter Split AC 18,000 BTU Heat & Cool, Anti-Corrosive Design, Auto Swing",
+          "price": 2099,
+          "stores": [
+            {
+              "store": "اكسترا",
+              "store_name": "اكسترا",
+              "current_price": 2099,
+              "original_price": 3199,
+              "availability": "in_stock",
+              "product_url": "https://www.extra.com/en-sa/large-appliances-/air-conditioner/split-air-conditioner/zamil-inverter-split-ac-18-000-btu-heat-cool-anti-corrosive-design-auto-swing/p/100394246"
+            }
+          ]
+        },
+        {
+          "name": "Zamil Window AC, 18,000 BTU, Cool Only, Rotary Compressor",
+          "price": 2100,
+          "stores": [
+            {
+              "store": "اكسترا",
+              "store_name": "اكسترا",
+              "current_price": 2100,
+              "original_price": 2300,
+              "availability": "in_stock",
+              "product_url": "https://www.extra.com/en-sa/large-appliances-/air-conditioner/window-air-conditioner/zamil-window-ac-18-000-btu-cool-only-rotary-compressor/p/100347349"
+            }
+          ]
+        },
+        {
+          "name": "Zamil Comfort Split AC 22,200 BTU, Heat & Cool, Rotary Compressor, R410A, Anti-Corrosive Design",
+          "price": 2239,
+          "stores": [
+            {
+              "store": "اكسترا",
+              "store_name": "اكسترا",
+              "current_price": 2239,
+              "original_price": 3199,
+              "availability": "in_stock",
+              "product_url": "https://www.extra.com/en-sa/large-appliances-/air-conditioner/split-air-conditioner/zamil-comfort-split-ac-22-200-btu-heat-cool-rotary-compressor-r410a-anti-corrosive-design/p/100392093"
+            }
+          ]
+        },
+        {
+          "name": "Zamil, Split AC, 18,000 BTU, Heat & Cool, Wi-Fi, Inverter, Anti-Corrosive Design",
+          "price": 2399,
+          "stores": [
+            {
+              "store": "اكسترا",
+              "store_name": "اكسترا",
+              "current_price": 2399,
+              "original_price": 3899,
+              "availability": "in_stock",
+              "product_url": "https://www.extra.com/en-sa/large-appliances-/air-conditioner/split-air-conditioner/zamil-split-ac-18-000-btu-heat-cool-wi-fi-inverter-anti-corrosive-design/p/100522662"
+            }
+          ]
+        }
+      ],
+      "samsungOffers": [],
+      "compareStatus": 404,
+      "comparison": {
+        "error": "Canonical product not found"
+      }
+    },
+    {
+      "model": "SM-F976BZVPMEA",
+      "category": "mobile",
+      "observedAt": "2026-09-16T08:45:02.558Z",
+      "sourceAtFreeze": {
+        "price": 10599,
+        "availability": "limited_stock"
+      },
+      "searchStatus": 200,
+      "search": [
+        {
+          "name": "50 Inch Smart TV FX50FHD-SM | Full HD 1080p, Android, WiFi, 144Hz, Screen Sharing, HDMI & USB, 2 Year Warranty",
+          "price": 950,
+          "stores": [
+            {
+              "store": "نون",
+              "store_name": "نون",
+              "current_price": 950,
+              "original_price": 1299,
+              "availability": "in_stock",
+              "product_url": "https://www.noon.com/saudi-en/50-inch-smart-tv-fx50fhd-sm-full-hd-1080p-android-wifi-144hz-screen-sharing-hdmi-usb-2-year-warranty/Z6D86513A1B0345924CF5Z/p/"
+            }
+          ]
+        },
+        {
+          "name": "Samsung Galaxy Watch 8 Classic 46mm SM-L500NZWAMEA-White",
+          "price": 1398.998001,
+          "stores": [
+            {
+              "store": "المنيع",
+              "store_name": "المنيع",
+              "current_price": 1398.998001,
+              "original_price": 1948.997001,
+              "availability": "in_stock",
+              "product_url": "https://www.almanea.sa/en/product/p-170100503999032"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy Buds Core Black (SM-R410NZKAMEA)",
+          "price": 199,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 199,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/audio-sound/galaxy-buds/galaxy-buds-core-black-sm-r410nzkamea/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy Buds Core White (SM-R410NZWAMEA)",
+          "price": 199,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 199,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/audio-sound/galaxy-buds/galaxy-buds-core-white-sm-r410nzwamea/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy Fit3 Gray Bluetooth V5 3 (SM-R390NZAAMEA)",
+          "price": 229,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 229,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/watches/galaxy-fit/galaxy-fit3-gray-bluetooth-v5-3-sm-r390nzaamea/buy/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy Fit3 Silver Bluetooth V5 3 (SM-R390NZSAMEA)",
+          "price": 229,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 229,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/watches/galaxy-fit/galaxy-fit3-silver-bluetooth-v5-3-sm-r390nzsamea/buy/"
+            }
+          ]
+        },
+        {
+          "name": "Samsung Galaxy Watch 8 Ultra 2025 SM-L705FZA1KSA-Gray",
+          "price": 1799.002501,
+          "stores": [
+            {
+              "store": "المنيع",
+              "store_name": "المنيع",
+              "current_price": 1799.002501,
+              "original_price": 2498.996001,
+              "availability": "in_stock",
+              "product_url": "https://www.almanea.sa/en/product/p-170100503999034"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy Buds3 FE Black (SM-R420NZKAMEA)",
+          "price": 499,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 499,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/audio-sound/galaxy-buds/galaxy-buds3-fe-black-sm-r420nzkamea/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy Buds3 FE Gray (SM-R420NZAAMEA)",
+          "price": 499,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 499,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/audio-sound/galaxy-buds/galaxy-buds3-fe-gray-sm-r420nzaamea/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy A07 Black 64GB (SM-A075FZKDMEA)",
+          "price": 599,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 599,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a07-black-64gb-sm-a075fzkdmea/buy/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy A07 Green 64GB (SM-A075FZGDMEA)",
+          "price": 599,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 599,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a07-green-64gb-sm-a075fzgdmea/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy A07 Light Violet 64GB (SM-A075FLVDMEA)",
+          "price": 599,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 599,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a07-light-violet-64gb-sm-a075flvdmea/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy A16 Black 128GB (SM-A165FZKDMEA)",
+          "price": 619,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 619,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a16-black-128gb-sm-a165fzkdmea/buy/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy A16 Light Green 128GB (SM-A165FLGDMEA)",
+          "price": 619,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 619,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a16-light-green-128gb-sm-a165flgdmea/buy/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy A16 Light Gray 128GB (SM-A165FZADMEA)",
+          "price": 619,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 619,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a16-light-gray-128gb-sm-a165fzadmea/buy/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy Tab A11 (LTE) Gray 64GB (SM-X135GZAAMEA)",
+          "price": 649,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 649,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/tablets/galaxy-tab-a/galaxy-tab-a11-gray-64gb-sm-x135gzaamea/buy/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy Tab A11 (LTE) Silver 64GB (SM-X135GZSAMEA)",
+          "price": 649,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 649,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/tablets/galaxy-tab-a/galaxy-tab-a11-silver-64gb-sm-x135gzsamea/buy/"
+            }
+          ]
+        },
+        {
+          "name": "Tablet Samsung SM X130NZAAEUE GALAXY TAB A11 Gray",
+          "price": 688.92,
+          "stores": [
+            {
+              "store": "أمازون",
+              "store_name": "أمازون",
+              "current_price": 688.92,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.amazon.sa/-/en/Tablet-Samsung-X130NZAAEUE-GALAXY-Gray/dp/B0FWS4GKZ8/ref=sr_1_73?dib=eyJ2IjoiMSJ9.8TRnsm5j8WEMWAbr6PSdxlST5sWcloSuRG8Pw9rRNkWM7TGHOZGBoNxzmb8uJSiVSHUr50lRKhyE03s6FC0j90QlRJpS_IjCbCuQal_ALHEK5DB0aEjUKRPd2m1cwRC8kUQyzUjqWbEOkxdc3-z65bvGrhseFxOo2Sr8mmN8GEs1VIqVgztDNmQsuWQ87vSQv8KiL8nV02iLzwemQ3kZsP1aezi9GX9JopENUC1mmcwOGIPQynSOXcgRrDWhGj5JA9tPpo3neaRz3cvmWv_M0fpHw7raI-a80SiiQ6XwPCQ.EbMSM92qnLQmRhYsmkRphqZol44qohrM4ZCA43abyLI&dib_tag=se&keywords=%D8%AA%D8%A7%D8%A8%D9%84%D8%AA&qid=1789171728&sr=8-73"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy A07 Green 128GB (SM-A075FZGGMEA)",
+          "price": 739,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 739,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a07-green-128gb-sm-a075fzggmea/"
+            }
+          ]
+        },
+        {
+          "name": "Galaxy A07 Black 128GB (SM-A075FZKGMEA)",
+          "price": 739,
+          "stores": [
+            {
+              "store": "سامسونج السعودية",
+              "store_name": "سامسونج السعودية",
+              "current_price": 739,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-a/galaxy-a07-black-128gb-sm-a075fzkgmea/buy/"
+            }
+          ]
+        }
+      ],
+      "samsungOffers": [],
+      "compareStatus": 404,
+      "comparison": {
+        "error": "Canonical product not found"
+      }
+    },
+    {
+      "model": "EP-T6010NBEGGB",
+      "category": "accessories",
+      "observedAt": "2026-09-16T08:45:04.113Z",
+      "sourceAtFreeze": {
+        "price": 219,
+        "availability": "in_stock"
+      },
+      "searchStatus": 200,
+      "search": [
+        {
+          "name": "Aukey Wired Type-C Earphones , White - EP-CC1-WH",
+          "price": 30.003501,
+          "stores": [
+            {
+              "store": "المنيع",
+              "store_name": "المنيع",
+              "current_price": 30.003501,
+              "original_price": 58.995001,
+              "availability": "in_stock",
+              "product_url": "https://www.almanea.sa/en/product/p-170114851999013"
+            }
+          ]
+        },
+        {
+          "name": "Headphone, Lightweight, Cool Design, Portable Speaker, Noise Canceling, Clear & Crisp Sound, Ep-13 Gold / Black, Wired",
+          "price": 54.05,
+          "stores": [
+            {
+              "store": "نون",
+              "store_name": "نون",
+              "current_price": 54.05,
+              "original_price": 56.9,
+              "availability": "in_stock",
+              "product_url": "https://www.noon.com/saudi-en/headphone-lightweight-cool-design-portable-speaker-noise-canceling-clear-crisp-sound-ep-13-gold-black-wired/ZE475CBF026FC43D7D2D1Z/p/"
+            }
+          ]
+        },
+        {
+          "name": "شاحن سامسونج محول طاقة للسفر شاحن جداري، 45 واط، USB-C، أسود – EP-T4511XBEGGB",
+          "price": 55.004501,
+          "stores": [
+            {
+              "store": "المنيع",
+              "store_name": "المنيع",
+              "current_price": 55.004501,
+              "original_price": 169.004001,
+              "availability": "in_stock",
+              "product_url": "https://www.almanea.sa/ar/product/p-170100506999011"
+            }
+          ]
+        },
+        {
+          "name": "Aukey M4 Wireless Earbuds, Gray - EP-M4-GY",
+          "price": 58.995001,
+          "stores": [
+            {
+              "store": "المنيع",
+              "store_name": "المنيع",
+              "current_price": 58.995001,
+              "original_price": 119.002001,
+              "availability": "in_stock",
+              "product_url": "https://www.almanea.sa/en/product/p-170114851999012"
+            }
+          ]
+        },
+        {
+          "name": "Aukey M4 Wireless Earbuds, White - EP-M4-WH",
+          "price": 58.995001,
+          "stores": [
+            {
+              "store": "المنيع",
+              "store_name": "المنيع",
+              "current_price": 58.995001,
+              "original_price": 119.002001,
+              "availability": "in_stock",
+              "product_url": "https://www.almanea.sa/en/product/p-170114851999010"
+            }
+          ]
+        },
+        {
+          "name": "Aukey  Hybrid  Earbuds, Wireless, Active Noise Cancellation, Silver - EP-B1-SV",
+          "price": 88.998501,
+          "stores": [
+            {
+              "store": "المنيع",
+              "store_name": "المنيع",
+              "current_price": 88.998501,
+              "original_price": 198.996001,
+              "availability": "in_stock",
+              "product_url": "https://www.almanea.sa/en/product/p-170114851999011"
+            }
+          ]
+        }
+      ],
+      "samsungOffers": [],
+      "compareStatus": 404,
+      "comparison": {
+        "error": "Canonical product not found"
+      }
+    },
+    {
+      "model": "EF-PS721CLEGWW",
+      "category": "accessories",
+      "observedAt": "2026-09-16T08:45:05.847Z",
+      "sourceAtFreeze": {
+        "price": 50,
+        "availability": "limited_stock"
+      },
+      "searchStatus": 200,
+      "search": [
+        {
+          "name": "BENOISON EF Lens for Canon - 85mm f1.8 Medium Telephoto Lenses Manual Camera Portrait Lens for Canon EOS Rebel T8i T7i T7 T6 T6s T6i T3i T2i SL3 SL2 90D 80D 77D 4000D,1DX 5D 6D Mark II/III/IV etc",
+          "price": 233.94,
+          "stores": [
+            {
+              "store": "أمازون السعودية",
+              "store_name": "أمازون السعودية",
+              "current_price": 233.94,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.amazon.sa/dp/B0CL255NSY?tag=tawveeri-21"
+            }
+          ]
+        },
+        {
+          "name": "Canon telephoto lens EF 75-300mm F4.0-5.6 III for EOS (58mm filter thread, autofocus) black",
+          "price": 1364.59,
+          "stores": [
+            {
+              "store": "أمازون السعودية",
+              "store_name": "أمازون السعودية",
+              "current_price": 1364.59,
+              "original_price": null,
+              "availability": "in_stock",
+              "product_url": "https://www.amazon.sa/dp/B00005K47Y?tag=tawveeri-21"
+            }
+          ]
+        },
+        {
+          "name": "Canon EF 75-300mm f/4-5.6 III Telephoto Zoom Lens, Black, 6473A003",
+          "price": 904.24,
+          "stores": [
+            {
+              "store": "أمازون السعودية",
+              "store_name": "أمازون السعودية",
+              "current_price": 904.24,
+              "original_price": null,
+              "availability": "limited_stock",
+              "product_url": "https://www.amazon.sa/dp/B00004THD0?tag=tawveeri-21"
+            }
+          ]
+        },
+        {
+          "name": "Canon EOS 2000D with EF-S 18-55mm IS, Lens and EF 75-300mm- black -KSA version with official warranty",
+          "price": 2799,
+          "stores": [
+            {
+              "store": "أمازون السعودية",
+              "store_name": "أمازون السعودية",
+              "current_price": 2799,
+              "original_price": null,
+              "availability": "limited_stock",
+              "product_url": "https://www.amazon.sa/dp/B07B39M2MJ?tag=tawveeri-21"
+            }
+          ]
+        }
+      ],
+      "samsungOffers": [],
+      "compareStatus": 404,
+      "comparison": {
+        "error": "Canonical product not found"
+      }
+    }
+  ],
+  "completedAt": "2026-09-16T08:45:07.286Z",
+  "summary": {
+    "tested": 21,
+    "searchHttp200": 21,
+    "samsungPresent": 10,
+    "exactMerchantVariantConfirmed": 0,
+    "errors": 0
+  }
+}

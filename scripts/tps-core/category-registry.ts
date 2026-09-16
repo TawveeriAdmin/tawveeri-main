@@ -91,7 +91,25 @@ export interface CategoryDef {
 
 const P = (v: unknown) => (v === undefined ? null : v);
 
+// These categories are admitted only by verified manufacturer SKU + Saudi PDP
+// evidence in the progressive engine. A generic accessory title is insufficient.
+function manufacturerOnlyCategory(category: string): CategoryDef {
+  const normalize = () => ({ model_number: null, payload: {}, ambiguity_flags: [] });
+  return {
+    category, detected: category, version: 'manufacturer-model-v1', filterKeywords: [],
+    plugin: { category, version: 'manufacturer-model-v1', detect: () => false, normalize,
+      buildIdentityKey: () => ({ key: null, status: 'invalid', reason: 'Verified manufacturer evidence required' }),
+      scoreConfidence: () => ({ confidence: 0, missing_critical: ['verified_manufacturer_model'], needs_llm: false }) },
+    normalize, names: key => ({ nameAr: key, nameEn: key }), attrs: () => ({}),
+    canonSeed: key => `canonical:${category}:${key}`, normSeed: id => `norm:${category}:raw_observations:${id}`,
+    requireValidTier: true, priceBand: null,
+  };
+}
+
 export const CATEGORY_DEFS: Record<string, CategoryDef> = {
+  accessories: manufacturerOnlyCategory('accessories'),
+  projector: manufacturerOnlyCategory('projector'),
+  hood: manufacturerOnlyCategory('hood'),
   tv: {
     category: "tv", detected: "tv", plugin: tvPlugin, normalize: tvN, version: "tv-v1",
     filterKeywords: ["tv", "تلفزيون", "television", "smart tv", "شاشة"],

@@ -1,0 +1,60 @@
+{
+  "rows": [
+    {
+      "model": "QA55LS03DAUXSA",
+      "url": "https://www.samsung.com/sa_en/lifestyle-tvs/the-frame/ls03d-55-inch-black-qa55ls03dauxsa/",
+      "observedAt": "2026-09-16T08:53:20.622Z",
+      "product": null
+    },
+    {
+      "model": "HW-T400/ZN",
+      "url": "https://www.samsung.com/sa_en/audio-devices/soundbar/t400-black-hw-t400-zn/",
+      "observedAt": "2026-09-16T08:53:24.442Z",
+      "product": null
+    },
+    {
+      "model": "EO-IC100BBEGWW",
+      "url": "https://www.samsung.com/sa_en/audio-sound/others/samsung-type-c-earphones-black-eo-ic100bbegww/",
+      "observedAt": "2026-09-16T08:53:27.364Z",
+      "product": {
+        "name_ar": "Samsung Type-C Earphones Black Eo (EO-IC100BBEGWW)",
+        "name_en": "Samsung Type-C Earphones Black Eo (EO-IC100BBEGWW)",
+        "brand": "Samsung",
+        "model": "EO-IC100BBEGWW",
+        "sku": "EO-IC100BBEGWW",
+        "original_price": 94.78,
+        "product_url": "https://www.samsung.com/sa_en/audio-sound/others/samsung-type-c-earphones-black-eo-ic100bbegww/",
+        "image_urls": [
+          "https://images.samsung.com/is/image/samsung/sa-en-samsung-type-c-earphones-eo-ic100-eo-ic100bbegww-frontblack-thumb-282918461"
+        ],
+        "specifications": {
+          "raw": {
+            "Speaker": "2Way(11mm/8mm)",
+            "Impedance": "32Ω",
+            "Frequency Response": "20~20kHz",
+            "Sensitivity": "94.3dB±3dB(-10dBFS input)",
+            "Active Noise Cancellation": "No",
+            "Control": "2 buttons for Volume Up(REW), Down(FF), 1 button for Play(Pause, Call)",
+            "Microphone": "Yes",
+            "Packaging Contents": "Ear Tips (S/M/L),Leaflet",
+            "Call Receiving": "Yes",
+            "Mute/Reject Function": "Yes",
+            "Cable Type": "Fabric Cable",
+            "Weight": "18.35 g",
+            "Compatible Models": "Samsung Galaxy Fold and all Samsung mobile devices which do not have a 3.5mm jack (e.g. Galaxy Note10, Tab S6, etc.)"
+          },
+          "source": "samsung_ksa_pdp_spec_table",
+          "source_url": "https://www.samsung.com/sa_en/audio-sound/others/samsung-type-c-earphones-black-eo-ic100bbegww/",
+          "observed_at": "2026-09-16T08:53:30.189Z"
+        },
+        "category": "accessories",
+        "description_ar": null,
+        "description_en": "Get the in-studio audio experience wherever you listen Balanced sound that's music to your ears Designed for easy, comfortable listening",
+        "merchant_rating": null,
+        "merchant_review_count": null,
+        "current_price": 48,
+        "availability": "in_stock"
+      }
+    }
+  ]
+}

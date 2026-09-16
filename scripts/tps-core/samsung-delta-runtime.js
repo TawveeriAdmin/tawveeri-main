@@ -4,10 +4,10 @@ const path = require('path');
 // Next standalone changes cwd and only copies traced files. The scheduled TS
 // worker needs the source tree and tsconfig, which Railway retains at /app.
 // Resolve this worker alone; do not change the cwd of other scheduled jobs.
-function resolveSamsungDeltaRuntime(cwd) {
+function resolveSamsungDeltaRuntime(cwd, relativeScript = 'scripts/tps-core/samsung-delta-watch.ts') {
   const required = [
     'tsconfig.json',
-    'scripts/tps-core/samsung-delta-watch.ts',
+    relativeScript,
     'scripts/tps-core/category-registry.ts',
     'src/lib/scraping/stores/samsung-ksa-scraper.ts',
     'src/lib/scraping/config/store-configs/samsung_ksa.json',
@@ -18,7 +18,7 @@ function resolveSamsungDeltaRuntime(cwd) {
   }
   for (const root of candidates) {
     if (required.every(file => fs.existsSync(path.join(root, file)))) {
-      return { cwd: root, script: path.join(root, 'scripts/tps-core/samsung-delta-watch.ts') };
+      return { cwd: root, script: path.join(root, relativeScript) };
     }
   }
   throw new Error(`Samsung delta runtime incomplete in ${candidates.join(', ')}`);

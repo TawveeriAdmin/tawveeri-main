@@ -24,6 +24,7 @@
 // Touches: nothing.
 
 import { createServerClient } from '@/lib/database';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { resolveApprovedSlug, retailerDisplayName, isDisplayableRetailer } from '@/lib/retailers/approved-retailers';
 import { displayedObservedAt } from '@/lib/intelligence/observed-freshness';
 import { STALE_CAVEAT_HOURS, isFreshObservation } from '@/lib/intelligence/evidence-engine';
@@ -170,6 +171,16 @@ export async function getComparison(params: {
     .select('store_slug')
     .eq('canonical_product_id', canonical.id);
   const delistedSlugs = new Set((delistRows ?? []).map((d) => (d as { store_slug: string }).store_slug));
+  // A repaired exact manufacturer identity must not retain the old generic
+  // identity's historical offer. History stays immutable; the current-state
+  // retirement records why that particular merchant offer moved.
+  const { data: retiredOffers } = await (supabase as unknown as SupabaseClient).from('tps_current_offers')
+    .select('store_id, payload').eq('identity_key', canonicalOut.tps_identity_key)
+    .not('payload->>_superseded_by_identity', 'is', null);
+  for (const row of retiredOffers ?? []) {
+    const slug = resolveApprovedSlug(row.store_id);
+    if (slug && row.payload?._superseded_by_identity) delistedSlugs.add(slug);
+  }
 
   // Latest price per DISPLAYABLE retailer. Rows are already newest-first, so the first
   // sighting of a slug wins. `isDisplayableRetailer`, not `resolveApprovedSlug` alone: a
@@ -244,6 +255,7 @@ export async function getComparison(params: {
   // no extra query cost and TTL-gated below, so a stale campaign flag silently stops showing
   // without any manual action (2026-08-06, ADR-220).
   const scrapedAtByRawId = new Map<number, string>();
+  const availabilityByRawId = new Map<number, string>();
   const campaignByRawId = new Map<number, CampaignEligibilityEvidence>();
   {
     const priceLinkedRawIds = [...latestBySlug.values()]
@@ -262,8 +274,9 @@ export async function getComparison(params: {
       };
       const now = new Date();
       const { data: raws } = await db.from('raw_observations').select('id, scraped_at, payload').in('id', rawIds);
-      for (const r of (raws ?? []) as { id: number | string; scraped_at: string | null; payload: { specifications?: { campaign_eligibility?: { campaign_category_id?: number } } } }[]) {
+      for (const r of (raws ?? []) as { id: number | string; scraped_at: string | null; payload: { availability?: string; specifications?: { campaign_eligibility?: { campaign_category_id?: number } } } }[]) {
         if (r.scraped_at) scrapedAtByRawId.set(Number(r.id), r.scraped_at);
+        if (r.payload?.availability) availabilityByRawId.set(Number(r.id), r.payload.availability);
         const eligibility = deriveCampaignEligibility(r.payload?.specifications?.campaign_eligibility, r.scraped_at, now);
         if (eligibility) campaignByRawId.set(Number(r.id), eligibility);
       }
@@ -278,6 +291,10 @@ export async function getComparison(params: {
   // change which price is lowest, cannot drop/add an offer, and cannot promote anything ahead
   // of a genuinely cheaper offer.
   const priceOrdered: CompareOffer[] = [...latestBySlug.entries()]
+    .filter(([slug, p]) => {
+      const newest = newestRawIdBySlug.get(slug);
+      return (newest ? availabilityByRawId.get(newest.rawId) : p.availability) !== 'out_of_stock';
+    })
     .map(([slug, p]) => {
       const listing = listingBySlug.get(slug);
       // Prefer the measured /go exit (attributed) and fall back to the observed listing URL.
@@ -304,7 +321,7 @@ export async function getComparison(params: {
         store_name: retailerDisplayName(slug, locale) ?? slug,
         raw_name: listing?.rawName ?? (locale === 'en' ? canonical.name_en : canonical.name_ar),
         price: p.price,
-        availability: p.availability,
+        availability: availabilityByRawId.get(newestRawIdBySlug.get(slug)?.rawId ?? -1) ?? p.availability,
         product_url: exitId ? buildGoUrl(exitId) : listing?.url ?? null,
         observed_at: observedAt,
         // P0 stale-price safety (2026-08-07): "current price" must never be presented as
@@ -361,7 +378,7 @@ export function deriveComparisonSummary(offers: CompareOffer[]): {
   // here too (not just in getComparison's own `offers` build) so `cheapest_store` always
   // names whichever offer actually leads the rendered list — never a different store than
   // the one the customer sees first, even when the fresh subset differs from the full one.
-  const priceSortedFresh = offers.filter((o) => isFreshObservation(o.observed_at)).sort((a, b) => a.price - b.price);
+  const priceSortedFresh = offers.filter((o) => o.availability !== 'out_of_stock' && isFreshObservation(o.observed_at)).sort((a, b) => a.price - b.price);
   const freshOffers = applyAffiliateTrueTieOrder(priceSortedFresh);
   const noFreshEvidence = offers.length > 0 && freshOffers.length === 0;
 

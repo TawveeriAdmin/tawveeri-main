@@ -1,0 +1,27 @@
+{
+  "measuredAt": "2026-09-16T09:15:51.629Z",
+  "before": {
+    "command": "npm run test:coverage -- --runInBand",
+    "exit": 1,
+    "coverage": {
+      "statements": 89.36,
+      "branches": 67.6,
+      "functions": 100,
+      "lines": 97.33
+    },
+    "tests": 3761,
+    "suites": 248
+  },
+  "after": {
+    "coverage": {
+      "statements": 89.36,
+      "branches": 67.6,
+      "functions": 100,
+      "lines": 97.33
+    },
+    "coverageLogTail": "cted env (12) from .env.local // tip: ◈ secrets for agents [www.dotenvx.com]\r\n\r\n      at _log (node_modules/dotenv/lib/main.js:131:11)\r\n\r\nPASS tests/campaigns/destination-validation.test.ts\r\n  ● Console\r\n\r\n    console.log\r\n      ◇ injected env (12) from .env.local // tip: ⌘ enable debugging { debug: true }\r\n\r\n      at _log (node_modules/dotenv/lib/main.js:131:11)\r\n\r\nPASS tests/agent/category-contracts.test.ts\r\n  ● Console\r\n\r\n    console.log\r\n      ◇ injected env (12) from .env.local // tip: ◈ secrets for agents [www.dotenvx.com]\r\n\r\n      at _log (node_modules/dotenv/lib/main.js:131:11)\r\n\r\nPASS tests/scraping/samsung-catalog.test.ts\r\n  ● Console\r\n\r\n    console.log\r\n      ◇ injected env (12) from .env.local // tip: ◈ secrets for agents [www.dotenvx.com]\r\n\r\n      at _log (node_modules/dotenv/lib/main.js:131:11)\r\n\r\n--------------------|---------|----------|---------|---------|-------------------\r\nFile                | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s \r\n--------------------|---------|----------|---------|---------|-------------------\r\nAll files           |   89.36 |     67.6 |     100 |   97.33 |                   \r\n lib                |     100 |    77.77 |     100 |     100 |                   \r\n  utils.ts          |     100 |    77.77 |     100 |     100 | 14,22             \r\n lib/scraping       |    86.3 |    66.12 |     100 |   96.36 |                   \r\n  product-filter.ts |    86.3 |    66.12 |     100 |   96.36 | 439-445           \r\n--------------------|---------|----------|---------|---------|-------------------\r\nJest: \"global\" coverage threshold for branches (70%) not met: 67.6%\r\n\r\nTest Suites: 253 passed, 253 total\r\nTests:       3799 passed, 3799 total\r\nSnapshots:   0 total\r\nTime:        106.486 s, estimated 200 s\r\nRan all test suites.\r\n",
+    "testLogTail": "sole\r\n\r\n    console.log\r\n      ◇ injected env (12) from .env.local // tip: ⌘ enable debugging { debug: true }\r\n\r\n      at _log (node_modules/dotenv/lib/main.js:131:11)\r\n\r\nPASS tests/intelligence/price-truth-gate.test.ts\r\n  ● Console\r\n\r\n    console.log\r\n      ◇ injected env (12) from .env.local // tip: ⌘ enable debugging { debug: true }\r\n\r\n      at _log (node_modules/dotenv/lib/main.js:131:11)\r\n\r\n\r\nTest Suites: 253 passed, 253 total\r\nTests:       3799 passed, 3799 total\r\nSnapshots:   0 total\r\nTime:        74.785 s, estimated 101 s\r\nRan all test suites.\r\nJest did not exit one second after the test run has completed.\r\n\r\n'This usually means that there are asynchronous operations that weren't stopped in your tests. Consider running Jest \r\nwith `--detectOpenHandles` to troubleshoot this issue.\r\n",
+    "buildLogTail": "dow\r\n├ ƒ /api/cron/demand-radar-shadow-recommendation\r\n├ ƒ /api/cron/discover-firecrawl\r\n├ ƒ /api/cron/discover-products\r\n├ ƒ /api/cron/dispatch\r\n├ ƒ /api/cron/extra-probe\r\n├ ƒ /api/cron/product-recovery\r\n├ ƒ /api/cron/sendgrid-key-check\r\n├ ƒ /api/cron/tps-algolia-sync\r\n├ ƒ /api/cron/tps-batch\r\n├ ƒ /api/cron/tps-progressive\r\n├ ƒ /api/cron/update-prices\r\n├ ƒ /api/debug/scheduler\r\n├ ƒ /api/events\r\n├ ƒ /api/health\r\n├ ƒ /api/health/deep\r\n├ ƒ /api/interactions\r\n├ ƒ /api/match\r\n├ ƒ /api/products/[id]/comparison\r\n├ ƒ /api/products/[id]/view\r\n├ ƒ /api/products/ensure\r\n├ ƒ /api/push/web/subscribe\r\n├ ƒ /api/search\r\n├ ƒ /api/search/diag\r\n├ ƒ /api/search/scrape\r\n├ ƒ /api/search/scrape/clear-cache\r\n├ ƒ /api/stats\r\n├ ƒ /api/store/coupons\r\n├ ƒ /api/store/coupons/[id]\r\n├ ƒ /api/store/products/bulk-update\r\n├ ƒ /api/store/sync/[storeId]\r\n├ ƒ /api/transactions/conversion\r\n├ ƒ /api/v1/agent/decide\r\n├ ƒ /api/v1/agent/home-mission\r\n├ ƒ /api/v1/agent/home-mission/share\r\n├ ƒ /api/v1/agent/home-mission/share/[token]/feedback\r\n├ ƒ /api/v1/dashboard\r\n├ ƒ /api/v1/intelligence/merchant-trust\r\n├ ƒ /api/v1/intelligence/merchant/[storeId]\r\n├ ƒ /api/v1/protocol/ucp/feed\r\n├ ƒ /api/v1/tps/discount-integrity\r\n├ ƒ /api/v1/tps/model-corroboration\r\n├ ƒ /api/v1/tps/price-intelligence\r\n├ ƒ /api/v1/tps/recommendations\r\n├ ƒ /api/v1/tps/search\r\n├ ƒ /auth/callback\r\n├ ƒ /auth/reset-password\r\n├ ƒ /auth/verify-email\r\n├ ƒ /go/[offerId]\r\n├ ƒ /how-it-works\r\n├ ƒ /r/[shortId]\r\n├ ƒ /robots.txt\r\n└ ○ /sitemap.xml\r\n\r\n\r\nƒ Proxy (Middleware)\r\n\r\n○  (Static)   prerendered as static content\r\nƒ  (Dynamic)  server-rendered on demand\r\n\r\n"
+  },
+  "decision": "Release authorized: directly measured coverage unchanged. Existing branch 70% threshold retained. Final coverage and npm test: 3799 passed/253 suites; Next build completed. Repository TypeScript drift remains."
+}

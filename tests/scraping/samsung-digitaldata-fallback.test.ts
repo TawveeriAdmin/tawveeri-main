@@ -80,10 +80,10 @@ describe('extractDigitalDataFallback — reads Samsung\'s own server-rendered an
     expect(extractDigitalDataFallback(html, VACUUM_URL)).toBeNull();
   });
 
-  it('defaults to in_stock only when data-saleable is absent (never assumes false = safer default)', () => {
+  it('preserves identity but does not claim purchase availability when data-saleable is absent', () => {
     const html = `<script>digitalData.product.model_code = "X1"; digitalData.product.displayName = "Test Product"; digitalData.product.model_price = "500";</script>`;
     const p = extractDigitalDataFallback(html, VACUUM_URL);
-    expect(p!.availability).toBe('in_stock');
+    expect(p!.availability).toBe('out_of_stock');
   });
 
   it('never treats 0 as a real price — returns the identified product with current_price: null instead', () => {

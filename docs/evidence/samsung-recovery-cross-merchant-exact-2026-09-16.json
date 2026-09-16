@@ -1,0 +1,537 @@
+{
+  "observedAt": "2026-09-16T07:49:32.292Z",
+  "method": "Read-only current-offer snapshot literal full model in title or normalized payload; candidate evidence, not an automatic merge",
+  "rows": [
+    {
+      "store": 5,
+      "key": "samsung|32|fhd|180|NO_PANEL",
+      "models": [
+        "LS32DG302EMXUE"
+      ],
+      "name": "Samsung Odyssey G3 FHD Gaming Monitor 180Hz 1ms 32 inch Black"
+    },
+    {
+      "store": 5,
+      "key": "samsung|HW-B650F/SA",
+      "models": [
+        "HW-B650F/SA"
+      ],
+      "name": "HW-B650F/SA Soundbar Samsung Saudi Arabia 370W"
+    },
+    {
+      "store": 5,
+      "key": "samsung|HW-QS700F/SA",
+      "models": [
+        "HW-QS700F/SA"
+      ],
+      "name": "2025 QS700F Q-Series Convertible Fit 3.1.2ch Soundbar | Samsung Saudi Arabia"
+    },
+    {
+      "store": 5,
+      "key": "samsung|MODEL:QA65QN80HAUXSA",
+      "models": [
+        "QA65QN80HAUXSA"
+      ],
+      "name": "Samsung Smart TV 65 Inch 4K Neo QLED, Tizen OS - QA65QN80HAUXSA"
+    },
+    {
+      "store": 5,
+      "key": "samsung|MODEL:SM-X620NZAAMEA",
+      "models": [
+        "SM-X620NZAAMEA"
+      ],
+      "name": "Samsung Galaxy Tab S10 FE Plus WiFi 13.1 inch 128GB Grey"
+    },
+    {
+      "store": 5,
+      "key": "samsung|MODEL:QA83S85HAEXSA",
+      "models": [
+        "QA83S85HAEXSA"
+      ],
+      "name": "Samsung Smart TV 83 Inch 4K OLED, Tizen OS - QA83S85HAEXSA"
+    },
+    {
+      "store": 5,
+      "key": "samsung|MODEL:QA65S85FAEXSA",
+      "models": [
+        "QA65S85FAEXSA"
+      ],
+      "name": "Samsung 65-Inch, 4K UHD, Smart OLED TV - QA65S85FAEXSA"
+    },
+    {
+      "store": 5,
+      "key": "samsung|split|WindFree|17500|Inverter|hot_cold",
+      "models": [
+        "AR18CSFCBWK/MG"
+      ],
+      "name": "Samsung WindFree Split AC, 17500 BTU, Cold and Hot, Rotary Compressor, White - AR18CSFCBWK/MG"
+    },
+    {
+      "store": 5,
+      "key": "samsung|MODEL:UA98U9000HUXSA",
+      "models": [
+        "UA98U9000HUXSA"
+      ],
+      "name": "Samsung TV, 98 Inch, 4K UHD, Smart- UA98U9000HUXSA"
+    },
+    {
+      "store": 5,
+      "key": "samsung|MODEL:QA77S85HAEXSA",
+      "models": [
+        "QA77S85HAEXSA"
+      ],
+      "name": "Samsung 77 Inch, 4K UHD, Smart, OLED TV- QA77S85HAEXSA"
+    },
+    {
+      "store": 5,
+      "key": "samsung|MODEL:UA85U8000HUXSA",
+      "models": [
+        "UA85U8000HUXSA"
+      ],
+      "name": "Samsung، TV، 85 Inch، UHD، Smart-UA85U8000HUXSA"
+    },
+    {
+      "store": 5,
+      "key": "samsung|MODEL:SM-X736BZSEMEA",
+      "models": [
+        "SM-X736BZSAMEA"
+      ],
+      "name": "Samsung Galaxy Tab S11 5G 11 inch 256GB Silver"
+    },
+    {
+      "store": 5,
+      "key": "samsung|HW-B750F/SA",
+      "models": [
+        "HW-B750F/SA"
+      ],
+      "name": "2025 B750F B-Series Dolby Wireless 5.1ch Soundbar | Samsung Saudi Arabia"
+    },
+    {
+      "store": 5,
+      "key": "samsung|MODEL:QA83S90HAEXSA",
+      "models": [
+        "QA83S90HAEXSA"
+      ],
+      "name": "Samsung Smart TV 83 Inch 4K OLED, Tizen OS - QA83S90HAEXSA"
+    },
+    {
+      "store": 5,
+      "key": "samsung|MODEL:UA75M80HAUXSA",
+      "models": [
+        "UA75M80HAUXSA"
+      ],
+      "name": "Samsung, TV, 75 Inch, 4K UHD, Smart, Mini LED, HDR, Tizen TV - UA75M80HAUXSA"
+    },
+    {
+      "store": 5,
+      "key": "samsung|EO-IA500BBEGWW",
+      "models": [
+        "EO-IA500BBEGWW"
+      ],
+      "name": "سماعات سامسونج سلكية 3.5 ملم لون اسود"
+    },
+    {
+      "store": 5,
+      "key": "samsung|SM-R420NZAAMEA",
+      "models": [
+        "SM-R420NZAAMEA"
+      ],
+      "name": "Samsung TWS Buds 3 FE BSM-R420/C - Gray"
+    },
+    {
+      "store": 5,
+      "key": "samsung|MODEL:SM-X520NZSAMEA",
+      "models": [
+        "SM-X520NZSAMEA"
+      ],
+      "name": "Samsung Galaxy Tab S10 FE WiFi 10.9 inch 128GB Silver"
+    },
+    {
+      "store": 5,
+      "key": "samsung|MODEL:QA65QN70HAUXSA",
+      "models": [
+        "QA65QN70HAUXSA"
+      ],
+      "name": "Samsung Smart TV 65 Inch 4K Neo QLED, Tizen OS - QA65QN70HAUXSA"
+    },
+    {
+      "store": 5,
+      "key": "samsung|MODEL:UA85M80HAUXSA",
+      "models": [
+        "UA85M80HAUXSA"
+      ],
+      "name": "Samsung, TV, 85 inch, 4K UHD, Smart, Mini LED, HDR, Tizen TV - UA85M80HAUXSA"
+    },
+    {
+      "store": 5,
+      "key": "samsung|MODEL:QA55QN70HAUXSA",
+      "models": [
+        "QA55QN70HAUXSA"
+      ],
+      "name": "Samsung, TV, 55 Inch, 4K UHD, Smart, Neo QLED- QA55QN70HAUXSA"
+    },
+    {
+      "store": 5,
+      "key": "samsung|MODEL:SM-X620NZSAMEA",
+      "models": [
+        "SM-X620NZSAMEA"
+      ],
+      "name": "Samsung Galaxy Tab S10 FE Plus WiFi 13.1 inch 128GB Silver"
+    },
+    {
+      "store": 5,
+      "key": "samsung|MODEL:SM-X520NZAAMEA",
+      "models": [
+        "SM-X520NZAAMEA"
+      ],
+      "name": "Samsung Galaxy Tab S10 FE WiFi 10.9 inch 128GB Grey"
+    },
+    {
+      "store": 5,
+      "key": "samsung|MODEL:SM-X930NZSEMEA",
+      "models": [
+        "SM-X930NZSAMEA"
+      ],
+      "name": "Samsung Galaxy Tab S11 Ultra WiFi 14.6 inch 512GB Silver"
+    },
+    {
+      "store": 5,
+      "key": "samsung|HW-B400F/SA",
+      "models": [
+        "HW-B400F/SA"
+      ],
+      "name": "2025 B400F B-Series Wireless 2.0ch Built-in woofer Soundbar | Samsung Saudi Arabia"
+    },
+    {
+      "store": 5,
+      "key": "samsung|MODEL:UA65M80HAUXSA",
+      "models": [
+        "UA65M80HAUXSA"
+      ],
+      "name": "Samsung, TV, 65 inch, 4K UHD, Smart, Mini LED, HDR, Tizen TV - UA65M80HAUXSA"
+    },
+    {
+      "store": 5,
+      "key": "samsung|MODEL:UA55M70HAUXSA",
+      "models": [
+        "UA55M70HAUXSA"
+      ],
+      "name": "Samsung TV, 55 Inch, 4K UHD, Smart, Mini LED- UA55M70HAUXSA"
+    },
+    {
+      "store": 5,
+      "key": "samsung|HW-Q600F/SA",
+      "models": [
+        "HW-Q600F/SA"
+      ],
+      "name": "2025 Q600F Q-Series True 3.1.2ch Soundbar | Samsung Saudi Arabia"
+    },
+    {
+      "store": 5,
+      "key": "samsung|galaxy buds 4",
+      "models": [
+        "SM-R540NZKAMEA"
+      ],
+      "name": "Samsung Galaxy Buds 4, TWS, Black - SM-R540NZKAMEA"
+    },
+    {
+      "store": 5,
+      "key": "samsung|split|WindFree|20500|Inverter|hot_cold",
+      "models": [
+        "AR24CSFCBWK/MG"
+      ],
+      "name": "Samsung WindFree Split AC, 20500 BTU, Cold and Hot, Rotary Compressor, White - AR24CSFCBWK/MG"
+    },
+    {
+      "store": 5,
+      "key": "samsung|Galaxy Watch|9|Standard|40|gps",
+      "models": [
+        "SM-L350NZKAMEA"
+      ],
+      "name": "Samsung Galaxy Watch 9, 40mm, Black - SM-L350NZKAMEA"
+    },
+    {
+      "store": 5,
+      "key": "samsung|SM-R420NZKAMEA",
+      "models": [
+        "SM-R420NZKAMEA"
+      ],
+      "name": "Samsung TWS Buds 3 FE BSM-R420/C - Black"
+    },
+    {
+      "store": 5,
+      "key": "samsung|upright|250",
+      "models": [
+        "VS25C9754QG/YL"
+      ],
+      "name": "Samsung Dry Upright Vacuum Cleaner, 250W, 0.5L - VS25C9754QG/YL"
+    },
+    {
+      "store": 5,
+      "key": "samsung|MODEL:UA55M80HAUXSA",
+      "models": [
+        "UA55M80HAUXSA"
+      ],
+      "name": "Samsung, TV, 55 inch, 4K UHD, Smart, Mini LED, HDR, Tizen TV - UA55M80HAUXSA"
+    },
+    {
+      "store": 5,
+      "key": "samsung|MODEL:SM-X930NZAAMEA",
+      "models": [
+        "SM-X930NZAAMEA"
+      ],
+      "name": "Samsung Galaxy Tab S11 Ultra WiFi 14.6 inch 256GB Gray"
+    },
+    {
+      "store": 5,
+      "key": "samsung|MODEL:QA65S90HAEXSA",
+      "models": [
+        "QA65S90HAEXSA"
+      ],
+      "name": "Samsung TV 65 Inch, 4K UHD Smart, OLED, Tizen, WiFi – QA65S90HAEXSA"
+    },
+    {
+      "store": 5,
+      "key": "samsung|MODEL:SM-X730NZSEMEA",
+      "models": [
+        "SM-X736BZSAMEA"
+      ],
+      "name": "Samsung Galaxy Tab S11 WiFi 11 inch 256GB Silver"
+    },
+    {
+      "store": 5,
+      "key": "samsung|MODEL:MRA75R85HAUXSA",
+      "models": [
+        "MRA75R85HAUXSA"
+      ],
+      "name": "Samsung 75 Inch 4K UHD Smart RGB LED TV, Tizen, WiFi – MRA75R85HAUXSA"
+    },
+    {
+      "store": 5,
+      "key": "samsung|MODEL:QA77S90HAUXSA",
+      "models": [
+        "QA77S90HAUXSA"
+      ],
+      "name": "Samsung Smart TV 77 Inch 4K OLED, Tizen OS - QA77S90HAUXSA"
+    },
+    {
+      "store": 5,
+      "key": "samsung|MODEL:SM-X620NLBEMEA",
+      "models": [
+        "SM-X620NLBEMEA"
+      ],
+      "name": "Samsung Galaxy Tab S10 FE Plus WiFi 13.1 inch 256GB Light Blue"
+    },
+    {
+      "store": 5,
+      "key": "samsung|Galaxy Watch|8|Classic|46|gps",
+      "models": [
+        "SM-L500NZWAMEA"
+      ],
+      "name": "Samsung Galaxy Watch 8 Classic 46mm SM-L500NZWAMEA-White"
+    },
+    {
+      "store": 5,
+      "key": "samsung|MODEL:UA75M70HAUXSA",
+      "models": [
+        "UA75M70HAUXSA"
+      ],
+      "name": "Samsung, TV, 75 inch, 4K UHD, Smart, Mini LED, HDR, Tizen TV - UA75M70HAUXSA"
+    },
+    {
+      "store": 5,
+      "key": "samsung|MODEL:MRA85R85HAUXSA",
+      "models": [
+        "MRA85R85HAUXSA"
+      ],
+      "name": "Samsung 85 Inch 4K UHD Smart RGB LED TV, Tizen, WiFi – MRA85R85HAUXSA"
+    },
+    {
+      "store": 5,
+      "key": "samsung|top_mount|460|standard",
+      "models": [
+        "RT47CG6422WWZA"
+      ],
+      "name": "Samsung ,16.3 cu. ft., Refrigerator, White ,RT47CG6422WWH"
+    },
+    {
+      "store": 5,
+      "key": "samsung|MODEL:UA85M70HAUXSA",
+      "models": [
+        "UA75M70HAUXSA",
+        "UA85M70HAUXSA"
+      ],
+      "name": "Samsung, TV, 85 inch, 4K UHD, Smart, Mini LED, HDR, Tizen - UA85M70HAUXSA"
+    },
+    {
+      "store": 5,
+      "key": "samsung|R640NZKAMEA",
+      "models": [
+        "SM-R640NZKAMEA"
+      ],
+      "name": "سماعات سامسونج جالاكسي بودز 4 برو، سماعات أذن لاسلكية ، أسود - SM-R640NZKAMEA"
+    },
+    {
+      "store": 5,
+      "key": "samsung|MODEL:UA65U8000HUXSA",
+      "models": [
+        "UA65U8000HUXSA"
+      ],
+      "name": "Samsung، TV، 65 Inch، UHD، Smart-UA65U8000HUXSA"
+    },
+    {
+      "store": 5,
+      "key": "samsung|MODEL:UA100M90HUXSA",
+      "models": [
+        "QA55S85HAEXSA",
+        "UA100M90HUXSA"
+      ],
+      "name": "Samsung, TV, 100 Inch, Mini LED, Smart TV, UA100M90HUXSA"
+    },
+    {
+      "store": 5,
+      "key": "samsung|MX-ST50B/SA",
+      "models": [
+        "MX-ST50B/SA"
+      ],
+      "name": "Samsung Sound Tower 240W Bi-directional High Power Audio, Built-in Battery"
+    },
+    {
+      "store": 5,
+      "key": "samsung|MODEL:UA98DU9000UXSA",
+      "models": [
+        "UA98DU9000UXSA"
+      ],
+      "name": "Samsung 98 inch 4K Crystal UHD Smart TV - UA98DU9000UXSA"
+    },
+    {
+      "store": 5,
+      "key": "samsung|MODEL:QA85QN70HAUXSA",
+      "models": [
+        "QA85QN70HAUXSA"
+      ],
+      "name": "Samsung Smart TV 85 Inch 4K Neo QLED, Tizen OS - QA85QN70HAUXSA"
+    },
+    {
+      "store": 5,
+      "key": "samsung|MX-T70/ZN",
+      "models": [
+        "MX-T70/ZN"
+      ],
+      "name": "Samsung Sound Tower 1500W Bi-directional High Power Audio, Bluetooth"
+    },
+    {
+      "store": 5,
+      "key": "samsung|MODEL:UA75U8000HUXSA",
+      "models": [
+        "UA65U8000HUXSA",
+        "UA75U8000HUXSA"
+      ],
+      "name": "Samsung، TV، 75 Inch، UHD، Smart-UA75U8000HUXSA"
+    },
+    {
+      "store": 5,
+      "key": "samsung|MODEL:QA75QN80HAUXSA",
+      "models": [
+        "QA75QN80HAUXSA"
+      ],
+      "name": "Samsung Smart TV 75 Inch 4K Neo QLED, Tizen OS - QA75QN80HAUXSA"
+    },
+    {
+      "store": 5,
+      "key": "samsung|SmartTag2|Black",
+      "models": [
+        "EI-T5600BBEGWW"
+      ],
+      "name": "Samsung Galaxy Smart Tag 2, Black - EI-T5600BBEGWW"
+    },
+    {
+      "store": 5,
+      "key": "samsung|SmartTag|Standard",
+      "models": [
+        "EI-T5600BBEGWW"
+      ],
+      "name": "سمارت تاج 2 سامسونج جالكسي، اسود - EI-T5600BBEGWW"
+    },
+    {
+      "store": 5,
+      "key": "samsung|split|WindFree|20000|Inverter|cool_only",
+      "models": [
+        "AR24CVFCBWK/MG"
+      ],
+      "name": "Samsung WindFree Split Air Conditioner 20,000 BTU Cold AR24CVFCBWK/MG"
+    },
+    {
+      "store": 5,
+      "key": "samsung|MODEL:SM-X930NZSAMEA",
+      "models": [
+        "SM-X930NZSAMEA"
+      ],
+      "name": "Samsung Galaxy Tab S11 Ultra WiFi 14.6 inch 256GB Silver"
+    },
+    {
+      "store": 5,
+      "key": "samsung|galaxy buds 4 pro",
+      "models": [
+        "SM-R640NZWAMEA"
+      ],
+      "name": "Samsung Galaxy Buds 4 Pro, TWS, White- SM-R640NZWAMEA"
+    },
+    {
+      "store": 5,
+      "key": "samsung|MODEL:VS25C9754QG/YL",
+      "models": [
+        "VS25C9754QG/YL"
+      ],
+      "name": "Samsung Dry Upright Vacuum Cleaner, 250W, 0.5L - VS25C9754QG/YL"
+    },
+    {
+      "store": 5,
+      "key": "samsung|MODEL:QA55S85HAEXSA",
+      "models": [
+        "QA55S85HAEXSA"
+      ],
+      "name": "Samsung 55 Inch 4K UHD OLED Smart TV - QA55S85HAEXSA"
+    },
+    {
+      "store": 5,
+      "key": "samsung|MODEL:QA75QN70HAUXSA",
+      "models": [
+        "QA75QN70HAUXSA"
+      ],
+      "name": "Samsung TV, 75 Inch, 4K UHD, Smart, Neo QLED- QA75QN70HAUXSA"
+    },
+    {
+      "store": 5,
+      "key": "samsung|MODEL:MRA65R85HAUXSA",
+      "models": [
+        "MRA65R85HAUXSA"
+      ],
+      "name": "Samsung 65 Inch 4K UHD Smart RGB LED TV, Tizen, WiFi – MRA65R85HAUXSA"
+    },
+    {
+      "store": 5,
+      "key": "samsung|MODEL:UA65M70HAUXSA",
+      "models": [
+        "UA65M70HAUXSA"
+      ],
+      "name": "Samsung, TV, 65 inch, 4K UHD, Smart, Mini LED, HDR, Tizen TV - UA65M70HAUXSA"
+    },
+    {
+      "store": 5,
+      "key": "samsung|Galaxy Watch|9|Standard|44|gps",
+      "models": [
+        "SM-L340NZEAMEA"
+      ],
+      "name": "Samsung Galaxy Watch 9, 44mm, Beige- SM-L340NZEAMEA"
+    },
+    {
+      "store": 5,
+      "key": "samsung|top_mount|390|standard",
+      "models": [
+        "RT38CG6420S9ZA"
+      ],
+      "name": "Samsung 13.7 cu. ft. Refrigerator ,Silver, RT38CG6420S9H"
+    }
+  ]
+}

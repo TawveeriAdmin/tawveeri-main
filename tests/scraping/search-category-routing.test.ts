@@ -62,7 +62,7 @@ function detectCanonicalCategories(raw: string): string[] | null {
     ACCESSORY_HINTS_AR.some((h) => norm.includes(normalizeArabic(h))) ||
     ACCESSORY_HINTS_EN.some((h) => norm.includes(h)) ||
     ACCESSORY_COMPAT_AR.test(norm) || ACCESSORY_COMPAT_EN.test(norm)
-  ) return null;
+  ) return ['accessories', 'stylus', 'tracker'];
   const words = norm.split(/\s+/).filter(Boolean);
   if (words.some((w) => AC_QUERY_WORDS.has(w))) return ['air_conditioner'];
   // ADR-293: whole-word "tab" (Samsung's own "Galaxy Tab" naming) — mirrors route.ts.
@@ -121,11 +121,10 @@ describe('category-aware canonical routing', () => {
     expect(detectCanonicalCategories('غسالة صحون')).toEqual(['dishwasher']);
     expect(detectCanonicalCategories('غسالة')).toEqual(['washing_machine']);
   });
-  it('accessory queries → NO canonical Smart Pick (no AC/mobile contamination)', () => {
-    expect(detectCanonicalCategories('كفر ايفون')).toBeNull();
-    expect(detectCanonicalCategories('iphone case')).toBeNull();
-    expect(detectCanonicalCategories('شاحن')).toBeNull();
-    expect(detectCanonicalCategories('holder for iphone')).toBeNull();
+  it('accessory queries retrieve dedicated accessory categories without AC/mobile contamination', () => {
+    for (const query of ['كفر ايفون', 'iphone case', 'شاحن', 'holder for iphone']) {
+      expect(detectCanonicalCategories(query)).toEqual(['accessories', 'stylus', 'tracker']);
+    }
   });
   it('unknown query uses safe fallback (mobile; returns [] when no canonical matches)', () => {
     expect(detectCanonicalCategories('random xyz')).toEqual(['mobile']);
@@ -155,10 +154,12 @@ describe('the search route wires category-aware routing (drift guard)', () => {
       expect(routeSrc).toContain(`'${cat}'`);
     }
   });
-  it('passes the derived categories and gates on them (skips when null)', () => {
+  it('gates retrieval on derived categories or a whole exact manufacturer code', () => {
     expect(routeSrc).toMatch(/const tpsCategories = rawQuery \? detectCanonicalCategories\(rawQuery\) : null/);
-    expect(routeSrc).toMatch(/if \(rawQuery && tpsCategories\)/);
-    expect(routeSrc).toMatch(/searchTPSCanonical\([^)]*tpsCategories\)/);
+    expect(routeSrc).toMatch(/const exactModel = exactModelQuery\(rawQuery \|\| ''\)/);
+    expect(routeSrc).toMatch(/if \(rawQuery && \(tpsCategories \|\| exactModel\)\)/);
+    expect(routeSrc).toMatch(/searchTPSCanonical\([^)]*tpsCategories \|\| \[\], exactModel\)/);
+    expect(routeSrc).toMatch(/canonicalQuery\.eq\('model_number', exactModel\)/);
   });
   it('derives the UI category per canonical, since several may be searched at once', () => {
     expect(routeSrc).toMatch(/category\?: string \}\)\.category === 'mobile'/);

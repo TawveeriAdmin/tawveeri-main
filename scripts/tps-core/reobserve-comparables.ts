@@ -35,8 +35,9 @@ const ONLY_STORES = args.find((a) => a.startsWith("--stores="))?.split("=")[1]?.
 
 // Same identity maps as seeded-discovery.ts — store_name namespaces as written into
 // price_history / normalized_product_observations, and the numeric TPS store ids.
-const STORE_ID: Record<string, number> = { noon: 3, extra: 4, almanea: 5, amazon: 2, jarir: 1, swsg: 8, shaker: 7, najm: 9, alnakheelk: 18 };
+const STORE_ID: Record<string, number> = { noon: 3, extra: 4, almanea: 5, amazon: 2, jarir: 1, swsg: 8, shaker: 7, najm: 9, alnakheelk: 18, samsung_ksa: 6 };
 const STORE_NAMES: Record<string, string[]> = {
+  samsung_ksa: ['سامسونج السعودية', 'samsung_ksa', '6'],
   noon: ["نون", "noon", "3"],
   extra: ["اكسترا", "إكسترا", "extra", "4"],
   almanea: ["المنيع", "almanea", "5"],
@@ -135,6 +136,11 @@ type Target = { cid: string; slug: string; raw_url: string | null; raw_name: str
        order by ph2.observed_at desc
        limit 1
      ) legacy on true
+     where not exists (
+       select 1 from tps_current_offers retired join m retirement_store on retirement_store.k=retired.store_id::text
+       where retired.identity_key=cp2.tps_identity_key and retirement_store.slug=s.slug
+         and retired.payload->>'_superseded_by_identity' is not null
+     )
      order by s.last_observed asc nulls first`,
     [...mapParams, STALE_HOURS],
   );

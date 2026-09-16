@@ -1,0 +1,38 @@
+{
+  "regressions": [],
+  "missing": [
+    {
+      "key": "ar|iphone|smart-pick",
+      "row": {
+        "query": "iphone",
+        "locale": "ar",
+        "subject": "smart-pick",
+        "relevant": true,
+        "sensiblePick": true,
+        "storeVisible": true,
+        "priceConsistent": false,
+        "linkLands": true,
+        "linkBucket": "ok",
+        "excluded": false,
+        "isComparison": true,
+        "pass": false,
+        "pickName": "جوال آبل iPhone 16 128 جيجابايت",
+        "cardPrice": 2239,
+        "comparePrice": 3049,
+        "cardStores": 4,
+        "compareStores": 5,
+        "surface": "smart-pick",
+        "attrRead": true,
+        "unhonouredClaims": [],
+        "exactModel": null,
+        "exactVariant": null,
+        "isModelQuery": false,
+        "destination": "https://www.amazon.sa/-/en/Apple-iPhone-16-128-GB/dp/B0DGJM5KW6/ref=sr_1_90?dib=eyJ2IjoiMSJ9.uaIpqzRje47GYwtE0_F-LbiEt1wfL1CafuIc5T9_ntnAu4k_f6SvH4k8Fp4NCFw4ExUaa-s0XfAN93l4euhj9L8r8YL2jMrOnV5hELKRJDSa0q8tRdiFxcfSiWQDW5zCfSa6bZFJ_UwSoXwZweivIUofeUdmlH3lyD0SXchB96b2koDRPv4szNo5y_ADzwe8r8RQD4x4R-ZBPLBOLmmh0GKr9ffwRPy7OgwUkKGfaxAxdVgvBEuF-LpfqPSVdT3DlSz5cmeBcPTu8r61_oSX7R-og1nvYogZRm2uOGUBctg.n87tt5dprRJLNeIgCGBGsNKHuqIA4hP-rY6-ZdUOpx4&dib_tag=se&keywords=%D8%AC%D9%88%D8%A7%D9%84&qid=1789409300&sr=8-90",
+        "notes": [
+          "PRICE MISMATCH card=2239 compare=3049"
+        ]
+      }
+    }
+  ],
+  "method": "Matched locale/query/subject; baseline and candidate use live data at different times and production vs local runtime, so changes require attribution."
+}

@@ -141,8 +141,16 @@ const arg = (name: string, dflt: number) => {
       await lockClient.connect();
       haveLane = (await lockClient.query<{ ok: boolean }>(`select pg_try_advisory_lock($1) ok`, [LANE_KEY])).rows[0].ok;
     } catch (e) {
+      if (process.argv.includes('--require-lane')) {
+        await lockClient?.end().catch(() => {});
+        throw new Error(`Required normalization lane unavailable: ${e instanceof Error ? e.message : e}`);
+      }
       console.warn(`  lane lease unavailable (${e instanceof Error ? e.message : e}) — proceeding`);
       haveLane = true;                      // fail open
+    }
+    if (!haveLane && process.argv.includes('--require-lane')) {
+      await lockClient?.end().catch(() => {});
+      throw new Error('Required normalization lane is held by another worker');
     }
     if (!haveLane && process.argv.includes("--yield-if-locked")) {
       console.log("normalize-incremental: another normalizer holds the lane — skipping this tick");

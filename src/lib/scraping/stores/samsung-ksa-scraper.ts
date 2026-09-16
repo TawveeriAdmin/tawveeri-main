@@ -3,6 +3,7 @@ import type { ProductCategory } from '@/lib/database/types';
 import { loadStoreConfig } from '../config/scraper-config';
 import { determineCategory } from '../utils/category-utils';
 import { GenericHtmlStoreScraper } from './generic-html-store-scraper';
+import { fetchSamsungCatalog, samsungCatalogProduct, samsungCatalogExclusion, type SamsungCatalogObservation } from './samsung-catalog';
 
 /**
  * Samsung KSA scraper.
@@ -17,6 +18,7 @@ import { GenericHtmlStoreScraper } from './generic-html-store-scraper';
  * AND the sitemap seed script can pull rich data from the same call.
  */
 export class SamsungKsaScraper extends GenericHtmlStoreScraper {
+  private finderCache = new Map<string, { expires: number; rows: SamsungCatalogObservation[] }>();
   constructor() {
     super(loadStoreConfig('samsung_ksa'));
   }
@@ -29,7 +31,7 @@ export class SamsungKsaScraper extends GenericHtmlStoreScraper {
     for (const url of urls.slice(0, limit)) {
       try {
         const product = await this.updateProductPrice(url);
-        if (product) products.push(product);
+        if (product && !samsungCatalogExclusion(product.sku || '')) products.push(product);
       } catch (error) {
         console.warn(`[Samsung KSA] sitemap product failed: ${url}`, error instanceof Error ? error.message : error);
       }
@@ -40,6 +42,32 @@ export class SamsungKsaScraper extends GenericHtmlStoreScraper {
   }
 
   async updateProductPrice(productUrl: string): Promise<ScrapedProduct | null> {
+    const requested = new URL(productUrl);
+    const selectedModel = requested.searchParams.get('modelCode');
+    if (selectedModel) {
+      // A family buy page may embed a different default variant. Resolve only
+      // the explicitly selected SKU against Samsung's current public catalog.
+      if (requested.hostname !== 'www.samsung.com' || requested.protocol !== 'https:'
+        || !/^\/(sa|sa_en)\/.+\/buy\/$/.test(requested.pathname)) return null;
+      const [, site, category] = requested.pathname.split('/');
+      const types: Record<string, string> = { smartphones: '01010000', tablets: '01020000',
+        watches: '01030000', 'audio-sound': '01040000', rings: '01090000', tvs: '04010000',
+        monitors: '07010000', 'mobile-accessories': '01050000' };
+      const type = types[category];
+      if (!type) return null;
+      const key = `${site}/${type}`;
+      let cached = this.finderCache.get(key);
+      if (!cached || cached.expires <= Date.now()) {
+        const rows = await fetchSamsungCatalog([type], [site as 'sa' | 'sa_en']);
+        cached = { rows, expires: Date.now() + 5 * 60 * 1000 };
+        this.finderCache.set(key, cached);
+      }
+      const row = cached.rows.find(item => item.model.modelCode === selectedModel);
+      if (!row) return null;
+      const product = samsungCatalogProduct(row);
+      // Do not accept a valid SKU transplanted onto another family's buy URL.
+      return product.product_url === requested.href ? product : null;
+    }
     // Errors propagate so the seed script can distinguish "real problem"
     // (caught in its try/catch → trigger rate-limit cooldown) from "page
     // fetched OK but has no purchase price" (returned null → skip quietly).
@@ -143,11 +171,10 @@ export class SamsungKsaScraper extends GenericHtmlStoreScraper {
 
     const currentPrice = toNumber(offers.price);
     if (currentPrice && currentPrice > 0) {
-      // Samsung sometimes ships highPrice as the crossed-out original.
-      let originalPrice = toNumber(
-        (offers as { highPrice?: unknown; listPrice?: unknown }).highPrice
-        ?? (offers as { listPrice?: unknown }).listPrice,
-      );
+      // AggregateOffer.highPrice can describe another offer/variant, not a
+      // reference price. Only explicit list-price evidence is eligible here.
+      let originalPrice = toNumber((offers as { listPrice?: unknown }).listPrice);
+      originalPrice = extractSamsungListPrice(html, currentPrice, sku) ?? originalPrice;
       if (originalPrice !== null && originalPrice <= currentPrice) {
         originalPrice = null;
       }
@@ -155,7 +182,8 @@ export class SamsungKsaScraper extends GenericHtmlStoreScraper {
         ...base,
         current_price: currentPrice,
         original_price: originalPrice,
-        availability: parseLdAvailability(offers.availability),
+        availability: samsungSaleable($, sku) === false ? 'out_of_stock'
+          : samsungSaleable($, sku) === true ? 'in_stock' : parseLdAvailability(offers.availability),
       };
     }
 
@@ -341,11 +369,11 @@ export function isSamsungKsaProductUrl(url: string): boolean {
     return false;
   }
 
-  if (!/samsung\.com$/i.test(parsed.hostname)) return false;
+  if (parsed.protocol !== 'https:' || parsed.hostname !== 'www.samsung.com') return false;
   const parts = parsed.pathname.split('/').filter(Boolean);
-  const minSegments = /\/mobile-accessories\//i.test(parsed.pathname) ? 3 : 4;
+  const minSegments = /\/(mobile-accessories|tv-accessories|home-appliance-accessories|display-accessories|projector-accessories)\//i.test(parsed.pathname) ? 3 : 4;
   if (parts.length < minSegments) return false;
-  if (parts[0].toLowerCase() !== 'sa_en') return false;
+  if (!['sa', 'sa_en'].includes(parts[0].toLowerCase())) return false;
 
   const terminal = parts[parts.length - 1].toLowerCase();
   if (!terminal || NON_PRODUCT_SLUGS.has(terminal)) return false;
@@ -458,12 +486,12 @@ function pickProductNode(node: unknown): Record<string, unknown> | null {
 }
 
 function parseLdAvailability(val: unknown): ScrapedProduct['availability'] {
-  if (typeof val !== 'string') return 'in_stock';
+  if (typeof val !== 'string') return 'out_of_stock';
   const v = val.toLowerCase();
   if (v.includes('outofstock')) return 'out_of_stock';
   if (v.includes('limitedavailability') || v.includes('limited')) return 'limited_stock';
   if (v.includes('preorder')) return 'pre_order';
-  return 'in_stock';
+  return v.includes('instock') ? 'in_stock' : 'out_of_stock';
 }
 
 function toNumber(val: unknown): number | null {
@@ -541,9 +569,8 @@ export function extractDigitalDataFallback(html: string, productUrl: string): Sc
 
   const currentPrice = toNumber(rawPrice);
   if (currentPrice && currentPrice > 0) {
-    const saleableMatch = html.match(/data-saleable="(true|false)"/);
-    const availability: ScrapedProduct['availability'] = saleableMatch?.[1] === 'false' ? 'out_of_stock' : 'in_stock';
-    return { ...base, current_price: currentPrice, availability };
+    const availability: ScrapedProduct['availability'] = samsungSaleable(cheerio.load(html), modelCode) === true ? 'in_stock' : 'out_of_stock';
+    return { ...base, current_price: currentPrice, original_price: extractSamsungListPrice(html, currentPrice, modelCode), availability };
   }
 
   // PRODUCT TRUTH vs OFFER TRUTH (ADR-356, 2026-09-13). `model_price` is explicitly empty —
@@ -551,6 +578,28 @@ export function extractDigitalDataFallback(html: string, productUrl: string): Sc
   // verified Samsung model code — the identity bar (Section 10) is met. Never fabricate a
   // price/availability; return the identified product with no offer instead of discarding it.
   return { ...base, current_price: null, availability: 'out_of_stock' };
+}
+
+/** Analytics list price is scoped to the exact PDP model, never a recommendation card.
+ * It is a merchant reference price, not evidence of a historically verified saving.
+ */
+export function extractSamsungListPrice(html: string, currentPrice: number, model: string | null): number | null {
+  const field = (key: string) => {
+    const value = html.match(new RegExp(`digitalData\\.product\\.${key}\\s*=\\s*"([^"\\n]*)"`))?.[1];
+    return value?.replace(/\\u([0-9a-f]{4})/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16))).replace(/\\\//g, '/');
+  };
+  if (!model || field('model_code')?.toUpperCase() !== model.toUpperCase()) return null;
+  const price = toNumber(field('list_price'));
+  return price !== null && price > currentPrice ? price : null;
+}
+
+function samsungSaleable($: cheerio.CheerioAPI | ReturnType<typeof cheerio.load>, model: string | null): boolean | null {
+  if (!model) return null;
+  const values = $('[data-saleable]').toArray()
+    .filter(el => $(el).attr('data-model-code')?.toUpperCase() === model.toUpperCase())
+    .map(el => $(el).attr('data-saleable'));
+  if (values.includes('false')) return false;
+  return values.includes('true') ? true : null;
 }
 
 /**

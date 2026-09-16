@@ -175,6 +175,7 @@ const jitterMs = (maxMin) => Math.floor(Math.random() * maxMin * 60 * 1000);
 
 // ── Intelligence refresh loop ───────────────────────────────────────────────
 let refreshRunning = false;
+let samsungDeltaWatchRunning = false;
 
 /**
  * Run the refresh chain. `full` also rebuilds the projection. Overlapping runs
@@ -184,6 +185,10 @@ let refreshRunning = false;
  */
 async function runRefresh(full) {
   if (!(await pressureOk('refresh'))) return;
+  if (samsungDeltaWatchRunning) {
+    console.log('[refresh] Samsung catalog realization active — deferring this tick');
+    return;
+  }
   if (refreshRunning) {
     console.log('[refresh] previous run still in progress — skipping this tick');
     return;
@@ -625,7 +630,15 @@ async function runReobserve() {
   if (reobserveRunning) { console.log('[reobserve] previous run still in progress — skipping'); return; }
   if (refreshRunning || feedIngestRunning || ingestRunning) { console.log('[reobserve] busy — deferring'); return; }
   reobserveRunning = true;
-  const child = spawn('npx', ['tsx', 'scripts/tps-core/reobserve-comparables.ts', '--go', `--limit=${REOBSERVE_LIMIT}`], { cwd: process.cwd(), shell: true, env: process.env });
+  let runtime;
+  try {
+    runtime = require('./tps-core/samsung-delta-runtime').resolveSamsungDeltaRuntime(process.cwd(), 'scripts/tps-core/reobserve-comparables.ts');
+  } catch (err) {
+    reobserveRunning = false;
+    console.error('[reobserve]', err.message);
+    return;
+  }
+  const child = spawn(process.execPath, [require.resolve('tsx/cli'), runtime.script, '--go', `--limit=${REOBSERVE_LIMIT}`], { cwd: runtime.cwd, env: process.env });
   let tail = '';
   const cap = (b) => { tail = (tail + b.toString()).slice(-800); };
   child.stdout.on('data', cap);
@@ -646,15 +659,12 @@ if (REOBSERVE_LIMIT > 0) {
 }
 
 // ── Samsung KSA New-Model Delta Watch (2026-09-14, maintenance-of-closure mission) ──
-// The Samsung Saudi official catalog is CLOSED (927 raw candidates -> 409 current-valid
-// identities, ADR-354..361). This loop keeps it current: a cheap sitemap-vs-baseline diff
-// (samsung_official_url_baseline), PDP validation ONLY for genuinely new URLs, model-code-
-// first dedup before anything is written. It never re-touches the closed catalog's existing
-// products. Its own PostgreSQL advisory lock (independent of this in-process flag) is the
-// real cross-process singleton guard — the same pattern proven in the closed recovery.
-// Additive-only, same shape as the reobserve loop above: SAMSUNG_DELTA_WATCH_MS<=0 disables it.
+// ADR-373: full bilingual finder refresh plus sitemap delta and known-PDP refresh.
+// Manufacturer variants are deduplicated before ingestion; availability, identity,
+// projection and legacy storefront reconciliation run under the writer lane.
+// The worker's advisory lock is the cross-process singleton guard.
+// SAMSUNG_DELTA_WATCH_MS<=0 disables this loop.
 const SAMSUNG_DELTA_WATCH_MS = parseInt(process.env.SAMSUNG_DELTA_WATCH_MS || String(6 * 60 * 60 * 1000), 10); // 6h default
-let samsungDeltaWatchRunning = false;
 async function runSamsungDeltaWatch() {
   if (SAMSUNG_DELTA_WATCH_MS <= 0) return;
   if (!(await pressureOk('samsung-delta-watch'))) return;

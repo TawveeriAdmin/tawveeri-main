@@ -1,0 +1,16 @@
+[
+  {
+    "url": "https://www.samsung.com/sa_en/smartphones/galaxy-z-fold8-ultra/buy/?modelCode=SM-F976BZVIMEA",
+    "status": 200,
+    "requested": "SM-F976BZVIMEA",
+    "preset": "SM-F976BZVIMEA",
+    "observedAt": "2026-09-16T08:02:33.462Z"
+  },
+  {
+    "url": "https://www.samsung.com/sa_en/smartphones/galaxy-z-fold8-ultra/buy/?modelCode=SM-F976BZVPMEA",
+    "status": 200,
+    "requested": "SM-F976BZVPMEA",
+    "preset": "SM-F976BZVPMEA",
+    "observedAt": "2026-09-16T08:02:33.721Z"
+  }
+]

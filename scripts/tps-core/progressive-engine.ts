@@ -15,8 +15,9 @@ import { isValidGtin } from "../../src/lib/enrichment/icecat";
 import { isAccessoryOnlyAudioTitle } from "../../src/lib/scraping/utils/category-utils";
 import { assessPriceTransition } from "../../src/lib/intelligence/price-truth-gate";
 import { fetchAllPaginated } from "../../src/lib/database/paginated-fetch";
+import { samsungManufacturerIdentity, samsungCatalogExclusion, samsungDeclaredModelIdentity, type SamsungVerifiedModel } from "./samsung-manufacturer-identity";
 
-function stableUuid(seed: string): string {
+export function stableUuid(seed: string): string {
   const h = createHash("sha256").update(seed).digest("hex");
   return [h.slice(0, 8), h.slice(8, 12), "4" + h.slice(13, 16), ((parseInt(h.slice(16, 17), 16) & 0x3) | 0x8).toString(16) + h.slice(17, 20), h.slice(20, 32)].join("-");
 }
@@ -51,9 +52,13 @@ export function adaptRow(p: Record<string, unknown>, rawName: string | null) {
   return { nameAr, nameEn, brand, url: pickBestUrl(p) };
 }
 export function extractPrice(p: Record<string, unknown>): number | null {
+  // A Samsung finder promotion of zero is explicit source evidence, not an
+  // absent field. Never turn its reference/list price into a payable offer.
+  const catalog = (p.specifications as { samsung_catalog?: unknown } | undefined)?.samsung_catalog;
+  if (catalog && !(Number(p.current_price) > 0)) return null;
   for (const c of [p.current_price, p.sellingPrice, p.price, p.wasPrice, p.original_price]) {
     const n = typeof c === "number" ? c : Number(asString(c));
-    if (Number.isFinite(n) && n > 0) return Math.round(n);
+    if (Number.isFinite(n) && n > 0) return Math.round(n * 100) / 100;
   }
   return null;
 }
@@ -171,6 +176,20 @@ export async function normalizeSweep(sb: SupabaseClient, defs: CategoryDef[], li
   const m: SweepMetrics = { fetched: 0, staged: 0, saturated: false, byCategory: {}, gapRecovered: 0 };
   for (const d of defs) m.byCategory[d.category] = { detected: 0, valid: 0, lowConfidence: 0, invalid: 0, touched: new Set() };
   const stagingRows: Record<string, unknown>[] = [];
+  let verifiedSamsungModels: Map<string, SamsungVerifiedModel> | null = null;
+  const loadVerifiedSamsungModels = async () => {
+    if (verifiedSamsungModels) return verifiedSamsungModels;
+    const registry = await fetchAllPaginated<{ official_url: string; model_code: string }>((from, to) => sb
+      .from('samsung_official_url_baseline').select('official_url, model_code')
+      .eq('classification', 'CURRENT_VALID_PRODUCT').eq('lifecycle_state', 'CURRENT')
+      .not('model_code', 'is', null).order('official_url').range(from, to));
+    verifiedSamsungModels = new Map();
+    for (const row of registry) {
+      const identity = samsungManufacturerIdentity(6, { brand: 'Samsung', sku: row.model_code, product_url: row.official_url });
+      if (identity && !samsungCatalogExclusion(identity.model)) verifiedSamsungModels.set(identity.model, identity);
+    }
+    return verifiedSamsungModels;
+  };
   // ADR-351 (2026-09-13, durability fix): `raw_observations.id` is a real Postgres
   // `GENERATED ALWAYS AS IDENTITY` sequence. Under concurrent writers (proven: the Samsung
   // recovery mission's manual script running alongside the normal scheduled ingestion for
@@ -254,12 +273,28 @@ export async function normalizeSweep(sb: SupabaseClient, defs: CategoryDef[], li
     for (const row of [...rows, ...gapRows]) {
       if (row.id > maxId) maxId = row.id;
       const p = row.payload ?? {};
+      const exclusion = row.store_id === 6 ? samsungCatalogExclusion(String(p.sku || '')) : null;
+      if (exclusion) {
+        // An intentional scope exclusion is processed evidence, not an unstaged
+        // gap to retry forever behind the forward cursor.
+        stagingRows.push({ category: 'accessories', raw_obs_id: row.id, store_id: row.store_id,
+          identity_key: null, status: 'invalid', price: null, url: pickBestUrl(p), name: row.raw_name || '',
+          confidence: 0, detected: false, payload: { _exclusion_reason: exclusion }, observed_at: row.scraped_at });
+        if (m.byCategory.accessories) m.byCategory.accessories.invalid++;
+        continue;
+      }
       const { nameAr, nameEn, brand, url } = adaptRow(p, row.raw_name);
+      let manufacturer = samsungManufacturerIdentity(row.store_id, p);
+      if (!manufacturer && row.store_id !== 6 && brand?.toLowerCase() === 'samsung'
+          && [p.model, p.modelNumber, p.model_number, p.mpn, p.sku].some(value => typeof value === 'string' && value.length >= 8)) {
+        manufacturer = samsungDeclaredModelIdentity(brand, p, await loadVerifiedSamsungModels());
+      }
       for (const def of defs) {
-        if (!def.plugin.detect(nameAr, nameEn)) continue;
+        if (manufacturer ? manufacturer.category !== def.category : !def.plugin.detect(nameAr, nameEn)) continue;
         const cm = m.byCategory[def.category]; cm.detected++;
         const norm = def.normalize(nameAr, nameEn, brand, p);
-        const identity = def.plugin.buildIdentityKey(brand, norm.payload, { model_number: norm.model_number });
+        const identity = manufacturer ? { key: manufacturer.key, status: 'valid' as const }
+          : def.plugin.buildIdentityKey(brand, norm.payload, { model_number: norm.model_number });
         if (identity.status === "invalid" || !identity.key) { cm.invalid++; continue; }
         if (identity.status === "low_confidence_candidate") cm.lowConfidence++; else cm.valid++;
         const conf = def.plugin.scoreConfidence(brand, norm.payload, norm.model_number, norm.ambiguity_flags);
@@ -268,10 +303,16 @@ export async function normalizeSweep(sb: SupabaseClient, defs: CategoryDef[], li
         stagingRows.push({
           category: def.category, raw_obs_id: row.id, store_id: row.store_id, identity_key: identity.key,
           status: identity.status, price: extractPrice(p), url, name: (nameEn || nameAr).slice(0, 300),
-          confidence: conf.confidence, detected: true,
+          confidence: manufacturer ? 95 : conf.confidence, detected: true,
           // Carry the observed image (and GTIN when present) alongside the normalized attrs so
           // corroboration can set canonical.image_url / attributes.gtin without re-reading raw.
-          payload: { ...norm.payload, ...(rawImg ? { _image: rawImg } : {}), ...(isValidGtin(p.gtin as string) ? { _gtin: String(p.gtin).replace(/\D+/g, "") } : {}) },
+          payload: { ...norm.payload,
+            ...(manufacturer ? { _manufacturer_model: manufacturer.model,
+              _source_name_ar: nameAr.toUpperCase().includes(manufacturer.model) ? nameAr : `${nameAr} (${manufacturer.model})`,
+              _source_name_en: nameEn.toUpperCase().includes(manufacturer.model) ? nameEn : `${nameEn} (${manufacturer.model})` } : {}),
+            ...(typeof p.availability === 'string' ? { _availability: p.availability } : {}),
+            ...(typeof p.original_price === 'number' ? { _original_price: p.original_price } : {}),
+            ...(rawImg ? { _image: rawImg } : {}), ...(isValidGtin(p.gtin as string) ? { _gtin: String(p.gtin).replace(/\D+/g, "") } : {}) },
           // The OBSERVATION's time, not the processing time. Falls back to now only when the
           // source row has no timestamp at all, so a missing value can never silently become
           // "observed just now" for a row we know is older.
@@ -313,6 +354,9 @@ export async function normalizeSweep(sb: SupabaseClient, defs: CategoryDef[], li
 export interface CorroborateMetrics { keysConsidered: number; corroborated: number; singleStore: number; canonicalsWritten: number; normalized: number; matches: number; prices: number; priceTransitionsRejected: number; pairDeferred: number; }
 
 export interface CorroborateOpts {
+  /** Shared only within one serialized sweep; accepted new names/models are
+   * added to these sets so later categories retain the same collision guards. */
+  writeGuards?: { takenPair: Set<string>; takenNameBrand: Set<string> };
   singleStore?: boolean; // singleStore=true writes the resolved-single (Layer 2, has_comparison=false) products
   /** Compute everything, call write_ac_batch NEVER. Metrics still report what WOULD be written. */
   dry?: boolean;
@@ -487,7 +531,7 @@ export async function corroboratePass(sb: SupabaseClient, def: CategoryDef, touc
   // Full set required (fetchAllPaginated, not a bare .limit()) — CLAUDE.md's ADR-172
   // pagination rule: a truncated set here would let real collisions slip through
   // unfiltered, recreating the exact crash this guard exists to prevent. ~4k rows today.
-  const takenPair = new Set<string>(
+  const takenPair = opts.writeGuards?.takenPair ?? new Set<string>(
     (
       await fetchAllPaginated<{ brand: string | null; model_number: string | null }>((from, to) =>
         sb
@@ -506,7 +550,7 @@ export async function corroboratePass(sb: SupabaseClient, def: CategoryDef, touc
   // discovered live when `write_ac_batch(mobile)` FATALed on it (a "Samsung Galaxy Z Flip7"
   // observation whose computed name_ar+brand pair already belonged to a different identity —
   // e.g. a "Renewed" variant keyed separately). Same policy: defer, never force.
-  const takenNameBrand = new Set<string>(
+  const takenNameBrand = opts.writeGuards?.takenNameBrand ?? new Set<string>(
     (
       await fetchAllPaginated<{ name_ar: string | null; brand: string | null }>((from, to) =>
         sb.from("canonical_products").select("name_ar, brand").order("id").range(from, to),
@@ -568,7 +612,9 @@ export async function corroboratePass(sb: SupabaseClient, def: CategoryDef, touc
     const parts = key.split("|");
     const isPrimary = parts[1]?.startsWith("MODEL:");
     const rep = offers[0].payload || {};
-    const { nameAr, nameEn } = def.names(key, rep);
+    const { nameAr, nameEn } = rep._manufacturer_model
+      ? { nameAr: String(rep._source_name_ar || offers[0].name), nameEn: String(rep._source_name_en || offers[0].name) }
+      : def.names(key, rep);
     // See the takenPair/takenNameBrand guards' header comments above this loop. Only a
     // genuinely NEW canonical can create a fresh pair on either global unique index — an
     // existing canonical being re-touched already owns whatever pair(s) it has, so neither
@@ -624,7 +670,7 @@ export async function corroboratePass(sb: SupabaseClient, def: CategoryDef, touc
     canonicalRows.push({
       id: canonicalId, name_ar: nameAr, name_en: nameEn, brand: parts[0],
       model_number: isPrimary ? parts[1].slice(6) : null, category: def.category, image_url,
-      attributes: { ...def.attrs(key, rep), identity_key: key, identity_tier: isPrimary ? "primary" : "fallback", stores: [...storeIds], offers_count: offers.length, parser_version: def.version, source: "progressive", comparison_eligible: !single, ...(observedGtin ? { gtin: observedGtin } : {}) },
+      attributes: { ...(rep._manufacturer_model ? { ...Object.fromEntries(Object.entries(rep).filter(([field]) => !field.startsWith('_'))), manufacturer_model: rep._manufacturer_model } : def.attrs(key, rep)), identity_key: key, identity_tier: isPrimary ? "primary" : "fallback", stores: [...storeIds], offers_count: offers.length, parser_version: def.version, source: "progressive", comparison_eligible: !single, ...(observedGtin ? { gtin: observedGtin } : {}) },
       is_active: true, tps_identity_key: key, tps_version: def.version, variant_key: key,
       identity_confidence: groupConf, data_quality_score: Math.max(50, groupConf - 10), created_at: now, data_updated_at: now,
     });
@@ -688,6 +734,9 @@ export async function corroboratePass(sb: SupabaseClient, def: CategoryDef, touc
     for (const [k, o] of newByKeyStore) {
       const prev = prevByKeyStore.get(k);
       if (prev && samePrice2(prev.price, o.price) && prev.status === o.status && prev.url === o.url
+          && prev.payload?._availability === o.payload?._availability
+          && prev.payload?._original_price === o.payload?._original_price
+          && prev.payload?._manufacturer_model === o.payload?._manufacturer_model
           && prev.observed_at && o.observed_at
           && new Date(o.observed_at).getTime() - new Date(prev.observed_at).getTime() < 3600_000) continue;
       upserts.push({
@@ -768,6 +817,15 @@ export async function runSweepUnit(sb: SupabaseClient, defs: CategoryDef[], limi
   if (limit > TPS_MAX_OBSERVATIONS) throw new Error(`limit ${limit} exceeds ${TPS_MAX_OBSERVATIONS}`);
   const n = await normalizeSweep(sb, defs, limit, onlyStores, dry, replayFrom);
   const corr: Record<string, CorroborateMetrics> = {};
+  let writeGuards: CorroborateOpts['writeGuards'];
+  if (onlyStores?.length === 1 && onlyStores[0] === 6 && Object.values(n.byCategory).some(c => c.touched.size)) {
+    const existing = await fetchAllPaginated<{ brand: string | null; model_number: string | null; name_ar: string | null }>((from, to) =>
+      sb.from('canonical_products').select('brand,model_number,name_ar').order('id').range(from, to));
+    writeGuards = {
+      takenPair: new Set(existing.filter(c => c.model_number).map(c => `${(c.brand ?? '').toLowerCase()}|${c.model_number}`)),
+      takenNameBrand: new Set(existing.map(c => `${(c.name_ar ?? '').trim().toLowerCase()}|${(c.brand ?? '').trim().toLowerCase()}`)),
+    };
+  }
   for (const def of defs) {
     const touched = [...n.byCategory[def.category].touched];
     if (touched.length) {
@@ -775,8 +833,8 @@ export async function runSweepUnit(sb: SupabaseClient, defs: CategoryDef[], limi
       // gets its normalized row / price event in the hourly chain regardless of whether
       // its key is currently single-store (Layer 2) or comparable (Layer 1). The two
       // passes write disjoint key sets by construction (the layer split).
-      const multi = await corroboratePass(sb, def, touched, { dry, sweepRows: n.pendingStaging });
-      const singles = await corroboratePass(sb, def, touched, { dry, sweepRows: n.pendingStaging, singleStore: true });
+      const multi = await corroboratePass(sb, def, touched, { dry, sweepRows: n.pendingStaging, writeGuards });
+      const singles = await corroboratePass(sb, def, touched, { dry, sweepRows: n.pendingStaging, singleStore: true, writeGuards });
       corr[def.category] = {
         keysConsidered: multi.keysConsidered,
         corroborated: multi.corroborated,

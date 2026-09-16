@@ -1,0 +1,139 @@
+{
+  "measuredAt": "2026-09-16T09:12:45.417Z",
+  "source": "samsung-recovery-source-reconciliation-2026-09-16.json",
+  "categories": {
+    "mobile": {
+      "products": 254,
+      "priced": 159,
+      "available": 158,
+      "images": 254,
+      "explicitZeroPrice": 0
+    },
+    "tablet": {
+      "products": 127,
+      "priced": 47,
+      "available": 46,
+      "images": 127,
+      "explicitZeroPrice": 0
+    },
+    "smartwatch": {
+      "products": 25,
+      "priced": 16,
+      "available": 16,
+      "images": 25,
+      "explicitZeroPrice": 0
+    },
+    "audio": {
+      "products": 38,
+      "priced": 15,
+      "available": 10,
+      "images": 35,
+      "explicitZeroPrice": 0
+    },
+    "ring": {
+      "products": 33,
+      "priced": 5,
+      "available": 5,
+      "images": 33,
+      "explicitZeroPrice": 0
+    },
+    "accessories": {
+      "products": 411,
+      "priced": 249,
+      "available": 240,
+      "images": 393,
+      "explicitZeroPrice": 1
+    },
+    "stylus": {
+      "products": 20,
+      "priced": 14,
+      "available": 14,
+      "images": 20,
+      "explicitZeroPrice": 0
+    },
+    "tracker": {
+      "products": 3,
+      "priced": 1,
+      "available": 1,
+      "images": 3,
+      "explicitZeroPrice": 0
+    },
+    "tv": {
+      "products": 120,
+      "priced": 46,
+      "available": 43,
+      "images": 118,
+      "explicitZeroPrice": 0
+    },
+    "refrigerator": {
+      "products": 25,
+      "priced": 8,
+      "available": 8,
+      "images": 25,
+      "explicitZeroPrice": 0
+    },
+    "dishwasher": {
+      "products": 7,
+      "priced": 1,
+      "available": 1,
+      "images": 6,
+      "explicitZeroPrice": 0
+    },
+    "microwave": {
+      "products": 3,
+      "priced": 2,
+      "available": 2,
+      "images": 3,
+      "explicitZeroPrice": 0
+    },
+    "cooker": {
+      "products": 4,
+      "priced": 3,
+      "available": 3,
+      "images": 4,
+      "explicitZeroPrice": 0
+    },
+    "washing_machine": {
+      "products": 33,
+      "priced": 13,
+      "available": 12,
+      "images": 33,
+      "explicitZeroPrice": 0
+    },
+    "air_conditioner": {
+      "products": 49,
+      "priced": 11,
+      "available": 9,
+      "images": 43,
+      "explicitZeroPrice": 0
+    },
+    "vacuum": {
+      "products": 2,
+      "priced": 0,
+      "available": 0,
+      "images": 2,
+      "explicitZeroPrice": 0
+    },
+    "monitor": {
+      "products": 136,
+      "priced": 21,
+      "available": 21,
+      "images": 136,
+      "explicitZeroPrice": 0
+    },
+    "hood": {
+      "products": 1,
+      "priced": 0,
+      "available": 0,
+      "images": 0,
+      "explicitZeroPrice": 0
+    }
+  },
+  "totals": {
+    "products": 1291,
+    "priced": 611,
+    "available": 589,
+    "images": 1260,
+    "explicitZeroPrice": 1
+  }
+}

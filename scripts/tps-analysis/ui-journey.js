@@ -434,7 +434,7 @@ async function evaluateSurface(page, browser, { query, locale, subject, surfaceC
   // (ADR-139) without updating this made 4 correct `ثلاجة` cards read as "no store name —
   // only stubs: شا اك ال", where شا is شاكر itself. An instrument that does not know the
   // catalogue reports the catalogue as broken.
-  const FULL_STORE = /اكسترا|إكسترا|امازون|أمازون|جرير|نون|المنيع|لولو|شرف|الشتاء|نجم|شاكر|النخيل|extra|amazon|jarir|noon|almanea|lulu|sharaf|najm|shaker|alnakheel/i;
+  const FULL_STORE = /اكسترا|إكسترا|امازون|أمازون|جرير|نون|المنيع|لولو|شرف|الشتاء|نجم|شاكر|النخيل|سامسونج السعودية|extra|amazon|jarir|noon|almanea|lulu|sharaf|najm|shaker|alnakheel|samsung\s+(?:saudi|ksa)/i;
   row.storeVisible = FULL_STORE.test(cardText);
   if (!row.storeVisible) {
     const stubs = (cardText.match(/(?:^|\s)([ء-ي]{2})(?=\s|$)/g) || []).map((s) => s.trim());

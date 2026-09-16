@@ -102,6 +102,15 @@ describe("deriveComparisonSummary — freshness gate", () => {
     expect(summary.lowest_price).toBe(80);
   });
 
+  it('does not let a freshly observed unavailable offer win the current purchase price', () => {
+    const { summary } = deriveComparisonSummary([
+      offer({ store_name: 'سامسونج السعودية', price: 50, observed_at: hoursAgo(1), availability: 'out_of_stock' }),
+      offer({ store_name: 'اكسترا', price: 80, observed_at: hoursAgo(2), availability: 'in_stock' }),
+    ]);
+    expect(summary.lowest_price).toBe(80);
+    expect(summary.cheapest_store).toBe('اكسترا');
+  });
+
   it("never mutates or drops the input offers array — price-history evidence stays intact upstream", () => {
     const offers = [
       offer({ store_name: "اكسترا", price: 999, observed_at: hoursAgo(300) }),

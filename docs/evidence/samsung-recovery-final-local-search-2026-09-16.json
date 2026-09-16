@@ -1,0 +1,309 @@
+{
+  "observedAt": "2026-09-16T09:16:14.310Z",
+  "note": "Candidate code against unrepaired live data; HTTP/category check, not recovery proof",
+  "rows": [
+    {
+      "query": "Galaxy Watch",
+      "status": 200,
+      "products": [
+        {
+          "name": "Samsung Galaxy Watch 8 40mm",
+          "key": "samsung|Galaxy Watch|8|Standard|40|gps",
+          "category": "smartwatch",
+          "stores": [
+            "أمازون السعودية",
+            "مكتبة جرير",
+            "إكسترا",
+            "سامسونج السعودية"
+          ]
+        },
+        {
+          "name": "Samsung Galaxy Watch 8 44mm",
+          "key": "samsung|Galaxy Watch|8|Standard|44|gps",
+          "category": "smartwatch",
+          "stores": [
+            "أمازون السعودية",
+            "مكتبة جرير",
+            "إكسترا",
+            "سامسونج السعودية"
+          ]
+        },
+        {
+          "name": "Samsung Galaxy Watch 8 Classic 46mm",
+          "key": "samsung|Galaxy Watch|8|Classic|46|gps",
+          "category": "smartwatch",
+          "stores": [
+            "أمازون السعودية",
+            "مكتبة جرير",
+            "إكسترا",
+            "المنيع",
+            "سامسونج السعودية"
+          ]
+        },
+        {
+          "name": "Samsung Galaxy Watch Ultra 47mm Cellular",
+          "key": "samsung|Galaxy Watch Ultra|Ultra|Ultra|47|cellular",
+          "category": "smartwatch",
+          "stores": [
+            "أمازون السعودية",
+            "نون",
+            "سامسونج السعودية"
+          ]
+        },
+        {
+          "name": "Samsung Galaxy Watch 9 44mm",
+          "key": "samsung|Galaxy Watch|9|Standard|44|gps",
+          "category": "smartwatch",
+          "stores": [
+            "المنيع",
+            "سامسونج السعودية",
+            "أمازون السعودية"
+          ]
+        }
+      ]
+    },
+    {
+      "query": "Galaxy Buds",
+      "status": 200,
+      "products": [
+        {
+          "name": "Samsung Galaxy Buds Earbuds",
+          "key": "samsung|galaxy buds",
+          "category": "audio",
+          "stores": [
+            "المنيع",
+            "مكتبة جرير",
+            "سامسونج السعودية"
+          ]
+        },
+        {
+          "name": "Samsung Galaxy Buds 4 Earbuds",
+          "key": "samsung|galaxy buds 4",
+          "category": "audio",
+          "stores": [
+            "المنيع",
+            "نون",
+            "سامسونج السعودية"
+          ]
+        },
+        {
+          "name": "Samsung Galaxy Buds 4 Pro Earbuds",
+          "key": "samsung|galaxy buds 4 pro",
+          "category": "audio",
+          "stores": [
+            "المنيع",
+            "نون",
+            "سامسونج السعودية"
+          ]
+        },
+        {
+          "name": "Galaxy Buds Core Black (SM-R410NZKAMEA)",
+          "category": "",
+          "stores": [
+            "سامسونج السعودية"
+          ]
+        },
+        {
+          "name": "Galaxy Buds Core White (SM-R410NZWAMEA)",
+          "category": "",
+          "stores": [
+            "سامسونج السعودية"
+          ]
+        }
+      ]
+    },
+    {
+      "query": "Galaxy Ring",
+      "status": 200,
+      "products": [
+        {
+          "name": "samsung Galaxy Ring Titanium Black",
+          "key": "samsung|Galaxy Ring|Titanium Black",
+          "category": "ring",
+          "stores": [
+            "سامسونج السعودية"
+          ]
+        },
+        {
+          "name": "samsung Galaxy Ring Titanium Gold",
+          "key": "samsung|Galaxy Ring|Titanium Gold",
+          "category": "ring",
+          "stores": [
+            "سامسونج السعودية"
+          ]
+        },
+        {
+          "name": "samsung Galaxy Ring Titanium Silver",
+          "key": "samsung|Galaxy Ring|Titanium Silver",
+          "category": "ring",
+          "stores": [
+            "سامسونج السعودية"
+          ]
+        },
+        {
+          "name": "Galaxy Ring Titanium Gold Size 12 (SM-Q502NZDAMEA)",
+          "category": "",
+          "stores": [
+            "سامسونج السعودية"
+          ]
+        },
+        {
+          "name": "Galaxy Ring Titanium Black Size 6 (SM-Q506NZKAMEA)",
+          "category": "",
+          "stores": [
+            "سامسونج السعودية"
+          ]
+        }
+      ]
+    },
+    {
+      "query": "Samsung charger",
+      "status": 200,
+      "products": [
+        {
+          "name": "SAMSUNG Galaxy Note 3 N9005 N9000 Micro USB 3.0 Data Sync Charger Cable (White)",
+          "category": "",
+          "stores": [
+            "أمازون السعودية"
+          ]
+        },
+        {
+          "name": "Micro USB Charging Cable, 1 Pack 6 Feet, Nylon Braided Android Charger Cord, Fast Charging Cable, Compatible with Galaxy S6 S7 Edge, Kindle, Android and Windows Smartphones - Purple | USB to USB B Male for Samsung Galaxy S6 S7 Edge,Kindle,Android & Windows Smartphones, PS4 and More-Purple",
+          "category": "",
+          "stores": [
+            "أمازون السعودية"
+          ]
+        },
+        {
+          "name": "UGREEN USB Charger 18W Samsung Fast Charger Wall Plug QC 3.0 Travel Adapter Quick Block Mobile Power Adapter Compatible for Samsung Galaxy S10,S9,S8,S7,A80,A70,A40, Huawei, Nokia, Xiaomi, Airpods,etc",
+          "category": "",
+          "stores": [
+            "أمازون السعودية"
+          ]
+        },
+        {
+          "name": "UGREEN iPhone 16 Pro Charger, USB C Charger, PD 20W Fast Type C Mobile Charger Adapter Plug, Smart Protection, Universal Travel Adapter Compatible for iPhone 16 Pro Max/15, Samsung, iPad, Huawei etc",
+          "category": "",
+          "stores": [
+            "أمازون السعودية"
+          ]
+        },
+        {
+          "name": "Anker iPhone 16 Pro Charger, 20W USB C Charger, PowerPort III 20W Cube Fast Charger for iPhone 16/16 Pro/16 Plus /16 Pro Max, 15/14 Series, Samsung, iPad, Huawei, Xiaomi, Vivo, Oppo and More",
+          "category": "",
+          "stores": [
+            "أمازون السعودية"
+          ]
+        }
+      ]
+    },
+    {
+      "query": "S Pen",
+      "status": 200,
+      "products": [
+        {
+          "name": "هونر، قلم Choice Amork Pencil Lite، أبيض، 5504AGNN",
+          "category": "",
+          "stores": [
+            "المنيع"
+          ]
+        },
+        {
+          "name": "SAMSUNG Galaxy Tab S10 Lite with S-Pen | 128GB, 6GB RAM, Wi-Fi Only | 10.9 | Original S-Pen included",
+          "category": "",
+          "stores": [
+            "أمازون"
+          ]
+        },
+        {
+          "name": "SAMSUNG Galaxy Tab S10 Lite with S-Pen | 128GB, 6GB RAM, Wi-Fi Only | 10.9",
+          "category": "",
+          "stores": [
+            "أمازون"
+          ]
+        },
+        {
+          "name": "Samsung Galaxy Tab S10 FE, WIFI Android Tablet, 8GB RAM, 128GB Storage, 10.9” Screen, 90Hz Display, S Pen Included, IP68, Long Battery Life, Blue (KSA Version)",
+          "category": "",
+          "stores": [
+            "أمازون"
+          ]
+        },
+        {
+          "name": "Samsung Galaxy Tab S10 FE, WIFI Android Tablet, 8GB RAM, 128GB Storage, 10.9” Screen, 90Hz Display, S Pen Included, IP68, Long Battery Life, Silver (KSA Version)",
+          "category": "",
+          "stores": [
+            "أمازون"
+          ]
+        }
+      ]
+    },
+    {
+      "query": "SmartTag",
+      "status": 200,
+      "products": [
+        {
+          "name": "samsung SmartTag2 Black",
+          "key": "samsung|SmartTag2|Black",
+          "category": "tracker",
+          "stores": [
+            "المنيع",
+            "سامسونج السعودية"
+          ]
+        },
+        {
+          "name": "samsung SmartTag",
+          "key": "samsung|SmartTag|Standard",
+          "category": "tracker",
+          "stores": [
+            "المنيع"
+          ]
+        },
+        {
+          "name": "Galaxy SmartTag2 Black Ei (EI-T5600BBEGWW)",
+          "category": "",
+          "stores": [
+            "سامسونج السعودية"
+          ]
+        },
+        {
+          "name": "Samsung Galaxy SmartTag2 Multi-function Item Locator, Black",
+          "category": "",
+          "stores": [
+            "مكتبة جرير"
+          ]
+        },
+        {
+          "name": "samsung SmartTag2 White",
+          "key": "samsung|SmartTag2|White",
+          "category": "tracker",
+          "stores": [
+            "سامسونج السعودية"
+          ]
+        }
+      ]
+    },
+    {
+      "query": "SM-X236BZSEMEA",
+      "status": 200,
+      "products": [
+        {
+          "name": "Samsung SM-X236BZSEMEA Tablet",
+          "key": "samsung|MODEL:SM-X236BZSEMEA",
+          "category": "tablet",
+          "stores": [
+            "سامسونج السعودية",
+            "إكسترا"
+          ]
+        },
+        {
+          "name": "Galaxy Tab A11+ 5G Silver 256GB (SM-X236BZSEMEA)",
+          "category": "",
+          "stores": [
+            "سامسونج السعودية"
+          ]
+        }
+      ]
+    }
+  ]
+}

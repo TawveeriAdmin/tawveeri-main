@@ -1,0 +1,1140 @@
+{
+  "frozenAt": "2026-09-16T08:38:32.039Z",
+  "method": "One purchasable model per category when available, otherwise an explicit no-offer control; distinct fold variant, charger and case controls. No result-based selection.",
+  "rows": [
+    {
+      "category": "mobile",
+      "model": "SM-F976BZVOMEA",
+      "source": "public_finder",
+      "sourceProduct": {
+        "name_ar": "Galaxy Z Fold8 Ultra Violet Shadow 512 GB (SM-F976BZVOMEA)",
+        "name_en": "Galaxy Z Fold8 Ultra Violet Shadow 512 GB (SM-F976BZVOMEA)",
+        "brand": "Samsung",
+        "model": "SM-F976BZVOMEA",
+        "sku": "SM-F976BZVOMEA",
+        "current_price": 8999,
+        "original_price": null,
+        "availability": "in_stock",
+        "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-z-fold8-ultra/buy/?modelCode=SM-F976BZVOMEA",
+        "image_urls": [
+          "https://images.samsung.com/is/image/samsung/p6pim/sa_en/f2607/gallery/sa-en-galaxy-z-fold8-ultra-f976-sm-f976bzvomea-thumb-553720517"
+        ],
+        "category": "smartphone",
+        "description_ar": null,
+        "description_en": null,
+        "specifications": {
+          "raw": {
+            "Weight (g)": "215",
+            "CPU Speed": "4.74GHz, 3.6GHz"
+          },
+          "samsung_catalog": {
+            "type": "01010000",
+            "subcategory": "Galaxy Z",
+            "model_code": "SM-F976BZVOMEA",
+            "variant": [
+              {
+                "fmyChipType": "COLOR",
+                "optionTypeSeq": "1",
+                "optionTypeCode": "CM001",
+                "fmyChipCode": "#4f4f5c",
+                "fmyChipName": "Violet Shadow",
+                "fmyChipLocalName": "Violet Shadow",
+                "multiColorYN": "N",
+                "multiColorList": null
+              },
+              {
+                "fmyChipType": "MOBILE MEMORY",
+                "optionTypeSeq": "1",
+                "optionTypeCode": "IM003",
+                "fmyChipCode": "512 GB",
+                "fmyChipName": "512 GB",
+                "fmyChipLocalName": "512 GB",
+                "multiColorYN": "N",
+                "multiColorList": null
+              }
+            ],
+            "stock_status": "inStock",
+            "purchase_cta": "Buy",
+            "origin_url": "https://www.samsung.com/sa_en/smartphones/galaxy-z/galaxy-z-fold8-ultra-violet-shadow-512gb-sm-f976bzvomea/",
+            "source_url": "https://searchapi.samsung.com/v6/front/b2c/product/finder/global?type=01010000&siteCode=sa_en&start=1&num=12&sort=newest&onlyFilterInfoYN=N&keySummaryYN=Y",
+            "observed_at": "2026-09-16T07:23:07.408Z",
+            "source_method": "samsung_public_finder"
+          }
+        }
+      }
+    },
+    {
+      "category": "tablet",
+      "model": "SM-X236BZSEMEA",
+      "source": "public_finder",
+      "sourceProduct": {
+        "name_ar": "Galaxy Tab A11+ 5G Silver 256 GB (SM-X236BZSEMEA)",
+        "name_en": "Galaxy Tab A11+ 5G Silver 256 GB (SM-X236BZSEMEA)",
+        "brand": "Samsung",
+        "model": "SM-X236BZSEMEA",
+        "sku": "SM-X236BZSEMEA",
+        "current_price": 1499,
+        "original_price": 1849,
+        "availability": "in_stock",
+        "product_url": "https://www.samsung.com/sa_en/tablets/galaxy-tab-a/galaxy-tab-a11-plus-silver-256gb-sm-x236bzsemea/",
+        "image_urls": [
+          "https://images.samsung.com/is/image/samsung/p6pim/sa_en/sm-x236bzsemea/gallery/sa-en-galaxy-tab-a11-plus-sm-x230-sm-x236bzsemea-thumb-550065241"
+        ],
+        "category": "tablet",
+        "description_ar": null,
+        "description_en": null,
+        "specifications": {
+          "raw": {
+            "Main Camera - Resolution": "8.0 MP",
+            "Weight (g)": "482",
+            "Video Playback Time (Hours)": "Up to 15",
+            "CPU Speed": "2.5GHz, 2GHz"
+          },
+          "samsung_catalog": {
+            "type": "01020000",
+            "subcategory": "Galaxy Tab A",
+            "model_code": "SM-X236BZSEMEA",
+            "variant": [
+              {
+                "fmyChipType": "COLOR",
+                "optionTypeSeq": "1",
+                "optionTypeCode": "CM001",
+                "fmyChipCode": "#c7c8ca",
+                "fmyChipName": "Silver",
+                "fmyChipLocalName": "Silver",
+                "multiColorYN": "N",
+                "multiColorList": null
+              },
+              {
+                "fmyChipType": "MOBILE MEMORY",
+                "optionTypeSeq": "1",
+                "optionTypeCode": "IM003",
+                "fmyChipCode": "256 GB",
+                "fmyChipName": "256 GB",
+                "fmyChipLocalName": "256 GB",
+                "multiColorYN": "N",
+                "multiColorList": null
+              }
+            ],
+            "stock_status": "inStock",
+            "purchase_cta": null,
+            "origin_url": "https://www.samsung.com/sa_en/tablets/galaxy-tab-a/galaxy-tab-a11-plus-silver-256gb-sm-x236bzsemea/",
+            "source_url": "https://searchapi.samsung.com/v6/front/b2c/product/finder/global?type=01020000&siteCode=sa_en&start=1&num=12&sort=newest&onlyFilterInfoYN=N&keySummaryYN=Y",
+            "observed_at": "2026-09-16T07:23:07.408Z",
+            "source_method": "samsung_public_finder"
+          }
+        }
+      }
+    },
+    {
+      "category": "smartwatch",
+      "model": "SM-L715FZSAKSA",
+      "source": "public_finder",
+      "sourceProduct": {
+        "name_ar": "Galaxy Watch Ultra2 Titanium Silver (SM-L715FZSAKSA)",
+        "name_en": "Galaxy Watch Ultra2 Titanium Silver (SM-L715FZSAKSA)",
+        "brand": "Samsung",
+        "model": "SM-L715FZSAKSA",
+        "sku": "SM-L715FZSAKSA",
+        "current_price": 2799,
+        "original_price": null,
+        "availability": "in_stock",
+        "product_url": "https://www.samsung.com/sa_en/watches/galaxy-watch/galaxy-watch-ultra2-titanium-silver-lte-sm-l715fzsaksa/",
+        "image_urls": [
+          "https://images.samsung.com/is/image/samsung/p6pim/sa_en/f2607/gallery/sa-en-galaxy-watch-ultra2-l710-sm-l715fzsaksa-thumb-553717423"
+        ],
+        "category": "wearable",
+        "description_ar": null,
+        "description_en": null,
+        "specifications": {
+          "raw": {
+            "Size (Main Display)": "1.5\" (38.5mm)",
+            "Body Weight (g)": "61.5",
+            "Bluetooth Version": "Bluetooth v6.0",
+            "Sensors": "Accelerometer, Barometer, Bioelectrical Impedance Analysis Sensor, Electrical Heart Sensor, Gyro Sensor, Geomagnetic Sensor, Light Sensor, Optical Heart Rate Sensor, Temperature Sensor",
+            "Storage (GB)": "64",
+            "CPU Speed": "2.1GHz, 1.95GHz"
+          },
+          "samsung_catalog": {
+            "type": "01030000",
+            "subcategory": "Galaxy Watch",
+            "model_code": "SM-L715FZSAKSA",
+            "variant": [
+              {
+                "fmyChipType": "COLOR",
+                "optionTypeSeq": "1",
+                "optionTypeCode": "CM001",
+                "fmyChipCode": "#6d6e72",
+                "fmyChipName": "Titanium Silver",
+                "fmyChipLocalName": "Titanium Silver",
+                "multiColorYN": "N",
+                "multiColorList": null
+              }
+            ],
+            "stock_status": "inStock",
+            "purchase_cta": null,
+            "origin_url": "https://www.samsung.com/sa_en/watches/galaxy-watch/galaxy-watch-ultra2-titanium-silver-lte-sm-l715fzsaksa/",
+            "source_url": "https://searchapi.samsung.com/v6/front/b2c/product/finder/global?type=01030000&siteCode=sa_en&start=1&num=12&sort=newest&onlyFilterInfoYN=N&keySummaryYN=Y",
+            "observed_at": "2026-09-16T07:23:07.408Z",
+            "source_method": "samsung_public_finder"
+          }
+        }
+      }
+    },
+    {
+      "category": "audio",
+      "model": "SM-R640NZWAMEA",
+      "source": "public_finder",
+      "sourceProduct": {
+        "name_ar": "Galaxy Buds4 Pro White (SM-R640NZWAMEA)",
+        "name_en": "Galaxy Buds4 Pro White (SM-R640NZWAMEA)",
+        "brand": "Samsung",
+        "model": "SM-R640NZWAMEA",
+        "sku": "SM-R640NZWAMEA",
+        "current_price": 999,
+        "original_price": null,
+        "availability": "in_stock",
+        "product_url": "https://www.samsung.com/sa_en/audio-sound/galaxy-buds/galaxy-buds4-pro-white-sm-r640nzwamea/",
+        "image_urls": [
+          "https://images.samsung.com/is/image/samsung/p6pim/sa_en/s2602/gallery/sa-en-galaxy-buds4-r640-sm-r640nzwamea-thumb-550975618"
+        ],
+        "category": "audio",
+        "description_ar": null,
+        "description_en": null,
+        "specifications": {
+          "raw": {
+            "Earbud Weight (g)": "5.1",
+            "Bluetooth Version": "Bluetooth v6.1",
+            "Sensors": "Accelerometer, Gyro Sensor, Hall Sensor, Pressure Sensor, Proximity Sensor, Touch Sensor, VPU(Voice Pickup Unit)"
+          },
+          "samsung_catalog": {
+            "type": "01040000",
+            "subcategory": "Galaxy Buds",
+            "model_code": "SM-R640NZWAMEA",
+            "variant": [
+              {
+                "fmyChipType": "COLOR",
+                "optionTypeSeq": "1",
+                "optionTypeCode": "CM001",
+                "fmyChipCode": "#f3f4f5",
+                "fmyChipName": "White",
+                "fmyChipLocalName": "White",
+                "multiColorYN": "N",
+                "multiColorList": null
+              }
+            ],
+            "stock_status": "inStock",
+            "purchase_cta": "buy",
+            "origin_url": "https://www.samsung.com/sa_en/audio-sound/galaxy-buds/galaxy-buds4-pro-white-sm-r640nzwamea/",
+            "source_url": "https://searchapi.samsung.com/v6/front/b2c/product/finder/global?type=01040000&siteCode=sa_en&start=1&num=12&sort=newest&onlyFilterInfoYN=N&keySummaryYN=Y",
+            "observed_at": "2026-09-16T07:23:07.408Z",
+            "source_method": "samsung_public_finder"
+          }
+        }
+      }
+    },
+    {
+      "category": "ring",
+      "model": "SM-Q506NZKAMEA",
+      "source": "public_finder",
+      "sourceProduct": {
+        "name_ar": "Galaxy Ring 6 Titanium Black (SM-Q506NZKAMEA)",
+        "name_en": "Galaxy Ring 6 Titanium Black (SM-Q506NZKAMEA)",
+        "brand": "Samsung",
+        "model": "SM-Q506NZKAMEA",
+        "sku": "SM-Q506NZKAMEA",
+        "current_price": 1499,
+        "original_price": null,
+        "availability": "in_stock",
+        "product_url": "https://www.samsung.com/sa_en/rings/galaxy-ring/galaxy-ring-titanium-black-size-6-sm-q506nzkamea/",
+        "image_urls": [
+          "https://images.samsung.com/is/image/samsung/p6pim/sa_en/sm-q506nzkamea/gallery/sa-en-galaxy-ring-q500-sm-q506nzkamea-thumb-543807982"
+        ],
+        "category": "wearable",
+        "description_ar": null,
+        "description_en": null,
+        "specifications": {
+          "raw": {
+            "Body Weight (g)": "2.4",
+            "Bluetooth Version": "Bluetooth v5.4",
+            "Sensors": "Accelerometer, Optical Heart Rate Sensor, Temperature Sensor"
+          },
+          "samsung_catalog": {
+            "type": "01090000",
+            "subcategory": "Galaxy Ring",
+            "model_code": "SM-Q506NZKAMEA",
+            "variant": [
+              {
+                "fmyChipType": "RING SIZE",
+                "optionTypeSeq": "1",
+                "optionTypeCode": "IM019",
+                "fmyChipCode": "6",
+                "fmyChipName": "6",
+                "fmyChipLocalName": "6",
+                "multiColorYN": "N",
+                "multiColorList": null
+              },
+              {
+                "fmyChipType": "COLOR",
+                "optionTypeSeq": "1",
+                "optionTypeCode": "CM001",
+                "fmyChipCode": "#363432",
+                "fmyChipName": "Titanium Black",
+                "fmyChipLocalName": "Titanium Black",
+                "multiColorYN": "N",
+                "multiColorList": null
+              }
+            ],
+            "stock_status": "inStock",
+            "purchase_cta": "buy",
+            "origin_url": "https://www.samsung.com/sa_en/rings/galaxy-ring/galaxy-ring-titanium-black-size-6-sm-q506nzkamea/",
+            "source_url": "https://searchapi.samsung.com/v6/front/b2c/product/finder/global?type=01090000&siteCode=sa_en&start=1&num=12&sort=newest&onlyFilterInfoYN=N&keySummaryYN=Y",
+            "observed_at": "2026-09-16T07:23:07.408Z",
+            "source_method": "samsung_public_finder"
+          }
+        }
+      }
+    },
+    {
+      "category": "accessories",
+      "model": "EF-PS721CBEGWW",
+      "source": "public_finder",
+      "sourceProduct": {
+        "name_ar": "Galaxy S24 FE Silicone Case Black (EF-PS721CBEGWW)",
+        "name_en": "Galaxy S24 FE Silicone Case Black (EF-PS721CBEGWW)",
+        "brand": "Samsung",
+        "model": "EF-PS721CBEGWW",
+        "sku": "EF-PS721CBEGWW",
+        "current_price": 50,
+        "original_price": 99,
+        "availability": "in_stock",
+        "product_url": "https://www.samsung.com/sa_en/mobile-accessories/galaxy-s24-fe-silicone-case-black-ef-ps721cbegww/",
+        "image_urls": [
+          "https://images.samsung.com/is/image/samsung/p6pim/sa_en/ef-ps721cbegww/gallery/sa-en-galaxy-s24-fe-silicone-case-ps721-528234-ef-ps721cbegww-thumb-544207813"
+        ],
+        "category": "accessories",
+        "description_ar": null,
+        "description_en": null,
+        "specifications": {
+          "raw": {},
+          "samsung_catalog": {
+            "type": "01050000",
+            "subcategory": "Cases",
+            "model_code": "EF-PS721CBEGWW",
+            "variant": [
+              {
+                "fmyChipType": "COLOR",
+                "optionTypeSeq": "1",
+                "optionTypeCode": "CM001",
+                "fmyChipCode": "#000000",
+                "fmyChipName": "Black",
+                "fmyChipLocalName": "Black",
+                "multiColorYN": "N",
+                "multiColorList": null
+              }
+            ],
+            "stock_status": "inStock",
+            "purchase_cta": null,
+            "origin_url": "https://www.samsung.com/sa_en/mobile-accessories/galaxy-s24-fe-silicone-case-black-ef-ps721cbegww/",
+            "source_url": "https://searchapi.samsung.com/v6/front/b2c/product/finder/global?type=01050000&siteCode=sa_en&start=1&num=12&sort=newest&onlyFilterInfoYN=N&keySummaryYN=Y",
+            "observed_at": "2026-09-16T07:23:07.408Z",
+            "source_method": "samsung_public_finder"
+          }
+        }
+      }
+    },
+    {
+      "category": "stylus",
+      "model": "GH96-20268A",
+      "source": "public_finder",
+      "sourceProduct": {
+        "name_ar": "S Pen for Galaxy Tab S11 and S11 Ultra White (GH96-20268A)",
+        "name_en": "S Pen for Galaxy Tab S11 and S11 Ultra White (GH96-20268A)",
+        "brand": "Samsung",
+        "model": "GH96-20268A",
+        "sku": "GH96-20268A",
+        "current_price": 259,
+        "original_price": null,
+        "availability": "limited_stock",
+        "product_url": "https://www.samsung.com/sa_en/mobile-accessories/s-pen-for-galaxy-tab-s11-and-s11-ultra-gh96-20268a/",
+        "image_urls": [
+          "https://images.samsung.com/is/image/samsung/p6pim/sa_en/gh96-20268a/gallery/sa-en-s-pen-for-galaxy-tab-s11-and-s11-ultra-gh96-20268a-thumb-553571836"
+        ],
+        "category": "accessories",
+        "description_ar": null,
+        "description_en": null,
+        "specifications": {
+          "raw": {},
+          "samsung_catalog": {
+            "type": "01050000",
+            "subcategory": "S Pens",
+            "model_code": "GH96-20268A",
+            "variant": [
+              {
+                "fmyChipType": "COLOR",
+                "optionTypeSeq": "1",
+                "optionTypeCode": "CM001",
+                "fmyChipCode": "#f4f9ff",
+                "fmyChipName": "White",
+                "fmyChipLocalName": "White",
+                "multiColorYN": "N",
+                "multiColorList": null
+              }
+            ],
+            "stock_status": "lowStock",
+            "purchase_cta": null,
+            "origin_url": "https://www.samsung.com/sa_en/mobile-accessories/s-pen-for-galaxy-tab-s11-and-s11-ultra-gh96-20268a/",
+            "source_url": "https://searchapi.samsung.com/v6/front/b2c/product/finder/global?type=01050000&siteCode=sa_en&start=1&num=12&sort=newest&onlyFilterInfoYN=N&keySummaryYN=Y",
+            "observed_at": "2026-09-16T07:23:07.408Z",
+            "source_method": "samsung_public_finder"
+          }
+        }
+      }
+    },
+    {
+      "category": "tracker",
+      "model": "EI-T5600BBEGWW",
+      "source": "public_finder",
+      "sourceProduct": {
+        "name_ar": "Galaxy SmartTag2 Black (EI-T5600BBEGWW)",
+        "name_en": "Galaxy SmartTag2 Black (EI-T5600BBEGWW)",
+        "brand": "Samsung",
+        "model": "EI-T5600BBEGWW",
+        "sku": "EI-T5600BBEGWW",
+        "current_price": 99,
+        "original_price": null,
+        "availability": "in_stock",
+        "product_url": "https://www.samsung.com/sa_en/mobile-accessories/galaxy-smarttag2-black-ei-t5600bbegww/",
+        "image_urls": [
+          "https://images.samsung.com/is/image/samsung/p6pim/sa_en/ei-t5600bbegww/gallery/sa-en-galaxy-smarttag2-ei-t5600-ei-t5600bbegww-thumb-538628056"
+        ],
+        "category": "accessories",
+        "description_ar": null,
+        "description_en": null,
+        "specifications": {
+          "raw": {},
+          "samsung_catalog": {
+            "type": "01050000",
+            "subcategory": "SmartTag",
+            "model_code": "EI-T5600BBEGWW",
+            "variant": [
+              {
+                "fmyChipType": "COLOR",
+                "optionTypeSeq": "1",
+                "optionTypeCode": "CM001",
+                "fmyChipCode": "#000000",
+                "fmyChipName": "Black",
+                "fmyChipLocalName": "Black",
+                "multiColorYN": "N",
+                "multiColorList": null
+              }
+            ],
+            "stock_status": "inStock",
+            "purchase_cta": null,
+            "origin_url": "https://www.samsung.com/sa_en/mobile-accessories/galaxy-smarttag2-black-ei-t5600bbegww/",
+            "source_url": "https://searchapi.samsung.com/v6/front/b2c/product/finder/global?type=01050000&siteCode=sa_en&start=1&num=12&sort=newest&onlyFilterInfoYN=N&keySummaryYN=Y",
+            "observed_at": "2026-09-16T07:23:07.408Z",
+            "source_method": "samsung_public_finder"
+          }
+        }
+      }
+    },
+    {
+      "category": "tv",
+      "model": "QA55QN1EHAUXSA",
+      "source": "public_finder",
+      "sourceProduct": {
+        "name_ar": "55\" Neo QLED QN1EH 4K Samsung Vision AI Smart TV (2026) 55\" (QA55QN1EHAUXSA)",
+        "name_en": "55\" Neo QLED QN1EH 4K Samsung Vision AI Smart TV (2026) 55\" (QA55QN1EHAUXSA)",
+        "brand": "Samsung",
+        "model": "QA55QN1EHAUXSA",
+        "sku": "QA55QN1EHAUXSA",
+        "current_price": 2999,
+        "original_price": null,
+        "availability": "in_stock",
+        "product_url": "https://www.samsung.com/sa_en/tvs/qled-tv/qn1eh-55-inch-neo-qled-4k-mini-led-smart-tv-qa55qn1ehauxsa/",
+        "image_urls": [
+          "https://images.samsung.com/is/image/samsung/p6pim/sa_en/qa55qn1ehauxsa/gallery/sa-en-qled-qn1eh-qa55qn1ehauxsa-thumb-553585990"
+        ],
+        "category": "tv",
+        "description_ar": null,
+        "description_en": null,
+        "specifications": {
+          "raw": {},
+          "samsung_catalog": {
+            "type": "04010000",
+            "subcategory": "QLED TV",
+            "model_code": "QA55QN1EHAUXSA",
+            "variant": [
+              {
+                "fmyChipType": "TV SIZE",
+                "optionTypeSeq": "1",
+                "optionTypeCode": "VD004",
+                "fmyChipCode": "55\"",
+                "fmyChipName": "55\"",
+                "fmyChipLocalName": "55\"",
+                "multiColorYN": "N",
+                "multiColorList": null
+              }
+            ],
+            "stock_status": "inStock",
+            "purchase_cta": null,
+            "origin_url": "https://www.samsung.com/sa_en/tvs/qled-tv/qn1eh-55-inch-neo-qled-4k-mini-led-smart-tv-qa55qn1ehauxsa/",
+            "source_url": "https://searchapi.samsung.com/v6/front/b2c/product/finder/global?type=04010000&siteCode=sa_en&start=1&num=12&sort=newest&onlyFilterInfoYN=N&keySummaryYN=Y",
+            "observed_at": "2026-09-16T07:23:07.408Z",
+            "source_method": "samsung_public_finder"
+          }
+        }
+      }
+    },
+    {
+      "category": "refrigerator",
+      "model": "RR40H39G1TZA",
+      "source": "public_finder",
+      "sourceProduct": {
+        "name_ar": "One Door Refrigerator Precise Cooling 394L Silver (RR40H39G1TZA)",
+        "name_en": "One Door Refrigerator Precise Cooling 394L Silver (RR40H39G1TZA)",
+        "brand": "Samsung",
+        "model": "RR40H39G1TZA",
+        "sku": "RR40H39G1TZA",
+        "current_price": 5999,
+        "original_price": null,
+        "availability": "in_stock",
+        "product_url": "https://www.samsung.com/sa_en/refrigerators/one-door/ri80h24-rr40h39gev-394l-silver-rr40h39g1tza/",
+        "image_urls": [
+          "https://images.samsung.com/is/image/samsung/p6pim/sa_en/rr40h39g1tza/gallery/sa-en-ri80h24-rr40h39gev-rr40h39g1tza-thumb-554498771"
+        ],
+        "category": "appliance",
+        "description_ar": null,
+        "description_en": null,
+        "specifications": {
+          "raw": {
+            "Net Total(Liter)": "387 ",
+            "Cooling Type": "All Around Cooling",
+            "Net Weight (kg)": "67 ",
+            "Net Width(mm)": "595 ",
+            "Net Depth with Door Handle(mm)": "694 "
+          },
+          "samsung_catalog": {
+            "type": "08030000",
+            "subcategory": "One Door",
+            "model_code": "RR40H39G1TZA",
+            "variant": [
+              {
+                "fmyChipType": "COLOR",
+                "optionTypeSeq": null,
+                "optionTypeCode": null,
+                "fmyChipCode": "#c0c0c0",
+                "fmyChipName": "Silver",
+                "fmyChipLocalName": "Silver",
+                "multiColorYN": null,
+                "multiColorList": null
+              }
+            ],
+            "stock_status": "inStock",
+            "purchase_cta": null,
+            "origin_url": "https://www.samsung.com/sa_en/refrigerators/one-door/ri80h24-rr40h39gev-394l-silver-rr40h39g1tza/",
+            "source_url": "https://searchapi.samsung.com/v6/front/b2c/product/finder/global?type=08030000&siteCode=sa_en&start=1&num=12&sort=newest&onlyFilterInfoYN=N&keySummaryYN=Y",
+            "observed_at": "2026-09-16T07:23:07.408Z",
+            "source_method": "samsung_public_finder"
+          }
+        }
+      }
+    },
+    {
+      "category": "dishwasher",
+      "model": "DW70H73YMFRYL",
+      "source": "public_finder",
+      "sourceProduct": {
+        "name_ar": "FreeStanding Dishwasher Energy Efficiency Class C and Flex Load 14 Place Setting Silver 14 Place Setting (DW70H73YMFRYL)",
+        "name_en": "FreeStanding Dishwasher Energy Efficiency Class C and Flex Load 14 Place Setting Silver 14 Place Setting (DW70H73YMFRYL)",
+        "brand": "Samsung",
+        "model": "DW70H73YMFRYL",
+        "sku": "DW70H73YMFRYL",
+        "current_price": 4299,
+        "original_price": null,
+        "availability": "in_stock",
+        "product_url": "https://www.samsung.com/sa_en/dishwashers/freestanding/dw70hm-24-dish-washer-energy-efficiency-class-c-flex-load-soft-railing-14-place-settings-silver-dw70h73ymfryl/",
+        "image_urls": [
+          "https://images.samsung.com/is/image/samsung/p6pim/sa_en/dw70h73ymfryl/gallery/sa-en-dw70hm24-dw70h73ycfru1-dw70h73ymfryl-thumb-551661219"
+        ],
+        "category": "appliance",
+        "description_ar": null,
+        "description_en": null,
+        "specifications": {
+          "raw": {
+            "Design": "Freestanding",
+            "Size": "24\"",
+            "Color/Material": "STSS",
+            "Washing Type": "Rotary",
+            "Performance": "14 P/S",
+            "Water Annual consumption": "1575 L",
+            "Option": "5"
+          },
+          "samsung_catalog": {
+            "type": "08090000",
+            "subcategory": "Freestanding",
+            "model_code": "DW70H73YMFRYL",
+            "variant": [
+              {
+                "fmyChipType": "COLOR",
+                "optionTypeSeq": "1",
+                "optionTypeCode": "CM001",
+                "fmyChipCode": "#c0c0c0",
+                "fmyChipName": "Silver",
+                "fmyChipLocalName": "Silver",
+                "multiColorYN": "N",
+                "multiColorList": null
+              },
+              {
+                "fmyChipType": "DISHWASHER PLACE",
+                "optionTypeSeq": "1",
+                "optionTypeCode": "DA021",
+                "fmyChipCode": "14 Place Setting",
+                "fmyChipName": "14 Place Setting",
+                "fmyChipLocalName": "14 Place Setting",
+                "multiColorYN": "N",
+                "multiColorList": null
+              }
+            ],
+            "stock_status": "inStock",
+            "purchase_cta": null,
+            "origin_url": "https://www.samsung.com/sa_en/dishwashers/freestanding/dw70hm-24-dish-washer-energy-efficiency-class-c-flex-load-soft-railing-14-place-settings-silver-dw70h73ymfryl/",
+            "source_url": "https://searchapi.samsung.com/v6/front/b2c/product/finder/global?type=08090000&siteCode=sa_en&start=1&num=12&sort=newest&onlyFilterInfoYN=N&keySummaryYN=Y",
+            "observed_at": "2026-09-16T07:23:07.408Z",
+            "source_method": "samsung_public_finder"
+          }
+        }
+      }
+    },
+    {
+      "category": "microwave",
+      "model": "MS23K3515AK/ZA",
+      "source": "public_finder",
+      "sourceProduct": {
+        "name_ar": "MS23K3515AK Microwave 23L800W Output PowerChild Safety Phantom Black (MS23K3515AK/ZA)",
+        "name_en": "MS23K3515AK Microwave 23L800W Output PowerChild Safety Phantom Black (MS23K3515AK/ZA)",
+        "brand": "Samsung",
+        "model": "MS23K3515AK/ZA",
+        "sku": "MS23K3515AK/ZA",
+        "current_price": 549,
+        "original_price": 1049,
+        "availability": "in_stock",
+        "product_url": "https://www.samsung.com/sa_en/microwave-ovens/solo/mw3500k-solo-mwo-with-quick-defrost-23l-ms23k3515ak-za/",
+        "image_urls": [
+          "https://images.samsung.com/is/image/samsung/p6pim/sa_en/ms23k3515ak-za/gallery/sa-en-mw3500k-solo-mwo-with-quick-defrost-23l-ms23k3515ak-za-thumb-542697989"
+        ],
+        "category": "appliance",
+        "description_ar": null,
+        "description_en": null,
+        "specifications": {
+          "raw": {
+            "Oven Capacity": "23L (0.8 Cu.ft)",
+            "Outside (WxHxD)": "489 x 275 x 374 mm",
+            "Power Consumption (Microwave)": "1300 ",
+            "Product Type": "Solo"
+          },
+          "samsung_catalog": {
+            "type": "08110000",
+            "subcategory": "Solo",
+            "model_code": "MS23K3515AK/ZA",
+            "variant": [
+              {
+                "fmyChipType": "COLOR",
+                "optionTypeSeq": "1",
+                "optionTypeCode": "CM001",
+                "fmyChipCode": "#000000",
+                "fmyChipName": "Phantom Black",
+                "fmyChipLocalName": "Phantom Black",
+                "multiColorYN": "N",
+                "multiColorList": null
+              }
+            ],
+            "stock_status": "inStock",
+            "purchase_cta": null,
+            "origin_url": "https://www.samsung.com/sa_en/microwave-ovens/solo/mw3500k-solo-mwo-with-quick-defrost-23l-ms23k3515ak-za/",
+            "source_url": "https://searchapi.samsung.com/v6/front/b2c/product/finder/global?type=08110000&siteCode=sa_en&start=1&num=12&sort=newest&onlyFilterInfoYN=N&keySummaryYN=Y",
+            "observed_at": "2026-09-16T07:23:07.408Z",
+            "source_method": "samsung_public_finder"
+          }
+        }
+      }
+    },
+    {
+      "category": "cooker",
+      "model": "NE63C6517SG/ZA",
+      "source": "public_finder",
+      "sourceProduct": {
+        "name_ar": "NE63C6517SG Electric Range 6.3 Cu.Ft Premium Stainless Design Air Fry Fan Convection Wifi (NE63C6517SG/ZA)",
+        "name_en": "NE63C6517SG Electric Range 6.3 Cu.Ft Premium Stainless Design Air Fry Fan Convection Wifi (NE63C6517SG/ZA)",
+        "brand": "Samsung",
+        "model": "NE63C6517SG/ZA",
+        "sku": "NE63C6517SG/ZA",
+        "current_price": 4999,
+        "original_price": 8699,
+        "availability": "in_stock",
+        "product_url": "https://www.samsung.com/sa_en/cooking-appliances/ranges/ne5000a-ne63a6511sw-ne63c6517sg-za/",
+        "image_urls": [
+          "https://images.samsung.com/is/image/samsung/p6pim/sa_en/ne63c6517sg-za/gallery/sa-en-ne5000ane63a6511sw-ne63c6517sg-za-thumb-538958868"
+        ],
+        "category": "appliance",
+        "description_ar": null,
+        "description_en": null,
+        "specifications": {
+          "raw": {
+            "Number of Burner": "5 ",
+            "Installation Type": "FreeStanding"
+          },
+          "samsung_catalog": {
+            "type": "08110000",
+            "subcategory": "Ranges",
+            "model_code": "NE63C6517SG/ZA",
+            "variant": [],
+            "stock_status": "inStock",
+            "purchase_cta": null,
+            "origin_url": "https://www.samsung.com/sa_en/cooking-appliances/ranges/ne5000a-ne63a6511sw-ne63c6517sg-za/",
+            "source_url": "https://searchapi.samsung.com/v6/front/b2c/product/finder/global?type=08110000&siteCode=sa_en&start=1&num=12&sort=newest&onlyFilterInfoYN=N&keySummaryYN=Y",
+            "observed_at": "2026-09-16T07:23:07.408Z",
+            "source_method": "samsung_public_finder"
+          }
+        }
+      }
+    },
+    {
+      "category": "washing_machine",
+      "model": "WD90H25AHSYL",
+      "source": "public_finder",
+      "sourceProduct": {
+        "name_ar": "Bespoke AI Laundry Combo All-in-One 25kg + 20kg Dark Gray 25+20 kg (WD90H25AHSYL)",
+        "name_en": "Bespoke AI Laundry Combo All-in-One 25kg + 20kg Dark Gray 25+20 kg (WD90H25AHSYL)",
+        "brand": "Samsung",
+        "model": "WD90H25AHSYL",
+        "sku": "WD90H25AHSYL",
+        "current_price": 10499,
+        "original_price": 20999,
+        "availability": "in_stock",
+        "product_url": "https://www.samsung.com/sa_en/washers-and-dryers/washer-dryer-combo/wd90h27-25kg-dark-gray-wd90h25ahsyl/",
+        "image_urls": [
+          "https://images.samsung.com/is/image/samsung/p6pim/sa_en/wd90h25ahsyl/gallery/sa-en-wd90h27-wd90h25ahs-wd90h25ahsyl-thumb-554089942"
+        ],
+        "category": "appliance",
+        "description_ar": null,
+        "description_en": null,
+        "specifications": {
+          "raw": {
+            "Washing Capacity (kg)": "25 ",
+            "Bubble technology": "Yes",
+            "VRT": "VRT+",
+            "Net Dimension (WxHxD)(mm)": "686 x 1110 x 875 ",
+            "Net Weight (kg)": "148 "
+          },
+          "samsung_catalog": {
+            "type": "08010000",
+            "subcategory": "Washer Dryer Combo",
+            "model_code": "WD90H25AHSYL",
+            "variant": [
+              {
+                "fmyChipType": "COLOR",
+                "optionTypeSeq": "1",
+                "optionTypeCode": "CM001",
+                "fmyChipCode": "#5e6061",
+                "fmyChipName": "Dark Gray",
+                "fmyChipLocalName": "Dark Gray",
+                "multiColorYN": "N",
+                "multiColorList": null
+              },
+              {
+                "fmyChipType": "WASHER AND DRYERS CAPACITY",
+                "optionTypeSeq": "1",
+                "optionTypeCode": "DA019",
+                "fmyChipCode": "25+20 kg",
+                "fmyChipName": "25+20 kg",
+                "fmyChipLocalName": "25+20 kg",
+                "multiColorYN": "N",
+                "multiColorList": null
+              }
+            ],
+            "stock_status": "inStock",
+            "purchase_cta": null,
+            "origin_url": "https://www.samsung.com/sa_en/washers-and-dryers/washer-dryer-combo/wd90h27-25kg-dark-gray-wd90h25ahsyl/",
+            "source_url": "https://searchapi.samsung.com/v6/front/b2c/product/finder/global?type=08010000&siteCode=sa_en&start=1&num=12&sort=newest&onlyFilterInfoYN=N&keySummaryYN=Y",
+            "observed_at": "2026-09-16T07:23:07.408Z",
+            "source_method": "samsung_public_finder"
+          }
+        }
+      }
+    },
+    {
+      "category": "air_conditioner",
+      "model": "AR60F24EADW/ZA",
+      "source": "public_finder",
+      "sourceProduct": {
+        "name_ar": "Bespoke AI Motion Sensor WindFree Split AC with WiFi Heat & Cool Digital Inverter 20500 BTU 20,500 BTU/h (AR60F24EADW/ZA)",
+        "name_en": "Bespoke AI Motion Sensor WindFree Split AC with WiFi Heat & Cool Digital Inverter 20500 BTU 20,500 BTU/h (AR60F24EADW/ZA)",
+        "brand": "Samsung",
+        "model": "AR60F24EADW/ZA",
+        "sku": "AR60F24EADW/ZA",
+        "current_price": 4599,
+        "original_price": null,
+        "availability": "in_stock",
+        "product_url": "https://www.samsung.com/sa_en/air-conditioners/wall-mount/ar9500t-ar70f12caawneu-ai-fast-comfort-cooling-ai-fast-comfort-cooling-comfort-drying-for-cold-free-dehumidification-ar60f24eadw-za/",
+        "image_urls": [
+          "https://images.samsung.com/is/image/samsung/p6pim/sa_en/ar60f24eadw-za/gallery/sa-en-ar9500tar70f12caawneu-570165-ar60f24eadw-za-thumb-549852274"
+        ],
+        "category": "appliance",
+        "description_ar": null,
+        "description_en": null,
+        "specifications": {
+          "raw": {
+            "Capacity": "20500 Btu/hr",
+            "Capacity (Cooling, kW)": "6.00 kW",
+            "EER (Cooling, W/W)": "3.65 W/W",
+            "Net Dimension (Outdoor, WxHxD, mm*mm*mm)": "880*638*310 mm"
+          },
+          "samsung_catalog": {
+            "type": "08050000",
+            "subcategory": "Wall Mount",
+            "model_code": "AR60F24EADW/ZA",
+            "variant": [
+              {
+                "fmyChipType": "AIR CONDITIONER COOLING CAPACITY",
+                "optionTypeSeq": "1",
+                "optionTypeCode": "DA023",
+                "fmyChipCode": "20,500 BTU/h",
+                "fmyChipName": "20,500 BTU/h",
+                "fmyChipLocalName": "20,500 BTU/h",
+                "multiColorYN": "N",
+                "multiColorList": null
+              }
+            ],
+            "stock_status": "inStock",
+            "purchase_cta": null,
+            "origin_url": "https://www.samsung.com/sa_en/air-conditioners/wall-mount/ar9500t-ar70f12caawneu-ai-fast-comfort-cooling-ai-fast-comfort-cooling-comfort-drying-for-cold-free-dehumidification-ar60f24eadw-za/",
+            "source_url": "https://searchapi.samsung.com/v6/front/b2c/product/finder/global?type=08050000&siteCode=sa_en&start=1&num=12&sort=newest&onlyFilterInfoYN=N&keySummaryYN=Y",
+            "observed_at": "2026-09-16T07:23:07.408Z",
+            "source_method": "samsung_public_finder"
+          }
+        }
+      }
+    },
+    {
+      "category": "vacuum",
+      "model": "VS15A60AGR5/YL",
+      "source": "public_finder",
+      "sourceProduct": {
+        "name_ar": "Jet65 Stick VC with More Advanced Cleaning Performance and Digital Inverter Motor, 150W Black (VS15A60AGR5/YL)",
+        "name_en": "Jet65 Stick VC with More Advanced Cleaning Performance and Digital Inverter Motor, 150W Black (VS15A60AGR5/YL)",
+        "brand": "Samsung",
+        "model": "VS15A60AGR5/YL",
+        "sku": "VS15A60AGR5/YL",
+        "current_price": null,
+        "original_price": null,
+        "availability": "out_of_stock",
+        "product_url": "https://www.samsung.com/sa_en/vacuum-cleaners/stick/vs9000rl-stick-more-advance-cleaning-performance-digital-inverter-motor-jet-cyclone-silver-vs15a60agr5-yl/",
+        "image_urls": [
+          "https://images.samsung.com/is/image/samsung/p6pim/sa_en/vs15a60agr5-yl/gallery/sa-en-jet65-vs9000rl-vs15a60agr5-yl-thumb-538960245"
+        ],
+        "category": "vacuum",
+        "description_ar": null,
+        "description_en": null,
+        "specifications": {
+          "raw": {
+            "Performance": "410 W",
+            "Body Color": "BLACK CHROMETAL",
+            "Point Color": "Teal Silver"
+          },
+          "samsung_catalog": {
+            "type": "08070000",
+            "subcategory": "Stick",
+            "model_code": "VS15A60AGR5/YL",
+            "variant": [
+              {
+                "fmyChipType": "COLOR",
+                "optionTypeSeq": "1",
+                "optionTypeCode": "CM001",
+                "fmyChipCode": "#000000",
+                "fmyChipName": "Black",
+                "fmyChipLocalName": "Black",
+                "multiColorYN": "N",
+                "multiColorList": null
+              }
+            ],
+            "stock_status": null,
+            "purchase_cta": null,
+            "origin_url": "https://www.samsung.com/sa_en/vacuum-cleaners/stick/vs9000rl-stick-more-advance-cleaning-performance-digital-inverter-motor-jet-cyclone-silver-vs15a60agr5-yl/",
+            "source_url": "https://searchapi.samsung.com/v6/front/b2c/product/finder/global?type=08070000&siteCode=sa_en&start=1&num=12&sort=newest&onlyFilterInfoYN=N&keySummaryYN=Y",
+            "observed_at": "2026-09-16T07:23:07.408Z",
+            "source_method": "samsung_public_finder"
+          }
+        }
+      }
+    },
+    {
+      "category": "monitor",
+      "model": "LS27HG402EMXUE",
+      "source": "public_finder",
+      "sourceProduct": {
+        "name_ar": "27\" Odyssey G4 G40H FHD Gaming Monitor 27\" (LS27HG402EMXUE)",
+        "name_en": "27\" Odyssey G4 G40H FHD Gaming Monitor 27\" (LS27HG402EMXUE)",
+        "brand": "Samsung",
+        "model": "LS27HG402EMXUE",
+        "sku": "LS27HG402EMXUE",
+        "current_price": 1199,
+        "original_price": null,
+        "availability": "in_stock",
+        "product_url": "https://www.samsung.com/sa_en/monitors/gaming/odyssey-g4-g40h-27-inch-300hz-fhd-ls27hg402emxue/",
+        "image_urls": [
+          "https://images.samsung.com/is/image/samsung/p6pim/sa_en/ls27hg402emxue/gallery/sa-en-odyssey-g4-g40h-ls27hg402emxue-thumb-554354609"
+        ],
+        "category": "monitor",
+        "description_ar": null,
+        "description_en": null,
+        "specifications": {
+          "raw": {
+            "Aspect Ratio": "16:9",
+            "Brightness (Typical)": "300 cd/㎡",
+            "Contrast Ratio Static": "1,000:1",
+            "Resolution": "FHD (1920 x 1080)",
+            "Response Time": "1 (GTG)"
+          },
+          "samsung_catalog": {
+            "type": "07010000",
+            "subcategory": "Gaming",
+            "model_code": "LS27HG402EMXUE",
+            "variant": [
+              {
+                "fmyChipType": "MONITOR SCREEN SIZE",
+                "optionTypeSeq": "1",
+                "optionTypeCode": "VD018",
+                "fmyChipCode": "27\"",
+                "fmyChipName": "27\"",
+                "fmyChipLocalName": "27\"",
+                "multiColorYN": "N",
+                "multiColorList": null
+              }
+            ],
+            "stock_status": "inStock",
+            "purchase_cta": null,
+            "origin_url": "https://www.samsung.com/sa_en/monitors/gaming/odyssey-g4-g40h-27-inch-300hz-fhd-ls27hg402emxue/",
+            "source_url": "https://searchapi.samsung.com/v6/front/b2c/product/finder/global?type=07010000&siteCode=sa_en&start=1&num=12&sort=newest&onlyFilterInfoYN=N&keySummaryYN=Y",
+            "observed_at": "2026-09-16T07:23:07.408Z",
+            "source_method": "samsung_public_finder"
+          }
+        }
+      }
+    },
+    {
+      "category": "hood",
+      "model": "NK24C5070US/ZA",
+      "source": "sitemap_pdp",
+      "sourceProduct": {
+        "name_ar": "شفاط موقد جداري من ستانلس ستيل 60 سم يمتاز بالتحكم عبر اللمس وطبقة زجاجية سوداء Hood Za (NK24C5070US/ZA)",
+        "name_en": "شفاط موقد جداري من ستانلس ستيل 60 سم يمتاز بالتحكم عبر اللمس وطبقة زجاجية سوداء Hood Za (NK24C5070US/ZA)",
+        "brand": "Samsung",
+        "model": "NK24C5070US/ZA",
+        "sku": "NK24C5070US/ZA",
+        "original_price": null,
+        "product_url": "https://www.samsung.com/sa/cooking-appliances/hoods/nk7000mm-hood-nk24c5070us-za/",
+        "image_urls": [],
+        "specifications": {
+          "raw": {
+            "السعة القصوى للاستخراج (م³/ساعة)": "‎531(㎥/hr)‎",
+            "الأوزان/الأبعاد": "‎600 x (620 ~ 1145) x 455mm‎",
+            "صافي الوزن (كجم)": "‎13.4kg‎",
+            "نوع التركيب": "حامل جداري",
+            "لون": "الزجاج الأسود",
+            "نوع التحكم": "اللمس",
+            "عرض الشفاط (سم)": "‎60cm‎",
+            "قُطر مجرى الهواء (مم)": "‎150mm‎",
+            "لون الشاشة": "أحمر",
+            "عدد المحركات/المراوح": "1/1 EA",
+            "مستوى سرعة الشفط": "3 + تعزيز",
+            "معدل الشفط المعزز (متر مكعب/الساعة)": "‎689(㎥/hr)‎",
+            "قوة الصوت (الوضع المعزز) (ديسيبل (A))": "‎75 ديسيبل (A)‎",
+            "إضاءة الشفاط (قطعة)": "2 EA",
+            "نوع فلتر الشفاط": "الألومنيوم",
+            "قوة الصوت (الحد الأقصى)": "‎70 ديسيبل (A)‎",
+            "مصدر الطاقة": "‎220-240 فولت / 60 هرتز‎",
+            "القدرة الإجمالية (واط)": "‎265 واط‎",
+            "الأبعاد الصافية (العرض × الارتفاع × العمق)": "‎600 x (620 ~ 1145) x 455mm‎",
+            "أبعاد العبوة (العرض × الارتفاع × العمق)(مم)": "‎645 x 374 x 576mm‎",
+            "كمية التحميل (20/40 قدمًا)": "180 / 384 / 384",
+            "الوزن (الإجمالي)": "‎15.9kg‎",
+            "فلتر الفحم": "نعم",
+            "طقم التمديد": "لا",
+            "طقم إعادة التدوير": "نعم",
+            "WiFi مدمج": "لا",
+            "دعم تطبيق SmartThings": "لا"
+          },
+          "source": "samsung_ksa_pdp_spec_table",
+          "source_url": "https://www.samsung.com/sa/cooking-appliances/hoods/nk7000mm-hood-nk24c5070us-za/",
+          "observed_at": "2026-09-16T08:13:01.799Z"
+        },
+        "category": "accessories",
+        "description_ar": null,
+        "description_en": null,
+        "merchant_rating": null,
+        "merchant_review_count": null,
+        "current_price": null,
+        "availability": "out_of_stock"
+      }
+    },
+    {
+      "category": "mobile",
+      "model": "SM-F976BZVPMEA",
+      "source": "public_finder",
+      "sourceProduct": {
+        "name_ar": "Galaxy Z Fold8 Ultra Violet Shadow 1 TB (SM-F976BZVPMEA)",
+        "name_en": "Galaxy Z Fold8 Ultra Violet Shadow 1 TB (SM-F976BZVPMEA)",
+        "brand": "Samsung",
+        "model": "SM-F976BZVPMEA",
+        "sku": "SM-F976BZVPMEA",
+        "current_price": 10599,
+        "original_price": null,
+        "availability": "limited_stock",
+        "product_url": "https://www.samsung.com/sa_en/smartphones/galaxy-z-fold8-ultra/buy/?modelCode=SM-F976BZVPMEA",
+        "image_urls": [
+          "https://images.samsung.com/is/image/samsung/p6pim/sa_en/f2607/gallery/sa-en-galaxy-z-fold8-ultra-f976-sm-f976bzvpmea-thumb-553720555"
+        ],
+        "category": "smartphone",
+        "description_ar": null,
+        "description_en": null,
+        "specifications": {
+          "raw": {
+            "Weight (g)": "215",
+            "CPU Speed": "4.74GHz, 3.6GHz"
+          },
+          "samsung_catalog": {
+            "type": "01010000",
+            "subcategory": "Galaxy Z",
+            "model_code": "SM-F976BZVPMEA",
+            "variant": [
+              {
+                "fmyChipType": "COLOR",
+                "optionTypeSeq": "1",
+                "optionTypeCode": "CM001",
+                "fmyChipCode": "#4f4f5c",
+                "fmyChipName": "Violet Shadow",
+                "fmyChipLocalName": "Violet Shadow",
+                "multiColorYN": "N",
+                "multiColorList": null
+              },
+              {
+                "fmyChipType": "MOBILE MEMORY",
+                "optionTypeSeq": "1",
+                "optionTypeCode": "IM003",
+                "fmyChipCode": "1 TB",
+                "fmyChipName": "1 TB",
+                "fmyChipLocalName": "1 TB",
+                "multiColorYN": "N",
+                "multiColorList": null
+              }
+            ],
+            "stock_status": "lowStock",
+            "purchase_cta": "Buy",
+            "origin_url": "https://www.samsung.com/sa_en/smartphones/galaxy-z/galaxy-z-fold8-ultra-violet-shadow-1tb-sm-f976bzvpmea/",
+            "source_url": "https://searchapi.samsung.com/v6/front/b2c/product/finder/global?type=01010000&siteCode=sa_en&start=1&num=12&sort=newest&onlyFilterInfoYN=N&keySummaryYN=Y",
+            "observed_at": "2026-09-16T07:23:07.408Z",
+            "source_method": "samsung_public_finder"
+          }
+        }
+      }
+    },
+    {
+      "category": "accessories",
+      "model": "EP-T6010NBEGGB",
+      "source": "public_finder",
+      "sourceProduct": {
+        "name_ar": "60W Power Adapter (Black) Black (EP-T6010NBEGGB)",
+        "name_en": "60W Power Adapter (Black) Black (EP-T6010NBEGGB)",
+        "brand": "Samsung",
+        "model": "EP-T6010NBEGGB",
+        "sku": "EP-T6010NBEGGB",
+        "current_price": 219,
+        "original_price": null,
+        "availability": "in_stock",
+        "product_url": "https://www.samsung.com/sa_en/mobile-accessories/60w-power-adapter-black-ep-t6010nbeggb/",
+        "image_urls": [
+          "https://images.samsung.com/is/image/samsung/p6pim/sa_en/ep-t6010nbeggb/gallery/sa-en-60w-power-adapter-ep-t6010-black-ep-t6010nbeggb-thumb-553375267"
+        ],
+        "category": "accessories",
+        "description_ar": null,
+        "description_en": null,
+        "specifications": {
+          "raw": {},
+          "samsung_catalog": {
+            "type": "01050000",
+            "subcategory": "Power",
+            "model_code": "EP-T6010NBEGGB",
+            "variant": [
+              {
+                "fmyChipType": "COLOR",
+                "optionTypeSeq": "1",
+                "optionTypeCode": "CM001",
+                "fmyChipCode": "#000000",
+                "fmyChipName": "Black",
+                "fmyChipLocalName": "Black",
+                "multiColorYN": "N",
+                "multiColorList": null
+              }
+            ],
+            "stock_status": "inStock",
+            "purchase_cta": null,
+            "origin_url": "https://www.samsung.com/sa_en/mobile-accessories/60w-power-adapter-black-ep-t6010nbeggb/",
+            "source_url": "https://searchapi.samsung.com/v6/front/b2c/product/finder/global?type=01050000&siteCode=sa_en&start=1&num=12&sort=newest&onlyFilterInfoYN=N&keySummaryYN=Y",
+            "observed_at": "2026-09-16T07:23:07.408Z",
+            "source_method": "samsung_public_finder"
+          }
+        }
+      }
+    },
+    {
+      "category": "accessories",
+      "model": "EF-PS721CLEGWW",
+      "source": "public_finder",
+      "sourceProduct": {
+        "name_ar": "Galaxy S24 FE Silicone Case Blue (EF-PS721CLEGWW)",
+        "name_en": "Galaxy S24 FE Silicone Case Blue (EF-PS721CLEGWW)",
+        "brand": "Samsung",
+        "model": "EF-PS721CLEGWW",
+        "sku": "EF-PS721CLEGWW",
+        "current_price": 50,
+        "original_price": 99,
+        "availability": "limited_stock",
+        "product_url": "https://www.samsung.com/sa_en/mobile-accessories/galaxy-s24-fe-silicone-case-blue-ef-ps721clegww/",
+        "image_urls": [
+          "https://images.samsung.com/is/image/samsung/p6pim/sa_en/ef-ps721clegww/gallery/sa-en-galaxy-s24-fe-silicone-case-ps721-528234-ef-ps721clegww-thumb-544207826"
+        ],
+        "category": "accessories",
+        "description_ar": null,
+        "description_en": null,
+        "specifications": {
+          "raw": {},
+          "samsung_catalog": {
+            "type": "01050000",
+            "subcategory": "Cases",
+            "model_code": "EF-PS721CLEGWW",
+            "variant": [
+              {
+                "fmyChipType": "COLOR",
+                "optionTypeSeq": "1",
+                "optionTypeCode": "CM001",
+                "fmyChipCode": "#0000ff",
+                "fmyChipName": "Blue",
+                "fmyChipLocalName": "Blue",
+                "multiColorYN": "N",
+                "multiColorList": null
+              }
+            ],
+            "stock_status": "lowStock",
+            "purchase_cta": null,
+            "origin_url": "https://www.samsung.com/sa_en/mobile-accessories/galaxy-s24-fe-silicone-case-blue-ef-ps721clegww/",
+            "source_url": "https://searchapi.samsung.com/v6/front/b2c/product/finder/global?type=01050000&siteCode=sa_en&start=1&num=12&sort=newest&onlyFilterInfoYN=N&keySummaryYN=Y",
+            "observed_at": "2026-09-16T07:23:07.408Z",
+            "source_method": "samsung_public_finder"
+          }
+        }
+      }
+    }
+  ]
+}

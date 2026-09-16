@@ -1,35 +1,9 @@
-// scripts/tps-core/samsung-delta-watch.ts
-// ─────────────────────────────────────────────────────────────────────────────
-// Samsung KSA New-Model Delta Watch (2026-09-14, maintenance-of-closure mission).
-//
-// The Samsung Saudi official catalog is CLOSED (927 raw sitemap candidates -> 404 core +
-// 5 high-value accessories = 409 current-valid identities, ADR-354..361). This script does
-// NOT re-run that classification. It answers one narrow question on a schedule: has
-// Samsung's sitemap changed since the last check, and if so, is the change a genuinely new
-// product/variant or just navigation noise the closed mission already knows how to
-// recognize?
-//
-// SET-DIFF, NOT LASTMOD (Section 8 of the mission brief). Audited live: some real Samsung
-// KSA product URLs (the S Pen accessory line) carry NO <lastmod> at all, while others do —
-// inconsistent presence disqualifies lastmod as a correctness gate. This script diffs the
-// FULL current sitemap URL set against `samsung_official_url_baseline` (durable memory of
-// every URL ever classified, seeded once from the closed mission's own evidence) — cheap
-// (a handful of sitemap.xml fetches), and correct regardless of whether lastmod is trustworthy.
-//
-// MODEL-CODE-FIRST DEDUPLICATION (Section 5). A new URL is never assumed to be a new
-// product. Every genuinely-new URL is validated through the real scraper + the full
-// CATEGORY_DEFS registry sweep (the exact same detect()/normalize()/buildIdentityKey()
-// chain the closed catalog itself was built from) BEFORE anything is written — if the
-// resolved identity_key already has a canonical, this is NEW_URL_SAME_PRODUCT (an alias),
-// never a duplicate canonical.
-//
-// ONLY THE DELTA IS PROCESSED (Section 6). New/changed URLs are ingested via the same
-// IngestionService.ingestBatch() the hourly chain uses, then canonicalized via the
-// standard, unmodified `normalize-incremental.ts --stores 6` entry point — its own forward
-// cursor guarantees existing, already-processed raw_observations are never re-touched.
-//
-// Usage:
-//   npx tsx scripts/tps-core/samsung-delta-watch.ts [--dry-run]
+// Samsung Saudi catalog worker: full public finder + bilingual sitemap delta.
+// Full manufacturer codes identify physical variants; URLs identify source aliases.
+// Every run refreshes finder price/stock and known PDP-only models, appends real
+// observations through IngestionService, normalizes Samsung, then projects.
+// Missing sitemap URLs are lifecycle evidence, never automatic product deletion.
+// --dry-run performs source reads/classification without database mutations.
 import { config } from "dotenv";
 import { resolve } from "path";
 config({ path: resolve(process.cwd(), ".env.local") });
@@ -53,9 +27,11 @@ async function main() {
   const { CATEGORY_DEFS } = await import("./category-registry");
   const { adaptRow } = await import("./progressive-engine");
   const {
-    SamsungKsaScraper, isSamsungKsaProductUrl, HIGH_VALUE_ACCESSORY_SLUG, KNOWN_CONSUMER_CATEGORY_PATH,
+    SamsungKsaScraper, isSamsungKsaProductUrl, KNOWN_CONSUMER_CATEGORY_PATH,
   } = await import("../../src/lib/scraping/stores/samsung-ksa-scraper");
   const { IngestionService } = await import("../../src/lib/scraping/services/ingestion-service");
+  const { fetchSamsungCatalog, samsungSaudiUrl, samsungCatalogProduct } = await import("../../src/lib/scraping/stores/samsung-catalog");
+  const { samsungManufacturerIdentity, samsungCatalogExclusion } = await import("./samsung-manufacturer-identity");
 
   const lockClient = new (Client as any)({ connectionString: toPoolerDbUrl(process.env.SUPABASE_DB_URL || ""), ssl: { rejectUnauthorized: false } });
   await lockClient.connect();
@@ -75,6 +51,7 @@ async function main() {
 
   const runStartedAt = new Date();
   let runId: string | null = null;
+  let runNotes: Record<string, unknown> = {};
   if (!DRY) {
     const { rows } = await pg.query(
       "insert into samsung_delta_watch_runs (started_at, status) values ($1, 'running') returning run_id",
@@ -101,25 +78,30 @@ async function main() {
     // missed for this reason). Included here with the SAME shape + known-category filters
     // as the other 3 — not a broad ingestion source: only 2 of 482 URLs currently survive
     // both filters, and both are validated (not trusted) before anything is written.
-    const SUB_SITEMAPS = [
-      "https://www.samsung.com/sa_en/im-sitemap.xml",
-      "https://www.samsung.com/sa_en/da-sitemap.xml",
-      "https://www.samsung.com/sa_en/vd-sitemap.xml",
-      "https://www.samsung.com/sa_en/assorted-sitemap.xml",
-    ];
+    const SUB_SITEMAPS = ['sa_en', 'sa'].flatMap(site => ['im', 'da', 'vd', 'assorted']
+      .map(group => `https://www.samsung.com/${site}/${group}-sitemap.xml`));
     const currentSet = new Set<string>();
     for (const smUrl of SUB_SITEMAPS) {
-      const res = await fetch(smUrl, { headers: { "User-Agent": "Mozilla/5.0", Accept: "application/xml, text/xml, */*" } });
-      if (!res.ok) { console.warn(`[sitemap] WARN: ${smUrl} -> HTTP ${res.status}`); continue; }
+      const res = await fetch(smUrl, { signal: AbortSignal.timeout(30000), headers: { "User-Agent": "Mozilla/5.0", Accept: "application/xml, text/xml, */*" } });
+      // An incomplete source set must never demote known products as missing.
+      if (!res.ok) throw new Error(`[sitemap] ${smUrl} -> HTTP ${res.status}`);
       const xml = await res.text();
       const locs = (xml.match(/<loc>([^<]+)<\/loc>/g) || []).map((m) => m.replace(/<\/?loc>/g, "").replace(/["\\\s]+$/, "").trim());
       for (const loc of locs) {
-        const isLowValueAccessory = /\/mobile-accessories\//i.test(loc) && !HIGH_VALUE_ACCESSORY_SLUG.test(loc);
-        if (isSamsungKsaProductUrl(loc) && KNOWN_CONSUMER_CATEGORY_PATH.test(loc) && !isLowValueAccessory) currentSet.add(loc);
+        const consumer = KNOWN_CONSUMER_CATEGORY_PATH.test(loc)
+          || /\/(tv-accessories|home-appliance-accessories|display-accessories|projector-accessories|projectors)\//.test(loc);
+        if (isSamsungKsaProductUrl(loc) && consumer) currentSet.add(loc);
       }
     }
     stats.sitemap_urls_seen = currentSet.size;
-    console.log(`[sitemap] current official set: ${currentSet.size} URLs`);
+    const catalog = await fetchSamsungCatalog();
+    const catalogModels = new Map<string, typeof catalog[number]>();
+    for (const item of catalog) if (!catalogModels.has(item.model.modelCode)) catalogModels.set(item.model.modelCode, item);
+    for (const item of catalogModels.values()) {
+      const url = samsungSaudiUrl(item.model.originPdpUrl || item.model.pdpUrl);
+      if (url) currentSet.add(url);
+    }
+    console.log(`[sources] sitemap=${stats.sitemap_urls_seen}, finder_models=${catalogModels.size}, union_urls=${currentSet.size}`);
 
     // ── 2. Load the KNOWN baseline ──────────────────────────────────────────────────
     const { rows: knownRows } = await pg.query("select official_url, model_code, identity_key, category, classification, lifecycle_state, consecutive_misses from samsung_official_url_baseline");
@@ -137,29 +119,86 @@ async function main() {
     const ingestion = new IngestionService();
     const { data: storeRow } = await sb.from("stores").select("id").eq("slug", "samsung_ksa").single();
     const storeId = Number((storeRow as { id: number | string } | null)?.id);
+    if (storeId !== 6) throw new Error('Unexpected Samsung store identity');
+    const catalogProducts = new Map<string, ReturnType<typeof samsungCatalogProduct>>();
+    for (const item of catalogModels.values()) {
+      // Hard bundles are multiple physical products, not an interchangeable SKU
+      // for either constituent. Retain their source evidence, do not offer-match them.
+      if (samsungCatalogExclusion(item.model.modelCode)) continue;
+      const product = samsungCatalogProduct(item);
+      const sourceUrl = samsungSaudiUrl(item.model.originPdpUrl || item.model.pdpUrl)!;
+      if (catalogProducts.has(sourceUrl)) throw new Error('Multiple Samsung models share one variant URL');
+      catalogProducts.set(sourceUrl, product);
+    }
+    // Complete price/availability refresh, independent of URL newness. A known
+    // model can change stock or price without changing any sitemap entry.
+    let finderIngested = 0;
+    if (!DRY) {
+      finderIngested = await ingestion.ingestBatch('samsung_ksa', [...catalogProducts.values()], storeId, null);
+      if (finderIngested !== catalogProducts.size) throw new Error(`Incomplete finder ingestion ${finderIngested}/${catalogProducts.size}`);
+    }
+    const knownModels = new Set([...known.values()].map(row => row.model_code?.toUpperCase()).filter(Boolean));
+    const { rows: legacyModels } = await pg.query('select distinct p.model from products p join product_stores ps on ps.product_id=p.id where ps.store_id=6');
+    for (const row of legacyModels) if (row.model) knownModels.add(String(row.model).toUpperCase());
 
     const discoveries: { url: string; identity_key: string; category: string; classification: string; discoveredAt: string }[] = [];
     const newBaselineRows: BaselineRow[] = [];
+    const finderForUrl = (url: string) => {
+      const direct = catalogProducts.get(url);
+      if (direct) return direct;
+      const terminal = new URL(url).pathname.replace(/\/buy\/$/, '/').split('/').filter(Boolean).pop()!
+        .toUpperCase().replace(/[^A-Z0-9]/g, '');
+      const matches = [...catalogProducts.values()].filter(product => terminal.endsWith(product.sku!.replace(/[^A-Z0-9]/g, '')));
+      // Locale and marketing aliases can corroborate an already observed SKU,
+      // but cannot supply another price observation or a fabricated fresh PDP.
+      return matches.length === 1 && samsungManufacturerIdentity(storeId, { ...matches[0], product_url: url })
+        ? matches[0] : null;
+    };
+    // A previously valid PDP can remain purchasable after disappearing from both
+    // navigation and the finder (verified EO-IC100BBEGWW). Also retry known
+    // sitemap candidates: a previous parser miss is not a permanent exclusion.
+    const refreshOnly = [...known.values()].filter(row => !samsungCatalogExclusion(row.model_code || '')
+      && (currentSet.has(row.official_url) || row.classification === 'CURRENT_VALID_PRODUCT')
+      && !finderForUrl(row.official_url)).map(row => row.official_url);
+    const refreshOnlySet = new Set(refreshOnly);
+    const observedSupplementModels = new Set<string>();
 
-    for (const url of deltaUrls) {
+    for (const url of [...deltaUrls, ...refreshOnly]) {
       const validatedAt = new Date().toISOString();
       try {
         // Validation (the live PDP fetch + classification) always runs, even in --dry-run
         // — it is read-only. Only the WRITES below (ingestBatch, baseline upsert,
         // canonicalization) are gated behind !DRY, so a dry run genuinely proves what
         // classification a candidate would receive, not just that it was "seen".
-        const scraped = await scraper.updateProductPrice(url);
+        const finderProduct = finderForUrl(url);
+        const scraped = finderProduct ?? await scraper.updateProductPrice(url);
         if (!scraped) {
           stats.invalid++;
-          newBaselineRows.push({ official_url: url, model_code: null, identity_key: null, category: null, classification: "INVALID", lifecycle_state: "CURRENT", consecutive_misses: 0 });
+          const prior = known.get(url);
+          newBaselineRows.push({ official_url: url, model_code: prior?.model_code ?? null, identity_key: prior?.identity_key ?? null,
+            category: prior?.category ?? null, classification: "INVALID", lifecycle_state: "CURRENT", consecutive_misses: 0 });
           console.log(`[delta] INVALID (no identity) — ${url.slice(-60)}`);
+          continue;
+        }
+        const excluded = samsungCatalogExclusion(scraped.sku || '');
+        if (excluded) {
+          stats.invalid++;
+          newBaselineRows.push({ official_url: url, model_code: scraped.sku, identity_key: null,
+            category: scraped.category, classification: excluded, lifecycle_state: 'CURRENT', consecutive_misses: 0 });
           continue;
         }
         const adapted = adaptRow(scraped as any, null);
         let matchedCategory: string | null = null;
         let identityKey: string | null = null;
         let status: string | null = null;
+        const manufacturer = samsungManufacturerIdentity(storeId, scraped as any);
+        if (manufacturer) {
+          matchedCategory = manufacturer.category;
+          identityKey = manufacturer.key;
+          status = 'valid';
+        }
         for (const [catKey, def] of Object.entries(CATEGORY_DEFS as Record<string, any>)) {
+          if (manufacturer) break;
           if (!def.plugin.detect(adapted.nameAr, adapted.nameEn)) continue;
           const norm = def.normalize(adapted.nameAr, adapted.nameEn, adapted.brand, scraped);
           const idr = def.plugin.buildIdentityKey(adapted.brand, norm.payload, { model_number: norm.model_number });
@@ -172,18 +211,23 @@ async function main() {
           console.log(`[delta] UNKNOWN (no category claimed it) — ${url.slice(-60)}`);
           continue;
         }
+        currentSet.add(url); // successful current PDP evidence, even without a sitemap entry
 
         // MODEL-CODE-FIRST DEDUPLICATION (Section 5): does this identity already exist?
-        const { rows: existingCanon } = await pg.query("select id from canonical_products where tps_identity_key=$1", [identityKey]);
-        const classification = existingCanon.length ? "NEW_URL_SAME_PRODUCT" : "NEW_PRODUCT";
-        if (classification === "NEW_URL_SAME_PRODUCT") stats.new_url_same_product++; else stats.new_products++;
+        const model = scraped.sku?.toUpperCase();
+        const classification = refreshOnlySet.has(url) ? 'UPDATED_EXISTING'
+          : model && knownModels.has(model) ? "NEW_URL_SAME_PRODUCT" : "NEW_PRODUCT";
+        if (classification === 'UPDATED_EXISTING') stats.updated_existing++;
+        else if (classification === "NEW_URL_SAME_PRODUCT") stats.new_url_same_product++; else stats.new_products++;
+        if (model) knownModels.add(model);
 
-        newBaselineRows.push({ official_url: url, model_code: identityKey.includes("MODEL:") ? identityKey.split("MODEL:")[1] : null, identity_key: identityKey, category: matchedCategory, classification: "CURRENT_VALID_PRODUCT", lifecycle_state: "CURRENT", consecutive_misses: 0 });
+        newBaselineRows.push({ official_url: url, model_code: scraped.sku || scraped.model || null, identity_key: identityKey, category: matchedCategory, classification: "CURRENT_VALID_PRODUCT", lifecycle_state: "CURRENT", consecutive_misses: 0 });
 
         if (classification === "NEW_PRODUCT") {
           console.log(`${DRY ? "[dry] would be " : ""}[delta] NEW_PRODUCT — ${matchedCategory} ${identityKey} — ${url.slice(-60)}`);
           if (!DRY) {
-            await ingestion.ingestBatch("samsung_ksa", [scraped], storeId, null);
+            if (!finderProduct && !observedSupplementModels.has(model!) && await ingestion.ingestBatch("samsung_ksa", [scraped], storeId, null) !== 1) throw new Error('PDP ingestion failed');
+            if (model) observedSupplementModels.add(model);
             discoveries.push({ url, identity_key: identityKey, category: matchedCategory!, classification, discoveredAt: validatedAt });
           }
         } else {
@@ -191,19 +235,28 @@ async function main() {
           // (model-code-first dedup, Section 5). Still worth a raw_observations row (real
           // evidence, append-only) once live, but never a new canonical.
           console.log(`${DRY ? "[dry] would be " : ""}[delta] NEW_URL_SAME_PRODUCT (alias of ${identityKey}) — ${url.slice(-60)}`);
-          if (!DRY) await ingestion.ingestBatch("samsung_ksa", [scraped], storeId, null);
+          if (!DRY && !finderProduct && !observedSupplementModels.has(model!) && await ingestion.ingestBatch("samsung_ksa", [scraped], storeId, null) !== 1) throw new Error('Alias ingestion failed');
+          if (model) observedSupplementModels.add(model);
         }
       } catch (e) {
         stats.failed++;
         console.warn(`[delta] FAILED — ${e instanceof Error ? e.message : e} — ${url.slice(-60)}`);
       }
-      await new Promise((r) => setTimeout(r, 400)); // source politeness (Section 15)
+      if (!finderForUrl(url)) await new Promise((r) => setTimeout(r, 400));
     }
 
     // ── 5. Persist new/updated baseline rows ───────────────────────────────────────
+    const deltaUrlSet = new Set(deltaUrls);
+    for (const [url, product] of catalogProducts) {
+      if (deltaUrlSet.has(url)) continue;
+      const identity = samsungManufacturerIdentity(storeId, product as any);
+      if (identity) newBaselineRows.push({ official_url: url, model_code: identity.model,
+        identity_key: identity.key, category: identity.category, classification: 'CURRENT_VALID_PRODUCT',
+        lifecycle_state: 'CURRENT', consecutive_misses: 0 });
+    }
     if (!DRY && newBaselineRows.length) {
       const { error } = await sb.from("samsung_official_url_baseline").upsert(
-        newBaselineRows.map((r) => ({ ...r, first_seen_at: validatedAtNow(), last_seen_at: validatedAtNow(), last_validated_at: validatedAtNow() })),
+        newBaselineRows.map((r) => ({ ...r, last_seen_at: validatedAtNow(), last_validated_at: validatedAtNow() })),
         { onConflict: "official_url" }
       );
       if (error) throw new Error(`baseline upsert failed: ${error.message}`);
@@ -215,7 +268,7 @@ async function main() {
       for (let i = 0; i < stillPresent.length; i += 500) {
         const chunk = stillPresent.slice(i, i + 500);
         await pg.query(
-          "update samsung_official_url_baseline set last_seen_at=now(), consecutive_misses=0 where official_url = any($1::text[])",
+          "update samsung_official_url_baseline set last_seen_at=now(), consecutive_misses=0, lifecycle_state='CURRENT' where official_url = any($1::text[])",
           [chunk]
         );
       }
@@ -242,24 +295,53 @@ async function main() {
     // ── 8. If any NEW_PRODUCT this run, canonicalize via the standard, unmodified entry point ──
     let canonicalAt: string | null = null;
     let userVisibleAt: string | null = null;
-    if (!DRY && discoveries.length) {
+    let realizationHealth: Record<string, unknown> | null = null;
+    let storefrontHealth: Record<string, unknown> | null = null;
+    if (!DRY && (discoveries.length || finderIngested)) {
       console.log(`[canonicalize] ${discoveries.length} new product(s) — running the standard normalize-incremental (Samsung-scoped, forward-cursor, existing products untouched)...`);
       const { execSync } = await import("child_process");
-      execSync("npx tsx scripts/tps-core/normalize-incremental.ts --stores 6 --batches 20 --limit 500", { stdio: "inherit" });
+      execSync("npx tsx scripts/tps-core/normalize-incremental.ts --stores 6 --batches 20 --limit 500 --require-lane", { stdio: "inherit" });
       canonicalAt = new Date().toISOString();
 
-      // Verify user-visibility end-to-end for each discovery (not inferred).
+      // Build before checking reachability. Active identity alone is not projection.
+      if (!(await pg.query('select pg_try_advisory_lock($1) ok', [8148148])).rows[0].ok) {
+        throw new Error('Projection deferred: normalization lane occupied');
+      }
+      execSync("npx tsx scripts/build-tps-projection.ts", { stdio: "inherit" });
+      const { syncSamsungStorefront } = await import('./sync-samsung-storefront');
+      storefrontHealth = (await syncSamsungStorefront(pg, true)).summary;
+      console.log('[storefront-health]', JSON.stringify(storefrontHealth));
       for (const d of discoveries) {
-        const { rows: cp } = await pg.query("select id, is_active from canonical_products where tps_identity_key=$1", [d.identity_key]);
-        if (cp.length && cp[0].is_active) {
+        const { rows: cp } = await pg.query(`select c.id from canonical_products c
+          join tps_product_projection p on p.canonical_id=c.id
+          join tps_current_offers o on o.identity_key=c.tps_identity_key and o.store_id=6
+          where c.tps_identity_key=$1 and c.is_active and o.status='valid' and o.price>0
+          and coalesce(o.payload->>'_availability','') <> 'out_of_stock'`, [d.identity_key]);
+        if (cp.length) {
           stats.user_visible_completed++;
         } else {
           console.warn(`[discover] WARNING: ${d.identity_key} did not canonicalize/activate this run — needs investigation, not silently retried forever.`);
         }
       }
       // Rebuild the projection so new canonicals reach the customer surface.
-      execSync("npx tsx scripts/build-tps-projection.ts", { stdio: "inherit" });
       userVisibleAt = new Date().toISOString();
+      const models = [...new Set([...catalogProducts.values()].map(p => p.sku).concat(newBaselineRows
+        .filter(row => row.classification === 'CURRENT_VALID_PRODUCT').map(row => row.model_code)).filter(Boolean))];
+      const { rows: health } = await pg.query(`with expected as (select unnest($1::text[]) model)
+        select count(distinct e.model)::int expected_models,
+          count(distinct e.model) filter(where c.id is null)::int canonical_unresolved,
+          count(distinct e.model) filter(where c.id is not null and not c.is_active)::int canonical_inactive,
+          count(distinct e.model) filter(where c.id is not null and p.canonical_id is null)::int projection_unresolved,
+          count(distinct e.model) filter(where o.identity_key is null)::int current_observation_unresolved,
+          count(distinct e.model) filter(where o.price>0)::int priced_models,
+          count(distinct e.model) filter(where o.price>0 and coalesce(o.payload->>'_availability','out_of_stock') in ('in_stock','limited_stock'))::int purchasable_models,
+          count(distinct e.model) filter(where o.payload->>'_availability' is null)::int missing_availability,
+          count(distinct e.model) filter(where o.category<>c.category)::int category_drift
+        from expected e left join canonical_products c on c.tps_identity_key='samsung|MODEL:'||e.model
+        left join tps_product_projection p on p.canonical_id=c.id
+        left join tps_current_offers o on o.identity_key='samsung|MODEL:'||e.model and o.store_id=6 and o.status='valid'`, [models]);
+      realizationHealth = health[0];
+      console.log('[realization-health]', JSON.stringify(realizationHealth));
     }
 
     const finishedAt = new Date();
@@ -268,6 +350,8 @@ async function main() {
     if (discoveries.length) {
       console.log("\nDiscoveries this run:");
       for (const d of discoveries) console.log(`  ${d.identity_key} (${d.category}) — discovered_at=${d.discoveredAt} canonical_at=${canonicalAt} user_visible_at=${userVisibleAt}`);
+    } else if (DRY && stats.new_products) {
+      console.log(`Dry run classified ${stats.new_products} new models; none ingested.`);
     } else {
       console.log("\nNo new products this run. Quiet, recorded.");
     }
@@ -281,12 +365,22 @@ async function main() {
          where run_id=$1`,
         [runId, stats.sitemap_urls_seen, stats.known_urls, stats.delta_urls, stats.new_products, stats.new_variants,
           stats.new_url_same_product, stats.updated_existing, stats.duplicates, stats.invalid, stats.failed,
-          stats.user_visible_completed, JSON.stringify({ discoveries, missing_this_run: missingUrls.length })]
+          stats.user_visible_completed, JSON.stringify(runNotes = { discoveries, missing_this_run: missingUrls.length,
+            finder_unique_models: catalogModels.size, finder_ingested: finderIngested,
+            finder_excluded_by_policy: catalogModels.size - catalogProducts.size,
+            source_union_urls: currentSet.size,
+            completed_full_discovery_at: finishedAt.toISOString(), completed_delta_discovery_at: finishedAt.toISOString(),
+            completed_price_stock_refresh_at: finishedAt.toISOString(), realization_health: realizationHealth,
+            storefront_health: storefrontHealth,
+            visibility_measure: 'active canonical + projection + priced available Samsung offer; browser journeys measured separately' })]
       );
     }
+    if (stats.failed) throw new Error(`Samsung discovery incomplete: ${stats.failed} PDP failures`);
+    if (realizationHealth && ['canonical_unresolved', 'canonical_inactive', 'projection_unresolved', 'current_observation_unresolved', 'category_drift']
+      .some(field => Number(realizationHealth![field]) > 0)) throw new Error('Samsung realization incomplete; see recorded health metrics');
   } catch (e) {
     if (!DRY && runId) {
-      await pg.query("update samsung_delta_watch_runs set finished_at=now(), status='failed', notes=$2 where run_id=$1", [runId, JSON.stringify({ error: e instanceof Error ? e.message : String(e) })]).catch(() => {});
+      await pg.query("update samsung_delta_watch_runs set finished_at=now(), status='failed', notes=$2 where run_id=$1", [runId, JSON.stringify({ ...runNotes, error: e instanceof Error ? e.message : String(e) })]).catch(() => {});
     }
     throw e;
   } finally {

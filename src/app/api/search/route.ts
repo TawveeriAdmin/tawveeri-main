@@ -16,6 +16,7 @@ import { parseShoppingTask, isPriorityDescriptorWord, parseScreenSizeComparator,
 import { assessRecoveryEligibility } from '@/lib/agent/recovery-eligibility';
 import { resolveComparisonRoute } from '@/lib/agent/resolve-comparison';
 import { toStorefrontCategory } from '@/lib/search/canonical-category';
+import { exactModelQuery } from '@/lib/search/exact-model-query';
 import { hoursSince, PICK_FRESHNESS_MAX_HOURS, productTrust, isFreshObservation, type TrustAssessment } from '@/lib/intelligence/evidence-engine';
 
 export const maxDuration = 30;
@@ -553,8 +554,11 @@ const CATEGORY_QUERY_TERMS: Array<{ cats: string[]; terms: string[] }> = [
   { cats: ['tv', 'monitor'], terms: ['تلفزيون', 'تلفاز', 'شاشه', 'شاشات', 'tv', 'television', 'monitor', 'display'] },
   { cats: ['laptop'], terms: ['لابتوب', 'laptop', 'notebook', 'macbook', 'ماك بوك', 'حاسوب', 'كمبيوتر', 'chromebook'] },
   { cats: ['tablet'], terms: ['ايباد', 'ipad', 'تابلت', 'tablet', 'تاب'] },
-  { cats: ['smartwatch'], terms: ['ساعه', 'ساعات', 'smartwatch', 'واتش', 'apple watch', 'جالكسي واتش'] },
-  { cats: ['audio'], terms: ['سماعه', 'سماعات', 'headphone', 'headphones', 'earbud', 'earbuds', 'مكبر صوت', 'speaker', 'soundbar', 'ايربودز', 'airpods'] },
+  { cats: ['smartwatch'], terms: ['ساعه', 'ساعات', 'smartwatch', 'واتش', 'apple watch', 'galaxy watch', 'جالكسي واتش'] },
+  { cats: ['ring'], terms: ['galaxy ring', 'خاتم', 'جالكسي رينج'] },
+  { cats: ['stylus'], terms: ['s pen', 's-pen', 'stylus', 'قلم سامسونج'] },
+  { cats: ['tracker'], terms: ['smarttag', 'سمارت تاج'] },
+  { cats: ['audio'], terms: ['سماعه', 'سماعات', 'headphone', 'headphones', 'earbud', 'earbuds', 'galaxy buds', 'مكبر صوت', 'speaker', 'soundbar', 'ايربودز', 'airpods'] },
   { cats: ['printer'], terms: ['طابعه', 'طابعات', 'printer'] },
   { cats: ['vacuum'], terms: ['مكنسه', 'vacuum'] },
   { cats: ['microwave'], terms: ['ميكروويف', 'مايكروويف', 'مايكرويف', 'microwave'] },
@@ -621,7 +625,7 @@ export function detectCanonicalCategories(raw: string): string[] | null {
     ACCESSORY_HINTS_AR.some((h) => matchesArabicAccessoryHint(norm, h)) ||
     hasEnglishAccessoryHint(norm) ||
     ACCESSORY_COMPAT_AR.test(norm) || ACCESSORY_COMPAT_EN.test(norm)
-  ) return null;
+  ) return ['accessories', 'stylus', 'tracker'];
 
   // Short tokens must match as WHOLE WORDS. "ac" is a substring of black, macbook, jacket —
   // substring-matching it would route half the catalogue to air conditioners. (Caught by
@@ -1981,14 +1985,16 @@ async function searchTPSCanonical(
   words: string[],
   supabase: ReturnType<typeof createServerClient>,
   categories: string[],
+  exactModel: string | null = null,
 ): Promise<GroupedSearchProduct[]> {
   try {
-    if (!words.length || !categories.length) return [];
-    const { data: prods } = await supabase
+    if (!words.length || (!categories.length && !exactModel)) return [];
+    let canonicalQuery = supabase
       .from('canonical_products')
       .select('id, name_ar, name_en, brand, image_url, tps_identity_key, model_number, category')
-      .in('category', categories)
       .eq('is_active', true);
+    canonicalQuery = exactModel ? canonicalQuery.eq('model_number', exactModel) : canonicalQuery.in('category', categories);
+    const { data: prods } = await canonicalQuery;
 
     if (!prods?.length) return [];
 
@@ -2027,12 +2033,12 @@ async function searchTPSCanonical(
     // prices, so its observed_at is when the price last MOVED; a stable price reads days
     // stale while the pipeline observes it daily. normalized_product_observations has a row
     // per observation, so its newest row per (canonical, store) is the honest «آخر رصد».
-    type ObsRow = { canonical_product_id: string; store_id: string | null; observed_at: string };
+    type ObsRow = { id: string; canonical_product_id: string; store_id: string | null; observed_at: string; raw_id?: string; url?: string };
     const obsChunks = await Promise.all(
       Array.from({ length: Math.ceil(ids.length / CHUNK) }, (_, i) =>
         supabase
           .from('normalized_product_observations')
-          .select('canonical_product_id, store_id, observed_at')
+          .select('id, canonical_product_id, store_id, observed_at, raw_id:normalized_payload->>_raw_id, url:normalized_payload->>_url')
           .in('canonical_product_id', ids.slice(i * CHUNK, (i + 1) * CHUNK))
           .order('observed_at', { ascending: false })
           .limit(4000),
@@ -2041,10 +2047,12 @@ async function searchTPSCanonical(
     // First (newest) row per (canonical, resolved retailer) wins — same windowing trade-off
     // as the price chunks above.
     const trueObserved = new Map<string, string>();
+    const exactObservationIds = new Map<string, string>();
     for (const r of obsChunks.flatMap((c) => (c.data ?? []) as unknown as ObsRow[])) {
       const slug = resolveApprovedSlug(r.store_id ?? '');
       if (!slug || !isDisplayableRetailer(slug) || !r.observed_at) continue;
       const key = `${r.canonical_product_id}|${slug}`;
+      if (r.raw_id && r.url && r.id) exactObservationIds.set(`${key}|${r.raw_id}`, r.id);
       if (!trueObserved.has(key)) trueObserved.set(key, r.observed_at);
     }
 
@@ -2087,21 +2095,21 @@ async function searchTPSCanonical(
     const matchedForOffers = matched as unknown as { id: string; tps_identity_key: string | null }[];
     const identityKeyToCanonicalId = new Map(matchedForOffers.map((p) => [p.tps_identity_key, p.id]));
     const identityKeys = [...identityKeyToCanonicalId.keys()].filter((k): k is string => !!k);
-    type CurrentOfferRow = { identity_key: string; store_id: number; price: number | string; observed_at: string };
+    type CurrentOfferRow = { identity_key: string; store_id: number; raw_obs_id: number | string; price: number | string; observed_at: string; payload?: { _availability?: string; _original_price?: number; _superseded_by_identity?: string } };
     const currentOfferChunks = identityKeys.length
       ? await Promise.all(
           Array.from({ length: Math.ceil(identityKeys.length / CHUNK) }, (_, i) =>
             supabase
               .from('tps_current_offers')
-              .select('identity_key, store_id, price, observed_at')
-              .eq('status', 'valid')
+              .select('identity_key, store_id, raw_obs_id, price, observed_at, payload')
+              .or('status.eq.valid,payload->>_superseded_by_identity.not.is.null')
               .in('identity_key', identityKeys.slice(i * CHUNK, (i + 1) * CHUNK)),
           ),
         )
       : [];
     const currentOffers = currentOfferChunks.flatMap((c) => (c.data ?? []) as unknown as CurrentOfferRow[]);
 
-    const latest = new Map<string, Map<string, { price: number; obsId: string; observedAt: string }>>();
+    const latest = new Map<string, Map<string, { price: number; obsId: string; observedAt: string; originalPrice?: number; availability?: SearchProduct['availability'] }>>();
     for (const r of prices ?? []) {
       // Approved scope gate + ONE KEY PER RETAILER. This map used to be keyed on the raw
       // `price_history.store_name`, which is not an identity: the same retailer appears
@@ -2143,6 +2151,7 @@ async function searchTPSCanonical(
       if (implausible.has(`${canonicalId}|${slug}`)) continue;
       if (!latest.has(canonicalId)) latest.set(canonicalId, new Map());
       const m = latest.get(canonicalId)!;
+      if (co.payload?._superseded_by_identity) { m.delete(slug); continue; }
       const existing = m.get(slug);
       const existingEffective = existing ? (trueObserved.get(`${canonicalId}|${slug}`) ?? existing.observedAt) : null;
       // INCIDENT FOLLOW-UP (2026-08-28, live-verification): tps_current_offers and the
@@ -2155,7 +2164,13 @@ async function searchTPSCanonical(
       // the stated design intent ("ties favor tps_current_offers as the single-row-per-key,
       // actively-maintained source" — docs/P0_AIRPODS_PRO2_RECURRENCE_2026-08-28.md §3).
       if (!existing || !existingEffective || new Date(co.observed_at).getTime() >= new Date(existingEffective).getTime()) {
-        m.set(slug, { price: Number(co.price), obsId: '', observedAt: co.observed_at });
+        if (co.payload?._availability === 'out_of_stock' || !(Number(co.price) > 0)) {
+          m.delete(slug);
+          continue;
+        }
+        m.set(slug, { price: Number(co.price), obsId: exactObservationIds.get(`${canonicalId}|${slug}|${co.raw_obs_id}`) || '', observedAt: co.observed_at,
+          originalPrice: Number(co.payload?._original_price) > Number(co.price) ? Number(co.payload?._original_price) : undefined,
+          availability: co.payload?._availability === 'limited_stock' ? 'limited_stock' : co.payload?._availability === 'pre_order' ? 'pre_order' : 'in_stock' });
         // co.observed_at is already authoritative (tps_current_offers is the hot
         // current-state table) — no borrowing needed; keep the later
         // `trueObserved ?? v.observedAt` lookup in sync so it can't override this back.
@@ -2179,8 +2194,8 @@ async function searchTPSCanonical(
         model: '', 
         sku: null,
         current_price: v.price, 
-        original_price: null,
-        availability: 'in_stock' as const,
+        original_price: v.originalPrice ?? null,
+        availability: v.availability ?? 'in_stock' as const,
         // An exit is rendered ONLY when we hold the observation id it needs. This emitted
         // `/go/undefined` / `/go/null` whenever the latest price row for a retailer carried a
         // NULL `tps_observation_id` — a button that looks healthy and lands nowhere.
@@ -2549,14 +2564,15 @@ export async function POST(request: NextRequest) {
   // TPS Canonical Search — the categories the query is actually about (ADR-138). This was
   // hard-limited to mobile + air_conditioner, which hid 323 of our 459 comparable products.
   const tpsCategories = rawQuery ? detectCanonicalCategories(rawQuery) : null;
-  if (rawQuery && tpsCategories) {
+  const exactModel = exactModelQuery(rawQuery || '');
+  if (rawQuery && (tpsCategories || exactModel)) {
     const nq = normalizeArabic(rawQuery);
     const aw = nq.split(/\s+/).filter(Boolean);
     const mw = aw.filter((w) => !isWrapperWord(w) && !constraintNumbers.has(w));
-    const tpsProducts = await searchTPSCanonical(mw.length ? mw : aw, supabase, tpsCategories);
+    const tpsProducts = await searchTPSCanonical(mw.length ? mw : aw, supabase, tpsCategories || [], exactModel);
     if (tpsProducts.length) {
       products = [...tpsProducts, ...products];
-      console.log('[TPS Search] injected:', tpsProducts.length, '(', tpsCategories.join('+'), ')');
+      console.log('[TPS Search] injected:', tpsProducts.length, '(', (tpsCategories || []).join('+'), ')');
     }
   }
 

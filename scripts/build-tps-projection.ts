@@ -49,6 +49,7 @@ import { resolve } from "path";
 config({ path: resolve(process.cwd(), ".env.local") });
 import { Client } from "pg";
 import { TPS_STORES } from "./tps-core/category-registry";
+import { toPoolerDbUrl } from './tps-core/pooler-url';
 import { PICK_FRESHNESS_MAX_HOURS } from "../src/lib/intelligence/evidence-engine";
 
 // ADR-082: some price_history rows carry the numeric store_id as store_name (a
@@ -188,7 +189,7 @@ async function main() {
   if (!url.includes("vyceqrzttspyycdpojtn") || url.includes("ffpsjjazsluolysgithg")) throw new Error("refusing: not production");
 
   const t0 = Date.now();
-  const pg = new Client({ connectionString: url, ssl: { rejectUnauthorized: false } });
+  const pg = new Client({ connectionString: toPoolerDbUrl(url), ssl: { rejectUnauthorized: false } });
   await pg.connect();
   await pg.query("set statement_timeout = 0");
   let queries = 0;
@@ -204,6 +205,13 @@ async function main() {
              ph.store_id
       from price_history ph
       where ph.tps_observation_id is not null
+        and not exists (
+          select 1 from canonical_products prior
+          join tps_current_offers retired on retired.identity_key=prior.tps_identity_key
+          where prior.id=ph.canonical_product_id
+            and (retired.store_id=ph.store_id or ${STORE_ID_NAME_CASE.replace(/co\./g, 'retired.')} = ${STORE_NAME_CASE})
+            and retired.payload->>'_superseded_by_identity' is not null
+        )
         -- ADR-196: an offer whose page is measured GONE (404/410 after the store's own
         -- scraper failed) must not win best-price or count as a comparison store. The
         -- signal heals (row deleted) the moment a later re-observation succeeds.
@@ -252,10 +260,12 @@ async function main() {
     current_state as (
       select c.id as canonical_product_id,
              ${STORE_ID_NAME_CASE} as store_name,
-             co.store_id, co.price, co.observed_at
+             co.store_id,
+             case when co.payload->>'_availability' = 'out_of_stock' then null else co.price end as price,
+             co.observed_at
       from tps_current_offers co
       join canonical_products c on c.tps_identity_key = co.identity_key
-      where co.status = 'valid' and co.price > 0
+      where co.status = 'valid' and (co.price > 0 or co.payload->>'_availability' = 'out_of_stock')
         and not exists (
           select 1 from tps_offer_delist_signals d
           where d.canonical_product_id = c.id
