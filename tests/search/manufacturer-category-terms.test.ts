@@ -18,4 +18,40 @@ describe('manufacturer-evidenced phone noun', () => {
     expect(manufacturerCategoryTerms({ category: 'mobile', model_number: 'VERIFIED123',
       tps_identity_key: 'other|MODEL:VERIFIED123', attributes: { manufacturer_model: 'VERIFIED123' } })).toContain('phone');
   });
+  const verified = (category: string, attrs: Record<string, unknown> = {}) => ({
+    category, model_number: 'COMPLETE123', tps_identity_key: 'manufacturer|MODEL:COMPLETE123',
+    attributes: { manufacturer_model: 'COMPLETE123', source: 'progressive', parser_version: `${category}-v1`, ...attrs },
+  });
+  it('recovers the tablet noun for a verified Galaxy Tab-style title', () => {
+    const terms = manufacturerCategoryTerms(verified('tablet'));
+    expect(terms).toContain('تابلت');
+    expect(terms).toContain('tablet');
+  });
+  it('does not trust a category that contradicts its recorded parser family', () => {
+    expect(manufacturerCategoryTerms(verified('tablet', { parser_version: 'mobile-v1' }))).toBe('');
+  });
+  it('folds Arabic category nouns just like the shopper query', () => {
+    expect(manufacturerCategoryTerms(verified('smartwatch'))).toContain('ساعه');
+    expect(manufacturerCategoryTerms(verified('refrigerator'))).toContain('ثلاجه');
+    expect(manufacturerCategoryTerms(verified('washing_machine', { is_dryer_only: false }))).toContain('غساله');
+  });
+  it('separates washing machines and standalone dryers and rejects unknown subtype evidence', () => {
+    expect(manufacturerCategoryTerms(verified('washing_machine', { is_dryer_only: false }))).toContain('washing machine');
+    const dryer = manufacturerCategoryTerms(verified('washing_machine', { is_dryer_only: true }));
+    expect(dryer).toContain('dryer');
+    expect(dryer).not.toContain('washer');
+    expect(dryer).not.toContain('washing');
+    expect(manufacturerCategoryTerms(verified('washing_machine'))).toBe('');
+  });
+  it('recovers the Arabic earphone noun without labeling speakers as headphones', () => {
+    expect(manufacturerCategoryTerms(verified('audio', { type: 'earbuds' }))).toContain('سماعات');
+    expect(manufacturerCategoryTerms(verified('audio', { type: 'speaker' }))).not.toContain('headphones');
+    expect(manufacturerCategoryTerms(verified('accessories', { type: 'earbuds' }))).toBe('');
+  });
+  it('uses an explicit earphone title only with verified audio identity and no contradictory subtype', () => {
+    const row = { ...verified('audio'), name_en: 'Samsung Type-C Earphones' };
+    expect(manufacturerCategoryTerms(row)).toContain('سماعات');
+    expect(manufacturerCategoryTerms({ ...row, attributes: { ...row.attributes, type: 'speaker' } })).not.toContain('earphones');
+    expect(manufacturerCategoryTerms({ ...verified('accessories'), name_en: 'Earphones case' })).toBe('');
+  });
 });

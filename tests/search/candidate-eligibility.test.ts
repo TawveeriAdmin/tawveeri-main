@@ -374,6 +374,40 @@ describe("excludeIneligibleCandidates — isMonitorQuery gate removes health-con
  * "hour", the time unit in battery-capacity specs ("10,000 مللي أمبير/ساعة" = 10,000 mAh).
  * Sorting "ساعة" lowest-price-first surfaced 4 power banks via this exact pattern.
  */
+describe('Samsung observed appliance-layout and numbered-watch title regressions', () => {
+  it('keeps top-mount refrigerators but still rejects separate mounting accessories', () => {
+    expect(hasAccessoryHint('', 'Top Mount Freezer Refrigerator 345L Optimal Fresh+')).toBe(false);
+    expect(hasAccessoryHint('', 'Bottom-Mount Refrigerator 500L')).toBe(false);
+    expect(hasAccessoryHint('', 'Mount bracket for refrigerator')).toBe(true);
+    expect(hasAccessoryHint('', 'Top Mount Freezer Refrigerator replacement shelf')).toBe(true);
+    expect(hasAccessoryHint('', 'Top Mount Freezer Refrigerator cover')).toBe(true);
+  });
+  it('recognizes Watch9 and Watch8 but keeps watch covers out of device candidates', () => {
+    expect(hasStrongWatchSignal('', 'Galaxy Watch9 (Bluetooth, 40 mm)')).toBe(true);
+    expect(hasStrongWatchSignal('', 'Galaxy Watch8 Classic (Bluetooth, 46 mm)')).toBe(true);
+    const watch = { name_en: 'Galaxy Watch9 (Bluetooth, 40 mm)', best_price: 1299 };
+    const cover = { name_en: 'Cover for Galaxy Watch9', best_price: 49 };
+    expect(excludeIneligibleCandidates([cover, watch], false, false, true)).toEqual([watch]);
+    expect(hasStrongWatchSignal('', 'Watchdog power supply')).toBe(false);
+  });
+  it('accepts a code-only watch with verified category evidence without promoting weak code-only rows', () => {
+    const verified = { name_en: 'SM-R390NZSAMEA', best_price: 229, _verified_category_terms: 'watch smartwatch' };
+    const weak = { name_en: 'UNKNOWN123', best_price: 229 };
+    expect(excludeIneligibleCandidates([weak, verified], false, false, true)).toEqual([verified]);
+    const cover = { ...verified, name_en: 'Watch protective cover' };
+    expect(excludeIneligibleCandidates([cover, verified], false, false, true)).toEqual([verified]);
+  });
+  it('keeps an independently verified wired earphone below the premium-earbud median without admitting unverified cheap rows', () => {
+    const earphone = { name_en: 'Samsung Type-C Earphones', best_price: 48, _verified_category_terms: 'audio earphones' };
+    const premium = [499, 599, 649, 799].map(best_price => ({ name_en: 'Premium earbuds', best_price }));
+    const unknown = { name_en: 'UNKNOWN', best_price: 10 };
+    const result = excludeIneligibleCandidates([earphone, unknown, ...premium]);
+    expect(result).toContain(earphone);
+    expect(result).not.toContain(unknown);
+    expect(excludeIneligibleCandidates([{ ...earphone, name_en: 'Earphone protective cover' }, ...premium])).toEqual(premium);
+  });
+});
+
 describe("hasStrongWatchSignal — bare \"ساعة\" as the HOUR unit is not a watch", () => {
   it("rejects the exact measured power-bank titles", () => {
     expect(hasStrongWatchSignal("قوي , بطارية متنقلة كيجو بسعة 10,000 مللي أمبير في الساعة,أسود", "")).toBe(false);

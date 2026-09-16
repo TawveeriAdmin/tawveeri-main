@@ -17,7 +17,10 @@ async function main() {
   if (!journal.apply || !journal.before?.canonicals || !journal.before?.normalized) throw new Error('An application journal with complete pre-write snapshots is required');
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('vyceqrzttspyycdpojtn')) throw new Error('Unexpected database');
   const source = JSON.parse(readFileSync('docs/evidence/samsung-recovery-source-reconciliation-2026-09-16.json', 'utf8'));
-  const sourceKeys = new Set<string>(source.models.filter((m: any) => m.identity && !m.exclusion).map((m: any) => m.identity.key));
+  // A later consumer-policy exclusion must not leave an identity introduced by
+  // an earlier recovery phase active after rollback (policy v1 -> v2 excluded 7).
+  // Membership here is a restoration boundary, not consumer inclusion policy.
+  const sourceKeys = new Set<string>(source.models.filter((m: any) => m.identity).map((m: any) => m.identity.key));
   const pg = new Client({ connectionString: toPoolerDbUrl(process.env.SUPABASE_DB_URL!), ssl: { rejectUnauthorized: false }, statement_timeout: 30000 });
   await pg.connect();
   const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } });

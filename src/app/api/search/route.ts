@@ -420,7 +420,10 @@ const ACCESSORY_HINTS_EN_RE = ACCESSORY_HINTS_EN.map(
   (h) => new RegExp(`\\b${h.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`),
 );
 function hasEnglishAccessoryHint(en: string): boolean {
-  return ACCESSORY_HINTS_EN_RE.some((re) => re.test(en));
+  // "Top Mount Freezer Refrigerator" describes the appliance layout, not a
+  // mounting accessory. Remove only that layout phrase; other hints still apply.
+  const accessoryText = en.replace(/\b(?:top|bottom)[ -]mount\s+(?=(?:freezer\s+)?(?:refrigerator|fridge)\b)/g, '');
+  return ACCESSORY_HINTS_EN_RE.some((re) => re.test(accessoryText));
 }
 
 // Compatibility phrasing is a strong accessory signal: an item described as
@@ -806,7 +809,7 @@ function applyFuelTypeFilter<T extends { name_ar?: string | null; name_en?: stri
   return result;
 }
 
-export function excludeIneligibleCandidates<T extends { name_ar?: string | null; name_en?: string | null; best_price: number }>(
+export function excludeIneligibleCandidates<T extends { name_ar?: string | null; name_en?: string | null; best_price: number; _verified_category_terms?: string }>(
   products: T[],
   isAcQuery = false,
   isMonitorQuery = false,
@@ -862,7 +865,9 @@ export function excludeIneligibleCandidates<T extends { name_ar?: string | null;
   // lowest-price-first surfaced power banks via "مللي أمبير/ساعة" (mAh). See
   // `hasStrongWatchSignal`'s own comment for the measured evidence.
   if (isWatchQuery) {
-    const watchFiltered = result.filter((p) => hasStrongWatchSignal(p.name_ar || '', p.name_en || ''));
+    // Full manufacturer/parser evidence also covers official code-only titles.
+    const watchFiltered = result.filter((p) => hasStrongWatchSignal(p.name_ar || '',
+      `${p.name_en || ''} ${p._verified_category_terms || ''}`));
     result = watchFiltered.length > 0 ? watchFiltered : (needShapedWithCategory ? [] : result);
   }
 
@@ -929,7 +934,10 @@ export function excludeIneligibleCandidates<T extends { name_ar?: string | null;
   if (positivePrices.length >= 4) {
     const median = positivePrices[Math.floor(positivePrices.length / 2)];
     const floor = median * 0.15;
-    const priceFiltered = result.filter((p) => p.best_price <= 0 || p.best_price >= floor);
+    // Price is a fallback type heuristic, not evidence against an independently
+    // verified device category (e.g. official wired earphones beside premium buds).
+    const priceFiltered = result.filter((p) => p.best_price <= 0 || p.best_price >= floor
+      || !!p._verified_category_terms);
     if (priceFiltered.length > 0) result = priceFiltered;
   }
   return result;
@@ -1018,7 +1026,7 @@ export function hasStrongWatchSignal(nameAr: string, nameEn: string): boolean {
     /ساعه\s*ذكيه|ساعات\s*ذكيه|سوار\s*ذكي|سوار\s*رياضي/.test(ar)
     || /smart\s*watch|smartwatch|apple\s*watch|galaxy\s*watch|huawei\s*watch|garmin|fitbit|wrist\s*watch|watch\s*band/.test(en);
   if (HOUR_UNIT_SIGNAL.test(ar)) return genuineWatchSignal();
-  return /(^|\s)ساعه|ساعات/.test(ar) || /\bwatch\b|smartwatch/.test(en);
+  return /(^|\s)ساعه|ساعات/.test(ar) || /\bwatch(?:\d+)?\b|smartwatch/.test(en);
 }
 
 // MEASURED LIVE (production, 2026-08-10, D→E mission Part F, sixth "check other categories"

@@ -5,6 +5,8 @@ import { toPoolerDbUrl } from '../tps-core/pooler-url';
 import { samsungCatalogExclusion } from '../tps-core/samsung-manufacturer-identity';
 const { Client } = require('pg');
 async function main() {
+  const phase = process.argv.find(a => a.startsWith('--phase='))?.slice(8);
+  if (phase && !/^[a-z-]+$/.test(phase)) throw new Error('Invalid evidence phase');
   const source = JSON.parse(readFileSync('docs/evidence/samsung-recovery-source-reconciliation-2026-09-16.json', 'utf8'));
   const included = new Set(source.models.filter((m: any) => !m.exclusion && m.identity).map((m: any) => m.model));
   const pg = new Client({ connectionString: toPoolerDbUrl(process.env.SUPABASE_DB_URL!), ssl: { rejectUnauthorized: false } });
@@ -26,7 +28,7 @@ async function main() {
         : !row.is_active ? 'LEGACY_INACTIVE_WITH_CURRENT_OFFER' : 'CURRENT_ELIGIBLE');
     }
     const counts = rows.reduce((out: any, row: any) => { out[row.reason] = (out[row.reason] || 0) + 1; return out; }, {});
-    writeFileSync('docs/evidence/samsung-recovery-legacy-loss-reasons-2026-09-16.json', JSON.stringify({ measuredAt: new Date().toISOString(),
+    writeFileSync(`docs/evidence/samsung-recovery-legacy-loss-reasons${phase ? '-' + phase : ''}-2026-09-16.json`, JSON.stringify({ measuredAt: new Date().toISOString(),
       method: 'All Samsung legacy rows; exact full-model source and canonical/current-offer joins, no fuzzy inference', counts, rows }, null, 2));
     console.log(JSON.stringify(counts));
   } finally { await pg.end(); }
