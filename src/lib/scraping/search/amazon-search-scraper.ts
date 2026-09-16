@@ -10,27 +10,35 @@ export class AmazonSearchScraper extends BaseSearchScraper {
     super('amazon', 'Amazon SA');
   }
 
-  async search(options: StoreSearchOptions): Promise<StoreSearchResult> {
-    const { query, pages } = options;
+  async search(options: StoreSearchOptions & { startPage?: number }): Promise<StoreSearchResult> {
+    const { query, pages, startPage = 1 } = options;
     const allProducts: SearchProduct[] = [];
+    let error: string | undefined;
 
     try {
-      for (let page = 1; page <= pages; page++) {
-        if (page > 1) await this.delay(500, 1500);
+      for (let page = startPage; page < startPage + pages; page++) {
+        if (page > startPage) await this.delay(500, 1500);
 
         const url = `${BASE_URL}/s?k=${encodeURIComponent(query)}&page=${page}&ref=sr_pg_${page}`;
         let html: string;
         try {
           html = await this.fetchHtml(url, getBrowserHeaders());
         } catch (err) {
-          console.error(`[Amazon] Page ${page} fetch failed:`, formatScrapeError(err));
+          error = formatScrapeError(err);
+          console.error(`[Amazon] Page ${page} fetch failed:`, error);
           break;
         }
 
         const $ = this.getCheerio(html);
         const items = $("div[data-component-type='s-search-result']");
 
-        if (items.length === 0) break;
+        if (items.length === 0) {
+          // A challenge/unknown template is not evidence that discovery completed.
+          if (!/no results for|لم يتم العثور على نتائج/i.test($.root().text())) {
+            error = `Amazon page ${page}: no result tiles; response could not be verified`;
+          }
+          break;
+        }
 
         items.each((_, el) => {
           const product = this.parseProduct($, $(el));
@@ -41,6 +49,7 @@ export class AmazonSearchScraper extends BaseSearchScraper {
       }
     } catch (err) {
       const msg = formatScrapeError(err);
+      error = msg;
       console.error(`[Amazon] Search error:`, msg);
       if (allProducts.length === 0) return this.errorResult(msg);
     }
@@ -50,6 +59,7 @@ export class AmazonSearchScraper extends BaseSearchScraper {
       store: this.storeSlug,
       storeName: this.storeName,
       count: allProducts.length,
+      ...(error ? { error } : {}),
     };
   }
 

@@ -1,0 +1,635 @@
+{
+  "at": "2026-09-15T10:10:12.126Z",
+  "project": "vyceqrzttspyycdpojtn",
+  "queries": {
+    "totals": "select count(*) offer_rows, count(distinct product_id) products,\n    count(distinct product_url) urls from product_stores where store_id=2",
+    "completeness": "with p as (select distinct p.* from products p join product_stores ps\n    on ps.product_id=p.id where ps.store_id=2)\n    select category,count(*) products,\n    count(*) filter(where canonical_product_id is not null) linked,\n    count(*) filter(where coalesce(image_url,'')<>'') with_image,\n    count(*) filter(where coalesce(brand,'') not in ('','Unknown','unknown')) known_brand,\n    count(*) filter(where coalesce(specifications,'{}'::jsonb)<>'{}'::jsonb) with_specs\n    from p group by category order by category",
+    "currentOffers": "select category,status,count(*) offers,max(observed_at) latest\n    from tps_current_offers where store_id=2 group by category,status order by category,status",
+    "freshness": "select count(*) offers,\n    count(*) filter(where last_scraped_at is null) never_pdp_scraped,\n    count(*) filter(where last_scraped_at>=now()-interval '24 hours') pdp_scraped_24h,\n    count(*) filter(where updated_at>=now()-interval '24 hours') updated_24h,\n    count(*) filter(where current_price>0) priced,\n    count(*) filter(where price_quarantined_at is not null) quarantined\n    from product_stores where store_id=2",
+    "cadence": "select date_trunc('day',started_at) as run_day,run_type,count(*) runs,\n    count(*) filter(where status='success') successes,\n    sum(products_discovered) discovered,sum(products_new) new,sum(products_updated) updated\n    from scraping_runs where store_id=2 and started_at>now()-interval '7 days'\n    group by 1,2 order by 1 desc,2",
+    "latestRuns": "select id,store_name,status,run_type,started_at,finished_at,\n    products_discovered,products_new,products_updated,products_failed\n    from scraping_runs where store_id=2 order by started_at desc limit 15",
+    "schedule": "select id,job_type,is_active,last_run_at,last_success_at\n    from scraping_schedules where store_id=2"
+  },
+  "results": {
+    "totals": [
+      {
+        "offer_rows": "9156",
+        "products": "4084",
+        "urls": "9120"
+      }
+    ],
+    "completeness": [
+      {
+        "category": "accessories",
+        "products": "565",
+        "linked": "35",
+        "with_image": "301",
+        "known_brand": "229",
+        "with_specs": "234"
+      },
+      {
+        "category": "air_conditioner",
+        "products": "309",
+        "linked": "4",
+        "with_image": "0",
+        "known_brand": "151",
+        "with_specs": "1"
+      },
+      {
+        "category": "appliance",
+        "products": "366",
+        "linked": "104",
+        "with_image": "62",
+        "known_brand": "157",
+        "with_specs": "36"
+      },
+      {
+        "category": "audio",
+        "products": "249",
+        "linked": "65",
+        "with_image": "132",
+        "known_brand": "107",
+        "with_specs": "129"
+      },
+      {
+        "category": "camera",
+        "products": "122",
+        "linked": "16",
+        "with_image": "122",
+        "known_brand": "13",
+        "with_specs": "97"
+      },
+      {
+        "category": "gaming",
+        "products": "126",
+        "linked": "2",
+        "with_image": "119",
+        "known_brand": "8",
+        "with_specs": "112"
+      },
+      {
+        "category": "kitchen",
+        "products": "223",
+        "linked": "43",
+        "with_image": "107",
+        "known_brand": "55",
+        "with_specs": "80"
+      },
+      {
+        "category": "laptop",
+        "products": "361",
+        "linked": "101",
+        "with_image": "171",
+        "known_brand": "224",
+        "with_specs": "182"
+      },
+      {
+        "category": "monitor",
+        "products": "262",
+        "linked": "93",
+        "with_image": "117",
+        "known_brand": "83",
+        "with_specs": "127"
+      },
+      {
+        "category": "networking",
+        "products": "109",
+        "linked": "0",
+        "with_image": "109",
+        "known_brand": "15",
+        "with_specs": "73"
+      },
+      {
+        "category": "personal_care",
+        "products": "180",
+        "linked": "0",
+        "with_image": "180",
+        "known_brand": "0",
+        "with_specs": "98"
+      },
+      {
+        "category": "printer",
+        "products": "85",
+        "linked": "25",
+        "with_image": "85",
+        "known_brand": "19",
+        "with_specs": "62"
+      },
+      {
+        "category": "smart_home",
+        "products": "68",
+        "linked": "0",
+        "with_image": "68",
+        "known_brand": "26",
+        "with_specs": "43"
+      },
+      {
+        "category": "smartphone",
+        "products": "205",
+        "linked": "59",
+        "with_image": "61",
+        "known_brand": "147",
+        "with_specs": "67"
+      },
+      {
+        "category": "smartwatch",
+        "products": "198",
+        "linked": "38",
+        "with_image": "33",
+        "known_brand": "85",
+        "with_specs": "29"
+      },
+      {
+        "category": "tablet",
+        "products": "249",
+        "linked": "75",
+        "with_image": "71",
+        "known_brand": "125",
+        "with_specs": "71"
+      },
+      {
+        "category": "tv",
+        "products": "397",
+        "linked": "107",
+        "with_image": "80",
+        "known_brand": "193",
+        "with_specs": "355"
+      },
+      {
+        "category": "wearable",
+        "products": "10",
+        "linked": "2",
+        "with_image": "10",
+        "known_brand": "3",
+        "with_specs": "6"
+      }
+    ],
+    "currentOffers": [
+      {
+        "category": "air_conditioner",
+        "status": "low_confidence_candidate",
+        "offers": "252",
+        "latest": "2026-09-14T18:08:25.800Z"
+      },
+      {
+        "category": "air_conditioner",
+        "status": "valid",
+        "offers": "2",
+        "latest": "2026-09-13T13:37:33.106Z"
+      },
+      {
+        "category": "air_fryer",
+        "status": "valid",
+        "offers": "1",
+        "latest": "2026-09-06T15:07:07.833Z"
+      },
+      {
+        "category": "audio",
+        "status": "valid",
+        "offers": "44",
+        "latest": "2026-09-15T01:25:23.325Z"
+      },
+      {
+        "category": "blender",
+        "status": "valid",
+        "offers": "1",
+        "latest": "2026-09-06T15:06:11.536Z"
+      },
+      {
+        "category": "camera",
+        "status": "valid",
+        "offers": "14",
+        "latest": "2026-09-13T19:35:59.329Z"
+      },
+      {
+        "category": "coffee_maker",
+        "status": "valid",
+        "offers": "3",
+        "latest": "2026-08-21T00:43:10.923Z"
+      },
+      {
+        "category": "kettle",
+        "status": "valid",
+        "offers": "5",
+        "latest": "2026-08-21T06:36:07.795Z"
+      },
+      {
+        "category": "laptop",
+        "status": "low_confidence_candidate",
+        "offers": "46",
+        "latest": "2026-09-14T18:08:25.800Z"
+      },
+      {
+        "category": "laptop",
+        "status": "valid",
+        "offers": "160",
+        "latest": "2026-09-14T18:08:25.800Z"
+      },
+      {
+        "category": "microwave",
+        "status": "valid",
+        "offers": "35",
+        "latest": "2026-09-15T00:08:32.982Z"
+      },
+      {
+        "category": "mobile",
+        "status": "valid",
+        "offers": "47",
+        "latest": "2026-09-14T18:08:25.800Z"
+      },
+      {
+        "category": "monitor",
+        "status": "valid",
+        "offers": "105",
+        "latest": "2026-09-15T00:08:32.982Z"
+      },
+      {
+        "category": "printer",
+        "status": "valid",
+        "offers": "23",
+        "latest": "2026-09-09T18:12:24.628Z"
+      },
+      {
+        "category": "refrigerator",
+        "status": "valid",
+        "offers": "63",
+        "latest": "2026-09-14T12:47:06.754Z"
+      },
+      {
+        "category": "smartwatch",
+        "status": "valid",
+        "offers": "32",
+        "latest": "2026-09-15T06:07:59.501Z"
+      },
+      {
+        "category": "tablet",
+        "status": "valid",
+        "offers": "71",
+        "latest": "2026-09-15T08:11:46.159Z"
+      },
+      {
+        "category": "toaster",
+        "status": "valid",
+        "offers": "1",
+        "latest": "2026-08-16T10:05:51.705Z"
+      },
+      {
+        "category": "tv",
+        "status": "valid",
+        "offers": "150",
+        "latest": "2026-09-15T06:20:27.222Z"
+      },
+      {
+        "category": "vacuum",
+        "status": "valid",
+        "offers": "1",
+        "latest": "2026-09-12T08:10:22.242Z"
+      },
+      {
+        "category": "washing_machine",
+        "status": "valid",
+        "offers": "54",
+        "latest": "2026-09-15T01:19:35.695Z"
+      }
+    ],
+    "freshness": [
+      {
+        "offers": "9156",
+        "never_pdp_scraped": "1783",
+        "pdp_scraped_24h": "661",
+        "updated_24h": "843",
+        "priced": "9141",
+        "quarantined": "10"
+      }
+    ],
+    "cadence": [
+      {
+        "run_day": "2026-09-15T00:00:00.000Z",
+        "run_type": "discovery",
+        "runs": "3",
+        "successes": "2",
+        "discovered": "552",
+        "new": "51",
+        "updated": "547"
+      },
+      {
+        "run_day": "2026-09-15T00:00:00.000Z",
+        "run_type": "price_update",
+        "runs": "2",
+        "successes": "0",
+        "discovered": "0",
+        "new": "0",
+        "updated": "310"
+      },
+      {
+        "run_day": "2026-09-14T00:00:00.000Z",
+        "run_type": "discovery",
+        "runs": "5",
+        "successes": "4",
+        "discovered": "924",
+        "new": "107",
+        "updated": "918"
+      },
+      {
+        "run_day": "2026-09-14T00:00:00.000Z",
+        "run_type": "price_update",
+        "runs": "2",
+        "successes": "0",
+        "discovered": "0",
+        "new": "0",
+        "updated": "205"
+      },
+      {
+        "run_day": "2026-09-13T00:00:00.000Z",
+        "run_type": "discovery",
+        "runs": "6",
+        "successes": "4",
+        "discovered": "1000",
+        "new": "134",
+        "updated": "984"
+      },
+      {
+        "run_day": "2026-09-13T00:00:00.000Z",
+        "run_type": "price_update",
+        "runs": "4",
+        "successes": "0",
+        "discovered": "0",
+        "new": "0",
+        "updated": "386"
+      },
+      {
+        "run_day": "2026-09-12T00:00:00.000Z",
+        "run_type": "discovery",
+        "runs": "5",
+        "successes": "3",
+        "discovered": "734",
+        "new": "104",
+        "updated": "721"
+      },
+      {
+        "run_day": "2026-09-12T00:00:00.000Z",
+        "run_type": "price_update",
+        "runs": "3",
+        "successes": "0",
+        "discovered": "0",
+        "new": "0",
+        "updated": "109"
+      },
+      {
+        "run_day": "2026-09-11T00:00:00.000Z",
+        "run_type": "discovery",
+        "runs": "4",
+        "successes": "4",
+        "discovered": "1167",
+        "new": "331",
+        "updated": "1163"
+      },
+      {
+        "run_day": "2026-09-11T00:00:00.000Z",
+        "run_type": "price_update",
+        "runs": "4",
+        "successes": "0",
+        "discovered": "0",
+        "new": "0",
+        "updated": "283"
+      },
+      {
+        "run_day": "2026-09-10T00:00:00.000Z",
+        "run_type": "discovery",
+        "runs": "7",
+        "successes": "4",
+        "discovered": "1260",
+        "new": "264",
+        "updated": "1237"
+      },
+      {
+        "run_day": "2026-09-10T00:00:00.000Z",
+        "run_type": "price_update",
+        "runs": "3",
+        "successes": "0",
+        "discovered": "0",
+        "new": "0",
+        "updated": "229"
+      },
+      {
+        "run_day": "2026-09-09T00:00:00.000Z",
+        "run_type": "discovery",
+        "runs": "4",
+        "successes": "3",
+        "discovered": "943",
+        "new": "352",
+        "updated": "929"
+      },
+      {
+        "run_day": "2026-09-09T00:00:00.000Z",
+        "run_type": "price_update",
+        "runs": "3",
+        "successes": "0",
+        "discovered": "0",
+        "new": "0",
+        "updated": "176"
+      },
+      {
+        "run_day": "2026-09-08T00:00:00.000Z",
+        "run_type": "discovery",
+        "runs": "3",
+        "successes": "3",
+        "discovered": "304",
+        "new": "96",
+        "updated": "299"
+      },
+      {
+        "run_day": "2026-09-08T00:00:00.000Z",
+        "run_type": "price_update",
+        "runs": "2",
+        "successes": "0",
+        "discovered": "0",
+        "new": "0",
+        "updated": "45"
+      }
+    ],
+    "latestRuns": [
+      {
+        "id": "7155",
+        "store_name": "amazon",
+        "status": "partial",
+        "run_type": "price_update",
+        "started_at": "2026-09-15T08:05:05.705Z",
+        "finished_at": "2026-09-15T08:33:02.953Z",
+        "products_discovered": 0,
+        "products_new": 0,
+        "products_updated": 111,
+        "products_failed": 0
+      },
+      {
+        "id": "7148",
+        "store_name": "amazon",
+        "status": "partial",
+        "run_type": "discovery",
+        "started_at": "2026-09-15T06:16:18.179Z",
+        "finished_at": "2026-09-15T06:20:54.693Z",
+        "products_discovered": 164,
+        "products_new": 0,
+        "products_updated": 160,
+        "products_failed": 0
+      },
+      {
+        "id": "7132",
+        "store_name": "أمازون",
+        "status": "success",
+        "run_type": "discovery",
+        "started_at": "2026-09-15T06:07:54.801Z",
+        "finished_at": "2026-09-15T06:09:10.297Z",
+        "products_discovered": 88,
+        "products_new": 11,
+        "products_updated": 87,
+        "products_failed": 0
+      },
+      {
+        "id": "7112",
+        "store_name": "amazon",
+        "status": "partial",
+        "run_type": "price_update",
+        "started_at": "2026-09-15T01:18:09.875Z",
+        "finished_at": "2026-09-15T01:46:31.414Z",
+        "products_discovered": 0,
+        "products_new": 0,
+        "products_updated": 199,
+        "products_failed": 0
+      },
+      {
+        "id": "7107",
+        "store_name": "أمازون",
+        "status": "success",
+        "run_type": "discovery",
+        "started_at": "2026-09-15T00:08:16.708Z",
+        "finished_at": "2026-09-15T00:12:41.332Z",
+        "products_discovered": 300,
+        "products_new": 40,
+        "products_updated": 300,
+        "products_failed": 0
+      },
+      {
+        "id": "7101",
+        "store_name": "amazon",
+        "status": "success",
+        "run_type": "discovery",
+        "started_at": "2026-09-14T19:48:12.691Z",
+        "finished_at": "2026-09-14T19:49:24.060Z",
+        "products_discovered": 90,
+        "products_new": 0,
+        "products_updated": 89,
+        "products_failed": 0
+      },
+      {
+        "id": "7071",
+        "store_name": "أمازون",
+        "status": "success",
+        "run_type": "discovery",
+        "started_at": "2026-09-14T18:08:11.428Z",
+        "finished_at": "2026-09-14T18:12:41.058Z",
+        "products_discovered": 300,
+        "products_new": 72,
+        "products_updated": 299,
+        "products_failed": 0
+      },
+      {
+        "id": "7065",
+        "store_name": "amazon",
+        "status": "partial",
+        "run_type": "price_update",
+        "started_at": "2026-09-14T12:24:25.190Z",
+        "finished_at": "2026-09-14T12:51:18.242Z",
+        "products_discovered": 0,
+        "products_new": 0,
+        "products_updated": 137,
+        "products_failed": 0
+      },
+      {
+        "id": "7060",
+        "store_name": "أمازون",
+        "status": "success",
+        "run_type": "discovery",
+        "started_at": "2026-09-14T12:06:37.629Z",
+        "finished_at": "2026-09-14T12:08:29.144Z",
+        "products_discovered": 135,
+        "products_new": 2,
+        "products_updated": 133,
+        "products_failed": 0
+      },
+      {
+        "id": "7053",
+        "store_name": "amazon",
+        "status": "partial",
+        "run_type": "discovery",
+        "started_at": "2026-09-14T05:10:52.175Z",
+        "finished_at": "2026-09-14T05:13:12.100Z",
+        "products_discovered": 167,
+        "products_new": 0,
+        "products_updated": 165,
+        "products_failed": 0
+      },
+      {
+        "id": "7020",
+        "store_name": "amazon",
+        "status": "partial",
+        "run_type": "price_update",
+        "started_at": "2026-09-14T00:56:03.019Z",
+        "finished_at": "2026-09-14T01:19:05.259Z",
+        "products_discovered": 0,
+        "products_new": 0,
+        "products_updated": 68,
+        "products_failed": 0
+      },
+      {
+        "id": "7015",
+        "store_name": "أمازون",
+        "status": "success",
+        "run_type": "discovery",
+        "started_at": "2026-09-14T00:08:01.339Z",
+        "finished_at": "2026-09-14T00:11:16.634Z",
+        "products_discovered": 232,
+        "products_new": 33,
+        "products_updated": 232,
+        "products_failed": 0
+      },
+      {
+        "id": "7009",
+        "store_name": "amazon",
+        "status": "partial",
+        "run_type": "price_update",
+        "started_at": "2026-09-13T19:18:36.384Z",
+        "finished_at": "2026-09-13T19:46:25.584Z",
+        "products_discovered": 0,
+        "products_new": 0,
+        "products_updated": 170,
+        "products_failed": 0
+      },
+      {
+        "id": "7003",
+        "store_name": "amazon",
+        "status": "partial",
+        "run_type": "discovery",
+        "started_at": "2026-09-13T18:38:01.957Z",
+        "finished_at": "2026-09-13T18:39:09.264Z",
+        "products_discovered": 166,
+        "products_new": 0,
+        "products_updated": 164,
+        "products_failed": 0
+      },
+      {
+        "id": "6970",
+        "store_name": "amazon",
+        "status": "partial",
+        "run_type": "discovery",
+        "started_at": "2026-09-13T17:53:52.804Z",
+        "finished_at": "2026-09-13T17:55:02.276Z",
+        "products_discovered": 175,
+        "products_new": 0,
+        "products_updated": 167,
+        "products_failed": 0
+      }
+    ],
+    "schedule": []
+  }
+}

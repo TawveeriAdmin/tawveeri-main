@@ -1,0 +1,137 @@
+{
+  "sampling": "SQL ORDER BY random() LIMIT 10; priced Amazon storefront offer rows within requested broad categories; offer-row-weighted, not representative of all categories",
+  "sampledAt": "2026-09-15T09:59:16.623Z",
+  "query": "select ps.id,ps.product_id,p.name_ar,p.category,ps.current_price,ps.original_price,ps.product_url,ps.last_scraped_at,ps.updated_at,p.canonical_product_id from product_stores ps join products p on p.id=ps.product_id where ps.store_id=2 and ps.current_price>0 and p.category in ('smartphone','tablet','laptop','appliance','kitchen','accessories') order by random() limit 10",
+  "rows": [
+    {
+      "at": "2026-09-15T10:00:20.872Z",
+      "asin": "B0GZ8HW1X7",
+      "url": "https://www.amazon.sa/dp/B0GZ8HW1X7",
+      "product_id": "fbca67ec-25ba-4014-9741-1d04eca0b4e1",
+      "title": "Xiaomi 17T Dual SIM+eSIM 5G Violet 12GB RAM 512GB - Global Version",
+      "http_status": 200,
+      "stored_price": "2399",
+      "merchant_price_candidates": [
+        "SAR2,399.00"
+      ],
+      "verdict": "MATCH"
+    },
+    {
+      "at": "2026-09-15T10:00:24.182Z",
+      "asin": "B0F137P9DJ",
+      "url": "https://www.amazon.sa/dp/B0F137P9DJ",
+      "product_id": "425ac1dc-bf19-4df2-8d47-89a59c3fa509",
+      "title": "TABWEE Android 16 Tablet 11 Inch FHD Display, 24GB RAM 128GB ROM /2TB TF",
+      "http_status": 200,
+      "stored_price": "789.99",
+      "merchant_price_candidates": [
+        "SAR789.99"
+      ],
+      "verdict": "MATCH"
+    },
+    {
+      "at": "2026-09-15T10:00:27.434Z",
+      "asin": "B08SKNFQBS",
+      "url": "https://www.amazon.sa/dp/B08SKNFQBS",
+      "product_id": "b6e4d4ca-04bc-4cde-91fe-b7e13821aac6",
+      "title": "Philips Drip Coffee Maker | 0.6L Glass Jar, Up to 7 Cups, Auto Off Function, Water Level Indicator, Dishwasher-Safe Parts, Black, HD7432/20",
+      "http_status": 200,
+      "stored_price": "114",
+      "merchant_price_candidates": [],
+      "verdict": "NO_BUYBOX_PRICE"
+    },
+    {
+      "at": "2026-09-15T10:00:30.472Z",
+      "asin": "B0GCW9MPZB",
+      "url": "https://www.amazon.sa/dp/B0GCW9MPZB",
+      "product_id": "39de72e2-486f-40b4-829f-4ca4bc4cf09d",
+      "title": "FLEXY 34L Built-In Microwave Oven with Grill, 1000W Output, 8 Auto Menus, 5 Power Levels, Defrost, Child Lock, Push Button Open, Black Finish, 2-Year Warranty",
+      "http_status": 200,
+      "stored_price": "650",
+      "merchant_price_candidates": [
+        "SAR650.00",
+        "SAR546.98"
+      ],
+      "verdict": "MATCH",
+      "note": "Buy New explicitly 650; 546.98 belongs to another offer, not substituted"
+    },
+    {
+      "at": "2026-09-15T10:00:33.734Z",
+      "asin": "B08WMRDYBC",
+      "url": "https://www.amazon.sa/dp/B08WMRDYBC",
+      "product_id": "254761ae-0d08-486e-ac2c-dac492dd3f3b",
+      "title": "LG 25 Liter Microwave with Touch Button| Model No MS2535GIS",
+      "http_status": 200,
+      "stored_price": "529",
+      "merchant_price_candidates": [
+        "SAR529.00"
+      ],
+      "verdict": "MATCH"
+    },
+    {
+      "at": "2026-09-15T10:00:36.873Z",
+      "asin": "B0GVF4QK51",
+      "url": "https://www.amazon.sa/dp/B0GVF4QK51",
+      "product_id": "bb9e049e-776b-47c3-8096-0ef7e1f05182",
+      "title": "SKY-TOUCH 2L Glass Electric Kettle, 1500W Fast Boil Hot Water Heater & Tea Pot, BPA-Free Borosilicate Glass with LED Indicator, Auto Shut-Off & Boil-Dry Protection, Stainless Steel Bottom",
+      "http_status": 200,
+      "stored_price": "49.9",
+      "merchant_price_candidates": [
+        "SAR49.90"
+      ],
+      "verdict": "MATCH"
+    },
+    {
+      "at": "2026-09-15T10:00:39.840Z",
+      "asin": "B0B6PLG6G2",
+      "url": "https://www.amazon.sa/dp/B0B6PLG6G2",
+      "product_id": "5e457090-e2dc-4b87-b227-e0efc803de45",
+      "title": "vailnd Air Fryer Paper Liners,125Pcs Parchment Paper, Air Fryer Disposable Paper Liner for Microwave, Air Fryer Basket Liners Square Free of Bleach (8IN)",
+      "http_status": 200,
+      "stored_price": "35.5",
+      "merchant_price_candidates": [
+        "SAR35.50"
+      ],
+      "verdict": "MATCH"
+    },
+    {
+      "at": "2026-09-15T10:00:42.951Z",
+      "asin": "B0DZ62HK83",
+      "url": "https://www.amazon.sa/dp/B0DZ62HK83",
+      "product_id": "d5cff21c-0531-4e06-8d72-f688dba8cbb4",
+      "title": "TABWEE 2026 Upgrade Android 16 Tablet 11 inch, 1920x1200 FHD Display",
+      "http_status": 200,
+      "stored_price": "678.99",
+      "merchant_price_candidates": [
+        "SAR678.99"
+      ],
+      "verdict": "MATCH"
+    },
+    {
+      "at": "2026-09-15T10:00:46.095Z",
+      "asin": "B0GY123BQW",
+      "url": "https://www.amazon.sa/dp/B0GY123BQW",
+      "product_id": "e6c46bec-f454-44e5-adb2-2b92ecadac23",
+      "title": "MOTOROLA Edge 60 5G, 12+12GB RAM Boost, 512 GB ROM, 50 MP Camera, IP68/IP69, Mediatek Dimensity 7300, 6.67\" pOLED Display 120Hz, PANTONE Gibraltar Sea",
+      "http_status": 200,
+      "stored_price": "1294.4",
+      "merchant_price_candidates": [
+        "SAR1,164.00"
+      ],
+      "verdict": "DIFFERENT"
+    },
+    {
+      "at": "2026-09-15T10:00:49.077Z",
+      "asin": "B0DMWF3WLM",
+      "url": "https://www.amazon.sa/dp/B0DMWF3WLM",
+      "product_id": "e1033b31-eefd-417c-abf8-42dbb2e748ff",
+      "title": "Phone Camera Lens, 2 in 1 Professional Phone Camera Lens, Universal Cell Phone Clip-on Lens Kit, 37mm Mobile Phone Lens 0.45x 49uv Super Wide-Angle + Macro HD Lens for All Smartphones",
+      "http_status": 200,
+      "stored_price": "39.99",
+      "merchant_price_candidates": [
+        "SAR39.99"
+      ],
+      "verdict": "MATCH"
+    }
+  ]
+}

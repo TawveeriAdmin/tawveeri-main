@@ -8,7 +8,7 @@ import type { StoreAdapter, FetchResult, NormalizedOffer } from './types';
 import type { BaseSearchScraper } from '../search/base-search-scraper';
 import type { SearchProduct } from '../search/types';
 import { JarirSearchScraper } from '../search/jarir-search-scraper';
-import { AmazonSearchScraper } from '../search/amazon-search-scraper';
+export { amazonAdapter } from './amazon';
 import { NoonSearchScraper } from '../search/noon-search-scraper';
 import { SamsungKsaSearchScraper } from '../search/samsung-ksa-search-scraper';
 import { ShakerSearchScraper } from '../search/shaker-search-scraper';
@@ -86,7 +86,6 @@ export const jarirAdapter = wrap({ slug: 'jarir', dbName: 'جرير', nameEn: 'J
 // (manual-trigger only). This adapter remains Amazon's ONLY currently-scheduled
 // discovery mechanism; disabling it would stop Amazon's automated catalog growth
 // entirely, not remove a redundancy. Left enabled.
-export const amazonAdapter = wrap({ slug: 'amazon', dbName: 'أمازون', nameEn: 'Amazon', enabled: true, source: 'amazon-search' }, () => new AmazonSearchScraper());
 
 // No-data stores — registered for contract completeness, disabled pending a
 // validated ingestion run (enable after confirming their scrapers return offers).
