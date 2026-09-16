@@ -332,7 +332,7 @@ async function main() {
       if (!(await pg.query('select pg_try_advisory_lock($1) ok', [8148148])).rows[0].ok) {
         throw new Error('Projection deferred: normalization lane occupied');
       }
-      await runSamsungWorkerChild('scripts/build-tps-projection.ts');
+      await runSamsungWorkerChild('scripts/build-tps-projection.ts', ['--samsung-only']);
       connectionGuard.assertHealthy();
       const { syncSamsungStorefront } = await import('./sync-samsung-storefront');
       storefrontHealth = (await syncSamsungStorefront(pg, true)).summary;

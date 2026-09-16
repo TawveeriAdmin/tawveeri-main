@@ -64,6 +64,12 @@ const STORE_NAME_CASE = `case ph.store_name ${TPS_STORES.map((s) => `when '${s.i
 const STORE_ID_NAME_CASE = `case co.store_id ${TPS_STORES.map((s) => `when ${s.id} then '${s.name}'`).join(" ")} else co.store_id::text end`;
 
 const DRY = process.argv.includes("--dry");
+const SAMSUNG_ONLY = process.argv.includes('--samsung-only');
+export function assertSamsungProjectionScope(rows: { tps_identity_key: string }[]) {
+  if (rows.some(row => !row.tps_identity_key.startsWith('samsung|MODEL:'))) {
+    throw new Error('Samsung projection scope contains an unrelated identity');
+  }
+}
 const QUIET = process.argv.includes("--quiet") || DRY;
 
 interface Row {
@@ -199,12 +205,17 @@ async function main() {
   // aggregate then emits parallel store/price arrays already ordered by price.
   const t1 = Date.now();
   const { rows } = await pg.query<Row>(`
-    with history_latest as (
+    with scoped_canonicals as materialized (
+      select c.* from canonical_products c
+      where not $2::boolean or (c.tps_identity_key like 'samsung|MODEL:%'
+        and exists(select 1 from tps_current_offers scoped where scoped.identity_key=c.tps_identity_key and scoped.store_id=6))
+    ), history_latest as (
       select distinct on (ph.canonical_product_id, ${STORE_NAME_CASE})
              ph.canonical_product_id, ${STORE_NAME_CASE} as store_name, ph.price, ph.observed_at,
              ph.store_id
       from price_history ph
       where ph.tps_observation_id is not null
+        and ph.canonical_product_id in (select id from scoped_canonicals)
         and not exists (
           select 1 from canonical_products prior
           join tps_current_offers retired on retired.identity_key=prior.tps_identity_key
@@ -241,6 +252,7 @@ async function main() {
       select canonical_product_id, store_id::int as store_id, max(observed_at) as last_observed_at
       from normalized_product_observations
       where canonical_product_id is not null and store_id ~ '^[0-9]+$'
+        and canonical_product_id in (select id from scoped_canonicals)
       group by canonical_product_id, store_id::int
     ),
     -- INCIDENT FIX (2026-08-28, AirPods Pro 2 SAR-79 recurrence): history_latest above can
@@ -264,7 +276,7 @@ async function main() {
              case when co.payload->>'_availability' = 'out_of_stock' then null else co.price end as price,
              co.observed_at
       from tps_current_offers co
-      join canonical_products c on c.tps_identity_key = co.identity_key
+      join scoped_canonicals c on c.tps_identity_key = co.identity_key
       where co.status = 'valid' and (co.price > 0 or co.payload->>'_availability' = 'out_of_stock')
         and not exists (
           select 1 from tps_offer_delist_signals d
@@ -327,29 +339,31 @@ async function main() {
       select canonical_product_id, max(observed_at) as last_observed_at
       from normalized_product_observations
       where canonical_product_id is not null
+        and canonical_product_id in (select id from scoped_canonicals)
       group by canonical_product_id
     )
     select c.id::text as canonical_id, c.tps_identity_key, c.name_ar, c.name_en,
            c.brand, c.category, c.identity_confidence, c.attributes,
            a.stores, a.prices, a.fresh,
            coalesce(o.last_observed_at, a.last_price_change_at) as last_observed_at
-    from canonical_products c
+    from scoped_canonicals c
     left join agg a on a.canonical_product_id = c.id
     left join obs o on o.canonical_product_id = c.id
     where c.tps_identity_key is not null
       and c.is_active
     order by c.id
-  `, [PICK_FRESHNESS_MAX_HOURS]);
+  `, [PICK_FRESHNESS_MAX_HOURS, SAMSUNG_ONLY]);
   queries++;
   const readMs = Date.now() - t1;
 
   // ── PHASE 2: derive in-process (exact v2 string semantics) ────────────────
+  if (SAMSUNG_ONLY) assertSamsungProjectionScope(rows);
   const projected = rows.map(deriveProjection);
   const comparable = projected.filter((p) => p.has_comparison).length;
 
   if (DRY) {
     console.log(JSON.stringify({
-      mode: "dry", canonicals: rows.length, comparable,
+      mode: "dry", scope: SAMSUNG_ONLY ? 'Samsung manufacturer identities with store 6 evidence' : 'all', canonicals: rows.length, comparable,
       read_ms: readMs, total_ms: Date.now() - t0, queries,
     }));
     await pg.end();
@@ -453,14 +467,17 @@ async function main() {
   // row and keeps its projection entry at store_count 0, unchanged from v2.
   const pruned = await pg.query(
     `delete from tps_product_projection p
-      where not exists (
+      where (not $1::boolean or (p.tps_identity_key like 'samsung|MODEL:%'
+        and exists(select 1 from tps_current_offers scoped where scoped.identity_key=p.tps_identity_key and scoped.store_id=6)))
+      and not exists (
         select 1 from canonical_products c
-         where c.tps_identity_key = p.tps_identity_key and c.is_active)`
+         where c.tps_identity_key = p.tps_identity_key and c.is_active)`, [SAMSUNG_ONLY]
   );
   queries++;
   const totalMs = Date.now() - t0;
 
   if (!QUIET) {
+    console.log(`  scope           : ${SAMSUNG_ONLY ? 'Samsung manufacturer identities with store 6 evidence' : 'all'}`);
     console.log(`TPS Layer 5 — Projection v3 (set-based)`);
     console.log(`  canonicals read : ${rows.length}   (${readMs} ms, 1 query)`);
     console.log(`  rows written    : ${written}       (${writeMs} ms, ${queries - 2} statements)`);
