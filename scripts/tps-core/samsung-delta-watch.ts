@@ -116,7 +116,9 @@ async function main() {
     // evidence as a refresh seed, never as proof that the PDP is still available.
     const { rows: priorOffers } = await pg.query(`select o.url,r.payload->>'sku' model
       from tps_current_offers o join raw_observations r on r.id=o.raw_obs_id
-      where o.store_id=6 and o.status='valid'`);
+      where o.store_id=6 and o.status='valid'
+      union select ps.product_url,p.model from products p
+      join product_stores ps on ps.product_id=p.id where ps.store_id=6`);
     for (const row of priorOffers) {
       if (known.has(row.url) || samsungCatalogExclusion(row.model || '')) continue;
       const identity = samsungManufacturerIdentity(6, { brand: 'Samsung', sku: row.model, product_url: row.url });
