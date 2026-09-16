@@ -6,6 +6,7 @@
 // --dry-run performs source reads/classification without database mutations.
 import { config } from "dotenv";
 import { resolve } from "path";
+import { guardSamsungConnections } from './samsung-connection-guard';
 config({ path: resolve(process.cwd(), ".env.local") });
 
 const DELTA_LOCK_KEY = "samsung_ksa_delta_watch";
@@ -33,10 +34,11 @@ async function main() {
   const { fetchSamsungCatalog, samsungSaudiUrl, samsungCatalogProduct } = await import("../../src/lib/scraping/stores/samsung-catalog");
   const { samsungManufacturerIdentity, samsungCatalogExclusion } = await import("./samsung-manufacturer-identity");
 
-  const lockClient = new (Client as any)({ connectionString: toPoolerDbUrl(process.env.SUPABASE_DB_URL || ""), ssl: { rejectUnauthorized: false } });
+  const lockClient = new (Client as any)({ connectionString: toPoolerDbUrl(process.env.SUPABASE_DB_URL || ""), ssl: { rejectUnauthorized: false }, keepAlive: true, keepAliveInitialDelayMillis: 10000 });
   await lockClient.connect();
-  const pg = new (Client as any)({ connectionString: toPoolerDbUrl(process.env.SUPABASE_DB_URL || ""), ssl: { rejectUnauthorized: false } });
+  const pg = new (Client as any)({ connectionString: toPoolerDbUrl(process.env.SUPABASE_DB_URL || ""), ssl: { rejectUnauthorized: false }, keepAlive: true, keepAliveInitialDelayMillis: 10000 });
   await pg.connect();
+  const connectionGuard = guardSamsungConnections([lockClient, pg]);
   const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } });
 
   // ── Singleton guard (Section 10) — the exact proven pattern from the closed recovery ──
@@ -45,6 +47,7 @@ async function main() {
     console.error(`[singleton-guard] REFUSED — another delta-watch instance already holds the lock (key="${DELTA_LOCK_KEY}").`);
     await lockClient.end().catch(() => {});
     await pg.end().catch(() => {});
+    connectionGuard.close();
     process.exit(1);
   }
   console.log(`[singleton-guard] lock acquired — sole delta-watch instance for this run.`);
@@ -95,6 +98,7 @@ async function main() {
     }
     stats.sitemap_urls_seen = currentSet.size;
     const catalog = await fetchSamsungCatalog();
+    connectionGuard.assertHealthy();
     const catalogModels = new Map<string, typeof catalog[number]>();
     for (const item of catalog) if (!catalogModels.has(item.model.modelCode)) catalogModels.set(item.model.modelCode, item);
     for (const item of catalogModels.values()) {
@@ -134,6 +138,7 @@ async function main() {
     // model can change stock or price without changing any sitemap entry.
     let finderIngested = 0;
     if (!DRY) {
+      connectionGuard.assertHealthy();
       finderIngested = await ingestion.ingestBatch('samsung_ksa', [...catalogProducts.values()], storeId, null);
       if (finderIngested !== catalogProducts.size) throw new Error(`Incomplete finder ingestion ${finderIngested}/${catalogProducts.size}`);
     }
@@ -164,6 +169,7 @@ async function main() {
     const observedSupplementModels = new Set<string>();
 
     for (const url of [...deltaUrls, ...refreshOnly]) {
+      connectionGuard.assertHealthy();
       const validatedAt = new Date().toISOString();
       try {
         // Validation (the live PDP fetch + classification) always runs, even in --dry-run
@@ -172,6 +178,7 @@ async function main() {
         // classification a candidate would receive, not just that it was "seen".
         const finderProduct = finderForUrl(url);
         const scraped = finderProduct ?? await scraper.updateProductPrice(url);
+        connectionGuard.assertHealthy();
         if (!scraped) {
           stats.invalid++;
           const prior = known.get(url);
@@ -255,6 +262,7 @@ async function main() {
         lifecycle_state: 'CURRENT', consecutive_misses: 0 });
     }
     if (!DRY && newBaselineRows.length) {
+      connectionGuard.assertHealthy();
       const { error } = await sb.from("samsung_official_url_baseline").upsert(
         newBaselineRows.map((r) => ({ ...r, last_seen_at: validatedAtNow(), last_validated_at: validatedAtNow() })),
         { onConflict: "official_url" }
@@ -298,9 +306,11 @@ async function main() {
     let realizationHealth: Record<string, unknown> | null = null;
     let storefrontHealth: Record<string, unknown> | null = null;
     if (!DRY && (discoveries.length || finderIngested)) {
+      connectionGuard.assertHealthy();
       console.log(`[canonicalize] ${discoveries.length} new product(s) — running the standard normalize-incremental (Samsung-scoped, forward-cursor, existing products untouched)...`);
       const { execSync } = await import("child_process");
       execSync("npx tsx scripts/tps-core/normalize-incremental.ts --stores 6 --batches 20 --limit 500 --require-lane", { stdio: "inherit" });
+      connectionGuard.assertHealthy();
       canonicalAt = new Date().toISOString();
 
       // Build before checking reachability. Active identity alone is not projection.
@@ -308,6 +318,7 @@ async function main() {
         throw new Error('Projection deferred: normalization lane occupied');
       }
       execSync("npx tsx scripts/build-tps-projection.ts", { stdio: "inherit" });
+      connectionGuard.assertHealthy();
       const { syncSamsungStorefront } = await import('./sync-samsung-storefront');
       storefrontHealth = (await syncSamsungStorefront(pg, true)).summary;
       console.log('[storefront-health]', JSON.stringify(storefrontHealth));
@@ -380,10 +391,14 @@ async function main() {
       .some(field => Number(realizationHealth![field]) > 0)) throw new Error('Samsung realization incomplete; see recorded health metrics');
   } catch (e) {
     if (!DRY && runId) {
-      await pg.query("update samsung_delta_watch_runs set finished_at=now(), status='failed', notes=$2 where run_id=$1", [runId, JSON.stringify({ ...runNotes, error: e instanceof Error ? e.message : String(e) })]).catch(() => {});
+      // Independent HTTP connection: a lost PG session cannot report its own failure.
+      const { error } = await sb.from('samsung_delta_watch_runs').update({ finished_at: new Date().toISOString(),
+        status: 'failed', notes: JSON.stringify({ ...runNotes, error: e instanceof Error ? e.message : String(e) }) }).eq('run_id', runId);
+      if (error) console.error('[run] failed to persist failure status:', error.message);
     }
     throw e;
   } finally {
+    connectionGuard.close();
     await lockClient.query("select pg_advisory_unlock(hashtext($1)::bigint)", [DELTA_LOCK_KEY]).catch(() => {});
     await lockClient.end().catch(() => {});
     await pg.end().catch(() => {});
