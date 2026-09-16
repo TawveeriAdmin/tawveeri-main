@@ -15,17 +15,25 @@ async function main() {
       count(*)::int observations,count(*) filter(where scraped_at<$1)::int before_observations
       from raw_observations where store_id=6 and payload->>'sku' is not null group by upper(payload->>'sku')`, [journal.observedAt])).rows;
     const rawByModel = new Map(raw.map((r: any) => [r.model, r])) as Map<string, any>;
+    const firstNew = (await pg.query(`select distinct on (upper(payload->>'sku')) upper(payload->>'sku') model,
+      id, scraped_at, payload#>>'{specifications,samsung_catalog,source_method}' source_method,
+      payload->>'product_url' product_url from raw_observations
+      where store_id=6 and scraped_at >= $1 and payload->>'sku' is not null
+      order by upper(payload->>'sku'),scraped_at,id`, [journal.observedAt])).rows;
+    const firstNewByModel = new Map(firstNew.map((r: any) => [r.model, r]));
     const legacy = new Set(journal.before.legacy.map((r: any) => r.model));
     const oldOffers = new Set(journal.before.offers.filter((r: any) => r.store_id === 6).map((r: any) => r.raw_payload?.sku));
     const exact = new Set(journal.before.canonicals.map((r: any) => r.tps_identity_key));
     const rows = included.map((m: any) => ({ model: m.model, category: m.identity.category, beforeRaw: (rawByModel.get(m.model)?.before_observations || 0) > 0,
       beforeLegacy: legacy.has(m.model), beforeOfferUnderAnyIdentity: oldOffers.has(m.model), beforeExactCanonical: exact.has(m.identity.key),
-      raw: rawByModel.get(m.model) || null }));
+      raw: rawByModel.get(m.model) || null, firstObservationAfterRecovery: firstNewByModel.get(m.model) || null }));
     const summary = { source: rows.length, representedInRawBefore: rows.filter((r: any) => r.beforeRaw).length,
       representedInLegacyBefore: rows.filter((r: any) => r.beforeLegacy).length,
       representedInOfferBefore: rows.filter((r: any) => r.beforeOfferUnderAnyIdentity).length,
       exactCanonicalBefore: rows.filter((r: any) => r.beforeExactCanonical).length,
       firstRawAfterRecoveryStarted: rows.filter((r: any) => !r.beforeRaw && r.raw).length,
+      firstRawWithNewFinderProvenance: rows.filter((r: any) => !r.beforeRaw
+        && r.firstObservationAfterRecovery?.source_method === 'samsung_public_finder').length,
       noRawNow: rows.filter((r: any) => !r.raw).length };
     writeFileSync('docs/evidence/samsung-recovery-attribution-2026-09-16.json', JSON.stringify({ measuredAt: new Date().toISOString(),
       journalPath, recoveryStartedAt: journal.observedAt, method: 'Immutable raw first-observation timestamps and pre-write journal. Newly represented is distinct from exact identity repair; timestamp association alone is not causal attribution to a worker.', summary, rows }, null, 2));

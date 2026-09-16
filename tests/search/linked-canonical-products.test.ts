@@ -19,4 +19,14 @@ describe('persisted storefront identity links', () => {
     expect(linkRetrievedCanonicals(rows, [canonical],
       [{ id: 'legacy', canonical_product_id: 'canonical-silver' }])).toEqual(rows);
   });
+  it('links an exact retailer-declared Samsung MPN only to its retrieved manufacturer identity', () => {
+    const rows = [{ product_id: 'retailer' }, { product_id: 'other-region' }, { product_id: 'other-brand' }];
+    const result = linkRetrievedCanonicals(rows, [canonical], [
+      { id: 'retailer', canonical_product_id: 'old-generic', brand: 'سامسونج', model: 'SM-X236BZSEMEA' },
+      { id: 'other-region', canonical_product_id: null, brand: 'Samsung', model: 'SM-X236BZSEUSA' },
+      { id: 'other-brand', canonical_product_id: null, brand: 'Unknown', model: 'SM-X236BZSEMEA' },
+    ]);
+    expect(result[0]).toMatchObject({ tps_identity_key: canonical.tps_identity_key });
+    expect(result.slice(1)).toEqual(rows.slice(1));
+  });
 });

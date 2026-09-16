@@ -19,6 +19,7 @@ import { toStorefrontCategory } from '@/lib/search/canonical-category';
 import { exactModelQuery } from '@/lib/search/exact-model-query';
 import { linkRetrievedCanonicals } from '@/lib/search/linked-canonical-products';
 import { collectCanonicalCandidates } from '@/lib/search/canonical-candidates';
+import { manufacturerCategoryTerms, productQueryText } from '@/lib/search/manufacturer-category-terms';
 import { hoursSince, PICK_FRESHNESS_MAX_HOURS, productTrust, isFreshObservation, type TrustAssessment } from '@/lib/intelligence/evidence-engine';
 
 export const maxDuration = 30;
@@ -1591,7 +1592,7 @@ export function scoreProduct(p: GroupedSearchProduct, priceMin: number, priceMax
   // query — so a 4-store iPhone beats a cheap 1-store AC that only shared the "16" in "16000 BTU".
   let relevanceScore = 0;
   if (relevanceGroups.length) {
-    const hay = (normalizeArabic(p.name_ar || '') + ' ' + (p.name_en || '') + ' ' + (p.brand || '')).toLowerCase();
+    const hay = productQueryText(p);
     const matched = relevanceGroups.filter((g) => relevanceGroupMatches(hay, g, isAcQuery, p.name_ar || '', p.name_en || '')).length;
     if (matched === relevanceGroups.length) relevanceScore = 300;
     else relevanceScore = -400 * (relevanceGroups.length - matched);
@@ -1638,7 +1639,7 @@ export function selectClosestOptions(
 ): ClosestOption[] {
   const relevant = relevanceGroups.length
     ? candidates.filter((p) => {
-        const hay = (normalizeArabic(p.name_ar || '') + ' ' + (p.name_en || '') + ' ' + (p.brand || '')).toLowerCase();
+        const hay = productQueryText(p);
         return relevanceGroups.every((g) => g.some((t) => hay.includes(t)));
       })
     : candidates;
@@ -1714,7 +1715,7 @@ function buildDecisionLayer(
   // showing the least-bad item as "اختيار توفيري" asserts an answer we do not have —
   // unknown beats incorrect. The results list still renders below; only the claim goes.
   const bestMatchesQuery = !best || relevanceGroups.length === 0 || (() => {
-    const hay = (normalizeArabic(best.name_ar || '') + ' ' + (best.name_en || '') + ' ' + (best.brand || '')).toLowerCase();
+    const hay = productQueryText(best);
     return relevanceGroups.every((g) => g.some((t) => hay.includes(t)));
   })();
   const trustworthyPick = !!best && best.best_price > 0 && bestMatchesQuery
@@ -1961,6 +1962,9 @@ async function enrichWithTPS(
     }
 
     return products.map((p, idx) => {
+      // Existing canonical retrieval is stronger than this legacy title-based
+      // enrichment. A duplicate model claim must never overwrite an exact key.
+      if (p.tps_identity_key) return p;
       let enriched = { ...p };
 
       for (const code of productModels[idx].codes) {
@@ -1998,7 +2002,7 @@ async function searchTPSCanonical(
     if (!words.length || (!categories.length && !exactModel)) return [];
     const prods = await collectCanonicalCandidates((from, to) => {
       let canonicalQuery = supabase.from('canonical_products')
-        .select('id, name_ar, name_en, brand, image_url, tps_identity_key, model_number, category')
+        .select('id, name_ar, name_en, brand, image_url, tps_identity_key, model_number, category, attributes')
         .eq('is_active', true);
       canonicalQuery = exactModel ? canonicalQuery.eq('model_number', exactModel) : canonicalQuery.in('category', categories);
       return canonicalQuery.order('id').range(from, to);
@@ -2008,7 +2012,8 @@ async function searchTPSCanonical(
 
     const wordTermsList = words.map(expandWordTerms).filter((t) => t.length > 0);
     const matched = prods.filter((p) => {
-      const hay = (normalizeArabic(p.name_ar || '') + ' ' + normalizeArabic(p.name_en || '') + ' ' + normalizeArabic(p.brand || '')).toLowerCase();
+      const hay = (normalizeArabic(p.name_ar || '') + ' ' + normalizeArabic(p.name_en || '') + ' '
+        + normalizeArabic(p.brand || '') + ' ' + manufacturerCategoryTerms(p)).toLowerCase();
       return wordTermsList.every((terms) => terms.some((t) => hay.includes(t)));
     });
     if (!matched.length) return [];
@@ -2277,6 +2282,7 @@ async function searchTPSCanonical(
         // Single-store products get no compare CTA (the UI shows an honest single-store action instead).
         tps_compare_url: byStore.size >= 2 ? `/ar/compare/${encodeURIComponent(p.tps_identity_key || '')}` : null,
         tps_identity_key: p.tps_identity_key,
+        _verified_category_terms: manufacturerCategoryTerms(p),
         has_tps_comparison: byStore.size >= 2,
       } as GroupedSearchProduct);
     }
@@ -2583,9 +2589,9 @@ export async function POST(request: NextRequest) {
       // canonical appeared twice. Resolve persisted links before deduplication;
       // title regex enrichment later in this route cannot prove this relationship.
       const legacyIds = [...new Set(products.filter(p => !p.tps_identity_key && p.product_id).map(p => p.product_id))];
-      const links: Array<{ id: string; canonical_product_id: string | null }> = [];
+      const links: Array<{ id: string; canonical_product_id: string | null; model: string | null; brand: string | null }> = [];
       for (let start = 0; start < legacyIds.length; start += 100) {
-        const { data, error } = await supabase.from('products').select('id,canonical_product_id')
+        const { data, error } = await supabase.from('products').select('id,canonical_product_id,model,brand')
           .in('id', legacyIds.slice(start, start + 100));
         if (error) console.warn('[TPS Search] persisted links unavailable:', error.message);
         else links.push(...(data || []));
@@ -2597,6 +2603,9 @@ export async function POST(request: NextRequest) {
   }
 
   // Deduplication after TPS merge
+  // Resolve the existing legacy enrichment before deduplication; doing it after
+  // pagination could create a second copy of an already-returned exact identity.
+  products = await enrichWithTPS(products, supabase);
   products = deduplicateProducts(products);
 
   // Relevance groups (hoisted): used by BOTH the gate (filter) and scoreProduct (rank) so the query's
@@ -2721,7 +2730,7 @@ export async function POST(request: NextRequest) {
     const wordGroups = relevanceGroups;
     if (wordGroups.length) {
       const gated = products.filter((p) => {
-        const hay = (normalizeArabic(p.name_ar || '') + ' ' + (p.name_en || '') + ' ' + (p.brand || '')).toLowerCase();
+        const hay = productQueryText(p);
         return wordGroups.every((group) => relevanceGroupMatches(hay, group, isAcQuery, p.name_ar || '', p.name_en || ''));
       });
       if (gated.length > 0) products = gated;
@@ -2775,7 +2784,7 @@ export async function POST(request: NextRequest) {
     // (TV-008, the AirPods aftermath, ADR-205) is a record of regressions from
     // broadening exactly that zeroing trigger, and this deliberately stays out of it.
     const gated = products.filter((p) => {
-      const hay = (normalizeArabic(p.name_ar || '') + ' ' + (p.name_en || '') + ' ' + (p.brand || '')).toLowerCase();
+      const hay = productQueryText(p);
       return relevanceGroups.every((group) => relevanceGroupMatches(hay, group, isAcQuery, p.name_ar || '', p.name_en || ''));
     });
     if (gated.length > 0) products = gated;
@@ -2863,8 +2872,8 @@ export async function POST(request: NextRequest) {
   // with different `page` values returning byte-identical product lists.
   const pageProducts = products.slice(offsetStart, offsetEnd + 1);
 
-  // TPS Enrichment
-  const enrichedProducts = await enrichWithTPS(pageProducts, supabase);
+  // Identity enrichment and deduplication already ran before pagination.
+  const enrichedProducts = pageProducts;
 
   const prices = enrichedProducts.map((p) => p.best_price).filter((n) => n > 0);
 
