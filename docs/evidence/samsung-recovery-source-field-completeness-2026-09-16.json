@@ -1,0 +1,32 @@
+{
+  "measuredAt": "2026-09-16T09:33:36.911Z",
+  "finderModels": 1277,
+  "nonemptyIdentifierFields": {},
+  "stock": {
+    "null": 668,
+    "inStock": 510,
+    "lowStock": 79,
+    "outOfStock": 20
+  },
+  "cta": {
+    "learnMore|Coming soon": 9,
+    "whereToBuy|Buy": 90,
+    "outOfStock|Buy": 2,
+    "learnMore|Buy": 64,
+    "whereToBuy|null": 442,
+    "learnMore|null": 501,
+    "whereToBuy|buy": 57,
+    "learnMore|buy": 94,
+    "outOfStock|null": 18
+  },
+  "includedPolicyV2": {
+    "measuredAt": "2026-09-16T13:13:07.510Z",
+    "denominator": 1284,
+    "names": 1284,
+    "completeModelCodes": 1284,
+    "images": 1260,
+    "positiveCurrentPrice": 611,
+    "explicitReferencePrice": 348,
+    "positivePriceDiscount": 347
+  }
+}

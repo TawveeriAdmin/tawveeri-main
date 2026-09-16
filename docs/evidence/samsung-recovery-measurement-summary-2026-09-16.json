@@ -1,0 +1,267 @@
+{
+  "measuredAt": "2026-09-16T13:24:06.306Z",
+  "beforeAt": "2026-09-16T09:20:16.732Z",
+  "afterAt": "2026-09-16T13:22:42.804Z",
+  "deployedCommit": "e9a2eb628bdf5e3b9d36d35aff64e4d5f28822ab",
+  "sourceCaptureCompletedAt": "2026-09-16T10:28:32.505Z",
+  "definitions": {
+    "model": "Complete Saudi manufacturer commercial variant, not family or URL",
+    "rawBefore": "Immutable observation before recovery application started",
+    "canonicalBefore": "Exact full-model identity, not any generic canonical association",
+    "purchasableAfter": "Positive current valid Samsung offer and affirmatively purchasable stock state",
+    "search": "API/browser census reported separately; projection is not proof of a rendered user journey",
+    "multiStore": "Excluded from before/after uplift because before instrumentation lacked normalized stock metadata"
+  },
+  "source": {
+    "finderModels": 1277,
+    "pdpSupplementModels": 37,
+    "knownPdpSupplementModels": 1,
+    "includedModels": 1284,
+    "excludedModels": 31,
+    "unresolvedModels": 0,
+    "urlClassifications": {
+      "OUTSIDE_CONSUMER_CATEGORIES": 1129,
+      "NAVIGATION_OR_EDITORIAL": 217,
+      "FINDER_MODEL_ALIAS": 2459,
+      "PDP_SUPPLEMENT": 60,
+      "NO_EXTRACTABLE_PRODUCT": 67,
+      "BUSINESS_DISPLAY_ACCESSORY": 4,
+      "HVAC_INSTALLATION_PANEL": 10,
+      "REPLACEMENT_ASSEMBLY_PART": 8,
+      "MULTI_PRODUCT_BUNDLE": 62
+    },
+    "validatedModelUrls": 2697,
+    "additionalAliases": 1413,
+    "ambiguousUrls": 0
+  },
+  "categories": {
+    "mobile": {
+      "source": 254,
+      "rawBefore": 91,
+      "rawAfter": 254,
+      "canonicalBefore": 0,
+      "canonicalAfter": 254,
+      "projectionBefore": 0,
+      "projectionAfter": 254,
+      "validCurrentOfferAfter": 254,
+      "purchasableAfter": 158
+    },
+    "tablet": {
+      "source": 127,
+      "rawBefore": 86,
+      "rawAfter": 127,
+      "canonicalBefore": 96,
+      "canonicalAfter": 127,
+      "projectionBefore": 96,
+      "projectionAfter": 127,
+      "validCurrentOfferAfter": 127,
+      "purchasableAfter": 46
+    },
+    "smartwatch": {
+      "source": 25,
+      "rawBefore": 19,
+      "rawAfter": 25,
+      "canonicalBefore": 0,
+      "canonicalAfter": 25,
+      "projectionBefore": 0,
+      "projectionAfter": 25,
+      "validCurrentOfferAfter": 25,
+      "purchasableAfter": 16
+    },
+    "audio": {
+      "source": 38,
+      "rawBefore": 36,
+      "rawAfter": 38,
+      "canonicalBefore": 0,
+      "canonicalAfter": 38,
+      "projectionBefore": 0,
+      "projectionAfter": 38,
+      "validCurrentOfferAfter": 38,
+      "purchasableAfter": 10
+    },
+    "ring": {
+      "source": 33,
+      "rawBefore": 33,
+      "rawAfter": 33,
+      "canonicalBefore": 0,
+      "canonicalAfter": 33,
+      "projectionBefore": 0,
+      "projectionAfter": 33,
+      "validCurrentOfferAfter": 33,
+      "purchasableAfter": 5
+    },
+    "accessories": {
+      "source": 404,
+      "rawBefore": 0,
+      "rawAfter": 404,
+      "canonicalBefore": 4,
+      "canonicalAfter": 404,
+      "projectionBefore": 4,
+      "projectionAfter": 404,
+      "validCurrentOfferAfter": 404,
+      "purchasableAfter": 240
+    },
+    "stylus": {
+      "source": 20,
+      "rawBefore": 20,
+      "rawAfter": 20,
+      "canonicalBefore": 0,
+      "canonicalAfter": 20,
+      "projectionBefore": 0,
+      "projectionAfter": 20,
+      "validCurrentOfferAfter": 20,
+      "purchasableAfter": 14
+    },
+    "tracker": {
+      "source": 3,
+      "rawBefore": 3,
+      "rawAfter": 3,
+      "canonicalBefore": 0,
+      "canonicalAfter": 3,
+      "projectionBefore": 0,
+      "projectionAfter": 3,
+      "validCurrentOfferAfter": 3,
+      "purchasableAfter": 1
+    },
+    "tv": {
+      "source": 120,
+      "rawBefore": 107,
+      "rawAfter": 120,
+      "canonicalBefore": 117,
+      "canonicalAfter": 120,
+      "projectionBefore": 117,
+      "projectionAfter": 120,
+      "validCurrentOfferAfter": 120,
+      "purchasableAfter": 44
+    },
+    "refrigerator": {
+      "source": 25,
+      "rawBefore": 21,
+      "rawAfter": 25,
+      "canonicalBefore": 0,
+      "canonicalAfter": 25,
+      "projectionBefore": 0,
+      "projectionAfter": 25,
+      "validCurrentOfferAfter": 25,
+      "purchasableAfter": 8
+    },
+    "dishwasher": {
+      "source": 7,
+      "rawBefore": 5,
+      "rawAfter": 7,
+      "canonicalBefore": 3,
+      "canonicalAfter": 7,
+      "projectionBefore": 3,
+      "projectionAfter": 7,
+      "validCurrentOfferAfter": 7,
+      "purchasableAfter": 1
+    },
+    "microwave": {
+      "source": 3,
+      "rawBefore": 3,
+      "rawAfter": 3,
+      "canonicalBefore": 1,
+      "canonicalAfter": 3,
+      "projectionBefore": 1,
+      "projectionAfter": 3,
+      "validCurrentOfferAfter": 3,
+      "purchasableAfter": 2
+    },
+    "cooker": {
+      "source": 4,
+      "rawBefore": 4,
+      "rawAfter": 4,
+      "canonicalBefore": 4,
+      "canonicalAfter": 4,
+      "projectionBefore": 4,
+      "projectionAfter": 4,
+      "validCurrentOfferAfter": 4,
+      "purchasableAfter": 3
+    },
+    "washing_machine": {
+      "source": 33,
+      "rawBefore": 30,
+      "rawAfter": 33,
+      "canonicalBefore": 0,
+      "canonicalAfter": 33,
+      "projectionBefore": 0,
+      "projectionAfter": 33,
+      "validCurrentOfferAfter": 33,
+      "purchasableAfter": 12
+    },
+    "air_conditioner": {
+      "source": 49,
+      "rawBefore": 39,
+      "rawAfter": 49,
+      "canonicalBefore": 0,
+      "canonicalAfter": 49,
+      "projectionBefore": 0,
+      "projectionAfter": 49,
+      "validCurrentOfferAfter": 49,
+      "purchasableAfter": 9
+    },
+    "vacuum": {
+      "source": 2,
+      "rawBefore": 2,
+      "rawAfter": 2,
+      "canonicalBefore": 2,
+      "canonicalAfter": 2,
+      "projectionBefore": 2,
+      "projectionAfter": 2,
+      "validCurrentOfferAfter": 2,
+      "purchasableAfter": 0
+    },
+    "monitor": {
+      "source": 136,
+      "rawBefore": 101,
+      "rawAfter": 136,
+      "canonicalBefore": 9,
+      "canonicalAfter": 136,
+      "projectionBefore": 9,
+      "projectionAfter": 136,
+      "validCurrentOfferAfter": 136,
+      "purchasableAfter": 21
+    },
+    "hood": {
+      "source": 1,
+      "rawBefore": 0,
+      "rawAfter": 1,
+      "canonicalBefore": 0,
+      "canonicalAfter": 1,
+      "projectionBefore": 0,
+      "projectionAfter": 1,
+      "validCurrentOfferAfter": 1,
+      "purchasableAfter": 0
+    }
+  },
+  "totals": {
+    "source": 1284,
+    "rawBefore": 600,
+    "rawAfter": 1284,
+    "canonicalBefore": 236,
+    "canonicalAfter": 1284,
+    "projectionBefore": 236,
+    "projectionAfter": 1284,
+    "validCurrentOfferAfter": 1284,
+    "purchasableAfter": 590
+  },
+  "lossReasonsAfter": {
+    "NO_POSITIVE_CURRENT_PRICE": 678,
+    "PURCHASABLE": 590,
+    "PURCHASE_AVAILABILITY_NOT_AFFIRMED": 16
+  },
+  "attribution": {
+    "source": 1284,
+    "representedInRawBefore": 600,
+    "representedInLegacyBefore": 397,
+    "representedInOfferBefore": 378,
+    "exactCanonicalBefore": 236,
+    "firstRawAfterRecoveryStarted": 684,
+    "firstRawWithNewFinderProvenance": 671,
+    "noRawNow": 0
+  },
+  "rawCoveragePercent": {
+    "before": 46.73,
+    "after": 100
+  }
+}

@@ -75550,7 +75550,7 @@
         "key": "samsung|MODEL:CY-TF65BRCXUE"
       },
       "source": "sitemap_pdp",
-      "exclusion": null
+      "exclusion": "BUSINESS_DISPLAY_ACCESSORY"
     },
     {
       "model": "STN-WM55RXUE",
@@ -75590,7 +75590,7 @@
         "key": "samsung|MODEL:STN-WM55RXUE"
       },
       "source": "sitemap_pdp",
-      "exclusion": null
+      "exclusion": "BUSINESS_DISPLAY_ACCESSORY"
     },
     {
       "model": "PC4NBNMUN",
@@ -75628,7 +75628,7 @@
         "key": "samsung|MODEL:PC4NBNMUN"
       },
       "source": "sitemap_pdp",
-      "exclusion": null
+      "exclusion": "HVAC_INSTALLATION_PANEL"
     },
     {
       "model": "PC4NUNMANDZ",
@@ -75666,7 +75666,7 @@
         "key": "samsung|MODEL:PC4NUNMANDZ"
       },
       "source": "sitemap_pdp",
-      "exclusion": null
+      "exclusion": "HVAC_INSTALLATION_PANEL"
     },
     {
       "model": "PC4NBDMUN",
@@ -75705,7 +75705,7 @@
         "key": "samsung|MODEL:PC4NBDMUN"
       },
       "source": "sitemap_pdp",
-      "exclusion": null
+      "exclusion": "HVAC_INSTALLATION_PANEL"
     },
     {
       "model": "PC4NUDMANDZ",
@@ -75744,7 +75744,7 @@
         "key": "samsung|MODEL:PC4NUDMANDZ"
       },
       "source": "sitemap_pdp",
-      "exclusion": null
+      "exclusion": "HVAC_INSTALLATION_PANEL"
     },
     {
       "model": "PC4NUFDAN",
@@ -75782,7 +75782,7 @@
         "key": "samsung|MODEL:PC4NUFDAN"
       },
       "source": "sitemap_pdp",
-      "exclusion": null
+      "exclusion": "HVAC_INSTALLATION_PANEL"
     },
     {
       "model": "MWR-SH00NDZ",
@@ -79286,7 +79286,7 @@
         "model": "CY-TF65BRCXUE",
         "key": "samsung|MODEL:CY-TF65BRCXUE"
       },
-      "classification": "PDP_SUPPLEMENT"
+      "classification": "BUSINESS_DISPLAY_ACCESSORY"
     },
     {
       "url": "https://www.samsung.com/sa/display-accessories/all-display-accessories/",
@@ -79332,7 +79332,7 @@
         "model": "STN-WM55RXUE",
         "key": "samsung|MODEL:STN-WM55RXUE"
       },
-      "classification": "PDP_SUPPLEMENT"
+      "classification": "BUSINESS_DISPLAY_ACCESSORY"
     },
     {
       "url": "https://www.samsung.com/sa/experiencealula/",
@@ -79841,7 +79841,7 @@
         "model": "PC4NBNMUN",
         "key": "samsung|MODEL:PC4NBNMUN"
       },
-      "classification": "PDP_SUPPLEMENT"
+      "classification": "HVAC_INSTALLATION_PANEL"
     },
     {
       "url": "https://www.samsung.com/sa/home-appliance-accessories/360-cassette-white-circular-panel-pc4nunmandz/",
@@ -79880,7 +79880,7 @@
         "model": "PC4NUNMANDZ",
         "key": "samsung|MODEL:PC4NUNMANDZ"
       },
-      "classification": "PDP_SUPPLEMENT"
+      "classification": "HVAC_INSTALLATION_PANEL"
     },
     {
       "url": "https://www.samsung.com/sa/home-appliance-accessories/360cst-panel-black-square-pc4nbdmun/",
@@ -79920,7 +79920,7 @@
         "model": "PC4NBDMUN",
         "key": "samsung|MODEL:PC4NBDMUN"
       },
-      "classification": "PDP_SUPPLEMENT"
+      "classification": "HVAC_INSTALLATION_PANEL"
     },
     {
       "url": "https://www.samsung.com/sa/home-appliance-accessories/360cst-panel-white-square-pc4nudmandz/",
@@ -79960,7 +79960,7 @@
         "model": "PC4NUDMANDZ",
         "key": "samsung|MODEL:PC4NUDMANDZ"
       },
-      "classification": "PDP_SUPPLEMENT"
+      "classification": "HVAC_INSTALLATION_PANEL"
     },
     {
       "url": "https://www.samsung.com/sa/home-appliance-accessories/4way-cst-windfree-panel-pc4nufdan/",
@@ -79999,7 +79999,7 @@
         "model": "PC4NUFDAN",
         "key": "samsung|MODEL:PC4NUFDAN"
       },
-      "classification": "PDP_SUPPLEMENT"
+      "classification": "HVAC_INSTALLATION_PANEL"
     },
     {
       "url": "https://www.samsung.com/sa/home-appliance-accessories/acc-mwr-sh00ndz/",
@@ -95711,7 +95711,7 @@
         "model": "CY-TF65BRCXUE",
         "key": "samsung|MODEL:CY-TF65BRCXUE"
       },
-      "classification": "PDP_SUPPLEMENT"
+      "classification": "BUSINESS_DISPLAY_ACCESSORY"
     },
     {
       "url": "https://www.samsung.com/sa_en/display-accessories/standforflip2-stn-wm55r-stn-wm55rxue/",
@@ -95752,7 +95752,7 @@
         "model": "STN-WM55RXUE",
         "key": "samsung|MODEL:STN-WM55RXUE"
       },
-      "classification": "PDP_SUPPLEMENT"
+      "classification": "BUSINESS_DISPLAY_ACCESSORY"
     },
     {
       "url": "https://www.samsung.com/sa_en/explore/",
@@ -96246,7 +96246,7 @@
         "model": "PC4NBNMUN",
         "key": "samsung|MODEL:PC4NBNMUN"
       },
-      "classification": "PDP_SUPPLEMENT"
+      "classification": "HVAC_INSTALLATION_PANEL"
     },
     {
       "url": "https://www.samsung.com/sa_en/home-appliance-accessories/360-cassette-white-circular-panel-pc4nunmandz/",
@@ -96285,7 +96285,7 @@
         "model": "PC4NUNMANDZ",
         "key": "samsung|MODEL:PC4NUNMANDZ"
       },
-      "classification": "PDP_SUPPLEMENT"
+      "classification": "HVAC_INSTALLATION_PANEL"
     },
     {
       "url": "https://www.samsung.com/sa_en/home-appliance-accessories/360cst-panel-black-square-pc4nbdmun/",
@@ -96325,7 +96325,7 @@
         "model": "PC4NBDMUN",
         "key": "samsung|MODEL:PC4NBDMUN"
       },
-      "classification": "PDP_SUPPLEMENT"
+      "classification": "HVAC_INSTALLATION_PANEL"
     },
     {
       "url": "https://www.samsung.com/sa_en/home-appliance-accessories/360cst-panel-white-square-pc4nudmandz/",
@@ -96365,7 +96365,7 @@
         "model": "PC4NUDMANDZ",
         "key": "samsung|MODEL:PC4NUDMANDZ"
       },
-      "classification": "PDP_SUPPLEMENT"
+      "classification": "HVAC_INSTALLATION_PANEL"
     },
     {
       "url": "https://www.samsung.com/sa_en/home-appliance-accessories/4way-cst-windfree-panel-pc4nufdan/",
@@ -96404,7 +96404,7 @@
         "model": "PC4NUFDAN",
         "key": "samsung|MODEL:PC4NUFDAN"
       },
-      "classification": "PDP_SUPPLEMENT"
+      "classification": "HVAC_INSTALLATION_PANEL"
     },
     {
       "url": "https://www.samsung.com/sa_en/home-appliance-accessories/acc-mwr-sh00ndz/",
@@ -109871,20 +109871,22 @@
     "finderModels": 1277,
     "pdpSupplementModels": 37,
     "knownPdpSupplementModels": 1,
-    "includedModels": 1291,
-    "excludedModels": 24,
+    "includedModels": 1284,
+    "excludedModels": 31,
     "unresolvedModels": 0,
     "urlClassifications": {
       "OUTSIDE_CONSUMER_CATEGORIES": 1129,
       "NAVIGATION_OR_EDITORIAL": 217,
       "FINDER_MODEL_ALIAS": 2459,
-      "PDP_SUPPLEMENT": 74,
+      "PDP_SUPPLEMENT": 60,
       "NO_EXTRACTABLE_PRODUCT": 67,
+      "BUSINESS_DISPLAY_ACCESSORY": 4,
+      "HVAC_INSTALLATION_PANEL": 10,
       "REPLACEMENT_ASSEMBLY_PART": 8,
       "MULTI_PRODUCT_BUNDLE": 62
     }
   },
-  "completedAt": "2026-09-16T09:09:04.643Z",
+  "completedAt": "2026-09-16T10:28:32.505Z",
   "knownPdpCrossCheck": {
     "rows": [
       {

@@ -1,0 +1,113 @@
+{
+  "commit": "e9a2eb628bdf5e3b9d36d35aff64e4d5f28822ab",
+  "deploymentId": "1f1c7983-be73-4051-a5d6-0be7afe2f574",
+  "verifiedAt": "2026-09-16T13:21:23.158Z",
+  "status": "SUCCESS",
+  "categoryQueries": [
+    {
+      "query": "Samsung washing machine",
+      "before": {
+        "returned": 14,
+        "samsung": 0
+      },
+      "after": {
+        "returned": 29,
+        "samsung": 10
+      }
+    },
+    {
+      "query": "Samsung refrigerator",
+      "before": {
+        "returned": 49,
+        "samsung": 3
+      },
+      "after": {
+        "returned": 70,
+        "samsung": 8
+      }
+    },
+    {
+      "query": "سماعات سامسونج",
+      "before": {
+        "returned": 2,
+        "samsung": 0
+      },
+      "after": {
+        "returned": 17,
+        "samsung": 10
+      }
+    },
+    {
+      "query": "ساعة سامسونج",
+      "before": {
+        "returned": 46,
+        "samsung": 4
+      },
+      "after": {
+        "returned": 58,
+        "samsung": 16
+      }
+    },
+    {
+      "query": "تابلت سامسونج",
+      "before": {
+        "returned": 92,
+        "samsung": 0
+      },
+      "after": {
+        "returned": 155,
+        "samsung": 46
+      }
+    },
+    {
+      "query": "ثلاجة سامسونج",
+      "before": {
+        "returned": 49,
+        "samsung": 3
+      },
+      "after": {
+        "returned": 70,
+        "samsung": 8
+      }
+    },
+    {
+      "query": "Samsung dryer",
+      "before": {
+        "returned": 33,
+        "samsung": 4
+      },
+      "after": {
+        "returned": 33,
+        "samsung": 4
+      }
+    }
+  ],
+  "closeoutJourney": {
+    "tested": 1,
+    "searchHttp200": 1,
+    "samsungPresent": 1,
+    "samsungInComparison": 1,
+    "searchComparisonPriceEqual": 1,
+    "neutralPriceOrder": 1,
+    "exactMerchantVariantConfirmed": 1,
+    "errors": 0
+  },
+  "database": {
+    "expected": 1284,
+    "canonical": 1284,
+    "active": 1284,
+    "projection": 1284,
+    "validOffer": 1284,
+    "priced": 606,
+    "purchasable": 590,
+    "multiStore": 90
+  },
+  "unchangedSamsungServingState": true,
+  "automaticContinuity": {
+    "completedRun": "d214346b-f3cd-4d86-bea0-40dba23a188f",
+    "finishedAt": "2026-09-16T12:33:43.372031+00:00",
+    "schedulerSuccessAt": "2026-09-16T12:33:44.885868+00:00",
+    "workerCodeUnchangedInFinalFrontendCommit": true,
+    "extraCycleTriggeredForCloseout": false
+  }
+}
