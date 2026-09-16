@@ -1,0 +1,27 @@
+[
+  {
+    "message": "[samsung-delta-watch] enabled — every 6.0h",
+    "level": "info",
+    "timestamp": "2026-09-15T07:36:20.766606337Z"
+  },
+  {
+    "timestamp": "2026-09-15T08:06:46.202694999Z",
+    "level": "info",
+    "message": "[samsung-delta-watch] exit 1: at resolveDirectorySync (file:///app/node_modules/tsx/dist/register-zZ7SWseA.mjs:2:10315) | at resolveTsPathsSync (file:///app/node_modules/tsx/dist/register-zZ7SWseA.mjs:2:11547) | at resolve (file:///app/node_modules/tsx/dist/register-zZ7SWseA.mjs:2:13365)"
+  },
+  {
+    "message": "[samsung-delta-watch] exit 1: at resolveDirectorySync (file:///app/node_modules/tsx/dist/register-zZ7SWseA.mjs:2:10315) | at resolveTsPathsSync (file:///app/node_modules/tsx/dist/register-zZ7SWseA.mjs:2:11547) | at resolve (file:///app/node_modules/tsx/dist/register-zZ7SWseA.mjs:2:13365)",
+    "level": "info",
+    "timestamp": "2026-09-15T13:36:27.398010388Z"
+  },
+  {
+    "level": "info",
+    "message": "[samsung-delta-watch] exit 1: at resolveDirectorySync (file:///app/node_modules/tsx/dist/register-zZ7SWseA.mjs:2:10315) | at resolveTsPathsSync (file:///app/node_modules/tsx/dist/register-zZ7SWseA.mjs:2:11547) | at resolve (file:///app/node_modules/tsx/dist/register-zZ7SWseA.mjs:2:13365)",
+    "timestamp": "2026-09-15T19:36:27.476755841Z"
+  },
+  {
+    "message": "[samsung-delta-watch] exit 1: at resolveDirectorySync (file:///app/node_modules/tsx/dist/register-zZ7SWseA.mjs:2:10315) | at resolveTsPathsSync (file:///app/node_modules/tsx/dist/register-zZ7SWseA.mjs:2:11547) | at resolve (file:///app/node_modules/tsx/dist/register-zZ7SWseA.mjs:2:13365)",
+    "level": "info",
+    "timestamp": "2026-09-16T01:36:23.412133026Z"
+  }
+]

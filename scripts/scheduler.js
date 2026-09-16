@@ -660,15 +660,25 @@ async function runSamsungDeltaWatch() {
   if (!(await pressureOk('samsung-delta-watch'))) return;
   if (samsungDeltaWatchRunning) { console.log('[samsung-delta-watch] previous run still in progress — skipping'); return; }
   if (refreshRunning || feedIngestRunning || ingestRunning) { console.log('[samsung-delta-watch] busy — deferring'); return; }
+  let runtime;
+  try {
+    runtime = require('./tps-core/samsung-delta-runtime').resolveSamsungDeltaRuntime(process.cwd());
+  } catch (err) {
+    console.error('[samsung-delta-watch]', err.message);
+    return;
+  }
   samsungDeltaWatchRunning = true;
-  const child = spawn('npx', ['tsx', 'scripts/tps-core/samsung-delta-watch.ts'], { cwd: process.cwd(), shell: true, env: process.env });
+  console.log(`[samsung-delta-watch] runtime cwd=${runtime.cwd}`);
+  const child = spawn(process.execPath, [require.resolve('tsx/cli'), runtime.script], { cwd: runtime.cwd, env: process.env });
   let tail = '';
-  const cap = (b) => { tail = (tail + b.toString()).slice(-1500); };
+  let head = '';
+  const cap = (b) => { head = (head + b.toString()).slice(0, 2000); tail = (tail + b.toString()).slice(-1500); };
   child.stdout.on('data', cap);
   child.stderr.on('data', cap);
   child.on('close', (code) => {
     samsungDeltaWatchRunning = false;
     if (code === 0) jobDone('samsung-delta-watch', 'ok');
+    else console.error(`[samsung-delta-watch] failure context: ${head}`);
     const last = tail.split('\n').map((l) => l.trim()).filter((l) => l && !l.includes('injected env')).slice(-3).join(' | ') || '';
     console.log(`[samsung-delta-watch] exit ${code}: ${last}`);
   });

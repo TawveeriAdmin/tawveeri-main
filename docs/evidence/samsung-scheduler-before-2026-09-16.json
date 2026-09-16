@@ -1,0 +1,34 @@
+{
+  "commit": "2a9d3c041ef01efdd613eb34c5a199d16c7d1cb2",
+  "instrumentationRan": "2026-09-16T05:51:01.917Z",
+  "schedulerSpawned": {
+    "pid": 37,
+    "path": "/app/.next/standalone/scripts/scheduler.js",
+    "at": "2026-09-16T05:51:01.941Z"
+  },
+  "schedulerError": null,
+  "schedulerExit": null,
+  "schedulerStdout": "◇ injected env (0) from .env.local // tip: ◈ encrypted .env [www.dotenvx.com]\n◇ injected env (0) from .env // tip: ⌁ auth for agents [www.vestauth.com]\n[scheduler] started — polling https://tawveeri.com/api/cron/dispatch every 60000ms\n[refresh]   full intelligence chain every 60m (~4.6 min per run since ADR-067)\n[ingest] merchant ingestion enabled for [noon, lulu, sharafdg, extra, amazon, jarir, samsung_ksa] — discovery every 12h, prices every 6h\n[recovery] product recovery enabled — every 10m\n[feed-ingest] feed ingestion enabled for [almanea, shaker, najm, alnakheelk, swsg, blackbox] — every 6h\n[reobserve] comparable re-observation enabled — every 6h, limit 60/run\n[samsung-delta-watch] enabled — every 6.0h\n[governor] refresh deferred — post-boot cooldown (8m left)\n",
+  "schedulerStderr": null,
+  "env": {
+    "cronSecret": true,
+    "appUrl": "https://tawveeri.com",
+    "nodeEnv": "production"
+  },
+  "hasSupabaseDbUrl": true,
+  "dbTest": {
+    "ok": true,
+    "ms": 1061,
+    "host": "aws-1-ap-southeast-2.pooler.supabase.com:5432"
+  },
+  "heartbeat": {
+    "pid": 37,
+    "booted_at": "2026-09-16T05:51:03.425Z",
+    "last_tick": "2026-09-16T05:55:02.252Z",
+    "last_refresh_at": "2026-09-16T04:52:03.220Z",
+    "last_refresh_status": "ok",
+    "db_now": "2026-09-16T05:55:52.734Z"
+  },
+  "nextRuntime": "nodejs",
+  "now": "2026-09-16T05:55:52.961Z"
+}

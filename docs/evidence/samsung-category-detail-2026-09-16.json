@@ -1,0 +1,278 @@
+{
+  "measured_at": "2026-09-16T06:08:11.814Z",
+  "queries": {
+    "kitchen": {
+      "sql": "select category,identity_key,status,price,name,url,payload from tps_current_offers where store_id=6 and category in ('cooker','air_fryer','microwave')",
+      "rows": [
+        {
+          "category": "air_fryer",
+          "identity_key": "samsung|MODEL:NE63C6517SG/ZA",
+          "status": "valid",
+          "price": "4999",
+          "name": "NE63C6517SG Electric Range 6.3 Cu.Ft Premium Stainless Design Air Fry Fan Convection Wifi Ne5000a Za (NE63C6517SG/ZA)",
+          "url": "https://www.samsung.com/sa_en/cooking-appliances/ranges/ne5000a-ne63a6511sw-ne63c6517sg-za/",
+          "payload": {
+            "type": null,
+            "brand": "samsung",
+            "_image": "https://images.samsung.com/is/image/samsung/p6pim/sa_en/ne63c6517sg-za/gallery/sa-en-ne5000ane63a6511sw-ne63c6517sg-za-thumb-538958868",
+            "window": false,
+            "digital": false,
+            "capacity": null,
+            "dual_zone": false
+          }
+        },
+        {
+          "category": "air_fryer",
+          "identity_key": "samsung|MODEL:NE63C6517SS/ZA",
+          "status": "valid",
+          "price": "4399",
+          "name": "NE63C6517SS Electric Range 6.3 Cu.Ft Premium Stainless Design Air Fry Fan Convection Wifi Ne5000a Ne5000a Za (NE63C6517SS/ZA)",
+          "url": "https://www.samsung.com/sa_en/cooking-appliances/ranges/ne5000a-ne63a6511sw-ne5000a-ne63a6511sw-ne63c6517ss-za/",
+          "payload": {
+            "type": null,
+            "brand": "samsung",
+            "window": false,
+            "digital": false,
+            "capacity": null,
+            "dual_zone": false
+          }
+        },
+        {
+          "category": "cooker",
+          "identity_key": "samsung|MODEL:NE63C6317SG/ZA",
+          "status": "valid",
+          "price": "4399",
+          "name": "NE63C6317SG Electric Range 6.3 Cu.Ft Premium Stainless Design Thermal ConvectioN Wifi Ne5000a Ne5000a Za (NE63C6317SG/ZA)",
+          "url": "https://www.samsung.com/sa_en/cooking-appliances/ranges/ne5000a-ne63a6511sw-ne5000a-ne63a6511sw-ne63c6317sg-za/",
+          "payload": {
+            "fan": false,
+            "type": "electric",
+            "brand": "samsung",
+            "grill": false,
+            "_image": "https://images.samsung.com/is/image/samsung/p6pim/sa_en/ne63c6317sg-za/gallery/sa-en-ne5000ane63a6511sw-ne63c6317sg-za-thumb-538958790",
+            "air_fry": false,
+            "ceramic": false,
+            "capacity": null,
+            "full_safety": false,
+            "self_ignition": false
+          }
+        },
+        {
+          "category": "cooker",
+          "identity_key": "samsung|MODEL:NE63C6317SS/ZA",
+          "status": "valid",
+          "price": "4199",
+          "name": "NE63C6317SS Electric Range 6.3 Cu.Ft Premium Stainless Design Thermal Convection Wifi Ne5000a Ne5000a Za (NE63C6317SS/ZA)",
+          "url": "https://www.samsung.com/sa_en/cooking-appliances/ranges/ne5000a-ne63a6511sw-ne5000a-ne63a6511sw-ne63c6317ss-za/",
+          "payload": {
+            "fan": false,
+            "type": "electric",
+            "brand": "samsung",
+            "grill": false,
+            "_image": "https://images.samsung.com/is/image/samsung/p6pim/sa_en/ne63c6317ss-za/gallery/sa-en-ne5000ane63a6511sw-ne63c6317ss-za-thumb-538958845",
+            "air_fry": false,
+            "ceramic": false,
+            "capacity": null,
+            "full_safety": false,
+            "self_ignition": false
+          }
+        },
+        {
+          "category": "cooker",
+          "identity_key": "samsung|MODEL:NE63C6517SG/ZA",
+          "status": "valid",
+          "price": "4999",
+          "name": "NE63C6517SG Electric Range 6.3 Cu.Ft Premium Stainless Design Air Fry Fan Convection Wifi Ne5000a Za (NE63C6517SG/ZA)",
+          "url": "https://www.samsung.com/sa_en/cooking-appliances/ranges/ne5000a-ne63a6511sw-ne63c6517sg-za/",
+          "payload": {
+            "fan": true,
+            "type": "electric",
+            "brand": "samsung",
+            "grill": false,
+            "_image": "https://images.samsung.com/is/image/samsung/p6pim/sa_en/ne63c6517sg-za/gallery/sa-en-ne5000ane63a6511sw-ne63c6517sg-za-thumb-538958868",
+            "air_fry": true,
+            "ceramic": false,
+            "capacity": null,
+            "full_safety": false,
+            "self_ignition": false
+          }
+        },
+        {
+          "category": "cooker",
+          "identity_key": "samsung|MODEL:NE63C6517SS/ZA",
+          "status": "valid",
+          "price": "4399",
+          "name": "NE63C6517SS Electric Range 6.3 Cu.Ft Premium Stainless Design Air Fry Fan Convection Wifi Ne5000a Ne5000a Za (NE63C6517SS/ZA)",
+          "url": "https://www.samsung.com/sa_en/cooking-appliances/ranges/ne5000a-ne63a6511sw-ne5000a-ne63a6511sw-ne63c6517ss-za/",
+          "payload": {
+            "fan": true,
+            "type": "electric",
+            "brand": "samsung",
+            "grill": false,
+            "air_fry": true,
+            "ceramic": false,
+            "capacity": null,
+            "full_safety": false,
+            "self_ignition": false
+          }
+        },
+        {
+          "category": "microwave",
+          "identity_key": "samsung|MODEL:MS23K3515AK/ZA",
+          "status": "valid",
+          "price": "549",
+          "name": "MS23K3515AK Microwave 23L800W Output PowerChild Safety Mw3500k Solo Mwo With Quick Defrost Za (MS23K3515AK/ZA)",
+          "url": "https://www.samsung.com/sa_en/microwave-ovens/solo/mw3500k-solo-mwo-with-quick-defrost-23l-ms23k3515ak-za/",
+          "payload": {
+            "type": "solo",
+            "brand": "samsung",
+            "grill": false,
+            "_image": "https://images.samsung.com/is/image/samsung/p6pim/sa_en/ms23k3515ak-za/gallery/sa-en-mw3500k-solo-mwo-with-quick-defrost-23l-ms23k3515ak-za-thumb-542697989",
+            "capacity": null,
+            "inverter": false,
+            "convection": false
+          }
+        },
+        {
+          "category": "microwave",
+          "identity_key": "samsung|MODEL:MS32DG4504ATZA",
+          "status": "valid",
+          "price": "599",
+          "name": "MS32DG4504AT Microwave 32L 1000W Output Power Child Safety Mw4000d Grill Solo Mwo Grill Fry Bread Defrost Seamless And Recessed Handle Design (MS32DG4504ATZA)",
+          "url": "https://www.samsung.com/sa_en/microwave-ovens/grill/mw4000d-grill-solo-mwo-grill-fry-bread-defrost-seamless-and-recessed-handle-design-ms32dg4504atza/",
+          "payload": {
+            "type": "grill",
+            "brand": "samsung",
+            "grill": true,
+            "_image": "https://images.samsung.com/is/image/samsung/p6pim/sa_en/ms32dg4504atza/gallery/sa-en-mw4000d-ms32dg4504atza-thumb-540722913",
+            "capacity": 32,
+            "inverter": false,
+            "convection": false
+          }
+        },
+        {
+          "category": "microwave",
+          "identity_key": "samsung|NA|23",
+          "status": "valid",
+          "price": "549",
+          "name": "MS23K3515AK Microwave 23L800W Output PowerChild Safety Mw3500k Solo Mwo With Quick Defrost Za (MS23K3515AK/ZA)",
+          "url": "https://www.samsung.com/sa_en/microwave-ovens/solo/mw3500k-solo-mwo-with-quick-defrost-23l-ms23k3515ak-za/",
+          "payload": {
+            "type": "solo",
+            "brand": "samsung",
+            "grill": false,
+            "_image": "https://images.samsung.com/is/image/samsung/p6pim/sa_en/ms23k3515ak-za/gallery/sa-en-mw3500k-solo-mwo-with-quick-defrost-23l-ms23k3515ak-za-thumb-542697989",
+            "capacity": null,
+            "inverter": false,
+            "convection": false
+          }
+        }
+      ]
+    },
+    "projection": {
+      "sql": "select o.category,count(*) valid_offers,count(*) filter(where exists(select 1 from tps_product_projection p where p.tps_identity_key=o.identity_key)) projected from tps_current_offers o where store_id=6 and status='valid' group by category order by category",
+      "rows": [
+        {
+          "category": "air_conditioner",
+          "valid_offers": "5",
+          "projected": "5"
+        },
+        {
+          "category": "air_fryer",
+          "valid_offers": "2",
+          "projected": "2"
+        },
+        {
+          "category": "audio",
+          "valid_offers": "39",
+          "projected": "31"
+        },
+        {
+          "category": "cooker",
+          "valid_offers": "4",
+          "projected": "4"
+        },
+        {
+          "category": "dishwasher",
+          "valid_offers": "7",
+          "projected": "5"
+        },
+        {
+          "category": "microwave",
+          "valid_offers": "3",
+          "projected": "2"
+        },
+        {
+          "category": "mobile",
+          "valid_offers": "20",
+          "projected": "20"
+        },
+        {
+          "category": "monitor",
+          "valid_offers": "73",
+          "projected": "62"
+        },
+        {
+          "category": "refrigerator",
+          "valid_offers": "12",
+          "projected": "12"
+        },
+        {
+          "category": "ring",
+          "valid_offers": "3",
+          "projected": "3"
+        },
+        {
+          "category": "smartwatch",
+          "valid_offers": "9",
+          "projected": "8"
+        },
+        {
+          "category": "stylus",
+          "valid_offers": "5",
+          "projected": "5"
+        },
+        {
+          "category": "tablet",
+          "valid_offers": "86",
+          "projected": "85"
+        },
+        {
+          "category": "tracker",
+          "valid_offers": "2",
+          "projected": "2"
+        },
+        {
+          "category": "tv",
+          "valid_offers": "113",
+          "projected": "105"
+        },
+        {
+          "category": "vacuum",
+          "valid_offers": "2",
+          "projected": "2"
+        },
+        {
+          "category": "washing_machine",
+          "valid_offers": "18",
+          "projected": "18"
+        }
+      ]
+    },
+    "legacy_availability": {
+      "sql": "select availability,count(*) offers,count(*) filter(where current_price>0) priced from product_stores where store_id=6 group by availability",
+      "rows": [
+        {
+          "availability": "in_stock",
+          "offers": "236",
+          "priced": "236"
+        },
+        {
+          "availability": "out_of_stock",
+          "offers": "187",
+          "priced": "187"
+        }
+      ]
+    }
+  }
+}

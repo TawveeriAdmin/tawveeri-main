@@ -1,0 +1,35 @@
+{
+  "measured_at": "2026-09-16T06:07:38.154Z",
+  "baseline_commit": "44ec634cbcf05c834d9e98775222b7e6ca4803d9",
+  "before": {
+    "command": "npm run test:coverage -- --runInBand",
+    "exit": 1,
+    "coverage": {
+      "statements": 89.36,
+      "branches": 67.6,
+      "functions": 100,
+      "lines": 97.33
+    },
+    "tests": 3757,
+    "suites": 247
+  },
+  "after": {
+    "command": "npm run test:coverage -- --runInBand",
+    "exit": 1,
+    "coverage": {
+      "statements": 89.36,
+      "branches": 67.6,
+      "functions": 100,
+      "lines": 97.33
+    },
+    "tests": 3761,
+    "suites": 248
+  },
+  "full_test": {
+    "command": "npm test -- --runInBand",
+    "exit": 0,
+    "tests": 3761,
+    "suites": 248
+  },
+  "decision": "Equal coverage; owner explicitly authorizes release despite pre-existing branch threshold failure. Jest thresholds unchanged."
+}

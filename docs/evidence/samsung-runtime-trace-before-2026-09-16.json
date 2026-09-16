@@ -1,0 +1,18 @@
+{
+  "measured_at": "2026-09-16T06:03:57.464Z",
+  "method": "Static file trace of scheduler CJS; not a production filesystem listing",
+  "scheduler": true,
+  "watcher": false,
+  "runtimeHelper": true,
+  "files": [
+    "scripts/scheduler.js",
+    "package.json",
+    "scripts/tps-core/pooler-url.js",
+    "scripts/tps-core/samsung-delta-runtime.js"
+  ],
+  "warnings": [
+    "Error: Failed to resolve dependency \"pg-native\":\nCannot find module 'pg-native' loaded from C:\\Users\\Hp\\Downloads\\Tawveeri-Official\\node_modules\\pg\\lib\\native\\client.js",
+    "Error: Failed to resolve dependency \"cloudflare:sockets\":\nCannot find module 'cloudflare:sockets' loaded from C:\\Users\\Hp\\Downloads\\Tawveeri-Official\\node_modules\\pg-cloudflare\\dist\\index.js",
+    "Error: Failed to resolve dependency \"pnpapi\":\nCannot find module 'pnpapi' loaded from C:\\Users\\Hp\\Downloads\\Tawveeri-Official\\node_modules\\esbuild\\lib\\main.js"
+  ]
+}

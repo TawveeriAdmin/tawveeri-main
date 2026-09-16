@@ -1,0 +1,164 @@
+{
+  "measured_at": "2026-09-16T06:05:24.738Z",
+  "queries": {
+    "categories": {
+      "sql": "select o.category,count(*) offers,count(*) filter(where o.status='valid') valid,count(*) filter(where o.status='valid' and exists(select 1 from canonical_products cp where cp.tps_identity_key=o.identity_key and cp.is_active)) active_canonical_offers from tps_current_offers o where store_id=6 group by category order by category",
+      "rows": [
+        {
+          "category": "air_conditioner",
+          "offers": "15",
+          "valid": "5",
+          "active_canonical_offers": "5"
+        },
+        {
+          "category": "air_fryer",
+          "offers": "2",
+          "valid": "2",
+          "active_canonical_offers": "2"
+        },
+        {
+          "category": "audio",
+          "offers": "39",
+          "valid": "39",
+          "active_canonical_offers": "31"
+        },
+        {
+          "category": "cooker",
+          "offers": "4",
+          "valid": "4",
+          "active_canonical_offers": "4"
+        },
+        {
+          "category": "dishwasher",
+          "offers": "7",
+          "valid": "7",
+          "active_canonical_offers": "5"
+        },
+        {
+          "category": "microwave",
+          "offers": "3",
+          "valid": "3",
+          "active_canonical_offers": "2"
+        },
+        {
+          "category": "mobile",
+          "offers": "20",
+          "valid": "20",
+          "active_canonical_offers": "20"
+        },
+        {
+          "category": "monitor",
+          "offers": "73",
+          "valid": "73",
+          "active_canonical_offers": "62"
+        },
+        {
+          "category": "refrigerator",
+          "offers": "12",
+          "valid": "12",
+          "active_canonical_offers": "12"
+        },
+        {
+          "category": "ring",
+          "offers": "3",
+          "valid": "3",
+          "active_canonical_offers": "3"
+        },
+        {
+          "category": "smartwatch",
+          "offers": "9",
+          "valid": "9",
+          "active_canonical_offers": "8"
+        },
+        {
+          "category": "stylus",
+          "offers": "5",
+          "valid": "5",
+          "active_canonical_offers": "5"
+        },
+        {
+          "category": "tablet",
+          "offers": "86",
+          "valid": "86",
+          "active_canonical_offers": "85"
+        },
+        {
+          "category": "tracker",
+          "offers": "2",
+          "valid": "2",
+          "active_canonical_offers": "2"
+        },
+        {
+          "category": "tv",
+          "offers": "113",
+          "valid": "113",
+          "active_canonical_offers": "105"
+        },
+        {
+          "category": "vacuum",
+          "offers": "2",
+          "valid": "2",
+          "active_canonical_offers": "2"
+        },
+        {
+          "category": "washing_machine",
+          "offers": "18",
+          "valid": "18",
+          "active_canonical_offers": "18"
+        }
+      ]
+    },
+    "images": {
+      "sql": "select count(*) denominator,count(*) filter(where image_urls is not null and image_urls::text not in ('[]','null')) image_arrays,count(*) filter(where image_url is not null) image_url from products where id in(select product_id from product_stores where store_id=6)",
+      "rows": [
+        {
+          "denominator": "423",
+          "image_arrays": "336",
+          "image_url": "6"
+        }
+      ]
+    },
+    "runs_meta": {
+      "sql": "select id,metadata,error_summary from scraping_runs where id in (7216,7195,7150,6921)",
+      "rows": [
+        {
+          "id": "6921",
+          "metadata": {},
+          "error_summary": null
+        },
+        {
+          "id": "7150",
+          "metadata": {},
+          "error_summary": null
+        },
+        {
+          "id": "7195",
+          "metadata": {},
+          "error_summary": null
+        },
+        {
+          "id": "7216",
+          "metadata": {},
+          "error_summary": null
+        }
+      ]
+    },
+    "projection_tables": {
+      "sql": "select table_name from information_schema.tables where table_schema='public' and (table_name like '%projection%' or table_name like '%listing%' or table_name like '%search%')",
+      "rows": [
+        {
+          "table_name": "tps_listing_price_facts"
+        },
+        {
+          "table_name": "search_history"
+        },
+        {
+          "table_name": "saved_searches"
+        },
+        {
+          "table_name": "tps_product_projection"
+        }
+      ]
+    }
+  }
+}
