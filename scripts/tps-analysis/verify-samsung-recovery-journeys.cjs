@@ -80,6 +80,11 @@ async function main() {
     result.completedAt = new Date().toISOString();
     result.summary = { tested: result.rows.length, searchHttp200: result.rows.filter(r => r.searchStatus === 200).length,
       samsungPresent: result.rows.filter(r => r.samsungOffers?.length).length,
+      samsungInComparison: result.rows.filter(r => r.comparison?.offers?.some(o => o.store_slug === 'samsung_ksa')).length,
+      searchComparisonPriceEqual: result.rows.filter(r => r.samsungOffers?.length && r.comparison?.offers?.some(o =>
+        o.store_slug === 'samsung_ksa' && r.samsungOffers.some(s => Number(s.current_price) === Number(o.price)))).length,
+      neutralPriceOrder: result.rows.filter(r => Array.isArray(r.comparison?.offers)
+        && r.comparison.offers.every((o, i, all) => i === 0 || Number(all[i - 1].price) <= Number(o.price))).length,
       exactMerchantVariantConfirmed: result.rows.filter(r => r.merchant?.exactVariantConfirmed).length,
       errors: result.rows.filter(r => r.error).length };
     fs.writeFileSync(output, JSON.stringify(result, null, 2));

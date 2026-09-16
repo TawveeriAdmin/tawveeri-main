@@ -364,6 +364,9 @@ export interface CorroborateOpts {
    *  processing (ADR-252): the pass consumes ONLY these new rows plus the small
    *  `tps_current_offers` current state — it never re-reads staging history. */
   sweepRows?: Record<string, unknown>[];
+  /** One category/touched-key set in one serialized sweep only. Both layer
+   * passes must compare prices against the same state from BEFORE either writes. */
+  priorCurrentState?: { rows?: Record<string, unknown>[] };
 }
 
 // ── Corroboration pass: for the touched keys, group ALL accumulated staging by
@@ -414,7 +417,9 @@ export async function corroboratePass(sb: SupabaseClient, def: CategoryDef, touc
   // (b) previous current state for the touched keys (small; paginated defensively —
   // ≤ keys × stores rows, i.e. a 100-key chunk tops out around a dozen hundred rows).
   const prevByKeyStore = new Map<string, Stg>();
-  for (let i = 0; i < touchedKeys.length; i += 100) {
+  if (opts.priorCurrentState?.rows) {
+    for (const r of opts.priorCurrentState.rows as Stg[]) prevByKeyStore.set(`${r.identity_key}|${r.store_id}`, r);
+  } else for (let i = 0; i < touchedKeys.length; i += 100) {
     const chunk = touchedKeys.slice(i, i + 100);
     let from = 0;
     for (;;) {
@@ -472,6 +477,7 @@ export async function corroboratePass(sb: SupabaseClient, def: CategoryDef, touc
   // transitions, requiring manual review is a small, acceptable cost, not a material
   // blocker on legitimate promotions (which this filter never touches at all — only the
   // 0.019% extreme tail).
+  if (opts.priorCurrentState && !opts.priorCurrentState.rows) opts.priorCurrentState.rows = [...prevByKeyStore.values()];
   const rejectedPriceTransitions: { key: string; storeId: number; price: number; priorPrice: number; reason: string }[] = [];
   for (const [k, row] of [...newByKeyStore]) {
     if (row.price == null || row.price <= 0) continue;
@@ -584,7 +590,16 @@ export async function corroboratePass(sb: SupabaseClient, def: CategoryDef, touc
     if (def.category === "audio") {
       offers = offers.filter((o) => !isAccessoryOnlyAudioTitle(o.name));
     }
-    if (def.priceBand) {
+    // A price-distance heuristic cannot contradict an independently verified
+    // complete manufacturer identity shared by EVERY participating offer.
+    // Measured SM-R420NZAAMEA: the official SAR499 offer disappeared beside
+    // Almanea SAR299 despite the same corroborated Saudi commercial variant.
+    // Ordinary title/specification keys and mixed/unverified groups retain the
+    // existing band; accessory and temporal price-transition guards still apply.
+    const exactManufacturerGroup = offers.length > 0 && offers.every(o =>
+      typeof o.payload?._manufacturer_model === 'string'
+      && key.split('|')[1] === `MODEL:${o.payload._manufacturer_model}`);
+    if (def.priceBand && !exactManufacturerGroup) {
       const priced = offers.filter((o) => o.price != null).map((o) => o.price as number);
       const minP = priced.length ? Math.min(...priced) : null;
       if (minP != null) offers = offers.filter((o) => o.price == null || (o.price as number) <= minP * def.priceBand!);
@@ -826,6 +841,7 @@ export async function runSweepUnit(sb: SupabaseClient, defs: CategoryDef[], limi
       takenNameBrand: new Set(existing.map(c => `${(c.name_ar ?? '').trim().toLowerCase()}|${(c.brand ?? '').trim().toLowerCase()}`)),
     };
   }
+
   for (const def of defs) {
     const touched = [...n.byCategory[def.category].touched];
     if (touched.length) {
@@ -833,8 +849,9 @@ export async function runSweepUnit(sb: SupabaseClient, defs: CategoryDef[], limi
       // gets its normalized row / price event in the hourly chain regardless of whether
       // its key is currently single-store (Layer 2) or comparable (Layer 1). The two
       // passes write disjoint key sets by construction (the layer split).
-      const multi = await corroboratePass(sb, def, touched, { dry, sweepRows: n.pendingStaging, writeGuards });
-      const singles = await corroboratePass(sb, def, touched, { dry, sweepRows: n.pendingStaging, singleStore: true, writeGuards });
+      const priorCurrentState: NonNullable<CorroborateOpts['priorCurrentState']> = {};
+      const multi = await corroboratePass(sb, def, touched, { dry, sweepRows: n.pendingStaging, writeGuards, priorCurrentState });
+      const singles = await corroboratePass(sb, def, touched, { dry, sweepRows: n.pendingStaging, singleStore: true, writeGuards, priorCurrentState });
       corr[def.category] = {
         keysConsidered: multi.keysConsidered,
         corroborated: multi.corroborated,

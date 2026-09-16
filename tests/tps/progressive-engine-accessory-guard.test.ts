@@ -78,6 +78,39 @@ const BAYKRON_AR = "بايكرون,  كفرايربودز برو الجيل ال
 const GENUINE_EN = "Apple AirPods Pro 2 Wireless Earbuds, Active Noise Cancellation, MagSafe Charging Case";
 
 describe("progressive-engine accessory-contamination guard (2026-08-27, P0-B)", () => {
+  it('retains different real prices for the same fully corroborated manufacturer variant', async () => {
+    const calls: Record<string, unknown>[][] = [];
+    const key = 'samsung|MODEL:SM-R420NZAAMEA';
+    const payload = { _manufacturer_model: 'SM-R420NZAAMEA' };
+    const sweepRows = [offerRow(1, 5, key, 299, 'Samsung Buds3 FE earbuds', { payload }),
+      offerRow(2, 6, key, 499, 'Galaxy Buds3 FE earbuds', { payload })];
+    const result = await corroboratePass(fakeSupabase({ current_offers: [], canonical_products: [] }, calls) as never, audioDef, [key], { sweepRows });
+    expect(result.corroborated).toBe(1);
+    expect(result.normalized).toBe(2);
+    expect(calls.flatMap(c => (c[0].p_prices as any[]).map(p => p.price)).sort()).toEqual([299, 499]);
+  });
+
+  it.each([{}, { _manufacturer_model: 'SM-R420NZAAOTHER' }])('keeps the price band when manufacturer evidence is missing or contradicts the full code: %j', async payload => {
+    const calls: Record<string, unknown>[][] = [];
+    const key = 'samsung|MODEL:SM-R420NZAAMEA';
+    const sweepRows = [offerRow(1, 5, key, 299, 'Samsung Buds3 FE earbuds', { payload: { _manufacturer_model: 'SM-R420NZAAMEA' } }),
+      offerRow(2, 6, key, 499, 'Galaxy Buds3 FE earbuds', { payload })];
+    const result = await corroboratePass(fakeSupabase({ current_offers: [], canonical_products: [] }, calls) as never, audioDef, [key], { sweepRows });
+    expect(result.corroborated).toBe(0);
+    expect(calls).toHaveLength(0);
+  });
+
+  it('still rejects accessory contamination even with manufacturer metadata', async () => {
+    const calls: Record<string, unknown>[][] = [];
+    const key = 'samsung|MODEL:SM-R420NZAAMEA';
+    const payload = { _manufacturer_model: 'SM-R420NZAAMEA' };
+    const sweepRows = [offerRow(1, 5, key, 29, 'Silicone protective case cover', { payload }),
+      offerRow(2, 6, key, 499, 'Galaxy Buds3 FE earbuds', { payload })];
+    const result = await corroboratePass(fakeSupabase({ current_offers: [], canonical_products: [] }, calls) as never, audioDef, [key], { sweepRows });
+    expect(result.corroborated).toBe(0);
+    expect(calls).toHaveLength(0);
+  });
+
   it("excludes a pure-accessory offer from store_count: 1 real store + 1 accessory store does NOT corroborate as 2-store comparable", async () => {
     const rpcCalls: Record<string, unknown>[][] = [];
     const sb = fakeSupabase({ current_offers: [], canonical_products: [] }, rpcCalls) as never;

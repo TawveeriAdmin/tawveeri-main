@@ -76,6 +76,21 @@ const newLog = () => ({ offerUpserts: [] as Record<string, unknown>[][], signalU
 const KEY = "apple|airpods pro 2";
 
 describe("progressive-engine price-transition guard (2026-08-27, P0-B §8.12 follow-up)", () => {
+  it('single-store pass retains the pre-sweep price when the multi pass has already updated current state', async () => {
+    const log = newLog(), calls: Record<string, unknown>[][] = [];
+    const previous = offerRow(1, 6, KEY, 499, 'Galaxy earbuds');
+    const next = offerRow(2, 6, KEY, 449, 'Galaxy earbuds');
+    const tables = { current_offers: [previous], canonical_products: [{ id: 'canonical', tps_identity_key: KEY, image_url: null }] };
+    const sb = fakeSupabase(tables, calls, log) as never;
+    const priorCurrentState = {};
+    await corroboratePass(sb, audioDef, [KEY], { sweepRows: [next], priorCurrentState });
+    expect(calls).toHaveLength(0);
+    tables.current_offers = [next]; // real first pass persisted the new hot state
+    const result = await corroboratePass(sb, audioDef, [KEY], { sweepRows: [next], singleStore: true, priorCurrentState });
+    expect(result.prices).toBe(1);
+    expect((calls[0][0].p_prices as any[])[0]).toMatchObject({ price: 449, observed_at: next.observed_at });
+  });
+
   it("THE EXACT AirPods Pro 2 incident: SAR 1,049 -> SAR 79 (ratio 0.075) is rejected, old price retained, signal written", async () => {
     const log = newLog();
     const rpcCalls: Record<string, unknown>[][] = [];

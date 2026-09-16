@@ -360,6 +360,11 @@ async function main() {
           count(distinct e.model) filter(where c.id is not null and not c.is_active)::int canonical_inactive,
           count(distinct e.model) filter(where c.id is not null and p.canonical_id is null)::int projection_unresolved,
           count(distinct e.model) filter(where o.identity_key is null)::int current_observation_unresolved,
+          count(distinct e.model) filter(where o.identity_key is not null and not exists
+            (select 1 from normalized_product_observations n where n.canonical_product_id=c.id and n.store_id='6'))::int normalized_offer_unresolved,
+          count(distinct e.model) filter(where o.price>0 and not exists
+            (select 1 from price_history h where h.canonical_product_id=c.id
+              and (h.store_id=6 or h.store_name in ('سامسونج السعودية','samsung_ksa'))))::int price_event_unresolved,
           count(distinct e.model) filter(where o.price>0)::int priced_models,
           count(distinct e.model) filter(where o.price>0 and coalesce(o.payload->>'_availability','out_of_stock') in ('in_stock','limited_stock'))::int purchasable_models,
           count(distinct e.model) filter(where o.payload->>'_availability' is null)::int missing_availability,
@@ -404,7 +409,7 @@ async function main() {
       );
     }
     if (stats.failed) throw new Error(`Samsung discovery incomplete: ${stats.failed} PDP failures`);
-    if (realizationHealth && ['canonical_unresolved', 'canonical_inactive', 'projection_unresolved', 'current_observation_unresolved', 'category_drift']
+    if (realizationHealth && ['canonical_unresolved', 'canonical_inactive', 'projection_unresolved', 'current_observation_unresolved', 'normalized_offer_unresolved', 'price_event_unresolved', 'category_drift']
       .some(field => Number(realizationHealth![field]) > 0)) throw new Error('Samsung realization incomplete; see recorded health metrics');
   } catch (e) {
     if (!DRY && runId) {
