@@ -4,6 +4,22 @@
 
 Status legend: **Accepted** · **Superseded** · **Proposed**.
 
+### ADR-374 — Freeze Tawveeri Check from visible navigation, no deletion · Accepted (2026-09-17)
+
+**Decision.** Owner-directed temporary freeze: remove Check's three visible entry points (homepage banner, Arabic and English footer links) from the site's browsable navigation, while leaving all code, the page itself, and all data completely intact and reactivatable. This is a navigation-visibility change only — no functional, data, or capability change to Check.
+
+**Scope, exactly as directed.** Not touched at all: `src/lib/check/`, `src/components/check/`, `src/app/[locale]/check/`, `src/app/api/check/`, every Check test, ADR-367/368/369/371, and every Check report. `/ar/check` and `/en/check` remain fully live and functional for anyone with the direct URL — the owner's instructions explicitly accepted this as fine ("هذا مقبول") and asked to be consulted only if that were wrong; no signal suggested otherwise, so this default stands unquestioned.
+
+**Files changed (3 files, navigation only):**
+- `src/app/[locale]/page.tsx` — the homepage entry `<Link>` block commented out in place (not deleted).
+- `src/components/layout/footer.tsx` — the Arabic and English footer link entries each commented out in place, inside their respective `links: [...]` arrays.
+
+**`sitemap.ts` deliberately left untouched — reasoned, not defaulted.** The owner's instruction permitted touching it only if the page's presence there "violates non-visibility," with a documentation requirement either way. Judgment: a sitemap entry is a crawler-facing signal, not user-facing browsable navigation (the instructed scope was explicitly "مداخل الوصول الظاهرة للمستخدم... بالتنقل العام") — the same category as the already-accepted direct-URL reachability, not a new visible entry point. Toggling sitemap membership also has real, asymmetric SEO cost (de-indexing lag now, re-crawl lag on unfreeze) that a one-line-revert navigation comment does not carry, which would work against the freeze's own intended low-friction reversibility. If this judgment is wrong, reverting is still a one-line removal of `'/check',` from `staticPages` in `src/app/sitemap.ts`.
+
+**Revert, one line or one uncomment per site, no deletion required:** uncomment the homepage `<div>...</div>` block in `page.tsx`, and uncomment the one array line in each of the two `footer.tsx` columns. `page.tsx`'s `Link` import was deliberately left in place (unused-import warning only, not an error) specifically so the revert needs no second edit.
+
+**Validation.** No existing test referenced either removed entry (checked directly — no test asserts the homepage banner or the footer Check links). Full suite and coverage gate run once before deployment, results and live verification recorded in the deployment note below.
+
 ### ADR-373 — Samsung Saudi consumer universe, full manufacturer variants and commerce realization · Accepted (2026-09-16)
 
 **Evidence.** Independently enumerated bilingual public-finder responses contain 1,277 complete manufacturer model codes; eight Saudi sitemaps add 37 PDP-confirmed models, and a separately revalidated earphone PDP adds one. Final consumer policy excludes 31 of 1,315 candidates, leaving **1,284 variants**, **2,697 exact-model URLs** and **1,413 additional aliases**. Initial policy v1 included 1,291; seven additional commercial components were excluded after official-source review, with the original evidence preserved. The initial legacy count of 423 was accurate but never a completeness denominator. Frozen generic normalization left 574 finder codes unresolved and collapsed distinct complete models into 107 shared keys. See the [full report and evidence](report/SAMSUNG-CATALOG-RECOVERY-2026-09-16.md).

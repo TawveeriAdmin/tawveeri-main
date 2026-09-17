@@ -52,7 +52,9 @@ export function Footer() {
                 // dismiss-gated (never in the server-rendered HTML, ADR-257), so this footer
                 // link is the one always-crawlable, always-visible path to it.
                 { href: `/${locale}/home-mission`,  label: 'جهّز بيتك بذكاء' },
-                { href: `/${locale}/check`, label: 'افحص رابط المنتج' },
+                // ADR-374 (2026-09-17): Check frozen from visible navigation, owner decision.
+                // Code/page/data untouched — uncomment this line to restore the entry.
+                // { href: `/${locale}/check`, label: 'افحص رابط المنتج' },
               ],
             },
             {
@@ -92,7 +94,9 @@ export function Footer() {
                 { href: `/${locale}/deals`,        label: 'Deals'       },
                 // ADR-301 (2026-09-07): see the Arabic column above for why this is here.
                 { href: `/${locale}/home-mission`, label: 'Home setup'  },
-                { href: `/${locale}/check`, label: 'Check a product link' },
+                // ADR-374 (2026-09-17): Check frozen from visible navigation, owner decision.
+                // Code/page/data untouched — uncomment this line to restore the entry.
+                // { href: `/${locale}/check`, label: 'Check a product link' },
               ],
             },
             {

@@ -33,12 +33,14 @@ export default async function HomePage({ params }: PageProps) {
 
   return (
     <PublicPageShell locale={locale}>
-      <div className="mx-auto max-w-3xl px-4 pt-5">
+      {/* ADR-374 (2026-09-17): Check frozen from visible navigation, owner decision.
+          Code/page/data untouched — uncomment this block to restore the homepage entry. */}
+      {/* <div className="mx-auto max-w-3xl px-4 pt-5">
         <Link href={`/${locale}/check`} className="flex min-h-14 items-center justify-between gap-3 rounded-xl border border-primary-200 bg-primary-50 px-4 py-3 text-sm font-semibold text-primary-800">
           <span>{locale === 'ar' ? 'لقيت المنتج؟ حط رابطه وافحصه قبل تدفع.' : 'Found a product? Check its link before paying.'}</span>
           <span className="shrink-0">Check ←</span>
         </Link>
-      </div>
+      </div> */}
       <BetaLanding locale={locale} deals={deals} campaigns={campaigns} />
     </PublicPageShell>
   );
