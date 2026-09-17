@@ -80,3 +80,11 @@ scratchpad/
 
 # pre-migration safety exports (raw production table dumps — never versioned)
 /backups/
+
+tokens.json
+x_oauth_login.py
+x-ops/
+marketing-assets/
+
+# fetched at build time by scripts/worker/fetch-tini.js — never versioned
+/bin/

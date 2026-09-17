@@ -14,10 +14,34 @@
 # — it is a plain long-lived Node process, not the Next.js app.
 [build]
 builder = "RAILPACK"
-buildCommand = "npm install --legacy-peer-deps && npm run build"
+# Fetches tini (v0.19.0, upstream static amd64 build from krallin/tini's own
+# GitHub Releases) via scripts/worker/fetch-tini.js — a plain Node script, not
+# a curl/shell one-liner, because `curl` was confirmed ABSENT from this
+# service's live runtime container (railway ssh, 2026-09-17) and Node is the
+# one binary guaranteed present in every stage. The script pins tini to its
+# published sha256 and fails closed on any mismatch, so a compromised/altered
+# asset can never silently become PID 1. See startCommand below for WHY tini
+# is here at all: found live, 2026-09-17, via an isolated fixture test on the
+# real production container (docs/DECISIONS.md ADR pending) — this worker's
+# own Node process runs AS PID 1 with no reaper, so when a middle process in a
+# 3+-level spawn chain (worker -> price-update.ts -> price-update-store.ts ->
+# Chromium, or the Samsung pipeline's own nested children) is killed, its
+# still-alive children reparent to PID 1 and are never reaped (confirmed:
+# still zombie/defunct at 15s+). Not yet acute (current Stage 1 jobs are only
+# 2 levels deep) but a real, proven risk once local-Chromium fallback or
+# Samsung's nested scripts run. tini is the same fix Docker's own `--init`
+# flag uses — a single-purpose, ~23KB, zero-dependency init binary; adding a
+# JS-level reaper isn't possible (reaping requires an actual waitpid() syscall
+# by the real parent, which plain Node cannot issue without a native binding).
+buildCommand = "node scripts/worker/fetch-tini.js && npm install --legacy-peer-deps && npm run build"
 
 [deploy]
-startCommand = "node --import tsx scripts/worker/index.ts"
+# tini as PID 1 (see buildCommand comment): it forwards signals to the real
+# worker process unchanged (so the existing SIGTERM handling in
+# scripts/worker/index.ts and the price-update.ts SIGTERM cascade are
+# untouched) and additionally reaps ANY reparented descendant, closing the
+# zombie gap. `--` is required so tini does not try to parse node's own args.
+startCommand = "bin/tini -- node --import tsx scripts/worker/index.ts"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 5
 # No healthcheckPath: this service has no HTTP server to probe. Liveness is the
