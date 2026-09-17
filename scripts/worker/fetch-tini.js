@@ -30,7 +30,12 @@ const TINI_SHA256 = '93dcc18adc78c65a028a84799ecf8ad40c936fdfc5f2a57b1acda5a8117
 const OUT_PATH = path.join(__dirname, '..', '..', 'bin', 'tini');
 
 async function main() {
-  console.log(`[fetch-tini] downloading ${TINI_URL}`);
+  // attempt=2 (2026-09-17): the first push of this script had zero effect on
+  // the deployed image — Railpack served the build entirely from cache and
+  // never executed this file (see railway.worker.toml's header comment). This
+  // log line existing at all in a deploy's build output is itself the proof
+  // that this build actually ran the command instead of reusing a stale plan.
+  console.log(`[fetch-tini] attempt=2 downloading ${TINI_URL}`);
   const res = await fetch(TINI_URL);
   if (!res.ok) {
     throw new Error(`download failed: HTTP ${res.status} ${res.statusText}`);

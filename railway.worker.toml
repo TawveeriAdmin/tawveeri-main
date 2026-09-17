@@ -1,14 +1,28 @@
-# Config-as-code for ONLY the `tawveeri-worker` Railway service — isolated from the
-# shared /railway.toml (used by tawveeri-main/node/amusing-amazement) on purpose.
+# DOCUMENTATION OF the `tawveeri-worker` Railway service's build/deploy config —
+# NOT live config-as-code. CONFIRMED 2026-09-17 via a direct `serviceInstanceUpdate`
+# API call: Railway now REJECTS setting `railwayConfigFile` with "Config as Code
+# (railway.json / railway.toml) is deprecated. Use Infrastructure as Code
+# (.railway/railway.ts) instead." This file is therefore NOT read by Railway for
+# this (or any) service — it exists only as a human-readable record of what the
+# service's actual settings should be. The real, live settings are `buildCommand`/
+# `startCommand`/etc. set directly on the service instance via `serviceInstanceUpdate`
+# (the same mechanism `railway.founder-report-cron.toml`'s own root-cause note
+# from 2026-08-07 describes working around the shared root railway.toml's
+# startCommand). Whenever this file is edited, the matching `serviceInstanceUpdate`
+# API call MUST be made too, or the live service silently keeps the old value —
+# proven the hard way (2026-09-17): editing only this file for the tini change
+# below had zero effect on the deployed service.
 #
-# WHY THIS FILE EXISTS AT ALL: this project has already been bitten once by every
-# service silently inheriting the shared root railway.toml's startCommand
-# ("npm run start", the full Next.js app) on any push to main — see
-# railway.founder-report-cron.toml's own root-cause note (2026-08-07) and the
-# 2026-09-17 audit finding that the `node` service is STILL suffering this exact
-# bug today. Pointing this service's `railwayConfigFile` at THIS file instead of
-# the shared one means a push to main can never silently turn the isolated worker
-# into a second full copy of the public web server.
+# BUILD-CACHE GOTCHA (found live, 2026-09-17): changing `buildCommand` via
+# `serviceInstanceUpdate` does NOT by itself invalidate Railpack's build-layer
+# cache for an unchanged commit — a `railway redeploy --from-source` on the same
+# commit re-used the old cached build plan and silently skipped the new command
+# entirely (confirmed: the resulting image had no bin/tini, and the container
+# crash-looped when startCommand was flipped to depend on it). A real code change
+# (new commit, changing content Railpack's layer cache keys on) is required to
+# force the new buildCommand to actually execute. ALWAYS verify a build-time
+# artifact exists (e.g. via `railway ssh`) before flipping startCommand to depend
+# on it — never flip both in the same step again.
 #
 # This service NEVER opens an HTTP listener and NEVER imports src/instrumentation.ts
 # — it is a plain long-lived Node process, not the Next.js app.
