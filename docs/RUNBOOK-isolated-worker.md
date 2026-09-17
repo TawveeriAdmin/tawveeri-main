@@ -1,0 +1,189 @@
+# Runbook — Isolated Worker (`tawveeri-worker`)
+
+Practical "what do I actually do" doc for the background scraping/intelligence worker,
+separated from `tawveeri-main` (the public web service) since the 2026-09-17 SEV-1. See
+`docs/DECISIONS.md` (ADR pending — search for "isolated worker") for the full incident,
+design rationale, and validation evidence this draws on.
+
+## Why this service exists
+
+The original architecture ran all scraping/discovery/intelligence jobs as a child process of
+`tawveeri-main`'s own Next.js server process (`src/instrumentation.ts` spawning
+`scripts/scheduler.js`). A stuck job (samsung_delta_watch run #10, 2026-09-17) exhausted the
+web container's memory and took the public site down with it — the job and the website shared
+one resource budget with no boundary between them.
+
+`tawveeri-worker` is a second Railway service, same repo/branch, that owns ALL heavy background
+work. `tawveeri-main` no longer runs any scraper, discovery, or intelligence-refresh code path —
+`DISABLE_INPROCESS_SCHEDULER=1` is set on it permanently. A worker crash, hang, or resource spike
+can only affect the worker's own container; it structurally cannot take the website down.
+
+## Architecture
+
+- **Config:** `railway.worker.toml` is documentation only — Railway's config-as-code
+  (`railwayConfigFile`) is deprecated platform-wide (confirmed live, 2026-09-17: the API rejects
+  it with "Use Infrastructure as Code (.railway/railway.ts) instead"). The service's REAL
+  `buildCommand`/`startCommand` are set directly via `serviceInstanceUpdate` (`railway api` or the
+  dashboard) — **when you change one, change both, or the live service silently keeps the old
+  value.** (Also found live: a `buildCommand` override is accepted/persisted/echoed by the API but
+  Railpack does not actually apply it for this project — confirmed across two full deploy cycles
+  including one genuine cache-busted rebuild. `startCommand` overrides ARE reliably applied. This
+  is why the tini fetch below runs as a startCommand prefix, not a build step.)
+- **PID 1 / process reaping:** `startCommand` is `node scripts/worker/fetch-tini.js && bin/tini --
+  node --import tsx scripts/worker/index.ts`. `fetch-tini.js` downloads krallin/tini's static amd64
+  binary (sha256-pinned, fails closed on mismatch) on first boot and verifies-then-skips on later
+  restarts. tini runs as PID 1 so any process reparented to it (a killed job's still-alive
+  grandchildren — Chromium renderers, nested pipeline scripts) gets reaped instead of accumulating
+  as zombies forever. Verified live via an isolated `railway ssh` fixture: before the fix, a
+  SIGTERM-ignoring grandchild stayed `Z <defunct>` at 15s+; after, it's gone within seconds of the
+  parent's SIGKILL.
+- **Concurrency:** exactly one heavy job runs at a time, enforced by a Postgres advisory lock
+  (`pg_advisory_lock(748219001)`, `scripts/worker/lib/global-lock.ts`) held over the SESSION pooler
+  (port 5432 — the transaction pooler on 6543 would silently break advisory-lock semantics; verified
+  live with a real two-connection test). `price_update` and `manual_trigger` are `highPriority: true`
+  and always served first from the pending queue.
+- **Timeouts / termination:** every job is spawned via `scripts/worker/lib/proc-guard.ts` with
+  `detached: true` (its own Linux process group) and a hard `timeoutMs`. On timeout: SIGTERM the
+  whole group, wait `graceMs` (default 30s), SIGKILL if still alive. Verified live with a genuine
+  forced lock-loss test (killed the lock's own DB backend via `pg_terminate_backend`): the
+  `onLost` callback fired ~1ms after termination, cascaded into the running job's cancellation,
+  SIGTERM → (a SIGTERM-ignoring fixture child) → SIGKILL after the grace period, and a file the
+  child was writing every 200ms stopped growing at exactly that point and never resumed — proof
+  the work itself stopped, not just that a callback fired.
+- **Per-unit bounding:** `price_update` and `discovery` each spawn ONE store (or store×category)
+  as its own child process with its own timeout, not a shared loop under one outer timeout — a
+  single slow/broken merchant cannot starve every other merchant's turn. The outer job-level
+  timeout (price_update 75min, discovery 60min) is a rare-case backstop; when it fires, the parent
+  forwards its own SIGTERM into whichever per-unit child is currently active (nested `detached`
+  process groups don't inherit signals automatically — this cascade is required and is what makes
+  the backstop actually work, verified live 2026-09-17: a discovery run that hit its 60min ceiling
+  correctly cancelled the in-flight `samsung_ksa/accessories` unit within 12s and closed its row).
+- **Boot-time orphan recovery:** a mid-run deploy swaps the container before the old one's SIGTERM
+  cascade can close its `scraping_runs` row — `reapOrphanedRuns()` (`lib/job-state.ts`) runs once
+  at boot, before any job is scheduled, and closes any row still `'running'` older than
+  `WORKER_STALE_RUN_THRESHOLD_MS` (default 20min) as `'failed'`. This threshold must stay
+  comfortably above every scraping_runs-writing job's real per-row ceiling — see the table below.
+  `refresh`/`reobserve`/`samsung_delta_watch` don't write `scraping_runs` at all (different or no
+  table) so they aren't affected by this threshold either way.
+
+### Per-row ceiling vs. the 20-minute reap threshold (audited 2026-09-17)
+
+| Job | Writes `scraping_runs`? | Real per-row ceiling | Margin |
+|---|---|---|---|
+| price_update | yes, per store | ~8.5min (8min timeout + 30s grace) | wide |
+| discovery | yes, per store×category | ~6.5min (6min timeout + 30s grace) | wide |
+| feed_ingest | yes, per store | 20min ÷ store count (6 stores ⇒ ~3.3min) | wide at current store count; shrinks if `WORKER_FEED_STORES` drops to 1-2 |
+| product_recovery | no (writes `product_recovery_requests`) | n/a | n/a |
+| dispatch_sweep | no | n/a | n/a |
+| manual_trigger | yes (when enabled) | 20min flat | **zero margin** — currently inert only because `status='pending'` is rejected by a live CHECK constraint (migration `033_scraping_runs_pending_status.sql` drafted, deliberately deferred). Re-check this row before ever applying that migration. |
+| refresh, reobserve, samsung_delta_watch | no / separate table | n/a | n/a |
+
+## Environment variables (this service only)
+
+Master switch: `WORKER_JOBS_ENABLED`. Per job: `WORKER_JOB_<NAME>_ENABLED` (default on except where
+noted). As of 2026-09-17: `price_update`, `feed_ingest`, `refresh`, `discovery`, `dispatch_sweep`,
+`product_recovery`, `reobserve`, `manual_trigger` all enabled; `samsung_delta_watch` deliberately
+still `0` pending a dedicated verification pass (nested-process cleanup is now solved by tini, but
+completion/run-state-closure/data-propagation under the new worker hasn't been observed yet).
+
+Store lists: `WORKER_INGEST_STORES` (scraper path), `WORKER_FEED_STORES` (feed/API path) — a store
+in both is silently excluded from the scraper path (`effectiveScraperStores()`, mirrors ADR-089's
+`_feedSet` exclusion) so nothing double-ingests.
+
+Per-job timeouts: `WORKER_PRICE_UPDATE_TIMEOUT_MS` (75min), `WORKER_PRICE_UPDATE_PER_STORE_TIMEOUT_MS`
+(8min), `WORKER_DISCOVERY_TIMEOUT_MS` (60min), `WORKER_DISCOVERY_PER_UNIT_TIMEOUT_MS` (6min),
+`WORKER_REFRESH_TIMEOUT_MS` (60min — raised from 20min 2026-09-17, see Known limitation below),
+`WORKER_FEED_INGEST_TIMEOUT_MS` (20min), `WORKER_PRODUCT_RECOVERY_TIMEOUT_MS` (10min),
+`WORKER_DISPATCH_SWEEP_TIMEOUT_MS` (10min), `WORKER_REOBSERVE_TIMEOUT_MS` (15min),
+`WORKER_SAMSUNG_TIMEOUT_MS` (45min), `WORKER_MANUAL_TRIGGER_TIMEOUT_MS` (20min).
+
+`WORKER_STALE_RUN_THRESHOLD_MS` (20min) — boot-time orphan-reap threshold, see table above.
+
+**Bounded lulu/sharafdg probe mode** (2026-09-17): `WORKER_PRICE_UPDATE_PROBE_STORES` (default
+`lulu,sharafdg`), `WORKER_PRICE_UPDATE_PROBE_MAX_PRODUCTS` (default `10`). Evidence: both merchants
+measured at 99–100% `scrape_status='failed'` over 14 days, zero comparable (multi-store) products,
+zero outbound/campaign clicks all-time, no affiliate relationship — a merchant-side access block,
+not a code defect. This reduces attempt VOLUME only (10 products/cycle instead of the full ~240/
+~144-item catalog); existing offers/price history are untouched, ranking is untouched, and this is
+fully reversible by removing a slug from the list or raising the count back up. Not a decision to
+pause/remove these merchants — that's a separate founder call this fix does not make.
+
+## Operating
+
+```bash
+railway logs --service tawveeri-worker                 # tail live logs
+railway logs --service tawveeri-worker --lines 200      # recent history
+railway variables -s tawveeri-worker -k                 # current env (raw values)
+railway variable set -s tawveeri-worker "KEY=VALUE"      # change one var (triggers a redeploy)
+railway redeploy -s tawveeri-worker --from-source -y     # force a fresh deploy from the latest commit
+```
+
+Heartbeat log line every 60s: `[worker] heartbeat mem=<bytes>/<limit> pids=<n>/1000 queue=[...] running=<job|->`.
+Resource limits: 2GB memory / 1 vCPU / single replica (`serviceInstanceLimitsUpdate`, verified via
+`railway api search`). Baseline idle: ~60-175MB, ~33-37 pids. Observed peak under a real
+discovery+refresh overlap: ~760MB, ~98 pids — comfortable headroom on both axes.
+
+`tps_scheduler_heartbeat` / `tps_job_state` (same tables the old in-process scheduler used, no
+schema change) — query directly for `last_success_at` per job if you don't have log access:
+```sql
+select job, last_success_at, last_note from tps_job_state order by job;
+```
+A job's `last_success_at` only advances on a clean `success` outcome (never on
+timeout/failed/cancelled) — `jobDue()` deliberately keeps retrying a job that hasn't cleanly
+succeeded rather than waiting a full interval. A stale `last_success_at` after several ticks means
+the job is genuinely struggling, not that nothing has been tried.
+
+## Gotcha: transient Turbopack build-cache corruption
+
+Observed once (2026-09-17): a `railway variable set` (no code change) triggered a rebuild that
+failed with `TurbopackInternalError: Failed to restore data for task TaskId 1 ... failed to open
+file .../00000147.sst: No such file or directory` — a corrupted persistent Turbopack build cache
+entry, unrelated to any code change. Railway kept the previous successful deployment's container
+running throughout (no outage); a second, identical deploy attempt (another `railway variable set`
+or `railway redeploy --from-source -y`) succeeded immediately. If a deploy fails with a
+`TurbopackInternalError` referencing `.next/cache/turbopack/.../*.sst`, just retry — do not assume
+it's your change.
+
+## Rollback
+
+Set `WORKER_JOBS_ENABLED=0` (master switch) to stop all worker execution without touching
+`tawveeri-main`. To fully stand down a single job, set its `WORKER_JOB_<NAME>_ENABLED=0`. Neither
+action reactivates the old in-process scheduler — `DISABLE_INPROCESS_SCHEDULER=1` on `tawveeri-main`
+is a separate, independent kill switch and must be unset explicitly (not recommended; that's the
+config that caused the original SEV-1).
+
+## Known limitation (open, 2026-09-17)
+
+`refresh` (`scripts/tps-core/refresh-intelligence.ts`, a 10-step pipeline, pre-existing script not
+part of this migration) has timed out at its budget on both observed attempts (20min, then 60min
+after raising it) without its own step-1 (`normalize-incremental.ts`) summary line ever printing —
+`runScript()` wraps each step in a synchronous `spawnSync` with no internal per-step timeout, so the
+outer proc-guard timeout is the only bound and a still-working step looks identical to a stuck one
+from the outside. Investigated live: step 1's advisory lock (`LANE_KEY=8148148`) was NOT contended.
+
+**This is NOT a stall.** Direct query evidence: `normalized_product_observations` gained 7,693 rows
+in 24h with the most recent write during the timed-out run itself, and `tps_progress_cursors`
+advanced measurably between the first and second attempts — step 1 is making real, DB-committed,
+resumable progress (the cursor is persistent, so no attempt's work is lost), it is just not
+completing a full pass within one window. The likely reason: this session restored `feed_ingest`,
+`discovery`, and `price_update` on the SAME day, and each one adds to the very backlog normalize is
+draining — a treadmill effect specific to the first day multiple jobs come back online at once, not
+a recurring steady-state cost.
+
+**The real, currently-unconfirmed gap:** steps 2-10 (which build `tps_product_projection` and the
+search index — what customers actually see) have a `needs` dependency chain starting at step 1, so
+they have NOT run via this path since before this session (`tps_product_projection.updated_at` last
+seen ~10:47 UTC, well before today's restored ingestion). Freshly-scraped/ingested data IS flowing
+in and being normalized; it has NOT been confirmed to have reached search/comparison yet. Expected
+to self-resolve as the cursor catches up over further attempts — confirm by checking
+`tps_product_projection`'s `updated_at`/`last_observed_at` against a specific product touched by
+today's price_update/discovery/feed_ingest runs, or by re-running the query above.
+
+**Do not** respond to a further timeout by blindly raising `WORKER_REFRESH_TIMEOUT_MS` again — the
+one raise already made was evidence-informed (ruled out lock contention and an oversized one-time
+backlog first). If it is still not completing after the backlog has had time to drain, the next
+step is per-step timing instrumentation inside `refresh-intelligence.ts` itself (e.g. have
+`runScript()` log a start line before each `spawnSync`, not just the result after), not another
+timeout increase — this is pre-existing script behavior under first-day combined load, not a worker
+isolation defect, and any deeper fix to `normalize-incremental.ts`'s own throughput is out of this
+migration's scope.
