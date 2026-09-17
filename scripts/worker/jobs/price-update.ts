@@ -71,6 +71,28 @@ async function main() {
   const staggerMs = parseInt(process.env.WORKER_STAGGER_MS || '20000', 10);
   const noonMax = parseInt(process.env.NOON_PRICE_MAX_PRODUCTS || '15', 10);
   const defaultMax = parseInt(process.env.INGEST_PRICE_MAX_PRODUCTS || '300', 10);
+  // Bounded review, 2026-09-17 (production-recovery mandate, section 9):
+  // lulu and sharafdg measured over the prior 14 days at 99.2% and 100.0%
+  // scrape_status='failed' respectively (lulu 240/242 offers, sharafdg
+  // 144/144), ZERO comparable (multi-store-available) products for either,
+  // ZERO outbound_clicks/campaign_clicks all-time, and no affiliate_campaigns
+  // row — while still consuming real execution time every 6h cycle (lulu
+  // avg 184.8s x34 partial runs, sharafdg avg 274.9s x22, ~2950-3000 errors
+  // each over 14 days) attempting their FULL catalog. This is a merchant-side
+  // access block (same class as the documented SWSG Bunny Shield outage), not
+  // a code defect — full-catalog retries can't fix it. Per the mandate:
+  // "temporarily pause expensive attempts with limited recovery probes" —
+  // NOT removal (existing offers/history stay untouched and comparable per
+  // ADR-356's null-never-overwrites guard; ranking is untouched; this is
+  // purely an attempt-volume control) and NOT because they lack an affiliate
+  // relationship (the reasoning above is 100% failure-rate + zero realized
+  // value, stated explicitly, not affiliate status). Reversible via env var —
+  // remove a slug from the list, or set the probe count back up, with no
+  // code change, the moment evidence changes (e.g. a recovery probe starts
+  // succeeding again).
+  const probeStores = (process.env.WORKER_PRICE_UPDATE_PROBE_STORES || 'lulu,sharafdg')
+    .split(',').map((s) => s.trim()).filter(Boolean);
+  const probeMax = parseInt(process.env.WORKER_PRICE_UPDATE_PROBE_MAX_PRODUCTS || '10', 10);
   const olderThanHours = 12;
   // Per-store bound: generous enough for a real full cycle on a healthy
   // store (observed live: noon 32s, sharafdg/almanea ~5-9min for a full
@@ -78,11 +100,11 @@ async function main() {
   // Reversible via env var without a code change.
   const perStoreTimeoutMs = parseInt(process.env.WORKER_PRICE_UPDATE_PER_STORE_TIMEOUT_MS || String(8 * 60 * 1000), 10);
 
-  console.log(`[worker:price-update] starting — stores=[${stores.join(',')}] perStoreTimeoutMs=${perStoreTimeoutMs}`);
+  console.log(`[worker:price-update] starting — stores=[${stores.join(',')}] perStoreTimeoutMs=${perStoreTimeoutMs} probeStores=[${probeStores.join(',')}] probeMax=${probeMax}`);
   const summary: string[] = [];
 
   for (const slug of stores) {
-    const maxProducts = slug === 'noon' ? noonMax : defaultMax;
+    const maxProducts = slug === 'noon' ? noonMax : probeStores.includes(slug) ? probeMax : defaultMax;
 
     const runId = await startRun({
       store_name: slug,

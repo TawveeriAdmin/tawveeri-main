@@ -10,15 +10,25 @@
 // from scripts/scheduler.js (see that file's own comments for the "why" on
 // each — not re-derived here to avoid drifting from the reasoning already on
 // record).
+//
+// BOUNDED PER UNIT (fixed 2026-09-17, before this job was ever enabled — see
+// discovery-store-category.ts's header): each store x category unit now runs
+// as its own spawned, individually-timed process via proc-guard, exactly
+// like price-update.ts's per-store fix. Same SIGTERM-cascade requirement
+// applies: the outer job-level timeout (owned by the worker supervisor) can
+// only reach whichever unit is currently active by this process forwarding
+// its own SIGTERM into the active child's detached process group.
 
-import { ScrapingOrchestrator } from '../../../src/lib/scraping/services/scraping-orchestrator';
-import type { DiscoveryOptions } from '../../../src/lib/scraping/base/types';
-import type { ProductCategory } from '../../../src/lib/database/types';
 import { createServerClient } from '../../../src/lib/database';
-import { startRun, finishRun, failRun, hasActiveRun, reapStaleRuns } from '../../../src/lib/scraping/services/run-logger';
+import type { ProductCategory } from '../../../src/lib/database/types';
+import { startRun, finishRun, hasActiveRun, reapStaleRuns } from '../../../src/lib/scraping/services/run-logger';
 import { effectiveScraperStores } from '../lib/store-sets';
+import { runGuarded } from '../lib/proc-guard';
+import path from 'path';
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const TSX_BIN = require.resolve('tsx/cli');
+const STORE_CATEGORY_JOB = path.join(__dirname, 'discovery-store-category.ts');
 
 const INGEST_CATEGORIES: Record<string, ProductCategory[]> = {
   shaker: ['tv', 'appliance', 'kitchen'] as ProductCategory[],
@@ -28,6 +38,17 @@ const INGEST_CATEGORIES: Record<string, ProductCategory[]> = {
   lulu: ['smartphone', 'laptop', 'tv', 'tablet', 'audio', 'wearable', 'kitchen', 'appliance', 'monitor'] as ProductCategory[],
   sharafdg: ['smartphone', 'laptop', 'tv', 'tablet', 'audio', 'wearable', 'appliance', 'monitor', 'camera'] as ProductCategory[],
 };
+
+// Same SIGTERM-cascade pattern as price-update.ts — see that file's header
+// for why this is required (per-unit children are detached process groups,
+// so the outer timeout's SIGTERM to THIS process does not automatically
+// reach whichever child is currently running).
+let activeCancel: ((reason: string) => void) | null = null;
+process.on('SIGTERM', () => {
+  console.error('[worker:discovery] received SIGTERM — cascading to active per-unit child, if any');
+  if (activeCancel) activeCancel('parent discovery received SIGTERM');
+  else process.exit(0);
+});
 
 async function lookupStoreId(storeSlug: string): Promise<number | null> {
   const supabase = createServerClient();
@@ -45,57 +66,78 @@ async function main() {
     return;
   }
   const staggerMs = parseInt(process.env.WORKER_STAGGER_MS || '20000', 10);
+  // Per-unit bound: discovery units are typically fast (a handful of search
+  // pages); generous headroom over any observed real run while still short
+  // enough that a stuck unit cannot consume the outer budget or exceed the
+  // 20min boot-time orphan-reap threshold. Reversible via env var.
+  const perUnitTimeoutMs = parseInt(process.env.WORKER_DISCOVERY_PER_UNIT_TIMEOUT_MS || String(6 * 60 * 1000), 10);
 
-  console.log(`[worker:discovery] starting — stores=[${stores.join(',')}]`);
+  console.log(`[worker:discovery] starting — stores=[${stores.join(',')}] perUnitTimeoutMs=${perUnitTimeoutMs}`);
+  const summary: string[] = [];
 
+  outer:
   for (const slug of stores) {
     const categories = INGEST_CATEGORIES[slug] || (['tv'] as ProductCategory[]);
+    const storeId = await lookupStoreId(slug);
+    await reapStaleRuns(storeId);
+
     for (const cat of categories) {
+      if (storeId !== null && (await hasActiveRun(storeId))) {
+        console.log(`[worker:discovery] ${slug}/${cat}: skipped — active run already in progress`);
+        continue;
+      }
+
       const maxPages = slug === 'samsung_ksa'
         ? parseInt(process.env.SAMSUNG_DISCOVERY_MAX_PAGES || '18', 10)
         : 2;
 
-      let runId: number | null = null;
-      try {
-        const storeId = await lookupStoreId(slug);
-        await reapStaleRuns(storeId);
-        if (storeId !== null && (await hasActiveRun(storeId))) {
-          console.log(`[worker:discovery] ${slug}/${cat}: skipped — active run already in progress`);
-          continue;
-        }
+      const runId = await startRun({
+        store_name: slug,
+        store_id: storeId,
+        job_type: 'discovery',
+        triggered_by: 'schedule',
+      });
 
-        runId = await startRun({
-          store_name: slug,
-          store_id: storeId,
-          job_type: 'discovery',
-          triggered_by: 'schedule',
+      if (!runId) {
+        console.error(`[worker:discovery] ${slug}/${cat}: could not create scraping_runs row — skipping`);
+        summary.push(`${slug}/${cat}=no_run_row`);
+        await sleep(staggerMs);
+        continue;
+      }
+
+      const guarded = runGuarded(
+        process.execPath,
+        [TSX_BIN, STORE_CATEGORY_JOB, slug, cat, String(runId), String(maxPages)],
+        { timeoutMs: perUnitTimeoutMs, jobName: `discovery:${slug}/${cat}`, env: process.env },
+      );
+      activeCancel = guarded.cancel;
+      const result = await guarded.result;
+      activeCancel = null;
+
+      if (result.outcome === 'timeout' || result.outcome === 'cancelled' || result.outcome === 'spawn_error') {
+        // Same reasoning as price-update.ts: status must be a value the live
+        // CHECK constraint accepts ('failed'), with the real outcome recorded
+        // in error_summary.reason, not as a literal status value.
+        await finishRun({
+          run_id: runId,
+          status: 'failed',
+          errors_count: 1,
+          error_summary: { reason: result.outcome, tail: result.tail.slice(-500) },
         });
+        console.error(`[worker:discovery] ${slug}/${cat}: ${result.outcome} after ${(result.durationMs / 1000).toFixed(0)}s — moving on`);
+      }
+      summary.push(`${slug}/${cat}=${result.outcome}`);
 
-        const options: DiscoveryOptions = { store_slug: slug, category: cat, max_pages: maxPages };
-        const orchestrator = new ScrapingOrchestrator();
-        const result = await orchestrator.runDiscoveryJob(options, runId);
-
-        if (runId) {
-          await finishRun({
-            run_id: runId,
-            status: result.success ? (result.errors > 0 ? 'partial' : 'success') : 'failed',
-            products_discovered: result.products_discovered,
-            products_updated: result.products_linked,
-            errors_count: result.errors,
-            error_summary: result.error_messages?.length ? result.error_messages : undefined,
-          });
-        }
-        console.log(`[worker:discovery] ${slug}/${cat}: discovered=${result.products_discovered} created=${result.products_created} linked=${result.products_linked}`);
-      } catch (err) {
-        console.error(`[worker:discovery] ${slug}/${cat} threw:`, err instanceof Error ? err.message : err);
-        if (runId) await failRun(runId, err);
+      if (result.outcome === 'cancelled') {
+        console.log(`[worker:discovery] stopping after cascade — ${summary.join(' ')}`);
+        break outer;
       }
 
       await sleep(staggerMs);
     }
   }
 
-  console.log('[worker:discovery] done');
+  console.log(`[worker:discovery] done — ${summary.join(' ')}`);
 }
 
 main()
