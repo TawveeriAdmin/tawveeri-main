@@ -111,9 +111,23 @@ async function main() {
       // The child was killed (or never started) before it could close its
       // own row — close it here so nothing is left permanently 'running',
       // exactly the failure mode that orphaned samsung_delta_watch_runs #10.
+      //
+      // WHY status: 'failed' and not 'timeout'/'cancelled' as the literal
+      // value (found live, 2026-09-17, same session): scraping_runs.status
+      // has a live CHECK constraint allowing only pending/running/success/
+      // partial/failed — 'pending' was already known to be rejected (the
+      // reason the run-now migration was held back); this file made the
+      // SAME mistake with 'timeout'/'cancelled', and the Supabase client's
+      // .update() call does not surface a constraint-violation error (no
+      // exception thrown, {error} never inspected) — the row simply never
+      // got closed, silently, which is exactly how this was caught: the
+      // very first live timeout under this code left its row stuck
+      // 'running' with finished_at=null. Using the real distinction only in
+      // error_summary.reason keeps this accurate and queryable without
+      // writing a status value the database does not yet accept.
       await finishRun({
         run_id: runId,
-        status: result.outcome === 'spawn_error' ? 'failed' : (result.outcome as 'timeout' | 'cancelled'),
+        status: 'failed',
         errors_count: 1,
         error_summary: { reason: result.outcome, tail: result.tail.slice(-500) },
       });

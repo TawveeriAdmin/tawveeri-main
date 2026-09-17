@@ -176,7 +176,7 @@ export async function finishRun(params: FinishRunParams): Promise<void> {
     const finishedAt = new Date();
     const durationMs = startedAt ? finishedAt.getTime() - new Date(startedAt).getTime() : null;
 
-    await supabase
+    const { error: updateError } = await supabase
       .from('scraping_runs')
       .update({
         status: params.status,
@@ -194,6 +194,21 @@ export async function finishRun(params: FinishRunParams): Promise<void> {
       // scraping_runs.id is bigint in the knowledge database; cast at the boundary
       // until types are regenerated post-consolidation.
       .eq('id', params.run_id as unknown as string);
+
+    // WHY check this now (found live, 2026-09-17): Supabase's .update() does
+    // NOT throw on a DB-level rejection (e.g. a CHECK constraint violation)
+    // — it resolves normally with {error} set. This call previously never
+    // looked at that, so a write that the database silently refused (e.g.
+    // an out-of-range `status` value) left the row exactly as it was —
+    // still 'running', finished_at still null — with zero signal anywhere.
+    // That is precisely how the first live per-store timeout under the
+    // isolated worker went undetected: the row never closed, the process
+    // exited cleanly, and nothing looked wrong until someone queried the
+    // row directly. Logging (not throwing — see the function's own
+    // "never throws" contract below) at least makes the failure visible.
+    if (updateError) {
+      console.error('[run-logger] finishRun update rejected by DB:', updateError.message, 'run_id=', params.run_id, 'status=', params.status);
+    }
 
     const scheduleId = (existing as { schedule_id?: string | null } | null)?.schedule_id;
     if (scheduleId) {
