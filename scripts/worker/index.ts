@@ -39,7 +39,7 @@ if (process.env.SUPABASE_DB_URL) process.env.SUPABASE_DB_URL = toPoolerDbUrl(pro
 import path from 'path';
 import { acquireGlobalLock, type GlobalLock } from './lib/global-lock';
 import { runGuarded, type JobOutcome } from './lib/proc-guard';
-import { heartbeat, pressureOk, jobDue, jobDone, admit } from './lib/job-state';
+import { heartbeat, pressureOk, jobDue, jobDone, admit, reapOrphanedRuns } from './lib/job-state';
 import { samsungRuntimeResources } from '../tps-core/samsung-runtime-resources';
 import { resolveSamsungDeltaRuntime } from '../tps-core/samsung-delta-runtime';
 
@@ -300,6 +300,11 @@ function scheduleJob(job: JobDef) {
 async function main() {
   console.log(`[worker] starting — pid=${process.pid} JOBS_ENABLED=${JOBS_ENABLED}`);
   await heartbeat('boot');
+  // Close out any scraping_runs row left 'running' by a container this
+  // fresh boot has replaced (redeploy mid-job) — see job-state.ts's own
+  // comment for why this is safe and necessary. Runs before any job is
+  // scheduled so a stale row can never be mistaken for still-active work.
+  await reapOrphanedRuns();
 
   if (!JOBS_ENABLED) {
     console.log('[worker] WORKER_JOBS_ENABLED != 1 — worker is up but will schedule NOTHING. This is the intended state for initial bring-up verification.');

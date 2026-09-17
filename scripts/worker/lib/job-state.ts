@@ -158,3 +158,51 @@ export async function admit(kind: string): Promise<boolean> {
   }
   return true;
 }
+
+// ── Boot-time orphan recovery ────────────────────────────────────────────
+//
+// WHY (found live, 2026-09-17, same session): a git push mid-run triggers a
+// Railway container swap for this service — same as any other deploy. The
+// OLD container is replaced before its SIGTERM cascade (see price-update.ts)
+// can finish the async DB write that closes the in-flight scraping_runs
+// row, so the row is left 'running' with finished_at=null even though the
+// container (and every process in it, cleanly, per Railway's own container
+// teardown) is gone. This is a smaller-scale repeat of exactly the class of
+// bug that orphaned samsung_delta_watch_runs #10 during the original SEV-1
+// (there the cause was resource exhaustion inside tawveeri-main; here it's
+// an ordinary code deploy) — the fix is the same shape: on boot, a FRESH
+// process can safely assume any 'running' row older than a generous
+// threshold belongs to a container that no longer exists (this worker never
+// runs more than one replica, and no job is allowed to run longer than its
+// own configured per-store/per-job timeout), and close it accurately.
+//
+// This runs once at boot, before any job is scheduled — it must never touch
+// a row a still-alive process might be updating, hence the generous
+// threshold (comfortably longer than any single per-store timeout).
+const STALE_RUN_THRESHOLD_MS = parseInt(process.env.WORKER_STALE_RUN_THRESHOLD_MS || String(20 * 60 * 1000), 10);
+
+export async function reapOrphanedRuns(): Promise<void> {
+  const url = dbUrl();
+  if (!url) return;
+  const c = newPgClient({ connectionString: url, ssl: { rejectUnauthorized: false } });
+  try {
+    await c.connect();
+    const cutoff = new Date(Date.now() - STALE_RUN_THRESHOLD_MS).toISOString();
+    const { rows } = await c.query(
+      `update scraping_runs
+       set status='failed', finished_at=now(), duration_ms=extract(epoch from (now()-started_at))*1000,
+           errors_count=coalesce(errors_count,0)+1,
+           error_summary=coalesce(error_summary,'{}'::jsonb) || $2::jsonb
+       where status='running' and started_at < $1
+       returning id, store_name`,
+      [cutoff, JSON.stringify({ reason: 'orphaned_boot_reap', detail: 'Row was still running when this worker process booted, older than the stale-run threshold — the container that owned it is gone. Closed automatically at boot.' })]
+    );
+    if (rows.length) {
+      console.log(`[worker] boot reap: closed ${rows.length} orphaned scraping_runs row(s): ${rows.map((r) => r.store_name).join(', ')}`);
+    }
+  } catch (e) {
+    console.error('[worker] boot reap failed:', (e as Error)?.message || e);
+  } finally {
+    try { await c.end(); } catch { /* ignore */ }
+  }
+}
