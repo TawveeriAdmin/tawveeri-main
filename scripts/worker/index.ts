@@ -86,7 +86,14 @@ const JOBS: JobDef[] = [
   {
     name: 'price_update',
     intervalMs: parseInt(process.env.INGEST_PRICE_MS || String(6 * 60 * 60 * 1000), 10),
-    timeoutMs: parseInt(process.env.WORKER_PRICE_UPDATE_TIMEOUT_MS || String(45 * 60 * 1000), 10),
+    // Outer backstop only (found live, 2026-09-17: two runs each consumed the
+    // full 45min on a single store — 'extra' then 'amazon' — starving every
+    // store after it). price-update.ts now bounds EACH store individually
+    // (WORKER_PRICE_UPDATE_PER_STORE_TIMEOUT_MS, default 8min) and cascades
+    // its own SIGTERM to whichever per-store child is active, so this outer
+    // ceiling should rarely fire — sized at 7 stores * 8min + stagger with
+    // headroom, not at the old single-store budget.
+    timeoutMs: parseInt(process.env.WORKER_PRICE_UPDATE_TIMEOUT_MS || String(75 * 60 * 1000), 10),
     spawn: workerJob('price-update.ts'),
     highPriority: true,
   },
