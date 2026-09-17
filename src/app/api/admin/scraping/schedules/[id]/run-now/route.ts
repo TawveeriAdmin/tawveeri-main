@@ -64,6 +64,13 @@ export async function POST(
       ? { max_pages: s.max_pages ?? 10, categories: s.categories && s.categories.length > 0 ? s.categories : undefined }
       : { max_products: s.max_products ?? 100, older_than_hours: s.older_than_hours ?? 24 };
 
+  // NOTE (2026-09-17): status='pending' requires migration
+  // 033_scraping_runs_pending_status.sql, drafted but not yet applied
+  // (founder held off pending a separate decision) — scraping_runs' live
+  // CHECK constraint does not accept 'pending' yet. startRun() swallows
+  // insert errors and returns null rather than throwing, so this is
+  // explicitly checked below: report unavailable, never silently claim
+  // success on a request nothing will actually execute.
   const runId = await startRun({
     store_name: s.stores.slug,
     store_id: Number(s.store_id), // stores.id is integer on the knowledge DB
@@ -74,6 +81,17 @@ export async function POST(
     status: 'pending',
     metadata: { options, enqueued_via: 'admin_run_now' },
   });
+
+  if (runId == null) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: 'Manual trigger delegation is not available yet — pending a database migration (033_scraping_runs_pending_status.sql) that has not been applied.',
+        execution: 'unavailable',
+      },
+      { status: 503 },
+    );
+  }
 
   createAuditLog({
     user_id: admin.id,
