@@ -38,9 +38,14 @@ export const maxDuration = 120;
 // it a poor first-cascade candidate; noon/almanea excluded from THIS cascade for the same
 // "richest-signal-first" reasoning (a future pass can widen this with real yield evidence,
 // not guessed — Part 9's own "measured evidence should determine provider order").
-const PROVIDER_CASCADE = ['jarir', 'extra', 'amazon'] as const;
-const MAX_ATTEMPTS_BEFORE_PERMANENT_FAILURE = 3;
-const BATCH_SIZE = 5;
+// Exported (2026-09-17, isolated-worker migration): the worker's job entrypoint
+// (scripts/worker/jobs/product-recovery.ts) imports these directly so the exact
+// same matching/ingestion logic runs whether triggered over HTTP (manual/admin)
+// or from the isolated worker — no second, untested implementation of this
+// cascade. Purely additive; no behavior below changed.
+export const PROVIDER_CASCADE = ['jarir', 'extra', 'amazon'] as const;
+export const MAX_ATTEMPTS_BEFORE_PERMANENT_FAILURE = 3;
+export const BATCH_SIZE = 5;
 
 // Generic stopwords stripped before the plausibility check — the SAME class of word this
 // codebase's own PREFERENCE_WRAPPER/STOPWORDS sets already exclude from literal title
@@ -67,7 +72,7 @@ export function isPlausibleCandidate(candidate: SearchProduct, queryTokens: stri
   return queryTokens.every((t) => hay.includes(t));
 }
 
-async function lookupStoreId(storeSlug: string): Promise<number | null> {
+export async function lookupStoreId(storeSlug: string): Promise<number | null> {
   const supabase = createServerClient();
   const { data } = await supabase.from('stores').select('id').eq('slug', storeSlug).maybeSingle();
   return (data as { id?: number } | null)?.id ?? null;
@@ -109,7 +114,7 @@ async function findExistingCanonicalMatch(category: string, candidate: SearchPro
   return matchesAnyCanonicalName(data as Array<{ name_ar: string; name_en: string }>, queryTokens);
 }
 
-interface RecoveryRow {
+export interface RecoveryRow {
   id: string;
   dedup_key: string;
   category: string;
@@ -122,9 +127,9 @@ interface RecoveryRow {
 // product_recovery_requests is not yet in the generated Supabase types (migration 49) —
 // same untyped-table pattern already used throughout command-center-queries.ts for this
 // exact reason, not a new workaround.
-type UntypedClient = { from: (table: string) => any };
+export type UntypedClient = { from: (table: string) => any };
 
-async function processOne(supabase: UntypedClient, row: RecoveryRow) {
+export async function processOne(supabase: UntypedClient, row: RecoveryRow) {
   await supabase.from('product_recovery_requests').update({
     status: 'PROCESSING', attempt_count: row.attempt_count + 1, last_attempt_at: new Date().toISOString(), updated_at: new Date().toISOString(),
   }).eq('id', row.id);

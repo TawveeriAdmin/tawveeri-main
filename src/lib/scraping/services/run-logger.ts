@@ -1,7 +1,11 @@
 import { createServerClient } from '@/lib/database';
 
 export type ScrapingJobType = 'discovery' | 'price_update';
-export type ScrapingRunStatus = 'pending' | 'running' | 'success' | 'failed' | 'partial';
+// 'timeout'/'cancelled' added 2026-09-17 (isolated-worker migration) so the
+// worker's proc-guard outcomes are recorded accurately instead of collapsing
+// into 'failed'. scraping_runs.status is a plain unconstrained text column —
+// this is a type-annotation widening, not a database schema change.
+export type ScrapingRunStatus = 'pending' | 'running' | 'success' | 'failed' | 'partial' | 'timeout' | 'cancelled';
 export type ScrapingTriggerSource = 'schedule' | 'manual' | 'api';
 
 export interface StartRunParams {
@@ -13,6 +17,16 @@ export interface StartRunParams {
   schedule_id?: string | null;
   triggered_by?: ScrapingTriggerSource;
   triggered_by_user_id?: string | null;
+  /** Defaults to 'running' (the existing behavior — every prior caller starts
+   *  a run it immediately executes). Pass 'pending' to enqueue a run for the
+   *  isolated worker to pick up instead of executing it in the caller's own
+   *  process — see src/app/api/admin/scraping/schedules/[id]/run-now/route.ts. */
+  status?: 'pending' | 'running';
+  /** Reuses the existing scraping_runs.metadata jsonb column (no schema
+   *  change) to carry the original request options (max_pages, categories,
+   *  max_products, older_than_hours) so a 'pending' row is fully self-
+   *  describing for whichever process later executes it. */
+  metadata?: Record<string, unknown> | null;
 }
 
 /**
@@ -117,14 +131,18 @@ export async function startRun(params: StartRunParams): Promise<number | null> {
         // NOT NULL columns, always supplied explicitly:
         store_name: params.store_name,
         run_type: params.job_type,
-        status: 'running',
-        started_at: new Date().toISOString(),
+        status: params.status ?? 'running',
+        // A 'pending' row has no started_at yet (see run-logger.ts's own
+        // comment: this timestamp is used to compute duration_ms on finish,
+        // which should measure execution time, not queue wait time).
+        started_at: params.status === 'pending' ? null : new Date().toISOString(),
         // Optional / newer columns:
         store_id: params.store_id ?? null,
         job_type: params.job_type,
         schedule_id: params.schedule_id ?? null,
         triggered_by: params.triggered_by ?? 'manual',
         triggered_by_user_id: params.triggered_by_user_id ?? null,
+        metadata: params.metadata ?? null,
       } as never)
       .select('id')
       .single();

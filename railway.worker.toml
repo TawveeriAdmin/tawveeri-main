@@ -1,0 +1,25 @@
+# Config-as-code for ONLY the `tawveeri-worker` Railway service — isolated from the
+# shared /railway.toml (used by tawveeri-main/node/amusing-amazement) on purpose.
+#
+# WHY THIS FILE EXISTS AT ALL: this project has already been bitten once by every
+# service silently inheriting the shared root railway.toml's startCommand
+# ("npm run start", the full Next.js app) on any push to main — see
+# railway.founder-report-cron.toml's own root-cause note (2026-08-07) and the
+# 2026-09-17 audit finding that the `node` service is STILL suffering this exact
+# bug today. Pointing this service's `railwayConfigFile` at THIS file instead of
+# the shared one means a push to main can never silently turn the isolated worker
+# into a second full copy of the public web server.
+#
+# This service NEVER opens an HTTP listener and NEVER imports src/instrumentation.ts
+# — it is a plain long-lived Node process, not the Next.js app.
+[build]
+builder = "RAILPACK"
+buildCommand = "npm install --legacy-peer-deps && npm run build"
+
+[deploy]
+startCommand = "node --import tsx scripts/worker/index.ts"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5
+# No healthcheckPath: this service has no HTTP server to probe. Liveness is the
+# tps_scheduler_heartbeat row it writes every 60s (same table/shape the old
+# in-process scheduler used) plus Railway's own deployment/process status.

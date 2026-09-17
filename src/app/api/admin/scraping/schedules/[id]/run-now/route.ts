@@ -42,13 +42,27 @@ export async function POST(
     stores: { slug: string };
   };
 
-  const cronSecret = process.env.CRON_SECRET;
-  if (!cronSecret) {
-    return NextResponse.json(
-      { error: 'CRON_SECRET is not configured. Set it before running scrapers manually.' },
-      { status: 503 },
-    );
-  }
+  // CHANGED 2026-09-17 (isolated-worker migration, SEV-1 follow-up): this
+  // route used to fire-and-forget an HTTP POST to /api/cron/discover-products
+  // or /api/cron/update-prices — running real scraping (Puppeteer/Browserless
+  // included) directly inside tawveeri-main's process, invisibly to the
+  // caller. That is exactly the pattern the migration exists to eliminate,
+  // and it applied to admin-triggered runs just as much as the old scheduler.
+  //
+  // Instead of executing anything here, this now DELEGATES to the isolated
+  // worker: it enqueues a 'pending' scraping_runs row (an existing, already-
+  // supported status — see run-logger.ts's ScrapingRunStatus) with the
+  // request options stashed in the existing `metadata` jsonb column (no
+  // schema change). scripts/worker/jobs/manual-trigger.ts polls for these
+  // and executes them through the SAME ScrapingOrchestrator methods the
+  // scheduled jobs use, under the same global lock and timeout guard.
+  //
+  // If the worker is down, this row simply waits — it does NOT silently fall
+  // back to running in tawveeri-main.
+  const options: Record<string, unknown> =
+    s.job_type === 'discovery'
+      ? { max_pages: s.max_pages ?? 10, categories: s.categories && s.categories.length > 0 ? s.categories : undefined }
+      : { max_products: s.max_products ?? 100, older_than_hours: s.older_than_hours ?? 24 };
 
   const runId = await startRun({
     store_name: s.stores.slug,
@@ -57,39 +71,17 @@ export async function POST(
     schedule_id: s.id,
     triggered_by: 'manual',
     triggered_by_user_id: admin.id,
+    status: 'pending',
+    metadata: { options, enqueued_via: 'admin_run_now' },
   });
-
-  const path = s.job_type === 'discovery' ? '/api/cron/discover-products' : '/api/cron/update-prices';
-  const body: Record<string, unknown> = {
-    store_slug: s.stores.slug,
-    run_id: runId,
-    schedule_id: s.id,
-    triggered_by_user_id: admin.id,
-  };
-  if (s.job_type === 'discovery') {
-    body.max_pages = s.max_pages ?? 10;
-    if (s.categories && s.categories.length > 0) body.categories = s.categories;
-  } else {
-    body.max_products = s.max_products ?? 100;
-    body.older_than_hours = s.older_than_hours ?? 24;
-  }
-
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://127.0.0.1:3000';
-
-  // Fire-and-forget.
-  fetch(`${baseUrl}${path}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${cronSecret}` },
-    body: JSON.stringify(body),
-  }).catch((err) => console.error('[run-now] fetch failed:', err));
 
   createAuditLog({
     user_id: admin.id,
     action: AUDIT_ACTIONS.SCRAPING_RUN_TRIGGERED,
     entity_type: 'scraping_schedule',
     entity_id: id,
-    details: { run_id: runId, job_type: s.job_type, store_slug: s.stores.slug },
+    details: { run_id: runId, job_type: s.job_type, store_slug: s.stores.slug, execution: 'delegated_to_isolated_worker' },
   }).catch(() => {});
 
-  return NextResponse.json({ ok: true, run_id: runId });
+  return NextResponse.json({ ok: true, run_id: runId, execution: 'delegated_to_isolated_worker' });
 }

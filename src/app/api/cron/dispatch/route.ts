@@ -7,7 +7,13 @@ import { writeCoverageSnapshot } from '@/lib/intelligence/coverage-ledger';
 
 // E15.5 — daily Coverage Ledger snapshot (throttled marker '_ledger_tick'/store 0).
 const LEDGER_INTERVAL_S = 86400; // 24h
-async function maybeCoverageSnapshot(): Promise<{ wrote: boolean }> {
+// Exported (2026-09-17, isolated-worker migration): this used to run DETACHED
+// inside tawveeri-main after the HTTP response returned (fire-and-forget,
+// invisible to the caller) — a real, DB-heavy background workload discovered
+// during the worker migration audit, not one of the originally-enumerated
+// jobs. The worker now runs it directly and AWAITS it (bounded by the job's
+// own timeout), rather than leaving it detached inside the web server.
+export async function maybeCoverageSnapshot(): Promise<{ wrote: boolean }> {
   try {
     const sb = createServerClient();
     const nowS = Math.floor(Date.now() / 1000);
@@ -28,7 +34,8 @@ export const maxDuration = 60;
 // (category '_sweep_tick', store_id 0, last_raw_id = epoch seconds). Best-effort:
 // failures never block the scraping dispatch.
 const SWEEP_INTERVAL_S = 900; // 15 min
-async function maybeProgressiveSweep(): Promise<{ ran: boolean; scanned?: number }> {
+// Exported for the same reason as maybeCoverageSnapshot above.
+export async function maybeProgressiveSweep(): Promise<{ ran: boolean; scanned?: number }> {
   try {
     const sb = createServerClient();
     const nowS = Math.floor(Date.now() / 1000);
@@ -62,18 +69,22 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    // The dispatch itself fires per-store cron routes fire-and-forget and returns
-    // fast — it is the tick's only critical path. The progressive sweep and daily
-    // coverage snapshot are heavy, throttled, best-effort jobs; awaiting them here
-    // intermittently exceeded Railway's edge timeout and returned 502 to the
-    // scheduler. Run them DETACHED so the tick always responds promptly. Safe on
-    // the long-running standalone server (the event loop keeps the promise alive
-    // after the response), and each job has its own throttle + slot-claim so a
-    // detached run cannot overlap the next tick's.
+    // dispatchDueSchedules() stays here — it is thin (scraping_schedules is a
+    // near-empty stub in production, see schedule-dispatcher.ts) and safe for
+    // an HTTP request/response cycle either way.
+    //
+    // CHANGED 2026-09-17 (isolated-worker migration, SEV-1 follow-up): this
+    // route used to ALSO run the progressive sweep and coverage snapshot —
+    // real, DB-heavy background work — DETACHED after responding, so the
+    // work continued executing inside tawveeri-main's process invisibly to
+    // the caller. That is exactly the pattern the migration exists to
+    // eliminate. Those two jobs are now owned exclusively by the isolated
+    // worker's own schedule (scripts/worker/jobs/dispatch-sweep.ts). A call
+    // to this route — manual, admin, or from any other trigger — no longer
+    // silently falls back to running them here; it reports that plainly
+    // instead.
     const result = await dispatchDueSchedules();
-    void maybeProgressiveSweep().catch((e) => console.error('[dispatch] sweep bg error:', e instanceof Error ? e.message : e));
-    void maybeCoverageSnapshot().catch((e) => console.error('[dispatch] ledger bg error:', e instanceof Error ? e.message : e));
-    return NextResponse.json({ success: true, ...result });
+    return NextResponse.json({ success: true, ...result, sweep: 'owned_by_isolated_worker', coverage_snapshot: 'owned_by_isolated_worker' });
   } catch (error) {
     console.error('[dispatch] failed:', error);
     return NextResponse.json(
