@@ -63,10 +63,21 @@ export function runGuarded(cmd: string, args: string[], opts: RunGuardedOptions)
   const { timeoutMs, graceMs: _g, jobName, ...spawnOpts } = opts;
   const child = spawn(cmd, args, { ...spawnOpts, detached: true });
 
+  // WHY mirror (found live, 2026-09-17): capturing into `tail` alone means a
+  // long-running job's per-store/per-item progress is completely invisible
+  // in `railway logs` until the job finishes (or times out) and the last
+  // ~2000 chars get logged — this is the exact ADR-344 lesson this codebase
+  // already learned once with Samsung ("three prior sessions independently
+  // concluded 'no Railway log access'... GET /api/debug/scheduler could
+  // answer the whole time"). Mirroring to the parent's own stdout/stderr is
+  // additive to the tail capture, not a replacement for it.
   let tail = '';
-  const capture = (buf: Buffer) => { tail = (tail + buf.toString()).slice(-2000); };
-  child.stdout?.on('data', capture);
-  child.stderr?.on('data', capture);
+  const capture = (mirror: NodeJS.WritableStream) => (buf: Buffer) => {
+    tail = (tail + buf.toString()).slice(-2000);
+    mirror.write(buf);
+  };
+  child.stdout?.on('data', capture(process.stdout));
+  child.stderr?.on('data', capture(process.stderr));
 
   const killGroup = (sig: NodeJS.Signals) => {
     if (child.pid == null) return;
