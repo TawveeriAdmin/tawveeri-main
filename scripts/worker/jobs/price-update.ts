@@ -24,6 +24,7 @@ import { ScrapingOrchestrator } from '../../../src/lib/scraping/services/scrapin
 import type { PriceUpdateOptions } from '../../../src/lib/scraping/base/types';
 import { createServerClient } from '../../../src/lib/database';
 import { startRun, finishRun, failRun } from '../../../src/lib/scraping/services/run-logger';
+import { effectiveScraperStores } from '../lib/store-sets';
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -34,8 +35,10 @@ async function lookupStoreId(storeSlug: string): Promise<number | null> {
 }
 
 async function main() {
-  const storesArg = process.env.WORKER_INGEST_STORES || '';
-  const stores = storesArg.split(',').map((s) => s.trim()).filter(Boolean);
+  const stores = effectiveScraperStores(
+    process.env.WORKER_INGEST_STORES || '',
+    process.env.WORKER_FEED_STORES || '',
+  );
   if (!stores.length) {
     console.log('[worker:price-update] no stores configured — nothing to do');
     return;
