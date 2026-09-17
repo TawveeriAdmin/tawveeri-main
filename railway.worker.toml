@@ -4,58 +4,57 @@
 # (railway.json / railway.toml) is deprecated. Use Infrastructure as Code
 # (.railway/railway.ts) instead." This file is therefore NOT read by Railway for
 # this (or any) service — it exists only as a human-readable record of what the
-# service's actual settings should be. The real, live settings are `buildCommand`/
-# `startCommand`/etc. set directly on the service instance via `serviceInstanceUpdate`
-# (the same mechanism `railway.founder-report-cron.toml`'s own root-cause note
-# from 2026-08-07 describes working around the shared root railway.toml's
-# startCommand). Whenever this file is edited, the matching `serviceInstanceUpdate`
-# API call MUST be made too, or the live service silently keeps the old value —
-# proven the hard way (2026-09-17): editing only this file for the tini change
-# below had zero effect on the deployed service.
+# service's actual settings should be. The real, live settings are `startCommand`/
+# etc. set directly on the service instance via `serviceInstanceUpdate` (the same
+# mechanism `railway.founder-report-cron.toml`'s own root-cause note from
+# 2026-08-07 describes working around the shared root railway.toml's startCommand).
+# Whenever this file is edited, the matching `serviceInstanceUpdate` API call MUST
+# be made too, or the live service silently keeps the old value.
 #
-# BUILD-CACHE GOTCHA (found live, 2026-09-17): changing `buildCommand` via
-# `serviceInstanceUpdate` does NOT by itself invalidate Railpack's build-layer
-# cache for an unchanged commit — a `railway redeploy --from-source` on the same
-# commit re-used the old cached build plan and silently skipped the new command
-# entirely (confirmed: the resulting image had no bin/tini, and the container
-# crash-looped when startCommand was flipped to depend on it). A real code change
-# (new commit, changing content Railpack's layer cache keys on) is required to
-# force the new buildCommand to actually execute. ALWAYS verify a build-time
-# artifact exists (e.g. via `railway ssh`) before flipping startCommand to depend
-# on it — never flip both in the same step again.
+# `buildCommand` OVERRIDE DOES NOT WORK FOR THIS SERVICE (found live, 2026-09-17,
+# confirmed across two full deploy cycles including one genuine cache-busted
+# rebuild — not a caching artifact): a `serviceInstanceUpdate` buildCommand value
+# is accepted, persisted, and echoed back by the API, but Railpack does not
+# actually apply it for this auto-detected Node/Next.js project — the real build
+# kept running the ROOT railway.toml's buildCommand regardless of what was set
+# here. `buildCommand` below is therefore left matching what actually runs
+# (inherited from the shared root railway.toml), NOT used for anything custom.
+# `startCommand`, by contrast, IS reliably applied — proven by a real crash loop
+# when it was made to depend on a build-time artifact that never got built, and
+# by a clean recovery when reverted. The tini fetch below runs as a startCommand
+# prefix instead, for exactly this reason.
 #
 # This service NEVER opens an HTTP listener and NEVER imports src/instrumentation.ts
 # — it is a plain long-lived Node process, not the Next.js app.
 [build]
 builder = "RAILPACK"
-# Fetches tini (v0.19.0, upstream static amd64 build from krallin/tini's own
-# GitHub Releases) via scripts/worker/fetch-tini.js — a plain Node script, not
-# a curl/shell one-liner, because `curl` was confirmed ABSENT from this
-# service's live runtime container (railway ssh, 2026-09-17) and Node is the
-# one binary guaranteed present in every stage. The script pins tini to its
-# published sha256 and fails closed on any mismatch, so a compromised/altered
-# asset can never silently become PID 1. See startCommand below for WHY tini
-# is here at all: found live, 2026-09-17, via an isolated fixture test on the
-# real production container (docs/DECISIONS.md ADR pending) — this worker's
-# own Node process runs AS PID 1 with no reaper, so when a middle process in a
-# 3+-level spawn chain (worker -> price-update.ts -> price-update-store.ts ->
-# Chromium, or the Samsung pipeline's own nested children) is killed, its
-# still-alive children reparent to PID 1 and are never reaped (confirmed:
-# still zombie/defunct at 15s+). Not yet acute (current Stage 1 jobs are only
-# 2 levels deep) but a real, proven risk once local-Chromium fallback or
-# Samsung's nested scripts run. tini is the same fix Docker's own `--init`
-# flag uses — a single-purpose, ~23KB, zero-dependency init binary; adding a
-# JS-level reaper isn't possible (reaping requires an actual waitpid() syscall
-# by the real parent, which plain Node cannot issue without a native binding).
-buildCommand = "node scripts/worker/fetch-tini.js && npm install --legacy-peer-deps && npm run build"
+buildCommand = "npm install --legacy-peer-deps && npm run build"
 
 [deploy]
-# tini as PID 1 (see buildCommand comment): it forwards signals to the real
-# worker process unchanged (so the existing SIGTERM handling in
-# scripts/worker/index.ts and the price-update.ts SIGTERM cascade are
-# untouched) and additionally reaps ANY reparented descendant, closing the
-# zombie gap. `--` is required so tini does not try to parse node's own args.
-startCommand = "bin/tini -- node --import tsx scripts/worker/index.ts"
+# `node scripts/worker/fetch-tini.js` runs first, at CONTAINER START (not
+# build time — see the buildCommand note above for why). It downloads tini
+# (v0.19.0, upstream static amd64 build from krallin/tini's own GitHub
+# Releases, sha256-pinned, fails closed on mismatch) into ./bin/tini, or
+# verifies an already-present copy's hash and skips the download on an
+# ordinary restart-policy restart (same container filesystem). tini then
+# runs as PID 1: it forwards signals to the real worker process unchanged
+# (so the existing SIGTERM handling in scripts/worker/index.ts and the
+# price-update.ts SIGTERM cascade are untouched) and additionally reaps ANY
+# reparented descendant, closing a real, proven gap — found live, 2026-09-17,
+# via an isolated fixture test on the real production container
+# (docs/DECISIONS.md ADR pending): this worker's own Node process runs AS
+# PID 1 with no reaper, so when a middle process in a 3+-level spawn chain
+# (worker -> price-update.ts -> price-update-store.ts -> Chromium, or the
+# Samsung pipeline's own nested children) is killed, its still-alive children
+# reparent to PID 1 and are never reaped (confirmed: still zombie/defunct at
+# 15s+). Not yet acute (current Stage 1 jobs are only 2 levels deep) but a
+# real risk once local-Chromium fallback or Samsung's nested scripts run.
+# tini is the same fix Docker's own `--init` flag uses — a single-purpose,
+# ~23KB, zero-dependency init binary; a JS-level reaper isn't possible
+# (reaping requires an actual waitpid() syscall by the real parent, which
+# plain Node cannot issue without a native binding). `--` is required so
+# tini does not try to parse node's own args.
+startCommand = "node scripts/worker/fetch-tini.js && bin/tini -- node --import tsx scripts/worker/index.ts"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 5
 # No healthcheckPath: this service has no HTTP server to probe. Liveness is the
