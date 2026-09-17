@@ -18,7 +18,11 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 **Revert, one line or one uncomment per site, no deletion required:** uncomment the homepage `<div>...</div>` block in `page.tsx`, and uncomment the one array line in each of the two `footer.tsx` columns. `page.tsx`'s `Link` import was deliberately left in place (unused-import warning only, not an error) specifically so the revert needs no second edit.
 
-**Validation.** No existing test referenced either removed entry (checked directly — no test asserts the homepage banner or the footer Check links). Full suite and coverage gate run once before deployment, results and live verification recorded in the deployment note below.
+**Validation.** No existing test referenced either removed entry (checked directly — no test asserts the homepage banner or the footer Check links). Full suite run once before deployment: 260/260 suites, 3840/3840 tests, exit 0. ESLint clean on both edited files except the anticipated, deliberate unused-`Link`-import warning (0 errors). `tsc --noEmit` clean on both files.
+
+**Deployed and live-verified.** Code `cfc0a323` on `main`, Railway `tawveeri-main` Online.
+- `/ar/check` and `/en/check` both still return live HTTP 200 directly — the freeze did not touch the page itself.
+- Fetched the full rendered homepage HTML (following the `/ar` → `/ar` and `/en` → `/en` redirects, decompressed) for both locales: the homepage banner's own text is completely absent in both; known footer links (`/ar/about`, `/ar/faq`, `/ar/home-mission` and their `/en` equivalents) ARE present, proving the footer itself rendered and this is a meaningful check, not an empty response; **zero occurrences of `/ar/check` or `/en/check` anywhere in either page's HTML** — both visible entry points are confirmed gone in production, not just in source.
 
 ### ADR-373 — Samsung Saudi consumer universe, full manufacturer variants and commerce realization · Accepted (2026-09-16)
 
