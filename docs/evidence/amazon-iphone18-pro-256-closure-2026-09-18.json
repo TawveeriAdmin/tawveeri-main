@@ -1,0 +1,78 @@
+{
+  "at": "2026-09-18T14:16:08.917Z",
+  "productionCommit": "fa3bae0588d5ea662fbf653eb2d96a8ab0443fb9",
+  "asin": "B0HJ9V43LX",
+  "identity": "apple|iPhone|18|Pro|256",
+  "source": {
+    "url": "https://www.amazon.sa/dp/B0HJ9V43LX",
+    "title": "Apple iPhone 18 Pro 256 GB: – Silver",
+    "currentPrice": 5699,
+    "originalPrice": null,
+    "merchant": "Shipper / Seller Amazon.sa Amazon.sa Shipper / Seller Amazon.sa",
+    "selectedSize": "Size: 256GB Make a Size selection 1TB 2TB 256GB 512GB",
+    "availability": "in_stock",
+    "tradeInApplied": false,
+    "method": "Unmodified Amazon PDP price parser; base buybox price only"
+  },
+  "before": {
+    "asinRawObservations": 0,
+    "comparisonStores": 1
+  },
+  "after": {
+    "comparisonStores": 2,
+    "realization": {
+      "keysConsidered": 1,
+      "corroborated": 1,
+      "singleStore": 0,
+      "canonicalsWritten": 1,
+      "normalized": 1,
+      "matches": 1,
+      "prices": 1,
+      "priceTransitionsRejected": 0,
+      "pairDeferred": 0
+    }
+  },
+  "live": {
+    "passed": true,
+    "url": "https://tawveeri.com/ar/compare/apple%7CiPhone%7C18%7CPro%7C256",
+    "offers": [
+      {
+        "store": "amazon",
+        "price": 5699,
+        "availability": "in_stock"
+      },
+      {
+        "store": "almanea",
+        "price": 5699,
+        "availability": "pre_order"
+      }
+    ],
+    "search": {
+      "status": 200,
+      "key": "apple|iPhone|18|Pro|256",
+      "stores": [
+        {
+          "store": "amazon",
+          "price": 5699
+        },
+        {
+          "store": "almanea",
+          "price": 5699
+        }
+      ]
+    },
+    "merchant": {
+      "status": 200,
+      "url": "https://www.amazon.sa/dp/B0HJ9V43LX?th=1",
+      "title": "Apple iPhone 18 Pro 256 GB: – Silver",
+      "asin": "B0HJ9V43LX"
+    },
+    "exitStatus": 302,
+    "exitHost": "www.amazon.sa",
+    "exitPath": "/dp/B0HJ9V43LX"
+  },
+  "tests": {
+    "suites": 3,
+    "passed": 19
+  }
+}
