@@ -206,3 +206,52 @@ export async function reapOrphanedRuns(): Promise<void> {
     try { await c.end(); } catch { /* ignore */ }
   }
 }
+
+// ── Samsung delta-watch orphan recovery ──────────────────────────────────
+//
+// WHY (found live, 2026-09-18, founder review of the production-recovery
+// mandate): reapOrphanedRuns() above only ever covered `scraping_runs`.
+// `samsung_delta_watch_runs` — the exact table samsung_delta_watch_runs #10
+// belonged to during the original SEV-1 — has NO equivalent recovery at all.
+// Confirmed by reading samsung-delta-watch.ts directly: it DOES catch
+// SIGTERM, but only to `process.exit(143)` immediately — it never attempts
+// to close its own row first, and a SIGKILL (proc-guard's escalation after
+// the grace period) gives no chance to run any cleanup code either way. So a
+// proc-guard-triggered timeout or a mid-run deploy leaves this table's row
+// stuck 'running' forever, identically to the original incident, even
+// though the OS-level process tree is now safely killed (SIGTERM/SIGKILL,
+// and tini now reaps any reparented descendants of its own nested spawn
+// chain — samsung-delta-watch.ts -> samsung-worker-child.ts -> a further
+// child). Process-level safety and database-bookkeeping safety are two
+// different guarantees; this closes the second one for this table
+// specifically, mirroring reapOrphanedRuns()'s exact pattern.
+//
+// Threshold: Samsung's own configured outer timeout (WORKER_SAMSUNG_TIMEOUT_MS)
+// is 45 minutes; this threshold must exceed it with real margin so a
+// genuinely-still-running run is never touched. Reversible via env var.
+const SAMSUNG_STALE_RUN_THRESHOLD_MS = parseInt(process.env.WORKER_SAMSUNG_STALE_RUN_THRESHOLD_MS || String(60 * 60 * 1000), 10);
+
+export async function reapOrphanedSamsungRuns(): Promise<void> {
+  const url = dbUrl();
+  if (!url) return;
+  const c = newPgClient({ connectionString: url, ssl: { rejectUnauthorized: false } });
+  try {
+    await c.connect();
+    const cutoff = new Date(Date.now() - SAMSUNG_STALE_RUN_THRESHOLD_MS).toISOString();
+    const { rows } = await c.query(
+      `update samsung_delta_watch_runs
+       set status='failed', finished_at=now(),
+           notes=coalesce(notes,'{}'::jsonb) || $2::jsonb
+       where status='running' and started_at < $1
+       returning id, run_id`,
+      [cutoff, JSON.stringify({ reason: 'orphaned_boot_reap', detail: 'Row was still running when this worker process booted, older than the stale-run threshold — the container/process that owned it is gone. Closed automatically at boot.' })]
+    );
+    if (rows.length) {
+      console.log(`[worker] boot reap: closed ${rows.length} orphaned samsung_delta_watch_runs row(s): ${rows.map((r) => r.id).join(', ')}`);
+    }
+  } catch (e) {
+    console.error('[worker] samsung boot reap failed:', (e as Error)?.message || e);
+  } finally {
+    try { await c.end(); } catch { /* ignore */ }
+  }
+}

@@ -39,7 +39,7 @@ if (process.env.SUPABASE_DB_URL) process.env.SUPABASE_DB_URL = toPoolerDbUrl(pro
 import path from 'path';
 import { acquireGlobalLock, type GlobalLock } from './lib/global-lock';
 import { runGuarded, type JobOutcome } from './lib/proc-guard';
-import { heartbeat, pressureOk, jobDue, jobDone, admit, reapOrphanedRuns } from './lib/job-state';
+import { heartbeat, pressureOk, jobDue, jobDone, admit, reapOrphanedRuns, reapOrphanedSamsungRuns } from './lib/job-state';
 import { samsungRuntimeResources } from '../tps-core/samsung-runtime-resources';
 import { resolveSamsungDeltaRuntime } from '../tps-core/samsung-delta-runtime';
 
@@ -305,6 +305,11 @@ async function main() {
   // comment for why this is safe and necessary. Runs before any job is
   // scheduled so a stale row can never be mistaken for still-active work.
   await reapOrphanedRuns();
+  // Same recovery, separately, for samsung_delta_watch_runs — a different
+  // table with no shared code path to reapOrphanedRuns() above. Added
+  // 2026-09-18 specifically because this table had NO orphan recovery at
+  // all until now — see job-state.ts's own comment on why that mattered.
+  await reapOrphanedSamsungRuns();
 
   if (!JOBS_ENABLED) {
     console.log('[worker] WORKER_JOBS_ENABLED != 1 — worker is up but will schedule NOTHING. This is the intended state for initial bring-up verification.');

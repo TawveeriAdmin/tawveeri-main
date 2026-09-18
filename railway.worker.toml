@@ -32,12 +32,18 @@ buildCommand = "npm install --legacy-peer-deps && npm run build"
 
 [deploy]
 # `node scripts/worker/fetch-tini.js` runs first, at CONTAINER START (not
-# build time — see the buildCommand note above for why). It downloads tini
+# build time — see the buildCommand note above for why). It installs tini
 # (v0.19.0, upstream static amd64 build from krallin/tini's own GitHub
-# Releases, sha256-pinned, fails closed on mismatch) into ./bin/tini, or
-# verifies an already-present copy's hash and skips the download on an
-# ordinary restart-policy restart (same container filesystem). tini then
-# runs as PID 1: it forwards signals to the real worker process unchanged
+# Releases, sha256-pinned, fails closed on mismatch) into ./bin/tini.
+# FIXED 2026-09-18 (founder review — startup must not depend on an external
+# download): the PRIMARY source is now the binary committed directly in this
+# repo at scripts/worker/bin/tini (~24KB, verified by hash before every use)
+# — zero network dependency on the common path. A GitHub download is kept
+# ONLY as a fallback if the committed copy is ever missing or fails its hash
+# check. Either way it verifies an already-installed copy's hash first and
+# skips all work on an ordinary restart-policy restart (same container
+# filesystem — only a fresh deploy gets an empty one). tini then runs as
+# PID 1: it forwards signals to the real worker process unchanged
 # (so the existing SIGTERM handling in scripts/worker/index.ts and the
 # price-update.ts SIGTERM cascade are untouched) and additionally reaps ANY
 # reparented descendant, closing a real, proven gap — found live, 2026-09-17,
