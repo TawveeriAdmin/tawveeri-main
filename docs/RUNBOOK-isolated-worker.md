@@ -63,8 +63,15 @@ can only affect the worker's own container; it structurally cannot take the webs
   at boot, before any job is scheduled, and closes any row still `'running'` older than
   `WORKER_STALE_RUN_THRESHOLD_MS` (default 20min) as `'failed'`. This threshold must stay
   comfortably above every scraping_runs-writing job's real per-row ceiling — see the table below.
-  `refresh`/`reobserve`/`samsung_delta_watch` don't write `scraping_runs` at all (different or no
-  table) so they aren't affected by this threshold either way.
+  `refresh`/`reobserve` don't write `scraping_runs` at all so they aren't affected by this
+  threshold either way. `samsung_delta_watch` writes a SEPARATE table (`samsung_delta_watch_runs`)
+  with its OWN boot-time reaper, `reapOrphanedSamsungRuns()` (added 2026-09-18 — this table had NO
+  recovery at all until then; `samsung-delta-watch.ts`'s SIGTERM handler only calls
+  `process.exit(143)`, never closing its own row, and a SIGKILL gives no chance to either way).
+  Threshold: `WORKER_SAMSUNG_STALE_RUN_THRESHOLD_MS` (default 60min — real margin over Samsung's
+  own 45min configured timeout). Found live on first deploy: run id=10, the ORIGINAL SEV-1
+  INCIDENT ROW, had been stuck `'running'` for 18h51m, undiscovered through this entire migration,
+  until this reaper closed it.
 
 ### Per-row ceiling vs. the 20-minute reap threshold (audited 2026-09-17)
 
@@ -81,10 +88,11 @@ can only affect the worker's own container; it structurally cannot take the webs
 ## Environment variables (this service only)
 
 Master switch: `WORKER_JOBS_ENABLED`. Per job: `WORKER_JOB_<NAME>_ENABLED` (default on except where
-noted). As of 2026-09-17: `price_update`, `feed_ingest`, `refresh`, `discovery`, `dispatch_sweep`,
-`product_recovery`, `reobserve`, `manual_trigger` all enabled; `samsung_delta_watch` deliberately
-still `0` pending a dedicated verification pass (nested-process cleanup is now solved by tini, but
-completion/run-state-closure/data-propagation under the new worker hasn't been observed yet).
+noted). As of 2026-09-18: ALL EIGHT jobs enabled — `price_update`, `feed_ingest`, `refresh`,
+`discovery`, `dispatch_sweep`, `product_recovery`, `reobserve`, `manual_trigger`, and
+`samsung_delta_watch` (enabled 2026-09-18 after its `samsung_delta_watch_runs` orphan-recovery gap
+was closed — see above — and proven with a real completed run: `status='completed'`, 223 products
+updated, 0 failed, 15.4min).
 
 Store lists: `WORKER_INGEST_STORES` (scraper path), `WORKER_FEED_STORES` (feed/API path) — a store
 in both is silently excluded from the scraper path (`effectiveScraperStores()`, mirrors ADR-089's
@@ -152,32 +160,32 @@ action reactivates the old in-process scheduler — `DISABLE_INPROCESS_SCHEDULER
 is a separate, independent kill switch and must be unset explicitly (not recommended; that's the
 config that caused the original SEV-1).
 
-## Known limitation (open, 2026-09-17)
+## Resolved: refresh pipeline propagation (was "Known limitation," 2026-09-17 → 2026-09-18)
 
 `refresh` (`scripts/tps-core/refresh-intelligence.ts`, a 10-step pipeline, pre-existing script not
-part of this migration) has timed out at its budget on both observed attempts (20min, then 60min
-after raising it) without its own step-1 (`normalize-incremental.ts`) summary line ever printing —
-`runScript()` wraps each step in a synchronous `spawnSync` with no internal per-step timeout, so the
-outer proc-guard timeout is the only bound and a still-working step looks identical to a stuck one
-from the outside. Investigated live: step 1's advisory lock (`LANE_KEY=8148148`) was NOT contended.
+part of this migration) timed out on its first two attempts (20min, then a raised 60min) without
+its own step-1 (`normalize-incremental.ts`) summary line ever printing. `runScript()` wraps each
+step in a synchronous `spawnSync` with no internal per-step timeout, so the outer proc-guard timeout
+was the only bound and a still-working step looked identical to a stuck one from the outside.
+Investigated live: step 1's advisory lock (`LANE_KEY=8148148`) was NOT contended — ruling out a
+deadlock. Direct query evidence at the time showed real, DB-committed, resumable progress (cursor
+advancing between attempts, `normalized_product_observations` gaining rows) — diagnosed as a
+treadmill effect from `feed_ingest`/`discovery`/`price_update` all restoring on the same day, each
+adding to the very backlog normalize was draining, not a stall.
 
-**This is NOT a stall.** Direct query evidence: `normalized_product_observations` gained 7,693 rows
-in 24h with the most recent write during the timed-out run itself, and `tps_progress_cursors`
-advanced measurably between the first and second attempts — step 1 is making real, DB-committed,
-resumable progress (the cursor is persistent, so no attempt's work is lost), it is just not
-completing a full pass within one window. The likely reason: this session restored `feed_ingest`,
-`discovery`, and `price_update` on the SAME day, and each one adds to the very backlog normalize is
-draining — a treadmill effect specific to the first day multiple jobs come back online at once, not
-a recurring steady-state cost.
-
-**The real, currently-unconfirmed gap:** steps 2-10 (which build `tps_product_projection` and the
-search index — what customers actually see) have a `needs` dependency chain starting at step 1, so
-they have NOT run via this path since before this session (`tps_product_projection.updated_at` last
-seen ~10:47 UTC, well before today's restored ingestion). Freshly-scraped/ingested data IS flowing
-in and being normalized; it has NOT been confirmed to have reached search/comparison yet. Expected
-to self-resolve as the cursor catches up over further attempts — confirm by checking
-`tps_product_projection`'s `updated_at`/`last_observed_at` against a specific product touched by
-today's price_update/discovery/feed_ingest runs, or by re-running the query above.
+**Resolved 2026-09-18, third attempt:** `refresh` completed a full clean pass — **10/10 steps
+succeeded in 1500.1s** — once the one-time restoration-day backlog cleared. `search` step synced
+8,978 products to the TPS index; `storefront-search` synced 15,183 products / 28,749 offers to the
+LIVE customer-facing Algolia index. Traced a specific real product end-to-end with matching IDs and
+timestamps to confirm this isn't just an aggregate count: `raw_observations` id 2742692 (almanea,
+a Samsung AC) → `normalized_product_observations` (same timestamp) → `tps_product_projection`
+(`lowest_price=2099, store_count=2`) → the exact same `offer_id` confirmed live in
+`GET /api/v1/tps/search`'s real JSON response, showing a genuine 3-store comparison. Do not assume
+every future cycle needs three attempts — this was specifically the first-day combined-restoration
+backlog; a normal steady-state cycle (only the hourly increment, not a multi-job catch-up) should
+complete well within the 60min budget. If a FUTURE run times out repeatedly again, re-measure the
+backlog and rate first (see the query patterns above) before assuming this same explanation applies
+— don't skip that measurement and just raise the timeout again.
 
 **Do not** respond to a further timeout by blindly raising `WORKER_REFRESH_TIMEOUT_MS` again — the
 one raise already made was evidence-informed (ruled out lock contention and an oversized one-time
