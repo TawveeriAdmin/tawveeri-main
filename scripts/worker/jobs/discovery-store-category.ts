@@ -23,6 +23,7 @@ import type { DiscoveryOptions } from '../../../src/lib/scraping/base/types';
 import type { ProductCategory } from '../../../src/lib/database/types';
 import { finishRun, failRun } from '../../../src/lib/scraping/services/run-logger';
 import { BrowserlessQuotaError } from '../../../src/lib/scraping/base/base-scraper';
+import { closeOrphanedBrowserSession } from '../lib/store-freshness';
 
 async function main() {
   const [, , slug, category, runIdArg, maxPagesArg] = process.argv;
@@ -37,6 +38,7 @@ async function main() {
     max_pages: parseInt(maxPagesArg || '2', 10),
   };
 
+  let exitCode = 0;
   try {
     const orchestrator = new ScrapingOrchestrator();
     const result = await orchestrator.runDiscoveryJob(options, runId);
@@ -56,12 +58,17 @@ async function main() {
     if (err instanceof BrowserlessQuotaError) {
       console.error(`[worker:discovery] ${slug}/${category}: deferred — Browserless quota/rate-limit signal: ${err.message}`);
       await finishRun({ run_id: runId, status: 'failed', errors_count: 0, error_summary: { reason: 'deferred_browserless_quota', detail: err.message } });
-      process.exit(0);
+    } else {
+      console.error(`[worker:discovery] ${slug}/${category} threw:`, err instanceof Error ? err.message : err);
+      await failRun(runId, err);
+      exitCode = 1;
     }
-    console.error(`[worker:discovery] ${slug}/${category} threw:`, err instanceof Error ? err.message : err);
-    await failRun(runId, err);
-    process.exit(1);
+  } finally {
+    // See price-update-store.ts's identical call for why — found live,
+    // 2026-09-19, testing the Browserless fix itself.
+    await closeOrphanedBrowserSession(slug, 'process_completed').catch(() => {});
   }
+  process.exit(exitCode);
 }
 
-main().then(() => process.exit(0));
+main();

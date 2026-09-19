@@ -24,7 +24,7 @@ import type { ProductCategory } from '../../../src/lib/database/types';
 import { startRun, finishRun, hasActiveRun, reapStaleRuns } from '../../../src/lib/scraping/services/run-logger';
 import { effectiveScraperStores } from '../lib/store-sets';
 import { runGuarded } from '../lib/proc-guard';
-import { recentlyCompleted } from '../lib/store-freshness';
+import { recentlyCompleted, closeOrphanedBrowserSession } from '../lib/store-freshness';
 import path from 'path';
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -138,6 +138,9 @@ async function main() {
           errors_count: 1,
           error_summary: { reason: result.outcome, tail: result.tail.slice(-500) },
         });
+        // See price-update.ts's identical call for why — found live,
+        // 2026-09-19, testing the Browserless fix itself.
+        await closeOrphanedBrowserSession(slug, result.outcome);
         console.error(`[worker:discovery] ${slug}/${cat}: ${result.outcome} after ${(result.durationMs / 1000).toFixed(0)}s — moving on`);
       }
       summary.push(`${slug}/${cat}=${result.outcome}`);

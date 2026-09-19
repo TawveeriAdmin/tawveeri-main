@@ -31,7 +31,7 @@ import { createServerClient } from '../../../src/lib/database';
 import { startRun, finishRun } from '../../../src/lib/scraping/services/run-logger';
 import { effectiveScraperStores } from '../lib/store-sets';
 import { runGuarded } from '../lib/proc-guard';
-import { recentlyCompleted } from '../lib/store-freshness';
+import { recentlyCompleted, closeOrphanedBrowserSession } from '../lib/store-freshness';
 import path from 'path';
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -193,6 +193,12 @@ async function main() {
         errors_count: 1,
         error_summary: { reason: result.outcome, tail: result.tail.slice(-500) },
       });
+      // Found live, 2026-09-19, testing the Browserless fix itself: the same
+      // SIGTERM that correctly kills the child gives it no chance to run its
+      // own cleanup()/recordSessionEnd() — see closeOrphanedBrowserSession's
+      // own header for why this must be closed HERE, not by a boot-time
+      // reaper (this can happen on any ordinary timeout, not just a redeploy).
+      await closeOrphanedBrowserSession(slug, result.outcome);
       console.error(`[worker:price-update] ${slug}: ${result.outcome} after ${(result.durationMs / 1000).toFixed(0)}s — moving on`);
     }
     summary.push(`${slug}=${result.outcome}`);

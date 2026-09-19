@@ -22,6 +22,7 @@ import { ScrapingOrchestrator } from '../../../src/lib/scraping/services/scrapin
 import type { PriceUpdateOptions } from '../../../src/lib/scraping/base/types';
 import { finishRun, failRun } from '../../../src/lib/scraping/services/run-logger';
 import { BrowserlessQuotaError } from '../../../src/lib/scraping/base/base-scraper';
+import { closeOrphanedBrowserSession } from '../lib/store-freshness';
 
 async function main() {
   const [, , slug, runIdArg, maxProductsArg, olderThanHoursArg] = process.argv;
@@ -36,6 +37,7 @@ async function main() {
     older_than_hours: parseInt(olderThanHoursArg || '12', 10),
   };
 
+  let exitCode = 0;
   try {
     const orchestrator = new ScrapingOrchestrator();
     const result = await orchestrator.runPriceUpdateJob(options);
@@ -61,12 +63,23 @@ async function main() {
     if (err instanceof BrowserlessQuotaError) {
       console.error(`[worker:price-update] ${slug}: deferred — Browserless quota/rate-limit signal: ${err.message}`);
       await finishRun({ run_id: runId, status: 'failed', errors_count: 0, error_summary: { reason: 'deferred_browserless_quota', detail: err.message } });
-      process.exit(0);
+    } else {
+      console.error(`[worker:price-update] ${slug} threw:`, err instanceof Error ? err.message : err);
+      await failRun(runId, err);
+      exitCode = 1;
     }
-    console.error(`[worker:price-update] ${slug} threw:`, err instanceof Error ? err.message : err);
-    await failRun(runId, err);
-    process.exit(1);
+  } finally {
+    // Closes any worker_browser_sessions row this run left open — found
+    // live, 2026-09-19: several store scrapers only call
+    // BaseScraper.cleanup() from their OWN discoverProducts() (if at all),
+    // never from updateProductPrice() (confirmed for extra-scraper.ts,
+    // amazon-scraper.ts, jarir-scraper.ts) — this is a pre-existing gap this
+    // file's own process boundary closes regardless of which scraper method
+    // actually opened the browser or which path above was taken, rather
+    // than chasing it into every individual store scraper's own code.
+    await closeOrphanedBrowserSession(slug, 'process_completed').catch(() => {});
   }
+  process.exit(exitCode);
 }
 
-main().then(() => process.exit(0));
+main();

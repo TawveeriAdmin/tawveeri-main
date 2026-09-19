@@ -167,6 +167,15 @@ durable fix that replaced that emergency pause.
    from worker_browser_sessions where started_at > now() - interval '7 days'
    group by store_slug, connected_via order by total_min desc;
    ```
+   **Session-close gap, found and fixed the same day:** several store scrapers only call
+   `BaseScraper.cleanup()` from their own `discoverProducts()` (if at all) — never from
+   `updateProductPrice()` (confirmed for extra/amazon/jarir) — a pre-existing gap invisible before
+   this tracking existed. Both `price-update-store.ts` and `discovery-store-category.ts` now close
+   any `still_open` session for their store in a `finally` block regardless of outcome or which
+   scraper method actually opened the browser; the parent (`price-update.ts`/`discovery.ts`) still
+   separately closes it on a detected timeout/cancelled kill, since a SIGKILLed child gets no chance
+   to run even a `finally` block. Both calls are idempotent (a no-op if already closed) — this is
+   deliberate double coverage, not redundant.
 
 **Redeploy-dedup guard** (`WORKER_STORE_REFRESH_GUARD_MS`, default 45min, `store-freshness.ts`):
 a redeploy restarts the worker, and the boot-kick can re-enqueue a whole job whose last attempt

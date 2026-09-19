@@ -27,6 +27,49 @@ import { createServerClient } from '../../../src/lib/database';
 
 const DEFAULT_GUARD_MS = 45 * 60 * 1000;
 
+/**
+ * Closes any 'still_open' worker_browser_sessions row for this store — call
+ * right after detecting a per-store/per-unit child's timeout/cancelled
+ * outcome. WHY (found live, 2026-09-19, testing the Browserless fix itself):
+ * proc-guard's SIGTERM to a timed-out child gives it no chance to run its own
+ * cleanup()/recordSessionEnd() — the OS-level browser process IS correctly
+ * killed (proven repeatedly this session), but the METRICS row is left
+ * 'still_open' forever, silently undercounting exactly the stores that
+ * consume a full timeout in checkDailyBrowserlessBudget()'s sum. Only ONE
+ * session can be open per store-run at a time (sequential per-store
+ * execution), so "the most recent still_open row for this store" is
+ * unambiguous — no session-id needs to be threaded from base-scraper.ts.
+ * Duration is estimated as (now - started_at); this is a metrics record, not
+ * a safety mechanism, so an approximation here is acceptable — unlike
+ * scraping_runs/samsung_delta_watch_runs, this table has no boot-time reaper,
+ * since sessions are orphaned by ordinary per-store timeouts (routine, not
+ * just container swaps) and closing them immediately here is more precise.
+ */
+export async function closeOrphanedBrowserSession(storeSlug: string, reason: string): Promise<void> {
+  try {
+    // worker_browser_sessions (migration 034) isn't in the generated
+    // Supabase types (types.ts describes the legacy app database, not the
+    // knowledge DB) — cast at the boundary, same convention as
+    // base-scraper.ts's own session-tracking calls.
+    const supabase = createServerClient() as any;
+    const { data } = await supabase
+      .from('worker_browser_sessions')
+      .select('id, started_at')
+      .eq('store_slug', storeSlug)
+      .eq('outcome', 'still_open')
+      .order('started_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const row = data as { id?: number; started_at?: string } | null;
+    if (!row?.id) return;
+    const durationMs = row.started_at ? Date.now() - new Date(row.started_at).getTime() : null;
+    await supabase
+      .from('worker_browser_sessions')
+      .update({ ended_at: new Date().toISOString(), duration_ms: durationMs, outcome: 'error', error_message: `orphaned_by_kill: ${reason}` })
+      .eq('id', row.id);
+  } catch { /* metrics-only, never fatal */ }
+}
+
 export async function recentlyCompleted(
   storeSlug: string,
   jobType: 'price_update' | 'discovery',
