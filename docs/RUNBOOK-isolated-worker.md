@@ -107,14 +107,80 @@ Per-job timeouts: `WORKER_PRICE_UPDATE_TIMEOUT_MS` (75min), `WORKER_PRICE_UPDATE
 
 `WORKER_STALE_RUN_THRESHOLD_MS` (20min) — boot-time orphan-reap threshold, see table above.
 
-**Bounded lulu/sharafdg probe mode** (2026-09-17): `WORKER_PRICE_UPDATE_PROBE_STORES` (default
-`lulu,sharafdg`), `WORKER_PRICE_UPDATE_PROBE_MAX_PRODUCTS` (default `10`). Evidence: both merchants
-measured at 99–100% `scrape_status='failed'` over 14 days, zero comparable (multi-store) products,
-zero outbound/campaign clicks all-time, no affiliate relationship — a merchant-side access block,
-not a code defect. This reduces attempt VOLUME only (10 products/cycle instead of the full ~240/
-~144-item catalog); existing offers/price history are untouched, ranking is untouched, and this is
-fully reversible by removing a slug from the list or raising the count back up. Not a decision to
-pause/remove these merchants — that's a separate founder call this fix does not make.
+**Bounded probe mode** (2026-09-17, extended 2026-09-19): `WORKER_PRICE_UPDATE_PROBE_STORES`
+(default `lulu,sharafdg,jarir`), `WORKER_PRICE_UPDATE_PROBE_MAX_PRODUCTS` (default `10`). lulu and
+sharafdg: measured at 99–100% `scrape_status='failed'` over 14 days, zero comparable (multi-store)
+products, zero outbound/campaign clicks all-time. jarir (added 2026-09-19): 14% price_update
+success rate (1045 ok / 7300 offers), only 1 comparable product, zero clicks — but its own
+DISCOVERY path is healthy (87/87 successful runs, 14d), so this is a price_update-specific
+weakness, not a whole-store block, and probe (not exclusion) fits. This reduces attempt VOLUME
+only; existing offers/price history are untouched, ranking is untouched, fully reversible.
+
+**Excluded from price_update entirely** (2026-09-19): `WORKER_PRICE_UPDATE_EXCLUDED_STORES`
+(default `lulu`). lulu showed zero comparable products and zero clicks in BOTH the 2026-09-17 and
+2026-09-19 reviews, unchanged even at reduced (probe) volume — the probe reduction alone surfaced
+no recovered value, only continued cost with nothing to show for it. Scoped specifically to
+price_update/Browserless cost — lulu's discovery (178/300 successful runs, 14d, largely non-browser)
+is unaffected. Not a permanent removal — reversible by clearing the env var — and not a decision
+based on affiliate status (lulu has no affiliate relationship, but that is not the stated reason).
+
+**Kept at full volume, evidence-backed** (2026-09-19): extra (83.6% price_update success rate,
+2,526 live `tps_product_projection` rows referencing it) and amazon (21% success rate — a real,
+separate parsing/matching issue, not a cost-containment concern — but 10 measured campaign clicks
+in 90 days, active enabled `affiliate_campaigns` rows, and the most comparable products of any of
+the four browser-dependent stores). Founder's own instruction: don't reduce these two by default;
+only extra/amazon showed real, current customer-facing value in this review.
+
+## Browserless cost management (2026-09-19 incident)
+
+**What happened.** A "100% of plan units consumed, further calls billed at overage rates" alert
+arrived from Browserless with no way to attribute consumption by store/job/time from our side.
+Root cause understood, not just patched: `base-scraper.ts`'s `launchBrowser()` fell back to an
+UNCAPPED local Chromium launch on ANY Browserless failure, including quota exhaustion — so once
+quota was hit, every subsequent page fetch kept re-attempting Browserless (adding to the very
+overage the alert was about) and then silently launching local Chromium, the same unbounded-memory
+pattern that caused the original SEV-1. Emergency containment (`BROWSERLESS_API_KEY` removed,
+`price_update`/`discovery` paused) stopped the bleeding immediately; this section covers the
+durable fix that replaced that emergency pause.
+
+**The fix, four parts:**
+1. **Quota/429 → defer, never fall back locally.** `BrowserlessQuotaError` (thrown by
+   `launchBrowser()` when the failure text matches `429|quota|rate.?limit|too many|units exhausted`)
+   propagates up through `scraping-orchestrator.ts`'s per-product loop, which stops attempting
+   FURTHER products for that store this cycle (not N repeated failures) and records the store as
+   `deferred_quota` — a distinct, honest status, not folded into ordinary scrape errors.
+2. **Non-quota Browserless failures → bounded local fallback.** At most
+   `WORKER_LOCAL_FALLBACK_MAX_SESSIONS` (default 2) local Chromium launches per store-run process
+   (each store already runs as its own spawned process, so this naturally scopes per store-run).
+   Exceeding the cap throws rather than launching again.
+3. **Self-imposed daily budget, independent of Browserless's own account limit** (which this
+   codebase has no API access to check — no usage endpoint found without dashboard login).
+   `WORKER_BROWSERLESS_DAILY_MS_CAP` (default 4h of cumulative session time per rolling 24h window,
+   deliberately conservative pending a real plan-tier number — see the cost forecast below) and
+   `WORKER_BROWSERLESS_DAILY_MS_WARN` (default 60% of the cap) — crossing WARN logs a warning,
+   crossing the cap defers (same as a real quota signal) before ever reaching the account's real
+   limit.
+4. **Durable, queryable usage tracking** — `worker_browser_sessions` (migration 034): every
+   session, Browserless or local, with store/job/connected_via/duration/outcome. Query directly:
+   ```sql
+   select store_slug, connected_via, count(*) n, sum(duration_ms)/60000.0 total_min
+   from worker_browser_sessions where started_at > now() - interval '7 days'
+   group by store_slug, connected_via order by total_min desc;
+   ```
+
+**Redeploy-dedup guard** (`WORKER_STORE_REFRESH_GUARD_MS`, default 45min, `store-freshness.ts`):
+a redeploy restarts the worker, and the boot-kick can re-enqueue a whole job whose last attempt
+didn't cleanly succeed — which then re-attempts EVERY store from scratch, including ones that just
+finished moments ago in the replaced container. Several redeploys in one troubleshooting session
+compounded this into far more Browserless sessions than the job's own interval ever intended. The
+guard skips a store/unit whose last successful completion is more recent than the window — logged
+clearly (`skipped — completed ... within the redeploy-dedup guard window`), never silent.
+
+**Known limitation, honestly stated:** the Free Browserless tier caps session time at 2 minutes
+(Prototyping: 15min, Starter: 30min, Scale: 60min — see the cost forecast). Which tier this account
+is on is not visible from here; if it's Free, sessions for slower stores may already be hitting
+that platform ceiling regardless of any quota question, which would itself waste units on repeated
+reconnects. Only the founder can confirm the current tier from Browserless's own dashboard.
 
 ## Operating
 

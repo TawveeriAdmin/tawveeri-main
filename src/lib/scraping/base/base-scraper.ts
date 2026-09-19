@@ -16,6 +16,25 @@ import { RetryHandler } from '../utils/retry-handler';
 import { parsePrice, validatePrice } from '../utils/price-parser';
 import { normalizeUrl, isValidUrl } from '../utils/url-utils';
 import { getBrowserHeaders } from '../search/user-agents';
+import { createServerClient } from '@/lib/database';
+
+/** Thrown when Browserless refuses a connection for a reason that looks like
+ *  quota/rate-limit exhaustion (429, or the error text names quota/units/limit).
+ *  Callers (the per-store/per-unit job scripts) catch this specifically to log
+ *  a clear "deferred: browserless quota" outcome and move on — never as a
+ *  generic scrape failure, and never followed by a local-Chromium attempt for
+ *  THIS reason. See base-scraper.ts's launchBrowser() for the full policy. */
+export class BrowserlessQuotaError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'BrowserlessQuotaError';
+  }
+}
+
+/** Per-process counter — each store/unit already runs as its own spawned
+ *  process (price-update-store.ts / discovery-store-category.ts), so this
+ *  naturally resets per store-run without any cross-process bookkeeping. */
+let localFallbackSessionsThisProcess = 0;
 
 /**
  * Base scraper class that all store-specific scrapers extend
@@ -26,11 +45,94 @@ export abstract class BaseScraper {
   protected page: Page | null = null;
   protected rateLimiter: RateLimiter;
   protected retryHandler: RetryHandler;
+  private currentSessionId: number | null = null;
+  private currentSessionStartedAt: number | null = null;
 
   constructor(config: ScraperConfig) {
     this.config = config;
     this.rateLimiter = new RateLimiter(config.rate_limit);
     this.retryHandler = new RetryHandler();
+  }
+
+  /** Best-effort session-accounting insert/update — a tracking failure must
+   *  never break a real scrape. See migration 034 for the table shape. */
+  private async recordSessionStart(connectedVia: 'browserless' | 'local', quotaSignal: boolean): Promise<void> {
+    try {
+      const supabase = createServerClient();
+      const { data } = await (supabase as any)
+        .from('worker_browser_sessions')
+        .insert({
+          store_slug: this.config.store_slug,
+          job_type: process.env.WORKER_CURRENT_JOB_TYPE || 'unknown',
+          connected_via: connectedVia,
+          quota_signal: quotaSignal,
+          outcome: 'still_open',
+        })
+        .select('id')
+        .single();
+      this.currentSessionId = (data as { id?: number } | null)?.id ?? null;
+      this.currentSessionStartedAt = Date.now();
+    } catch { /* metrics-only, never fatal */ }
+  }
+
+  private async recordSessionEnd(outcome: 'closed_ok' | 'error', errorMessage?: string): Promise<void> {
+    if (this.currentSessionId == null) return;
+    try {
+      const supabase = createServerClient();
+      const durationMs = this.currentSessionStartedAt ? Date.now() - this.currentSessionStartedAt : null;
+      await (supabase as any)
+        .from('worker_browser_sessions')
+        .update({ ended_at: new Date().toISOString(), duration_ms: durationMs, outcome, error_message: errorMessage ?? null })
+        .eq('id', this.currentSessionId);
+    } catch { /* metrics-only, never fatal */ }
+    this.currentSessionId = null;
+    this.currentSessionStartedAt = null;
+  }
+
+  /** A Browserless connect failure whose text names quota/rate-limit
+   *  exhaustion specifically, as opposed to a generic network/config error. */
+  private static isQuotaSignal(msg: string): boolean {
+    return /\b429\b|quota|rate.?limit|too many|unit(s)?\s+(exhausted|exceeded)/i.test(msg);
+  }
+
+  /** Self-imposed daily ceiling on OUR OWN measured Browserless session time
+   *  — independent of Browserless's own account quota (which this codebase
+   *  has no API access to check). WHY (2026-09-19 cost incident): a "100% of
+   *  plan units consumed" alert arrived with no way to see it coming from our
+   *  side. This makes the same kind of alert self-inflicted-and-visible
+   *  instead: WARN at `WORKER_BROWSERLESS_DAILY_MS_WARN` (default 60% of the
+   *  hard cap), refuse further Browserless attempts (defer, like a real quota
+   *  signal — never fall back to local for this reason) at
+   *  `WORKER_BROWSERLESS_DAILY_MS_CAP` (default 4 hours of cumulative session
+   *  time/day — deliberately conservative pending a real plan-tier number
+   *  from the founder; see the runbook for how to size this once known).
+   *  Rolling 24h window, not calendar-day, so it doesn't reset stale mid-spike. */
+  private async checkDailyBrowserlessBudget(): Promise<{ ok: boolean; usedMs: number }> {
+    const capMs = parseInt(process.env.WORKER_BROWSERLESS_DAILY_MS_CAP || String(4 * 60 * 60 * 1000), 10);
+    const warnMs = parseInt(process.env.WORKER_BROWSERLESS_DAILY_MS_WARN || String(Math.round(capMs * 0.6)), 10);
+    try {
+      const supabase = createServerClient();
+      const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { data } = await (supabase as any)
+        .from('worker_browser_sessions')
+        .select('duration_ms')
+        .eq('connected_via', 'browserless')
+        .gte('started_at', since);
+      const usedMs = ((data as { duration_ms: number | null }[] | null) || []).reduce((sum, r) => sum + (r.duration_ms || 0), 0);
+      if (usedMs >= capMs) {
+        console.error(`[browserless-budget] self-imposed 24h cap reached: ${(usedMs / 60000).toFixed(1)}min used of ${(capMs / 60000).toFixed(1)}min cap — deferring further Browserless attempts, NOT falling back to local`);
+        return { ok: false, usedMs };
+      }
+      if (usedMs >= warnMs) {
+        console.warn(`[browserless-budget] approaching self-imposed 24h cap: ${(usedMs / 60000).toFixed(1)}min used of ${(capMs / 60000).toFixed(1)}min cap`);
+      }
+      return { ok: true, usedMs };
+    } catch {
+      // Fail open — a metrics-query failure must never block a legitimate
+      // scrape. This cap is a self-imposed safety margin, not the account's
+      // real limit; Browserless's own quota enforcement is still the backstop.
+      return { ok: true, usedMs: 0 };
+    }
   }
 
   /**
@@ -43,13 +145,36 @@ export abstract class BaseScraper {
    *
    * When BROWSERLESS_API_KEY is set, connect to a remote Chromium session on Browserless.io
    * instead of launching one locally — the browser process (and its memory) then lives entirely
-   * outside this container. If that connection fails or times out for ANY reason (bad key, quota
-   * exhausted, Browserless outage, network issue), fall back to the local launch — a scrape must
-   * degrade, never hard-fail, if the external dependency has a bad day.
+   * outside this container.
+   *
+   * REWRITTEN 2026-09-19 (Browserless "100% of plan units consumed" cost incident): the previous
+   * version fell back to a local launch on ANY Browserless failure, unconditionally — including
+   * quota/rate-limit exhaustion, which meant every subsequent page fetch silently kept retrying
+   * Browserless (adding to the very quota overage the alert was about) and then falling back to
+   * an uncapped local Chromium launch, the same memory-pressure pattern that caused the original
+   * SEV-1. Policy now:
+   *   - Quota/429 signal → NEVER fall back locally. Throw `BrowserlessQuotaError` so the caller
+   *     (the store's own per-run job script) can defer this store cleanly and move on — not a
+   *     generic failure, not a silent local-Chromium substitution.
+   *   - Any OTHER Browserless failure (bad token, network blip, Browserless outage unrelated to
+   *     quota) → local fallback is still allowed, but now explicitly BOUNDED: at most
+   *     `WORKER_LOCAL_FALLBACK_MAX_SESSIONS` (default 2) local launches per store-run process
+   *     (each store already runs as its own spawned, individually-timed process — see
+   *     price-update.ts/discovery.ts — so this counter naturally scopes to one store's run).
+   *     Exceeding the cap throws rather than launching again.
+   *   - No `BROWSERLESS_API_KEY` at all → local fallback, subject to the same cap.
+   * Every session (Browserless or local) is recorded in `worker_browser_sessions` — see
+   * migration 034 — so consumption is queryable by store/job/time going forward.
    */
   private async launchBrowser(): Promise<Browser> {
     const browserlessKey = process.env.BROWSERLESS_API_KEY;
     if (browserlessKey) {
+      const budget = await this.checkDailyBrowserlessBudget();
+      if (!budget.ok) {
+        throw new BrowserlessQuotaError(
+          `[${this.config.store_slug}] self-imposed daily Browserless budget already used (${(budget.usedMs / 60000).toFixed(1)}min) — deferring rather than risking the real account quota.`
+        );
+      }
       try {
         const wsEndpoint =
           process.env.BROWSERLESS_WS_ENDPOINT || 'wss://production-sfo.browserless.io';
@@ -61,27 +186,59 @@ export abstract class BaseScraper {
             setTimeout(() => reject(new Error('Browserless connect timed out')), connectTimeoutMs)
           ),
         ]);
+        await this.recordSessionStart('browserless', false);
         return browser;
       } catch (err) {
         // ws's ErrorEvent (a bad token surfaces as one, not a plain Error) isn't an
         // `instanceof Error` — pull `.message` off whatever shape actually came back
         // rather than dumping the whole socket/request object into the logs.
-        const msg =
+        const msg = String(
           (err as { message?: unknown })?.message ??
           (err as { error?: { message?: unknown } })?.error?.message ??
-          String(err);
+          err
+        );
+        const quotaSignal = BaseScraper.isQuotaSignal(msg);
+        if (quotaSignal) {
+          console.error(`    [${this.config.store_slug}] Browserless quota/rate-limit signal — deferring, NOT falling back to local: ${msg}`);
+          // Record the failed attempt itself for consumption visibility, even
+          // though no session actually opened (duration/outcome reflect that).
+          try {
+            const supabase = createServerClient();
+            await (supabase as any).from('worker_browser_sessions').insert({
+              store_slug: this.config.store_slug,
+              job_type: process.env.WORKER_CURRENT_JOB_TYPE || 'unknown',
+              connected_via: 'browserless',
+              quota_signal: true,
+              outcome: 'error',
+              ended_at: new Date().toISOString(),
+              duration_ms: 0,
+              error_message: msg.slice(0, 500),
+            });
+          } catch { /* metrics-only */ }
+          throw new BrowserlessQuotaError(`Browserless quota/rate-limit signal for ${this.config.store_slug}: ${msg}`);
+        }
         console.warn(
-          `    [${this.config.store_slug}] Browserless connect failed, falling back to local Puppeteer: ${msg}`
+          `    [${this.config.store_slug}] Browserless connect failed (non-quota), considering bounded local fallback: ${msg}`
         );
       }
     }
 
-    return puppeteer.launch({
+    const maxLocalSessions = parseInt(process.env.WORKER_LOCAL_FALLBACK_MAX_SESSIONS || '2', 10);
+    if (localFallbackSessionsThisProcess >= maxLocalSessions) {
+      throw new Error(
+        `[${this.config.store_slug}] local-Chromium fallback budget (${maxLocalSessions} session(s) per store-run) already used — refusing another local launch this run, deferring instead of risking unbounded local Chromium usage.`
+      );
+    }
+    localFallbackSessionsThisProcess++;
+
+    const browser = await puppeteer.launch({
       headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
       // Respect an explicit Chrome path when set (prod pinning / envs without the bundled download).
       ...(process.env.PUPPETEER_EXECUTABLE_PATH ? { executablePath: process.env.PUPPETEER_EXECUTABLE_PATH } : {}),
     });
+    await this.recordSessionStart('local', false);
+    return browser;
   }
 
   /**
@@ -93,7 +250,7 @@ export abstract class BaseScraper {
     this.browser = await this.launchBrowser();
 
     this.page = await this.browser.newPage();
-    
+
     // Set user agent
     if (this.config.user_agents.length > 0) {
       const userAgent = this.config.user_agents[0];
@@ -115,6 +272,7 @@ export abstract class BaseScraper {
     if (this.browser) {
       await this.browser.close();
       this.browser = null;
+      await this.recordSessionEnd('closed_ok');
     }
   }
 

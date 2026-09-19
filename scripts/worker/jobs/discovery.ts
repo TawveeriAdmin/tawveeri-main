@@ -24,6 +24,7 @@ import type { ProductCategory } from '../../../src/lib/database/types';
 import { startRun, finishRun, hasActiveRun, reapStaleRuns } from '../../../src/lib/scraping/services/run-logger';
 import { effectiveScraperStores } from '../lib/store-sets';
 import { runGuarded } from '../lib/proc-guard';
+import { recentlyCompleted } from '../lib/store-freshness';
 import path from 'path';
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -87,6 +88,16 @@ async function main() {
         continue;
       }
 
+      // Redeploy-dedup guard (2026-09-19, Browserless cost incident) — see
+      // store-freshness.ts's header. Scoped to this exact store×category unit
+      // via metadata.category, not the whole store.
+      const freshness = await recentlyCompleted(slug, 'discovery', cat);
+      if (freshness.skip) {
+        console.log(`[worker:discovery] ${slug}/${cat}: skipped — completed ${freshness.finishedAt} (within the redeploy-dedup guard window)`);
+        summary.push(`${slug}/${cat}=skipped_fresh`);
+        continue;
+      }
+
       const maxPages = slug === 'samsung_ksa'
         ? parseInt(process.env.SAMSUNG_DISCOVERY_MAX_PAGES || '18', 10)
         : 2;
@@ -96,6 +107,7 @@ async function main() {
         store_id: storeId,
         job_type: 'discovery',
         triggered_by: 'schedule',
+        metadata: { category: cat },
       });
 
       if (!runId) {
@@ -108,7 +120,9 @@ async function main() {
       const guarded = runGuarded(
         process.execPath,
         [TSX_BIN, STORE_CATEGORY_JOB, slug, cat, String(runId), String(maxPages)],
-        { timeoutMs: perUnitTimeoutMs, jobName: `discovery:${slug}/${cat}`, env: process.env },
+        // WORKER_CURRENT_JOB_TYPE: read by base-scraper.ts's session tracking
+        // (worker_browser_sessions.job_type) — see migration 034.
+        { timeoutMs: perUnitTimeoutMs, jobName: `discovery:${slug}/${cat}`, env: { ...process.env, WORKER_CURRENT_JOB_TYPE: 'discovery' } },
       );
       activeCancel = guarded.cancel;
       const result = await guarded.result;

@@ -31,6 +31,7 @@ import { createServerClient } from '../../../src/lib/database';
 import { startRun, finishRun } from '../../../src/lib/scraping/services/run-logger';
 import { effectiveScraperStores } from '../lib/store-sets';
 import { runGuarded } from '../lib/proc-guard';
+import { recentlyCompleted } from '../lib/store-freshness';
 import path from 'path';
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -90,9 +91,30 @@ async function main() {
   // remove a slug from the list, or set the probe count back up, with no
   // code change, the moment evidence changes (e.g. a recovery probe starts
   // succeeding again).
-  const probeStores = (process.env.WORKER_PRICE_UPDATE_PROBE_STORES || 'lulu,sharafdg')
+  // Extended, 2026-09-19 (Browserless cost incident bounded review): jarir
+  // measured over the same 14-day window at a 14% scrape-success rate on
+  // price_update (1045 ok / 7300 offers), only 1 comparable (multi-store)
+  // product, zero outbound/campaign clicks — a materially weaker signal than
+  // extra (83.6% success, 2,526 live comparison-projection rows) or amazon
+  // (21% success but real measured clicks + active affiliate campaigns +
+  // 13 comparable products). jarir's own DISCOVERY path is healthy (87/87
+  // successful runs, 14d) — this is specifically a price_update/browser-page
+  // problem, not a whole-store block, so probe mode (not exclusion) fits:
+  // still checked every cycle at low volume, not fully cut off.
+  const probeStores = (process.env.WORKER_PRICE_UPDATE_PROBE_STORES || 'lulu,sharafdg,jarir')
     .split(',').map((s) => s.trim()).filter(Boolean);
   const probeMax = parseInt(process.env.WORKER_PRICE_UPDATE_PROBE_MAX_PRODUCTS || '10', 10);
+  // Excluded outright from price_update (2026-09-19, same review): lulu
+  // showed ZERO comparable products and ZERO outbound/campaign clicks in
+  // BOTH this review and the 2026-09-17 one, unchanged even at reduced
+  // (probe) volume — the earlier probe reduction alone did not surface any
+  // recovered value, only continued cost with nothing to show for it. This
+  // is specifically about price_update/Browserless cost; lulu's DISCOVERY
+  // stays enabled (178/300 successful runs, 14d — a materially different,
+  // largely non-browser path, see effectiveScraperStores/discovery.ts).
+  // Reversible via env var, same as every other store control here.
+  const excludedStores = (process.env.WORKER_PRICE_UPDATE_EXCLUDED_STORES || 'lulu')
+    .split(',').map((s) => s.trim()).filter(Boolean);
   const olderThanHours = 12;
   // Per-store bound: generous enough for a real full cycle on a healthy
   // store (observed live: noon 32s, sharafdg/almanea ~5-9min for a full
@@ -100,10 +122,26 @@ async function main() {
   // Reversible via env var without a code change.
   const perStoreTimeoutMs = parseInt(process.env.WORKER_PRICE_UPDATE_PER_STORE_TIMEOUT_MS || String(8 * 60 * 1000), 10);
 
-  console.log(`[worker:price-update] starting — stores=[${stores.join(',')}] perStoreTimeoutMs=${perStoreTimeoutMs} probeStores=[${probeStores.join(',')}] probeMax=${probeMax}`);
+  console.log(`[worker:price-update] starting — stores=[${stores.join(',')}] perStoreTimeoutMs=${perStoreTimeoutMs} probeStores=[${probeStores.join(',')}] probeMax=${probeMax} excludedStores=[${excludedStores.join(',')}]`);
   const summary: string[] = [];
 
   for (const slug of stores) {
+    if (excludedStores.includes(slug)) {
+      console.log(`[worker:price-update] ${slug}: excluded from price_update (bounded review — see excludedStores comment above) — discovery is unaffected`);
+      summary.push(`${slug}=excluded`);
+      continue;
+    }
+
+    // Redeploy-dedup guard (2026-09-19, Browserless cost incident): skip a
+    // store that already completed successfully very recently — see
+    // store-freshness.ts's header for why. Logged clearly, never silent.
+    const freshness = await recentlyCompleted(slug, 'price_update');
+    if (freshness.skip) {
+      console.log(`[worker:price-update] ${slug}: skipped — completed ${freshness.finishedAt} (within the redeploy-dedup guard window)`);
+      summary.push(`${slug}=skipped_fresh`);
+      continue;
+    }
+
     const maxProducts = slug === 'noon' ? noonMax : probeStores.includes(slug) ? probeMax : defaultMax;
 
     const runId = await startRun({
@@ -123,7 +161,9 @@ async function main() {
     const guarded = runGuarded(
       process.execPath,
       [TSX_BIN, STORE_JOB, slug, String(runId), String(maxProducts), String(olderThanHours)],
-      { timeoutMs: perStoreTimeoutMs, jobName: `price-update:${slug}`, env: process.env },
+      // WORKER_CURRENT_JOB_TYPE: read by base-scraper.ts's session tracking
+      // (worker_browser_sessions.job_type) — see migration 034.
+      { timeoutMs: perStoreTimeoutMs, jobName: `price-update:${slug}`, env: { ...process.env, WORKER_CURRENT_JOB_TYPE: 'price_update' } },
     );
     activeCancel = guarded.cancel;
     const result = await guarded.result;

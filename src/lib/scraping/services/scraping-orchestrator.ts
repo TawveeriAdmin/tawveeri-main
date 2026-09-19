@@ -21,6 +21,7 @@ import { ProductService } from './product-service';
 import { IngestionService } from './ingestion-service';
 import { DataValidator } from '../validation/data-validator';
 import { createServerClient } from '@/lib/database';
+import { BrowserlessQuotaError } from '../base/base-scraper';
 import { createNotification, sendBackInStockEmail } from '@/lib/auth/notifications';
 import { createAuditLog } from '@/lib/auth/audit';
 import { sendPushToUser } from '@/lib/push/expo-push';
@@ -35,6 +36,12 @@ async function retryAsync<T>(
     try {
       return await fn();
     } catch (err) {
+      // A Browserless quota/rate-limit signal will fail identically on every
+      // retry — burning the retry budget just adds noise and delay for no
+      // chance of success. Rethrow immediately so the caller's own
+      // quota-specific handling (stop this store's loop, defer) runs right
+      // away instead of after 3 pointless attempts.
+      if (err instanceof BrowserlessQuotaError) throw err;
       lastErr = err;
       if (attempt === options.maxAttempts) break;
       const delay = options.baseDelayMs * Math.pow(2, attempt - 1);
@@ -402,6 +409,11 @@ export class ScrapingOrchestrator {
       let productsUpdated = 0;
       let priceChanges = 0;
       let errors = 0;
+      // Browserless cost incident, 2026-09-19: stores whose remaining
+      // products were skipped because of a quota/rate-limit signal, not a
+      // real per-product failure — kept separate from `errors` so a quota
+      // pause doesn't read as a wave of scrape failures for that store.
+      const deferredQuotaStores: string[] = [];
 
       for (const [storeSlug, products] of Object.entries(byStore)) {
         const scraper = this.getScraperForStore(storeSlug);
@@ -522,6 +534,12 @@ export class ScrapingOrchestrator {
           try {
             results = await batchScraper.updateProductPricesBatch(urls);
           } catch (err) {
+            if (err instanceof BrowserlessQuotaError) {
+              console.error(`[price] ${storeSlug}: Browserless quota/rate-limit signal — deferring this store's remaining batch, not treating as N product failures: ${err.message}`);
+              deferredQuotaStores.push(storeSlug);
+              storesUpdated++;
+              continue;
+            }
             console.error(`[price] batch fetch failed for ${storeSlug}:`, err instanceof Error ? err.message : err);
             results = new Map();
           }
@@ -556,6 +574,19 @@ export class ScrapingOrchestrator {
             );
             await applyResult(productStore, scrapedProduct);
           } catch (err) {
+            // Browserless cost incident, 2026-09-19: a quota/rate-limit
+            // signal will fail identically for EVERY remaining product in
+            // this store's batch — stop attempting them (they are neither
+            // touched nor stamped, so the next cycle's staleness ordering
+            // picks them up first) instead of burning through the whole
+            // list re-hitting the same exhausted quota. This is a deferral,
+            // not N product failures — `errors` is deliberately NOT
+            // incremented here.
+            if (err instanceof BrowserlessQuotaError) {
+              console.error(`[price] ${storeSlug}: Browserless quota/rate-limit signal — deferring ${products.length - products.indexOf(productStore)} remaining product(s), not attempting further this cycle: ${err.message}`);
+              deferredQuotaStores.push(storeSlug);
+              break;
+            }
             const msg = err instanceof Error ? err.message.slice(0, 500) : String(err).slice(0, 500);
             this.logPriceAttempt({
               retailer: storeSlug, offer_id: productStoreId, url: productUrl,
@@ -584,6 +615,7 @@ export class ScrapingOrchestrator {
         price_changes: priceChanges,
         errors,
         duration_ms: Date.now() - startTime,
+        deferred_quota_stores: deferredQuotaStores.length ? deferredQuotaStores : undefined,
       };
     } catch (error) {
       console.error('runPriceUpdateJob failed:', error);

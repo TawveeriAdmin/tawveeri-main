@@ -22,6 +22,7 @@ import { ScrapingOrchestrator } from '../../../src/lib/scraping/services/scrapin
 import type { DiscoveryOptions } from '../../../src/lib/scraping/base/types';
 import type { ProductCategory } from '../../../src/lib/database/types';
 import { finishRun, failRun } from '../../../src/lib/scraping/services/run-logger';
+import { BrowserlessQuotaError } from '../../../src/lib/scraping/base/base-scraper';
 
 async function main() {
   const [, , slug, category, runIdArg, maxPagesArg] = process.argv;
@@ -49,6 +50,14 @@ async function main() {
     });
     console.log(`[worker:discovery] ${slug}/${category}: discovered=${result.products_discovered} created=${result.products_created} linked=${result.products_linked}`);
   } catch (err) {
+    // Browserless cost incident, 2026-09-19: a quota/rate-limit signal is not
+    // a scraping defect — log and record it distinctly so it reads as
+    // "deferred: browserless quota" rather than a generic discovery failure.
+    if (err instanceof BrowserlessQuotaError) {
+      console.error(`[worker:discovery] ${slug}/${category}: deferred — Browserless quota/rate-limit signal: ${err.message}`);
+      await finishRun({ run_id: runId, status: 'failed', errors_count: 0, error_summary: { reason: 'deferred_browserless_quota', detail: err.message } });
+      process.exit(0);
+    }
     console.error(`[worker:discovery] ${slug}/${category} threw:`, err instanceof Error ? err.message : err);
     await failRun(runId, err);
     process.exit(1);

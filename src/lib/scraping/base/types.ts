@@ -240,6 +240,10 @@ export interface PriceUpdateResult {
   price_changes: number;
   errors: number;
   duration_ms: number;
+  /** Stores whose remaining products were deferred (not attempted) due to a
+   *  Browserless quota/rate-limit signal — see base-scraper.ts's
+   *  BrowserlessQuotaError. Empty in the common case. */
+  deferred_quota_stores?: string[];
 }
 
 
