@@ -255,13 +255,25 @@ export class ProductService {
       return data?.id ?? null;
     }
 
-    const { data: existing } = await this.supabase
+    // (product_id, store_id) can have duplicate rows in production — the DB's only
+    // unique index on product_stores is (product_id, store_name), which is nullable
+    // and does not enforce this pair (ADR pending, 2026-09-20 price-update timeout
+    // investigation). .maybeSingle() errors on 2+ matches; that error used to be
+    // silently discarded here, so a duplicated pair always looked "not found" and
+    // every re-scrape inserted yet another duplicate. Pick deterministically instead.
+    const { data: existingRows, error: existingError } = await this.supabase
       .from('product_stores')
       .select('id, current_price, price_pending_value')
       .eq('product_id', productId)
       .eq('store_id', storeId)
-      .maybeSingle();
+      .order('last_seen_at', { ascending: false, nullsFirst: false })
+      .order('updated_at', { ascending: false, nullsFirst: false });
 
+    if (existingError) {
+      throw new Error(`Failed to check existing product_store: ${existingError.message}`);
+    }
+
+    const existing = existingRows?.[0] ?? null;
     const updateData = baseData as Partial<ProductStoreRow>;
 
     if (existing) {
@@ -347,12 +359,18 @@ export class ProductService {
      */
     newProductUrl?: string,
   ): Promise<void> {
-    const { data: existing, error: fetchError } = await this.supabase
+    // See linkProductToStore() — (product_id, store_id) can have duplicate rows in
+    // production, so .single() throws "multiple rows returned" for those pairs and
+    // the price update fails outright. Pick the most recently seen row deterministically.
+    const { data: existingRows, error: fetchError } = await this.supabase
       .from('product_stores')
       .select('id, current_price, price_pending_value')
       .eq('product_id', productId)
       .eq('store_id', storeId)
-      .single();
+      .order('last_seen_at', { ascending: false, nullsFirst: false })
+      .order('updated_at', { ascending: false, nullsFirst: false });
+
+    const existing = existingRows?.[0];
 
     if (fetchError || !existing) {
       throw new Error(`Product-store link not found: ${fetchError?.message || 'Not found'}`);
