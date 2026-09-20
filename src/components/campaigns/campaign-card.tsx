@@ -20,11 +20,12 @@
 // already started it independently.
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { EligibleCampaign, CampaignSurface } from '@/lib/campaigns/types';
 import { track } from '@/lib/analytics/track';
 import { buildModeInsightAr, buildModeInsightEn } from '@/lib/campaigns/original-value';
 import { MERCHANT_ACCENT } from '@/lib/campaigns/merchant-accent';
+import { isAmazonHomeSeason, AMAZON_HOME_SEASON_END } from '@/lib/campaigns/amazon-home-season';
 
 function sendClickBeacon(campaign: EligibleCampaign, surface: CampaignSurface, category?: string | null) {
   const payload = JSON.stringify({
@@ -72,6 +73,15 @@ export function CampaignCard({
 }) {
   const isAr = locale !== 'en';
   const firedImpression = useRef(false);
+  const [now, setNow] = useState(() => Date.now());
+  const seasonal = variant === 'featured' && surface === 'homepage'
+    && isAmazonHomeSeason(campaign.id, campaign.merchant, now);
+  // Revert even if the visitor leaves this tab open across the editorial deadline.
+  useEffect(() => {
+    if (!seasonal) return;
+    const timer = setTimeout(() => setNow(Date.now()), Math.max(0, AMAZON_HOME_SEASON_END - Date.now()));
+    return () => clearTimeout(timer);
+  }, [seasonal]);
 
   // Impression telemetry — fires once per mount (ref guard) AND is deduped again by
   // track.ts's own 1.5s window, so neither a React double-mount (StrictMode/dev) nor a
@@ -89,8 +99,8 @@ export function CampaignCard({
     });
   }, [campaign.id, campaign.merchant, campaign.is_test, category, surface]);
 
-  const title = isAr ? campaign.title_ar : campaign.title_en;
-  const cta = isAr ? campaign.cta_ar : campaign.cta_en;
+  const title = seasonal ? (isAr ? 'عروض اليوم الوطني' : 'National Day offers') : (isAr ? campaign.title_ar : campaign.title_en);
+  const cta = seasonal ? (isAr ? 'تسوّق العروض' : 'Shop offers') : (isAr ? campaign.cta_ar : campaign.cta_en);
   const disclosure = isAr ? campaign.disclosure_ar : campaign.disclosure_en;
   // Amazon Decision Layer V2.1 §8 — the original-Tawveeri-value line. null when no
   // meaningful insight exists (e.g. category unrecognized) — the card just omits it
@@ -101,11 +111,13 @@ export function CampaignCard({
 
   if (variant === 'featured') {
     const accent = MERCHANT_ACCENT[campaign.merchant];
+    const prominent = campaign.merchant === 'amazon' && surface === 'homepage';
     const merchantName = isAr ? accent.nameAr : accent.name;
     return (
       <a
         data-testid="campaign-card"
         data-variant="featured"
+        data-seasonal={seasonal ? 'national-day' : undefined}
         href={campaign.merchantUrl}
         target="_blank"
         rel="noopener noreferrer sponsored"
@@ -123,11 +135,16 @@ export function CampaignCard({
           flexDirection: 'column',
           justifyContent: 'space-between',
           gap: 12,
-          minHeight: 148,
-          background: accent.bg,
-          color: accent.fg,
+          minHeight: prominent ? 248 : 148,
+          boxSizing: 'border-box',
+          minWidth: 0,
+          background: prominent ? 'linear-gradient(135deg, #ffffff 0%, #fff5e3 100%)' : accent.bg,
+          color: prominent ? '#131A22' : accent.fg,
+          border: prominent ? '1px solid #f0d7aa' : undefined,
+          boxShadow: prominent ? '0 8px 24px rgba(180, 119, 24, 0.08)' : undefined,
           borderRadius: 18,
-          padding: '16px 18px',
+          padding: prominent ? '24px' : '16px 18px',
+          borderTop: seasonal ? '4px solid #3f977b' : undefined,
           textDecoration: 'none',
         }}
       >
@@ -148,13 +165,13 @@ export function CampaignCard({
               reference's icon-chip + big-name pairing. */}
           <span style={{ fontSize: 22, fontWeight: 900, lineHeight: 1.1 }}>{merchantName}</span>
         </div>
-        <div style={{ fontSize: 15, fontWeight: 800, lineHeight: 1.4 }}>{title}</div>
+        <div style={{ fontSize: prominent ? 'clamp(30px, 4vw, 44px)' : 15, fontWeight: prominent ? 900 : 800, lineHeight: prominent ? 1.3 : 1.4, maxWidth: '100%', textWrap: prominent ? 'balance' : undefined }}>{title}</div>
         <span
           style={{
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            minHeight: 38, alignSelf: 'flex-start',
+            minHeight: prominent ? 44 : 38, alignSelf: 'flex-start',
             background: accent.badgeBg, color: accent.badgeFg,
-            borderRadius: 10, padding: '7px 16px', fontSize: 12, fontWeight: 900,
+            borderRadius: 10, padding: prominent ? '10px 22px' : '7px 16px', fontSize: prominent ? 16 : 12, fontWeight: 900,
           }}
         >
           {cta}

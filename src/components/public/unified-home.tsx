@@ -17,7 +17,7 @@ import { needPhrasings, needPrompt } from '@/lib/agent/need-phrasings';
 import { useNavigableCategories } from '@/lib/intelligence/navigable-categories-context';
 import { track } from '@/lib/analytics/track';
 import { recordFirstPartyInteraction, appendInteractionId } from '@/lib/analytics/interaction';
-import { CampaignCard } from '@/components/campaigns/campaign-card';
+import { HomepageOffers } from '@/components/campaigns/homepage-offers';
 
 const T = {
   ar: {
@@ -178,16 +178,7 @@ export function UnifiedHome({
           always [] and this falls back EXACTLY to the original verified-deals section —
           the whole rollback story is "the kill switch is off", no code path removed. */}
       {campaigns.length > 0 ? (
-        <section style={S.section}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-            <h2 style={{ fontSize: 16, fontWeight: 900, color: 'var(--color-on-surface)', margin: 0 }}>{t.campaignsTitle}</h2>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: campaigns.length > 1 ? 'repeat(2, 1fr)' : '1fr', gap: 12 }}>
-            {campaigns.map((c) => (
-              <CampaignCard key={c.id} campaign={c} locale={locale} surface="homepage" category={null} variant="featured" />
-            ))}
-          </div>
-        </section>
+        <HomepageOffers campaigns={campaigns} locale={locale} />
       ) : deals.length > 0 && (
         <section style={S.section}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
