@@ -191,6 +191,30 @@ is on is not visible from here; if it's Free, sessions for slower stores may alr
 that platform ceiling regardless of any quota question, which would itself waste units on repeated
 reconnects. Only the founder can confirm the current tier from Browserless's own dashboard.
 
+## price_update per-store timeouts: diagnosis by store (2026-09-20, ADR-377)
+
+A store hitting its 8-minute `WORKER_PRICE_UPDATE_PER_STORE_TIMEOUT_MS` proc-guard SIGTERM can have a
+completely different cause per store — do not assume one shared root cause. Diagnosed for extra/amazon/
+samsung_ksa:
+
+- **extra, samsung_ksa** — throughput/capacity, not a defect: real, mostly-successful scraping runs the
+  full 8 minutes and simply doesn't finish the eligible backlog (extra ~5,000 eligible, samsung_ksa ~250).
+  `products_updated: 0` in the `scraping_runs` row after a timeout is a reporting artifact, not reality —
+  `price-update.ts`'s timeout path can't see the killed child's in-progress counts.
+- **amazon** — was a real defect, now fixed: `product_stores` has no DB constraint on `(product_id,
+  store_id)` (the only unique index is on the nullable `(product_id, store_name)`), so duplicate rows can
+  and did accumulate (340 amazon products, up to 181 duplicate rows for one). `product-service.ts`'s
+  `updateProductPrice()`/`linkProductToStore()` assumed uniqueness the DB never enforced — fixed to select
+  ordered by recency instead of `.single()`/`.maybeSingle()`. See ADR-377 for full detail, numbers, and
+  what remains open (existing duplicate-row cleanup, capacity tuning) as founder decisions, not silently
+  applied.
+
+Before assuming a timeout is Browserless-related, check which scraper method the store's price-update
+path actually calls: `grep -n "fetchPageWithJS\|fetchPage(" src/lib/scraping/stores/<slug>-scraper.ts`
+around its `updateProductPrice()` method. Amazon's price-update path uses plain `fetchPage()`, not
+Browserless, despite amazon using Browserless for discovery — the two jobs can have entirely different
+dependencies for the same store.
+
 ## Operating
 
 ```bash
