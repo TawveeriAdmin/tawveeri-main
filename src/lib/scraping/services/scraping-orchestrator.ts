@@ -51,6 +51,24 @@ async function retryAsync<T>(
   throw lastErr;
 }
 
+/**
+ * Given rows already ordered stalest-first (last_checked_at ASC, nulls first), keep only
+ * the FIRST (stalest) row per product_id and stop once `max` distinct products are kept.
+ * Pure function, no I/O — see runPriceUpdateJob's amazon-only overfetch for why this exists
+ * (2026-09-24 founder-scoped freshness investigation; docs/DECISIONS.md ADR-378).
+ */
+export function dedupeStalestPerProductId<T extends { product_id: string }>(rows: T[], max: number): T[] {
+  const seenProductIds = new Set<string>();
+  const deduped: T[] = [];
+  for (const r of rows) {
+    if (seenProductIds.has(r.product_id)) continue;
+    seenProductIds.add(r.product_id);
+    deduped.push(r);
+    if (deduped.length >= max) break;
+  }
+  return deduped;
+}
+
 const ALL_PRODUCT_CATEGORIES: ProductCategory[] = [
   'smartphone',
   'laptop',
@@ -381,12 +399,31 @@ export class ScrapingOrchestrator {
       // "column does not exist" for EVERY store — the real reason Extra went stale. `last_checked_at`
       // DOES exist and is the correct rotation cursor (updateProductPrice stamps it); only the
       // per-product failure backoff (consecutive_failures) is dropped until that column exists.
+      // Amazon-only overfetch, 2026-09-24 (founder-scoped freshness investigation, no ADR
+      // number assigned yet — see docs/DECISIONS.md ADR-378 for the audit this follows).
+      // Amazon carries known duplicate (product_id, store_id) rows (ADR-377: 352
+      // products / 5,964 rows at last count) — a heavily-duplicated product can occupy
+      // several of a single 8-minute cycle's ~90 real slots checking the SAME product
+      // over and over, at the expense of other distinct, equally-or-more-stale products.
+      // Measured live before this change (top-N staleness-ordered simulation against
+      // production): 0% waste at the real observed ~74-100/cycle throughput, rising to
+      // 13.7% at the full configured 300-row limit (never reached before the per-store
+      // timeout fires) — small but strictly one-directional (never a regression), so
+      // fetch a wider pool and keep only the stalest row per product_id before slicing
+      // to max_products. `requestedMax * 3` stays well under PostgREST's db-max-rows=1000
+      // cap (ADR-172/285) for every configured max_products value in this codebase.
+      // Gated to store_slug === 'amazon' only — extra/samsung_ksa/noon/every other store
+      // (and any call with no store_slug at all) keep the exact original query, byte-for-
+      // byte, so this cannot change their behavior.
+      const requestedMax = options.max_products || 500;
+      const isAmazonDedupe = options.store_slug === 'amazon';
+
       let query = supabase
         .from('product_stores')
         .select('id, product_id, store_id, product_url, current_price, availability, stores!inner(slug, name_ar, name_en)')
         .or(`last_checked_at.is.null,last_checked_at.lt.${cutoffTime.toISOString()}`)
         .order('last_checked_at', { ascending: true, nullsFirst: true })
-        .limit(options.max_products || 500);
+        .limit(isAmazonDedupe ? Math.min(requestedMax * 3, 900) : requestedMax);
 
       if (options.store_slug) {
         query = query.eq('stores.slug', options.store_slug);
@@ -398,7 +435,10 @@ export class ScrapingOrchestrator {
         throw new Error(`Failed to fetch products: ${error?.message || 'Unknown error'}`);
       }
 
-      const rows = productStores as unknown as PriceUpdateStoreRow[];
+      let rows = productStores as unknown as PriceUpdateStoreRow[];
+      if (isAmazonDedupe) {
+        rows = dedupeStalestPerProductId(rows, requestedMax);
+      }
       const byStore: Record<string, PriceUpdateStoreRow[]> = {};
       for (const ps of rows) {
         const storeSlug = ps.stores.slug;
