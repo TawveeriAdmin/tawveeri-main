@@ -31,9 +31,9 @@ const T = {
     good: "✅ سعر جيد",
     noImage: "بدون صورة",
     sar: "ريال",
-    belowAvg: (n: string) => `أقل من متوسط السوق بـ ${n} ريال`,
-    pctTitle: "مقارنةً بمتوسط سعر السوق الذي رصدناه",
-    pctLabel: (p: number) => `-${p}٪ عن المتوسط`,
+    belowAvg: (n: string) => `أقل من سعره الأصلي المسجّل بـ ${n} ريال`,
+    pctTitle: "مقارنةً بالسعر الأصلي الذي رصدناه لهذا العرض في نفس المتجر",
+    pctLabel: (p: number) => `-${p}٪ عن السعر الأصلي`,
     emptyTitle: "لا توجد عروض قوية مكتشفة حالياً",
     emptyBody: "محرك العروض يراقب الأسعار على مدار اليوم — عُد قريباً، أو",
     browse: "تصفّح الفئات",
@@ -51,9 +51,9 @@ const T = {
     good: "✅ Good price",
     noImage: "No image",
     sar: "SAR",
-    belowAvg: (n: string) => `${n} SAR below the market average`,
-    pctTitle: "Against the market-average price we observed",
-    pctLabel: (p: number) => `-${p}% vs average`,
+    belowAvg: (n: string) => `${n} SAR below its own recorded original price`,
+    pctTitle: "Against the original price we recorded for this offer at the same store",
+    pctLabel: (p: number) => `-${p}% vs original price`,
     emptyTitle: "No strong deals detected right now",
     emptyBody: "The deal engine watches prices through the day — check back soon, or",
     browse: "browse categories",
@@ -182,9 +182,13 @@ export default async function DealsPage(props: { params: Promise<{ locale: strin
                     {d.bestPrice.toLocaleString(t.numberLocale)}{" "}
                     <span className="text-xs font-normal">{t.sar}</span>
                   </div>
-                  {/* ADR-129 (P0-2): averagePrice is OUR cross-store measurement, not a merchant "was" —
-                      so it is NOT gated. Relabelled to state exactly what it is (below the market AVERAGE),
-                      never "بدلاً من" which implies a former price. A claim no competitor can make. */}
+                  {/* Trust-copy correction (2026-09-24): averagePrice is best.was — the WINNING
+                      offer's own store-recorded original_price (getDeals.ts), never an arithmetic
+                      mean across stores. ADR-129's original comment above this block asserted a
+                      cross-store-average premise that does not match the code; ungating this figure
+                      was justified on that premise, so it stays worth re-checking, but the copy now
+                      states only what the number actually is — a self "was" comparison, matching the
+                      page's own sub-header/footer text. See docs/DECISIONS.md ADR-129/211/051. */}
                   {d.averagePrice > d.bestPrice && (
                     <div className="text-xs text-on-surface-variant">
                       {t.belowAvg(Math.round(d.averagePrice - d.bestPrice).toLocaleString(t.numberLocale))}

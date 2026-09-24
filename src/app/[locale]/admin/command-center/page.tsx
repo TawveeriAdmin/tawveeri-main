@@ -400,9 +400,17 @@ export default async function CommandCenterPage({
                 { icon: Eye, label: isRTL ? 'فتح منتج' : 'Product view', value: real.productView, conv: fpct(kpis.searchToProduct) },
                 { icon: Scale, label: isRTL ? 'مقارنة' : 'Comparison', value: real.comparisonView, conv: fpct(kpis.productToCompare) },
                 { icon: BookOpen, label: isRTL ? 'دليل' : 'Evidence', value: real.evidenceView, conv: null },
-                { icon: ExternalLink, label: isRTL ? 'خروج' : 'Outbound', value: real.outbound, conv: fpct(kpis.compareToExit) },
+                {
+                  icon: ExternalLink, label: isRTL ? 'خروج' : 'Outbound', value: real.outbound, conv: fpct(kpis.compareToExit),
+                  // 2026-09-24 labeling fix: this is the legacy client-fired go_click usage_event
+                  // (ADR-244), not the decision-grade first_party_interactions ledger (ADR-286) or
+                  // the raw outbound_clicks table shown elsewhere on this page — each is a
+                  // deliberately different, already-documented metric, but this tile alone had no
+                  // caption distinguishing it from its labeled neighbors.
+                  hint: isRTL ? 'حدث نقر من المتصفح (go_click) — وليس سجل outbound_clicks أو first_party_interactions.' : 'Client-fired go_click event — not the outbound_clicks or first_party_interactions ledgers.',
+                },
               ].map((s) => (
-                <div key={s.label} className="rounded-2xl border border-[#eef6f2] p-3 text-center dark:border-[#1c261f]">
+                <div key={s.label} title={s.hint} className="rounded-2xl border border-[#eef6f2] p-3 text-center dark:border-[#1c261f]">
                   <s.icon className="mx-auto h-4 w-4 text-[#1f6f59] dark:text-[#9fe4d0]" />
                   <p className="mt-1 text-[11px] font-bold text-on-surface-variant dark:text-white/50">{s.label}</p>
                   <p className="text-xl font-black tabular-nums text-on-surface dark:text-white">{s.value}</p>

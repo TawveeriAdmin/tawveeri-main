@@ -168,8 +168,8 @@ function formatDealsForAI(deals: Awaited<ReturnType<typeof getDeals>>): string {
       (d, i) => `عرض ${i + 1}: ${d.nameAr}
   السعر: ${customerPrice(d.bestPrice)} ريال
   المتجر: ${d.bestStore}
-  المتوسط: ${customerPrice(d.averagePrice)} ريال
-  أرخص من المتوسط: ${d.discountPct}٪
+  السعر الأصلي المسجّل في نفس المتجر: ${customerPrice(d.averagePrice)} ريال
+  أرخص من سعره الأصلي: ${d.discountPct}٪
   القوة: ${d.strength === 'hot' ? 'عرض قوي 🔥' : 'سعر جيد ✅'}
   السبب: ${d.reason}
   رابط المقارنة: ${SITE_URL}${d.compareUrl}`
