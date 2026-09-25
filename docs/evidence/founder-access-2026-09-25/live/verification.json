@@ -1,0 +1,107 @@
+{
+  "base": "https://tawveeri.com",
+  "cases": [
+    {
+      "label": "founder logged in — desktop Chrome",
+      "status": 200,
+      "finalUrl": "/ar/admin/founder",
+      "leaksAdminData": false,
+      "mobileButtonVisible": true
+    },
+    {
+      "label": "founder logged in — iPhone Safari UA",
+      "status": 200,
+      "finalUrl": "/ar/admin/founder",
+      "leaksAdminData": false,
+      "mobileButtonVisible": true
+    },
+    {
+      "label": "founder on another admin page — mobile button present",
+      "status": 200,
+      "finalUrl": "/ar/admin/command-center",
+      "leaksAdminData": false,
+      "mobileButtonVisible": true
+    },
+    {
+      "label": "logged out → login with return path",
+      "status": 200,
+      "finalUrl": "/ar/auth/login?redirect=%2Fadmin%2Ffounder",
+      "leaksAdminData": false,
+      "mobileButtonVisible": false
+    },
+    {
+      "label": "ordinary customer → unauthorized",
+      "status": 200,
+      "finalUrl": "/ar/unauthorized",
+      "leaksAdminData": false,
+      "mobileButtonVisible": false
+    },
+    {
+      "label": "ordinary customer direct URL → unauthorized",
+      "status": 200,
+      "finalUrl": "/ar/unauthorized",
+      "leaksAdminData": false,
+      "mobileButtonVisible": false
+    },
+    {
+      "label": "login redirect=https://evil.example (founder session)",
+      "status": 200,
+      "finalUrl": "/ar/admin/command-center",
+      "leaksAdminData": false,
+      "mobileButtonVisible": true
+    },
+    {
+      "label": "login redirect=//evil.example (founder session)",
+      "status": 200,
+      "finalUrl": "/ar/admin/command-center",
+      "leaksAdminData": false,
+      "mobileButtonVisible": true
+    },
+    {
+      "label": "login redirect=/%2F%2Fevil.example (founder session)",
+      "status": 200,
+      "finalUrl": "/ar/admin/command-center",
+      "leaksAdminData": false,
+      "mobileButtonVisible": true
+    },
+    {
+      "label": "login redirect=/admin/founder (founder session) → honoured",
+      "status": 200,
+      "finalUrl": "/ar/admin/founder",
+      "leaksAdminData": false,
+      "mobileButtonVisible": true
+    },
+    {
+      "label": "cookie policy after forced refresh (remembered)",
+      "finalUrl": "/ar/admin/founder",
+      "refreshedCookies": 2,
+      "maxAgeDays": [
+        30,
+        30
+      ],
+      "allSameSiteLax": true,
+      "secureFlag": [
+        true,
+        true
+      ]
+    },
+    {
+      "label": "cookie policy after forced refresh (session-only)",
+      "finalUrl": "/ar/admin/founder",
+      "refreshedCookies": 2,
+      "maxAgeDays": [
+        "session",
+        "session"
+      ],
+      "allSameSiteLax": true,
+      "secureFlag": [
+        true,
+        true
+      ]
+    }
+  ],
+  "cleanup": {
+    "tempUserDeleted": true,
+    "tempEmail": "founder-access-e2e-<ts>@tawveeri.local"
+  }
+}
