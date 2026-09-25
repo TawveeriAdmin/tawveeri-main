@@ -28,7 +28,7 @@ export default async function ExpensesPage({ params, searchParams }: { params: P
     <div className="space-y-6">
       <FCard><WindowPicker current={w} basePath={base} sp={sp} /></FCard>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <FCard><KV rows={[{ k: 'إجمالي ما صُرف منذ البداية (F04)', v: <Sar v={total.sar} />, note: `${total.rows} سجل مدفوع${total.estimateRows ? ` · ${total.estimateRows} تقدير` : ''}${unconverted ? ` · ${unconverted} بلا تحويل` : ''}` }]} /></FCard>
+        <FCard><KV rows={[{ k: 'إجمالي ما صُرف منذ البداية (F04)', v: <Sar v={total.sar} />, note: `${total.rows} سجل مدفوع${total.estimateRows ? ` · ${total.estimateRows} تقدير` : ''}${unconverted ? ` · ${unconverted} بلا تحويل` : ''}${total.undatedRows ? ` · ${total.undatedRows} بتاريخ يحتاج مراجعة (خارج النوافذ المؤرخة)` : ''}` }]} /></FCard>
         <FCard><KV rows={[{ k: 'هذا الشهر: نقد / تكلفة', v: <><Sar v={monthCash.sar} /> / <Sar v={monthPeriod.sar} /></>, note: monthW.labelAr }]} /></FCard>
         <FCard><KV rows={[{ k: 'اليوم نقدًا', v: <Sar v={todayCash.sar} /> }, { k: 'مستحق غير مدفوع (F03)', v: <Sar v={due.sar} /> }]} /></FCard>
         <FCard><KV rows={[{ k: `${w.labelAr}: نقد (F01)`, v: <Sar v={cash.sar} /> }, { k: 'تكلفة الفترة (F02)', v: <Sar v={period.sar} />, note: 'موزعة على فترة الخدمة' }]} /></FCard>
@@ -68,7 +68,7 @@ export default async function ExpensesPage({ params, searchParams }: { params: P
                   <div>
                     <p className="font-black">{e.vendor} <span className="font-normal text-on-surface-variant dark:text-white/60">· {EXPENSE_CATEGORY_AR[e.category]} · {e.description ?? ''}</span></p>
                     <p className="mt-0.5 tabular-nums text-on-surface-variant dark:text-white/60">
-                      {e.amount_original} {e.currency}{e.fees || e.tax ? ` (+${e.fees} رسوم، +${e.tax} ضريبة)` : ''} = <b>{expenseSar(e) == null ? 'غير محوّل' : `${expenseSar(e)} ر.س`}</b> · الخدمة {e.service_period_start} → {e.service_period_end} · {e.payment_status === 'paid' ? `دُفع ${e.paid_at}` : `مستحق ${e.due_at ?? ''}`}
+                      {e.amount_original} {e.currency}{e.fees || e.tax ? ` (+${e.fees} رسوم، +${e.tax} ضريبة)` : ''} = <b>{expenseSar(e) == null ? 'غير محوّل' : `${expenseSar(e)} ر.س`}</b> · {e.date_precision === 'needs_review' || !e.service_period_start ? <Tag tone="warn">تاريخ تاريخي يحتاج مراجعة</Tag> : <>الخدمة {e.service_period_start} → {e.service_period_end} · {e.payment_status === 'paid' ? `دُفع ${e.paid_at ?? 'بلا تاريخ'}` : `مستحق ${e.due_at ?? ''}`}</>}
                       {e.recurrence !== 'one_time' ? ` · ${e.recurrence === 'monthly' ? 'شهري' : e.recurrence === 'yearly' ? 'سنوي' : 'متكرر'}` : ''}{e.campaign ? ` · حملة ${e.campaign}` : ''}
                     </p>
                     <p className="mt-0.5 text-[11px] text-on-surface-variant dark:text-white/50">

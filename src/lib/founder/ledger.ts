@@ -37,7 +37,11 @@ export interface ExpenseInput {
   campaign?: string | null; project?: string | null; channel?: string | null;
   recurrence?: string; renewal_at?: string | null; evidence_ref?: string | null; evidence_path?: string | null; evidence_state?: string;
   cost_kind?: string; allocation_note?: string | null; notes?: string | null; import_id?: string | null; row_hash?: string | null;
+  /** exact (default) | month | year | needs_review — only needs_review may leave the dates empty. */
+  date_precision?: string;
 }
+
+const DATE_PRECISIONS = ['exact', 'month', 'year', 'needs_review'];
 
 export function normalizeExpense(input: ExpenseInput): Record<string, unknown> {
   const errors: Record<string, string> = {};
@@ -45,8 +49,10 @@ export function normalizeExpense(input: ExpenseInput): Record<string, unknown> {
   if (!vendor) errors.vendor = 'المورد مطلوب';
   const category = EXPENSE_CATEGORIES.includes(input.category as never) ? input.category : null;
   if (!category) errors.category = 'الفئة غير معروفة';
+  const datePrecision = DATE_PRECISIONS.includes(input.date_precision ?? '') ? (input.date_precision as string) : 'exact';
+  const needsReview = datePrecision === 'needs_review';
   const start = dateOrNull(input.service_period_start);
-  if (!start) errors.service_period_start = 'تاريخ بداية الخدمة مطلوب (YYYY-MM-DD)';
+  if (!start && !needsReview) errors.service_period_start = 'تاريخ بداية الخدمة مطلوب (YYYY-MM-DD) — أو اختر «تاريخ تاريخي يحتاج مراجعة»';
   const end = dateOrNull(input.service_period_end) ?? start;
   if (start && end && end < start) errors.service_period_end = 'نهاية الخدمة قبل بدايتها';
   const amount = numOrNull(input.amount_original);
@@ -55,7 +61,7 @@ export function normalizeExpense(input: ExpenseInput): Record<string, unknown> {
   const fees = numOrNull(input.fees) ?? 0, tax = numOrNull(input.tax) ?? 0;
   const paymentStatus = input.payment_status === 'due' ? 'due' : 'paid';
   const paidAt = dateOrNull(input.paid_at);
-  if (paymentStatus === 'paid' && !paidAt) errors.paid_at = 'تاريخ الدفع مطلوب للمصروف المدفوع';
+  if (paymentStatus === 'paid' && !paidAt && !needsReview) errors.paid_at = 'تاريخ الدفع مطلوب للمصروف المدفوع';
   const fxRate = numOrNull(input.fx_rate);
   const fxSource = strOrNull(input.fx_source, 200);
   let amountSar = numOrNull(input.amount_sar);
@@ -67,7 +73,7 @@ export function normalizeExpense(input: ExpenseInput): Record<string, unknown> {
   const recurrence = ['one_time', 'monthly', 'yearly', 'other'].includes(input.recurrence ?? '') ? input.recurrence : 'one_time';
   if (Object.keys(errors).length) throw new LedgerValidationError(errors);
   return {
-    vendor, description: strOrNull(input.description, 1000), category,
+    vendor, description: strOrNull(input.description, 1000), category, date_precision: datePrecision,
     service_period_start: start, service_period_end: end, due_at: dateOrNull(input.due_at), paid_at: paymentStatus === 'paid' ? paidAt : dateOrNull(input.paid_at),
     payment_status: paymentStatus, amount_original: amount, currency, fees, tax, amount_sar: amountSar, fx_rate: currency === 'SAR' ? null : fxRate, fx_source: currency === 'SAR' ? null : fxSource,
     campaign: strOrNull(input.campaign, 120), project: strOrNull(input.project, 120), channel: strOrNull(input.channel, 120),

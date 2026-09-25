@@ -10,7 +10,8 @@ type AnyClient = { from: (table: string) => any };
 
 export interface ExpenseRow {
   id: string; vendor: string; description: string | null; category: ExpenseCategory;
-  service_period_start: string; service_period_end: string; due_at: string | null; paid_at: string | null;
+  service_period_start: string | null; service_period_end: string | null; due_at: string | null; paid_at: string | null;
+  date_precision?: 'exact' | 'month' | 'year' | 'needs_review';
   payment_status: 'paid' | 'due'; amount_original: number; currency: string; fees: number; tax: number;
   amount_sar: number | null; fx_rate: number | null; fx_source: string | null;
   campaign: string | null; project: string | null; channel: string | null;
@@ -92,8 +93,9 @@ export function expenseSar(e: Pick<ExpenseRow, 'amount_original' | 'fees' | 'tax
 
 const dateInWindow = (d: string | null, w: MetricWindow) => !!d && new Date(`${d}T00:00:00+03:00`).getTime() >= w.start.getTime() && new Date(`${d}T00:00:00+03:00`).getTime() < w.end.getTime();
 
-export interface SarTotal { sar: number; rows: number; unconvertedRows: number; estimateRows: number }
-const emptyTotal = (): SarTotal => ({ sar: 0, rows: 0, unconvertedRows: 0, estimateRows: 0 });
+export interface SarTotal { sar: number; rows: number; unconvertedRows: number; estimateRows: number; /** paid rows with no usable date — in F04 only, never in a dated window */ undatedRows: number }
+const emptyTotal = (): SarTotal => ({ sar: 0, rows: 0, unconvertedRows: 0, estimateRows: 0, undatedRows: 0 });
+const undated = (e: ExpenseRow) => e.date_precision === 'needs_review' || !e.service_period_start || !e.service_period_end;
 const addTo = (t: SarTotal, e: ExpenseRow, sar: number | null, factor = 1) => {
   t.rows += 1;
   if (e.evidence_state === 'estimate') t.estimateRows += 1;
@@ -103,7 +105,11 @@ const addTo = (t: SarTotal, e: ExpenseRow, sar: number | null, factor = 1) => {
 /** F01 — cash paid inside the window (paid_at). */
 export function cashSpent(rows: ExpenseRow[], w: MetricWindow): SarTotal {
   const t = emptyTotal();
-  for (const e of rows) if (e.payment_status === 'paid' && dateInWindow(e.paid_at, w)) addTo(t, e, expenseSar(e));
+  for (const e of rows) {
+    if (e.payment_status !== 'paid') continue;
+    if (!e.paid_at) { t.undatedRows += 1; continue; }
+    if (dateInWindow(e.paid_at, w)) addTo(t, e, expenseSar(e));
+  }
   t.sar = round2(t.sar);
   return t;
 }
@@ -112,6 +118,7 @@ export function cashSpent(rows: ExpenseRow[], w: MetricWindow): SarTotal {
 export function periodCost(rows: ExpenseRow[], w: MetricWindow): SarTotal {
   const t = emptyTotal();
   for (const e of rows) {
+    if (undated(e)) { t.undatedRows += 1; continue; }
     const ps = new Date(`${e.service_period_start}T00:00:00+03:00`);
     const pe = new Date(new Date(`${e.service_period_end}T00:00:00+03:00`).getTime() + 86_400_000); // inclusive end date
     const overlapStart = Math.max(ps.getTime(), w.start.getTime());
@@ -136,7 +143,7 @@ export function dueUnpaid(rows: ExpenseRow[], asOf: Date): SarTotal {
 /** F04 — everything ever paid. */
 export function totalSinceStart(rows: ExpenseRow[]): SarTotal {
   const t = emptyTotal();
-  for (const e of rows) if (e.payment_status === 'paid') addTo(t, e, expenseSar(e));
+  for (const e of rows) if (e.payment_status === 'paid') { addTo(t, e, expenseSar(e)); if (undated(e)) t.undatedRows += 1; }
   t.sar = round2(t.sar);
   return t;
 }
@@ -148,6 +155,7 @@ export function breakdownBy(rows: ExpenseRow[], w: MetricWindow, key: 'category'
   for (const e of rows) {
     let factor = 0;
     if (mode === 'cash') factor = e.payment_status === 'paid' && dateInWindow(e.paid_at, w) ? 1 : 0;
+    else if (undated(e)) factor = 0;
     else {
       const ps = new Date(`${e.service_period_start}T00:00:00+03:00`).getTime();
       const pe = new Date(`${e.service_period_end}T00:00:00+03:00`).getTime() + 86_400_000;
@@ -171,7 +179,7 @@ export function upcomingCommitments(rows: ExpenseRow[], now = new Date(), horizo
   const today = riyadhDateString(now);
   const horizon = riyadhDateString(new Date(now.getTime() + horizonDays * 86_400_000));
   return rows
-    .filter((e) => e.recurrence !== 'one_time' && e.renewal_at && e.renewal_at >= today && e.renewal_at <= horizon)
+    .filter((e) => e.recurrence !== 'one_time' && !!e.renewal_at && e.renewal_at >= today && e.renewal_at <= horizon)
     .map((e) => ({ id: e.id, vendor: e.vendor, renewalAt: e.renewal_at as string, sar: expenseSar(e), recurrence: e.recurrence }))
     .sort((a, b) => a.renewalAt.localeCompare(b.renewalAt));
 }
