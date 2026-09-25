@@ -286,6 +286,12 @@ export class ProductService {
         pendingValue: existing.price_pending_value,
       });
 
+      // Same `updated_at` write-path fix as updateProductPrice() (see its own comment) —
+      // only a CREDIBLE confirmation counts, never a rejected/quarantined observation.
+      if (transition.credible) {
+        updateData.updated_at = new Date().toISOString();
+      }
+
       if (!transition.credible) {
         console.error(`[price-quarantine] ${JSON.stringify({
           product_store_id: existing.id, product_id: productId, store_id: storeId,
@@ -415,6 +421,22 @@ export class ProductService {
       current_price: price,
       availability: availability as ProductStoreRow['availability'],
       last_checked_at: new Date().toISOString(),
+      // 2026-09-25 (amazon comparison-visibility investigation; ADR-334 already found this
+      // exact gap on 2026-09-10 but never patched this call site): `product_stores` carries
+      // no `updated_at` trigger (confirmed live: zero triggers on the table) and this branch
+      // never set the column itself, so `updated_at` only ever reflected row-INSERT time —
+      // frozen at whatever it was on discovery, drifting further behind with every
+      // successful price re-check that never touched it (measured for amazon: median 476h/
+      // p90 1434h on `updated_at` vs 199h/290h on `last_checked_at` for the SAME rows).
+      // `src/lib/catalog/select-best-price-offer.ts` (the storefront /products/[slug]
+      // comparison page) filters "best price" eligibility by `isFreshObservation(updated_at)`
+      // on the explicit assumption that this column already means "last successfully
+      // confirmed price" — true for every OTHER store's freshness expectations too, not an
+      // amazon-specific change. Setting it here, only on a CREDIBLE, non-quarantined price
+      // confirmation (never on the quarantine-hold branch above, which rejected the
+      // observation), restores that assumed invariant instead of picking a different,
+      // already-known-contaminated column to read from.
+      updated_at: new Date().toISOString(),
     };
 
     if (newProductUrl) {
