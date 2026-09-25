@@ -80,6 +80,22 @@ describe('getCrossCanonicalOffers', () => {
     expect(offers[0].affiliate_url).toBeNull();
   });
 
+  it('collapses a sibling product\'s known duplicate (product_id, store_id) rows to ONE offer per store (live bug found 2026-09-25: 7 amazon cards for one product)', async () => {
+    currentMock = makeMockClient({
+      ownLink: { canonical_product_id: 'canon-1' },
+      siblingLinks: [{ product_id: 'product-amazon' }],
+      productStoresRows: [
+        { id: 'ps-amazon-old', product_id: 'product-amazon', current_price: 469, original_price: null, currency: 'SAR', availability: 'in_stock', stock_quantity: null, product_url: 'https://amazon.sa/old', delivery_time_days: null, delivery_cost: null, is_free_delivery: null, is_deal: false, deal_expires_at: null, coupon_code: null, updated_at: '2026-08-03T00:00:00Z', last_seen_at: '2026-08-03T00:00:00Z', store_id: 2, stores: AMAZON_STORE },
+        { id: 'ps-amazon-newest', product_id: 'product-amazon', current_price: 449, original_price: null, currency: 'SAR', availability: 'limited_stock', stock_quantity: null, product_url: 'https://amazon.sa/newest', delivery_time_days: null, delivery_cost: null, is_free_delivery: null, is_deal: false, deal_expires_at: null, coupon_code: null, updated_at: '2026-09-21T00:00:00Z', last_seen_at: '2026-09-21T00:00:00Z', store_id: 2, stores: AMAZON_STORE },
+        { id: 'ps-amazon-mid', product_id: 'product-amazon', current_price: 455, original_price: null, currency: 'SAR', availability: 'in_stock', stock_quantity: null, product_url: 'https://amazon.sa/mid', delivery_time_days: null, delivery_cost: null, is_free_delivery: null, is_deal: false, deal_expires_at: null, coupon_code: null, updated_at: '2026-08-03T12:00:00Z', last_seen_at: '2026-08-03T12:00:00Z', store_id: 2, stores: AMAZON_STORE },
+      ],
+    });
+    const offers = await getCrossCanonicalOffers('product-extra', new Set());
+    expect(offers).toHaveLength(1);
+    expect(offers[0].id).toBe('ps-amazon-newest');
+    expect(offers[0].current_price).toBe(449);
+  });
+
   it('excludes a store already present on the current product (no duplicate card)', async () => {
     currentMock = makeMockClient({
       ownLink: { canonical_product_id: 'canon-1' },

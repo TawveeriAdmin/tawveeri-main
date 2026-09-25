@@ -109,7 +109,7 @@ export async function getCrossCanonicalOffers(
     .select(
       `id, current_price, original_price, currency, availability, stock_quantity, product_url,
        delivery_time_days, delivery_cost, is_free_delivery, is_deal, deal_expires_at, coupon_code,
-       updated_at, store_id, stores(id, slug, name_ar, name_en, logo_url, average_rating, total_reviews)`
+       updated_at, last_seen_at, store_id, stores(id, slug, name_ar, name_en, logo_url, average_rating, total_reviews)`
     )
     .in('product_id', siblingIds);
 
@@ -118,11 +118,29 @@ export async function getCrossCanonicalOffers(
     availability: string | null; stock_quantity: number | null; product_url: string | null;
     delivery_time_days: number | null; delivery_cost: number | null; is_free_delivery: boolean | null;
     is_deal: boolean | null; deal_expires_at: string | null; coupon_code: string | null;
-    updated_at: string | null; store_id: number; stores: StoreSummary | StoreSummary[] | null;
+    updated_at: string | null; last_seen_at: string | null; store_id: number; stores: StoreSummary | StoreSummary[] | null;
   };
 
-  return ((rows ?? []) as Row[])
-    .filter((r) => r.stores && isApprovedStoreId(r.store_id) && !excludeStoreIds.has(r.store_id))
+  // A sibling product can itself carry the same known amazon-style duplicate
+  // (product_id, store_id) rows (ADR-377) — without this, one store could appear
+  // several times on the SAME page with different prices. Keep only the most
+  // recently seen row per store_id, same tie-break convention as
+  // product-service.ts's updateProductPrice()/linkProductToStore() (last_seen_at
+  // desc, then updated_at desc) — one authoritative offer per store, never more.
+  const byStore = new Map<number, Row>();
+  for (const r of (rows ?? []) as Row[]) {
+    if (!r.stores) continue;
+    const existing = byStore.get(r.store_id);
+    if (!existing) { byStore.set(r.store_id, r); continue; }
+    const rSeen = r.last_seen_at ?? '';
+    const eSeen = existing.last_seen_at ?? '';
+    if (rSeen !== eSeen ? rSeen > eSeen : (r.updated_at ?? '') > (existing.updated_at ?? '')) {
+      byStore.set(r.store_id, r);
+    }
+  }
+
+  return [...byStore.values()]
+    .filter((r) => isApprovedStoreId(r.store_id) && !excludeStoreIds.has(r.store_id))
     .map((r) => ({
       id: r.id,
       current_price: r.current_price,
