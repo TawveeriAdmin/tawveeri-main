@@ -1,0 +1,40 @@
+{
+  "base": "https://tawveeri.com",
+  "startedAt": "2026-09-25T08:36:28.951Z",
+  "pages": [
+    {
+      "route": "founder?w=month",
+      "status": 200,
+      "ms": 26355,
+      "mobileOverflow": false,
+      "showsUnknownNotZero": true,
+      "statementTimeout": false,
+      "pageErrors": [],
+      "textChars": 3969
+    },
+    {
+      "route": "founder/demand?w=30d",
+      "status": 200,
+      "ms": 18007,
+      "mobileOverflow": false,
+      "showsUnknownNotZero": true,
+      "statementTimeout": false,
+      "pageErrors": [],
+      "textChars": 16781
+    },
+    {
+      "route": "founder/summary?w=7d",
+      "status": 200,
+      "ms": 15813,
+      "mobileOverflow": false,
+      "showsUnknownNotZero": true,
+      "statementTimeout": false,
+      "pageErrors": [],
+      "textChars": 4134
+    }
+  ],
+  "api": [],
+  "journey": {},
+  "cron": null,
+  "cleanup": []
+}
