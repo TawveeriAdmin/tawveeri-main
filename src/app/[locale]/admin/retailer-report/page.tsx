@@ -43,6 +43,10 @@ export default async function RetailerReportPage({
 
   const qs = (extra: Record<string, string>) => {
     const p = new URLSearchParams({ storeId: String(storeId ?? ''), period });
+    if ((extra.period ?? period) === 'custom') {
+      if (sp.start) p.set('start', sp.start);
+      if (sp.end) p.set('end', sp.end);
+    }
     if (includeHistorical) p.set('historical', '1');
     Object.entries(extra).forEach(([k, v]) => p.set(k, v));
     return `?${p.toString()}`;
@@ -90,6 +94,7 @@ export default async function RetailerReportPage({
             ))}
           </div>
           <input type="hidden" name="period" value="custom" />
+          {includeHistorical && <input type="hidden" name="historical" value="1" />}
           <input type="date" name="start" defaultValue={sp.start} className="rounded-lg border border-[#d7ece5] bg-transparent px-2 py-1 text-sm dark:border-[#263b33]" />
           <input type="date" name="end" defaultValue={sp.end} className="rounded-lg border border-[#d7ece5] bg-transparent px-2 py-1 text-sm dark:border-[#263b33]" />
           <button type="submit" className="rounded-lg bg-[#1f6f59] px-3 py-1.5 text-sm font-black text-white">{isRTL ? 'تطبيق' : 'Apply'}</button>

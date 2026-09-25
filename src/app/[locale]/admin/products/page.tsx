@@ -111,7 +111,7 @@ function StatsCard({
     <button
       onClick={onClick}
       className={cn(
-        'group flex min-h-[104px] items-center gap-3 rounded-2xl border p-4 text-start transition-all duration-200 active:scale-[0.99]',
+        'group flex min-h-[104px] flex-col items-start gap-3 rounded-2xl border p-4 text-start transition-all duration-200 active:scale-[0.99] sm:flex-row sm:items-center',
         active
           ? 'border-[#55b295] bg-[#eaf7f2] ring-1 ring-[#55b295]/25 dark:border-[#55b295] dark:bg-[#17382e] dark:ring-[#55b295]/20'
           : 'border-[#d7ece5] bg-white hover:border-[#9fd9c9] dark:border-[#263b33] dark:bg-[#141c18] dark:hover:border-[#3f6657]'
@@ -128,10 +128,10 @@ function StatsCard({
         {icon}
       </div>
       <div className="min-w-0">
-        <p className="font-mono text-2xl font-black tabular-nums text-on-surface dark:text-white">
+        <p className="whitespace-nowrap text-xl font-black tabular-nums text-on-surface dark:text-white sm:text-2xl">
           {value}
         </p>
-        <p className="truncate text-xs font-bold text-on-surface-variant dark:text-white/55">{title}</p>
+        <p className="text-xs font-bold leading-5 text-on-surface-variant dark:text-white/55">{title}</p>
       </div>
     </button>
   );
