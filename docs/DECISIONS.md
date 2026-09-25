@@ -4,6 +4,34 @@
 
 Status legend: **Accepted** · **Superseded** · **Proposed**.
 
+### ADR-383 — Founder Operating & Decision Center: one register, one SQL computation authority, founder ledgers (expenses / commissions / funding / budgets / goals), validated daily summaries, exportable reports, and explicit search-journey linking · Accepted (2026-09-25)
+
+**Context.** Founder mandate 2026-09-25 ("TAWVEERI — FOUNDER OPERATING & DECISION CENTER"): turn the two review-only studies of the same morning — the command-center audit (`docs/report/FOUNDER-COMMAND-AUDIT-2026-09-25.md`, fixes eb070c0c/969c5e12) and the decisions proposal + preview (`docs/report/FOUNDER-DECISIONS-PROPOSAL-2026-09-25.md`, `docs/evidence/founder-decisions-2026-09-25/`) — into a working management system that answers, in Arabic and without technical translation: how much qualified audience, what it wants, whether we served it, which store it exited to, what the partner proved, what we spent/earned/collected, whether we are on the month's goal, and the next decision. The third input the mandate named, a ChatGPT study `Tawveeri-Founder-Decision-System-2026-09-25.md`, does not exist in the repo or anywhere under the founder's Downloads/Desktop/Documents/OneDrive (searched) — recorded as MISSING; nothing here depends on it. ADRs checked before starting: 245 (founder dashboard truth), 278/285 (PostgREST cap), 286 (decision-grade interactions), 328 (qualified outbound), 375 (isolated worker), 378 (closeout audit).
+
+**Decision 1 — one register, one computation authority.** `src/lib/founder/registry.ts` defines every metric (id, unit, definition, *proves / does not prove*, semantic confidence, source) under `DEFINITION_VERSION = 2026-09-25.1`. The journey/audience metrics (S01–S06, Q01.., D01) are computed by SQL functions in migration `58-founder-operating-center.sql` (`founder_window_metrics`, `founder_query_demand`, `founder_product_demand`, `founder_store_funnel`, `founder_store_go_clicks`, `founder_daily_series`) — service-role only (`revoke ... from anon, authenticated`). **Verified before applying** (dry-run inside a rolled-back transaction) that they reproduce the frozen study window *exactly*: 637 browsers / 91 searched / 80 positive results / 4 product-after-search / 204 linked interactions / 116 linked browsers / 12 search→linked exit / 3 browsers & 9 compare-click events / 16,071 raw `/go` rows of which 15,630 without session / 228 explicit interactions; the 7-day window 53 / 45 / 5 / 118 / 66; the per-day rows for 22–24 September (55/27/3356, 35/14/3835, 14/2/1586); the query ranking (مكيف 15/31, تلفزيون 13/18 …) and the store ranking (extra 90, amazon 38, alnakheelk 17, najm 16, noon 14, almanea 11 linked). Every number the UI shows, snapshots, summarises or exports comes from these functions plus pure TypeScript finance/goal arithmetic — no second computation path, no LLM anywhere in a number.
+
+**Decision 2 — founder ledgers, additive and audited.** New service-role-only tables (RLS enabled, explicit statements so `tests/database/rls-coverage.test.ts` can verify): `founder_expenses` (vendor, category enum, service period, due/paid dates, original amount+fees+tax, currency, `amount_sar` only with a documented `fx_rate`+`fx_source`, campaign/project/channel, recurrence/renewal, evidence ref + private-bucket attachment path, documented|estimate, direct|shared, import id + row hash, revision, soft delete), `founder_expense_imports` (file checksum unique), `founder_revenue_entries` (partner source, account/report refs, partner txn id unique per source, period/occurred/approved/paid dates, order|item|aggregate unit, commission, currency, state declared→matched→pending→confirmed→paid|cancelled, matched report/conversion ids, evidence), `founder_funding` (founder money ≠ revenue), `founder_budgets` (seeded: tools 1,300 SAR/month labelled *adjustable target, not a fact*), `founder_goals` + append-only `founder_goal_revisions` (a goal edit without a reason is rejected), `founder_settings` (summary hour, scenario inputs), `founder_metric_snapshots`, `founder_summaries`, `founder_ledger_audit` (before/after on every write, plus `admin_logs` via `createAuditLog`). Finance policy, stated on the page: cash by paid date (F01), period cost pro-rated over the service period (F02 — an annual payment is 1/12 per month), due-unpaid (F03), all-time spend (F04), founder funding (F05), operating result S08−F02 (F06), net cash S08P−F01 (F07), receivable (F08); foreign-currency rows without a documented rate are COUNTED and shown, never guessed. A management ledger, not statutory books (labelled as such).
+
+**Decision 3 — partner coverage gates every money claim.** `revenueSummary()` computes C01 = partner sources (amazon, noon) with an imported `affiliate_reports` row or a non-declared manual entry overlapping the window. `coverage_missing` renders S07/S08 as «غير معلوم» and makes F06/F07 «غير قابل للحكم»; imported `affiliate_conversions` rows are mapped to the same state vocabulary (PAID→paid, COMMISSION_CONFIRMED→confirmed, ORDERED/SHIPPED/COMMISSION_PENDING→pending, CANCELLED/RETURNED→cancelled) and never double-counted against a manual entry that references them. The existing `/admin/affiliate` upload path is reused unchanged; the founder's own report of Amazon earnings is captured as a `declared` entry until matched.
+
+**Decision 4 — goals judged honestly, scenarios that refuse to guess.** `evaluateGoal()` returns achieved / on_track (≥90% of the elapsed-fraction pace) / behind / not_judgeable (value unavailable, coverage missing, or definition version changed since the goal was set). `buildScenarios()` (conservative 0% / base 10% / optimistic 25% monthly growth of linked exits — declared assumptions, editable) computes months to operating breakeven and to payback of founder net cash **only** when commission-per-linked-exit is provided; otherwise it lists the exact inputs the founder must supply. No CAC/ROAS/LTV is computed anywhere.
+
+**Decision 5 — summaries: deterministic first, AI validated or rejected.** `buildDeterministicSummary()` renders what happened / what changed vs the equal previous window (absolute first, % only when previous > 0, ratios shown with numerator and denominator) / top needs / serving well / blockers / money / unknowns / decisions, every line bound to a metric id and window. `explainWithAi()` (Anthropic, same containment as `founder-intelligence.ts`, gated by `ENABLE_FOUNDER_AI_BRIEF=1`) may add hypotheses, unknowns and ONE proposed experiment (3–10 participants, typed `proposed_target`); `validateAiExplanation()` rejects the whole response if any number in it (Arabic digits normalised) is not in the fact pack, if a cited metric id does not exist, on partial JSON, or on a non-`end_turn` stop — the deterministic summary always stands with its cutoff time. Persisted in `founder_summaries`; nothing is sent externally.
+
+**Decision 6 — automation on the isolated worker, computation in the web codebase.** New job `founder_daily` in `scripts/worker/index.ts` (hourly, 5-min ceiling) runs `scripts/worker/jobs/founder-daily.ts`, which only POSTs `/api/cron/founder-daily` with `CRON_SECRET`. The route self-gates: before `summary_hour_riyadh` (default 08:00) it returns `skipped`; once the day's summary exists it returns `exists`; otherwise it snapshots 7d/30d/month-to-date + the last 7 completed Riyadh days (late events) and writes the daily summary, plus the previous month's report on a month's first day. The worker service had no `CRON_SECRET`; copied from `tawveeri-main` (no value printed, `--skip-deploys`). This is the one deployment-config change.
+
+**Decision 7 — explicit journey linking (the study's opportunity 3), additive.** `track()` mints `meta.query_id` on `search`/`advisor_query` (kept per tab in `sessionStorage`), auto-attaches it to `results` (plus `meta.result_set_id`), `no_answer`, `error`, `product_view`, `comparison_view`, `alternative_view`, `evidence_view`, `go_click`, `category_go_click`…; `recordFirstPartyInteraction()` sends it and `/api/interactions` stores it in the new nullable `first_party_interactions.query_id` (format-validated like `interaction_id`). History is never backfilled; S02/S04/S06 keep the 30-minute association until a `query_id`-based definition has an overlap baseline. Verified end-to-end in test mode: one `query_id` on search → results (with `result_set_id`) → return_to_decision.
+
+**Surfaces.** `/admin/founder` (+ `/audience`, `/demand`, `/referrals`, `/expenses`, `/revenue`, `/goals`, `/summary`, `/reports`) — Arabic, RTL, mobile-first, each card carrying definition/proves/not-proves/source/version/window/last-event under a disclosure; visual grammar موثق (green) / نافذة جزئية (amber) / غير معلوم / غير متاح (grey, never a zero); windows أمس / 7 أيام / 30 يومًا / هذا الشهر / custom with start and end printed; buttons إضافة مصروف / إضافة عمولة / رفع تقرير شريك / تحديد هدف / تقرير اليوم. Reports (founder / store / investor) render printable HTML and export JSON/CSV with period, extraction time, sources, definition version and limitations; the store report reuses `getRetailerReport()` and exposes only that store's share; exports are audit-logged. Sidebar entry «مركز قرارات المؤسس» first.
+
+**Migration 59 (found live, fixed same session).** `/admin/founder/demand` on a 30-day window hit `canceling statement due to statement timeout` (service_role 20s) — `founder_query_demand`'s correlated `EXISTS` subqueries nested-loop-scanned `usage_events`, which had NO `session_id` index. Rewritten as hash-joinable LEFT JOIN + `bool_or` aggregation and added `usage_events_session_created_idx`; proven identical on all 193 baseline queries (4.5s → 1.0s; 30-day window 0.48s). Both migrations are additive/idempotent with rollback blocks, applied to production `vyceqrzttspyycdpojtn`.
+
+**Verification.** `tests/founder/*` (3 suites, 39 tests: FX/cash/accrual/budget arithmetic, coverage semantics, validation contracts, goal status, scenarios, AI-number gate, pack mapping, Riyadh windows, CSV import) + full suite 271/271 green after the RLS-scan fix. `scripts/tps-analysis/founder-center-verify.cjs` (isolated magic-link admin session, `tw_test` on every request): 11 pages 200 on desktop and 390px with zero horizontal overflow and zero page errors; 26 API calls with the expected statuses (validation → 400 with field errors, duplicate CSV re-upload → `alreadyImported`, goal edit without reason → 400, unauthenticated → 403, cron without bearer → 401, forced cron → snapshots + daily summary); E2E ledger rows (prefixed `E2E-VERIFY`) soft-deleted at the end and the one on-demand summary that embedded them deleted; screenshots and page text in `docs/evidence/founder-center-2026-09-25/`. Live production verification recorded in the closing report after deploy.
+
+**Alternatives rejected.** Computing metrics in TypeScript over paginated rows (the command-center pattern) — would have made the auditor's SQL and the product's numbers two implementations; kept SQL as the single authority and TS for ledger arithmetic only. A separate `is_test` flag on ledgers for tester rows — soft-delete + audit already isolates them and adds no schema. Loosening the AI gate to allow rounded numbers — rejected; a number the pack does not contain is exactly the fabrication class the contract forbids. Building expense/goal data as JSON blobs in `founder_settings` — rejected in favour of typed, indexed, auditable tables.
+
+**Founder still to provide.** Amazon Associates and Noon exports covering the period (with state/date/currency columns); historical expenses (CSV or manual); founder funding amounts; commission-per-linked-exit once partner data exists; the Anthropic explanation layer is already enabled in production (`ENABLE_FOUNDER_AI_BRIEF=1`). Merchant-side arrival confirmation is not obtainable from `/go` and is shown as «غير متاح».
+
 ### ADR-382 — Search-results cross-store visibility fix, and a tie-break correction to ADR-381: pick the confirmed VALID price, never merely the most recently observed · Accepted (2026-09-25)
 
 **Context.** Direct founder follow-up to ADR-381: the product-detail-page fix was accepted as real progress, but the closure bar explicitly extends to `/search` — real examples where extra/almanea appear and amazon (same product, available, valid price) does not, root-caused, fixed, verified live with real before/after search results AND the product page, on a diverse sample, still accepting only confirmed identity matches (never a blanket merge of the 959 split groups), and with duplicate-handling that must pick the latest CONFIRMED VALID price, not merely the latest observation.
@@ -1064,7 +1092,7 @@ NOON:   The equivalent order/earnings export from Noon's affiliate/partner dashb
 
 ---
 
-### ADR-336 — Noon 7-day operating proof: checkpoint opened, honest day-0 baseline, metric definitions fixed · Proposed (2026-09-10)
+### ADR-336 — Noon 7-day operating proof: checkpoint opened, honest day-0 baseline, metric definitions fixed · Accepted (2026-09-10), 7-day review completed (2026-09-17)
 
 **Context.** ADR-335 shipped Apify (saswave) production retrieval, bounded to the FREE Apify plan's $5/month credit at ~15 Noon products/6h (~60/day). Founder mandate: run this cadence for 7 real days, measure actual behavior (not fabricated), and only THEN decide the long-term operating model (stay FREE, upgrade to STARTER, or roll back). This ADR is the OPENING checkpoint — the honest day-0 baseline and the exact review to run at day 7 — not the final scale decision, which requires real elapsed time that has not yet passed.
 
@@ -1129,6 +1157,163 @@ HOW TO TRIGGER  = ask a future Claude session to "run the Noon 7-day operating p
 ```
 
 **Consequences.** No code changed in this ADR — this is a measurement/documentation checkpoint only, exactly as scoped. The actual scale decision (KEEP_FREE_AND_OPTIMIZE_QUEUE / UPGRADE_TO_STARTER_AND_* / REMAIN_IN_PROOF_MODE / ROLL_BACK_APIFY) is deferred to the 2026-09-17 review and must be evidence-based, not decided today.
+
+**Products 2 status.** Not touched.
+
+---
+
+**UPDATE (2026-09-17) — 7-day review completed, READ-ONLY. No plan change made — recommendation only, pending founder approval.**
+
+**Method.** Direct read-only Postgres queries against production (`vyceqrzttspyycdpojtn`, via the pooler) against `stores`, `product_stores`, `raw_observations`, `price_history`, `scraping_runs`, `tps_current_offers`, `outbound_clicks` — the same tables ADR-334/335/336 already used. Apify's own account API (`GET /v2/users/me`, `/v2/users/me/usage/monthly`, `/v2/acts/saswave~noon-product-scraper/runs`) queried for ground-truth cost — `APIFY_API_TOKEN` was read from Railway production and injected into a local subprocess (`railway run`) without ever being written to a file, printed, or otherwise materialized. One additional bounded, non-destructive validation call was made directly to the pinned actor (build `0.0.3`) with 25 already-known Noon product URLs to get an INDEPENDENT price/availability check (§4's own requirement) — cost ≈ $0.05, nothing written back to `product_stores` or `tps_current_offers`. Full raw output: `docs/evidence/noon-apify-7day-review-2026-09-17.json`. Zero production writes were made anywhere in this review.
+
+**Schema note surfaced during this review.** `stores.id` / `product_stores.store_id` / `raw_observations.store_id` / `scraping_runs.store_id` / `price_history.store_id` / `tps_current_offers.store_id` are ALL plain `integer` in production today (Noon = `3` everywhere) — the original `01-schema.sql`'s `UUID` store-id design was superseded at some point and the file was never updated; `price_history.product_store_id` is stored as `text`, not the `uuid` its sibling `product_stores.id` actually is (works today only because nothing currently relies on a typed join between them — `price_history` carries its own `store_id`/`price`/`observed_at` directly, which is what this review used). Informational only; not fixed here, out of scope.
+
+**Apify-deployment boundary found and excluded.** ADR-334/335 shipped LATER on 2026-09-10, not at 00:00 UTC. Two `price_update` runs that calendar day (`scraping_runs` 6519 at 01:18 UTC, 6597 at 12:22 UTC) show `products_updated=1-2, errors_count=298-299` out of an attempted batch of 300 — the OLD, Akamai-blocked, uncapped HTML-scraper shape, not Apify. The first genuinely Apify-shaped run (bounded to ≤15 per the `NOON_PRICE_MAX_PRODUCTS` cap) is run 6604 at **2026-09-10T14:58:21Z**. All "Apify-era" figures below use 6604 onward (≈6.44 days), with the two pre-deploy runs reported separately, not blended in — folding them in would have wrongly attributed the old scraper's near-total failure to Apify.
+
+```
+1. FRESHNESS COVERAGE
+   Storefront (product_stores.last_checked_at ≤168h)   = 670 / 4,434  = 15.11%
+     vs day-0 baseline (ADR-336 opening, different def.) = 16 / 4,434  ≈ 0.36%  → ~42x directional gain
+   TPS knowledge layer (tps_current_offers, status='valid', observed_at ≤168h) = 90 / 1,076 valid = 8.36%
+     (all Noon rows incl. low_confidence_candidate: 112 / 1,335 = 8.39%)
+   NOTE: storefront-fresh (670) is 6x TPS-layer-fresh (112) — a real, unexplained lag between
+   the two layers' freshness clocks, not fabricated away here; flagged as an open item (§ below).
+   Source: product_stores, tps_current_offers (production, this session).
+
+2. PRICE CHANGE YIELD
+   Apify-era (25 runs, 2026-09-10T14:58Z–2026-09-17T01:30Z): price_changes/updated = 166/265 = 62.6%
+   Cross-check: price_history rows in trailing 168h for store_id=3 = 208 (166 distinct product_store_id) —
+   consistent with scraping_runs' own 166 count.
+   Pre-Apify clean baseline (last full week before cutover, 2026-09-03→09-10): updated=5, price_changes=4
+   (yield 80% on a near-zero base — the base itself is the real story, see §3).
+   Source: scraping_runs, price_history.
+
+3. ACTIVE OFFER RATE
+   Apify-era: attempted=370, price-write succeeded=265 → ACTIVE_OFFER_RATE = 71.6%
+   NO-PRICE-WRITE = 105/370 = 28.4% — this blends genuine NO_ACTIVE_OFFER/WRONG_MARKET/SKU_MISMATCH
+   (ADR-335's honest, non-failure outcomes) with true fetch failures; `scraping_runs.errors_count`
+   does not itself distinguish them, and per-run Railway console lines (`[apify-noon-provider]
+   NO_ACTIVE_OFFER/...`) are not retrievable for the full 7-day window from this session (Railway's
+   `logs` CLI only serves the CURRENT deployment's recent history, and multiple redeploys happened
+   during the week) — reported as a real measurement limit, not papered over.
+   Pre-Apify clean week (2026-09-03→09-10): 23 runs, 5,995 attempted-slots, 5 updated ≈ 0.08% —
+   this is the ~0.2%-order-of-magnitude failure rate ADR-333/334 already established, reconfirmed here
+   on fresh data as the honest "what Apify replaced."
+   Source: scraping_runs.
+
+4. NOON LOWEST-PRICE WINS
+   Among (category, identity_key) TPS keys where Noon holds a valid priced offer AND ≥1 other store
+   also holds a valid priced offer (current snapshot, tps_current_offers — this table is single-row-
+   per-key by design, not a 168h-windowed figure): comparable_keys = 304
+     Noon price ≤ cheapest other store (win-or-tie) = 194 / 304 = 63.8%
+     Noon strictly cheapest                          = 141 / 304 = 46.4%
+   Source: tps_current_offers.
+
+5. AFFILIATE OPPORTUNITY RECOVERY
+   NOON_AFFILIATE_CAPABLE_FRESH_PRODUCTS (valid + priced + observed ≤168h, TPS layer) = 90
+   NOON_QUALIFIED_OUTBOUND_CLICKS (168h, real only, has interaction_id per ADR-337's own definition)
+     = 8  (real_clicks=40 total this window, 2 test-flagged excluded, 8/40 = 20.0% qualified)
+   Framing: day-0 the genuinely-fresh, trustworthy Noon inventory was ≈0 by any definition; one week
+   in it is 90 products (2.0% of the 4,434-row catalog) that are simultaneously valid, priced, and
+   fresh enough to defensibly send a shopper to. Small in absolute terms, real in direction — the
+   ceiling is the deliberate 15-products/6h THROTTLE (a Tawveeri cost-safety choice, ADR-335), not an
+   Apify limit.
+   Source: tps_current_offers, outbound_clicks.
+
+6. PRICE ACCURACY — independent 25-product validation (this review, bounded, non-destructive)
+   SKU/identity match (Apify returned a matched record for every requested URL) = 25/25 = 100%
+   Of the 25: 17 (68%) currently show an active buyable offer at Noon right now; 8 (32%) show none
+     (see §7 — this is an availability finding, not a price one).
+   Of the 17 with a live price: EXACT match to Tawveeri's currently-stored price = 7/17 = 41.2%
+     (the other 10/17 differ from -4.8% to +277.6%; the two large outliers were BOTH rows whose
+     `last_checked_at` predates 2026-09-07 — i.e. never yet touched by the Apify cadence, and one had
+     no `?o=` offer-code at all so `selectBestOffer()` correctly fell back to "current cheapest",
+     which had genuinely moved since first discovery — not a selection-logic defect).
+   Against the full sample of 25: 7/25 = 28% show a currently-verified-exact price.
+   Read this as a FRESHNESS finding, not an Apify-accuracy finding — ADR-334 already proved the
+   actor itself is 100% fetch-accurate and ~93% price-sane; this sample mostly hit rows the 15/6h
+   queue has not reached yet.
+
+7. AVAILABILITY ACCURACY — same 25-product sample
+   Tawveeri's stored `availability` was `in_stock` for all 25 sampled rows (matches the storefront-
+   wide finding that Noon's `product_stores.availability` column has ZERO `out_of_stock` rows today —
+   4,265 in_stock / 169 limited_stock / 0 out_of_stock, whole store).
+   Agreement (stored `in_stock` vs. live confirmed-buyable) = 17/25 = 68%; all 8 disagreements are the
+   SAME direction — Tawveeri currently overstates availability, never understates it, in this sample.
+   ROOT CAUSE, confirmed by direct code read (`scraping-orchestrator.ts` `applyResult()`): when Apify
+   returns NO_ACTIVE_OFFER, `scrapedProduct` is `null` and the code path only increments `errors` and
+   calls `recordFailure`/`stampChecked(false)` — it NEVER writes `availability` at all. A confirmed-
+   delisted Noon product's storefront row keeps showing whatever it showed before, indefinitely. This
+   is the SAME defect ADR-330 described for the pre-Apify scraper ("never wrote out_of_stock in 25+
+   days") — proven here, on real post-Apify data, to still be open. Not fixed in this review (READ-
+   ONLY); flagged as a real, code-level follow-up independent of the plan decision below.
+
+8. ACTUAL APIFY USAGE AND COST (Apify's own account API — ground truth, not modeled)
+   Plan: FREE, isPaying=false, $5.00/month included credit, billing cycle 2026-08-22→2026-09-21.
+   Zero usage anywhere in this cycle before 2026-09-10 (confirmed — no earlier daily entries exist).
+   TOTAL actual spend, 2026-09-10→2026-09-17 (all of it Noon; nothing else uses this account) =
+     $0.7919 (before AND after volume discount — usage never reached a discount tier)
+   Daily: 09-10 $0.1344 (incl. ADR-334/335's own proof/scale-up testing) · 09-11 $0.1183 · 09-12 $0.0902
+     · 09-13 $0.1203 · 09-14 $0.0581 · 09-15 $0.1203 · 09-16 $0.1203 · 09-17 (partial) $0.0301
+   Real per-item rate reconfirmed: run 6604 (15 items) cost exactly $0.03005 → $0.002003/item, matching
+     ADR-335's measured $0.002/result exactly. Independent cross-check: Apify's own monthly
+     DATASET_READS=395 items ≈ DB-derived requested (370 cron-tracked + 23 from two untracked manual
+     ADR-334-era test calls = 393) — within 2 items, i.e. ~100% retrieval, matching ADR-334's finding.
+   Steady-state daily average (6 clean days, 09-11→09-16, excluding deploy-day noise and the partial
+     day) = $0.1046/day.
+   Source: Apify GET /v2/users/me, /v2/users/me/usage/monthly, /v2/acts/.../runs (this session).
+```
+
+**Calculations.**
+```
+AVERAGE DAILY APIFY COST (steady-state)         ≈ $0.10–0.11/day
+PROJECTED 30-DAY COST at observed usage         ≈ $3.1–3.3/month  (62–66% of the $5 FREE credit)
+PROJECTED 30-DAY COST at 2× Noon coverage       ≈ $6.3–6.5/month  (exceeds the FREE credit by ~$1.3–1.5)
+  — the FREE plan's $5 is `maxMonthlyUsageUsd` (a stated cap in Apify's own plan object), so exceeding
+  it is an OPERATIONAL-FAILURE risk (runs start refusing once the credit is exhausted) rather than a
+  silent-overspend risk, unless the founder explicitly authorizes a small pay-as-you-go overage —
+  ADR-335 already noted this exact possibility ("bounded overages are possible but not yet
+  authorized"). Either way, ~$6.3–6.5/month at 2× coverage is still under a THIRD of STARTER's fixed
+  $19/month.
+IS THE CURRENT FREE PLAN OPERATIONALLY SUFFICIENT?  YES for the cadence actually running today
+  (15 products/6h) — real spend is 62–66% of the credit with headroom to spare. It is NOT the limiting
+  factor on freshness coverage: raising NOON_PRICE_MAX_PRODUCTS from 15 even to 30 (2×) still fits
+  inside-or-barely-over the $5 credit; the 15/6h cap is a Tawveeri-chosen cost guard (ADR-335), not
+  something Apify's FREE tier itself forces this low.
+```
+
+**APIFY_PLAN_DECISION (RECOMMENDATION — NOT executed; returned to founder for approval, per instruction).**
+```
+APIFY_PLAN_DECISION = STAY_FREE
+```
+Reasoning: actual 7-day spend ($0.79) and steady-state projection (~$3.1–3.3/month) leave comfortable
+headroom under the $5/month FREE credit; even a full 2× coverage increase (~$6.3–6.5/month) would cost
+a fraction of STARTER's $19/month fixed price, and could be covered by a small, explicitly-authorized
+pay-as-you-go overage on FREE rather than a 4-6x more expensive plan upgrade. No measured business
+value yet justifies STARTER's fixed cost: real affiliate revenue for Noon remains $0 confirmed
+(ADR-337, LEVEL_0 only), and NOON_QUALIFIED_OUTBOUND_CLICKS is 8 for the whole week. STARTER becomes
+worth revisiting if the founder wants a step-change in cadence (e.g. 5-10× today's 15/6h, which WOULD
+need STARTER's larger credit) or once real Noon commission is proven and the ROI math changes — neither
+is true today.
+
+**Did Apify materially improve Noon enough to justify keeping this architecture? YES, with evidence:**
+successful price-refreshes went from 5/week (the last clean pre-Apify week) to 265/week at a real cost
+of $0.79/week; storefront freshness coverage moved from ≈0.36% to 15.1%; a real (if still small) base
+of 90 simultaneously-valid-priced-fresh products now exists where before there was essentially none.
+The only alternative is the direct HTML scraper, which ADR-333 already proved is Akamai-blocked with
+no safe evasion-free fix — there is no free, higher-fidelity option being forgone by staying on Apify.
+The architecture should be KEPT; the plan tier should STAY_FREE, pending founder approval.
+
+**Open items surfaced by this review, NOT decided or fixed here (READ-ONLY):**
+1. `applyResult()`'s NO_ACTIVE_OFFER branch never writes `availability` — a Noon product Apify has
+   positively confirmed as delisted keeps showing its old status (usually `in_stock`) to customers
+   indefinitely. Independent of the plan decision; a real code-level correctness gap (§7).
+2. The storefront-fresh (670) vs. TPS-layer-fresh (112) gap is unexplained by this review — worth its
+   own investigation, not guessed at here.
+3. At the current (recommended-unchanged) 15/6h cadence, a full-catalog rotation is still ≈74 days
+   (ADR-335's own estimate, reconfirmed by this week's data) — freshness coverage will keep climbing
+   slowly regardless of the plan decision; a demand-weighted (HOT/WARM/COLD) refresh order, deferred
+   since ADR-335, would raise the SAME $ into more customer-visible value without a plan change.
 
 **Products 2 status.** Not touched.
 

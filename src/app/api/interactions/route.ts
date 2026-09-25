@@ -64,6 +64,11 @@ export async function POST(req: NextRequest) {
     const rawCanonicalId = typeof body.canonical_id === "string" ? body.canonical_id : null;
     const canonicalId = rawCanonicalId && UUID_RE.test(rawCanonicalId) ? rawCanonicalId : null;
 
+    // ADR-383 journey linking — same client-minted id shape as interaction_id; unvalidated
+    // beyond format, joined at read time only. Nullable, additive (migration 58).
+    const rawQueryId = typeof body.query_id === "string" ? body.query_id : null;
+    const queryId = rawQueryId && ID_RE.test(rawQueryId) ? rawQueryId : null;
+
     // session_id is NEVER read from the request body — same cookie /go already reads
     // server-side (ADR-244's readAttribution pattern), never a client-declared value.
     const sessionId = req.cookies.get("tw_sid")?.value?.slice(0, 64) || null;
@@ -103,6 +108,7 @@ export async function POST(req: NextRequest) {
         canonical_product_id: canonicalId,
         session_id: sessionId,
         surface,
+        query_id: queryId,
         // Server-derived, never read from the request body — an arbitrary POST cannot
         // declare its own provenance. 'internal_test' is used whenever ANY of the is_test
         // signals fired from admin/staff identity specifically (cookie or session); a bot-UA

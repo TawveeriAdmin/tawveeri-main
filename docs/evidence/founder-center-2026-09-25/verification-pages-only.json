@@ -1,0 +1,20 @@
+{
+  "base": "http://localhost:3000",
+  "startedAt": "2026-09-25T08:26:59.584Z",
+  "pages": [
+    {
+      "route": "founder/referrals?w=30d",
+      "status": 200,
+      "ms": 15980,
+      "mobileOverflow": false,
+      "showsUnknownNotZero": true,
+      "statementTimeout": false,
+      "pageErrors": [],
+      "textChars": 3020
+    }
+  ],
+  "api": [],
+  "journey": {},
+  "cron": null,
+  "cleanup": []
+}

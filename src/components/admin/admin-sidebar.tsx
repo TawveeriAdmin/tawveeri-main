@@ -19,6 +19,7 @@ import {
   Activity,
   Gauge,
   Rocket,
+  Compass,
   FileBarChart,
   PanelLeftClose,
   PanelLeftOpen,
@@ -41,6 +42,7 @@ interface AdminSidebarProps {
 const STORAGE_KEY = 'tawveeri-admin-sidebar-collapsed';
 
 const navItems = [
+  { href: '/admin/founder', icon: Compass, key: 'founder' },
   { href: '/admin/command-center', icon: Gauge, key: 'commandCenter' },
   { href: '/admin/growth', icon: Rocket, key: 'growth' },
   { href: '/admin/retailer-report', icon: FileBarChart, key: 'retailerReport' },
@@ -60,8 +62,8 @@ const navItems = [
 ];
 
 const navGroups = [
-  { key: 'core', items: navItems.slice(0, 9) },
-  { key: 'operations', items: navItems.slice(9) },
+  { key: 'core', items: navItems.slice(0, 10) },
+  { key: 'operations', items: navItems.slice(10) },
 ];
 
 export function AdminSidebar({ locale }: AdminSidebarProps) {

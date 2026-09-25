@@ -1,0 +1,542 @@
+{
+  "base": "http://localhost:3000",
+  "startedAt": "2026-09-25T08:23:31.283Z",
+  "pages": [
+    {
+      "route": "founder?w=30d",
+      "status": 200,
+      "ms": 21665,
+      "mobileOverflow": false,
+      "showsUnknownNotZero": true,
+      "statementTimeout": false,
+      "pageErrors": [],
+      "textChars": 3956
+    },
+    {
+      "route": "founder/audience?w=30d",
+      "status": 200,
+      "ms": 9922,
+      "mobileOverflow": false,
+      "showsUnknownNotZero": true,
+      "statementTimeout": false,
+      "pageErrors": [],
+      "textChars": 4002
+    },
+    {
+      "route": "founder/demand?w=30d",
+      "status": 200,
+      "ms": 9030,
+      "mobileOverflow": false,
+      "showsUnknownNotZero": true,
+      "statementTimeout": false,
+      "pageErrors": [],
+      "textChars": 16781
+    },
+    {
+      "route": "founder/referrals?w=30d",
+      "status": 200,
+      "ms": 10908,
+      "mobileOverflow": false,
+      "showsUnknownNotZero": true,
+      "statementTimeout": false,
+      "pageErrors": [],
+      "textChars": 2916
+    },
+    {
+      "route": "founder/expenses?w=30d",
+      "status": 200,
+      "ms": 6091,
+      "mobileOverflow": false,
+      "showsUnknownNotZero": true,
+      "statementTimeout": false,
+      "pageErrors": [],
+      "textChars": 2573
+    },
+    {
+      "route": "founder/revenue?w=30d",
+      "status": 200,
+      "ms": 5381,
+      "mobileOverflow": false,
+      "showsUnknownNotZero": true,
+      "statementTimeout": false,
+      "pageErrors": [],
+      "textChars": 2432
+    },
+    {
+      "route": "founder/goals?w=30d",
+      "status": 200,
+      "ms": 11091,
+      "mobileOverflow": false,
+      "showsUnknownNotZero": true,
+      "statementTimeout": false,
+      "pageErrors": [],
+      "textChars": 2790
+    },
+    {
+      "route": "founder/summary?w=7d",
+      "status": 200,
+      "ms": 5130,
+      "mobileOverflow": false,
+      "showsUnknownNotZero": true,
+      "statementTimeout": false,
+      "pageErrors": [],
+      "textChars": 4092
+    },
+    {
+      "route": "founder/reports?kind=founder&w=30d",
+      "status": 200,
+      "ms": 17829,
+      "mobileOverflow": false,
+      "showsUnknownNotZero": true,
+      "statementTimeout": false,
+      "pageErrors": [],
+      "textChars": 5161
+    },
+    {
+      "route": "founder/reports?kind=store&store=extra&w=30d",
+      "status": 200,
+      "ms": 20924,
+      "mobileOverflow": false,
+      "showsUnknownNotZero": true,
+      "statementTimeout": false,
+      "pageErrors": [],
+      "textChars": 3848
+    },
+    {
+      "route": "founder/reports?kind=investor&w=30d",
+      "status": 200,
+      "ms": 19477,
+      "mobileOverflow": false,
+      "showsUnknownNotZero": true,
+      "statementTimeout": false,
+      "pageErrors": [],
+      "textChars": 3787
+    }
+  ],
+  "api": [
+    {
+      "method": "POST",
+      "path": "/api/admin/founder/expenses",
+      "status": 201,
+      "ok": true,
+      "sample": "{\"id\":\"d8b1b65b-f5a9-420d-a9b2-b88c4591d56e\"}"
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/founder/expenses",
+      "status": 400,
+      "ok": false,
+      "sample": "{\"error\":\"validation\",\"fieldErrors\":{\"vendor\":\"المورد مطلوب\",\"category\":\"الفئة غير معروفة\",\"service_period_start\":\"تاريخ بداية الخدمة مطلوب (YYYY-MM-DD)\",\"amount_original\":\"المبلغ مطلوب ولا يكون سالبًا\",\"paid_at\":\"تاريخ الدفع مطلوب للمصروف المدفوع\"}}"
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/founder/expenses",
+      "status": 201,
+      "ok": true,
+      "sample": "{\"id\":\"964851c8-bff8-444d-b3af-2d656d4f7889\"}"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/founder/expenses/d8b1b65b-f5a9-420d-a9b2-b88c4591d56e",
+      "status": 200,
+      "ok": true,
+      "sample": "{\"ok\":true}"
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/founder/expenses/import",
+      "status": 200,
+      "ok": true,
+      "sample": "{\"dryRun\":true,\"checksum\":\"7dc8922f92438305e8eab6e7447441df1eece202a6d32e43644405538a763fe4\",\"headers\":[\"المورد\",\"الوصف\",\"الفئة\",\"تاريخ الدفع\",\"المبلغ\",\"العملة\"],\"mapping\":{\"vendor\":\"المورد\",\"description\":\"الوصف\",\"category\":\"الفئة\",\"paid_at\":\"تاريخ الدفع\",\"amount_original\":\"المبلغ\",\"currency\":\"العملة\"},\"rowCount\":3,\"wouldImport\":1,\"skippedDuplicates\":1,\"rejectedRows\":1,\"rejectedSamples\":[{\"row\":4,"
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/founder/expenses/import",
+      "status": 200,
+      "ok": true,
+      "sample": "{\"alreadyImported\":true,\"import\":{\"id\":\"7d57bf98-6b9f-46df-834a-8f47ee775b4e\",\"created_at\":\"2026-09-25T08:09:18.787759+00:00\",\"imported_rows\":1,\"skipped_duplicates\":1,\"rejected_rows\":1}}"
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/founder/expenses/import",
+      "status": 200,
+      "ok": true,
+      "sample": "{\"alreadyImported\":true,\"import\":{\"id\":\"7d57bf98-6b9f-46df-834a-8f47ee775b4e\",\"created_at\":\"2026-09-25T08:09:18.787759+00:00\",\"imported_rows\":1,\"skipped_duplicates\":1,\"rejected_rows\":1}}"
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/founder/revenue",
+      "status": 201,
+      "ok": true,
+      "sample": "{\"id\":\"7b1890db-de85-49c4-9f6b-045be5b93961\",\"possibleDuplicates\":0}"
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/founder/revenue",
+      "status": 400,
+      "ok": false,
+      "sample": "{\"error\":\"validation\",\"fieldErrors\":{\"paid_at\":\"تاريخ القبض مطلوب للعمولة المقبوضة\",\"evidence_ref\":\"الحالة غير «مصرّح» تحتاج مرجع تقرير أو إثبات\"}}"
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/founder/funding",
+      "status": 201,
+      "ok": true,
+      "sample": "{\"id\":\"35334a5e-5276-4635-a051-6c57c2a14d86\"}"
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/founder/goals",
+      "status": 201,
+      "ok": true,
+      "sample": "{\"id\":\"3c05c361-9ed8-4911-b7a8-2dd75d9a8450\"}"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/founder/goals/3c05c361-9ed8-4911-b7a8-2dd75d9a8450",
+      "status": 200,
+      "ok": true,
+      "sample": "{\"ok\":true}"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/founder/goals/3c05c361-9ed8-4911-b7a8-2dd75d9a8450",
+      "status": 400,
+      "ok": false,
+      "sample": "{\"error\":\"validation\",\"fieldErrors\":{\"reason\":\"سبب التعديل مطلوب\"}}"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/founder/settings",
+      "status": 200,
+      "ok": true,
+      "sample": "{\"ok\":true}"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/founder/settings",
+      "status": 400,
+      "ok": false,
+      "sample": "{\"error\":\"validation\",\"fieldErrors\":{\"summary_hour_riyadh\":\"ساعة بين 0 و23\"}}"
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/founder/summary",
+      "status": 200,
+      "ok": true,
+      "sample": "{\"summary\":{\"kind\":\"on_demand\",\"periodStart\":\"2026-09-18T08:27:09.797Z\",\"periodEnd\":\"2026-09-25T08:27:09.797Z\",\"partial\":true,\"deterministic\":{\"titleAr\":\"ملخص عند الطلب — آخر 7 أيام (168 ساعة متحركة)\",\"windowLabelAr\":\"آخر 7 أيام (168 ساعة متحركة)\",\"partial\":true,\"cutoffAr\":\"25‏/09‏/2026، 11:27 السعودية (نافذة جزئية)\",\"whatHappenedAr\":[\"متصفحات أرسلت بحثًا: 52. يثبت إرسال بحث. ولا يثبت أشخاصًا سعود"
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/founder/export?kind=founder&w=7d&format=json",
+      "status": 200,
+      "ok": true,
+      "sample": "{\"kind\":\"founder\",\"titleAr\":\"تقرير المؤسس\",\"audienceAr\":\"المؤسس\",\"window\":{\"labelAr\":\"آخر 7 أيام (168 ساعة متحركة)\",\"start\":\"2026-09-18T08:27:29.908Z\",\"end\":\"2026-09-25T08:27:29.908Z\",\"partial\":true},\"extractedAt\":\"2026-09-25T08:27:43.902Z\",\"definitionVersion\":\"2026-09-25.1\",\"sources\":[\"usage_events\",\"first_party_interactions\",\"outbound_clicks\",\"founder_expenses\",\"founder_revenue_entries\",\"affilia"
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/founder/export?kind=investor&w=30d&format=csv",
+      "status": 200,
+      "ok": true,
+      "sample": "section,label,value,note\n\"meta\",\"title\",\"تقرير المستثمر\",\"\"\n\"meta\",\"window\",\"2026-08-26T08:27:45.109Z → 2026-09-25T08:27:45.109Z (partial)\",\"آخر 30 يومًا (متحركة)\"\n\"meta\",\"extracted_at\",\"2026-09-25T08"
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/founder/export?kind=store&store=extra&w=30d&format=json",
+      "status": 200,
+      "ok": true,
+      "sample": "{\"kind\":\"store\",\"titleAr\":\"تقرير متجر اكسترا\",\"audienceAr\":\"متجر اكسترا\",\"window\":{\"labelAr\":\"آخر 30 يومًا (متحركة)\",\"start\":\"2026-08-26T08:28:00.776Z\",\"end\":\"2026-09-25T08:28:00.776Z\",\"partial\":true},\"extractedAt\":\"2026-09-25T08:28:14.786Z\",\"definitionVersion\":\"2026-09-25.1\",\"sources\":[\"first_party_interactions ⋈ outbound_clicks\",\"usage_events\",\"affiliate_*\"],\"limitationsAr\":[\"معرّف المتصفح (tw_s"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/founder/expenses/d8b1b65b-f5a9-420d-a9b2-b88c4591d56e?note=e2e%20cleanup",
+      "status": 200,
+      "ok": true,
+      "sample": "{\"ok\":true}"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/founder/expenses/964851c8-bff8-444d-b3af-2d656d4f7889?note=e2e%20cleanup",
+      "status": 200,
+      "ok": true,
+      "sample": "{\"ok\":true}"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/founder/revenue/7b1890db-de85-49c4-9f6b-045be5b93961?note=e2e%20cleanup",
+      "status": 200,
+      "ok": true,
+      "sample": "{\"ok\":true}"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/founder/funding?id=35334a5e-5276-4635-a051-6c57c2a14d86",
+      "status": 200,
+      "ok": true,
+      "sample": "{\"ok\":true}"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/founder/goals/3c05c361-9ed8-4911-b7a8-2dd75d9a8450?reason=e2e%20cleanup",
+      "status": 200,
+      "ok": true,
+      "sample": "{\"ok\":true}"
+    }
+  ],
+  "journey": {
+    "search": {
+      "sessionMinted": true,
+      "queryIdMinted": true
+    },
+    "compare": {
+      "target": "http://localhost:3000/ar/compare/lg%7Csplit%7CFreshDV%7C18000%7CInverter%7Ccool_only",
+      "queryIdPersisted": true,
+      "exitClicked": "/go/f68e597a-4067-4202-997d-2a4cefcb97d8?gt=1790324785380.49251f67e1c04e1b8a547b5e75bbbbc144756f8decfdcd38bc72a1a1ef9b4fb2"
+    },
+    "linking": {
+      "events": [
+        {
+          "event_type": "search",
+          "is_test": true,
+          "qid": "0022a2ad-9cff-447c-9e2d-2c852064a3ad",
+          "rsid": null
+        },
+        {
+          "event_type": "results",
+          "is_test": true,
+          "qid": "0022a2ad-9cff-447c-9e2d-2c852064a3ad",
+          "rsid": "2374679d-759c-42bd-ba2f-191be0fc76d2"
+        },
+        {
+          "event_type": "return_to_decision",
+          "is_test": true,
+          "qid": "0022a2ad-9cff-447c-9e2d-2c852064a3ad",
+          "rsid": null
+        },
+        {
+          "event_type": "go_click",
+          "is_test": true,
+          "qid": "0022a2ad-9cff-447c-9e2d-2c852064a3ad",
+          "rsid": null
+        }
+      ],
+      "interactions": [
+        {
+          "interaction_id": "11fe4210-c2c4-4d1e-bb82-cb0a8806e538",
+          "query_id": "0022a2ad-9cff-447c-9e2d-2c852064a3ad",
+          "is_test": true
+        }
+      ],
+      "outbound": [
+        {
+          "interaction_id": null,
+          "is_test": true
+        }
+      ],
+      "allTest": true,
+      "sameQueryIdAcrossJourney": true,
+      "interactionCarriesQueryId": true,
+      "exitLinkedToInteraction": false
+    },
+    "validationRejected": true,
+    "import": {
+      "dry": {
+        "dryRun": true,
+        "checksum": "7dc8922f92438305e8eab6e7447441df1eece202a6d32e43644405538a763fe4",
+        "headers": [
+          "المورد",
+          "الوصف",
+          "الفئة",
+          "تاريخ الدفع",
+          "المبلغ",
+          "العملة"
+        ],
+        "mapping": {
+          "vendor": "المورد",
+          "description": "الوصف",
+          "category": "الفئة",
+          "paid_at": "تاريخ الدفع",
+          "amount_original": "المبلغ",
+          "currency": "العملة"
+        },
+        "rowCount": 3,
+        "wouldImport": 1,
+        "skippedDuplicates": 1,
+        "rejectedRows": 1,
+        "rejectedSamples": [
+          {
+            "row": 4,
+            "error": "فئة غير معروفة: غير معروف"
+          }
+        ],
+        "preview": [
+          {
+            "vendor": "E2E-VERIFY CSV Vendor",
+            "description": "سطر مستورد",
+            "category": "hosting",
+            "service_period_start": "2026-09-01",
+            "service_period_end": "2026-09-01",
+            "due_at": null,
+            "paid_at": "2026-09-01",
+            "payment_status": "paid",
+            "amount_original": 12.25,
+            "currency": "SAR",
+            "fees": 0,
+            "tax": 0,
+            "amount_sar": 12.25,
+            "fx_rate": null,
+            "fx_source": null,
+            "campaign": null,
+            "project": null,
+            "channel": null,
+            "recurrence": "one_time",
+            "renewal_at": null,
+            "evidence_ref": null,
+            "evidence_path": null,
+            "evidence_state": "documented",
+            "cost_kind": "direct",
+            "allocation_note": null,
+            "notes": null,
+            "import_id": "18c30e27-b243-41c1-8801-df067996d86f",
+            "row_hash": "ccec786bc50d1d97d65f24207e25715c7e009128e2f6ba2adb33b7ad1818f8ca"
+          }
+        ]
+      },
+      "real": {},
+      "again": true
+    },
+    "revenueValidationRejected": true,
+    "goalEditWithoutReasonRejected": true,
+    "settingsValidationRejected": true,
+    "summary": {
+      "status": 200,
+      "aiStatus": "disabled",
+      "aiReason": "ENABLE_FOUNDER_AI_BRIEF != 1",
+      "facts": 6,
+      "decisions": [
+        "مراجعة هدف «تلقت نتائج غير فارغة»: 80 من 110 (73%)، والوتيرة المتوقعة حتى اليوم 89.7؛ 6 يومًا متبقيًا",
+        "معالجة أول عائق مثبت: تغطية تقارير الشركاء 1/2"
+      ]
+    },
+    "exports": {
+      "founderSections": 7,
+      "investorCsvBytes": 3715,
+      "storeTitle": "تقرير متجر اكسترا"
+    },
+    "unauthenticatedBlocked": true
+  },
+  "cron": {
+    "status": 200,
+    "body": {
+      "ok": true,
+      "snapshotRun": "613a23fa-4393-42d8-927f-e090b481560e",
+      "summaries": [
+        {
+          "kind": "daily",
+          "periodStart": "2026-09-23T21:00:00.000Z",
+          "status": "generated",
+          "aiStatus": "disabled"
+        }
+      ],
+      "now": "2026-09-25T08:28:16.463Z",
+      "riyadhHour": 11,
+      "summaryHour": 8,
+      "snapshots": [
+        {
+          "kind": "7d",
+          "start": "2026-09-18T08:28:16.463Z",
+          "ok": true,
+          "rows": 18
+        },
+        {
+          "kind": "30d",
+          "start": "2026-08-26T08:28:16.463Z",
+          "ok": true,
+          "rows": 18
+        },
+        {
+          "kind": "month",
+          "start": "2026-08-31T21:00:00.000Z",
+          "ok": true,
+          "rows": 18
+        },
+        {
+          "kind": "day",
+          "start": "2026-09-23T21:00:00.000Z",
+          "ok": true,
+          "rows": 18
+        },
+        {
+          "kind": "day",
+          "start": "2026-09-22T21:00:00.000Z",
+          "ok": true,
+          "rows": 18
+        },
+        {
+          "kind": "day",
+          "start": "2026-09-21T21:00:00.000Z",
+          "ok": true,
+          "rows": 18
+        },
+        {
+          "kind": "day",
+          "start": "2026-09-20T21:00:00.000Z",
+          "ok": true,
+          "rows": 18
+        },
+        {
+          "kind": "day",
+          "start": "2026-09-19T21:00:00.000Z",
+          "ok": true,
+          "rows": 18
+        },
+        {
+          "kind": "day",
+          "start": "2026-09-18T21:00:00.000Z",
+          "ok": true,
+          "rows": 18
+        },
+        {
+          "kind": "day",
+          "start": "2026-09-17T21:00:00.000Z",
+          "ok": true,
+          "rows": 18
+        }
+      ]
+    },
+    "unauthorizedBlocked": true
+  },
+  "cleanup": [
+    {
+      "path": "/api/admin/founder/expenses/",
+      "id": "d8b1b65b-f5a9-420d-a9b2-b88c4591d56e",
+      "status": 200
+    },
+    {
+      "path": "/api/admin/founder/expenses/",
+      "id": "964851c8-bff8-444d-b3af-2d656d4f7889",
+      "status": 200
+    },
+    {
+      "path": "/api/admin/founder/revenue/",
+      "id": "7b1890db-de85-49c4-9f6b-045be5b93961",
+      "status": 200
+    },
+    {
+      "path": "/api/admin/founder/funding",
+      "id": "35334a5e-5276-4635-a051-6c57c2a14d86",
+      "status": 200
+    },
+    {
+      "path": "/api/admin/founder/goals/",
+      "id": "3c05c361-9ed8-4911-b7a8-2dd75d9a8450",
+      "status": 200
+    },
+    {
+      "path": "founder_summaries",
+      "id": "8426e4b7-1abc-4d1f-8cae-5aa6e800754f",
+      "status": "deleted"
+    }
+  ],
+  "finishedAt": "2026-09-25T08:29:01.352Z"
+}

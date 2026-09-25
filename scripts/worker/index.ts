@@ -57,7 +57,7 @@ function jobEnabled(name: string, defaultOn = true): boolean {
 
 // ── Job registry: name, interval, timeout ceiling (measured evidence,
 //    see the migration report for how each ceiling was derived), priority ──
-type JobName = 'price_update' | 'discovery' | 'product_recovery' | 'dispatch_sweep' | 'refresh' | 'feed_ingest' | 'reobserve' | 'samsung_delta_watch' | 'manual_trigger';
+type JobName = 'price_update' | 'discovery' | 'product_recovery' | 'dispatch_sweep' | 'refresh' | 'feed_ingest' | 'reobserve' | 'samsung_delta_watch' | 'manual_trigger' | 'founder_daily';
 
 interface JobDef {
   name: JobName;
@@ -163,6 +163,17 @@ const JOBS: JobDef[] = [
     timeoutMs: parseInt(process.env.WORKER_MANUAL_TRIGGER_TIMEOUT_MS || String(20 * 60 * 1000), 10),
     spawn: workerJob('manual-trigger.ts'),
     highPriority: true,
+  },
+  {
+    // Founder Operating Center (ADR-383): hourly trigger of the self-gated
+    // /api/cron/founder-daily route — snapshots + daily/monthly summaries,
+    // once per day after the configured Riyadh hour. Light (a few RPCs +
+    // one optional model call inside the web service); the 5min ceiling is
+    // generous headroom over the route's own 120s budget.
+    name: 'founder_daily',
+    intervalMs: parseInt(process.env.WORKER_FOUNDER_DAILY_MS || String(60 * 60 * 1000), 10),
+    timeoutMs: parseInt(process.env.WORKER_FOUNDER_DAILY_TIMEOUT_MS || String(5 * 60 * 1000), 10),
+    spawn: workerJob('founder-daily.ts'),
   },
 ];
 

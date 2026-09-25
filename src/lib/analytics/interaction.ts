@@ -17,7 +17,7 @@
 // navigate immediately after. It NEVER blocks on the network request succeeding: if the
 // beacon/fetch fails or is dropped, the customer still reaches the merchant — Tawveeri simply
 // undercounts that one interaction rather than fabricating one it never confirmed.
-import { sessionId } from './track';
+import { sessionId, currentQueryId } from './track';
 
 function uuid(): string {
   try {
@@ -48,6 +48,8 @@ export function recordFirstPartyInteraction(input: RecordInteractionInput): stri
       canonical_id: input.canonicalId ?? null,
       session_id: sessionId(),
       surface: input.surface,
+      // ADR-383 journey linking: the query this exit belongs to, when the tab has one.
+      query_id: currentQueryId(),
     });
     if (typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function') {
       // sendBeacon: purpose-built for "fire this during/just-before unload, browser owns

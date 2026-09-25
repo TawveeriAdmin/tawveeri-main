@@ -55,6 +55,30 @@ export function isTestMode(): boolean {
   try { return localStorage.getItem(TEST_KEY) === "1"; } catch { return false; }
 }
 
+// ── Journey linking (Founder Operating Center, ADR-383 — "opportunity 3") ──────────────────
+// A query_id is minted per search/advisor_query and kept for the tab (sessionStorage), so the
+// results, product opens, comparison clicks and merchant exits that follow can be joined to the
+// exact query that produced them — an explicit key instead of the 30-minute temporal
+// association the founder metrics had to rely on. Additive: lands in meta.query_id only; history
+// is never backfilled. Never a person identifier — scoped to one browser tab.
+const QUERY_KEY = "tw_qid";
+const QUERY_LINKED_EVENTS: ReadonlySet<string> = new Set([
+  "results", "advisor_result", "no_answer", "error", "product_view", "comparison_view", "alternative_view", "evidence_view",
+  "evidence_expand", "recommendation_accept", "go_click", "category_go_click", "closest_options_view", "return_to_decision", "deal_click",
+]);
+
+/** The query_id of the most recent search in this tab, if any. */
+export function currentQueryId(): string | null {
+  if (typeof window === "undefined") return null;
+  try { return sessionStorage.getItem(QUERY_KEY); } catch { return null; }
+}
+
+function mintQueryId(): string {
+  const id = uuid();
+  try { sessionStorage.setItem(QUERY_KEY, id); } catch { /* noop */ }
+  return id;
+}
+
 // Canonical funnel steps span BOTH customer surfaces (storefront + AI advisor), unified by
 // step in the funnel report: Search (search|advisor_query) → Results (results|advisor_result)
 // → Product View (product_view) → Comparison (comparison_view) → Evidence (evidence_view)
@@ -116,7 +140,14 @@ export function track(event_type: EventType, props?: Record<string, unknown>): v
     try { variant = getEntryVariant(); } catch { /* noop */ }
     let campaign: Record<string, unknown> = {};
     try { campaign = { ...(getCampaign() ?? {}) }; } catch { /* noop */ }
-    const meta = { ...(props?.meta && typeof props.meta === "object" ? (props.meta as Record<string, unknown>) : {}), ...(variant ? { variant } : {}), ...campaign };
+    const meta: Record<string, unknown> = { ...(props?.meta && typeof props.meta === "object" ? (props.meta as Record<string, unknown>) : {}), ...(variant ? { variant } : {}), ...campaign };
+    if (event_type === "search" || event_type === "advisor_query") {
+      meta.query_id = mintQueryId();
+    } else if (QUERY_LINKED_EVENTS.has(event_type) && meta.query_id === undefined) {
+      const qid = currentQueryId();
+      if (qid) meta.query_id = qid;
+      if ((event_type === "results" || event_type === "advisor_result") && qid) meta.result_set_id = uuid();
+    }
     const payload = JSON.stringify({ event_type, session_id: sessionId(), source: "web", ...props, meta });
     const headers: Record<string, string> = { "content-type": "application/json" };
     if (isTestMode()) headers["x-tw-test"] = "1";
