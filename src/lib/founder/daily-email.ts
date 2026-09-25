@@ -10,7 +10,6 @@ import { generateSummary, latestSummary, type SummaryRecord } from './summary';
 import { buildOverview, buildMoneyPicture, type Overview, type MoneyPicture } from './overview';
 import { fetchExpenses, expenseSar } from './finance';
 import { GOAL_STATUS_AR } from './goals';
-import { METRICS } from './registry';
 import { ratioText } from './metrics';
 import { formatRiyadh, monthWindow, riyadhMonthStart, riyadhDateString, windowFor, toRiyadh, type MetricWindow } from './windows';
 
@@ -20,6 +19,8 @@ export const FOUNDER_LINK = 'https://tawveeri.com/founder';
 export interface DailyEmail { reportDate: string; subject: string; html: string; text: string; summaryId: string | null; aiStatus: string; blocksUnavailable: string[] }
 
 const esc = (s: unknown) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));
+/** The text/plain part is derived from the HTML lines: strip tags, then restore entities. */
+const toText = (html: string) => html.replace(/<[^>]+>/g, '').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
 const sar = (v: number | null | undefined) => (v == null ? 'غير متاح' : `${v.toLocaleString('en-US', { maximumFractionDigits: 2 })} ر.س`);
 const li = (items: string[]) => (items.length ? `<ul style="margin:6px 0 0;padding-inline-start:18px">${items.map((t) => `<li style="margin:3px 0">${t}</li>`).join('')}</ul>` : '');
 const h = (title: string) => `<h3 style="margin:18px 0 4px;font-size:15px;color:#1f6f59">${esc(title)}</h3>`;
@@ -48,7 +49,7 @@ function yesterdayBlock(o: Overview): { html: string; text: string[] } {
   const stores = o.referrals.stores.filter((s) => s.linkedInteractions > 0).slice(0, 3).map((s) => `${esc(s.nameAr)} (${s.linkedInteractions})`);
   if (stores.length) lines.push(`أعلى المتاجر بالخروج المرتبط: ${stores.join('، ')}.`);
   if (!lines.length) lines.push('لا نشاط مسجل أمس (أو تعذر القياس — انظر جودة البيانات).');
-  return { html: h('ماذا حدث أمس؟') + li(lines), text: lines.map((l) => l.replace(/<[^>]+>/g, '')) };
+  return { html: h('ماذا حدث أمس؟') + li(lines), text: lines.map(toText) };
 }
 
 /** Block 2 — money, strictly separated. */
@@ -62,21 +63,21 @@ function moneyBlock(dayMoney: MoneyPicture | null, monthMoney: MoneyPicture | nu
     if (r.coverageState === 'coverage_missing') lines.push(`عمولات مقبوضة: <b>غير معلوم</b>؛ عمولات معتمدة: <b>غير معلوم</b> — لا تقرير شريك يغطي الشهر (S08/S08P)${r.pendingSar ? `؛ معلق/متوقع مصرّح به: ${sar(r.pendingSar)} — ليس إيرادًا مقبوضًا` : ''}.`);
     else lines.push(`عمولات مقبوضة هذا الشهر: <b>${sar(r.paidSar)}</b> (S08P)؛ معتمدة: ${sar(r.confirmedSar)} (S08)؛ معلقة: ${sar(r.pendingSar)} — المعلق ليس مقبوضًا. تغطية الشركاء ${r.coverageCount}/2.`);
   }
-  return { html: h('الأداء المالي') + li(lines), text: lines.map((l) => l.replace(/<[^>]+>/g, '')) };
+  return { html: h('الأداء المالي') + li(lines), text: lines.map(toText) };
 }
 
 /** Block 3 — month goals. */
 function goalsBlock(o: Overview, monthEnd: Date): { html: string; text: string[] } {
   if (!o.goals.length) { const t = 'لا أهداف مسجلة لهذا الشهر — «تحديد هدف» في المركز.'; return { html: h('أهداف الشهر') + `<p style="margin:4px 0">${t}</p>`, text: [t] }; }
   const lines = o.goals.map((g) => `${esc(g.nameAr)} (${g.goal.metric_id}): <b>${GOAL_STATUS_AR[g.status]}</b> — ${g.current ?? 'غير متاح'} / ${g.goal.target_value}${g.goal.direction === 'lte' ? ' (أقل أفضل)' : ''}، الموعد ${formatRiyadh(monthEnd, false)}${g.status === 'not_judgeable' ? ` — ${esc(g.statusReasonAr)}` : ''}`);
-  return { html: h('أهداف الشهر') + li(lines), text: lines.map((l) => l.replace(/<[^>]+>/g, '')) };
+  return { html: h('أهداف الشهر') + li(lines), text: lines.map(toText) };
 }
 
 /** Block 4 — data quality (only when something matters). */
 function qualityBlock(o: Overview): { html: string; text: string[] } {
   const items = o.quality.filter((q) => q.severity !== 'info').map((q) => `${q.severity === 'critical' ? '⚠︎ ' : ''}${esc(q.textAr)}`);
   if (!items.length) return { html: '', text: [] };
-  return { html: h('جودة البيانات') + li(items), text: items };
+  return { html: h('جودة البيانات') + li(items), text: items.map(toText) };
 }
 
 export async function buildDailyEmail(now = new Date(), kind: 'daily' | 'test' = 'daily'): Promise<DailyEmail> {
