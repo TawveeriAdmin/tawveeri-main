@@ -96,6 +96,24 @@ describe('getCrossCanonicalOffers', () => {
     expect(offers[0].current_price).toBe(449);
   });
 
+  it('prefers a CONFIRMED valid price over a merely more-recently-observed but quarantined/invalid one (2026-09-25 correction)', async () => {
+    currentMock = makeMockClient({
+      ownLink: { canonical_product_id: 'canon-1' },
+      siblingLinks: [{ product_id: 'product-amazon' }],
+      productStoresRows: [
+        // Older, but a real confirmed price.
+        { id: 'ps-confirmed', product_id: 'product-amazon', current_price: 449, original_price: null, currency: 'SAR', availability: 'in_stock', stock_quantity: null, product_url: 'https://amazon.sa/confirmed', delivery_time_days: null, delivery_cost: null, is_free_delivery: null, is_deal: false, deal_expires_at: null, coupon_code: null, updated_at: '2026-08-01T00:00:00Z', last_seen_at: '2026-08-01T00:00:00Z', price_quarantined_at: null, store_id: 2, stores: AMAZON_STORE },
+        // Newer last_seen_at/updated_at, but currently quarantined — a rejected observation, not a confirmed price.
+        { id: 'ps-quarantined', product_id: 'product-amazon', current_price: 449, original_price: null, currency: 'SAR', availability: 'in_stock', stock_quantity: null, product_url: 'https://amazon.sa/quarantined', delivery_time_days: null, delivery_cost: null, is_free_delivery: null, is_deal: false, deal_expires_at: null, coupon_code: null, updated_at: '2026-09-25T00:00:00Z', last_seen_at: '2026-09-25T00:00:00Z', price_quarantined_at: '2026-09-25T00:00:00Z', store_id: 2, stores: AMAZON_STORE },
+        // Newer still, but out of stock — not a valid offer to show as the store's price.
+        { id: 'ps-out-of-stock', product_id: 'product-amazon', current_price: 449, original_price: null, currency: 'SAR', availability: 'out_of_stock', stock_quantity: null, product_url: 'https://amazon.sa/oos', delivery_time_days: null, delivery_cost: null, is_free_delivery: null, is_deal: false, deal_expires_at: null, coupon_code: null, updated_at: '2026-09-26T00:00:00Z', last_seen_at: '2026-09-26T00:00:00Z', price_quarantined_at: null, store_id: 2, stores: AMAZON_STORE },
+      ],
+    });
+    const offers = await getCrossCanonicalOffers('product-extra', new Set());
+    expect(offers).toHaveLength(1);
+    expect(offers[0].id).toBe('ps-confirmed');
+  });
+
   it('excludes a store already present on the current product (no duplicate card)', async () => {
     currentMock = makeMockClient({
       ownLink: { canonical_product_id: 'canon-1' },

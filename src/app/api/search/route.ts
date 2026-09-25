@@ -21,6 +21,7 @@ import { linkRetrievedCanonicals } from '@/lib/search/linked-canonical-products'
 import { collectCanonicalCandidates } from '@/lib/search/canonical-candidates';
 import { manufacturerCategoryTerms, productQueryText } from '@/lib/search/manufacturer-category-terms';
 import { hoursSince, PICK_FRESHNESS_MAX_HOURS, productTrust, isFreshObservation, type TrustAssessment } from '@/lib/intelligence/evidence-engine';
+import { mergeVerifiedCanonicalSearchResults } from '@/lib/catalog/merge-verified-canonical-search-results';
 
 export const maxDuration = 30;
 export const dynamic = 'force-dynamic';
@@ -2582,6 +2583,15 @@ export async function POST(request: NextRequest) {
     : rows
         .map(toGroupedSearchProduct)
         .filter((p): p is GroupedSearchProduct => p !== null);
+
+  // Cross-store search-visibility fix (2026-09-25, ADR-382): the SAME real-world
+  // product can live on two separate `products.id` rows (ADR-381's root cause) — a
+  // search matching both listings' titles otherwise returns two separate cards
+  // instead of one merged, comparable card. Only merges a VERIFIED identity link
+  // (never a blanket merge); collapses any same-store duplicate on every card
+  // regardless of source. Applied to both the Algolia and DB-fallback paths since
+  // both converge to this one array.
+  products = await mergeVerifiedCanonicalSearchResults(products);
 
   // TPS Canonical Search — the categories the query is actually about (ADR-138). This was
   // hard-limited to mobile + air_conditioner, which hid 323 of our 459 comparable products.
