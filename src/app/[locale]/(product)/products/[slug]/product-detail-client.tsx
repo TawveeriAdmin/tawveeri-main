@@ -267,8 +267,31 @@ export default function ProductDetailClient() {
  }
 
  const mappedProduct = mapProductRecord(productData);
- setProduct(mappedProduct);
- setViewCount(mappedProduct.view_count);
+
+ // Cross-store comparison-visibility fix (2026-09-25, ADR-381): the SAME real-world
+ // product can live on a DIFFERENT products.id row when a store's listing wasn't
+ // recognized as an existing product at ingest time — its offer is otherwise
+ // invisible on this page even when genuinely comparable. Merges in offers from ANY
+ // other approved store verified (ADR-242 identity link) to be the same product —
+ // store-neutral, never favors one retailer, and feeds the existing, unchanged
+ // selectBestPriceOffer ranking below. Fails closed to the product's own offers
+ // alone if this optional enrichment errors.
+ let mergedProduct = mappedProduct;
+ try {
+ const ownStoreIds = mappedProduct.product_stores.map((ps) => ps.stores.id).join(',');
+ const crossRes = await fetch(`/api/products/${mappedProduct.id}/cross-store-offers?exclude=${ownStoreIds}`);
+ if (crossRes.ok) {
+ const { offers } = (await crossRes.json()) as { offers: ProductStore[] };
+ if (offers?.length) {
+ mergedProduct = { ...mappedProduct, product_stores: [...mappedProduct.product_stores, ...offers] };
+ }
+ }
+ } catch {
+ // Never breaks the product page over this optional enrichment.
+ }
+
+ setProduct(mergedProduct);
+ setViewCount(mergedProduct.view_count);
  // View count is now tracked via API route (see useEffect above)
 
  // Similar products — same-category, most-recent. (The pgvector get_recommendations RPC is not
