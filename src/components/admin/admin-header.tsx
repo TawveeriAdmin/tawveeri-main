@@ -17,7 +17,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ChevronLeft, ChevronRight, Languages, LogOut, Menu, Moon, Sun, User } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Compass, Languages, LogOut, Menu, Moon, Sun, User } from 'lucide-react';
 import { AdminNotifications } from './admin-notifications';
 import { useAdminSidebar } from './admin-sidebar-context';
 
@@ -33,6 +33,7 @@ interface AdminHeaderProps {
 const subscribe = () => () => {};
 
 const pageTitleMap: Record<string, string> = {
+  '/admin/founder': 'admin.sidebar.founder',
   '/admin/command-center': 'admin.sidebar.commandCenter',
   '/admin/retailer-report': 'admin.sidebar.retailerReport',
   '/admin/dashboard': 'admin.sidebar.dashboard',
@@ -62,6 +63,15 @@ export function AdminHeader({ userProfile, locale }: AdminHeaderProps) {
   const isHydrated = useSyncExternalStore(subscribe, () => true, () => false);
 
   const handleSignOut = async () => {
+    await signOut();
+    window.location.href = `/${locale}`;
+  };
+
+  // Revoke every refresh token of this account (all devices, remembered ones included), then
+  // sign this device out too. Server-side scope 'global' — see /api/auth/signout.
+  const handleSignOutEverywhere = async () => {
+    if (!confirm(isRTL ? 'إنهاء الجلسات على جميع الأجهزة؟ ستحتاج لتسجيل الدخول من جديد في كل جهاز.' : 'Sign out on all devices?')) return;
+    await fetch('/api/auth/signout', { method: 'POST', credentials: 'include', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ scope: 'global' }) }).catch(() => {});
     await signOut();
     window.location.href = `/${locale}`;
   };
@@ -133,6 +143,17 @@ export function AdminHeader({ userProfile, locale }: AdminHeaderProps) {
         >
           <Menu className="h-5 w-5" />
         </button>
+
+        {/* Mobile: one-tap entry to the founder center — no link to copy, no menu to open */}
+        {!pathnameWithoutLocale.startsWith('/admin/founder') && (
+          <Link
+            href={`/${locale}/admin/founder`}
+            className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-2xl bg-[#1f6f59] px-3 text-xs font-black text-white md:hidden"
+          >
+            <Compass className="h-4 w-4" />
+            <span>{isRTL ? 'مركز قرارات المؤسس' : 'Founder center'}</span>
+          </Link>
+        )}
 
         <div className="min-w-0">
           <nav
@@ -240,6 +261,13 @@ export function AdminHeader({ userProfile, locale }: AdminHeaderProps) {
             >
               <LogOut className="h-4 w-4 shrink-0" />
               <span>{t('admin.header.signOut')}</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onSelect={(e) => { e.preventDefault(); handleSignOutEverywhere(); }}
+              className="cursor-pointer justify-start text-start text-error"
+            >
+              <LogOut className="h-4 w-4 shrink-0" />
+              <span>{isRTL ? 'إنهاء الجلسات على جميع الأجهزة' : 'Sign out on all devices'}</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

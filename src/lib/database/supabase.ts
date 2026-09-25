@@ -30,6 +30,11 @@ export const getBrowserClient = () => {
 
     browserClient = createBrowserClient<Database>(url, anonKey, {
       auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+      // Session policy (founder access task): a remembered device lives at most 30 days (the
+      // library default is 400); sameSite=lax; secure on https. Session-only mode (checkbox off)
+      // is applied right after login by re-setting these cookies without Max-Age — see
+      // src/lib/auth/session-policy.ts — and preserved by the server clients on every refresh.
+      cookieOptions: { maxAge: 30 * 24 * 60 * 60, sameSite: 'lax', secure: typeof window !== 'undefined' && window.location.protocol === 'https:' },
       db: { schema: 'public' },
       global: { headers: { 'x-application-name': 'tawveeri' } },
     });

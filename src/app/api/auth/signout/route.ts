@@ -19,6 +19,10 @@ function clearSupabaseCookies(request: NextRequest, response: NextResponse) {
 
 export async function POST(request: NextRequest) {
   const response = NextResponse.json({ success: true });
+  // `scope: 'global'` revokes every refresh token of the account (all devices) — the founder's
+  // «إنهاء الجلسات على جميع الأجهزة» action. Default stays local (this device only).
+  const body = await request.json().catch(() => ({} as { scope?: string }));
+  const scope: 'local' | 'global' = body?.scope === 'global' ? 'global' : 'local';
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -39,7 +43,7 @@ export async function POST(request: NextRequest) {
   );
 
   try {
-    await supabase.auth.signOut({ scope: 'local' });
+    await supabase.auth.signOut({ scope });
   } catch (error) {
     console.warn('Server sign-out failed; clearing auth cookies locally.', error);
   }

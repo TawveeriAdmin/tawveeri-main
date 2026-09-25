@@ -1,0 +1,70 @@
+{
+  "base": "http://localhost:3000",
+  "startedAt": "2026-09-25T13:18:34.425Z",
+  "pages": [
+    {
+      "route": "founder/expenses?w=month",
+      "status": 200,
+      "ms": 10136,
+      "mobileOverflow": false,
+      "showsUnknownNotZero": true,
+      "statementTimeout": false,
+      "pageErrors": [],
+      "textChars": 13681
+    },
+    {
+      "route": "founder/expenses/report?f=month",
+      "status": 200,
+      "ms": 5868,
+      "mobileOverflow": false,
+      "showsUnknownNotZero": true,
+      "statementTimeout": false,
+      "pageErrors": [],
+      "textChars": 1501
+    },
+    {
+      "route": "founder/expenses/report?f=prev",
+      "status": 200,
+      "ms": 6253,
+      "mobileOverflow": false,
+      "showsUnknownNotZero": true,
+      "statementTimeout": false,
+      "pageErrors": [],
+      "textChars": 1475
+    },
+    {
+      "route": "founder/expenses/report?f=all",
+      "status": 200,
+      "ms": 6977,
+      "mobileOverflow": false,
+      "showsUnknownNotZero": true,
+      "statementTimeout": false,
+      "pageErrors": [],
+      "textChars": 1494
+    },
+    {
+      "route": "founder/revenue?w=month",
+      "status": 200,
+      "ms": 7330,
+      "mobileOverflow": false,
+      "showsUnknownNotZero": true,
+      "statementTimeout": false,
+      "pageErrors": [],
+      "textChars": 2649
+    },
+    {
+      "route": "founder?w=month",
+      "status": 200,
+      "ms": 20557,
+      "mobileOverflow": false,
+      "showsUnknownNotZero": true,
+      "statementTimeout": false,
+      "pageErrors": [],
+      "textChars": 3962
+    }
+  ],
+  "api": [],
+  "journey": {},
+  "cron": null,
+  "cleanup": []
+}

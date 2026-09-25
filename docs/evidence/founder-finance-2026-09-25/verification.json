@@ -1,0 +1,45 @@
+{
+  "base": "http://localhost:3000",
+  "startedAt": "2026-09-25T13:12:55.921Z",
+  "pages": [
+    {
+      "route": "founder/expenses?w=month",
+      "status": 200,
+      "ms": 15427,
+      "mobileOverflow": false,
+      "showsUnknownNotZero": true,
+      "statementTimeout": false,
+      "pageErrors": [],
+      "textChars": 13681
+    },
+    {
+      "route": "founder/expenses/report?f=month",
+      "status": 200,
+      "ms": 10752,
+      "mobileOverflow": false,
+      "showsUnknownNotZero": true,
+      "statementTimeout": false,
+      "pageErrors": [
+        "Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.\n- Date formatting in a user's locale which doesn't match the server.\n- External changing data without sending a snapshot of it along with the HTML.\n- Invalid HTML tag nesting.\n\nIt can also happen if the client has a browser extension installed which messes with the HTML before React loaded.\n\nhttps://react.dev/link/hydration-mismatch\n\n  ...\n    <SegmentViewNode type=\"layout\" pagePath=\"[locale]/a...\">\n      <SegmentTrieNode>\n      <script>\n      <script>\n      <AdminLayout>\n        <AdminSidebarProvider>\n          <AdminActivityMarker>\n          <div className=\"flex h-[10...\">\n            <a>\n            <div>\n            <div className=\"flex min-w...\">\n              <div className=\"print:hidden\">\n                <AdminHeader userProfile={{id:\"f70b37...\", ...}} locale=\"ar\">\n                  <header className=\"flex min-h...\">\n                    <div className=\"flex min-w...\">\n                      <button>\n                      <div className=\"min-w-0\">\n                        <nav aria-label=\"مسار الصفحة\" className=\"hidden min...\">\n                          <div className=\"flex min-w...\">\n                            <LinkComponent href=\"/ar/admin/...\" className=\"truncate t...\">\n+                             <a\n+                               className=\"truncate transition-colors hover:text-[#1f6f59] dark:hover:text-[#9fe4d0]\"\n+                               ref={function}\n+                               onClick={function onClick}\n+                               onMouseEnter={function onMouseEnter}\n+                               onTouchStart={function onTouchStart}\n+                               href=\"/ar/admin/dashboard\"\n+                             >\n-                             <span className=\"truncate text-[#1f6f59] dark:text-[#9fe4d0]\">\n                          ...\n                    ...\n              ...\n"
+      ],
+      "textChars": 1501
+    },
+    {
+      "route": "founder/expenses/report?f=all",
+      "status": 200,
+      "ms": 7655,
+      "mobileOverflow": false,
+      "showsUnknownNotZero": true,
+      "statementTimeout": false,
+      "pageErrors": [
+        "Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.\n- Date formatting in a user's locale which doesn't match the server.\n- External changing data without sending a snapshot of it along with the HTML.\n- Invalid HTML tag nesting.\n\nIt can also happen if the client has a browser extension installed which messes with the HTML before React loaded.\n\nhttps://react.dev/link/hydration-mismatch\n\n  ...\n    <SegmentViewNode type=\"layout\" pagePath=\"[locale]/a...\">\n      <SegmentTrieNode>\n      <script>\n      <script>\n      <AdminLayout>\n        <AdminSidebarProvider>\n          <AdminActivityMarker>\n          <div className=\"flex h-[10...\">\n            <a>\n            <div>\n            <div className=\"flex min-w...\">\n              <div className=\"print:hidden\">\n                <AdminHeader userProfile={{id:\"f70b37...\", ...}} locale=\"ar\">\n                  <header className=\"flex min-h...\">\n                    <div className=\"flex min-w...\">\n                      <button>\n                      <div className=\"min-w-0\">\n                        <nav aria-label=\"مسار الصفحة\" className=\"hidden min...\">\n                          <div className=\"flex min-w...\">\n                            <LinkComponent href=\"/ar/admin/...\" className=\"truncate t...\">\n+                             <a\n+                               className=\"truncate transition-colors hover:text-[#1f6f59] dark:hover:text-[#9fe4d0]\"\n+                               ref={function}\n+                               onClick={function onClick}\n+                               onMouseEnter={function onMouseEnter}\n+                               onTouchStart={function onTouchStart}\n+                               href=\"/ar/admin/dashboard\"\n+                             >\n-                             <span className=\"truncate text-[#1f6f59] dark:text-[#9fe4d0]\">\n                          ...\n                    ...\n              ...\n"
+      ],
+      "textChars": 1494
+    }
+  ],
+  "api": [],
+  "journey": {},
+  "cron": null,
+  "cleanup": [],
+  "fatal": "net::ERR_ABORTED at http://localhost:3000/ar/admin/founder/revenue?w=month"
+}

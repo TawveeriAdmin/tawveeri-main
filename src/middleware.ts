@@ -5,6 +5,7 @@ import { createAuditLog } from '@/lib/auth/audit';
 import createIntlMiddleware from 'next-intl/middleware';
 import { locales, defaultLocale } from './i18n';
 import { isNonCanonicalHost, NON_CANONICAL_ROBOTS_TAG } from '@/lib/seo/canonical-host';
+import { resolveFounderShortcut, safeRelativePath, applySessionCookiePolicy, SESSION_ONLY_COOKIE } from '@/lib/auth/founder-shortcut';
 
 /**
  * Combined Middleware: i18n + Auth + API Rate Limiting
@@ -214,6 +215,35 @@ export async function middleware(request: NextRequest) {
     return markHost(NextResponse.next());
   }
 
+  // Founder short link (ADR-383 follow-up): `/founder` → the founder center for an admin session,
+  // the login page (with a same-origin return path) for no session, and the unauthorized page for
+  // any other role — never a bypass, the target route's own admin gate below still applies.
+  if (pathname === '/founder' || pathname === '/founder/') {
+    const shortcutResponse = markHost(NextResponse.next());
+    const sessionOnly = request.cookies.get(SESSION_ONLY_COOKIE)?.value === '1';
+    const sb = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+      cookies: {
+        get: (name: string) => request.cookies.get(name)?.value,
+        set: (name: string, value: string, options = {}) => { shortcutResponse.cookies.set(name, value, applySessionCookiePolicy(options as Record<string, unknown>, sessionOnly)); },
+        remove: (name: string, options = {}) => { shortcutResponse.cookies.set(name, '', { ...options, maxAge: 0 }); },
+      } as CookieMethodsServerDeprecated,
+    });
+    const { data: { user: shortcutUser } } = await sb.auth.getUser();
+    let role: string | null = null;
+    if (shortcutUser) {
+      if (isConfiguredAdminEmail(shortcutUser.email ?? null)) role = 'admin';
+      else { const { data } = await sb.from('users').select('role').eq('id', shortcutUser.id).maybeSingle(); role = data?.role ?? null; }
+    }
+    const decision = resolveFounderShortcut({ hasUser: !!shortcutUser, role, locale: 'ar' });
+    if (decision.kind === 'unauthorized' && shortcutUser) {
+      await createAuditLog({ user_id: shortcutUser.id, action: 'security_alert', entity_type: 'admin', details: { reason: 'unauthorized_admin_access_attempt', path: '/founder' } });
+    }
+    const redirect = markHost(NextResponse.redirect(new URL(decision.path, request.url)));
+    // Copy the WHOLE cookie (attributes included) — `set(name, value)` would drop Max-Age/SameSite.
+    shortcutResponse.cookies.getAll().forEach((c) => redirect.cookies.set(c));
+    return redirect;
+  }
+
   // First, let next-intl handle the routing
   const response = markHost(handleI18nRouting(request));
 
@@ -244,13 +274,15 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  // For protected routes, add auth checks
+  // For protected routes, add auth checks. Refreshed auth cookies follow the session policy:
+  // 30-day cap, sameSite=lax, secure in production, session-only when «تذكر هذا الجهاز» was off.
+  const sessionOnly = request.cookies.get(SESSION_ONLY_COOKIE)?.value === '1';
   const cookies: CookieMethodsServerDeprecated = {
     get(name: string) {
       return request.cookies.get(name)?.value;
     },
     set(name: string, value: string, options = {}) {
-      response.cookies.set(name, value, options);
+      response.cookies.set(name, value, applySessionCookiePolicy(options as Record<string, unknown>, sessionOnly));
     },
     remove(name: string, options = {}) {
       response.cookies.set(name, '', { ...options, maxAge: 0 });
@@ -294,8 +326,11 @@ export async function middleware(request: NextRequest) {
   // middleware are lost and the browser client cannot establish a session.
   const createRedirect = (url: URL) => {
     const redirectResponse = markHost(NextResponse.redirect(url));
+    // Whole-cookie copy: `set(name, value)` silently dropped Max-Age/SameSite/Secure on every
+    // refreshed token that rode a redirect (measured 2026-09-25: refreshed cookies arrived as
+    // attribute-less session cookies), which is exactly what the session policy sets.
     response.cookies.getAll().forEach((cookie) => {
-      redirectResponse.cookies.set(cookie.name, cookie.value);
+      redirectResponse.cookies.set(cookie);
     });
     return redirectResponse;
   };
@@ -317,10 +352,15 @@ export async function middleware(request: NextRequest) {
   if (isAuthRoute && user) {
     const role = await getUserRole();
     const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname =
+    // A safe, same-origin `?redirect=` (e.g. from the /founder short link) wins over the default
+    // landing page; anything absolute or protocol-relative is ignored, never followed.
+    const requested = safeRelativePath(request.nextUrl.searchParams.get('redirect'));
+    const localized = requested ? (requested.startsWith(`/${validLocale}/`) || requested === `/${validLocale}` ? requested : `/${validLocale}${requested}`) : null;
+    redirectUrl.search = '';
+    redirectUrl.pathname = localized ?? (
       role === 'admin'
         ? `/${validLocale}/admin/command-center`
-        : `/${validLocale}/dashboard`;
+        : `/${validLocale}/dashboard`);
     return createRedirect(redirectUrl);
   }
 

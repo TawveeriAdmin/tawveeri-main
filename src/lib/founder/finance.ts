@@ -12,7 +12,8 @@ export interface ExpenseRow {
   id: string; vendor: string; description: string | null; category: ExpenseCategory;
   service_period_start: string | null; service_period_end: string | null; due_at: string | null; paid_at: string | null;
   date_precision?: 'exact' | 'month' | 'year' | 'needs_review';
-  payment_status: 'paid' | 'due'; amount_original: number; currency: string; fees: number; tax: number;
+  payment_status: 'paid' | 'due' | 'expected'; amount_original: number; currency: string; fees: number; tax: number;
+  subscription_id?: string | null; expected_for?: string | null;
   amount_sar: number | null; fx_rate: number | null; fx_source: string | null;
   campaign: string | null; project: string | null; channel: string | null;
   recurrence: 'one_time' | 'monthly' | 'yearly' | 'other'; renewal_at: string | null;
@@ -118,6 +119,7 @@ export function cashSpent(rows: ExpenseRow[], w: MetricWindow): SarTotal {
 export function periodCost(rows: ExpenseRow[], w: MetricWindow): SarTotal {
   const t = emptyTotal();
   for (const e of rows) {
+    if (e.payment_status === 'expected') continue; // a subscription draft is not a cost until confirmed
     if (undated(e)) { t.undatedRows += 1; continue; }
     const ps = new Date(`${e.service_period_start}T00:00:00+03:00`);
     const pe = new Date(new Date(`${e.service_period_end}T00:00:00+03:00`).getTime() + 86_400_000); // inclusive end date
@@ -154,7 +156,8 @@ export function breakdownBy(rows: ExpenseRow[], w: MetricWindow, key: 'category'
   const map = new Map<string, Breakdown>();
   for (const e of rows) {
     let factor = 0;
-    if (mode === 'cash') factor = e.payment_status === 'paid' && dateInWindow(e.paid_at, w) ? 1 : 0;
+    if (e.payment_status === 'expected') factor = 0;
+    else if (mode === 'cash') factor = e.payment_status === 'paid' && dateInWindow(e.paid_at, w) ? 1 : 0;
     else if (undated(e)) factor = 0;
     else {
       const ps = new Date(`${e.service_period_start}T00:00:00+03:00`).getTime();
@@ -287,7 +290,10 @@ export function revenueSummary(entries: RevenueRow[], conversions: AffiliateConv
 
   const coverage: PartnerCoverage[] = PARTNER_SOURCES.map((source) => {
     const rep = reports.filter((r) => r.source.toLowerCase().includes(source.split('_')[0]) && overlaps(r.report_period_start, r.report_period_end, w)).length;
-    const ent = entries.filter((e) => e.source === source && e.state !== 'declared' && overlaps(e.period_start, e.period_end, w)).length;
+    // Coverage means a partner DOCUMENT stands behind the period: an imported report, or a manual
+    // entry already matched/confirmed/paid against one. Founder-declared or merely expected
+    // (pending) amounts never create coverage — they are shown, but S07/S08 stay «غير معلوم».
+    const ent = entries.filter((e) => e.source === source && (e.state === 'matched' || e.state === 'confirmed' || e.state === 'paid') && overlaps(e.period_start, e.period_end, w)).length;
     const covered = rep > 0 || ent > 0;
     return { source, covered, reports: rep, entries: ent, detailAr: covered ? `${rep} تقرير مستورد، ${ent} إدخال موثق يغطي الفترة` : 'لا تقرير مستورد ولا إدخال موثق يغطي الفترة — غير معلوم' };
   });

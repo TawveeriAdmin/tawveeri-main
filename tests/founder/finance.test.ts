@@ -74,8 +74,10 @@ describe('revenueSummary', () => {
     expect(s.coverageState).toBe('partial'); expect(s.coverageCount).toBe(1);
     expect(s.confirmedSar).toBe(40); expect(s.paidSar).toBe(0); expect(s.receivableSar).toBe(40);
   });
-  it('declared entries do not create coverage', () => {
+  it('declared and pending entries do not create coverage (no partner document yet), but pending money is still shown', () => {
     expect(revenueSummary([entry({ state: 'declared', approved_at: null })], [], [], w).coverageCount).toBe(0);
+    const s = revenueSummary([entry({ state: 'pending', approved_at: null, commission_amount: 77 })], [], [], w);
+    expect(s.coverageCount).toBe(0); expect(s.coverageState).toBe('coverage_missing'); expect(s.pendingSar).toBe(77);
   });
   it('a paid entry counts cash only when paid inside the window', () => {
     expect(revenueSummary([entry({ state: 'paid', paid_at: '2026-09-22' })], [], [], w).paidSar).toBe(40);

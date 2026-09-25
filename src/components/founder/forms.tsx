@@ -324,6 +324,54 @@ export function GenerateSummaryButton({ sp }: { sp: { w?: string; start?: string
   );
 }
 
+// ── Subscriptions & commitments ─────────────────────────────────────────────
+export function SubscriptionForm({ initial }: { initial?: Record<string, any> | null }) {
+  const router = useRouter();
+  const [errors, setErrors] = useState<FieldErrors>({}); const [msg, setMsg] = useState<string | null>(null); const [ok, setOk] = useState(false);
+  const [kind, setKind] = useState(initial?.kind ?? 'fixed');
+  async function submit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault(); const body = formToObject(e.currentTarget);
+    const r = initial?.id ? await call('PATCH', `/subscriptions/${initial.id}`, body) : await call('POST', '/subscriptions', body);
+    setErrors(r.fieldErrors); setOk(r.ok); setMsg(r.ok ? 'حُفظ الاشتراك' : r.error); if (r.ok) { router.refresh(); if (!initial?.id) (e.target as HTMLFormElement).reset(); }
+  }
+  return (
+    <form onSubmit={submit} className="grid gap-3 sm:grid-cols-2">
+      <Field label="المورد *" name="vendor" errors={errors}><input name="vendor" required defaultValue={initial?.vendor ?? ''} className={inputCls} /></Field>
+      <Field label="الفئة *" name="category" errors={errors}><select name="category" defaultValue={initial?.category ?? 'ai'} className={inputCls}>{EXPENSE_CATEGORIES.map((c) => <option key={c} value={c}>{EXPENSE_CATEGORY_AR[c]}</option>)}</select></Field>
+      <Field label="النوع *" name="kind" errors={errors} hint="الثابت ينشئ قيدًا متوقعًا في التجديد؛ المتغير ميزانية تقديرية فقط وتُدخل فاتورته شهريًا"><select name="kind" value={kind} onChange={(e) => setKind(e.target.value)} className={inputCls}><option value="fixed">اشتراك ثابت</option><option value="variable_budget">متغير — ميزانية تقديرية</option></select></Field>
+      <Field label="الحالة" name="status" errors={errors}><select name="status" defaultValue={initial?.status ?? 'active'} className={inputCls}><option value="active">فعال</option><option value="needs_confirmation">يحتاج تأكيد المؤسس</option><option value="paused">موقوف</option><option value="ended">منتهٍ</option></select></Field>
+      <Field label={kind === 'fixed' ? 'المبلغ الشهري (ر.س) *' : 'الميزانية التقديرية الشهرية (ر.س) *'} name="amount_sar" errors={errors}><input name="amount_sar" type="number" step="0.01" min="0" defaultValue={initial?.amount_sar ?? ''} className={inputCls} /></Field>
+      <Field label="الدورة" name="cadence" errors={errors}><select name="cadence" defaultValue={initial?.cadence ?? 'monthly'} className={inputCls}><option value="monthly">شهري</option><option value="yearly">سنوي</option></select></Field>
+      {kind === 'fixed' ? <Field label="تاريخ التجديد القادم *" name="next_renewal_at" errors={errors}><input name="next_renewal_at" type="date" defaultValue={initial?.next_renewal_at ?? ''} className={inputCls} /></Field>
+        : <Field label="مصدر التقدير *" name="budget_source" errors={errors}><input name="budget_source" defaultValue={initial?.budget_source ?? ''} className={inputCls} placeholder="متوسط آخر 3 فواتير" /></Field>}
+      <Field label="الوصف / ملاحظات" name="notes" errors={errors}><input name="notes" defaultValue={initial?.notes ?? ''} className={inputCls} /></Field>
+      <div className="flex flex-wrap items-center gap-2 sm:col-span-2"><Btn type="submit">{initial?.id ? 'حفظ' : 'إضافة التزام'}</Btn><Status msg={msg} ok={ok} /></div>
+    </form>
+  );
+}
+
+/** Turns a subscription draft (payment_status=expected) into a PAID expense — only with a date and a reference. */
+export function ConfirmExpectedButton({ expenseId, defaultDate }: { expenseId: string; defaultDate: string }) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false); const [msg, setMsg] = useState<string | null>(null); const [ok, setOk] = useState(false); const [errors, setErrors] = useState<FieldErrors>({});
+  async function submit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault(); const f = formToObject(e.currentTarget);
+    const r = await call('PATCH', `/expenses/${expenseId}`, { payment_status: 'paid', paid_at: f.paid_at, evidence_ref: f.evidence_ref, evidence_state: 'documented', note: 'تأكيد فاتورة/خصم اشتراك' });
+    setErrors(r.fieldErrors); setOk(r.ok); setMsg(r.ok ? 'أُكد الدفع وأصبح القيد مدفوعًا' : r.error); if (r.ok) { router.refresh(); setOpen(false); }
+  }
+  return (
+    <div className="text-[11px]">
+      <Btn type="button" onClick={() => setOpen((v) => !v)}>{open ? 'إغلاق' : 'تأكيد الدفع (فاتورة/خصم)'}</Btn>
+      {open && <form onSubmit={submit} className="mt-2 grid gap-2 sm:grid-cols-3">
+        <Field label="تاريخ الخصم *" name="paid_at" errors={errors}><input name="paid_at" type="date" required defaultValue={defaultDate} className={inputCls} /></Field>
+        <Field label="مرجع الفاتورة/الخصم *" name="evidence_ref" errors={errors}><input name="evidence_ref" required className={inputCls} placeholder="رقم الفاتورة أو سطر كشف البطاقة" /></Field>
+        <div className="flex items-end"><Btn type="submit">تأكيد</Btn></div>
+      </form>}
+      <Status msg={msg} ok={ok} />
+    </div>
+  );
+}
+
 export function DeleteButton({ path, label = 'حذف', confirmText = 'تأكيد الحذف (حذف ناعم، يبقى في سجل التدقيق)؟' }: { path: string; label?: string; confirmText?: string }) {
   const router = useRouter();
   return <button type="button" className="text-[11px] font-bold text-red-700 underline decoration-dotted dark:text-red-300" onClick={async () => { if (!confirm(confirmText)) return; const r = await call('DELETE', path); if (r.ok) router.refresh(); else alert(r.error); }}>{label}</button>;

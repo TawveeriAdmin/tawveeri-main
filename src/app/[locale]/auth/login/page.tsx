@@ -6,6 +6,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from '@/lib/simple-intl-provider';
 import { useTheme } from 'next-themes';
 import { useAuth } from '@/lib/auth/auth-context';
+import { setRememberDevice, makeAuthCookiesSessionOnly } from '@/lib/auth/session-policy';
 import { useToast } from '@/components/ui/use-toast';
 import { Mail, Lock, Eye, EyeOff, Moon, Sun, Languages, Phone, ArrowLeft, User, Tag } from 'lucide-react';
 
@@ -161,8 +162,10 @@ export default function LoginPage() {
 
  setIsLoading(true);
  try {
+ setRememberDevice(formData.rememberMe);
  const { error } = await signInWithEmail(formData.email, formData.password);
  if (error) throw error;
+ if (!formData.rememberMe) makeAuthCookiesSessionOnly();
 
  toast({
  title: t('auth.loginSuccess') || 'Welcome back!',
@@ -250,6 +253,7 @@ export default function LoginPage() {
  }
 
  // Verify OTP - check if user exists first
+ setRememberDevice(formData.rememberMe);
  const result = await signInWithPhone(formData.phone, formData.otp, {
  fullName: isNewUser ? formData.fullName : undefined,
  email: isNewUser ? formData.email : undefined,
@@ -284,6 +288,7 @@ export default function LoginPage() {
 
  // Brief wait for cookies to be set before full page reload
  await new Promise(resolve => setTimeout(resolve, 300));
+ if (!formData.rememberMe) makeAuthCookiesSessionOnly();
  setIsLoading(false);
  window.location.href = localizePath(getPostLoginPath());
  } catch (error: any) {

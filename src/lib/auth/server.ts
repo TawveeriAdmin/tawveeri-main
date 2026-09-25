@@ -7,6 +7,7 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { cache } from 'react';
 import type { UserRole } from '@/lib/database/types';
+import { applySessionCookiePolicy, SESSION_ONLY_COOKIE } from '@/lib/auth/founder-shortcut';
 
 /**
  * Create Supabase client for Server Components
@@ -25,7 +26,8 @@ export const createClient = cache(async () => {
         },
         set(name: string, value: string, options: Record<string, unknown>) {
           try {
-            cookieStore.set({ name, value, ...options });
+            const sessionOnly = cookieStore.get(SESSION_ONLY_COOKIE)?.value === '1';
+            cookieStore.set({ name, value, ...applySessionCookiePolicy(options, sessionOnly) });
           } catch {
             // Cookie setting can fail in Server Components
             // This is fine during the render phase

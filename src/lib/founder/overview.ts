@@ -79,16 +79,18 @@ function headlineFor(cards: MetricValue[], prev: MetricValue[], money: MoneyPict
     if (money.expenseRows > 0) parts.push(`تكلفة الفترة ${money.periodCost.sar} ريال`);
   }
   const resultAr = parts.length ? `${w.labelAr}: ${parts.join('؛ ')}.` : `${w.labelAr}: القياس غير متاح.`;
+  const topNeed = needs.find((n) => n.category !== 'unparsed');
   let gapAr = 'لا فجوة قياس مسجلة.';
   if (money?.revenue.coverageState === 'coverage_missing') gapAr = 'أكبر فجوة: لا تقرير شريك يغطي الفترة — لا يمكن الحكم على الربحية.';
+  else if (money?.revenue.coverageState === 'partial') gapAr = `أكبر فجوة: تغطية تقارير الشركاء ${money.revenue.coverageCount}/2 — الحكم المالي جزئي.`;
   else if (money && money.expenseRows === 0) gapAr = 'أكبر فجوة: سجل المصروفات فارغ — التكلفة والتعادل غير محسوبين.';
   else {
     const behind = goals.filter((g) => g.status === 'behind');
     if (behind.length) gapAr = `أكبر فجوة: هدف «${behind[0].nameAr}» متأخر (${behind[0].statusReasonAr}).`;
-    else if (needs[0] && needs[0].bucket === 'demand_needs_coverage_or_identity') gapAr = `أكبر فجوة: أعلى حاجة (${needs[0].labelAr}) بلا مقارنة حديثة كافية.`;
+    else if (topNeed && topNeed.bucket === 'demand_needs_coverage_or_identity') gapAr = `أكبر فجوة: أعلى حاجة (${topNeed.labelAr}) بلا مقارنة حديثة كافية.`;
   }
   let decisionAr = 'القرار التالي: استورد تقارير أمازون ونون للفترة، ثم راجع أعلى 3 مجموعات مكيفات قبل أي توسع تسويقي.';
-  if (money && money.revenue.coverageState !== 'coverage_missing' && needs[0]) decisionAr = `القرار التالي: اختبار حاجة «${needs[0].labelAr}» مع 5 مشترين محتملين قبل زيادة الإنفاق؛ لا تغيير في الترتيب.`;
+  if (money && money.revenue.coverageState === 'complete' && topNeed) decisionAr = `القرار التالي: اختبار حاجة «${topNeed.labelAr}» مع 5 مشترين محتملين قبل زيادة الإنفاق؛ لا تغيير في الترتيب.`;
   return { resultAr, gapAr, decisionAr };
 }
 

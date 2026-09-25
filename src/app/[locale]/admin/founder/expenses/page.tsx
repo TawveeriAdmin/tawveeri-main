@@ -3,7 +3,9 @@ import { fetchExpenses, fetchBudgets, cashSpent, periodCost, dueUnpaid, totalSin
 import { EXPENSE_CATEGORY_AR } from '@/lib/founder/registry';
 import { daysBetween, monthWindow, riyadhMonthStart, riyadhMidnightDaysAgo, formatRiyadh } from '@/lib/founder/windows';
 import { FCard, SectionTitle, WindowPicker, EmptyNote, KV, Sar, Tag } from '@/components/founder/ui';
-import { ExpenseForm, ExpenseImportForm, BudgetForm, DeleteButton, EditToggle, ViewEvidence } from '@/components/founder/forms';
+import { ExpenseForm, ExpenseImportForm, BudgetForm, DeleteButton, EditToggle, ViewEvidence, SubscriptionForm, ConfirmExpectedButton } from '@/components/founder/forms';
+import { fetchSubscriptions, materializeExpectedExpenses, SUBSCRIPTION_STATUS_AR, SUBSCRIPTION_KIND_AR } from '@/lib/founder/subscriptions';
+import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
 type SP = { w?: string; start?: string; end?: string };
@@ -13,7 +15,12 @@ export default async function ExpensesPage({ params, searchParams }: { params: P
   const sp = await searchParams;
   const w = windowFromSearchParams(sp);
   const now = new Date();
-  const [rows, budgets] = await Promise.all([fetchExpenses(), fetchBudgets()]);
+  // Rule 1: any fixed subscription whose renewal date has arrived gets its EXPECTED draft now
+  // (idempotent; the worker does the same hourly). Never marks anything paid.
+  await materializeExpectedExpenses(null).catch(() => null);
+  const [allRows, budgets, subs] = await Promise.all([fetchExpenses(), fetchBudgets(), fetchSubscriptions()]);
+  const expected = allRows.filter((e) => e.payment_status === 'expected');
+  const rows = allRows.filter((e) => e.payment_status !== 'expected');
   const base = `/${locale}/admin/founder/expenses`;
   const monthW = monthWindow(riyadhMonthStart(now));
   const todayW = { kind: 'day' as const, start: riyadhMidnightDaysAgo(0, now), end: now, partial: true, labelAr: 'اليوم' };
@@ -53,8 +60,49 @@ export default async function ExpensesPage({ params, searchParams }: { params: P
         <FCard><SectionTitle sub="سياسة التوزيع: المشترك يُعرض منفصلًا ولا يُوزع تلقائيًا على الحملات.">مباشر / مشترك</SectionTitle>{byKind.length ? <KV rows={byKind.map((b) => ({ k: b.labelAr, v: <Sar v={b.sar} /> }))} /> : <EmptyNote>لا شيء</EmptyNote>}</FCard>
       </div>
 
+      <section id="subscriptions">
+        <SectionTitle sub="منفصلة عن المصروفات المدفوعة. الاشتراك الثابت ينشئ قيدًا متوقعًا في تاريخ التجديد ولا يصبح مدفوعًا إلا بتأكيد فاتورة أو خصم. المتغير (Railway/Supabase/SendGrid/Anthropic API) ميزانية تقديرية فقط وتُدخل فاتورته الفعلية شهريًا." action={<Link href={`/${locale}/admin/founder/expenses/report`} className="text-xs font-black text-[#1f6f59] underline decoration-dotted">تقرير المصروفات ←</Link>}>الالتزامات والاشتراكات الشهرية</SectionTitle>
+        <div className="grid gap-4 lg:grid-cols-2">
+          <FCard>
+            {subs.length === 0 ? <EmptyNote>لا التزامات مسجلة</EmptyNote> : (
+              <div className="space-y-2 text-xs">
+                {subs.map((s) => (
+                  <div key={s.id} className="rounded-xl border border-[#eef6f2] p-2.5 dark:border-white/10">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="font-black">{s.vendor} <span className="font-normal text-on-surface-variant dark:text-white/60">· {EXPENSE_CATEGORY_AR[s.category]}</span></span>
+                      <span className="flex gap-1"><Tag tone={s.kind === 'fixed' ? 'good' : 'muted'}>{SUBSCRIPTION_KIND_AR[s.kind]}</Tag><Tag tone={s.status === 'active' ? 'good' : s.status === 'needs_confirmation' ? 'warn' : 'muted'}>{SUBSCRIPTION_STATUS_AR[s.status]}</Tag></span>
+                    </div>
+                    <p className="mt-1 tabular-nums text-on-surface-variant dark:text-white/60">
+                      {s.kind === 'fixed' ? <>{s.amount_sar} ر.س / {s.cadence === 'yearly' ? 'سنة' : 'شهر'}{s.next_renewal_at ? ` · التجديد القادم ${s.next_renewal_at}` : ''}{s.last_confirmed_at ? ` · آخر تأكيد ${s.last_confirmed_at}` : ''}</> : <>ميزانية تقديرية {s.amount_sar} ر.س/شهر · {s.budget_source}</>}
+                    </p>
+                    {s.notes && <p className="mt-0.5 text-[11px] text-on-surface-variant dark:text-white/50">{s.notes}</p>}
+                    <div className="mt-1 flex items-center gap-3"><EditToggle><SubscriptionForm initial={s} /></EditToggle><DeleteButton path={`/subscriptions/${s.id}`} label="أرشفة" confirmText="أرشفة هذا الالتزام؟ (يبقى في سجل التدقيق)" /></div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </FCard>
+          <div className="space-y-4">
+            <FCard>
+              <SectionTitle sub="قيود أنشأها الاشتراك الثابت في تاريخ تجديده؛ خارج كل مجموع حتى يُؤكد الدفع بفاتورة أو خصم.">قيود متوقعة بانتظار التأكيد</SectionTitle>
+              {expected.length === 0 ? <EmptyNote>لا قيود متوقعة الآن — تظهر تلقائيًا في تاريخ التجديد</EmptyNote> : (
+                <div className="space-y-2 text-xs">
+                  {expected.map((e) => (
+                    <div key={e.id} className="rounded-xl border border-amber-200 bg-amber-50/40 p-2.5 dark:border-amber-500/30 dark:bg-amber-500/5">
+                      <p className="font-black">{e.vendor} <span className="font-normal tabular-nums text-on-surface-variant dark:text-white/60">· {expenseSar(e) ?? e.amount_original} ر.س · متوقع في {e.expected_for ?? e.due_at}</span></p>
+                      <div className="mt-1 flex flex-wrap items-center gap-3"><ConfirmExpectedButton expenseId={e.id} defaultDate={e.expected_for ?? e.due_at ?? ''} /><DeleteButton path={`/expenses/${e.id}?note=${encodeURIComponent('إلغاء قيد متوقع')}`} label="لم يُدفع — إلغاء" /></div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </FCard>
+            <FCard><SectionTitle sub="Store Leads وBrowserless لا يُنشآن التزامًا متكررًا إلا بعد تأكيد أنهما لا يزالان فعالين (غيّر الحالة إلى «فعال»).">إضافة التزام</SectionTitle><SubscriptionForm /></FCard>
+          </div>
+        </div>
+      </section>
+
       <FCard>
-        <SectionTitle sub="اشتراكات متكررة تجديدها خلال 45 يومًا.">الالتزامات القادمة</SectionTitle>
+        <SectionTitle sub="اشتراكات متكررة تجديدها خلال 45 يومًا (من القيود نفسها).">الالتزامات القادمة من القيود</SectionTitle>
         {upcoming.length ? <KV rows={upcoming.map((u) => ({ k: `${u.vendor} (${u.recurrence === 'monthly' ? 'شهري' : u.recurrence === 'yearly' ? 'سنوي' : 'متكرر'})`, v: <Sar v={u.sar} />, note: `التجديد ${u.renewalAt}` }))} /> : <EmptyNote>لا تجديدات مسجلة قريبة</EmptyNote>}
       </FCard>
 

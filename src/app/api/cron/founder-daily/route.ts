@@ -9,6 +9,7 @@ import { getSetting } from '@/lib/founder/ledger';
 import { snapshotWindows } from '@/lib/founder/snapshots';
 import { generateSummary, latestSummary, scheduledSummaryWindows } from '@/lib/founder/summary';
 import { riyadhMidnightDaysAgo, toRiyadh, windowFor, type MetricWindow } from '@/lib/founder/windows';
+import { materializeExpectedExpenses } from '@/lib/founder/subscriptions';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -22,6 +23,8 @@ export async function POST(req: NextRequest) {
   const hour = Number((await getSetting<number>('summary_hour_riyadh')) ?? 8);
   const riyadhHour = toRiyadh(now).getUTCHours();
   const ledger: Record<string, unknown> = { now: now.toISOString(), riyadhHour, summaryHour: hour };
+  // Subscription drafts (rule 1): idempotent, cheap, runs on every tick regardless of the hour.
+  ledger.subscriptions = await materializeExpectedExpenses(null).catch((e) => ({ error: e instanceof Error ? e.message : 'failed' }));
   if (riyadhHour < hour && !force) return NextResponse.json({ skipped: 'before summary hour', ...ledger });
 
   const targets = scheduledSummaryWindows(now);

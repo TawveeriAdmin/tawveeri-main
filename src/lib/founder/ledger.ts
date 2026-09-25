@@ -39,6 +39,8 @@ export interface ExpenseInput {
   cost_kind?: string; allocation_note?: string | null; notes?: string | null; import_id?: string | null; row_hash?: string | null;
   /** exact (default) | month | year | needs_review — only needs_review may leave the dates empty. */
   date_precision?: string;
+  /** Set only by materializeExpectedExpenses() — links an EXPECTED draft to its subscription. */
+  subscription_id?: string | null; expected_for?: string | null;
 }
 
 const DATE_PRECISIONS = ['exact', 'month', 'year', 'needs_review'];
@@ -59,7 +61,8 @@ export function normalizeExpense(input: ExpenseInput): Record<string, unknown> {
   if (amount == null || amount < 0) errors.amount_original = 'المبلغ مطلوب ولا يكون سالبًا';
   const currency = (strOrNull(input.currency, 8) ?? 'SAR').toUpperCase();
   const fees = numOrNull(input.fees) ?? 0, tax = numOrNull(input.tax) ?? 0;
-  const paymentStatus = input.payment_status === 'due' ? 'due' : 'paid';
+  // 'expected' = a subscription draft (never counted as spend); 'due' = an invoice awaiting payment.
+  const paymentStatus = input.payment_status === 'due' ? 'due' : input.payment_status === 'expected' ? 'expected' : 'paid';
   const paidAt = dateOrNull(input.paid_at);
   if (paymentStatus === 'paid' && !paidAt && !needsReview) errors.paid_at = 'تاريخ الدفع مطلوب للمصروف المدفوع';
   const fxRate = numOrNull(input.fx_rate);
@@ -80,6 +83,7 @@ export function normalizeExpense(input: ExpenseInput): Record<string, unknown> {
     recurrence, renewal_at: dateOrNull(input.renewal_at), evidence_ref: strOrNull(input.evidence_ref, 500), evidence_path: strOrNull(input.evidence_path, 500),
     evidence_state: input.evidence_state === 'estimate' ? 'estimate' : 'documented', cost_kind: input.cost_kind === 'shared' ? 'shared' : 'direct',
     allocation_note: strOrNull(input.allocation_note, 500), notes: strOrNull(input.notes, 2000), import_id: strOrNull(input.import_id, 64), row_hash: strOrNull(input.row_hash, 80),
+    subscription_id: strOrNull(input.subscription_id, 64), expected_for: dateOrNull(input.expected_for),
   };
 }
 
