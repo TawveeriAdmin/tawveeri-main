@@ -87,6 +87,15 @@ describe('mergeVerifiedCanonicalSearchResults', () => {
     expect(result[0].stores).toHaveLength(1);
   });
 
+  it('recognizes "أمازون" and "أمازون السعودية" as the SAME store (live bug found 2026-09-25: shown as two conflicting amazon prices on one card)', async () => {
+    ownLinks = {};
+    const dup = card('product-solo', 'أمازون', 77);
+    dup.stores = [offer('أمازون', 77, 'in_stock'), offer('أمازون السعودية', 79, 'in_stock')];
+    const result = await mergeVerifiedCanonicalSearchResults([dup, card('product-other', 'noon', 200)]);
+    const merged = result.find((r) => r.product_id === 'product-solo')!;
+    expect(merged.stores).toHaveLength(1);
+  });
+
   it('collapses a single card\'s own duplicate same-store offers, preferring a valid one over out-of-stock', async () => {
     ownLinks = {};
     const dup = card('product-solo', 'amazon', 100);

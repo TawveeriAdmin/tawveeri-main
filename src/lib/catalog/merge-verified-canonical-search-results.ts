@@ -18,6 +18,7 @@
 // best-price/representative metadata are recomputed the same way for every store.
 // ─────────────────────────────────────────────────────────────────────────────
 import { createServerClient } from '@/lib/database';
+import { resolveApprovedSlug } from '@/lib/retailers/approved-retailers';
 import type { GroupedSearchProduct } from '@/lib/scraping/search/product-grouper';
 import type { SearchProduct } from '@/lib/scraping/search/types';
 
@@ -26,6 +27,21 @@ const VERIFIED_LINK_FILTER = {
   rule_version: 'convergence-v1',
   identity_key_status: 'valid',
 } as const;
+
+/**
+ * Live-caught (2026-09-25, same verification pass): a single card can already carry
+ * the SAME store spelled two different ways ("أمازون" vs "أمازون السعودية" — two
+ * `product_stores` rows for the identical amazon ASIN with inconsistent
+ * `store_name` values, the very column instability ADR-377 first documented) — a
+ * raw string key would treat them as two different stores and show both. Group by
+ * the canonical slug `resolveApprovedSlug()` already resolves every known display-
+ * name variant to, falling back to the raw (lowercased) string only for a name that
+ * map doesn't recognize, so an unmapped store is still deduped against itself
+ * without being wrongly merged into a DIFFERENT unmapped store.
+ */
+function storeKey(s: SearchProduct): string {
+  return resolveApprovedSlug(s.store) ?? s.store.trim().toLowerCase();
+}
 
 /** A store's offer is fit to stand alone: a real, positive price and not out of stock.
  *  Never "confirmed valid" from a merely-recent timestamp — see ADR-382. */
@@ -44,9 +60,9 @@ function isValidOffer(s: SearchProduct): boolean {
 function dedupeCardStores(card: GroupedSearchProduct): GroupedSearchProduct {
   const byStore = new Map<string, SearchProduct>();
   for (const s of card.stores) {
-    const existing = byStore.get(s.store);
-    if (!existing) { byStore.set(s.store, s); continue; }
-    if (isValidOffer(s) && !isValidOffer(existing)) byStore.set(s.store, s);
+    const existing = byStore.get(storeKey(s));
+    if (!existing) { byStore.set(storeKey(s), s); continue; }
+    if (isValidOffer(s) && !isValidOffer(existing)) byStore.set(storeKey(s), s);
   }
   if (byStore.size === card.stores.length) return card; // no-op, nothing collapsed
   const stores = [...byStore.values()];
@@ -66,9 +82,9 @@ function mergeCards(group: GroupedSearchProduct[]): GroupedSearchProduct {
   const allStores = group.flatMap((c) => c.stores);
   const byStore = new Map<string, SearchProduct>();
   for (const s of allStores) {
-    const existing = byStore.get(s.store);
-    if (!existing) { byStore.set(s.store, s); continue; }
-    if (isValidOffer(s) && !isValidOffer(existing)) byStore.set(s.store, s);
+    const existing = byStore.get(storeKey(s));
+    if (!existing) { byStore.set(storeKey(s), s); continue; }
+    if (isValidOffer(s) && !isValidOffer(existing)) byStore.set(storeKey(s), s);
   }
   const stores = [...byStore.values()];
   const prices = stores.map((s) => s.current_price).filter((n): n is number => typeof n === 'number' && n > 0);
