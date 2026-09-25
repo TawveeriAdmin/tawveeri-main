@@ -208,15 +208,15 @@ export default async function AdminDashboardPage({
       >
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <Card label={t('جلسات', 'Sessions')} value={fmt(data.consumer7d.sessions)} />
-          <Card label={t('عمليات بحث', 'Searches')} value={fmt(data.consumer7d.searches)} />
+          <Card label={t('أحداث بحث خام (قبل تسوية التكرار)', 'Raw search events (before deduplication)')} value={fmt(data.consumer7d.searches)} />
           <Card
-            label={t('بلا نتيجة', 'No result')}
+            label={t('أحداث بلا نتيجة (قبل تسوية إجابات المستشار)', 'Raw no-result events (before advisor reconciliation)')}
             value={fmt(data.consumer7d.noAnswer)}
             hint={noAnswerRate !== null ? `${noAnswerRate}%` : undefined}
             warn={noAnswerRate !== null && noAnswerRate > 20}
           />
           <Card
-            label={t('خروج لمتاجر', 'Retailer exits')}
+            label={t('طلبات خروج خام — تشخيصي', 'Raw exit requests — diagnostic')}
             value={fmt(data.consumer7d.outboundExits)}
             hint={t(
               `[خام] ${fmt(data.consumer7d.outboundExits)} خروج متجر مسجل — [منسوب] ${fmt(data.consumer7d.outboundExitsAttributed)} مرتبط بمعرّف جلسة توفيري؛ والبقية غير منسوبة وقيد التحقيق`,
@@ -233,8 +233,8 @@ export default async function AdminDashboardPage({
             label={t('تفاعلات مؤكدة (دقيقة القرار)', 'Decision-grade interactions')}
             value={fmt(data.decisionGrade7d.firstPartyInteractions)}
             hint={t(
-              `${fmt(data.decisionGrade7d.merchantNavigationsCorrelated)} منها مرتبط بخروج فعلي للمتجر — الرقم الوحيد الذي يثبت تفاعلاً صريحاً، وليس مجرد طلب خام`,
-              `${fmt(data.decisionGrade7d.merchantNavigationsCorrelated)} of these correlate to a confirmed merchant exit — the only number here that proves an explicit interaction, not merely a raw request`
+              `${fmt(data.decisionGrade7d.merchantNavigationsCorrelated)} منها مرتبط بسجل /go — وصول صفحة المتجر والشراء غير مقاسين`,
+              `${fmt(data.decisionGrade7d.merchantNavigationsCorrelated)} correlate to a /go record — merchant page arrival and purchases are not measured`
             )}
           />
         </div>

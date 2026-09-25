@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     lines.push(csvRow(['Generated at', report.generatedAt]));
     lines.push(csvRow([]));
     lines.push(csvRow(['Metric', 'Value']));
-    lines.push(csvRow(['Qualified visits referred', report.qualifiedSessions]));
+    lines.push(csvRow(['Session identifiers with recorded exit requests', report.qualifiedSessions]));
     // ADR-286 wording fix: RAW server-recorded /go request count, not proof of customer
     // interaction — "confirmed" retired from this export, matching the on-screen report.
     lines.push(csvRow(['Recorded retailer redirects', report.confirmedRedirects]));

@@ -24,13 +24,13 @@ describe("Command Center headline — uses ADR-286 decision-grade firstPartyInte
 
   it("commercial.explicitRetailerInteractions is populated from decisionGrade.firstPartyInteractions, never fabricated as non-null", () => {
     expect(querySource).toMatch(
-      /explicitRetailerInteractions:\s*decisionGrade\.firstPartyInteractions\.value \?\? 0/
+      /explicitRetailerInteractions:\s*decisionGrade\.firstPartyInteractions\.value,/
     );
   });
 
   it("commercial.correlatedMerchantNavigations is populated from decisionGrade.merchantNavigationsCorrelated", () => {
     expect(querySource).toMatch(
-      /correlatedMerchantNavigations:\s*decisionGrade\.merchantNavigationsCorrelated\.value \?\? 0/
+      /correlatedMerchantNavigations:\s*decisionGrade\.merchantNavigationsCorrelated\.value,/
     );
   });
 
@@ -85,10 +85,10 @@ describe("raw /go request volume is demoted to a neutrally-worded operational no
 describe("correlated merchant navigation is shown separately from the explicit-interaction count, never merged into one number", () => {
   it("the page renders a distinct supporting line naming the correlated subset via /go", () => {
     expect(pageSource).toMatch(
-      /\$\{commercial\.correlatedMerchantNavigations\} منها مرتبطة بخروج فعلي للمتجر عبر \/go/
+      /مرتبطة بسجل \/go؛ وصول المتجر غير مقاس/
     );
     expect(pageSource).toMatch(
-      /\$\{commercial\.correlatedMerchantNavigations\} correlate to a server-recorded merchant navigation via \/go/
+      /correlate to a \/go record; merchant arrival is not measured/
     );
   });
 

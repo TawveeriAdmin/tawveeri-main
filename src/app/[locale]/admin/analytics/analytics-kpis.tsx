@@ -18,12 +18,12 @@ export function DashboardKPICards({ kpis, locale }: DashboardKPICardsProps) {
 
   const items = [
     {
-      title: t('admin.dashboard.totalRevenue'),
+      title: isRTL ? 'الإيراد — راجع تقارير الشركاء' : 'Revenue — see partner reports',
       value: kpis.totalRevenue,
       icon: Banknote,
       tone: 'primary',
       currency: true,
-      trend: kpis.revenueTrend,
+      trend: undefined,
       helper: t('admin.dashboard.vsLastPeriod'),
     },
     {
@@ -47,13 +47,13 @@ export function DashboardKPICards({ kpis, locale }: DashboardKPICardsProps) {
       tone: 'neutral',
     },
     {
-      title: t('admin.dashboard.transactions'),
+      title: isRTL ? 'الطلبات — تتطلب إثبات شريك' : 'Orders — partner evidence required',
       value: kpis.totalTransactions,
       icon: CreditCard,
       tone: 'neutral',
     },
     {
-      title: t('admin.dashboard.activeDeals'),
+      title: isRTL ? 'عروض متاجر موسومة كتخفيض' : 'Store offers flagged as deals',
       value: kpis.activeDeals,
       icon: Tag,
       tone: 'gold',
@@ -121,7 +121,7 @@ export function DashboardKPICards({ kpis, locale }: DashboardKPICardsProps) {
               >
                 {item.title}
               </p>
-              {'currency' in item && item.currency ? (
+              {item.value === null ? <p className="mt-1 text-xl font-bold">{isRTL ? 'غير متاح هنا' : 'Unavailable here'}</p> : 'currency' in item && item.currency ? (
                 <Price
                   amount={item.value}
                   className={cn('mt-1 text-2xl font-black tracking-tight', item.tone === 'primary' ? 'text-white' : 'text-on-surface dark:text-white')}

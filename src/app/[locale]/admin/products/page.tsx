@@ -75,17 +75,17 @@ interface Product {
   category: string;
   brand: string;
   image_urls: string[] | null;
-  view_count: number;
-  save_count: number;
+  view_count: number | null;
+  save_count: number | null;
   created_at: string;
   product_stores: { count: number }[] | null;
 }
 
 interface ProductStats {
-  total: number;
-  withDeals: number;
-  totalViews: number;
-  totalSaves: number;
+  total: number | null;
+  withDeals: number | null;
+  totalViews: number | null;
+  totalSaves: number | null;
 }
 
 type SortField = 'name_en' | 'category' | 'brand' | 'view_count' | 'save_count' | 'created_at';
@@ -173,7 +173,7 @@ export default function AdminProductsPage(
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<ProductStats>({
-    total: 0, withDeals: 0, totalViews: 0, totalSaves: 0,
+    total: null, withDeals: null, totalViews: null, totalSaves: null,
   });
   const [categories, setCategories] = useState<string[]>([]);
   const [brands, setBrands] = useState<string[]>([]);
@@ -219,20 +219,17 @@ export default function AdminProductsPage(
   const loadStats = useCallback(async () => {
     try {
       const sb = getSupabaseBrowserClient();
-      const [totalRes, dealsRes, viewsRes, savesRes] = await Promise.all([
+      if (!sb) return;
+      const [totalRes, dealsRes] = await Promise.all([
         sb.from('products').select('id', { count: 'exact', head: true }),
         sb.from('product_stores').select('product_id', { count: 'exact', head: true }).eq('is_deal', true),
-        sb.from('products').select('view_count'),
-        sb.from('products').select('save_count'),
       ]);
-      const viewRows = (viewsRes.data || []) as Array<{ view_count: number | null }>;
-      const saveRows = (savesRes.data || []) as Array<{ save_count: number | null }>;
 
       setStats({
-        total: totalRes.count || 0,
-        withDeals: dealsRes.count || 0,
-        totalViews: viewRows.reduce((sum, p) => sum + (p.view_count || 0), 0),
-        totalSaves: saveRows.reduce((sum, p) => sum + (p.save_count || 0), 0),
+        total: totalRes.error ? null : totalRes.count,
+        withDeals: dealsRes.error ? null : dealsRes.count,
+        totalViews: null, // No such counter exists in the production products schema.
+        totalSaves: null,
       });
     } catch (e) {
       console.error('Error loading stats:', e);
@@ -261,15 +258,16 @@ export default function AdminProductsPage(
     try {
       setLoading(true);
       const sb = getSupabaseBrowserClient();
+      if (!sb) throw new Error('Database client unavailable');
 
       // Map sort field for name (locale-dependent)
       const dbSortField = sortField === 'name_en'
         ? (locale === 'ar' ? 'name_ar' : 'name_en')
-        : sortField;
+        : ['view_count', 'save_count'].includes(sortField) ? 'created_at' : sortField;
 
       let q = sb
         .from('products')
-        .select('id, name_ar, name_en, category, brand, image_urls, view_count, save_count, created_at, product_stores(count)', { count: 'exact' });
+        .select('id, name_ar, name_en, category, brand, image_urls, created_at, product_stores(count)', { count: 'exact' });
 
       if (categoryFilter !== 'all') q = q.eq('category', categoryFilter);
       if (brandFilter !== 'all') q = q.eq('brand', brandFilter);
@@ -284,7 +282,9 @@ export default function AdminProductsPage(
         .range((page - 1) * rowsPerPage, page * rowsPerPage - 1);
 
       if (error) throw error;
-      setProducts((data as unknown as Product[]) || []);
+      setProducts(((data ?? []) as unknown as Array<Omit<Product, 'view_count' | 'save_count'>>).map((p) => ({
+        ...p, view_count: null, save_count: null,
+      })));
       setTotal(count || 0);
     } catch (e) {
       console.error('Error loading products:', e);
@@ -439,22 +439,22 @@ export default function AdminProductsPage(
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatsCard
           title={t('admin.products.totalProducts')}
-          value={formatNumber(stats.total, locale)}
+          value={stats.total === null ? '—' : formatNumber(stats.total, locale)}
           icon={<Package className="h-5 w-5" />}
         />
         <StatsCard
-          title={t('admin.products.withDeals')}
-          value={formatNumber(stats.withDeals, locale)}
+          title={isRTL ? 'عروض متاجر موسومة كتخفيض' : 'Store offers flagged as deals'}
+          value={stats.withDeals === null ? '—' : formatNumber(stats.withDeals, locale)}
           icon={<Tag className="h-5 w-5" />}
         />
         <StatsCard
           title={t('admin.products.totalViews')}
-          value={formatNumber(stats.totalViews, locale)}
+          value={isRTL ? 'غير مقاس' : 'Not measured'}
           icon={<BarChart3 className="h-5 w-5" />}
         />
         <StatsCard
           title={t('admin.products.totalSaves')}
-          value={formatNumber(stats.totalSaves, locale)}
+          value={isRTL ? 'غير مقاس' : 'Not measured'}
           icon={<Bookmark className="h-5 w-5" />}
         />
       </div>
@@ -704,12 +704,12 @@ export default function AdminProductsPage(
                         )}
                         {visibleCols.views && (
                           <TableCell className="hidden font-mono text-sm tabular-nums text-on-surface-variant dark:text-white/60 lg:table-cell">
-                            {formatNumber(product.view_count, locale)}
+                            {product.view_count === null ? '—' : formatNumber(product.view_count, locale)}
                           </TableCell>
                         )}
                         {visibleCols.saves && (
                           <TableCell className="hidden font-mono text-sm tabular-nums text-on-surface-variant dark:text-white/60 lg:table-cell">
-                            {formatNumber(product.save_count, locale)}
+                            {product.save_count === null ? '—' : formatNumber(product.save_count, locale)}
                           </TableCell>
                         )}
                         {visibleCols.createdDate && (
@@ -776,7 +776,7 @@ export default function AdminProductsPage(
                           {getStoresCount(product)} {t('admin.products.stores')}
                         </span>
                         <span className="font-mono text-xs tabular-nums text-on-surface-variant dark:text-white/55">
-                          {formatNumber(product.view_count, locale)} {t('admin.products.views')}
+                          {product.view_count === null ? '—' : formatNumber(product.view_count, locale)} {t('admin.products.views')}
                         </span>
                       </div>
                     </div>

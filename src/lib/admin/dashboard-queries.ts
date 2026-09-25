@@ -1,4 +1,4 @@
-import { createServerClient } from '@/lib/database';
+import { createServerClient, fetchAllPaginated } from '@/lib/database';
 
 export type TimePeriod = '7d' | '30d' | '90d';
 
@@ -26,97 +26,42 @@ function getDateRange(period: TimePeriod) {
 }
 
 export interface DashboardKPIs {
-  totalUsers: number;
-  totalProducts: number;
-  totalStores: number;
-  totalTransactions: number;
-  totalRevenue: number;
-  activeDeals: number;
-  activePriceAlerts: number;
-  usersTrend: number;
-  revenueTrend: number;
+  totalUsers: number | null;
+  totalProducts: number | null;
+  totalStores: number | null;
+  totalTransactions: number | null;
+  totalRevenue: number | null;
+  activeDeals: number | null;
+  activePriceAlerts: number | null;
+  usersTrend: number | null;
+  revenueTrend: number | null;
   revenueSparkline: number[];
   usersSparkline: number[];
 }
 
 export async function getDashboardKPIs(): Promise<DashboardKPIs> {
-  const supabase = createServerClient();
-  const now = new Date();
-  const thirtyDaysAgo = new Date(now);
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  const sixtyDaysAgo = new Date(now);
-  sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
-
-  const [
-    usersResult,
-    productsResult,
-    storesResult,
-    transactionsResult,
-    revenueResult,
-    activeDealsResult,
-    priceAlertsResult,
-    currentPeriodUsersResult,
-    previousPeriodUsersResult,
-    currentPeriodRevenueResult,
-    previousPeriodRevenueResult,
-  ] = await Promise.all([
-    supabase.from('users').select('id', { count: 'exact', head: true }),
-    supabase.from('products').select('id', { count: 'exact', head: true }),
-    supabase.from('stores').select('id', { count: 'exact', head: true }),
-    supabase.from('transactions').select('id', { count: 'exact', head: true }).eq('status', 'completed'),
-    supabase.from('transactions').select('amount').eq('status', 'completed'),
-    supabase.from('product_stores').select('id', { count: 'exact', head: true }).eq('is_deal', true),
-    supabase.from('price_alerts').select('id', { count: 'exact', head: true }).eq('is_active', true),
-    // Current 30d users
-    supabase.from('users').select('id', { count: 'exact', head: true })
-      .gte('created_at', thirtyDaysAgo.toISOString()),
-    // Previous 30d users
-    supabase.from('users').select('id', { count: 'exact', head: true })
-      .gte('created_at', sixtyDaysAgo.toISOString())
-      .lt('created_at', thirtyDaysAgo.toISOString()),
-    // Current 30d revenue
-    supabase.from('transactions').select('amount')
-      .eq('status', 'completed')
-      .gte('created_at', thirtyDaysAgo.toISOString()),
-    // Previous 30d revenue
-    supabase.from('transactions').select('amount')
-      .eq('status', 'completed')
-      .gte('created_at', sixtyDaysAgo.toISOString())
-      .lt('created_at', thirtyDaysAgo.toISOString()),
+  const sb = createServerClient();
+  const end = new Date();
+  const start = new Date(end.getTime() - 30 * 86400000);
+  const previous = new Date(start.getTime() - 30 * 86400000);
+  const [users, products, stores, deals, alerts, currentUsers, previousUsers] = await Promise.all([
+    sb.from('users').select('id', { count: 'exact', head: true }),
+    sb.from('products').select('id', { count: 'exact', head: true }),
+    sb.from('stores').select('id', { count: 'exact', head: true }),
+    sb.from('product_stores').select('id', { count: 'exact', head: true }).eq('is_deal', true),
+    sb.from('price_alerts').select('id', { count: 'exact', head: true }).eq('is_active', true),
+    sb.from('users').select('id', { count: 'exact', head: true }).gte('created_at', start.toISOString()).lt('created_at', end.toISOString()),
+    sb.from('users').select('id', { count: 'exact', head: true }).gte('created_at', previous.toISOString()).lt('created_at', start.toISOString()),
   ]);
-
-  const totalRevenue = revenueResult.data?.reduce((sum, t) => sum + (t.amount || 0), 0) || 0;
-
-  const currentUsers = currentPeriodUsersResult.count || 0;
-  const previousUsers = previousPeriodUsersResult.count || 0;
-  const usersTrend = previousUsers > 0
-    ? Math.round(((currentUsers - previousUsers) / previousUsers) * 100)
-    : currentUsers > 0 ? 100 : 0;
-
-  const currentRevenue = currentPeriodRevenueResult.data?.reduce((sum, t) => sum + (t.amount || 0), 0) || 0;
-  const previousRevenue = previousPeriodRevenueResult.data?.reduce((sum, t) => sum + (t.amount || 0), 0) || 0;
-  const revenueTrend = previousRevenue > 0
-    ? Math.round(((currentRevenue - previousRevenue) / previousRevenue) * 100)
-    : currentRevenue > 0 ? 100 : 0;
-
-  // Sparklines were previously synthesized with Math.random() — fabricated data
-  // on a founder surface. Empty arrays render as "no sparkline"; a real one can
-  // only come from a real per-day query.
-  const revenueSparkline: number[] = [];
-  const usersSparkline: number[] = [];
-
+  const value = (r: { error: unknown; count: number | null }) => r.error ? null : r.count;
+  const current = value(currentUsers), prior = value(previousUsers);
   return {
-    totalUsers: usersResult.count || 0,
-    totalProducts: productsResult.count || 0,
-    totalStores: storesResult.count || 0,
-    totalTransactions: transactionsResult.count || 0,
-    totalRevenue,
-    activeDeals: activeDealsResult.count || 0,
-    activePriceAlerts: priceAlertsResult.count || 0,
-    usersTrend,
-    revenueTrend,
-    revenueSparkline,
-    usersSparkline,
+    totalUsers: value(users), totalProducts: value(products), totalStores: value(stores),
+    // Legacy transactions cannot establish partner-reported orders or revenue.
+    totalTransactions: null, totalRevenue: null,
+    activeDeals: value(deals), activePriceAlerts: value(alerts),
+    usersTrend: current !== null && prior !== null && prior > 0 ? Math.round((current - prior) / prior * 100) : null,
+    revenueTrend: null, revenueSparkline: [], usersSparkline: [],
   };
 }
 
@@ -213,9 +158,9 @@ export interface CategoryDistributionItem {
 export async function getCategoryDistribution(): Promise<CategoryDistributionItem[]> {
   const supabase = createServerClient();
 
-  const { data } = await supabase
-    .from('products')
-    .select('category');
+  const data = await fetchAllPaginated<{ category: string | null }>((from, to) =>
+    supabase.from('products').select('category').order('id', { ascending: true }).range(from, to)
+  );
 
   if (!data || data.length === 0) return [];
 

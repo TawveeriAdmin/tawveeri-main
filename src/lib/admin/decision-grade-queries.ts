@@ -31,6 +31,8 @@ export interface DecisionGradeOutboundStats {
    *  row — "merchant navigations we can prove followed a proven interaction". Deduplicated by
    *  interaction identity: a retried /go request for the same click never inflates this past 1. */
   merchantNavigationsCorrelated: Metric;
+  byStore: Array<{ key: string; interactions: number }> | null;
+  byChannel: Array<{ key: string; interactions: number }> | null;
 }
 
 /** Real-only, exact-ID decision-grade stats for [start, end). Never throws. */
@@ -59,6 +61,12 @@ export async function getDecisionGradeOutboundStats(start: Date, end: Date): Pro
   // this function's own doc comment. Regression-tested below (decision-grade-queries.test.ts)
   // specifically for this case.
   let correlated: Metric = { value: 0 };
+  const storeIds = new Map<string, Set<string>>();
+  const channelIds = new Map<string, Set<string>>();
+  const add = (map: Map<string, Set<string>>, key: string, id: string) => {
+    const ids = map.get(key) ?? new Set<string>();
+    ids.add(id); map.set(key, ids);
+  };
   if (idRows.error) {
     correlated = { value: null, reason: idRows.error.message };
   } else if (idRows.ids.length > 0) {
@@ -72,14 +80,21 @@ export async function getDecisionGradeOutboundStats(start: Date, end: Date): Pro
       for (;;) {
         const r = await supabase
           .from('outbound_clicks')
-          .select('interaction_id')
+          .select('interaction_id, store_name, campaign')
           .in('interaction_id', chunk)
+          .eq('is_test', false)
+          .gte('clicked_at', start.toISOString())
+          .lt('clicked_at', end.toISOString())
           .not('interaction_id', 'is', null)
           .order('id', { ascending: true })
           .range(from, from + pageSize - 1);
         if (r.error) { queryError = r.error; break; }
-        for (const row of (r.data ?? []) as Array<{ interaction_id: string | null }>) {
-          if (row.interaction_id && targetIds.has(row.interaction_id)) distinctCorrelated.add(row.interaction_id);
+        for (const row of (r.data ?? []) as Array<{ interaction_id: string | null; store_name?: string; campaign?: { utm_source?: string } | null }>) {
+          if (row.interaction_id && targetIds.has(row.interaction_id)) {
+            distinctCorrelated.add(row.interaction_id);
+            add(storeIds, row.store_name || 'unknown', row.interaction_id);
+            add(channelIds, row.campaign?.utm_source || 'unknown', row.interaction_id);
+          }
         }
         if (!r.data || r.data.length < pageSize) break;
         from += pageSize;
@@ -91,6 +106,8 @@ export async function getDecisionGradeOutboundStats(start: Date, end: Date): Pro
   return {
     firstPartyInteractions: metric(interactions.count, interactions.error),
     merchantNavigationsCorrelated: correlated,
+    byStore: correlated.value === null ? null : [...storeIds].map(([key, ids]) => ({ key, interactions: ids.size })).sort((a,b) => b.interactions-a.interactions),
+    byChannel: correlated.value === null ? null : [...channelIds].map(([key, ids]) => ({ key, interactions: ids.size })).sort((a,b) => b.interactions-a.interactions),
   };
 }
 

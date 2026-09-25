@@ -25,6 +25,7 @@ const FIELD_LABELS: Record<CanonicalField, { en: string; ar: string; required?: 
   price: { en: 'Price', ar: 'السعر' },
   commissionAmount: { en: 'Commission amount', ar: 'مبلغ العمولة' },
   state: { en: 'Status / state', ar: 'الحالة' },
+  currency: { en: 'Currency', ar: 'العملة' },
 };
 
 export function AffiliateReportUpload({ locale }: { locale: string }) {
@@ -121,7 +122,7 @@ export function AffiliateReportUpload({ locale }: { locale: string }) {
                 placeholder={isRTL ? 'اسم العمود في الملف' : 'CSV header name'}
                 value={mapping[field] || ''}
                 onChange={(e) => setMapping((m) => ({ ...m, [field]: e.target.value }))}
-                className="flex-1 rounded-lg border border-[#d7ece5] bg-transparent px-2 py-1 dark:border-[#263b33]"
+                className="min-w-0 flex-1 rounded-lg border border-[#d7ece5] bg-transparent px-2 py-1 dark:border-[#263b33]"
               />
             </div>
           ))}

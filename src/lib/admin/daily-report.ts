@@ -175,14 +175,14 @@ export async function generateDailyFounderReport(): Promise<DailyReportResult> {
       ${statRow('الجلسات الحقيقية', String(real.sessions), sessionsDelta !== null ? `${sessionsDelta >= 0 ? '▲' : '▼'} ${Math.abs(sessionsDelta)}%` : 'جديد')}
       ${statRow('عمليات البحث', String(real.search), searchDelta !== null ? `${searchDelta >= 0 ? '▲' : '▼'} ${Math.abs(searchDelta)}%` : 'جديد')}
       ${statRow('زيارات مؤهلة مُحالة', String(commercial.qualifiedVisitsReferred), '')}
-      ${statRow('تفاعلات متجر صريحة (دقيقة القرار)', String(commercial.explicitRetailerInteractions), '')}
+      ${statRow('تفاعلات متجر صريحة (دقيقة القرار)', String(commercial.explicitRetailerInteractions ?? 'غير متاح'), '')}
       ${statRow('طلبات /go مسجّلة (تشغيلي)', String(commercial.confirmedRetailerRedirects), '')}
     </table>
     <!-- ADR-286 wording fix: "تفاعلات متجر صريحة" requires a real onClick to have fired
          (first_party_interactions, REAL only); "طلبات /go مسجّلة" is a raw server-recorded
          request count — operational evidence, never proof of customer interaction. -->
     <p style="margin:0 0 20px;font-size:11px;color:#5b6b63">
-      ${commercial.correlatedMerchantNavigations} من التفاعلات الصريحة مرتبطة بخروج فعلي للمتجر عبر /go — طلبات /go المسجّلة قياس تشغيلي فقط ولا تثبت تفاعل عميل.
+      ${commercial.correlatedMerchantNavigations ?? 'غير متاح'} من التفاعلات الصريحة مرتبطة بسجل /go؛ وصول المتجر غير مقاس — طلبات /go المسجّلة قياس تشغيلي فقط ولا تثبت تفاعل عميل.
     </p>
 
     ${commercial.retailers.length > 0 ? `

@@ -7,6 +7,7 @@ import { createServerClient, fetchAllPaginated } from '@/lib/database';
 import { getAffiliateConfig } from '@/lib/transactions/affiliate-config';
 import { parseShoppingTask } from '@/lib/agent/task-parser';
 import { getDecisionGradeOutboundStats } from './decision-grade-queries';
+import type { DecisionGradeOutboundStats } from './decision-grade-queries';
 
 export type Period = 'today' | 'yesterday' | '7d' | '30d' | 'custom';
 
@@ -44,7 +45,8 @@ export function resolvePeriod(period: Period, customStart?: string, customEnd?: 
       return { start: new Date(now.getTime() - 7 * 86_400_000), end: now, label: '7d' };
     case 'custom': {
       const start = customStart ? new Date(`${customStart}T00:00:00+03:00`) : new Date(now.getTime() - 30 * 86_400_000);
-      const end = customEnd ? new Date(`${customEnd}T23:59:59+03:00`) : now;
+      // All queries use [start, end): include the final second of the selected day.
+      const end = customEnd ? new Date(new Date(`${customEnd}T00:00:00+03:00`).getTime() + 86_400_000) : now;
       return { start, end, label: 'custom' };
     }
     case '30d':
@@ -349,6 +351,17 @@ export function buildSessionFunnel(events: UsageEventRow[]): SessionFunnel {
 /** Safe ratio for session-level rates. Returns 0 on an empty denominator, never NaN. */
 export function sessionRate(numerator: number, denominator: number): number {
   return denominator > 0 ? numerator / denominator : 0;
+}
+
+export function buildSessionKpis(f: SessionFunnel) {
+  return {
+    answerRate: sessionRate(f.searchedAndGotResults, f.searched),
+    noAnswerRate: sessionRate(f.noAnswer, f.searched),
+    searchToProduct: sessionRate(f.searchedAndViewedProduct, f.searched),
+    productToCompare: sessionRate(f.viewedProductAndComparison, f.viewedProduct),
+    compareToExit: sessionRate(f.viewedComparisonAndExited, f.viewedComparison),
+    searchToExit: sessionRate(f.searchedAndExited, f.searched),
+  };
 }
 
 // Transparency signal (Data Quality Contract Rule 7/8): what share of REAL search actions came
@@ -758,6 +771,8 @@ export function buildHomeMissionStats(events: UsageEventRow[]): HomeMissionStats
 }
 
 export interface CommandCenterData {
+  sessionFunnel: SessionFunnel;
+  clientExitEvents: number;
   homeMission: HomeMissionStats;
   range: DateRange;
   real: Funnel;
@@ -794,11 +809,13 @@ export interface CommandCenterData {
     /** ADR-286 decision-grade: first_party_interactions rows requiring a real onClick to have
      *  fired (src/lib/analytics/interaction.ts) in the selected period, REAL only. This — not
      *  confirmedRetailerRedirects — is the number that actually proves an explicit interaction. */
-    explicitRetailerInteractions: number;
+    explicitRetailerInteractions: number | null;
     /** Subset of explicitRetailerInteractions exact-joined (by interaction_id) to a real
      *  outbound_clicks row — i.e. an explicit interaction that also produced a server-recorded
      *  /go merchant navigation. Never larger than explicitRetailerInteractions. */
-    correlatedMerchantNavigations: number;
+    correlatedMerchantNavigations: number | null;
+    byStore: DecisionGradeOutboundStats['byStore'];
+    byChannel: DecisionGradeOutboundStats['byChannel'];
     referredProductInterest: number;
     referredCategoryDemand: Array<{ category: string; count: number }>;
     topSearchTerms: Array<{ query: string; count: number }>;
@@ -984,7 +1001,7 @@ async function resolveStoreNameKey(rawKeys: Iterable<string>): Promise<Map<strin
   return resolved;
 }
 
-export async function retailerBreakdown(realEvents: UsageEventRow[], outboundRows: OutboundClickRow[]): Promise<RetailerReferralRow[]> {
+export async function retailerBreakdown(_realEvents: UsageEventRow[], outboundRows: OutboundClickRow[]): Promise<RetailerReferralRow[]> {
   const realOutboundRows = outboundRows.filter((r) => !r.is_test);
   const keyFor = await resolveStoreNameKey(realOutboundRows.map((r) => r.store_name || '(unknown)'));
   const bySlug = new Map<string, OutboundClickRow[]>();
@@ -993,29 +1010,9 @@ export async function retailerBreakdown(realEvents: UsageEventRow[], outboundRow
     const arr = bySlug.get(key);
     if (arr) arr.push(r); else bySlug.set(key, [r]);
   }
-  const goClickSessionsByStore = new Map<string, Set<string>>();
-  // usage_events.go_click doesn't carry store reliably for every surface — qualified sessions
-  // here are approximated from outbound_clicks' own session-less rows is not possible (ADR-207),
-  // so "qualified sessions" per retailer counts DISTINCT outbound_clicks rows' click timestamps
-  // clustered per session isn't available either; use REAL go_click events whose canonical_id
-  // matches a product referred to this store as the best-available session proxy.
-  const productsByStore = new Map<string, Set<string>>();
-  for (const [slug, rows] of bySlug) {
-    productsByStore.set(slug, new Set(rows.map((r) => r.canonical_product_id).filter((x): x is string => Boolean(x))));
-  }
-  for (const e of realEvents) {
-    if (e.event_type !== 'go_click' || !e.session_id || !e.canonical_id) continue;
-    for (const [slug, products] of productsByStore) {
-      if (products.has(e.canonical_id)) {
-        const set = goClickSessionsByStore.get(slug) ?? new Set<string>();
-        set.add(e.session_id);
-        goClickSessionsByStore.set(slug, set);
-      }
-    }
-  }
   return Array.from(bySlug.entries()).map(([storeSlug, rows]) => ({
     storeSlug,
-    qualifiedSessions: goClickSessionsByStore.get(storeSlug)?.size ?? 0,
+    qualifiedSessions: new Set(rows.map((r) => r.session_id).filter(Boolean)).size,
     confirmedRedirects: rows.length,
     distinctProducts: new Set(rows.map((r) => r.canonical_product_id).filter(Boolean)).size,
     hasAffiliateProgram: rows.some((r) => r.affiliate_program && r.affiliate_program !== 'direct'),
@@ -1086,14 +1083,8 @@ export async function getCommandCenterData(
   const test = buildFunnel(testEvents, outboundRows.filter((r) => r.is_test));
   const prevReal = buildFunnel(prevRealEvents, prevOutboundRows.filter((r) => !r.is_test));
 
-  const kpis = {
-    answerRate: pct(real.results, real.search),
-    noAnswerRate: pct(real.noAnswer, real.search),
-    searchToProduct: pct(real.productView, real.search),
-    productToCompare: pct(real.comparisonView, real.productView),
-    compareToExit: pct(real.outbound, real.comparisonView),
-    searchToExit: pct(real.outbound, real.search),
-  };
+  const sessionFunnel = buildSessionFunnel(realEvents);
+  const kpis = buildSessionKpis(sessionFunnel);
 
   const outboundReal = summarizeOutbound(outboundRows, false);
   const outboundTest = summarizeOutbound(outboundRows, true);
@@ -1139,7 +1130,9 @@ export async function getCommandCenterData(
     outboundReal,
     outboundTest,
     kpis,
-    gate: buildGate(real, kpis),
+    sessionFunnel,
+    clientExitEvents: goClickEventCountReal,
+    gate: buildGate({ ...real, outbound: decisionGrade.merchantNavigationsCorrelated.value ?? 0 }, kpis),
     quality: {
       lastEventAt,
       trackingStopped,
@@ -1148,12 +1141,19 @@ export async function getCommandCenterData(
       topSessionSearchShare: topSessionSearchShare(realEvents).share,
     },
     campaignAttribution,
-    confidence: METRIC_CONFIDENCE,
+    confidence: {
+      ...METRIC_CONFIDENCE,
+      explicitInteractions: decisionGrade.firstPartyInteractions.value === null
+        ? { state: 'UNAVAILABLE', note: 'تعذر قراءة مصدر التفاعلات؛ لا تعني القيمة المفقودة صفرًا.' }
+        : METRIC_CONFIDENCE.explicitInteractions,
+    },
     commercial: {
       qualifiedVisitsReferred: qualifiedReferredSessions(realEvents, outboundRows.filter((r) => !r.is_test)),
       confirmedRetailerRedirects: outboundReal.clicks,
-      explicitRetailerInteractions: decisionGrade.firstPartyInteractions.value ?? 0,
-      correlatedMerchantNavigations: decisionGrade.merchantNavigationsCorrelated.value ?? 0,
+      explicitRetailerInteractions: decisionGrade.firstPartyInteractions.value,
+      correlatedMerchantNavigations: decisionGrade.merchantNavigationsCorrelated.value,
+      byStore: decisionGrade.byStore,
+      byChannel: decisionGrade.byChannel,
       referredProductInterest: outboundReal.distinctProducts,
       referredCategoryDemand: categoryDemand,
       topSearchTerms: topSearchTerms(realEvents),

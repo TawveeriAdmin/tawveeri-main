@@ -12,6 +12,10 @@ export const dynamic = 'force-dynamic';
 
 const PERIODS: Period[] = ['today', 'yesterday', '7d', '30d'];
 
+function sessionRatio(n: number, d: number, ar: boolean) {
+  return d ? `${fpct(n / d)} (${n}/${d})` : (ar ? 'لا توجد عينة' : 'No sample');
+}
+
 function fpct(x: number) {
   return `${(x * 100).toFixed(1)}%`;
 }
@@ -63,7 +67,7 @@ export default async function CommandCenterPage({
 
   const data = await getCommandCenterData(period, sp.start, sp.end, includeHistorical);
   const {
-    real, test, prevReal, kpis, gate, surfaces, topDemand, unmetDemand, decisionHelpIntent, outboundReal, outboundTest,
+    real, test, prevReal, sessionFunnel, gate, surfaces, topDemand, unmetDemand, decisionHelpIntent, outboundReal, outboundTest,
     quality, campaignAttribution, confidence, commercial, baseline, homeMission,
   } = data;
 
@@ -95,7 +99,7 @@ export default async function CommandCenterPage({
               {isRTL ? 'حالة العمل الآن' : 'The business, right now'}
             </h1>
             <p className="mt-1 text-xs text-on-surface-variant dark:text-white/50">
-              {isRTL ? 'آخر تحديث' : 'Last updated'}: {new Date().toLocaleString(isRTL ? 'ar-SA' : 'en-US')}
+              {isRTL ? 'وقت قراءة الصفحة (السعودية)' : 'Page read time (Riyadh)'}: {new Date().toLocaleString(isRTL ? 'ar-SA' : 'en-US', { timeZone: 'Asia/Riyadh' })}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -172,14 +176,18 @@ export default async function CommandCenterPage({
           its daily briefing. Same pipeline, same evidence, same ACT/WATCH/INSUFFICIENT_EVIDENCE
           tiers as the email — computed once in src/lib/admin/focus-today.ts, never duplicated.
           Renders nothing at all when ENABLE_FOUNDER_AI_BRIEF is off. ── */}
-      <FocusTodaySection data={data} isRTL={isRTL} />
+      <p className="text-xs leading-6 text-on-surface-variant">
+        {isRTL ? 'الفترة بتوقيت السعودية' : 'Period in Riyadh time'}: {data.range.start.toLocaleString(locale, { timeZone: 'Asia/Riyadh' })} — {data.range.end.toLocaleString(locale, { timeZone: 'Asia/Riyadh' })}.
+        {' '}{isRTL ? 'آخر حدث مسجل' : 'Latest recorded event'}: {quality.lastEventAt ? new Date(quality.lastEventAt).toLocaleString(locale, { timeZone: 'Asia/Riyadh' }) : '—'}.
+        {' '}{isRTL ? 'معرّف الجلسة لا يساوي شخصًا؛ الزيارات البشرية المؤكدة ووصول صفحة المتجر غير مقاسين. اليوم الجاري غير مكتمل.' : 'Session IDs are not people; verified humans and merchant page arrivals are not measured. The current day is incomplete.'}
+      </p>
 
       {/* ── Commercial headline — answers the founder's 7 questions in one screen ── */}
       <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         {[
-          { icon: Users, label: isRTL ? 'الجلسات الحقيقية' : 'Real sessions', value: real.sessions, prev: prevReal.sessions, confidenceKey: 'sessions' },
+          { icon: Users, label: isRTL ? 'معرّفات جلسات غير اختبارية' : 'Non-test session identifiers', value: real.sessions, prev: prevReal.sessions, confidenceKey: 'sessions' },
           { icon: Search, label: isRTL ? 'عمليات البحث' : 'Searches', value: real.search, prev: prevReal.search, confidenceKey: 'search' },
-          { icon: TrendingUp, label: isRTL ? 'زيارات مؤهلة مُحالة' : 'Qualified visits referred', value: commercial.qualifiedVisitsReferred, prev: undefined, confidenceKey: 'qualifiedVisitsReferred' },
+          { icon: TrendingUp, label: isRTL ? 'جلسات مرتبطة بإشارة خروج' : 'Sessions with an exit signal', value: commercial.qualifiedVisitsReferred, prev: undefined, confidenceKey: 'qualifiedVisitsReferred' },
           {
             // ADR-286 wording fix: this used to be "تحويلات مؤكدة للمتاجر" / "Confirmed retailer
             // redirects" bound to a RAW outbound_clicks row count — a bare /go request/redirect
@@ -193,15 +201,15 @@ export default async function CommandCenterPage({
             confidenceKey: 'explicitInteractions',
             notes: [
               isRTL
-                ? `${commercial.correlatedMerchantNavigations} منها مرتبطة بخروج فعلي للمتجر عبر /go`
-                : `${commercial.correlatedMerchantNavigations} correlate to a server-recorded merchant navigation via /go`,
+                ? `${commercial.correlatedMerchantNavigations ?? 'غير متاح'} منها مرتبطة بسجل /go؛ وصول المتجر غير مقاس`
+                : `${commercial.correlatedMerchantNavigations ?? 'Unavailable'} correlate to a /go record; merchant arrival is not measured`,
               isRTL
                 ? `طلبات /go مسجّلة: ${commercial.confirmedRetailerRedirects} — قياس تشغيلي، لا يثبت تفاعل عميل`
                 : `Recorded /go requests: ${commercial.confirmedRetailerRedirects} — operational metric, not proof of customer interaction`,
             ],
           },
         ].map((h) => {
-          const tr = h.prev !== undefined ? trend(h.value, h.prev) : null;
+          const tr = h.prev !== undefined && h.value !== null ? trend(h.value, h.prev) : null;
           const conf = confidence[h.confidenceKey];
           return (
             <Card key={h.label}>
@@ -209,10 +217,10 @@ export default async function CommandCenterPage({
                 <p className="text-xs font-bold text-on-surface-variant dark:text-white/50">{h.label}</p>
                 {conf && <ConfidenceBadge state={conf.state} note={conf.note} isRTL={isRTL} />}
               </div>
-              <p className="mt-2 text-3xl font-black tabular-nums text-on-surface dark:text-white">{h.value}</p>
+              <p className="mt-2 text-3xl font-black tabular-nums text-on-surface dark:text-white">{h.value ?? (isRTL ? 'غير متاح' : 'Unavailable')}</p>
               {tr && (
                 <p className={`mt-1 text-xs font-bold ${tr.dir === 'up' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
-                  {tr.dir === 'up' ? '▲' : '▼'} {tr.pct !== null ? fpct(tr.pct) : (isRTL ? 'جديد' : 'new')} {isRTL ? 'مقابل أمس' : 'vs yesterday'}
+                  {tr.dir === 'up' ? '▲' : '▼'} {tr.pct !== null ? fpct(tr.pct) : (isRTL ? 'جديد' : 'new')} {isRTL ? `مقابل الفترة السابقة المساوية (${h.prev} ← ${h.value})` : `vs equal previous period (${h.prev} → ${h.value})`}
                 </p>
               )}
               {baseline.previousIsPreLaunch && !tr && period === 'today' && (
@@ -226,12 +234,35 @@ export default async function CommandCenterPage({
         })}
       </div>
 
+      <Card>
+        <p className="text-sm font-bold">{isRTL ? 'الطلبات والعمولات المؤكدة' : 'Verified orders and commissions'}</p>
+        <p className="mt-2 text-sm">{isRTL ? 'مصدرها تقارير الشركاء، ولا يمكن استنتاجها من البحث أو الخروج. راجع تغطية التقارير وفترتها قبل الحكم على الإيراد.' : 'Evidence comes from partner reports, never inferred from searches or exits. Check the report coverage and period before assessing revenue.'}</p>
+        <Link href={`/${locale}/admin/affiliate`} className="mt-2 inline-block text-sm underline">{isRTL ? 'تقارير الشركاء وحالة الاستيراد' : 'Partner reports and import status'}</Link>
+      </Card>
+
+      <FocusTodaySection data={data} isRTL={isRTL} />
+
+      <Card>
+        <h2 className="font-bold">{isRTL ? 'التفاعلات المرتبطة بسجل خروج — بحسب المتجر والقناة' : 'Interactions linked to exit records — by retailer and channel'}</h2>
+        <p className="mt-2 text-xs leading-6">{isRTL ? 'نفس الفترة أعلاه؛ عدّ معرّفات تفاعل فريدة بعد مطابقة المصدرين. القناة هي UTM المسجلة وليست إثبات إعلان مدفوع. قد يظهر التفاعل في أكثر من مجموعة؛ لا تجمع المجموعات لإنتاج الإجمالي.' : 'Same period; distinct interaction IDs matched across both sources. Channels use recorded UTM, not proof of paid advertising. Groups may overlap.'}</p>
+        <div className="mt-3 grid gap-5 sm:grid-cols-2">
+          {[commercial.byStore, commercial.byChannel].map((rows, index) => (
+            <div key={index} className="space-y-2 text-sm">
+              <h3 className="font-bold">{index === 0 ? (isRTL ? 'المتجر' : 'Retailer') : (isRTL ? 'القناة المسجلة' : 'Recorded channel')}</h3>
+              {rows === null ? <p>{isRTL ? 'تعذر قراءة المصدر' : 'Source unavailable'}</p> : rows.length === 0 ? <p>{isRTL ? 'لا تفاعلات مطابقة في الفترة' : 'No matched interactions in this period'}</p> : rows.map(row => (
+                <div key={row.key} className="flex justify-between gap-3"><bdi>{row.key === 'unknown' ? (isRTL ? 'غير معروفة' : 'Unknown') : index === 0 ? retailerDisplayName(row.key, isRTL) : row.key}</bdi><span>{row.interactions}</span></div>
+              ))}
+            </div>
+          ))}
+        </div>
+      </Card>
+
       {/* Referred product/category interest */}
       <div className="grid gap-4 lg:grid-cols-3">
         <Card>
-          <p className="text-xs font-bold text-on-surface-variant dark:text-white/50">{isRTL ? 'اهتمام بمنتجات مُحالة' : 'Referred product interest'}</p>
+          <p className="text-xs font-bold text-on-surface-variant dark:text-white/50">{isRTL ? 'منتجات في سجل الخروج الخام' : 'Products in raw exit ledger'}</p>
           <p className="mt-2 text-2xl font-black tabular-nums text-on-surface dark:text-white">{commercial.referredProductInterest}</p>
-          <p className="mt-1 text-[11px] text-on-surface-variant dark:text-white/40">{isRTL ? 'عدد المنتجات المختلفة التي أُحيلت لمتجر' : 'distinct products referred to a retailer'}</p>
+          <p className="mt-1 text-[11px] text-on-surface-variant dark:text-white/40">{isRTL ? 'معرّفات منتجات فريدة في طلبات /go؛ تشمل حركة غير مؤهلة، ولا تثبت اهتمام عملاء أو وصول المتجر.' : 'Distinct product IDs in raw /go requests, including unqualified traffic; not proof of customer interest or merchant arrival.'}</p>
         </Card>
         <Card className="lg:col-span-2">
           <div className="flex items-center gap-2">
@@ -269,11 +300,12 @@ export default async function CommandCenterPage({
         </Card>
         <Card>
           <h2 className="text-sm font-black uppercase tracking-wide text-on-surface dark:text-white">{isRTL ? 'الفئات الأعلى طلباً' : 'Top demand categories'}</h2>
+          <p className="mt-2 text-xs text-on-surface-variant dark:text-white/60">{isRTL ? 'تصنيف تقديري للنص بمحلل الفئات الحالي؛ العربية والإنجليزية قد تمثلان الفئة نفسها. العدد أحداث بحث، لا أشخاص.' : 'Estimated text classification with the current parser; counts are search events, not people.'}</p>
           <div className="mt-3 space-y-1.5 text-sm">
             {topDemand.length === 0 && <p className="text-on-surface-variant dark:text-white/40">{isRTL ? 'لا توجد بيانات بعد' : 'No data yet'}</p>}
             {topDemand.slice(0, 8).map((d) => (
               <div key={d.category} className="flex items-center justify-between">
-                <span className="text-on-surface-variant dark:text-white/60">{d.category}</span>
+                <span className="text-on-surface-variant dark:text-white/60">{d.category === '(unparsed)' || d.category === 'unparsed' ? (isRTL ? 'غير مصنف آليًا' : 'Not automatically classified') : d.category}</span>
                 <span className="font-bold tabular-nums text-on-surface dark:text-white">{d.count}</span>
               </div>
             ))}
@@ -390,18 +422,19 @@ export default async function CommandCenterPage({
         <div className="mt-4 space-y-6">
           <div>
             <div className="flex items-center justify-between gap-2">
-              <h3 className="text-xs font-black uppercase tracking-wide text-on-surface-variant dark:text-white/60">{isRTL ? 'رحلة العميل الكاملة' : 'Full customer journey'}</h3>
+              <h3 className="text-xs font-black uppercase tracking-wide text-on-surface-variant dark:text-white/60">{isRTL ? 'مراحل النشاط المسجّل' : 'Recorded activity stages'}</h3>
               <ConfidenceBadge state={confidence.search.state} note={confidence.search.note} isRTL={isRTL} />
             </div>
+            <p className="mt-2 text-xs">{isRTL ? 'الأعداد أحداث؛ النسب تقاطع معرّفات الجلسات بين مرحلتين، ولا تثبت ترتيب الخطوات أو وصول العميل للمتجر.' : 'Counts are events; rates intersect session IDs across stages and do not establish sequence or merchant arrival.'}</p>
             <div className="mt-3 grid grid-cols-3 gap-2 sm:gap-3 lg:grid-cols-6">
               {[
                 { icon: Search, label: isRTL ? 'بحث' : 'Search', value: real.search, conv: null },
-                { icon: FileSearch, label: isRTL ? 'نتائج' : 'Results', value: real.results, conv: fpct(kpis.answerRate) },
-                { icon: Eye, label: isRTL ? 'فتح منتج' : 'Product view', value: real.productView, conv: fpct(kpis.searchToProduct) },
-                { icon: Scale, label: isRTL ? 'مقارنة' : 'Comparison', value: real.comparisonView, conv: fpct(kpis.productToCompare) },
+                { icon: FileSearch, label: isRTL ? 'نتائج' : 'Results', value: real.results, conv: sessionRatio(sessionFunnel.searchedAndGotResults, sessionFunnel.searched, isRTL) },
+                { icon: Eye, label: isRTL ? 'فتح منتج' : 'Product view', value: real.productView, conv: sessionRatio(sessionFunnel.searchedAndViewedProduct, sessionFunnel.searched, isRTL) },
+                { icon: Scale, label: isRTL ? 'مقارنة' : 'Comparison', value: real.comparisonView, conv: sessionRatio(sessionFunnel.viewedProductAndComparison, sessionFunnel.viewedProduct, isRTL) },
                 { icon: BookOpen, label: isRTL ? 'دليل' : 'Evidence', value: real.evidenceView, conv: null },
                 {
-                  icon: ExternalLink, label: isRTL ? 'خروج' : 'Outbound', value: real.outbound, conv: fpct(kpis.compareToExit),
+                  icon: ExternalLink, label: isRTL ? 'نقر خروج من المتصفح' : 'Client exit clicks', value: data.clientExitEvents, conv: sessionRatio(sessionFunnel.viewedComparisonAndExited, sessionFunnel.viewedComparison, isRTL),
                   // 2026-09-24 labeling fix: this is the legacy client-fired go_click usage_event
                   // (ADR-244), not the decision-grade first_party_interactions ledger (ADR-286) or
                   // the raw outbound_clicks table shown elsewhere on this page — each is a
@@ -419,7 +452,7 @@ export default async function CommandCenterPage({
               ))}
             </div>
             <p className="mt-3 text-xs text-on-surface-variant dark:text-white/50">
-              {isRTL ? 'بدون نتيجة' : 'No-answer'}={real.noAnswer} · {isRTL ? 'أخطاء' : 'errors'}={real.errors} · {isRTL ? 'بحث→خروج إجمالي' : 'overall Search→Exit'}={fpct(kpis.searchToExit)}
+              {isRTL ? 'بدون نتيجة' : 'No-answer'}={real.noAnswer} · {isRTL ? 'أخطاء' : 'errors'}={real.errors} · {isRTL ? 'بحث→خروج إجمالي' : 'overall Search→Exit'}={sessionRatio(sessionFunnel.searchedAndExited, sessionFunnel.searched, isRTL)}
             </p>
           </div>
 

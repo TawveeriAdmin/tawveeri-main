@@ -125,7 +125,8 @@ describe('generateFounderIntelligenceBrief — evidence integrity', () => {
     global.fetch = mockFetch('', false, 500);
     const result = await generateFounderIntelligenceBrief(assembleFounderIntelligenceCandidates([opp({})]));
     expect(result.aiAvailable).toBe(false);
-    expect(describeUnavailability(result)).toContain('500');
+    expect(describeUnavailability(result)).toContain('تعذر');
+    expect(describeUnavailability(result)).not.toContain('500');
   });
 
   it('a thrown network error never propagates — always resolves', async () => {

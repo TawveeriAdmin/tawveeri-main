@@ -127,7 +127,7 @@ describe("5 — decision-grade evidence and raw operational evidence remain visi
   });
 
   it("daily report: the decision-grade stat row and the raw-request stat row are two separate <tr> rows, not one blended figure", () => {
-    const explicitRowIdx = dailyReport.indexOf("تفاعلات متجر صريحة (دقيقة القرار)', String(commercial.explicitRetailerInteractions)");
+    const explicitRowIdx = dailyReport.indexOf("تفاعلات متجر صريحة (دقيقة القرار)', String(commercial.explicitRetailerInteractions ??");
     const rawRowIdx = dailyReport.indexOf("طلبات /go مسجّلة (تشغيلي)', String(commercial.confirmedRetailerRedirects)");
     expect(explicitRowIdx).toBeGreaterThan(-1);
     expect(rawRowIdx).toBeGreaterThan(-1);

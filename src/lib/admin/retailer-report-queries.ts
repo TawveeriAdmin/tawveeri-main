@@ -6,7 +6,7 @@
 import { createServerClient } from '@/lib/database';
 import { getProviderByStoreId, listProviders } from '@/lib/providers/registry';
 import {
-  resolvePeriod, fetchUsageEvents, fetchOutboundClicks,
+  resolvePeriod, fetchOutboundClicks,
   COMMERCIAL_BASELINE, computeCampaignAttribution,
   type Period, type DateRange,
 } from './command-center-queries';
@@ -71,12 +71,7 @@ export async function getRetailerReport(
   const range = resolvePeriod(period, customStart, customEnd);
   const fetchStart = includeHistorical ? range.start : new Date(Math.max(range.start.getTime(), COMMERCIAL_BASELINE.getTime()));
 
-  const [events, outboundRows] = await Promise.all([
-    fetchUsageEvents(fetchStart, range.end),
-    fetchOutboundClicks(fetchStart, range.end),
-  ]);
-
-  const realEvents = events.filter((e) => !e.is_test);
+  const outboundRows = await fetchOutboundClicks(fetchStart, range.end);
   const storeKey = String(storeId);
   const retailerRowsBeforeAutomationFilter = outboundRows.filter((r) => !r.is_test && r.store_name === storeKey);
   const retailerRows = retailerRowsBeforeAutomationFilter.filter((r) => !isProbableAutomatedRedirect(r));
@@ -85,16 +80,9 @@ export async function getRetailerReport(
   const productIds = Array.from(new Set(retailerRows.map((r) => r.canonical_product_id).filter((x): x is string => Boolean(x))));
   const [categories, names] = await Promise.all([categoriesForProducts(productIds), namesForProducts(productIds)]);
 
-  // Qualified sessions for this retailer: REAL go_click events whose canonical_id is among the
-  // products actually referred to this store (same proxy method as command-center-queries.ts's
-  // retailerBreakdown — outbound_clicks.session_id is unpopulated, ADR-207).
-  const productSet = new Set(productIds);
-  const qualifiedSessionIds = new Set<string>();
-  for (const e of realEvents) {
-    if (e.event_type === 'go_click' && e.session_id && e.canonical_id && productSet.has(e.canonical_id)) {
-      qualifiedSessionIds.add(e.session_id);
-    }
-  }
+  // Session identity is populated on the ledger since August 13. Product overlap is
+  // not attribution: the same product can send a shopper to a different retailer.
+  const qualifiedSessionIds = new Set(retailerRows.map((r) => r.session_id).filter((s): s is string => Boolean(s)));
 
   const productCounts = new Map<string, number>();
   for (const r of retailerRows) {
@@ -121,26 +109,19 @@ export async function getRetailerReport(
     const day = riyadh.toISOString().slice(0, 10);
     const bucket = byDay.get(day) ?? { redirects: 0, sessions: new Set<string>() };
     bucket.redirects++;
-    byDay.set(day, bucket);
-  }
-  for (const e of realEvents) {
-    if (e.event_type !== 'go_click' || !e.session_id || !e.canonical_id || !productSet.has(e.canonical_id)) continue;
-    const riyadh = new Date(new Date(e.created_at).getTime() + 3 * 60 * 60 * 1000);
-    const day = riyadh.toISOString().slice(0, 10);
-    const bucket = byDay.get(day) ?? { redirects: 0, sessions: new Set<string>() };
-    bucket.sessions.add(e.session_id);
+    if (r.session_id) bucket.sessions.add(r.session_id);
     byDay.set(day, bucket);
   }
   const dailyTrend = Array.from(byDay.entries())
     .map(([date, v]) => ({ date, redirects: v.redirects, qualifiedSessions: v.sessions.size }))
     .sort((a, b) => a.date.localeCompare(b.date));
 
-  const goClicksForStore = realEvents.filter((e) => e.event_type === 'go_click' && e.canonical_id && productSet.has(e.canonical_id));
-  const attribution = computeCampaignAttribution(goClicksForStore, retailerRows);
+  // One ledger only: mixing client go_click with O counts the same exit twice.
+  const attribution = computeCampaignAttribution([], retailerRows);
 
   const provider = getProviderByStoreId(storeId);
   const limitations: string[] = [
-    'Qualified sessions are approximated via product-level correlation, not a direct session→retailer join (outbound_clicks.session_id is not populated — see ADR-207).',
+    'Sessions are distinct non-empty outbound_clicks.session_id values for this retailer in the selected period. They are identifiers, not verified people or confirmed merchant arrivals. Historical sessionless rows cannot be attributed.',
     // ADR-286 wording fix: this is a RAW server-recorded /go request count, not proof any
     // customer actually interacted — "confirmed" language was retired from this report (see
     // buildRetailerNarrative and the on-screen headline card).
@@ -183,6 +164,6 @@ export function buildRetailerNarrative(report: RetailerReport, isRTL: boolean): 
   }
   const topCats = report.topCategories.slice(0, 3).map((c) => c.category).join(isRTL ? '، ' : ', ');
   return isRTL
-    ? `خلال الفترة المحددة، أحال توفيري ${report.qualifiedSessions} زيارة مؤهلة إلى ${name} عبر ${report.uniqueProducts} منتجاً (${report.confirmedRedirects} عملية انتقال مسجّلة إلى المتجر). أعلى الفئات اهتماماً: ${topCats || 'غير محدد'}.`
-    : `During the selected period, Tawveeri referred ${report.qualifiedSessions} qualified visits to ${name} across ${report.uniqueProducts} products (${report.confirmedRedirects} recorded retailer redirects). The highest-interest categories were ${topCats || 'not yet clear'}.`;
+    ? `خلال الفترة المحددة، سُجّل ${report.qualifiedSessions} معرّف جلسة مرتبط بطلب خروج إلى ${name} عبر ${report.uniqueProducts} منتجاً (${report.confirmedRedirects} طلب خروج بعد الاستبعاد). وصول المتجر والشراء غير مثبتين. أعلى الفئات المسجلة: ${topCats || 'غير محدد'}.`
+    : `During the selected period, ${report.qualifiedSessions} session identifiers were linked to exit requests to ${name} across ${report.uniqueProducts} products (${report.confirmedRedirects} recorded retailer redirects after exclusions). Merchant arrival and purchases are not verified. Top recorded categories: ${topCats || 'not yet clear'}.`;
 }

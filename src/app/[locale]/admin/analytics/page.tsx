@@ -1,7 +1,6 @@
 import dynamic from 'next/dynamic';
 import {
   getDashboardKPIs,
-  getRevenueOverTime,
   getUserRegistrationsByDay,
   getCategoryDistribution,
 } from '@/lib/admin/dashboard-queries';
@@ -32,11 +31,11 @@ export default async function AdminAnalyticsPage({
     storeStatusResult,
   ] = await Promise.all([
     getDashboardKPIs(),
-    getRevenueOverTime('30d'),
+    Promise.resolve([]), // Legacy transactions are not affiliate-network revenue evidence.
     getUserRegistrationsByDay('30d'),
     getCategoryDistribution(),
     supabase.from('users').select('role'),
-    supabase.from('stores').select('status'),
+    supabase.from('stores').select('slug'),
   ]);
 
   // Build role distribution
@@ -58,8 +57,8 @@ export default async function AdminAnalyticsPage({
 
   // Build store status distribution
   const statusCounts: Record<string, number> = {};
-  storeStatusResult.data?.forEach((store) => {
-    const status = store.status || 'unknown';
+  storeStatusResult.data?.forEach(() => {
+    const status = 'registered'; // Production has no lifecycle status column.
     statusCounts[status] = (statusCounts[status] || 0) + 1;
   });
   const storeStatusData = Object.entries(statusCounts)
@@ -75,6 +74,7 @@ export default async function AdminAnalyticsPage({
 
   return (
     <div className="space-y-6">
+      <p className="text-sm leading-7">{locale === 'ar' ? 'هذه إحصاءات حسابات وقوائم الكتالوج الحالية، وليست زيارات أو مبيعات. لا توجد حالة نشاط موثقة للمتاجر في هذا المصدر. الإيراد والطلبات يُراجعان من تقارير الشركاء في صفحة العمولات؛ لا يُستنتجان من جدول المعاملات التراثي.' : 'Current account and catalog counts, not visits or sales. Store lifecycle status is not recorded here. Use partner reports for revenue and orders.'}</p>
       {/* KPI Cards */}
       <DashboardKPICards kpis={kpis} locale={locale} />
 

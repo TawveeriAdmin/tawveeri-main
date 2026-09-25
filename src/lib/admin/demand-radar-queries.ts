@@ -2,7 +2,7 @@
 // REAL and TEST are fetched separately and never blended; the radar state row
 // makes SOURCE_UNAVAILABLE / UNCONFIGURED visible instead of a silent zero.
 
-import { createServerClient } from '@/lib/database';
+import { createServerClient, fetchAllPaginated } from '@/lib/database';
 
 export interface OpportunityRow {
   id: string;
@@ -88,9 +88,10 @@ export async function fetchRadarSurface(): Promise<{
   categoryStats: CategoryRadarStats[];
   testCount: number;
   mentions: MentionRow[];
+  latestSavedOpportunityAt: string | null;
 }> {
   const sb = createServerClient() as any;
-  const [openRes, closedRes, stateRes, allRes, testRes, mentionsRes] = await Promise.all([
+  const [openRes, closedRes, stateRes, allRes, testRes, mentionsRes, latestRes] = await Promise.all([
     sb.from('demand_opportunities')
       .select('*')
       .in('status', ['new', 'ready_for_review', 'approved', 'changes_requested'])
@@ -103,17 +104,23 @@ export async function fetchRadarSurface(): Promise<{
       .order('updated_at', { ascending: false })
       .limit(10),
     sb.from('demand_radar_state').select('source, last_poll_at, last_poll_status, last_poll_candidates'),
-    sb.from('demand_opportunities')
-      .select('category, tier, status, is_test')
-      .eq('is_test', false)
-      .limit(5000),
+    fetchAllPaginated<{ category: string | null; tier: string; status: string }>((from, to) =>
+      sb.from('demand_opportunities').select('category, tier, status, is_test')
+        .eq('is_test', false).order('id', { ascending: true }).range(from, to)
+    ),
     sb.from('demand_opportunities').select('id', { count: 'exact', head: true }).eq('is_test', true),
     sb.from('brand_mentions')
       .select('id, source, source_url, author_handle, post_text, source_posted_at, first_seen_at, mention_class, suggested_reply, status, is_test')
       .eq('status', 'new')
       .order('created_at', { ascending: false })
       .limit(20),
+    sb.from('demand_opportunities').select('first_seen_at').eq('is_test', false)
+      .order('first_seen_at', { ascending: false }).limit(1),
   ]);
+  // A failed source is unknown, never an empty successful radar.
+  for (const result of [openRes, closedRes, stateRes, testRes, mentionsRes, latestRes]) {
+    if (result.error) throw result.error;
+  }
 
   const tierOrder = (t: string) => (t === 'high' ? 0 : t === 'medium' ? 1 : 2);
   const open = ((openRes.data ?? []) as OpportunityRow[]).sort(
@@ -121,7 +128,7 @@ export async function fetchRadarSurface(): Promise<{
   );
 
   const stats = new Map<string, CategoryRadarStats>();
-  for (const r of (allRes.data ?? []) as Array<{ category: string | null; tier: string; status: string }>) {
+  for (const r of allRes) {
     const key = r.category ?? 'غير محدد';
     const s = stats.get(key) ?? { category: key, candidates: 0, high: 0, medium: 0, approved: 0, dismissed: 0, replied: 0 };
     s.candidates++;
@@ -140,5 +147,6 @@ export async function fetchRadarSurface(): Promise<{
     categoryStats: [...stats.values()].sort((a, b) => b.candidates - a.candidates),
     testCount: testRes.count ?? 0,
     mentions: (mentionsRes.data ?? []) as MentionRow[],
+    latestSavedOpportunityAt: latestRes.data?.[0]?.first_seen_at ?? null,
   };
 }

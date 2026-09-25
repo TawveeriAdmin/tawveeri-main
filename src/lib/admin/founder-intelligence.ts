@@ -30,6 +30,7 @@
 // the email must never depend on an AI call succeeding.
 
 import type { Opportunity, EvidenceConfidence, ActionTier } from './opportunities';
+import { founderAIStatusAr } from './service-status';
 
 const MODEL = process.env.FOUNDER_INTEL_BRIEF_MODEL || 'claude-sonnet-5';
 const TIMEOUT_MS = 15000;
@@ -170,15 +171,19 @@ export async function generateFounderIntelligenceBrief(
       headers: { 'content-type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
       body: JSON.stringify({
         model: MODEL,
-        max_tokens: 1200,
+        max_tokens: 2400,
         system: SYSTEM_PROMPT,
         messages: [{ role: 'user', content: JSON.stringify(buildCandidatePayload(candidates)) }],
       }),
     });
     if (!res.ok) return { focusItems: [], aiAvailable: false, reason: `Anthropic API ${res.status}` };
-    const data = (await res.json()) as { content?: Array<{ type: string; text?: string }> };
+    const data = (await res.json()) as { stop_reason?: string; content?: Array<{ type: string; text?: string }> };
+    if (data.stop_reason && data.stop_reason !== 'end_turn') {
+      return { focusItems: [], aiAvailable: false, reason: `incomplete response: ${data.stop_reason}` };
+    }
     const text = data.content?.find((b) => b.type === 'text')?.text ?? '';
     const parsed = JSON.parse(text.trim());
+    if (!Array.isArray(parsed)) return { focusItems: [], aiAvailable: false, reason: 'invalid JSON response shape' };
     return { focusItems: validateAndResolve(parsed, candidates), aiAvailable: true };
   } catch (e) {
     return { focusItems: [], aiAvailable: false, reason: e instanceof Error ? e.message : 'unknown error' };
@@ -217,5 +222,5 @@ export function assembleFounderIntelligenceCandidates(
  *  the founder's own requirement that AI failures be stated, not hidden. */
 export function describeUnavailability(result: FounderIntelligenceBriefResult): string | null {
   if (result.aiAvailable) return null;
-  return result.reason ?? 'unknown';
+  return founderAIStatusAr(result.reason);
 }

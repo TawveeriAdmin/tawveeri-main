@@ -30,7 +30,7 @@ describe("Retailer report CSV export carries no personal or session data", () =>
   });
 
   it("only emits aggregated fields (counts/names/dates), not raw per-click rows", () => {
-    expect(src).toMatch(/Qualified visits referred/);
+    expect(src).toMatch(/Session identifiers with recorded exit requests/);
     expect(src).toMatch(/report\.topProducts/);
     expect(src).not.toMatch(/outboundRows|realOutboundRows/); // raw row arrays never touch the CSV builder
   });

@@ -17,18 +17,7 @@ describe('Notification System', () => {
   const supabase = createServerClient();
 
   beforeAll(async () => {
-    // Get a test user ID
-    const { data } = await supabase
-      .from('users')
-      .select('id')
-      .eq('role', 'admin')
-      .maybeSingle();
-
-    if (data?.id) {
-      testUserId = data.id;
-      return;
-    }
-
+    // Never send fixture notifications to the real founder account.
     const testId = crypto.randomUUID();
     const { data: created, error } = await supabase
       .from('users')

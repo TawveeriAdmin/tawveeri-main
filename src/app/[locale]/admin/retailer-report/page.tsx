@@ -103,15 +103,19 @@ export default async function RetailerReportPage({
           {/* Print header — visible only when printing */}
           <div className="hidden print:block">
             <h1 className="text-xl font-black">{isRTL ? 'تقرير شراكة توفيري' : 'Tawveeri Partnership Report'} — {isRTL ? report.retailer.displayNameAr : report.retailer.displayName}</h1>
-            <p className="text-xs text-gray-600">{isRTL ? 'تم الإنشاء' : 'Generated'}: {new Date(report.generatedAt).toLocaleString(isRTL ? 'ar-SA' : 'en-US')}</p>
+            <p className="text-xs text-gray-600">{isRTL ? 'تم الإنشاء بتوقيت السعودية' : 'Generated (Saudi time)'}: {new Date(report.generatedAt).toLocaleString(isRTL ? 'ar-SA' : 'en-US', { timeZone: 'Asia/Riyadh' })}</p>
           </div>
 
           <Card>
             <p className="text-sm leading-7 text-on-surface dark:text-white">{narrative}</p>
             <p className="mt-2 text-xs text-on-surface-variant dark:text-white/40">
-              {isRTL ? 'تم الإنشاء' : 'Generated'}: {new Date(report.generatedAt).toLocaleString(isRTL ? 'ar-SA' : 'en-US')} ·{' '}
+              {isRTL ? 'تم الإنشاء بتوقيت السعودية' : 'Generated (Saudi time)'}: {new Date(report.generatedAt).toLocaleString(isRTL ? 'ar-SA' : 'en-US', { timeZone: 'Asia/Riyadh' })} ·{' '}
               {isRTL ? 'حجم العينة' : 'Sample size'}: {report.sampleSize} {isRTL ? 'نقرة خروج' : 'redirects'}
               {report.sampleSize < 30 && <span className="ms-2 font-black text-amber-600 dark:text-amber-400">{isRTL ? 'إشارة مبكرة' : 'EARLY SIGNAL'}</span>}
+            </p>
+            <p className="mt-2 text-xs text-on-surface-variant dark:text-white/60">
+              {isRTL ? 'الفترة بتوقيت السعودية (النهاية حصرية)' : 'Period in Saudi time (exclusive end)'}: {report.range.start.toLocaleString(locale, { timeZone: 'Asia/Riyadh' })} — {report.range.end.toLocaleString(locale, { timeZone: 'Asia/Riyadh' })}.
+              {' '}{isRTL ? 'عدّ قابل لإعادة الحساب من السجل؛ هوية الإنسان ووصول المتجر غير مثبتين.' : 'Reproducible ledger counts; human identity and merchant arrival are unverified.'}
             </p>
             {report.probableAutomatedRedirectsExcluded > 0 && (
               <p className="mt-1 text-xs text-on-surface-variant dark:text-white/40">
@@ -124,7 +128,7 @@ export default async function RetailerReportPage({
 
           <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             {[
-              { label: isRTL ? 'زيارات مؤهلة' : 'Qualified visits', value: report.qualifiedSessions },
+              { label: isRTL ? 'جلسات مرتبطة بطلب خروج' : 'Sessions with exit requests', value: report.qualifiedSessions },
               // ADR-286 wording fix: this is a RAW /go request count (server-recorded), never
               // proof of a customer interaction — "confirmed" was retired from this label.
               { label: isRTL ? 'عمليات انتقال مسجّلة إلى المتجر' : 'Recorded retailer redirects', value: report.confirmedRedirects },
@@ -173,7 +177,7 @@ export default async function RetailerReportPage({
                   <tr className="text-start text-xs font-bold text-on-surface-variant dark:text-white/50">
                     <th className="pb-2 text-start">{isRTL ? 'التاريخ' : 'Date'}</th>
                     <th className="pb-2 text-end">{isRTL ? 'نقرات خروج' : 'Redirects'}</th>
-                    <th className="pb-2 text-end">{isRTL ? 'زيارات مؤهلة' : 'Qualified sessions'}</th>
+                    <th className="pb-2 text-end">{isRTL ? 'جلسات مرتبطة بطلب خروج' : 'Sessions with exit requests'}</th>
                   </tr>
                 </thead>
                 <tbody>

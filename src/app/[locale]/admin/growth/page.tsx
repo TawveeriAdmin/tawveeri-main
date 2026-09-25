@@ -6,6 +6,7 @@ import { GrowthReviewActions } from '@/components/admin/growth-review-actions';
 import { fetchRadarSurface, OPPORTUNITY_STATUS_LABEL_AR, MENTION_CLASS_LABEL_AR } from '@/lib/admin/demand-radar-queries';
 import { RadarOpportunityActions, MentionActions } from '@/components/admin/radar-opportunity-actions';
 import { categoryNameAr } from '@/lib/growth/demand-radar/saudi-lexicon';
+import { radarStatusAr } from '@/lib/admin/service-status';
 
 // Founder Growth surface (ADR-244 Gates D/E/F). The smallest useful review
 // experience: trustworthy measurement, the distribution diagnosis, the content
@@ -46,7 +47,7 @@ export default async function GrowthPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">النمو — Growth</h1>
-          <p className="text-sm text-gray-500">آخر 7 أيام · بيانات حقيقية فقط (REAL) · <Link className="underline" href="command-center">لوحة التجارة الكاملة</Link></p>
+          <p className="text-sm text-gray-500">آخر 7 أيام · بيانات غير موسومة كاختبار · <Link className="underline" href="command-center">لوحة التجارة الكاملة</Link></p>
         </div>
         {readyCount > 0 && (
           <span className="rounded-full bg-emerald-100 px-4 py-2 text-sm font-bold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
@@ -59,10 +60,10 @@ export default async function GrowthPage() {
       <Card title="القياس الحالي">
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           {[
-            ['جلسات حقيقية', f.sessions],
-            ['عمليات بحث', f.search],
-            ['مقارنات', f.comparisonView],
-            ['خروج لمتاجر (سجل الخروج)', f.outbound],
+            ['معرّفات جلسات (لا تساوي أشخاصًا)', f.sessions],
+            ['عمليات بحث بعد تسوية التكرار (تقدير)', f.search],
+            ['أحداث عرض مقارنة', f.comparisonView],
+            ['تفاعلات مرتبطة بسجل /go', data.commercial.correlatedMerchantNavigations ?? 'غير متاح'],
           ].map(([label, v]) => (
             <div key={String(label)} className="rounded-xl bg-gray-50 p-4 text-center dark:bg-white/5">
               <div className="text-3xl font-extrabold tabular-nums">{String(v)}</div>
@@ -70,8 +71,17 @@ export default async function GrowthPage() {
             </div>
           ))}
         </div>
+        <p className="mt-3 text-xs leading-6 text-gray-500">
+          الفترة بتوقيت السعودية: {data.range.start.toLocaleString('ar-SA', { timeZone: 'Asia/Riyadh' })} — {data.range.end.toLocaleString('ar-SA', { timeZone: 'Asia/Riyadh' })}.
+          آخر حدث مسجل: {data.quality.lastEventAt ? new Date(data.quality.lastEventAt).toLocaleString('ar-SA', { timeZone: 'Asia/Riyadh' }) : 'غير معروف'}.
+          الربط بمعرّف التفاعل دليل داخلي على طلب خروج؛ لا يثبت وصول صفحة المتجر أو شراءً. استبعاد الاختبارات وحده لا يثبت بشرية الزيارة.
+        </p>
+        <details className="mt-3 text-xs text-gray-500"><summary>جودة بيانات الخروج</summary>
+          <p className="mt-2">طلبات /go الخام: {f.outbound} — تشمل طلبات بلا جلسة واستدعاءات آلية محتملة؛ ليست عدد عملاء أو زيارات متجر مؤكدة.</p>
+          <p>الطلبات والعمولات المؤكدة: تُراجع من تقارير الشركاء في صفحة العمولات؛ لا تُستنتج من النقرات.</p>
+        </details>
         <p className="mt-3 text-xs text-gray-500">
-          زيارات مؤهلة مُحالة: <b>{data.commercial.qualifiedVisitsReferred}</b> · أعلى طلب غير مُجاب:{' '}
+          معرّفات جلسات مرتبطة بإشارة خروج: <b>{data.commercial.qualifiedVisitsReferred}</b> · أعلى طلب غير مُجاب:{' '}
           {data.unmetDemand.slice(0, 3).map((u) => `«${u.query}»`).join('، ') || '—'}
         </p>
       </Card>
@@ -82,6 +92,10 @@ export default async function GrowthPage() {
           <p className="text-sm text-amber-700 dark:text-amber-300">تعذر تحميل المرصد — الحالة غير معروفة (وليست صفرًا).</p>
         ) : (
           <>
+            <p className="mb-3 text-xs leading-6 text-gray-500">
+              آخر فرصة غير اختبارية محفوظة: {radar.latestSavedOpportunityAt ? new Date(radar.latestSavedOpportunityAt).toLocaleString('ar-SA', { timeZone: 'Asia/Riyadh' }) : 'لا توجد بيانات محفوظة'} (السعودية).
+              هذه بيانات سابقة، وليست إثباتًا لاستمرار الجلب. وقت آخر فحص ناجح لا يُحفظ مستقلًا في المصدر الحالي.
+            </p>
             {/* source truth strip: UNKNOWN is never rendered as zero */}
             <div className="mb-4 flex flex-wrap gap-3 text-xs">
               {radar.states.length === 0 && (
@@ -98,7 +112,7 @@ export default async function GrowthPage() {
                       : 'bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300'
                   }`}
                 >
-                  {s.source === 'x' ? 'X' : s.source} · {s.last_poll_status ?? '—'} · آخر فحص: {relAgo(s.last_poll_at)}
+                  {s.source === 'x' ? 'X' : s.source} · {radarStatusAr(s.last_poll_status)} · آخر محاولة فحص: {relAgo(s.last_poll_at)}
                 </span>
               ))}
               {radar.testCount > 0 && (

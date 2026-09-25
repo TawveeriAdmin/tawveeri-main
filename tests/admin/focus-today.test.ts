@@ -73,7 +73,7 @@ describe('computeFocusToday — flag ON', () => {
     mockDeps({ briefImpl: async () => ({ focusItems: [], aiAvailable: false, reason: 'Anthropic API 500' }) });
     const { computeFocusToday } = freshFocusToday(true);
     const result = await computeFocusToday([]);
-    expect(result).toEqual({ enabled: true, aiAvailable: false, reason: 'Anthropic API 500' });
+    expect(result).toEqual({ enabled: true, aiAvailable: false, reason: 'تعذر توليد توصيات مكتملة الآن. الأرقام أدناه مستقلة عن خدمة التوصيات.' });
   });
 
   it('reports an empty focusItems array as a valid "nothing worth surfacing" result', async () => {
@@ -100,7 +100,7 @@ describe('computeFocusToday — flag ON', () => {
     const { computeFocusToday } = freshFocusToday(true);
     await expect(computeFocusToday([])).resolves.not.toThrow();
     const result = await computeFocusToday([]);
-    expect(result).toEqual({ enabled: true, aiAvailable: false, reason: 'catalog read timed out' });
+    expect(result).toEqual({ enabled: true, aiAvailable: false, reason: 'تعذر توليد توصيات مكتملة الآن. الأرقام أدناه مستقلة عن خدمة التوصيات.' });
   });
 
   it('folds a real demand_momentum need-signal into the AI candidate pool alongside existing opportunities (integration through the real, unmocked opportunities.ts)', async () => {

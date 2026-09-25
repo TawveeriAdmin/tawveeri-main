@@ -21,7 +21,6 @@ interface Notification {
   message_en: string | null;
   is_read: boolean;
   created_at: string;
-  link: string | null;
 }
 
 interface AdminNotificationsProps {
@@ -54,25 +53,32 @@ export function AdminNotifications({ locale }: AdminNotificationsProps) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   const fetchNotifications = useCallback(async () => {
     if (!user?.id) return;
     setLoading(true);
+    setFailed(false);
     try {
       const supabase = getSupabaseBrowserClient();
       const { data, error } = await supabase
         .from('notifications')
-        .select('id, type, title_ar, title_en, message_ar, message_en, is_read, created_at, link')
+        .select('id, type, title_ar, title_en, message_ar, message_en, is_read, created_at')
         .eq('user_id', user.id)
+        .is('data->founder_audit_archived', null)
         .order('created_at', { ascending: false })
         .limit(20);
 
-      if (!error && data) {
+      if (error) throw error;
+      if (data) {
         setNotifications(data);
-        setUnreadCount(data.filter((n) => !n.is_read).length);
+        const { count, error: countError } = await supabase.from('notifications')
+          .select('id', { count: 'exact', head: true }).eq('user_id', user.id).eq('is_read', false).is('data->founder_audit_archived', null);
+        if (countError) throw countError;
+        setUnreadCount(count ?? 0);
       }
     } catch {
-      // fail silently
+      setFailed(true);
     } finally {
       setLoading(false);
     }
@@ -91,28 +97,33 @@ export function AdminNotifications({ locale }: AdminNotificationsProps) {
       .select('*', { count: 'exact', head: true })
       .eq('user_id', user.id)
       .eq('is_read', false)
-      .then(({ count }) => {
-        setUnreadCount(count || 0);
+      .is('data->founder_audit_archived', null)
+      .then(({ count, error }) => {
+        if (error) { setFailed(true); return; }
+        setUnreadCount(count ?? 0);
       });
   }, [user?.id]);
 
   const markAsRead = async (id: string) => {
     const supabase = getSupabaseBrowserClient();
-    await supabase.from('notifications').update({ is_read: true }).eq('id', id);
+    const { error } = await supabase.from('notifications').update({ is_read: true }).eq('id', id);
+    if (error) { setFailed(true); return; }
+    const wasUnread = notifications.some((n) => n.id === id && !n.is_read);
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
     );
-    setUnreadCount((prev) => Math.max(0, prev - 1));
+    if (wasUnread) setUnreadCount((prev) => Math.max(0, prev - 1));
   };
 
   const markAllRead = async () => {
     if (!user?.id) return;
     const supabase = getSupabaseBrowserClient();
-    await supabase
+    const { error } = await supabase
       .from('notifications')
       .update({ is_read: true })
       .eq('user_id', user.id)
       .eq('is_read', false);
+    if (error) { setFailed(true); return; }
     setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
     setUnreadCount(0);
   };
@@ -120,7 +131,8 @@ export function AdminNotifications({ locale }: AdminNotificationsProps) {
   const deleteNotification = async (id: string) => {
     const supabase = getSupabaseBrowserClient();
     const was = notifications.find((n) => n.id === id);
-    await supabase.from('notifications').delete().eq('id', id);
+    const { error } = await supabase.from('notifications').delete().eq('id', id);
+    if (error) { setFailed(true); return; }
     setNotifications((prev) => prev.filter((n) => n.id !== id));
     if (was && !was.is_read) setUnreadCount((prev) => Math.max(0, prev - 1));
   };
@@ -144,7 +156,7 @@ export function AdminNotifications({ locale }: AdminNotificationsProps) {
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align={isRTL ? 'start' : 'end'}
-        className="w-[380px] p-0"
+        className="w-[380px] max-w-[calc(100vw-2rem)] p-0"
         sideOffset={8}
       >
         {/* Header */}
@@ -170,11 +182,12 @@ export function AdminNotifications({ locale }: AdminNotificationsProps) {
 
         {/* List */}
         <div className="max-h-[400px] overflow-y-auto">
+          {failed && <p role="alert" className="p-4 text-sm text-error">{locale === 'ar' ? 'تعذر تحديث الإشعارات. أعد المحاولة؛ لا يعني ذلك عدم وجود إشعارات.' : 'Notifications could not be updated. Please retry; this does not mean there are none.'}</p>}
           {loading && notifications.length === 0 ? (
             <div className="flex items-center justify-center py-10 text-sm text-on-surface-variant">
               {t('notifications.notifications.loading')}
             </div>
-          ) : notifications.length === 0 ? (
+          ) : notifications.length === 0 && !failed ? (
             <div className="flex flex-col items-center justify-center py-10 text-center">
               <Bell className="mb-2 h-8 w-8 text-on-surface-variant/40" />
               <p className="text-sm font-medium text-on-surface-variant">
@@ -229,7 +242,7 @@ export function AdminNotifications({ locale }: AdminNotificationsProps) {
                   </div>
 
                   {/* Actions (show on hover) */}
-                  <div className="absolute end-2 top-2 hidden items-center gap-0.5 group-hover:flex">
+                  <div className="flex shrink-0 items-center gap-1">
                     {!notif.is_read && (
                       <button
                         onClick={(e) => { e.stopPropagation(); markAsRead(notif.id); }}

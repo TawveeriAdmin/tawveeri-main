@@ -12,6 +12,7 @@ import { fetchUsageEvents } from './command-center-queries';
 import { computeNeedBasedOpportunities, type Opportunity } from './opportunities';
 import { computeNeedSignals } from './need-signals';
 import { clusterEmergingLanguage } from './emerging-language';
+import { founderAIStatusAr } from './service-status';
 import {
   assembleFounderIntelligenceCandidates, generateFounderIntelligenceBrief,
   describeUnavailability, type FocusItem, type FocusDomain,
@@ -62,8 +63,8 @@ export async function computeFocusToday(existingOpportunities: Opportunity[]): P
       return { enabled: true, aiAvailable: false, reason: describeUnavailability(brief) ?? 'unknown' };
     }
     return { enabled: true, aiAvailable: true, focusItems: brief.focusItems };
-  } catch (e) {
-    return { enabled: true, aiAvailable: false, reason: e instanceof Error ? e.message : 'unexpected error' };
+  } catch {
+    return { enabled: true, aiAvailable: false, reason: founderAIStatusAr() };
   }
 }
 

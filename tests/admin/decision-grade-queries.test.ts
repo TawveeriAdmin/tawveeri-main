@@ -15,7 +15,7 @@
 import { getDecisionGradeOutboundStats } from '@/lib/admin/decision-grade-queries';
 
 interface FPIRow { interaction_id: string; is_test: boolean; created_at: string }
-interface OCRow { id: number; interaction_id: string | null }
+interface OCRow { id: number; interaction_id: string | null; is_test?: boolean; clicked_at?: string }
 
 let fpiRows: FPIRow[] = [];
 let ocRows: OCRow[] = [];
@@ -27,15 +27,15 @@ let ocError: { message: string } | null = null;
  *  Thenable (implements .then) so a chain with no trailing .range() — the head-count shape —
  *  resolves correctly when awaited directly, exactly like the real Supabase query builder. */
 function makeBuilder(table: string) {
-  const state: { eq: Record<string, unknown>; gte?: string; lt?: string; in?: string[]; notNull?: string; head?: boolean } = { eq: {} };
-  const rows = () => (table === 'first_party_interactions' ? fpiRows : (ocRows as unknown as FPIRow[]));
+  const state: { eq: Record<string, unknown>; gte?: [string, string]; lt?: [string, string]; in?: string[]; notNull?: string; head?: boolean } = { eq: {} };
+  const rows = () => (table === 'first_party_interactions' ? fpiRows : ocRows.map(r => ({ is_test: false, clicked_at: inWindow, ...r })));
   const err = () => (table === 'first_party_interactions' ? fpiError : ocError);
 
   function filtered(): any[] {
     let r: any[] = rows().slice();
     for (const [k, v] of Object.entries(state.eq)) r = r.filter((row) => row[k] === v);
-    if (state.gte) r = r.filter((row) => row.created_at >= state.gte!);
-    if (state.lt) r = r.filter((row) => row.created_at < state.lt!);
+    if (state.gte) r = r.filter((row) => row[state.gte![0]] >= state.gte![1]);
+    if (state.lt) r = r.filter((row) => row[state.lt![0]] < state.lt![1]);
     if (state.in) r = r.filter((row) => state.in!.includes(row.interaction_id));
     if (state.notNull) r = r.filter((row) => row[state.notNull!] != null);
     return r;
@@ -43,8 +43,8 @@ function makeBuilder(table: string) {
 
   const builder: any = {
     eq(k: string, v: unknown) { state.eq[k] = v; return builder; },
-    gte(_k: string, v: string) { state.gte = v; return builder; },
-    lt(_k: string, v: string) { state.lt = v; return builder; },
+    gte(k: string, v: string) { state.gte = [k, v]; return builder; },
+    lt(k: string, v: string) { state.lt = [k, v]; return builder; },
     in(_k: string, v: string[]) { state.in = v; return builder; },
     not(k: string, _op: string, _v: unknown) { state.notNull = k; return builder; },
     order() { return builder; },
@@ -106,6 +106,15 @@ describe('getDecisionGradeOutboundStats — firstPartyInteractions', () => {
 });
 
 describe('getDecisionGradeOutboundStats — merchantNavigationsCorrelated (exact-ID dedup)', () => {
+  it('excludes test exits and exits outside the selected period even when their interaction matches', async () => {
+    fpiRows = [{ interaction_id: 'click-1', is_test: false, created_at: inWindow }];
+    ocRows = [
+      { id: 1, interaction_id: 'click-1', is_test: true },
+      { id: 2, interaction_id: 'click-1', clicked_at: WINDOW_END.toISOString() },
+      { id: 3, interaction_id: 'click-1', clicked_at: '2026-08-31T00:00:00Z' },
+    ];
+    expect((await getDecisionGradeOutboundStats(WINDOW_START, WINDOW_END)).merchantNavigationsCorrelated.value).toBe(0);
+  });
   it('THE REGRESSION THIS ADR EXISTS TO CLOSE: one interaction correlated to THREE outbound_clicks rows (a retried /go request reusing the same interaction_id) counts as ONE, not three', async () => {
     fpiRows = [{ interaction_id: 'click-1', is_test: false, created_at: inWindow }];
     ocRows = [

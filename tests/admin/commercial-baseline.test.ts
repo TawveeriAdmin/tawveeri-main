@@ -93,15 +93,15 @@ describe("retailerBreakdown — commercial vocabulary, never calls a redirect a 
     expect(result.find((r) => r.storeSlug === "2")).toBeUndefined(); // TEST-only store excluded entirely
   });
 
-  it("approximates qualified sessions via product-level correlation to go_click events", async () => {
-    const outbound = [click({ store_name: "4", canonical_product_id: "p1" })];
+  it("attributes sessions directly to the retailer, never through a shared product", async () => {
+    const outbound = [click({ store_name: "4", canonical_product_id: "p1", session_id: 'actual-store-session' })];
     const events = [
       ev({ event_type: "go_click", session_id: "s1", canonical_id: "p1" }),
       ev({ event_type: "go_click", session_id: "s2", canonical_id: "p1" }),
       ev({ event_type: "go_click", session_id: "s3", canonical_id: "unrelated-product" }),
     ];
     const result = await retailerBreakdown(events, outbound);
-    expect(result.find((r) => r.storeSlug === "4")!.qualifiedSessions).toBe(2);
+    expect(result.find((r) => r.storeSlug === "4")!.qualifiedSessions).toBe(1);
   });
 
   it("2026-08-30 merchant-normalization fix: a display-name-shaped store_name resolves to the same bucket as its numeric id", async () => {

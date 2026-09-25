@@ -4,7 +4,7 @@ import { AffiliateSettingsCard } from '@/components/admin/affiliate-settings-car
 import { AffiliateReportUpload } from '@/components/admin/affiliate-report-upload';
 import { AlertCircle, HandCoins } from 'lucide-react';
 
-const BASELINE_ISO = '2026-08-06T00:00:00Z';
+const BASELINE_ISO = '2026-08-06T00:00:00+03:00';
 
 /**
  * Commercial truth per affiliate program (founder mission 2026-08-13):
@@ -14,18 +14,21 @@ const BASELINE_ISO = '2026-08-06T00:00:00Z';
  */
 async function getProgramTruth(program: 'amazon' | 'noon') {
   const sb = createServerClient() as any;
-  const [tagged, last, conversions] = await Promise.all([
+  const source = program === 'amazon' ? 'amazon_associates' : 'noon_affiliate';
+  const [tagged, last, conversions, reports] = await Promise.all([
     sb.from('outbound_clicks').select('id', { count: 'exact', head: true })
       .eq('is_test', false).eq('affiliate_program', program).gte('clicked_at', BASELINE_ISO),
     sb.from('outbound_clicks').select('clicked_at')
       .eq('is_test', false).eq('affiliate_program', program)
       .order('clicked_at', { ascending: false }).limit(1),
-    sb.from('affiliate_conversions').select('id', { count: 'exact', head: true }),
+    sb.from('affiliate_conversions').select('id', { count: 'exact', head: true }).eq('source', source),
+    sb.from('affiliate_reports').select('id', { count: 'exact', head: true }).eq('source', source),
   ]);
   return {
     taggedExits: tagged.error ? null : (tagged.count ?? 0),
     lastExitAt: last.error ? null : (last.data?.[0]?.clicked_at ?? null),
     conversions: conversions.error ? null : (conversions.count ?? 0),
+    reports: reports.error ? null : (reports.count ?? 0),
   };
 }
 
@@ -95,7 +98,7 @@ export default async function AdminAffiliatePage({
             <dl className="mt-3 space-y-2 text-sm">
               <div className="flex items-center justify-between gap-3">
                 <dt className="text-on-surface-variant dark:text-white/60">
-                  {isRTL ? 'خروج موسوم مؤكد (منذ 2026-08-06)' : 'Tagged confirmed exits (since 2026-08-06)'}
+                  {isRTL ? 'طلبات خروج خام موسومة (منذ 2026-08-06)' : 'Tagged raw exit requests (since 2026-08-06)'}
                 </dt>
                 <dd className="font-black tabular-nums">
                   {truth.taggedExits === null ? '—' : truth.taggedExits.toLocaleString()}
@@ -123,11 +126,11 @@ export default async function AdminAffiliatePage({
               </div>
               <div className="flex items-center justify-between gap-3">
                 <dt className="text-on-surface-variant dark:text-white/60">
-                  {isRTL ? 'تحويلات/عمولة مؤكدة' : 'Conversions / confirmed commission'}
+                  {isRTL ? 'صفوف تحويلات في تقارير الشريك' : 'Conversion rows in partner reports'}
                 </dt>
                 <dd className="text-xs font-medium text-on-surface-variant dark:text-white/60">
-                  {(truth.conversions ?? 0) > 0
-                    ? truth.conversions!.toLocaleString()
+                  {truth.reports !== null && truth.reports > 0 && truth.conversions !== null
+                    ? truth.conversions.toLocaleString()
                     : isRTL
                       ? 'غير متاح — لم يُستورد تقرير الشبكة بعد'
                       : 'unavailable — no network report imported yet'}
@@ -146,7 +149,7 @@ export default async function AdminAffiliatePage({
               <p className="font-black">
                 {isRTL ? 'تعذر تحميل إعدادات العمولات' : 'Could not load affiliate settings'}
               </p>
-              <p className="mt-1 text-sm opacity-80">{error.message}</p>
+              <p className="mt-1 text-sm opacity-80">{isRTL ? 'تعذر قراءة المصدر؛ أعد المحاولة.' : 'The source could not be read. Please retry.'}</p>
             </div>
           </div>
         </div>
