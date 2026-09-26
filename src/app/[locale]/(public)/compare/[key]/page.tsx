@@ -6,11 +6,11 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ExternalLink, ShieldCheck, Trophy, ArrowRight, Gift, AlertTriangle } from 'lucide-react';
-import { PublicPageShell } from '@/components/public/public-page-shell';
+import { ExternalLink, ShieldCheck, Trophy, ArrowRight, Gift, AlertTriangle, History } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Price } from '@/components/ui/price';
-import { getComparison, isComparisonError } from '@/lib/compare/get-comparison';
+import { getComparison, isComparisonError, partitionOffersByEligibility, type CompareOffer as LoaderOffer } from '@/lib/compare/get-comparison';
+import { categoryLabel } from '@/lib/agent/advisor-api';
 import { buildAlternates } from '@/lib/seo/metadata';
 import { retailerDisplayName, resolveApprovedSlug } from '@/lib/retailers/approved-retailers';
 import { CompareStateSync } from '@/components/agent/compare-state-sync';
@@ -156,6 +156,20 @@ function freshnessLabel(iso: string, isAr: boolean): string {
   return isAr ? `قبل ${days} يومًا` : `${days} days ago`;
 }
 
+/** «رصدناه اليوم / أمس / قبل N يومًا» — ONE phrasing for every offer, featured or listed. */
+function observedLabel(iso: string, isAr: boolean): string {
+  return isAr ? `رصدناه ${freshnessLabel(iso, true)}` : `observed ${freshnessLabel(iso, false)}`;
+}
+
+/** Customer-facing category name — never the internal slug («air_conditioner»). TPS's own
+ *  short codes (`ac`/`mobile`) are mapped first; everything else goes through the shared
+ *  advisor label map, which falls back to a de-underscored slug rather than a raw token. */
+function categoryBadgeLabel(category: string, isAr: boolean): string {
+  if (category === 'ac') return isAr ? 'مكيفات' : 'Air conditioners';
+  if (category === 'mobile') return isAr ? 'جوالات' : 'Phones';
+  return categoryLabel(category, isAr ? 'ar' : 'en');
+}
+
 /**
  * Level-2 conditional-campaign notice (e.g. Black Box's "مهرجان الريال" — see
  * blackbox-riyal-festival.ts, ADR-220). Deliberately small and secondary: this states
@@ -226,10 +240,15 @@ export default async function TpsComparePage({
   // No multi-store comparison for this product yet → a helpful state with a search fallback,
   // NEVER a 404/error (the compare button used to dead-end here). This is honest empty-state
   // handling, not a cosmetic mask: many products are single-store while coverage grows.
+  // No PublicPageShell in this file: `(public)/layout.tsx` already wraps the route group with
+  // it. This page wrapped itself AGAIN, so every compare page shipped TWO <header>/<main>/
+  // <footer> landmark sets and a second fixed header stacked on the first — measured live
+  // 2026-09-26 (header=2 footer=2 main=2, vs 1 on /stores). Removed here and on the two
+  // other pages with the same duplication (categories, offers/[merchant]) — ADR-386.
   if (!data || data.offers.length === 0) {
     const nm = data?.canonical ? (isAr ? (data.canonical.name_ar || data.canonical.name_en) : (data.canonical.name_en || data.canonical.name_ar)) : null;
     return (
-      <PublicPageShell locale={locale}>
+      <>
         <div className="mx-auto max-w-xl px-4 py-16 text-center">
           <div className="mb-4 text-5xl">🔍</div>
           <h1 className="text-xl font-bold text-on-surface">{nm ?? (isAr ? 'مقارنة الأسعار' : 'Price comparison')}</h1>
@@ -245,7 +264,7 @@ export default async function TpsComparePage({
             {isAr ? 'ابحث عن هذا المنتج' : 'Search for this product'}
           </a>
         </div>
-      </PublicPageShell>
+      </>
     );
   }
 
@@ -253,6 +272,13 @@ export default async function TpsComparePage({
   const name = isAr ? (canonical.name_ar || canonical.name_en) : (canonical.name_en || canonical.name_ar);
 
   const cheapestOffer = offers.find(o => o.store_name === summary.cheapest_store) ?? offers[0];
+
+  // ONE eligibility rule, shared with the summary (get-comparison.ts): an offer backs the
+  // comparison only if it is in stock AND observed within PICK_FRESHNESS_MAX_HOURS. Older
+  // evidence is still shown — as "last observed", clearly separated, never as a current
+  // offer competing for «الأرخص» (ADR-386; founder review: a 12-day-old cheaper Amazon row
+  // sat in the same list as today's offers with equal visual weight).
+  const { eligible: eligibleOffers, older: olderOffers } = partitionOffersByEligibility(offers as unknown as LoaderOffer[]) as unknown as { eligible: CompareOffer[]; older: CompareOffer[] };
 
   /**
    * THE OFFERS, IN A FORM A MACHINE CAN READ (ADR-189).
@@ -265,6 +291,11 @@ export default async function TpsComparePage({
    * the body reads — never recomputed, never rounded differently, never a figure the customer
    * cannot see. Structured data that disagrees with the visible page is a fabricated claim
    * with a schema wrapper on it, and it is also what gets a site penalised.
+   *
+   * The nested offers are the ELIGIBLE set — the exact set `lowPrice`/`highPrice` were computed
+   * from. Measured live 2026-09-26 (FreshDV): lowPrice "3099" while a nested Offer said "2799",
+   * because every stored price was published as a current Offer regardless of age. An offer
+   * the page itself shows only as «آخر رصد» is not a current offer and is not published as one.
    */
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -277,9 +308,9 @@ export default async function TpsComparePage({
         priceCurrency: 'SAR',
         lowPrice: String(summary.lowest_price),
         ...(summary.highest_price != null ? { highPrice: String(summary.highest_price) } : {}),
-        offerCount: summary.store_count,
+        offerCount: eligibleOffers.length,
         // Named sellers, so the comparison is checkable rather than asserted.
-        offers: offers
+        offers: eligibleOffers
           .filter((o) => o.price > 0)
           .map((o) => ({
             '@type': 'Offer',
@@ -304,7 +335,7 @@ export default async function TpsComparePage({
   };
 
   return (
-    <PublicPageShell locale={locale}>
+    <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -330,17 +361,19 @@ export default async function TpsComparePage({
           <div className="flex flex-col gap-1 mb-4">
             <div className="flex items-center gap-2 flex-wrap">
               <Badge variant="secondary" className="text-xs capitalize">
-                {isAr
-                  ? (canonical.category === 'ac' ? 'مكيفات' : canonical.category === 'mobile' ? 'جوالات' : canonical.category)
-                  : canonical.category
-                }
+                {categoryBadgeLabel(canonical.category, isAr)}
               </Badge>
               {canonical.brand && (
                 <Badge variant="outline" className="text-xs">{canonical.brand}</Badge>
               )}
+              {/* `identity_confidence` is an INTERNAL matching score. It was rendered as
+                  «ثقة 95%» / «تم التحقق من المطابقة بدقة 95%» — a measured-accuracy claim
+                  no measurement backs (the platform's match precision has never been
+                  audited to that figure). Replaced with what is actually true: the offers
+                  were matched on the model's declared specifications (ADR-386). */}
               <span className="inline-flex items-center gap-1 text-xs text-on-surface-variant">
                 <ShieldCheck className="h-3.5 w-3.5 text-[var(--brand-green)]" />
-                {isAr ? `ثقة ${canonical.identity_confidence}%` : `${canonical.identity_confidence}% confidence`}
+                {isAr ? 'مطابقة على مواصفات الموديل' : 'Matched on model specifications'}
               </span>
             </div>
             <h1 className="text-xl md:text-2xl font-bold text-on-surface leading-snug mt-1">
@@ -414,26 +447,37 @@ export default async function TpsComparePage({
                   <Trophy className="h-3 w-3" />
                   {cheapestOffer.stale
                     ? (isAr ? 'آخر سعر رصدناه' : 'Last Observed Price')
-                    : (isAr ? 'أفضل سعر' : 'Best Price')}
+                    : (isAr ? 'أفضل سعر مرصود' : 'Best Observed Price')}
                 </span>
               </div>
             )}
 
             <div className="flex items-start justify-between gap-4 mb-5">
               <div className="flex flex-col min-w-0">
+                {/* «الآن» dropped from the fresh label too: the claim this page can back is
+                    "best price we OBSERVED, at this time" — the observation time is now
+                    rendered right here on the featured offer (it was only shown in the list
+                    below), so the reader sees the price, the store and WHEN together. */}
                 <span className="text-xs text-on-surface-variant mb-1">
                   {offers.length > 1
                     ? (cheapestOffer.stale
                         ? (isAr ? 'آخر سعر رصدناه عند' : 'Last observed price at')
-                        : (isAr ? 'أفضل سعر الآن عند' : 'Best price at'))
+                        : (isAr ? 'أفضل سعر مرصود عند' : 'Best observed price at'))
                     : (isAr ? 'متوفر عند' : 'Available at')}
                 </span>
                 <span className="text-base font-bold text-on-surface">
                   {cheapestOffer.store_name}
                 </span>
+                {cheapestOffer.observed_at && (
+                  <span className="text-[11px] text-on-surface-variant mt-0.5">
+                    {observedLabel(cheapestOffer.observed_at, isAr)}
+                  </span>
+                )}
                 {cheapestOffer.availability === 'in_stock' && (
                   <span className="text-xs text-[var(--brand-green)] font-medium mt-0.5">
-                    {isAr ? '● متوفر الآن' : '● In Stock'}
+                    {cheapestOffer.stale
+                      ? (isAr ? '● متوفر بحسب آخر رصد' : '● In stock at last observation')
+                      : (isAr ? '● متوفر' : '● In Stock')}
                   </span>
                 )}
                 {/* QUALITY PROGRAM P1 §14.1 (2026-08-28): `availability` already carries
@@ -496,17 +540,9 @@ export default async function TpsComparePage({
           </div>
         )}
 
-        {/* ── All Offers ── */}
-        {offers.length > 1 && (
-          <div className="rounded-2xl border border-[color:var(--color-outline-variant)] overflow-hidden">
-            <div className="bg-[color:var(--color-surface-container)] px-4 py-3 border-b border-[color:var(--color-outline-variant)]">
-              <h2 className="text-sm font-bold text-on-surface">
-                {isAr ? `جميع العروض (${offers.length} متاجر)` : `All Offers (${offers.length} stores)`}
-              </h2>
-            </div>
-
-            <div className="divide-y divide-[color:var(--color-outline-variant)]/50">
-              {offers.map((offer, idx) => (
+        {/* ── All Offers — eligible comparison set first, older evidence separated ── */}
+        {offers.length > 1 && (() => {
+          const renderOffer = (offer: CompareOffer, idx: number) => (
                 <div
                   key={`${offer.store_name}-${idx}`}
                   className="px-4 py-4 hover:bg-[color:var(--color-surface-container-low)] transition-colors"
@@ -536,12 +572,7 @@ export default async function TpsComparePage({
                         provided we say how old. */}
                     {offer.observed_at && (
                       <span className="text-[11px] text-on-surface-variant mt-0.5">
-                        {(() => {
-                          const days = Math.floor((Date.now() - new Date(offer.observed_at).getTime()) / 86400000);
-                          if (days <= 0) return isAr ? 'رصدناه اليوم' : 'observed today';
-                          if (days === 1) return isAr ? 'رصدناه أمس' : 'observed yesterday';
-                          return isAr ? `رصدناه قبل ${days} يومًا` : `observed ${days} days ago`;
-                        })()}
+                        {observedLabel(offer.observed_at, isAr)}
                       </span>
                     )}
                   </div>
@@ -588,23 +619,64 @@ export default async function TpsComparePage({
                 <CampaignEligibilityNote offer={offer} isAr={isAr} />
                 <StaleEvidenceNote offer={offer} isAr={isAr} />
                 </div>
-              ))}
+          );
+          return (
+            <div className="space-y-4">
+              {eligibleOffers.length > 0 && (
+                <div className="rounded-2xl border border-[color:var(--color-outline-variant)] overflow-hidden">
+                  <div className="bg-[color:var(--color-surface-container)] px-4 py-3 border-b border-[color:var(--color-outline-variant)]">
+                    <h2 className="text-sm font-bold text-on-surface">
+                      {isAr
+                        ? `العروض الداخلة في المقارنة (${eligibleOffers.length} ${eligibleOffers.length === 1 ? 'متجر' : 'متاجر'})`
+                        : `Offers in this comparison (${eligibleOffers.length} ${eligibleOffers.length === 1 ? 'store' : 'stores'})`}
+                    </h2>
+                    <p className="mt-0.5 text-[11px] text-on-surface-variant">
+                      {isAr
+                        ? 'رُصدت خلال آخر 7 أيام ومتوفرة بحسب آخر رصد — منها يُحسب «الأرخص» و«الأعلى».'
+                        : 'Observed within the last 7 days and in stock at last observation — lowest/highest are computed from these.'}
+                    </p>
+                  </div>
+                  <div className="divide-y divide-[color:var(--color-outline-variant)]/50">
+                    {eligibleOffers.map(renderOffer)}
+                  </div>
+                </div>
+              )}
+              {olderOffers.length > 0 && (
+                <div className="rounded-2xl border border-dashed border-[color:var(--color-outline-variant)] overflow-hidden">
+                  <div className="bg-[color:var(--color-surface-container-low)] px-4 py-3 border-b border-[color:var(--color-outline-variant)]/60">
+                    <h2 className="inline-flex items-center gap-1.5 text-sm font-bold text-on-surface-variant">
+                      <History className="h-3.5 w-3.5" />
+                      {isAr
+                        ? `أسعار أقدم — آخر رصد لدينا (${olderOffers.length})`
+                        : `Older prices — our last observation (${olderOffers.length})`}
+                    </h2>
+                    <p className="mt-0.5 text-[11px] text-on-surface-variant">
+                      {isAr
+                        ? 'أقدم من 7 أيام أو غير متوفرة عند آخر رصد؛ لا تدخل في حساب الأرخص وقد لا تعكس سعر المتجر الحالي.'
+                        : 'Older than 7 days or out of stock at last observation; excluded from the lowest-price claim and may not reflect the retailer’s current price.'}
+                    </p>
+                  </div>
+                  <div className="divide-y divide-[color:var(--color-outline-variant)]/50">
+                    {olderOffers.map(renderOffer)}
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
-        )}
+          );
+        })()}
 
-        {/* ── TPS Badge ── */}
+        {/* ── TPS Badge — states the matching METHOD, never a measured-accuracy figure ── */}
         <div className="flex items-center justify-center gap-2 py-2 text-xs text-on-surface-variant">
           <ShieldCheck className="h-3.5 w-3.5 text-[var(--brand-green)]" />
           <span>
             {isAr
-              ? `تم التحقق من المطابقة بدقة ${canonical.identity_confidence}% • مدعوم بـ TPS`
-              : `Verified match at ${canonical.identity_confidence}% confidence • Powered by TPS`
+              ? 'جُمعت هذه العروض على مواصفات الموديل المعلنة؛ تحقق من رقم الموديل لدى المتجر قبل الشراء • مدعوم بـ TPS'
+              : 'These offers were grouped on the model’s declared specifications; confirm the model number with the retailer before buying • Powered by TPS'
             }
           </span>
         </div>
 
       </div>
-    </PublicPageShell>
+    </>
   );
 }

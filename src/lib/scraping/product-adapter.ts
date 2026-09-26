@@ -2,7 +2,7 @@ import type { ScrapedProduct } from './base/types';
 import type { ProductCardProduct } from '@/components/products/product-card';
 import type { AvailabilityStatus } from '@/lib/database/types';
 import type { GroupedSearchProduct } from './search/product-grouper';
-import { resolveApprovedSlug } from '@/lib/retailers/approved-retailers';
+import { resolveApprovedSlug, retailerDisplayName } from '@/lib/retailers/approved-retailers';
 
 interface ScrapedProductWithStore extends ScrapedProduct {
   store?: string;
@@ -118,13 +118,30 @@ export function mapGroupedToProductCard(
   const storeSlug = firstStore?.store || 'amazon';
   const id = grouped.sku || `grouped-${storeSlug}-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 
-  const slug = grouped.name_en
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '') || 'product';
+  // PROVEN 404 (2026-09-26, ADR-386): this slug was ALWAYS re-derived from the title with
+  // `[^a-z0-9]+ → '-'`, while `products.slug` is written by `generateSlug()` (slugify.ts),
+  // which STRIPS punctuation instead — "…18000 BTU,Rotary Compressor,Heat and Cold" is stored
+  // as `…-bturotary-compressorheat-and-cold` but was linked here as `…-btu-rotary-compressor-
+  // heat-and-cold`, a page that does not exist. Measured: 6,725 active products have a stored
+  // slug that differs from this re-derivation. The search route already emits the routable
+  // `product_slug` (the DB slug or UUID; `identityKeyToSlug()` for TPS canonicals) — prefer it,
+  // and only fall back to the title-derived form for a card that carries none.
+  const slug = grouped.product_slug
+    || grouped.name_en
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+    || 'product';
 
   const productStores = grouped.stores.map((sp) => {
-    const names = STORE_NAMES_BILINGUAL[sp.store] || { name_ar: sp.store, name_en: sp.store };
+    // One naming authority: the search route emits canonical retailer SLUGS (najm, alnakheelk,
+    // blackbox…) that the local map never covered, so cards printed the raw internal slug to
+    // shoppers («alnakheelk»). Fall back to approved-retailers' display names before echoing
+    // an identifier.
+    const resolved = resolveApprovedSlug(sp.store);
+    const names = STORE_NAMES_BILINGUAL[sp.store]
+      || (resolved ? STORE_NAMES_BILINGUAL[resolved] : undefined)
+      || { name_ar: retailerDisplayName(resolved, 'ar') ?? sp.store, name_en: retailerDisplayName(resolved, 'en') ?? sp.store };
     return {
       id:                `store-${sp.store}-${sp.sku || id}`,
       current_price:     sp.current_price,

@@ -9,6 +9,10 @@ export interface GroupedSearchProduct extends ScrapedProduct {
   store_count: number;
   // Optional identity/TPS enrichment attached by the search route.
   product_id?: string;
+  /** The ROUTABLE slug for /products/<slug> — `products.slug` (or the UUID, which the page
+   *  also accepts) for storefront rows, `identityKeyToSlug()` for TPS canonicals. Set by the
+   *  search route; consumers must prefer it over re-deriving a slug from the title. */
+  product_slug?: string;
   tps_identity_key?: string;
   model_number?: string;
   has_tps_comparison?: boolean;

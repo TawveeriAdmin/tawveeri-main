@@ -15,7 +15,7 @@ describe('comparison offer disclosure', () => {
   it.each([null, '', 'Apple iPhone 16 Pro Max 256GB Black Titanium', 'Open box phone'])(
     'does not promote an unconfirmed condition to new: %s', (rawName) => {
       render(<OfferDescription rawName={rawName} isAr={false} />);
-      expect(screen.getByText('Product condition unconfirmed')).toBeTruthy();
+      expect(screen.getByText('Condition (new/renewed) not stated in the offer description')).toBeTruthy();
       expect(screen.queryByText('New according to description')).toBeNull();
     },
   );

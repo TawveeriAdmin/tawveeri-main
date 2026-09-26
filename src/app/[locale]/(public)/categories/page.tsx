@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { PublicPageShell } from '@/components/public/public-page-shell';
 import { getNavigableCategories } from '@/lib/intelligence/navigable-categories';
 import { buildPageMetadata } from '@/lib/seo/metadata';
 
@@ -44,8 +43,12 @@ export default async function CategoriesPage({ params }: { params: Promise<{ loc
   const isAr = locale !== 'en';
   const cats = await getNavigableCategories();
 
+  // No PublicPageShell here: `(public)/layout.tsx` already wraps every page in this route
+  // group with it. Wrapping again rendered TWO <header>/<main>/<footer> per page (measured
+  // live 2026-09-26: header=2 footer=2 main=2 vs 1 on /stores) — a duplicated landmark set
+  // for screen readers and a second fixed header stacked over the first (ADR-386).
   return (
-    <PublicPageShell locale={locale}>
+    <>
       <div style={{ maxWidth: 780, margin: '0 auto', padding: '10px 0 48px', textAlign: isAr ? 'right' : 'left' }}>
         <h1 style={{ fontSize: 'clamp(22px, 4.5vw, 30px)', fontWeight: 900, color: 'var(--color-on-surface)', margin: '6px 0 6px' }}>
           {isAr ? 'تصفّح الفئات' : 'Browse categories'}
@@ -87,6 +90,6 @@ export default async function CategoriesPage({ params }: { params: Promise<{ loc
           </div>
         )}
       </div>
-    </PublicPageShell>
+    </>
   );
 }

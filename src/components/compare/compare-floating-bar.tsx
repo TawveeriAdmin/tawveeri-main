@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BarChart3, X, Trash2 } from 'lucide-react';
+import { BarChart3, X, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { getSupabaseBrowserClient } from '@/lib/database';
 
 const COMPARE_STORAGE_KEY = 'compare_products';
@@ -18,6 +18,8 @@ interface CompareItem {
   name_en: string;
   slug: string | null;
   imageUrl: string | null;
+  /** Where this item genuinely resolves — see `resolveCompareItemHref`. */
+  href: string;
 }
 
 interface CachedProduct {
@@ -26,6 +28,27 @@ interface CachedProduct {
   name_en?: string;
   slug?: string;
   image_urls?: (string | null)[] | null;
+  tps_compare_url?: string | null;
+  tps_identity_key?: string | null;
+}
+
+/**
+ * PROVEN 404 (2026-09-26, ADR-386): every tray thumbnail linked to `/products/<slug>`, but a
+ * search-originated item's `slug` was a title-derived string that matches no `products.slug`
+ * (see product-adapter.ts), and a TPS canonical has no storefront product page at all — its
+ * page IS the compare page. Resolve in that order: the canonical's own compare URL (re-homed
+ * to the current locale — the search route emits it under `/ar/`), then a compare URL built
+ * from the identity key, then the storefront product page, then the multi-compare page.
+ */
+export function resolveCompareItemHref(
+  locale: string,
+  c: { slug?: string | null; tps_compare_url?: string | null; tps_identity_key?: string | null },
+  fallback: string,
+): string {
+  if (c.tps_compare_url) return c.tps_compare_url.replace(/^\/(ar|en)\//, `/${locale}/`);
+  if (c.tps_identity_key) return `/${locale}/compare/${encodeURIComponent(c.tps_identity_key)}`;
+  if (c.slug) return `/${locale}/products/${c.slug}`;
+  return fallback;
 }
 
 interface CompareFloatingBarProps {
@@ -49,6 +72,10 @@ export function CompareFloatingBar({ locale }: CompareFloatingBarProps) {
   const onComparePage = /\/compare(\/|$|\?)/.test(pathname);
   const [items, setItems] = useState<CompareItem[]>([]);
   const [hidden, setHidden] = useState(false);
+  // Collapsed = a small pill instead of the full tray, so the tray never covers result cards
+  // and their buttons on a phone. Re-expands on tap or when the selection changes.
+  const [collapsed, setCollapsed] = useState(false);
+  const compareHref = `/${locale}/compare`;
 
   const load = useCallback(async () => {
     if (typeof window === 'undefined') return;
@@ -86,6 +113,7 @@ export function CompareFloatingBar({ locale }: CompareFloatingBarProps) {
           name_en: c.name_en ?? '',
           slug: c.slug ?? null,
           imageUrl: c.image_urls?.[0] ?? null,
+          href: resolveCompareItemHref(locale, c, compareHref),
         });
       } else if (UUID_RE.test(id)) {
         missingDbIds.push(id);
@@ -106,6 +134,8 @@ export function CompareFloatingBar({ locale }: CompareFloatingBarProps) {
             name_en: p.name_en,
             slug: p.slug,
             imageUrl: p.image_urls?.[0] ?? null,
+            // A DB row's own slug is authoritative — the page resolves by it (or by UUID).
+            href: `/${locale}/products/${p.slug || p.id}`,
           });
         }
       } catch {
@@ -118,12 +148,13 @@ export function CompareFloatingBar({ locale }: CompareFloatingBarProps) {
       .map((id) => resolved.get(id))
       .filter((x): x is CompareItem => Boolean(x));
     setItems(ordered);
-  }, []);
+  }, [locale, compareHref]);
 
   useEffect(() => {
     load();
     const handler = () => {
       setHidden(false);
+      setCollapsed(false);
       load();
     };
     window.addEventListener('compare-products-updated', handler);
@@ -170,7 +201,23 @@ export function CompareFloatingBar({ locale }: CompareFloatingBarProps) {
   if (!items.length || hidden || onComparePage) return null;
 
   const canCompare = items.length >= 2;
-  const compareHref = `/${locale}/compare`;
+
+  if (collapsed) {
+    return (
+      <div className="fixed bottom-3 end-3 z-50 md:bottom-5 md:end-6">
+        <button
+          type="button"
+          onClick={() => setCollapsed(false)}
+          aria-label={isRTL ? 'إظهار لوحة المقارنة' : 'Show compare tray'}
+          className="inline-flex h-10 items-center gap-2 rounded-full border border-[color:var(--color-outline-variant)]/60 bg-[color:var(--color-surface)]/95 px-3.5 text-xs font-semibold text-on-surface shadow-[var(--elevation-3)] backdrop-blur-md"
+        >
+          <BarChart3 className="h-4 w-4 text-[var(--brand-green-dark)]" />
+          <span>{isRTL ? `المقارنة (${items.length})` : `Compare (${items.length})`}</span>
+          <ChevronUp className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    );
+  }
   // Always clickable — opens the compare page even with 1 item so the user
   // can see it side-by-side and pick more from there. Copy hints at state.
   const labelCompare = isRTL
@@ -210,7 +257,7 @@ export function CompareFloatingBar({ locale }: CompareFloatingBarProps) {
             return (
               <li key={item.id} className="relative shrink-0">
                 <Link
-                  href={item.slug ? `/${locale}/products/${item.slug}` : compareHref}
+                  href={item.href}
                   className="flex w-16 flex-col items-center gap-1 rounded-lg border border-[color:var(--color-outline-variant)]/50 bg-[color:var(--color-surface-container-lowest)] p-1.5 transition-colors hover:border-[var(--brand-green)] md:w-20"
                   title={rawName || ''}
                 >
@@ -264,6 +311,15 @@ export function CompareFloatingBar({ locale }: CompareFloatingBarProps) {
 
         {/* Actions */}
         <div className="flex shrink-0 items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => setCollapsed(true)}
+            aria-label={isRTL ? 'تصغير لوحة المقارنة' : 'Minimize compare tray'}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full text-on-surface-variant transition-colors hover:bg-[color:var(--color-surface-container)]"
+            title={isRTL ? 'تصغير' : 'Minimize'}
+          >
+            <ChevronDown className="h-4 w-4" />
+          </button>
           <button
             type="button"
             onClick={clearAll}

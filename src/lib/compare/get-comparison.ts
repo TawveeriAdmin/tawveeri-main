@@ -152,11 +152,16 @@ export async function getComparison(params: {
   };
 
   // ── 2. prices — the SAME derivation the search card uses ─────
+  // Newest-first with an EXPLICIT bound (ADR-172/285: PostgREST silently caps an unbounded
+  // query at db-max-rows=1000 anyway). Only the newest row per displayable store is consumed
+  // below, so a newest-first window of 1000 rows is the correct, intentionally-bounded page
+  // for "latest price per store" — never a "give me everything" fetch in disguise.
   const { data: prices, error: phErr } = await supabase
     .from('price_history')
     .select('store_name, price, availability, observed_at, tps_observation_id')
     .eq('canonical_product_id', canonical.id)
-    .order('observed_at', { ascending: false });
+    .order('observed_at', { ascending: false })
+    .limit(1000);
 
   if (phErr) {
     console.error('[compare] price_history failed:', phErr.message);
@@ -208,10 +213,54 @@ export async function getComparison(params: {
   if (latestBySlug.size === 0) return empty;
 
   // ── 3. exit URLs + listing titles, keyed by the SAME slug ────
-  const { data: observations } = await supabase
+  //
+  // PROVEN DEFECT (2026-09-26, FreshDV incident — ADR-386). This query had NO `.order()` and
+  // NO `.limit()`. PostgREST silently truncates such a query at `db-max-rows` (1000) with
+  // `error: null` (ADR-172/285), and an unordered slice is arbitrary. The FreshDV canonical
+  // carried 1,565 observation rows, so the truly-newest re-observations (alnakheelk/shaker/
+  // najm ~1h old, almanea ~8h old) were simply not in the slice: `reobservedBySlug` never saw
+  // them, freshness fell back to price_history's price-CHANGE date, and the compare page said
+  // «رصدناه قبل 9 يومًا» for an offer the search card (which orders newest-first) correctly
+  // showed as observed an hour ago. 79 active canonicals exceed 1,000 rows today — ALL 79 are
+  // multi-store comparables, i.e. exactly the pages customers are sent to. Measured before the
+  // fix: npo rows per canonical p50=20, p95=362, p99=927, max=3,309.
+  //
+  // Fix: newest-first, explicitly bounded. Everything derived from this set wants the NEWEST
+  // row per displayable retailer (listing title/URL, re-observation time, newest raw id), and
+  // a canonical has at most ~a dozen displayable retailers, so a 1000-row newest-first window
+  // always contains every retailer's newest row. The ONE thing that may legitimately live
+  // outside the window is the price-CHANGE observation `price_history.tps_observation_id`
+  // points at (needed for the provenance `scraped_at` of the price event) — fetched below by
+  // id, so it can never be lost regardless of how many rows the canonical accumulates.
+  const NPO_NEWEST_WINDOW = 1000;
+  const { data: newestObservations } = await supabase
     .from('normalized_product_observations')
     .select('id, store_id, raw_name, confidence, observed_at, normalized_payload')
-    .eq('canonical_product_id', canonical.id);
+    .eq('canonical_product_id', canonical.id)
+    .order('observed_at', { ascending: false })
+    .limit(NPO_NEWEST_WINDOW);
+  const observations: ObsRow[] = [...((newestObservations ?? []) as unknown as ObsRow[])];
+  {
+    const seen = new Set(observations.map((o) => o.id));
+    const missingPriceLinked = [...latestBySlug.values()]
+      .map((p) => p.obsId)
+      .filter((id): id is string => !!id && !seen.has(id));
+    if (missingPriceLinked.length) {
+      // Same narrow loose view the raw_observations lookup below uses — the generated types
+      // for this table reject the typed builder here (pre-existing codegen drift in this file).
+      const db = supabase as unknown as {
+        from(t: string): { select(c: string): { in(col: string, vals: unknown[]): Promise<{ data: unknown }> } };
+      };
+      const { data: linked } = await db
+        .from('normalized_product_observations')
+        .select('id, store_id, raw_name, confidence, observed_at, normalized_payload')
+        .in('id', missingPriceLinked);
+      // Appended AFTER the newest-first rows on purpose: `listingBySlug` keeps the first
+      // (newest) row per retailer, so an older price-change row can only ever feed
+      // `rawIdByObsId`, never displace a newer listing title/URL.
+      observations.push(...((linked ?? []) as unknown as ObsRow[]));
+    }
+  }
 
   const listingBySlug = new Map<string, { url: string | null; rawName: string | null; confidence: number | null; obsId: string }>();
   // PROVENANCE INDEX (Principle 7). `normalized_payload._raw_id` points back at the
@@ -227,7 +276,7 @@ export async function getComparison(params: {
   // re-observation existed, because the price hadn't moved. Non-price evidence must track the
   // truly latest observation, not the latest price change.
   const newestRawIdBySlug = new Map<string, { t: number; rawId: number }>();
-  for (const obs of (observations ?? []) as unknown as ObsRow[]) {
+  for (const obs of observations) {
     const rawId = Number((obs.normalized_payload as Record<string, unknown> | null)?._raw_id);
     if (Number.isFinite(rawId)) rawIdByObsId.set(obs.id, rawId);
     const slug = resolveApprovedSlug(obs.store_id);
@@ -403,6 +452,27 @@ export function deriveComparisonSummary(offers: CompareOffer[]): {
       ? { message: 'لا تتوفر مقارنة أسعار محدثة حالياً — كل الأسعار المتوفرة أقدم من أسبوع' }
       : {}),
   };
+}
+
+/**
+ * ONE eligibility rule for "may this offer back a current price claim" — the SAME test
+ * `deriveComparisonSummary` applies (in stock + observed within PICK_FRESHNESS_MAX_HOURS).
+ * The compare page renders `eligible` as the comparison set and `older` as last-observed
+ * reference prices only, and its JSON-LD publishes the SAME `eligible` set the summary's
+ * lowPrice/highPrice were computed from — so structured data can never list a price below
+ * its own declared lowPrice (measured live 2026-09-26: lowPrice 3099 next to an Offer at
+ * 2799, ADR-386). Pure and order-preserving; `nowMs` is injectable for tests.
+ */
+export function partitionOffersByEligibility(
+  offers: CompareOffer[],
+  nowMs: number = Date.now(),
+): { eligible: CompareOffer[]; older: CompareOffer[] } {
+  const eligible: CompareOffer[] = [];
+  const older: CompareOffer[] = [];
+  for (const o of offers) {
+    (o.availability !== 'out_of_stock' && isFreshObservation(o.observed_at, nowMs) ? eligible : older).push(o);
+  }
+  return { eligible, older };
 }
 
 export function isComparisonError(v: ComparisonResult | ComparisonError): v is ComparisonError {

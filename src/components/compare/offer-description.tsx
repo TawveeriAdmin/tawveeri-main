@@ -5,7 +5,11 @@ const CONDITION_LABELS: Record<MerchantCondition, { ar: string; en: string }> = 
   RENEWED: { ar: 'مجدّد بحسب الوصف', en: 'Renewed according to description' },
   REFURBISHED: { ar: 'مجدّد بحسب الوصف', en: 'Refurbished according to description' },
   USED: { ar: 'مستعمل بحسب الوصف', en: 'Used according to description' },
-  UNKNOWN: { ar: 'حالة المنتج غير مؤكدة', en: 'Product condition unconfirmed' },
+  // Says exactly what is unknown: the CONDITION (new/renewed/used) is not stated in the
+  // merchant's own description. Never a stock statement — availability is rendered
+  // separately from `availability`, and «حالة المنتج غير مؤكدة» was being read as "may be
+  // out of stock" (founder review 2026-09-26, ADR-386).
+  UNKNOWN: { ar: 'حالة السلعة (جديد/مجدّد) غير مذكورة في وصف العرض', en: 'Condition (new/renewed) not stated in the offer description' },
 };
 
 /** Describe the observed offer; never infer equivalent terms from a shared model. */

@@ -24,7 +24,6 @@
 // computed evidence (observed price history), never a merchant "was" price.
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { PublicPageShell } from '@/components/public/public-page-shell';
 import { getProvider } from '@/lib/providers';
 import { getCampaignPageHero } from '@/lib/campaigns/store';
 import { MERCHANT_ACCENT } from '@/lib/campaigns/merchant-accent';
@@ -78,8 +77,10 @@ export default async function MerchantOffersPage({ params }: { params: Promise<{
     ? `عروض ${merchantName} الحالية على توفيري`
     : `Current ${merchantName} offers on Tawveeri`;
 
+  // No PublicPageShell here — `(public)/layout.tsx` already provides it; a second wrapper
+  // duplicated <header>/<main>/<footer> on this page (ADR-386, measured live 2026-09-26).
   return (
-    <PublicPageShell locale={locale}>
+    <>
       <div style={{ maxWidth: 720, margin: '0 auto', padding: '20px 16px 60px' }}>
         <div
           style={{
@@ -114,6 +115,6 @@ export default async function MerchantOffersPage({ params }: { params: Promise<{
         </h2>
         <MerchantOfferDeals deals={deals} locale={locale} merchant={merchantSlug} />
       </div>
-    </PublicPageShell>
+    </>
   );
 }

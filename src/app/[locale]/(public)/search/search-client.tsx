@@ -1736,8 +1736,13 @@ export default function SearchClient() {
                   </Button>
                 </form>
                 <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-bold text-[color:var(--color-muted-foreground)]">
-                  <span className="rounded-full bg-[color:var(--color-muted)] px-3 py-1">
-                    {totalCount.toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')} {t('search.resultsCount')}
+                  {/* Never «٠ نتيجة» while a search is in flight — the count is unknown, not
+                      zero (founder-observed 2026-09-26: «٠ نتيجة» beside «جاري البحث», then
+                      results appeared; ADR-386). The mobile toolbar below already did this. */}
+                  <span className={`rounded-full bg-[color:var(--color-muted)] px-3 py-1${loading ? ' animate-pulse' : ''}`}>
+                    {loading
+                      ? t('search.loading')
+                      : `${totalCount.toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')} ${t('search.resultsCount')}`}
                   </span>
                   {activeFilterCount > 0 && (
                     <span className="rounded-full bg-[color:var(--color-secondary)] px-3 py-1 text-[color:var(--color-secondary-foreground)]">
