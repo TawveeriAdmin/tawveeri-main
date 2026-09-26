@@ -21,7 +21,7 @@ import { linkRetrievedCanonicals } from '@/lib/search/linked-canonical-products'
 import { collectCanonicalCandidates } from '@/lib/search/canonical-candidates';
 import { manufacturerCategoryTerms, productQueryText } from '@/lib/search/manufacturer-category-terms';
 import { hoursSince, PICK_FRESHNESS_MAX_HOURS, productTrust, isFreshObservation, type TrustAssessment } from '@/lib/intelligence/evidence-engine';
-import { mergeVerifiedCanonicalSearchResults } from '@/lib/catalog/merge-verified-canonical-search-results';
+import { mergeVerifiedCanonicalSearchResults, mergeSameListingCards } from '@/lib/catalog/merge-verified-canonical-search-results';
 
 export const maxDuration = 30;
 export const dynamic = 'force-dynamic';
@@ -2633,6 +2633,14 @@ export async function POST(request: NextRequest) {
   // pagination could create a second copy of an already-returned exact identity.
   products = await enrichWithTPS(products, supabase);
   products = deduplicateProducts(products);
+  // ADR-388 — MEASURED DEFECT (2026-09-26, live): the same-listing merge above ran BEFORE the
+  // TPS canonical cards were injected, so «مكيف سامسونج 18000» still returned THREE cards for
+  // ONE Extra listing (/p/100226575): the storefront row (raw Extra URL), the TPS canonical
+  // (its `listing_url` is that same URL) and an identity-less shadow canonical with the
+  // storefront row's exact name and no link. `deduplicateProducts` keys on identity key /
+  // product_id / name and cannot see a shared listing. The pure lane runs again here, on the
+  // FINAL array, so the merge covers every source that reaches the customer.
+  products = mergeSameListingCards(products);
 
   // Relevance groups (hoisted): used by BOTH the gate (filter) and scoreProduct (rank) so the query's
   // product noun must be present. Generic tokens can't satisfy relevance on their own.

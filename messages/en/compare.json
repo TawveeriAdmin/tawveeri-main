@@ -46,6 +46,10 @@
   "brand": "Brand",
   "model": "Model",
   "category": "Category",
-  "storesAvailable": "Stores Available",
-  "savings": "Savings"
+  "storesAvailable": "Stores",
+  "savings": "Savings",
+  "lastObserved": "Last observed",
+  "lastObservedPrice": "Last observed price",
+  "noEligibleOffer": "No eligible offer right now",
+  "observationUnknown": "Observation time unknown"
 }

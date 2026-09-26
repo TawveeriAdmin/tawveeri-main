@@ -52,6 +52,22 @@ describe('mergeSameListingCards — the Samsung 18000 triple', () => {
     expect(out[0].best_price).toBe(1155);
   });
 
+  it('ADR-388: the live array order (TPS canonical injected FIRST, then storefront and ghost) also collapses to one card', () => {
+    const out = mergeSameListingCards([tps, storefront, ghost]);
+    expect(out).toHaveLength(1);
+    expect(out[0].tps_identity_key).toBe('samsung|split|NO_SERIES|18000|Standard|NO_MODE');
+    expect(out[0].stores).toHaveLength(1);
+    // the representative keeps the /go exit; the raw listing URL stays as evidence only
+    expect(out[0].stores[0].product_url).toBe('/go/71047ca4');
+    expect(out[0].stores[0].listing_url).toBe(EXTRA_URL);
+  });
+
+  it('ADR-388: the storefront card alone with the ghost (no TPS card present yet) folds the link-less ghost into the linked card', () => {
+    const out = mergeSameListingCards([storefront, ghost]);
+    expect(out).toHaveLength(1);
+    expect(out[0].stores.some((s) => s.product_url === EXTRA_URL)).toBe(true);
+  });
+
   it('does NOT merge two identity-bearing canonicals that merely share a title', () => {
     const a = card({ product_id: 'a', tps_identity_key: 'k1', name_ar: 'نفس الاسم', name_en: 'same', stores: [offer('extra', 100, { product_url: '/go/1', listing_url: 'https://www.extra.com/p/1' })] });
     const b = card({ product_id: 'b', tps_identity_key: 'k2', name_ar: 'نفس الاسم', name_en: 'same', stores: [offer('extra', 120, { product_url: '/go/2', listing_url: 'https://www.extra.com/p/2' })] });

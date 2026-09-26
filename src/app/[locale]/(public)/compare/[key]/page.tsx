@@ -24,6 +24,8 @@ import { categoryLabel } from '@/lib/agent/advisor-api';
 import { classifyCondition } from '@/lib/campaigns/condition';
 import { CONDITION_LABELS } from '@/components/compare/offer-description';
 import { PICK_FRESHNESS_MAX_HOURS } from '@/lib/intelligence/evidence-engine';
+import { freshnessLabel, observedLabel, availabilityLabelFor, exclusionLabelFor } from '@/lib/compare/observed-label';
+import { exclusionReasonFor } from '@/lib/compare/offer-eligibility';
 import { buildAlternates } from '@/lib/seo/metadata';
 import { retailerDisplayName, resolveApprovedSlug } from '@/lib/retailers/approved-retailers';
 import { CompareStateSync } from '@/components/agent/compare-state-sync';
@@ -93,7 +95,9 @@ export async function generateMetadata({
 
   const name = (isAr ? data.canonical.name_ar : data.canonical.name_en) || data.canonical.name_ar || data.canonical.name_en;
   const price = data.summary.lowest_price;
-  const stores = data.summary.store_count;
+  // ADR-388: the meta description names the ELIGIBLE store set — the one `lowest_price` came
+  // from — never the full known set (ArtCool read «من 5 متاجر» while the page compared 3).
+  const stores = data.summary.eligible_store_count;
 
   return {
     // The locale layout applies `%s | توفيري` / `%s | Tawveeri`, so the brand must NOT be
@@ -101,9 +105,13 @@ export async function generateMetadata({
     // AI assistants show as the headline.
     title: isAr ? `${name} — مقارنة الأسعار` : `${name} — price comparison`,
     description: price
-      ? (isAr
-        ? `أرخص سعر رصدناه لـ ${name} هو ${price} ر.س، من ${stores} متاجر سعودية.`
-        : `The lowest price we observed for ${name} is ${price} SAR, across ${stores} Saudi retailers.`)
+      ? (stores >= 2
+        ? (isAr
+          ? `أرخص سعر رصدناه لـ ${name} هو ${price} ر.س، من ${stores} متاجر سعودية رُصدت خلال 7 أيام.`
+          : `The lowest price we observed for ${name} is ${price} SAR, across ${stores} Saudi retailers observed within 7 days.`)
+        : (isAr
+          ? `آخر سعر رصدناه لـ ${name} هو ${price} ر.س عند متجر واحد — لا مقارنة بين متجرين بعد.`
+          : `The last price we observed for ${name} is ${price} SAR at one retailer — no two-store comparison yet.`))
       : (isAr
         ? `قارن أسعار ${name} بين متاجر سعودية.`
         : `Compare ${name} prices across Saudi retailers.`),
@@ -111,20 +119,9 @@ export async function generateMetadata({
   };
 }
 
-/** Same day-count freshness phrasing for every observation on the page. */
-function freshnessLabel(iso: string, isAr: boolean): string {
-  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
-  if (days <= 0) return isAr ? 'اليوم' : 'today';
-  if (days === 1) return isAr ? 'أمس' : 'yesterday';
-  // Arabic number agreement: dual for 2, plural noun for 3–10, singular accusative beyond.
-  if (isAr) return days === 2 ? 'قبل يومين' : days <= 10 ? `قبل ${days} أيام` : `قبل ${days} يومًا`;
-  return `${days} days ago`;
-}
-
-/** «رصدناه اليوم / أمس / قبل N …» — ONE phrasing for every offer, featured or listed. */
-function observedLabel(iso: string, isAr: boolean): string {
-  return isAr ? `رصدناه ${freshnessLabel(iso, true)}` : `observed ${freshnessLabel(iso, false)}`;
-}
+// ADR-388: `freshnessLabel` / `observedLabel` / availability wording moved to
+// src/lib/compare/observed-label.ts so the multi-product compare page renders the SAME
+// phrasing — it used to show no observation time at all.
 
 /** Customer-facing category name — never the internal slug («air_conditioner»). TPS's own
  *  short codes (`ac`/`mobile`) are mapped first; everything else goes through the shared
@@ -138,20 +135,14 @@ function categoryBadgeLabel(category: string, isAr: boolean): string {
 /** Availability wording is always bound to the observation it came from — «الآن» is never
  *  claimed. Stale evidence says so explicitly. */
 function availabilityLabel(offer: CompareOffer, isAr: boolean): { text: string; tone: 'ok' | 'muted' | 'bad' } | null {
-  if (offer.availability === 'out_of_stock') return { text: isAr ? 'غير متوفر عند آخر رصد' : 'Out of stock at last observation', tone: 'bad' };
-  if (offer.availability === 'in_stock' || offer.availability === 'limited_stock') {
-    if (offer.stale) return { text: isAr ? 'متوفر بحسب آخر رصد' : 'In stock at last observation', tone: 'muted' };
-    return { text: offer.availability === 'limited_stock' ? (isAr ? 'كمية محدودة' : 'Limited stock') : (isAr ? 'متوفر' : 'In stock'), tone: 'ok' };
-  }
-  return null;
+  return availabilityLabelFor(offer.availability, offer.stale, isAr);
 }
 
 /** Why an offer sits outside the comparison — one reason per offer, never a blanket label
  *  (a fresh out-of-stock offer is not "old"; founder review 2026-09-26). */
 function exclusionReason(offer: CompareOffer, isAr: boolean): string {
-  if (offer.availability === 'out_of_stock') return isAr ? 'غير متوفر عند آخر رصد' : 'Out of stock at last observation';
-  const days = Math.max(1, Math.floor((Date.now() - Date.parse(offer.observed_at)) / 86400000));
-  return isAr ? `آخر رصد قبل ${days} يومًا — أقدم من ${PICK_FRESHNESS_MAX_HOURS / 24} أيام` : `Last observed ${days} days ago — older than ${PICK_FRESHNESS_MAX_HOURS / 24} days`;
+  const reason = exclusionReasonFor({ price: offer.price, availability: offer.availability, observed_at: offer.observed_at });
+  return exclusionLabelFor(reason ?? 'stale', offer.observed_at, isAr);
 }
 
 /** Model codes the knowledge layer holds for this canonical, if any — a shopper's fastest

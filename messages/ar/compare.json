@@ -46,6 +46,10 @@
   "brand": "العلامة التجارية",
   "model": "الموديل",
   "category": "الفئة",
-  "storesAvailable": "المتاجر المتاحة",
-  "savings": "التوفير"
+  "storesAvailable": "المتاجر",
+  "savings": "التوفير",
+  "lastObserved": "آخر رصد",
+  "lastObservedPrice": "آخر سعر رصدناه",
+  "noEligibleOffer": "لا عرض مؤهل حاليًا",
+  "observationUnknown": "زمن الرصد غير معروف"
 }

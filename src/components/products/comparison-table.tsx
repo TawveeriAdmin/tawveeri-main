@@ -80,6 +80,10 @@ export function ComparisonTable({ productStores, onStoreClick }: ComparisonTable
   }
 
   const bestPriceValue = Math.min(...rows.map((r) => r.current_price));
+  // ADR-388: «أفضل سعر» is a COMPARISON claim. With one store there is nothing to be best
+  // against — the page header already says «متجر واحد — لا مقارنة بعد» (ADR-387), and this
+  // table was contradicting it one screen below (founder finding 2026-09-26).
+  const hasComparison = rows.length > 1;
   const showDeliveryColumn = rows.some(
     (r) => r.delivery_time_days != null || r.delivery_cost != null || r.is_free_delivery,
   );
@@ -142,7 +146,7 @@ export function ComparisonTable({ productStores, onStoreClick }: ComparisonTable
           </thead>
           <tbody>
             {rows.map((ps) => {
-              const isWinner = ps.current_price === bestPriceValue;
+              const isWinner = hasComparison && ps.current_price === bestPriceValue;
               const savings =
                 ps.original_price && ps.original_price > ps.current_price
                   ? ps.original_price - ps.current_price
@@ -246,7 +250,7 @@ export function ComparisonTable({ productStores, onStoreClick }: ComparisonTable
       {/* ── Mobile cards ── */}
       <div className="md:hidden divide-y divide-[color:var(--color-outline-variant)]/50">
         {rows.map((ps) => {
-          const isWinner = ps.current_price === bestPriceValue;
+          const isWinner = hasComparison && ps.current_price === bestPriceValue;
           const savings =
             ps.original_price && ps.original_price > ps.current_price
               ? ps.original_price - ps.current_price

@@ -61,7 +61,8 @@ export function StoreComparisonPanel({ product, locale, onClose }: StoreComparis
         {sortedStores.map((ps) => {
           const storeName = locale === 'ar' ? ps.stores.name_ar : ps.stores.name_en;
           const storeInitial = storeName.charAt(0).toUpperCase();
-          const isBestPrice = ps.current_price === bestPriceValue;
+          // ADR-388: a single store has nothing to be "best" against — no badge, no highlight.
+          const isBestPrice = sortedStores.length > 1 && ps.current_price === bestPriceValue;
           const rawStoreUrl = ps.product_url || ps.affiliate_url;
           const storeSlug = ps.stores.slug || ps.stores.id || null;
           const storeUrl = rawStoreUrl

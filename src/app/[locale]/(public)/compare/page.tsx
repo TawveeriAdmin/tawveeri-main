@@ -22,7 +22,11 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { ProductCategory, AvailabilityStatus } from '@/lib/database/types';
-import { isFreshObservation } from '@/lib/intelligence/evidence-engine';
+import { PICK_FRESHNESS_MAX_HOURS } from '@/lib/intelligence/evidence-engine';
+import { partitionEligible, summarizeEligiblePrices, distinctStoreCount, type ExclusionReason } from '@/lib/compare/offer-eligibility';
+import { observedLabel, availabilityLabelFor, exclusionLabelFor } from '@/lib/compare/observed-label';
+import { identitySpecRows, mergeIdentitySpecTable } from '@/lib/compare/identity-specs';
+import { brandDisplayName } from '@/lib/compare/brand-display';
 
 interface StoreInfo {
   id: string;
@@ -68,6 +72,64 @@ interface Product {
   image_urls: string[] | null;
   specifications: Record<string, unknown> | null;
   product_stores: ProductStore[];
+  /** ADR-388: the knowledge layer's structured identity (a search-originated item carries
+   *  it in the cache). Read for identity-derived specification rows — never displayed raw. */
+  tps_identity_key?: string | null;
+}
+
+/**
+ * ADR-388 — everything the page states about ONE product's offers, computed once from the
+ * SAME eligibility rule /compare/[key] uses (offer-eligibility.ts). Exported for tests.
+ *   • eligible / excluded-with-reason (in stock, positive price, observed ≤ 7 days)
+ *   • best = the cheapest ELIGIBLE offer; when none is eligible, the cheapest known offer is
+ *     still shown, labelled as a last-observed price and never crowned
+ *   • eligibleStoreCount = DISTINCT eligible retailers (never offer rows)
+ *   • spread = highest − lowest among ELIGIBLE prices only (null below two)
+ * Legacy rows with no timestamp anywhere on the product keep the pre-existing behaviour
+ * (availability alone decides) — the moment any offer carries a timestamp, an undated one
+ * is excluded as `unknown_age` rather than out-competing a dated one.
+ */
+export interface ProductOfferFacts {
+  sorted: ProductStore[];
+  eligible: ProductStore[];
+  excluded: Array<{ item: ProductStore; reason: ExclusionReason }>;
+  best: ProductStore | null;
+  bestIsEligible: boolean;
+  eligibleStoreCount: number;
+  excludedStoreCount: number;
+  lowest: number | null;
+  highest: number | null;
+  spread: number | null;
+  /** true when no offer of this product carries any observation time (legacy rows). */
+  freshnessUnknown: boolean;
+}
+
+export function deriveProductOfferFacts(stores: readonly ProductStore[], nowMs: number = Date.now()): ProductOfferFacts {
+  const sorted = [...stores].filter((s) => s.current_price > 0).sort((a, b) => a.current_price - b.current_price);
+  const freshnessUnknown = !sorted.some((s) => s.observed_at != null);
+  const { eligible, excluded } = partitionEligible(
+    sorted,
+    (s) => ({ price: s.current_price, availability: s.availability, observed_at: s.observed_at }),
+    nowMs,
+    { unknownAgeIsEligible: freshnessUnknown },
+  );
+  const inStock = sorted.filter((s) => s.availability !== 'out_of_stock');
+  const best = eligible[0] ?? inStock[0] ?? sorted[0] ?? null;
+  const storeKey = (s: ProductStore) => s.stores?.id ?? s.id;
+  const { lowest, highest, spread } = summarizeEligiblePrices(eligible.map((s) => s.current_price));
+  return {
+    sorted,
+    eligible,
+    excluded,
+    best,
+    bestIsEligible: best != null && eligible.includes(best),
+    eligibleStoreCount: distinctStoreCount(eligible, storeKey),
+    excludedStoreCount: distinctStoreCount(excluded.map((e) => e.item), storeKey),
+    lowest,
+    highest,
+    spread,
+    freshnessUnknown,
+  };
 }
 
 const MAX_COMPARE_PRODUCTS = 4;
@@ -234,6 +296,7 @@ interface ProductRecord {
   image_urls: string[] | null;
   specifications: Record<string, unknown> | null;
   product_stores?: ProductStoreRecord[] | null;
+  tps_identity_key?: string | null;
 }
 
 function isUuid(value: string): boolean {
@@ -310,11 +373,9 @@ function normalizeAvailability(availability: unknown): AvailabilityStatus {
  * is in stock, unchanged from before this fix).
  */
 export function selectBestPriceStore(sortedStores: ProductStore[]): ProductStore | null {
-  const inStock = sortedStores.filter((s) => s.availability !== 'out_of_stock');
-  const anyObservedAt = inStock.some((s) => s.observed_at != null);
-  const isFresh = (s: ProductStore) => !anyObservedAt || isFreshObservation(s.observed_at);
-  const freshInStock = inStock.filter(isFresh);
-  return freshInStock[0] ?? inStock[0] ?? sortedStores[0] ?? null;
+  // ADR-388: delegates to the shared eligibility rule so the crown, the store count and the
+  // spread on this page can never disagree with each other or with /compare/[key].
+  return deriveProductOfferFacts(sortedStores).best;
 }
 
 function normalizeProductStore(store: ProductStoreRecord): ProductStore {
@@ -353,6 +414,7 @@ function normalizeProductRecord(product: ProductRecord): Product {
     image_urls: product.image_urls || null,
     specifications: product.specifications || null,
     product_stores: (product.product_stores || []).map(normalizeProductStore),
+    tps_identity_key: typeof product.tps_identity_key === 'string' ? product.tps_identity_key : null,
   };
 }
 
@@ -412,6 +474,82 @@ function getStoreSlug(store: StoreInfo | null): string | null {
   return null;
 }
 
+/**
+ * ADR-388 — a search-originated item in the tray is a SNAPSHOT of the moment it was added
+ * (prices, availability, observation times frozen in localStorage). The founder's rule: the
+ * cache is not the authority — the saved identifier is, and current data is restored from it.
+ * For an item that carries a TPS identity key, the knowledge layer's own comparison (the same
+ * `getComparison` derivation /compare/[key] renders, via the public `/api/compare` route) is
+ * fetched client-side and its offers REPLACE the cached ones. On any failure the snapshot is
+ * kept as-is (it still carries its own observation times, so the eligibility rule still
+ * applies) — never a blank column, never a fabricated offer. Exported for tests.
+ */
+export interface KnowledgeLayerOffer {
+  store_slug: string;
+  store_name: string;
+  price: number;
+  availability: string | null;
+  product_url: string | null;
+  observed_at: string;
+}
+export interface KnowledgeLayerComparison {
+  canonical?: { name_ar?: string | null; name_en?: string | null; image_url?: string | null; brand?: string | null } | null;
+  offers?: KnowledgeLayerOffer[] | null;
+}
+
+export function applyKnowledgeLayerComparison(product: Product, comparison: KnowledgeLayerComparison | null | undefined): Product {
+  const offers = Array.isArray(comparison?.offers) ? comparison!.offers!.filter((o) => o && typeof o.price === 'number' && o.price > 0 && o.store_slug) : [];
+  if (offers.length === 0) return product;
+  const product_stores: ProductStore[] = offers.map((o) => ({
+    id: `tps-${o.store_slug}`,
+    current_price: o.price,
+    original_price: null,
+    availability: normalizeAvailability(o.availability),
+    delivery_time_days: null,
+    delivery_cost: null,
+    is_free_delivery: null,
+    product_url: o.product_url ?? null,
+    affiliate_url: o.product_url ?? null,
+    observed_at: o.observed_at ?? null,
+    stores: {
+      id: o.store_slug,
+      name_ar: o.store_name || o.store_slug,
+      name_en: o.store_name || o.store_slug,
+      logo_url: null,
+      website_url: '',
+      delivery_info_ar: null,
+      delivery_info_en: null,
+      return_policy_ar: null,
+      return_policy_en: null,
+      warranty_info_ar: null,
+      warranty_info_en: null,
+    },
+  }));
+  const c = comparison?.canonical ?? null;
+  return {
+    ...product,
+    name_ar: c?.name_ar || product.name_ar,
+    name_en: c?.name_en || product.name_en,
+    brand: product.brand || c?.brand || '',
+    image_urls: product.image_urls && product.image_urls.length > 0 ? product.image_urls : c?.image_url ? [c.image_url] : product.image_urls,
+    product_stores,
+  };
+}
+
+async function refreshFromKnowledgeLayer(items: Product[], locale: string): Promise<Product[]> {
+  return Promise.all(items.map(async (p) => {
+    if (!p.tps_identity_key) return p;
+    try {
+      const res = await fetch(`/api/compare?key=${encodeURIComponent(p.tps_identity_key)}&locale=${locale === 'en' ? 'en' : 'ar'}`, { headers: { accept: 'application/json' } });
+      if (!res.ok) return p;
+      const json = (await res.json()) as KnowledgeLayerComparison;
+      return applyKnowledgeLayerComparison(p, json);
+    } catch {
+      return p;
+    }
+  }));
+}
+
 export default function ComparePage() {
   const params = useParams();
   const router = useRouter();
@@ -440,6 +578,7 @@ export default function ComparePage() {
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
+    let cancelled = false;
 
     async function fetchProducts() {
       if (productIds.length === 0) {
@@ -472,6 +611,11 @@ export default function ComparePage() {
             .map((id) => cachedProductsById[id])
             .filter(Boolean) as Product[];
           setProducts(orderedCachedProducts);
+          // ADR-388: restore current offers for identity-bearing snapshots (see helper).
+          const refreshed = await refreshFromKnowledgeLayer(orderedCachedProducts, locale);
+          if (cancelled) return;
+          setProducts(refreshed);
+          writeCompareCache(Object.fromEntries(refreshed.map((p) => [p.id, p])), productIds);
           return;
         }
 
@@ -515,6 +659,19 @@ export default function ComparePage() {
 
         setProducts(ordered);
 
+        // ADR-388: a TPS canonical has no `products` row, so it always comes from the cache
+        // snapshot above — restore its CURRENT offers from the knowledge layer by identity key,
+        // then persist the refreshed snapshot so the tray and the next load agree.
+        const needsRefresh = ordered.some((p) => p.tps_identity_key && !dbProductsById.has(p.id));
+        if (needsRefresh) {
+          const refreshed = await refreshFromKnowledgeLayer(ordered.map((p) => (dbProductsById.has(p.id) ? { ...p, tps_identity_key: null } : p)), locale);
+          if (cancelled) return;
+          // keep the DB rows' identity keys (they were only masked to skip the fetch)
+          const merged = refreshed.map((p, i) => (dbProductsById.has(p.id) ? ordered[i] : p));
+          setProducts(merged);
+          writeCompareCache({ ...cachedProductsById, ...Object.fromEntries(merged.filter((p) => !dbProductsById.has(p.id)).map((p) => [p.id, p])) }, productIds);
+        }
+
         validProductIds.forEach((productId) => {
           if (!dbProductsById.has(productId)) {
             return;
@@ -547,7 +704,8 @@ export default function ComparePage() {
     }
 
     fetchProducts();
-  }, [productIds, t]);
+    return () => { cancelled = true; };
+  }, [productIds, t, locale]);
 
   const getStoresByPrice = (product: Product): ProductStore[] => {
     return [...product.product_stores]
@@ -635,20 +793,25 @@ export default function ComparePage() {
     return store.product_url || store.affiliate_url || store.stores?.website_url || null;
   };
 
-  const sortedStoresByProductId = new Map<string, ProductStore[]>();
+  // ADR-388: ONE derivation per product feeds the header price, the crown, the store counts,
+  // the spread and the observation line — they cannot disagree with each other.
+  const factsByProductId = new Map<string, ProductOfferFacts>();
   const bestStoreByProductId = new Map<string, ProductStore | null>();
-
   products.forEach((product) => {
-    const sortedStores = getStoresByPrice(product);
-    sortedStoresByProductId.set(product.id, sortedStores);
-    bestStoreByProductId.set(product.id, selectBestPriceStore(sortedStores));
+    const facts = deriveProductOfferFacts(getStoresByPrice(product));
+    factsByProductId.set(product.id, facts);
+    bestStoreByProductId.set(product.id, facts.best);
   });
 
-  const bestPriceValues = Array.from(bestStoreByProductId.values())
-    .map((store) => store?.current_price)
-    .filter((price): price is number => typeof price === 'number' && price > 0);
-
-  const lowestBestPrice = bestPriceValues.length > 0 ? Math.min(...bestPriceValues) : null;
+  // «الأقل سعرًا بين المختارة» is awarded only among ELIGIBLE best offers — a stale price
+  // never wins the badge (it can still be shown, labelled as last observed).
+  const eligibleBestPrices = Array.from(factsByProductId.values())
+    .filter((f) => f.bestIsEligible && f.best)
+    .map((f) => f.best!.current_price);
+  const lowestBestPrice = eligibleBestPrices.length > 0 ? Math.min(...eligibleBestPrices) : null;
+  const isAr = locale === 'ar';
+  const windowDays = PICK_FRESHNESS_MAX_HOURS / 24;
+  const identityTable = mergeIdentitySpecTable(products.map((p) => identitySpecRows(p.tps_identity_key, p.category, isAr ? 'ar' : 'en')));
 
   if (loading) {
     return (
@@ -771,10 +934,12 @@ export default function ComparePage() {
               <div className="sticky start-0 z-[1] border-e border-outline-variant/50 bg-inherit p-4" />
               {products.map((product, colIdx) => {
                 const productName = getProductName(product);
-                const bestStore = bestStoreByProductId.get(product.id) || null;
+                const facts = factsByProductId.get(product.id) ?? deriveProductOfferFacts([]);
+                const bestStore = facts.best;
                 const imageUrl = product.image_urls?.[0] || PLACEHOLDER_IMAGE;
-                const isBestPriceProduct = lowestBestPrice !== null && bestStore?.current_price === lowestBestPrice && products.length > 1;
+                const isBestPriceProduct = lowestBestPrice !== null && facts.bestIsEligible && bestStore?.current_price === lowestBestPrice && products.length > 1;
                 const primaryStoreUrl = getStoreUrl(bestStore);
+                const bestAvail = bestStore ? availabilityLabelFor(bestStore.availability, !facts.bestIsEligible, isAr) : null;
 
                 return (
                   <div
@@ -817,22 +982,30 @@ export default function ComparePage() {
                         {productName}
                       </h3>
 
-                      {/* Brand / Model */}
-                      <p className="text-xs text-on-surface-variant mb-2">
-                        {product.brand}{product.model ? ` - ${product.model}` : ''}
+                      {/* Brand / Model — brand in the reader's language; a missing model is omitted, never a placeholder */}
+                      <p className="text-xs text-on-surface-variant mb-2" dir="auto">
+                        {brandDisplayName(product.brand, isAr ? 'ar' : 'en')}{product.model && !/^(NO_|NA$)/.test(product.model) ? ` · ${product.model}` : ''}
                       </p>
 
-                      {/* Price */}
+                      {/* Price — the cheapest ELIGIBLE offer; an ineligible one is labelled as last observed.
+                          ADR-388: the merchant's struck-through «was» price is gone from this surface —
+                          71% of advertised reference prices were never observed (ADR-134); a figure we
+                          cannot source is not one we repeat beside our own observation. */}
                       <div className="mb-3">
                         {bestStore ? (
                           <div className="flex flex-col items-center gap-0.5">
-                            <Price amount={bestStore.current_price} className="text-lg font-bold text-on-surface" symbolClassName="w-4 h-4" />
-                            {bestStore.original_price && bestStore.original_price > bestStore.current_price && (
-                              <Price
-                                amount={bestStore.original_price}
-                                className="text-xs text-on-surface-variant line-through"
-                                symbolClassName="w-3 h-3"
-                              />
+                            {!facts.bestIsEligible && (
+                              <span className="text-[10px] font-medium text-on-surface-variant">{t('compare.lastObservedPrice')}</span>
+                            )}
+                            <Price amount={bestStore.current_price} className={cn('text-lg font-bold', facts.bestIsEligible ? 'text-on-surface' : 'text-on-surface-variant')} symbolClassName="w-4 h-4" />
+                            <span className="text-[11px] leading-snug text-on-surface-variant" dir="auto">
+                              {bestStore.stores ? (isAr ? bestStore.stores.name_ar : bestStore.stores.name_en) : null}
+                              {bestStore.observed_at ? ` · ${observedLabel(bestStore.observed_at, isAr)}` : facts.freshnessUnknown ? ` · ${t('compare.observationUnknown')}` : ''}
+                            </span>
+                            {bestAvail && (
+                              <span className={cn('text-[11px]', bestAvail.tone === 'ok' ? 'text-[var(--brand-green-dark)]' : bestAvail.tone === 'bad' ? 'text-[var(--color-error)]' : 'text-on-surface-variant')}>
+                                {bestAvail.text}
+                              </span>
                             )}
                           </div>
                         ) : (
@@ -880,13 +1053,66 @@ export default function ComparePage() {
               <h2 className="text-sm font-bold text-on-surface uppercase tracking-wide">
                 {t('compare.storeComparison')}
               </h2>
+              {/* ADR-388: the same rule /compare/[key] states — which offers count, and that the
+                  price is for the device alone. Stated once, above the rows it governs. */}
+              <p className="text-[11px] text-on-surface-variant">
+                {isAr
+                  ? `تدخل في المقارنة العروض التي رُصدت خلال ${windowDays} أيام ومتوفرة عند آخر رصد؛ منها يُحسب فرق السعر. الأسعار للجهاز فقط — لا تشمل الشحن أو التركيب.`
+                  : `Offers observed within ${windowDays} days and in stock at last observation take part; the spread is computed from them. Prices are for the device only — shipping and installation excluded.`}
+              </p>
             </div>
 
             {/* ── Store Comparison Rows ── */}
             {[
-              { key: 'bestStore', label: t('compare.bestStore'), render: (product: Product) => getStoreName(bestStoreByProductId.get(product.id) || null) },
-              { key: 'availability', label: t('compare.availability'), render: (product: Product) => { const bs = bestStoreByProductId.get(product.id) || null; return bs ? getAvailabilityBadge(bs.availability) : <Badge variant="secondary">{t('product.outOfStock')}</Badge>; } },
-              { key: 'storesAvailable', label: t('compare.storesAvailable'), render: (product: Product) => `${product.product_stores.length} ${product.product_stores.length === 1 ? t('compare.store') : t('compare.stores')}` },
+              {
+                key: 'bestStore', label: t('compare.bestStore'), render: (product: Product) => {
+                  const f = factsByProductId.get(product.id);
+                  if (!f?.best) return <span className="text-on-surface-variant">{t('compare.notAvailable')}</span>;
+                  if (!f.bestIsEligible) return <span className="text-on-surface-variant">{t('compare.noEligibleOffer')}</span>;
+                  return getStoreName(f.best);
+                },
+              },
+              {
+                key: 'observed', label: t('compare.lastObserved'), render: (product: Product) => {
+                  const f = factsByProductId.get(product.id);
+                  const bs = f?.best ?? null;
+                  if (!bs) return <span className="text-on-surface-variant">{t('compare.notAvailable')}</span>;
+                  if (!bs.observed_at) return <span className="text-on-surface-variant">{t('compare.observationUnknown')}</span>;
+                  return <span className={f && !f.bestIsEligible ? 'text-on-surface-variant' : 'text-on-surface'}>{observedLabel(bs.observed_at, isAr)}</span>;
+                },
+              },
+              {
+                // Availability is bound to the observation it came from — never present tense for an old offer.
+                key: 'availability', label: t('compare.availability'), render: (product: Product) => {
+                  const f = factsByProductId.get(product.id);
+                  const bs = f?.best ?? null;
+                  if (!bs) return <Badge variant="secondary">{t('product.outOfStock')}</Badge>;
+                  const a = availabilityLabelFor(bs.availability, !f!.bestIsEligible, isAr);
+                  if (!a) return getAvailabilityBadge(bs.availability);
+                  return <Badge variant={a.tone === 'ok' ? 'success' : a.tone === 'bad' ? 'secondary' : 'outline'}>{a.text}</Badge>;
+                },
+              },
+              {
+                // DISTINCT eligible retailers, with the excluded ones counted separately — never «5 متاحة»
+                // when only 3 offers may take part (ArtCool, 2026-09-26).
+                key: 'storesAvailable', label: t('compare.storesAvailable'), render: (product: Product) => {
+                  const f = factsByProductId.get(product.id);
+                  if (!f) return null;
+                  const inPart = isAr
+                    ? (f.eligibleStoreCount === 0 ? 'لا متاجر مؤهلة' : f.eligibleStoreCount === 1 ? 'متجر واحد مؤهل' : f.eligibleStoreCount === 2 ? 'متجران مؤهلان' : `${f.eligibleStoreCount} متاجر مؤهلة`)
+                    : `${f.eligibleStoreCount} eligible ${f.eligibleStoreCount === 1 ? 'store' : 'stores'}`;
+                  return (
+                    <span className="flex flex-col items-center gap-0.5 leading-snug">
+                      <span>{inPart}</span>
+                      {f.excludedStoreCount > 0 && (
+                        <span className="text-[11px] text-on-surface-variant" title={f.excluded.map((e) => `${e.item.stores ? (isAr ? e.item.stores.name_ar : e.item.stores.name_en) : ''}: ${exclusionLabelFor(e.reason, e.item.observed_at, isAr)}`).join('\n')}>
+                          {isAr ? `${f.excludedStoreCount} خارج المقارنة` : `${f.excludedStoreCount} outside the comparison`}
+                        </span>
+                      )}
+                    </span>
+                  );
+                },
+              },
               { key: 'deliveryTime', label: t('compare.deliveryTime'), render: (product: Product) => getDeliveryTimeLabel(bestStoreByProductId.get(product.id) || null) },
               { key: 'shippingCost', label: t('compare.shippingCost'), render: (product: Product) => getShippingLabel(bestStoreByProductId.get(product.id) || null) },
               {
@@ -917,12 +1143,15 @@ export default function ComparePage() {
                 // (ADR-134: 71% of advertised reference prices were never observed) is exactly
                 // why that claim is not ours to repeat. What we CAN state is observed: the spread
                 // between this product's own stores' prices.
+                // ADR-388: computed over ELIGIBLE offers only — the same set the count above names.
+                // Live defect: ArtCool read 720 here (3,669 − a 12-day-old 2,949) against 400 on
+                // /compare/[key] (3,669 − 3,269 among the three eligible stores).
                 key: 'spread', label: locale === 'ar' ? 'فرق السعر بين المتاجر' : 'Price spread across stores', render: (product: Product) => {
-                  const sorted = (sortedStoresByProductId.get(product.id) || []).filter((s) => s.availability !== 'out_of_stock' && s.current_price > 0);
-                  if (sorted.length < 2) return <span className="text-on-surface-variant">{locale === 'ar' ? 'متجر واحد' : 'One store'}</span>;
-                  const spread = sorted[sorted.length - 1].current_price - sorted[0].current_price;
-                  return spread > 0
-                    ? <Price amount={spread} className="text-sm font-semibold text-[var(--brand-gold-dark)]" symbolClassName="w-3 h-3" />
+                  const f = factsByProductId.get(product.id);
+                  if (!f || f.eligibleStoreCount === 0) return <span className="text-on-surface-variant">{t('compare.noEligibleOffer')}</span>;
+                  if (f.eligibleStoreCount < 2 || f.spread == null) return <span className="text-on-surface-variant">{isAr ? 'متجر واحد مؤهل — لا فرق يُحسب' : 'One eligible store — no spread'}</span>;
+                  return f.spread > 0
+                    ? <Price amount={f.spread} className="text-sm font-semibold text-[var(--brand-gold-dark)]" symbolClassName="w-3 h-3" />
                     : <span className="text-on-surface-variant">{locale === 'ar' ? 'نفس السعر' : 'Same price'}</span>;
                 },
               },
@@ -939,8 +1168,18 @@ export default function ComparePage() {
             </div>
             {[
               { key: '__category', label: locale === 'ar' ? 'الفئة' : 'Category', get: (p: Product) => (p.category ? t(`products.categories.${p.category}`) : null), diff: mixedCategories },
-              { key: '__brand', label: locale === 'ar' ? 'العلامة' : 'Brand', get: (p: Product) => p.brand || null, diff: new Set(products.map((p) => (p.brand || '').toLowerCase())).size > 1 },
-              { key: '__model', label: locale === 'ar' ? 'الموديل' : 'Model', get: (p: Product) => p.model || null, diff: false },
+              { key: '__brand', label: locale === 'ar' ? 'العلامة' : 'Brand', get: (p: Product) => (p.brand ? brandDisplayName(p.brand, isAr ? 'ar' : 'en') : null), diff: new Set(products.map((p) => (p.brand || '').toLowerCase())).size > 1 },
+              // Model: shown only when at least one product states one — a row of «غير متاح» helps nobody.
+              ...(products.some((p) => p.model && !/^(NO_|NA$)/.test(p.model))
+                ? [{ key: '__model', label: locale === 'ar' ? 'الموديل' : 'Model', get: (p: Product) => (p.model && !/^(NO_|NA$)/.test(p.model) ? p.model : null), diff: false }]
+                : []),
+              // ADR-388: identity-derived specifications (the knowledge layer's parsed identity —
+              // capacity, series, inverter, cooling mode for an AC). Unknown stays «غير متاح».
+              ...identityTable.map((row) => ({
+                key: `__id_${row.key}`, label: row.label,
+                get: (p: Product) => row.values[products.indexOf(p)] ?? null,
+                diff: row.differs,
+              })),
               ...specKeys.map((k) => ({ key: k, label: humanizeKey(k), get: (p: Product) => specValue(p, k), diff: differs(k) })),
             ].map((row, rowIdx) => (
               <div

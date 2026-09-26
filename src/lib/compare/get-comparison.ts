@@ -27,7 +27,8 @@ import { createServerClient } from '@/lib/database';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { resolveApprovedSlug, retailerDisplayName, isDisplayableRetailer } from '@/lib/retailers/approved-retailers';
 import { displayedObservedAt } from '@/lib/intelligence/observed-freshness';
-import { STALE_CAVEAT_HOURS, isFreshObservation } from '@/lib/intelligence/evidence-engine';
+import { STALE_CAVEAT_HOURS } from '@/lib/intelligence/evidence-engine';
+import { partitionEligible, distinctStoreCount } from '@/lib/compare/offer-eligibility';
 import { deriveCampaignEligibility, type CampaignEligibilityEvidence } from '@/lib/providers/campaigns/blackbox-riyal-festival';
 import { buildGoUrl } from '@/lib/analytics/build-go-url';
 import { applyAffiliateTrueTieOrder } from '@/lib/compare/affiliate-true-tie';
@@ -100,6 +101,12 @@ export interface ComparisonResult {
      *  CompareOffer.stale) — a surface must disclose this before letting a customer
      *  act on "cheapest" as if it were freshly verified (P0, 2026-08-07). */
     cheapest_stale: boolean;
+    /** ADR-388: DISTINCT retailers whose offer takes part in the current comparison (in
+     *  stock, observed within PICK_FRESHNESS_MAX_HOURS) — the set lowest/highest/saving were
+     *  computed from. `store_count` stays the full known set (coverage, never deleted). */
+    eligible_store_count: number;
+    /** Offers known but outside the current comparison (stale or out of stock). */
+    excluded_offer_count: number;
   };
   offers: CompareOffer[];
   message?: string;
@@ -150,7 +157,7 @@ export async function getComparison(params: {
 
   const empty: ComparisonResult = {
     canonical: canonicalOut,
-    summary: { cheapest_store: null, lowest_price: null, highest_price: null, saving: null, store_count: 0, cheapest_stale: false },
+    summary: { cheapest_store: null, lowest_price: null, highest_price: null, saving: null, store_count: 0, cheapest_stale: false, eligible_store_count: 0, excluded_offer_count: 0 },
     offers: [],
     message: 'No approved-retailer offers for this product yet',
   };
@@ -497,7 +504,10 @@ export function deriveComparisonSummary(offers: CompareOffer[]): {
   // here too (not just in getComparison's own `offers` build) so `cheapest_store` always
   // names whichever offer actually leads the rendered list — never a different store than
   // the one the customer sees first, even when the fresh subset differs from the full one.
-  const priceSortedFresh = offers.filter((o) => o.availability !== 'out_of_stock' && isFreshObservation(o.observed_at)).sort((a, b) => a.price - b.price);
+  // ADR-388: the eligibility test is the shared one every compare surface uses
+  // (offer-eligibility.ts) — the multi-product page had re-derived its own and disagreed.
+  const partitioned = partitionOffersByEligibility(offers);
+  const priceSortedFresh = partitioned.eligible.slice().sort((a, b) => a.price - b.price);
   const freshOffers = applyAffiliateTrueTieOrder(priceSortedFresh);
   const noFreshEvidence = offers.length > 0 && freshOffers.length === 0;
 
@@ -517,6 +527,8 @@ export function deriveComparisonSummary(offers: CompareOffer[]): {
       // DISTINCT RETAILERS, not offer rows — a store must never be counted twice (ADR-132).
       store_count: offers.length,
       cheapest_stale: cheapest?.stale ?? false,
+      eligible_store_count: distinctStoreCount(partitioned.eligible, (o) => o.store_slug),
+      excluded_offer_count: partitioned.older.length,
     },
     ...(noFreshEvidence
       ? { message: 'لا تتوفر مقارنة أسعار محدثة حالياً — كل الأسعار المتوفرة أقدم من أسبوع' }
@@ -537,12 +549,10 @@ export function partitionOffersByEligibility(
   offers: CompareOffer[],
   nowMs: number = Date.now(),
 ): { eligible: CompareOffer[]; older: CompareOffer[] } {
-  const eligible: CompareOffer[] = [];
-  const older: CompareOffer[] = [];
-  for (const o of offers) {
-    (o.availability !== 'out_of_stock' && isFreshObservation(o.observed_at, nowMs) ? eligible : older).push(o);
-  }
-  return { eligible, older };
+  // A CompareOffer always carries a positive price and an observation time (the loader
+  // drops anything else), so the shared rule reduces to in-stock + fresh here.
+  const p = partitionEligible(offers, (o) => ({ price: o.price, availability: o.availability, observed_at: o.observed_at }), nowMs);
+  return { eligible: p.eligible, older: p.excluded.map((e) => e.item) };
 }
 
 export function isComparisonError(v: ComparisonResult | ComparisonError): v is ComparisonError {
