@@ -456,8 +456,8 @@ export function ProductCard({
                 data-eligible-stores={storeCounts.eligible}
                 data-total-stores={storeCounts.total}
                 title={currentLocale === 'ar'
-                  ? `${storeCounts.eligible} متاجر بعروض حديثة ومتوفرة تدخل في المقارنة · ${storeCounts.total} متاجر معروفة إجمالًا`
-                  : `${storeCounts.eligible} stores with current, in-stock offers in the comparison · ${storeCounts.total} known stores in total`}
+                  ? `${storeCounts.eligible} متاجر تدخل في مقارنة السعر (رُصدت خلال 7 أيام ولم يُذكر نفادها؛ حالة التوفر موضحة لكل عرض) · ${storeCounts.total} متاجر معروفة إجمالًا`
+                  : `${storeCounts.eligible} stores in the price comparison (observed within 7 days, not stated out of stock; availability is shown per offer) · ${storeCounts.total} known stores in total`}
               >
                 <Store className="w-3 h-3" />
                 {storePillLabel(storeCounts, currentLocale)}

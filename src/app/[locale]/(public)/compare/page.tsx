@@ -1158,8 +1158,8 @@ export default function ComparePage() {
                   price is for the device alone. Stated once, above the rows it governs. */}
               <p className="text-[11px] text-on-surface-variant">
                 {isAr
-                  ? `تدخل في المقارنة العروض التي رُصدت خلال ${windowDays} أيام ومتوفرة عند آخر رصد؛ منها يُحسب فرق السعر. الأسعار للجهاز فقط — لا تشمل الشحن أو التركيب.`
-                  : `Offers observed within ${windowDays} days and in stock at last observation take part; the spread is computed from them. Prices are for the device only — shipping and installation excluded.`}
+                  ? `تدخل في مقارنة السعر العروض التي رُصدت خلال ${windowDays} أيام ولم يُذكر نفادها؛ منها يُحسب فرق السعر، وحالة التوفر موضحة لكل عرض. الأسعار للجهاز فقط — لا تشمل الشحن أو التركيب.`
+                  : `Offers observed within ${windowDays} days and not stated out of stock take part in the price comparison; the spread is computed from them, and availability is shown per offer. Prices are for the device only — shipping and installation excluded.`}
               </p>
             </div>
 

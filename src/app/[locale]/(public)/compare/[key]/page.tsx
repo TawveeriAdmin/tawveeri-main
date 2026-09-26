@@ -499,8 +499,8 @@ export default async function TpsComparePage({
               </h2>
               <p className="mt-0.5 text-[11px] text-on-surface-variant">
                 {isAr
-                  ? `رُصدت خلال آخر ${PICK_FRESHNESS_MAX_HOURS / 24} أيام ومتوفرة بحسب آخر رصد — منها يُحسب الأقل والأعلى. الترتيب بالسعر.`
-                  : `Observed within ${PICK_FRESHNESS_MAX_HOURS / 24} days and in stock at last observation — lowest/highest come from these. Ordered by price.`}
+                  ? `الأهلية هنا لمقارنة السعر: رُصدت خلال آخر ${PICK_FRESHNESS_MAX_HOURS / 24} أيام ولم يُذكر نفادها — منها يُحسب الأقل والأعلى. حالة التوفر موضحة لكل عرض. الترتيب بالسعر.`
+                  : `Eligibility here is for the price comparison: observed within ${PICK_FRESHNESS_MAX_HOURS / 24} days and not stated out of stock — lowest/highest come from these. Availability is shown per offer. Ordered by price.`}
               </p>
             </div>
             <ul className="divide-y divide-[color:var(--color-outline-variant)]/50">
