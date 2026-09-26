@@ -21,7 +21,7 @@ import { linkRetrievedCanonicals } from '@/lib/search/linked-canonical-products'
 import { collectCanonicalCandidates } from '@/lib/search/canonical-candidates';
 import { manufacturerCategoryTerms, productQueryText } from '@/lib/search/manufacturer-category-terms';
 import { hoursSince, PICK_FRESHNESS_MAX_HOURS, productTrust, isFreshObservation, type TrustAssessment } from '@/lib/intelligence/evidence-engine';
-import { mergeVerifiedCanonicalSearchResults, mergeSameListingCards } from '@/lib/catalog/merge-verified-canonical-search-results';
+import { mergeVerifiedCanonicalSearchResults, mergeSameListingCards, attachStorefrontListingUrls, type StorefrontListingRow } from '@/lib/catalog/merge-verified-canonical-search-results';
 
 export const maxDuration = 30;
 export const dynamic = 'force-dynamic';
@@ -2623,7 +2623,22 @@ export async function POST(request: NextRequest) {
         else links.push(...(data || []));
       }
       products = linkRetrievedCanonicals(products, tpsProducts, links);
+      // ADR-389: identity-less memory canonicals carry no URL; attach their storefront row's
+      // listing URL (writer's own key: exact name_ar, same store) so the same-listing lane can
+      // merge them even when the storefront row itself was not retrieved this time.
       products = [...tpsProducts, ...products];
+      const ghostNames = [...new Set(products
+        .filter((p) => !p.tps_identity_key && !p.stores.some((s) => (s.product_url || '').startsWith('http') || (s.listing_url || '').startsWith('http')))
+        .map((p) => (p.name_ar || '').trim()).filter(Boolean))].slice(0, 50);
+      if (ghostNames.length) {
+        const { data: ghostRows, error: ghostErr } = await supabase.from('products')
+          .select('id, name_ar, product_stores(store_id, product_url)')
+          .in('name_ar', ghostNames)
+          .eq('is_active', true)
+          .limit(100);
+        if (ghostErr) console.warn('[TPS Search] storefront listing lookup unavailable:', ghostErr.message);
+        else if (ghostRows?.length) products = attachStorefrontListingUrls(products, ghostRows as unknown as StorefrontListingRow[]);
+      }
       console.log('[TPS Search] injected:', tpsProducts.length, '(', (tpsCategories || []).join('+'), ')');
     }
   }

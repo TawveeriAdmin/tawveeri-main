@@ -32,6 +32,7 @@ import { CompareStateSync } from '@/components/agent/compare-state-sync';
 import { readCategoryAttribution, type CategoryAttribution } from '@/lib/catalog/category-link';
 import { CategoryExitLink } from '@/components/catalog/category-exit-link';
 import { ExitLink } from '@/components/catalog/exit-link';
+import { brandDisplayName } from '@/lib/compare/brand-display';
 
 type CompareResult = ComparisonResult;
 
@@ -238,7 +239,7 @@ function OfferRow({ offer, isAr, attribution, canonicalId, isLowest, excluded }:
         <div className="flex min-w-0 flex-1 items-center gap-2.5 basis-[55%] sm:basis-auto sm:w-44 sm:flex-none">
           <StoreLogo slug={offer.store_slug} size="md" alt={offer.store_name} locale={isAr ? 'ar' : 'en'} />
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-on-surface">{offer.store_name}</p>
+            <p className="break-words text-sm font-semibold leading-snug text-on-surface">{offer.store_name}</p>
             <p className="text-[11px] text-on-surface-variant">{observedLabel(offer.observed_at, isAr)}</p>
           </div>
         </div>
@@ -363,7 +364,13 @@ export default async function TpsComparePage({
             priceCurrency: 'SAR',
             ...(o.product_url ? { url: o.product_url } : {}),
             seller: { '@type': 'Organization', name: retailerDisplayName(resolveApprovedSlug(o.store_name), isAr ? 'ar' : 'en') ?? o.store_name },
-            availability: o.availability === 'out_of_stock' ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock',
+            // ADR-389: three states. "Not stated" publishes NO availability — asserting InStock
+            // for an offer whose page said nothing is the same overstatement the UI avoids.
+            ...(o.availability === 'out_of_stock'
+              ? { availability: 'https://schema.org/OutOfStock' }
+              : o.availability === 'in_stock' || o.availability === 'limited_stock'
+                ? { availability: o.availability === 'limited_stock' ? 'https://schema.org/LimitedAvailability' : 'https://schema.org/InStock' }
+                : o.availability === 'pre_order' ? { availability: 'https://schema.org/PreOrder' } : {}),
           })),
       },
     } : {}),
@@ -398,7 +405,8 @@ export default async function TpsComparePage({
             <div className="min-w-0 flex-1">
               <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
                 <Badge variant="secondary" className="text-xs">{categoryBadgeLabel(canonical.category, isAr)}</Badge>
-                {canonical.brand && <Badge variant="outline" className="text-xs capitalize">{canonical.brand}</Badge>}
+                {/* ADR-389: reader-facing brand («إل جي»), never the internal token («lg») */}
+                {canonical.brand && <Badge variant="outline" className="text-xs">{brandDisplayName(canonical.brand, isAr ? 'ar' : 'en')}</Badge>}
                 {codes && <Badge variant="outline" className="text-xs tabular-nums" dir="ltr">{codes}</Badge>}
               </div>
               <h1 className="text-lg font-bold leading-snug text-on-surface md:text-2xl">{name}</h1>
@@ -441,19 +449,21 @@ export default async function TpsComparePage({
             <p className="mb-3 rounded-xl border border-[color:var(--color-outline-variant)]/40 bg-[color:var(--color-surface-container)] p-3 text-center text-sm text-on-surface-variant">{message}</p>
           )}
 
-          <div className="mb-4 flex items-start justify-between gap-4">
+          {/* ADR-389: on a phone the store name and the price stack (the name was truncated to
+              «م…» at 390px when both shared one row) — the store name is decision information. */}
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
             <div className="flex min-w-0 items-center gap-3">
               <StoreLogo slug={featured.store_slug} size="lg" alt={featured.store_name} locale={isAr ? 'ar' : 'en'} />
               <div className="min-w-0">
                 <p className="text-xs text-on-surface-variant">{featuredIsEligible ? (isAr ? 'عند' : 'at') : (isAr ? 'آخر سعر رصدناه عند' : 'Last observed price at')}</p>
-                <p className="truncate text-base font-bold text-on-surface">{featured.store_name}</p>
+                <p className="break-words text-base font-bold leading-snug text-on-surface" data-featured-store>{featured.store_name}</p>
                 <p className="text-[11px] text-on-surface-variant">
                   {observedLabel(featured.observed_at, isAr)}
                   {featuredAvail && <span className={featuredAvail.tone === 'ok' ? 'text-[var(--brand-green)]' : featuredAvail.tone === 'bad' ? 'text-[var(--color-error)]' : ''}>{' · '}{featuredAvail.text}</span>}
                 </p>
               </div>
             </div>
-            <div className="shrink-0 text-end">
+            <div className="shrink-0 text-start sm:text-end">
               <Price amount={featured.price} className="text-3xl font-extrabold tabular-nums text-[var(--brand-green-dark)] md:text-4xl" symbolClassName="w-6 h-6 md:w-7 md:h-7" />
               {summary.highest_price != null && summary.saving != null && summary.saving > 0 && featuredIsEligible && (
                 <p className="mt-0.5 text-xs text-on-surface-variant">
@@ -527,8 +537,8 @@ export default async function TpsComparePage({
         <footer className="space-y-1.5 px-1 py-2 text-center text-[11px] leading-relaxed text-on-surface-variant">
           <p>
             {isAr
-              ? 'الأسعار كما رصدناها في وقت الرصد المذكور، دون شحن أو تركيب. تحقق من الحالة واللون والضمان لدى المتجر قبل الشراء؛ قد تختلف شروط العروض.'
-              : 'Prices are as observed at the stated time, excluding shipping and installation. Confirm condition, colour and warranty with the retailer before buying; offer terms may differ.'}
+              ? 'الأسعار كما رصدناها في وقت الرصد المذكور، دون شحن أو تركيب. عرضٌ لم يذكر متجره التوفر يدخل بسعره ويُعلَّم «التوفر غير مذكور» — لا نعدّه نفادًا ولا تأكيدًا. تحقق من الحالة واللون والضمان لدى المتجر قبل الشراء؛ قد تختلف شروط العروض.'
+              : 'Prices are as observed at the stated time, excluding shipping and installation. An offer whose store stated no availability takes part by price and is marked “availability not stated” — neither out of stock nor confirmed. Confirm condition, colour and warranty with the retailer before buying; offer terms may differ.'}
           </p>
           <p className="inline-flex items-center justify-center gap-1.5">
             <ShieldCheck className="h-3.5 w-3.5 text-[var(--brand-green)]" />

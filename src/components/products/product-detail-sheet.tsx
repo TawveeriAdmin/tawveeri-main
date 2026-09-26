@@ -10,6 +10,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Price, SavingsLabel } from '@/components/ui/price';
+import { ReferencePrice } from '@/components/ui/reference-price';
 import { StoreLogo } from '@/components/ui/store-logo';
 import { useTranslations } from '@/lib/simple-intl-provider';
 import { cn } from '@/lib/utils';
@@ -212,13 +213,7 @@ export function ProductDetailSheet({
                             )}
                             symbolClassName="w-3.5 h-3.5"
                           />
-                          {ps.original_price && ps.original_price > ps.current_price && (
-                            <Price
-                              amount={ps.original_price}
-                              className="text-xs text-on-surface-variant line-through"
-                              symbolClassName="w-2.5 h-2.5"
-                            />
-                          )}
+                          <ReferencePrice amount={ps.original_price} currentPrice={ps.current_price} locale={locale} compact priceClassName="text-xs" symbolClassName="w-2.5 h-2.5" />
                           {/* Savings label temporarily hidden — restore when copy is finalized.
                           {storeSavings > 0 && (
                             <span className="t-caption text-[var(--brand-gold-dark)] font-semibold">

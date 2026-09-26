@@ -25,6 +25,15 @@ describe('search route — same-listing merge runs after TPS injection', () => {
     expect(merge).toBeGreaterThan(dedupe);
   });
 
+  it('ADR-389: identity-less memory canonicals get their storefront listing URL attached after injection and before the final merge', () => {
+    const injection = src.indexOf('products = [...tpsProducts, ...products]');
+    const attach = src.indexOf('products = attachStorefrontListingUrls(products');
+    const merge = src.lastIndexOf('products = mergeSameListingCards(products);');
+    expect(attach).toBeGreaterThan(injection);
+    expect(merge).toBeGreaterThan(attach);
+    expect(src).toContain(".select('id, name_ar, product_stores(store_id, product_url)')");
+  });
+
   it('the merge still happens before pagination/slicing of the response', () => {
     const merge = src.lastIndexOf('products = mergeSameListingCards(products);');
     const paginate = src.indexOf('.slice(', merge);

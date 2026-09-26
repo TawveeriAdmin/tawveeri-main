@@ -35,7 +35,11 @@ export function availabilityLabelFor(
     if (stale) return { text: isAr ? 'متوفر بحسب آخر رصد' : 'In stock at last observation', tone: 'muted' };
     return { text: availability === 'limited_stock' ? (isAr ? 'كمية محدودة' : 'Limited stock') : (isAr ? 'متوفر' : 'In stock'), tone: 'ok' };
   }
-  return null;
+  if (availability === 'pre_order') return { text: isAr ? 'طلب مسبق' : 'Pre-order', tone: 'muted' };
+  // ADR-389: the THIRD state, stated rather than silent. "Not stated" is neither out of stock
+  // nor a confirmation — the offer may take part in the price comparison (the shared rule
+  // excludes only an explicit out_of_stock), but it is never labelled «متوفر».
+  return { text: isAr ? 'التوفر غير مذكور عند آخر رصد' : 'Availability not stated at last observation', tone: 'muted' };
 }
 
 /** Why an offer sits outside the comparison — one reason per offer, never a blanket label. */

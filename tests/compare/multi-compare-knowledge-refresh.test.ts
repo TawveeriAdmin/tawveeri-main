@@ -62,10 +62,16 @@ describe('applyKnowledgeLayerComparison', () => {
     expect(facts.spread).toBe(400);
   });
 
-  it('keeps the snapshot untouched when the knowledge layer returns nothing usable', () => {
-    expect(applyKnowledgeLayerComparison(snapshot, null)).toBe(snapshot);
-    expect(applyKnowledgeLayerComparison(snapshot, { offers: [] })).toBe(snapshot);
-    expect(applyKnowledgeLayerComparison(snapshot, { offers: [{ store_slug: 'x', store_name: 'x', price: 0, availability: 'in_stock', product_url: null, observed_at: daysAgo(1) }] })).toBe(snapshot);
+  it('ADR-389: a malformed/absent response keeps the snapshot and flags the refresh as failed', () => {
+    expect(applyKnowledgeLayerComparison(snapshot, null)).toEqual({ ...snapshot, refresh_status: 'failed' });
+    expect(applyKnowledgeLayerComparison(snapshot, { canonical: null })).toEqual({ ...snapshot, refresh_status: 'failed' });
+  });
+
+  it('ADR-389: a well-formed response with NO usable offers is authoritative — the snapshot offer is not resurrected', () => {
+    expect(applyKnowledgeLayerComparison(snapshot, { offers: [] }).product_stores).toEqual([]);
+    const zero = applyKnowledgeLayerComparison(snapshot, { offers: [{ store_slug: 'x', store_name: 'x', price: 0, availability: 'in_stock', product_url: null, observed_at: daysAgo(1) }] });
+    expect(zero.product_stores).toEqual([]);
+    expect(zero.refresh_status).toBe('ok');
   });
 
   it('never overwrites an existing image or name with an empty canonical field', () => {

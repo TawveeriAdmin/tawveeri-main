@@ -5,6 +5,29 @@ import { getProductSeoData, resolveLegacyProductSlug } from '@/lib/seo/product-d
 import { buildAlternates, getBaseUrl } from '@/lib/seo/metadata';
 import { JsonLd, buildProductJsonLd } from '@/lib/seo/json-ld';
 import { formatPrice } from '@/lib/utils';
+import { findSameListingCanonical, hasArabicLetters } from '@/lib/catalog/same-listing-identity';
+
+/**
+ * ADR-389 — when the storefront row's Arabic title is not Arabic at all, or it has no image,
+ * and the knowledge layer holds a canonical for the SAME merchant listing (proven by listing
+ * URL equality, never by name), the page uses that documented title/image. Model codes are
+ * never translated; nothing is fabricated when no such canonical exists.
+ */
+async function enrichFromSameListing<T extends { name_ar: string; image_urls: string[] | null; store_urls?: string[] }>(product: T) {
+  const needsName = !hasArabicLetters(product.name_ar);
+  const needsImage = !(product.image_urls && product.image_urls.length > 0);
+  if (!needsName && !needsImage) return { product, listing: null };
+  const listing = await findSameListingCanonical(product.store_urls ?? []);
+  if (!listing) return { product, listing: null };
+  return {
+    product: {
+      ...product,
+      name_ar: needsName && listing.name_ar ? listing.name_ar : product.name_ar,
+      image_urls: needsImage && listing.image_url ? [listing.image_url] : product.image_urls,
+    },
+    listing,
+  };
+}
 
 export async function generateMetadata({
   params,
@@ -12,7 +35,8 @@ export async function generateMetadata({
   params: Promise<{ locale: string; slug: string }>;
 }): Promise<Metadata> {
   const { locale, slug } = await params;
-  const product = await getProductSeoData(slug);
+  const raw = await getProductSeoData(slug);
+  const product = raw ? (await enrichFromSameListing(raw)).product : raw;
 
   // The 404 is raised in the PAGE COMPONENT, not here. Raising it from generateMetadata does
   // set the status, but Next then resolves the not-found boundary outside this layout and the
@@ -73,7 +97,9 @@ export default async function ProductPage({
   params: Promise<{ locale: string; slug: string }>;
 }) {
   const { locale, slug } = await params;
-  const product = await getProductSeoData(slug);
+  const raw = await getProductSeoData(slug);
+  const enriched = raw ? await enrichFromSameListing(raw) : null;
+  const product = enriched ? enriched.product : raw;
 
   // ONLY a genuine absence (`null`) may 404. `undefined` means the lookup itself failed, and
   // we fall through to the client rather than telling a shopper that a product which probably
@@ -102,7 +128,14 @@ export default async function ProductPage({
   return (
     <>
       {product && <JsonLd data={buildProductJsonLd(product, locale)} />}
-      <ProductDetailClient />
+      <ProductDetailClient
+        listingIdentity={enriched?.listing ? {
+          name_ar: enriched.listing.name_ar,
+          name_en: enriched.listing.name_en,
+          image_url: enriched.listing.image_url,
+          tps_identity_key: enriched.listing.tps_identity_key,
+        } : null}
+      />
     </>
   );
 }

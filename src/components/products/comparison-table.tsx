@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Price, SARSymbol, SavingsLabel } from '@/components/ui/price';
+import { ReferencePrice } from '@/components/ui/reference-price';
 import { StoreLogo } from '@/components/ui/store-logo';
 import { useLocale } from '@/lib/simple-intl-provider';
 import { bestPrice as bestPriceCopy } from '@/lib/copy';
@@ -188,13 +189,7 @@ export function ComparisonTable({ productStores, onStoreClick }: ComparisonTable
                         )}
                         symbolClassName="w-4 h-4"
                       />
-                      {ps.original_price && ps.original_price > ps.current_price && (
-                        <Price
-                          amount={ps.original_price}
-                          className="t-small text-on-surface-variant line-through"
-                          symbolClassName="w-3 h-3"
-                        />
-                      )}
+                      <ReferencePrice amount={ps.original_price} currentPrice={ps.current_price} locale={locale} compact priceClassName="t-small" symbolClassName="w-3 h-3" />
                     </div>
                   </Td>
                   <Td>
@@ -286,13 +281,7 @@ export function ComparisonTable({ productStores, onStoreClick }: ComparisonTable
                     )}
                     symbolClassName="w-4 h-4"
                   />
-                  {ps.original_price && ps.original_price > ps.current_price && (
-                    <Price
-                      amount={ps.original_price}
-                      className="t-small text-on-surface-variant line-through"
-                      symbolClassName="w-3 h-3"
-                    />
-                  )}
+                  <ReferencePrice amount={ps.original_price} currentPrice={ps.current_price} locale={locale} compact priceClassName="t-small" symbolClassName="w-3 h-3" />
                 </div>
               </div>
 

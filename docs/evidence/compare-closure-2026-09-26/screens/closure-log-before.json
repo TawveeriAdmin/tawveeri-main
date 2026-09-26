@@ -1,0 +1,571 @@
+{
+ "at": "2026-09-26T16:21:26.257Z",
+ "tag": "before",
+ "log": [
+  {
+   "k": "samsung-search",
+   "v": {
+    "apiSamsungProducts": 2,
+    "productCards": 2,
+    "cardBrandLine": "سامسونج",
+    "cardHasBestBadge": false,
+    "cardReferencePrice": null,
+    "smartPickText": "اختيار توفيري | مكيف سبليت سامسونج، 18000 وحدة، عادي | أرخص سعر | أفضل سعر عند إكسترا | أفضل سعر | ١٬١٥٥ | آخر رصد قبل 3 يومًا | اعرض العرض",
+    "smartPickSaysBest": true
+   }
+  },
+  {
+   "k": "lg-search-pills",
+   "v": [
+    {
+     "name": "مكيف سبليت FreshDV إل جي، 18000 وحدة، انفرتر، بارد",
+     "pill": null,
+     "eligible": null,
+     "total": null,
+     "bestBadge": true,
+     "refPrice": null
+    },
+    {
+     "name": "مكيف سبليت إل جي، 18000 وحدة، حار وبارد",
+     "pill": null,
+     "eligible": null,
+     "total": null,
+     "bestBadge": true,
+     "refPrice": null
+    },
+    {
+     "name": "مكيف سبليت ArtCool إل جي، 18000 وحدة، انفرتر، بارد",
+     "pill": null,
+     "eligible": null,
+     "total": null,
+     "bestBadge": true,
+     "refPrice": null
+    },
+    {
+     "name": "مكيف سبليت إل جي، 18000 وحدة، انفرتر، بارد فقط",
+     "pill": null,
+     "eligible": null,
+     "total": null,
+     "bestBadge": true,
+     "refPrice": null
+    },
+    {
+     "name": "مكيف سبليت إل جي، 18000 وحدة، بارد فقط",
+     "pill": null,
+     "eligible": null,
+     "total": null,
+     "bestBadge": true,
+     "refPrice": null
+    },
+    {
+     "name": "مكيف سبليت إل جي، 18000 وحدة، انفرتر، حار وبارد",
+     "pill": null,
+     "eligible": null,
+     "total": null,
+     "bestBadge": true,
+     "refPrice": null
+    }
+   ]
+  },
+  {
+   "k": "journey-add-to-compare",
+   "v": [
+    {
+     "n": "FreshDV",
+     "ok": true
+    },
+    {
+     "n": "ArtCool",
+     "ok": true
+    }
+   ]
+  },
+  {
+   "k": "journey-tray",
+   "v": {
+    "links": [
+     "/ar/compare/lg%7Csplit%7CArtCool%7C18000%7CInverter%7Ccool_only",
+     "/ar/compare/lg%7Csplit%7CFreshDV%7C18000%7CInverter%7Ccool_only",
+     "/ar/compare"
+    ],
+    "trayTop": 735,
+    "visibleButtonsUnderTray": 0
+   }
+  },
+  {
+   "k": "tray-minimized-overlap",
+   "v": {
+    "pill": {
+     "l": 12,
+     "r": 142,
+     "t": 792,
+     "b": 832
+    },
+    "overlappingControls": []
+   }
+  },
+  {
+   "k": "multi-compare@390-first",
+   "v": {
+    "hasHorizontalScroll": false,
+    "clientW": 390,
+    "headers": 1,
+    "mains": 1,
+    "columns": [
+     "مكيف سبليت ArtCool إل جي، 18000 وحدة، انفرتر، بارد فقط",
+     "مكيف سبليت FreshDV إل جي، 18000 وحدة، انفرتر، بارد فقط"
+    ],
+    "stores": "المتاجر | تدخل في المقارنة العروض التي رُصدت خلال 7 أيام ومتوفرة عند آخر رصد؛ منها يُحسب فرق السعر. الأسعار للجهاز فقط — لا تشمل الشحن أو التركيب. | أفضل متجر | متجر النخيل",
+    "spread": "فرق السعر بين المتاجر | ٤٠٠ | ٣٠٠",
+    "observed": "آخر رصد | رصدناه اليوم | رصدناه اليوم",
+    "strikethrough": 0,
+    "referencePrices": 0,
+    "allOffersLinks": [],
+    "servicesUnknownRow": null,
+    "refreshFailed": 0,
+    "visibility": {
+     "checked": 2,
+     "problems": [
+      {
+       "text": "عرض المتجر",
+       "left": 0,
+       "right": 136,
+       "offscreen": false,
+       "clipped": true,
+       "truncated": false
+      }
+     ],
+     "fontsUnder10px": []
+    },
+    "excerpt": "مقارنة المنتجات\nمكيف سبليت ArtCool إل جي، 18000 وحدة، انفرتر، بارد فقط\nإل جي\n٣٬٢٦٩\nمتجر النخيل · رصدناه اليوم\nمتوفر\nعرض المتجر\nالأقل سعرًا بين المختارة\nمكيف سبليت FreshDV إل جي، 18000 وحدة، انفرتر، بارد فقط\nإل جي\n٢٬٧٩٩\nمتجر النخيل · رصدناه اليوم\nمتوفر\nعرض المتجر\nمسح الاختيار\nمقارنة المتاجر\nتدخل في المقارنة العروض التي رُصدت خلال 7 أيام ومتوفرة عند آخر رصد؛ منها يُحسب فرق السعر. الأسعار للجهاز فقط — لا تشمل الشحن أو التركيب.\nأفضل متجر\nمتجر النخيل\nمتجر النخيل\nآخر رصد\nرصدناه اليوم\nرصدناه اليوم\nالتوفر\nمتوفر\nمتوفر\nالمتاجر\n3 متاجر مؤهلة\n2 خارج المقارنة\n4 متاجر مؤهلة\nمدة التوصيل\nغير محدد\nغير محدد\nتكلفة الشحن\nغير محدد\nغير محدد\nالضمان\nغير محدد\nغير محدد\nسياسة الإرجاع\nغير محدد\nغير محدد\nفرق السعر بين المتاجر\n٤٠٠\n٣٠٠\nالمواصفات\nالصفوف المظللة تختلف بين المنتجات. «غير متاح» يعني أن المتجر لم يذكرها — لا أنها متطابقة.\nالفئة\nمكيفات\nمكيفات\nالعلامة\nإل جي\nإل جي\nالنوع\nسبليت\nسبليت\nالسلسلة\nArtCool\nFreshDV\nالسعة\n18,000 وحدة (BTU)\n18,000 وحدة (BTU)\nالتقنية\nانفرتر\nانفرتر\nالتشغيل\nبارد فقط\nبارد فقط"
+   }
+  },
+  {
+   "k": "multi-compare@390-reload",
+   "v": {
+    "hasHorizontalScroll": false,
+    "clientW": 390,
+    "headers": 1,
+    "mains": 1,
+    "columns": [
+     "مكيف سبليت ArtCool إل جي، 18000 وحدة، انفرتر، بارد فقط",
+     "مكيف سبليت FreshDV إل جي، 18000 وحدة، انفرتر، بارد فقط"
+    ],
+    "stores": "المتاجر | تدخل في المقارنة العروض التي رُصدت خلال 7 أيام ومتوفرة عند آخر رصد؛ منها يُحسب فرق السعر. الأسعار للجهاز فقط — لا تشمل الشحن أو التركيب. | أفضل متجر | متجر النخيل",
+    "spread": "فرق السعر بين المتاجر | ٤٠٠ | ٣٠٠",
+    "observed": "آخر رصد | رصدناه اليوم | رصدناه اليوم",
+    "strikethrough": 0,
+    "referencePrices": 0,
+    "allOffersLinks": [],
+    "servicesUnknownRow": null,
+    "refreshFailed": 0,
+    "visibility": {
+     "checked": 2,
+     "problems": [
+      {
+       "text": "عرض المتجر",
+       "left": 0,
+       "right": 136,
+       "offscreen": false,
+       "clipped": true,
+       "truncated": false
+      }
+     ],
+     "fontsUnder10px": []
+    },
+    "excerpt": "مقارنة المنتجات\nمكيف سبليت ArtCool إل جي، 18000 وحدة، انفرتر، بارد فقط\nإل جي\n٣٬٢٦٩\nمتجر النخيل · رصدناه اليوم\nمتوفر\nعرض المتجر\nالأقل سعرًا بين المختارة\nمكيف سبليت FreshDV إل جي، 18000 وحدة، انفرتر، بارد فقط\nإل جي\n٢٬٧٩٩\nمتجر النخيل · رصدناه اليوم\nمتوفر\nعرض المتجر\nمسح الاختيار\nمقارنة المتاجر\nتدخل في المقارنة العروض التي رُصدت خلال 7 أيام ومتوفرة عند آخر رصد؛ منها يُحسب فرق السعر. الأسعار للجهاز فقط — لا تشمل الشحن أو التركيب.\nأفضل متجر\nمتجر النخيل\nمتجر النخيل\nآخر رصد\nرصدناه اليوم\nرصدناه اليوم\nالتوفر\nمتوفر\nمتوفر\nالمتاجر\n3 متاجر مؤهلة\n2 خارج المقارنة\n4 متاجر مؤهلة\nمدة التوصيل\nغير محدد\nغير محدد\nتكلفة الشحن\nغير محدد\nغير محدد\nالضمان\nغير محدد\nغير محدد\nسياسة الإرجاع\nغير محدد\nغير محدد\nفرق السعر بين المتاجر\n٤٠٠\n٣٠٠\nالمواصفات\nالصفوف المظللة تختلف بين المنتجات. «غير متاح» يعني أن المتجر لم يذكرها — لا أنها متطابقة.\nالفئة\nمكيفات\nمكيفات\nالعلامة\nإل جي\nإل جي\nالنوع\nسبليت\nسبليت\nالسلسلة\nArtCool\nFreshDV\nالسعة\n18,000 وحدة (BTU)\n18,000 وحدة (BTU)\nالتقنية\nانفرتر\nانفرتر\nالتشغيل\nبارد فقط\nبارد فقط"
+   }
+  },
+  {
+   "k": "multi-compare@430-reload",
+   "v": {
+    "hasHorizontalScroll": false,
+    "clientW": 430,
+    "headers": 1,
+    "mains": 1,
+    "columns": [
+     "مكيف سبليت ArtCool إل جي، 18000 وحدة، انفرتر، بارد فقط",
+     "مكيف سبليت FreshDV إل جي، 18000 وحدة، انفرتر، بارد فقط"
+    ],
+    "stores": "المتاجر | تدخل في المقارنة العروض التي رُصدت خلال 7 أيام ومتوفرة عند آخر رصد؛ منها يُحسب فرق السعر. الأسعار للجهاز فقط — لا تشمل الشحن أو التركيب. | أفضل متجر | متجر النخيل",
+    "spread": "فرق السعر بين المتاجر | ٤٠٠ | ٣٠٠",
+    "observed": "آخر رصد | رصدناه اليوم | رصدناه اليوم",
+    "strikethrough": 0,
+    "referencePrices": 0,
+    "allOffersLinks": [],
+    "servicesUnknownRow": null,
+    "refreshFailed": 0,
+    "visibility": {
+     "checked": 2,
+     "problems": [],
+     "fontsUnder10px": []
+    },
+    "excerpt": "مقارنة المنتجات\nمكيف سبليت ArtCool إل جي، 18000 وحدة، انفرتر، بارد فقط\nإل جي\n٣٬٢٦٩\nمتجر النخيل · رصدناه اليوم\nمتوفر\nعرض المتجر\nالأقل سعرًا بين المختارة\nمكيف سبليت FreshDV إل جي، 18000 وحدة، انفرتر، بارد فقط\nإل جي\n٢٬٧٩٩\nمتجر النخيل · رصدناه اليوم\nمتوفر\nعرض المتجر\nمسح الاختيار\nمقارنة المتاجر\nتدخل في المقارنة العروض التي رُصدت خلال 7 أيام ومتوفرة عند آخر رصد؛ منها يُحسب فرق السعر. الأسعار للجهاز فقط — لا تشمل الشحن أو التركيب.\nأفضل متجر\nمتجر النخيل\nمتجر النخيل\nآخر رصد\nرصدناه اليوم\nرصدناه اليوم\nالتوفر\nمتوفر\nمتوفر\nالمتاجر\n3 متاجر مؤهلة\n2 خارج المقارنة\n4 متاجر مؤهلة\nمدة التوصيل\nغير محدد\nغير محدد\nتكلفة الشحن\nغير محدد\nغير محدد\nالضمان\nغير محدد\nغير محدد\nسياسة الإرجاع\nغير محدد\nغير محدد\nفرق السعر بين المتاجر\n٤٠٠\n٣٠٠\nالمواصفات\nالصفوف المظللة تختلف بين المنتجات. «غير متاح» يعني أن المتجر لم يذكرها — لا أنها متطابقة.\nالفئة\nمكيفات\nمكيفات\nالعلامة\nإل جي\nإل جي\nالنوع\nسبليت\nسبليت\nالسلسلة\nArtCool\nFreshDV\nالسعة\n18,000 وحدة (BTU)\n18,000 وحدة (BTU)\nالتقنية\nانفرتر\nانفرتر\nالتشغيل\nبارد فقط\nبارد فقط"
+   }
+  },
+  {
+   "k": "multi-compare@1280-reload",
+   "v": {
+    "hasHorizontalScroll": false,
+    "clientW": 1280,
+    "headers": 1,
+    "mains": 1,
+    "columns": [
+     "مكيف سبليت ArtCool إل جي، 18000 وحدة، انفرتر، بارد فقط",
+     "مكيف سبليت FreshDV إل جي، 18000 وحدة، انفرتر، بارد فقط"
+    ],
+    "stores": "المتاجر | تدخل في المقارنة العروض التي رُصدت خلال 7 أيام ومتوفرة عند آخر رصد؛ منها يُحسب فرق السعر. الأسعار للجهاز فقط — لا تشمل الشحن أو التركيب. | أفضل متجر | متجر النخيل",
+    "spread": "فرق السعر بين المتاجر | ٤٠٠ | ٣٠٠",
+    "observed": "آخر رصد | رصدناه اليوم | رصدناه اليوم",
+    "strikethrough": 0,
+    "referencePrices": 0,
+    "allOffersLinks": [],
+    "servicesUnknownRow": null,
+    "refreshFailed": 0,
+    "visibility": {
+     "checked": 2,
+     "problems": [],
+     "fontsUnder10px": []
+    },
+    "excerpt": "مقارنة المنتجات\nمكيف سبليت ArtCool إل جي، 18000 وحدة، انفرتر، بارد فقط\nإل جي\n٣٬٢٦٩\nمتجر النخيل · رصدناه اليوم\nمتوفر\nعرض المتجر\nالأقل سعرًا بين المختارة\nمكيف سبليت FreshDV إل جي، 18000 وحدة، انفرتر، بارد فقط\nإل جي\n٢٬٧٩٩\nمتجر النخيل · رصدناه اليوم\nمتوفر\nعرض المتجر\nمسح الاختيار\nمقارنة المتاجر\nتدخل في المقارنة العروض التي رُصدت خلال 7 أيام ومتوفرة عند آخر رصد؛ منها يُحسب فرق السعر. الأسعار للجهاز فقط — لا تشمل الشحن أو التركيب.\nأفضل متجر\nمتجر النخيل\nمتجر النخيل\nآخر رصد\nرصدناه اليوم\nرصدناه اليوم\nالتوفر\nمتوفر\nمتوفر\nالمتاجر\n3 متاجر مؤهلة\n2 خارج المقارنة\n4 متاجر مؤهلة\nمدة التوصيل\nغير محدد\nغير محدد\nتكلفة الشحن\nغير محدد\nغير محدد\nالضمان\nغير محدد\nغير محدد\nسياسة الإرجاع\nغير محدد\nغير محدد\nفرق السعر بين المتاجر\n٤٠٠\n٣٠٠\nالمواصفات\nالصفوف المظللة تختلف بين المنتجات. «غير متاح» يعني أن المتجر لم يذكرها — لا أنها متطابقة.\nالفئة\nمكيفات\nمكيفات\nالعلامة\nإل جي\nإل جي\nالنوع\nسبليت\nسبليت\nالسلسلة\nArtCool\nFreshDV\nالسعة\n18,000 وحدة (BTU)\n18,000 وحدة (BTU)\nالتقنية\nانفرتر\nانفرتر\nالتشغيل\nبارد فقط\nبارد فقط"
+   }
+  },
+  {
+   "k": "tray-controls",
+   "v": {
+    "before": 2,
+    "afterRemove": 1,
+    "removeButtonFound": true,
+    "minimized": true,
+    "restored": true,
+    "trayGone": true,
+    "idsAfterClear": null
+   }
+  },
+  {
+   "k": "compare-freshdv@390",
+   "v": {
+    "hasHorizontalScroll": false,
+    "clientW": 390,
+    "headers": 1,
+    "mains": 1,
+    "featured": "أقل سعر مرصود | من 4 متاجر رُصدت خلال 7 أيام | AL | عند | متجر النخيل | رصدناه اليوم · متوفر | ٢٬٧٩٩ | أعلى سعر مؤهل  | ٣٬٠٩٩ |  · الفرق  | ٣٠٠ | اذهب إلى متجر النخيل | 3 عروض أخرى مؤهلة أدناه — شاكر بـ  | ٢٬٧٩٩",
+    "featuredStoreName": null,
+    "featuredStoreTruncated": null,
+    "identityBadges": [],
+    "availabilityLines": [
+     "● متوفر",
+     "● متوفر",
+     "● متوفر"
+    ],
+    "jsonldAvailability": [
+     "https://schema.org/InStock",
+     "https://schema.org/InStock",
+     "https://schema.org/InStock",
+     "https://schema.org/InStock"
+    ],
+    "eligibleHeading": "العروض الداخلة في المقارنة (4 متاجر)",
+    "visibility": {
+     "checked": 5,
+     "problems": [],
+     "fontsUnder10px": []
+    }
+   }
+  },
+  {
+   "k": "compare-freshdv@1280",
+   "v": {
+    "hasHorizontalScroll": false,
+    "clientW": 1280,
+    "headers": 1,
+    "mains": 1,
+    "featured": "أقل سعر مرصود | من 4 متاجر رُصدت خلال 7 أيام | AL | عند | متجر النخيل | رصدناه اليوم · متوفر | ٢٬٧٩٩ | أعلى سعر مؤهل  | ٣٬٠٩٩ |  · الفرق  | ٣٠٠ | اذهب إلى متجر النخيل | 3 عروض أخرى مؤهلة أدناه — شاكر بـ  | ٢٬٧٩٩",
+    "featuredStoreName": null,
+    "featuredStoreTruncated": null,
+    "identityBadges": [],
+    "availabilityLines": [
+     "● متوفر",
+     "● متوفر",
+     "● متوفر"
+    ],
+    "jsonldAvailability": [
+     "https://schema.org/InStock",
+     "https://schema.org/InStock",
+     "https://schema.org/InStock",
+     "https://schema.org/InStock"
+    ],
+    "eligibleHeading": "العروض الداخلة في المقارنة (4 متاجر)",
+    "visibility": {
+     "checked": 5,
+     "problems": [],
+     "fontsUnder10px": []
+    }
+   }
+  },
+  {
+   "k": "compare-artcool@390",
+   "v": {
+    "hasHorizontalScroll": false,
+    "clientW": 390,
+    "headers": 1,
+    "mains": 1,
+    "featured": "أقل سعر مرصود | من 3 متاجر رُصدت خلال 7 أيام | AL | عند | متجر النخيل | رصدناه اليوم · متوفر | ٣٬٢٦٩ | أعلى سعر مؤهل  | ٣٬٦٦٩ |  · الفرق  | ٤٠٠ | اذهب إلى متجر النخيل | 2 عروض أخرى مؤهلة أدناه — شاكر بـ  | ٣٬٢٩٩",
+    "featuredStoreName": null,
+    "featuredStoreTruncated": null,
+    "identityBadges": [],
+    "availabilityLines": [
+     "● متوفر",
+     "● متوفر"
+    ],
+    "jsonldAvailability": [
+     "https://schema.org/InStock",
+     "https://schema.org/InStock",
+     "https://schema.org/InStock"
+    ],
+    "eligibleHeading": "العروض الداخلة في المقارنة (3 متاجر)",
+    "visibility": {
+     "checked": 6,
+     "problems": [],
+     "fontsUnder10px": []
+    }
+   }
+  },
+  {
+   "k": "compare-artcool@1280",
+   "v": {
+    "hasHorizontalScroll": false,
+    "clientW": 1280,
+    "headers": 1,
+    "mains": 1,
+    "featured": "أقل سعر مرصود | من 3 متاجر رُصدت خلال 7 أيام | AL | عند | متجر النخيل | رصدناه اليوم · متوفر | ٣٬٢٦٩ | أعلى سعر مؤهل  | ٣٬٦٦٩ |  · الفرق  | ٤٠٠ | اذهب إلى متجر النخيل | 2 عروض أخرى مؤهلة أدناه — شاكر بـ  | ٣٬٢٩٩",
+    "featuredStoreName": null,
+    "featuredStoreTruncated": null,
+    "identityBadges": [],
+    "availabilityLines": [
+     "● متوفر",
+     "● متوفر"
+    ],
+    "jsonldAvailability": [
+     "https://schema.org/InStock",
+     "https://schema.org/InStock",
+     "https://schema.org/InStock"
+    ],
+    "eligibleHeading": "العروض الداخلة في المقارنة (3 متاجر)",
+    "visibility": {
+     "checked": 6,
+     "problems": [],
+     "fontsUnder10px": []
+    }
+   }
+  },
+  {
+   "k": "product-samsung",
+   "v": {
+    "finalStatus": 200,
+    "chain": [
+     "308 https://tawveeri.com/ar/products/samsung-split-ac-18000-btu-rotary-compressor-heat-and-cold"
+    ],
+    "hasHorizontalScroll": false,
+    "clientW": 390,
+    "headers": 1,
+    "mains": 1,
+    "h1": "Samsung Split AC 18000 BTU Rotary Compressor Heat and Cold",
+    "merchantTitle": null,
+    "heroImage": {
+     "src": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLz",
+     "natural": 400
+    },
+    "singleStoreNotice": [
+     "متجر واحد — لا مقارنة بعد",
+     "متجر واحد — لا مقارنة أسعار لهذا المنتج بعد"
+    ],
+    "bestBadge": false,
+    "referencePrices": [],
+    "bareStrikethrough": 6,
+    "title": "Samsung Split AC 18000 BTU Rotary Compressor Heat and Cold | توفيري"
+   }
+  },
+  {
+   "k": "journey-featured-cta",
+   "v": {
+    "href": "/go/6d92d25d-0298-4e66-96a3-6eba46609919?gt=1790439678808.27cb112a96a0766e7d76840870251e3ca2a04b01c5f57241d002cb16bb4c8eff",
+    "text": "اذهب إلى متجر النخيل"
+   }
+  },
+  {
+   "k": "hover-no-outbound",
+   "v": {
+    "newIssues": []
+   }
+  },
+  {
+   "k": "journey-go",
+   "v": {
+    "status": 302,
+    "location": "https://alnakheelk.com/en/%D8%A7%D9%84-%D8%AC%D9%8A-%D9%85%D9%83%D9%8A%D9%81-%D8%B3%D8%A8%D9%84%D9%8A%D8%AA-%D9%81%D8%B1%D9%8A%D8%B4-%D8%B1%D9%8A%D8%B4-%D9%85%D8%B2%D8%AF%D9%88%D8%AC%D8%A9-18000-%D9%88%D8%AD%D8%AF%D8%A9-%D8%A8%D8%A7%D8%B1%D8%AF-%D9%81%D9%82%D8%B7-%D8%A5%D9%86%D9%81%D8%B1%D8%AA%D8%B1/p737069420"
+   }
+  },
+  {
+   "k": "journey-merchant",
+   "v": {
+    "status": 200,
+    "url": "https://alnakheelk.com/en/%D8%A7%D9%84-%D8%AC%D9%8A-%D9%85%D9%83%D9%8A%D9%81-%D8%B3%D8%A8%D9%84%D9%8A%D8%AA-%D9%81%D8%B1%D9%8A%D8%B4-%D8%B1%D9%8A%D8%B4-%D9%85%D8%B2%D8%AF%D9%88%D8%AC%D8%A9-18000-%D9%88%D8%AD%D8%AF%D8%A9-%D8%A8%D8%A7%D8%B1%D8%AF-%D9%81%D9%82%D8%B7-%D8%A5%D9%86%D9%81%D8%B1%D8%AA%D8%B1/p737069420"
+   }
+  },
+  {
+   "k": "console-and-network-issues",
+   "v": [
+    {
+     "page": "https://tawveeri.com/ar/search?q=%D9%85%D9%83%D9%8A%D9%81%20%D8%B3%D8%A7%D9%85%D",
+     "type": "error",
+     "text": "The Content Security Policy directive 'upgrade-insecure-requests' is ignored when delivered in a report-only policy."
+    },
+    {
+     "page": "https://tawveeri.com/ar/search?q=%D9%85%D9%83%D9%8A%D9%81%20%D8%B3%D8%A7%D9%85%D",
+     "type": "error",
+     "text": "[Report Only] Refused to load the script 'https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495' because it violates the following Content Security Policy "
+    },
+    {
+     "page": "https://tawveeri.com/ar/search?q=%D9%85%D9%83%D9%8A%D9%81%20%D8%B3%D8%A7%D9%85%D",
+     "type": "error",
+     "text": "The Content Security Policy directive 'upgrade-insecure-requests' is ignored when delivered in a report-only policy."
+    },
+    {
+     "page": "https://tawveeri.com/ar/search?q=%D9%85%D9%83%D9%8A%D9%81%20%D8%B3%D8%A7%D9%85%D",
+     "type": "error",
+     "text": "The Content Security Policy directive 'upgrade-insecure-requests' is ignored when delivered in a report-only policy."
+    },
+    {
+     "page": "https://tawveeri.com/ar/search?q=%D9%85%D9%83%D9%8A%D9%81%20%D8%B3%D8%A7%D9%85%D",
+     "type": "error",
+     "text": "The Content Security Policy directive 'upgrade-insecure-requests' is ignored when delivered in a report-only policy."
+    },
+    {
+     "page": "https://tawveeri.com/ar/search?q=%D9%85%D9%83%D9%8A%D9%81%20%D8%B3%D8%A7%D9%85%D",
+     "type": "error",
+     "text": "The Content Security Policy directive 'upgrade-insecure-requests' is ignored when delivered in a report-only policy."
+    },
+    {
+     "page": "https://tawveeri.com/ar/search?q=%D9%85%D9%83%D9%8A%D9%81+%D8%B3%D8%A7%D9%85%D8%",
+     "type": "error",
+     "text": "[Report Only] Refused to connect to 'https://www.extra.com/en-sa/large-appliances-/air-conditioner/split-air-conditioner/samsung-split-ac-18000-btu-rotary-compressor-heat-and-cold/p/100226575' because"
+    },
+    {
+     "page": "https://tawveeri.com/ar/search?q=%D9%85%D9%83%D9%8A%D9%81%20LG%2018000",
+     "type": "error",
+     "text": "The Content Security Policy directive 'upgrade-insecure-requests' is ignored when delivered in a report-only policy."
+    },
+    {
+     "page": "https://tawveeri.com/ar/search?q=%D9%85%D9%83%D9%8A%D9%81%20LG%2018000",
+     "type": "error",
+     "text": "[Report Only] Refused to load the script 'https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495' because it violates the following Content Security Policy "
+    },
+    {
+     "page": "https://tawveeri.com/ar/search?q=%D9%85%D9%83%D9%8A%D9%81+LG+18000",
+     "type": "error",
+     "text": "[Report Only] Refused to connect to 'https://alnakheelk.com/en/%D8%A7%D9%84-%D8%AC%D9%8A-%D9%85%D9%83%D9%8A%D9%81-%D8%B3%D8%A8%D9%84%D9%8A%D8%AA-%D9%81%D8%B1%D9%8A%D8%B4-%D8%B1%D9%8A%D8%B4-%D9%85%D8%B"
+    },
+    {
+     "page": "https://tawveeri.com/ar/search?q=%D9%85%D9%83%D9%8A%D9%81+LG+18000",
+     "type": "error",
+     "text": "Access to fetch at 'https://alnakheelk.com/en/%D8%A7%D9%84-%D8%AC%D9%8A-%D9%85%D9%83%D9%8A%D9%81-%D8%B3%D8%A8%D9%84%D9%8A%D8%AA-%D9%81%D8%B1%D9%8A%D8%B4-%D8%B1%D9%8A%D8%B4-%D9%85%D8%B2%D8%AF%D9%88%D8%"
+    },
+    {
+     "page": "https://tawveeri.com/ar/search?q=%D9%85%D9%83%D9%8A%D9%81+LG+18000",
+     "failed": "https://alnakheelk.com/en/%D8%A7%D9%84-%D8%AC%D9%8A-%D9%85%D9%83%D9%8A%D9%81-%D8%B3%D8%A8%D9%84%D9%8A%D8%AA-%D9%81%D8%B1",
+     "reason": "net::ERR_FAILED"
+    },
+    {
+     "page": "https://tawveeri.com/ar/search?q=%D9%85%D9%83%D9%8A%D9%81+LG+18000",
+     "type": "error",
+     "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+     "page": "https://tawveeri.com/ar/search?q=%D9%85%D9%83%D9%8A%D9%81+LG+18000",
+     "type": "error",
+     "text": "[Report Only] Refused to connect to 'https://alnakheelk.com/en/%D8%A7%D9%84-%D8%AC%D9%8A-%D9%85%D9%83%D9%8A%D9%81-%D8%B3%D8%A8%D9%84%D9%8A%D8%AA-%D9%81%D8%B1%D9%8A%D8%B4-%D8%B1%D9%8A%D8%B4-%D9%85%D8%B"
+    },
+    {
+     "page": "https://tawveeri.com/ar/search?q=%D9%85%D9%83%D9%8A%D9%81+LG+18000",
+     "type": "error",
+     "text": "Access to fetch at 'https://alnakheelk.com/en/%D8%A7%D9%84-%D8%AC%D9%8A-%D9%85%D9%83%D9%8A%D9%81-%D8%B3%D8%A8%D9%84%D9%8A%D8%AA-%D9%81%D8%B1%D9%8A%D8%B4-%D8%B1%D9%8A%D8%B4-%D9%85%D8%B2%D8%AF%D9%88%D8%"
+    },
+    {
+     "page": "https://tawveeri.com/ar/search?q=%D9%85%D9%83%D9%8A%D9%81+LG+18000",
+     "failed": "https://alnakheelk.com/en/%D8%A7%D9%84-%D8%AC%D9%8A-%D9%85%D9%83%D9%8A%D9%81-%D8%B3%D8%A8%D9%84%D9%8A%D8%AA-%D9%81%D8%B1",
+     "reason": "net::ERR_FAILED"
+    },
+    {
+     "page": "https://tawveeri.com/ar/search?q=%D9%85%D9%83%D9%8A%D9%81+LG+18000",
+     "type": "error",
+     "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+     "page": "https://tawveeri.com/ar/search?q=%D9%85%D9%83%D9%8A%D9%81+LG+18000",
+     "failed": "https://o4511874557018112.ingest.us.sentry.io/api/4511874595815424/envelope/?sentry_version=7&sentry_key=87147ed6e2e97de",
+     "reason": "net::ERR_ABORTED"
+    },
+    {
+     "page": "https://tawveeri.com/ar/compare",
+     "type": "error",
+     "text": "The Content Security Policy directive 'upgrade-insecure-requests' is ignored when delivered in a report-only policy."
+    },
+    {
+     "page": "https://tawveeri.com/ar/compare",
+     "type": "error",
+     "text": "[Report Only] Refused to load the script 'https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495' because it violates the following Content Security Policy "
+    },
+    {
+     "page": "https://tawveeri.com/ar/compare",
+     "type": "error",
+     "text": "The Content Security Policy directive 'upgrade-insecure-requests' is ignored when delivered in a report-only policy."
+    },
+    {
+     "page": "https://tawveeri.com/ar/compare",
+     "type": "error",
+     "text": "[Report Only] Refused to load the script 'https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495' because it violates the following Content Security Policy "
+    },
+    {
+     "page": "https://tawveeri.com/ar/compare",
+     "failed": "https://o4511874557018112.ingest.us.sentry.io/api/4511874595815424/envelope/?sentry_version=7&sentry_key=87147ed6e2e97de",
+     "reason": "net::ERR_ABORTED"
+    },
+    {
+     "page": "https://tawveeri.com/ar/compare",
+     "type": "error",
+     "text": "The Content Security Policy directive 'upgrade-insecure-requests' is ignored when delivered in a report-only policy."
+    },
+    {
+     "page": "https://tawveeri.com/ar/compare",
+     "type": "error",
+     "text": "[Report Only] Refused to load the script 'https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495' because it violates the following Content Security Policy "
+    },
+    {
+     "page": "https://tawveeri.com/ar/compare",
+     "failed": "https://o4511874557018112.ingest.us.sentry.io/api/4511874595815424/envelope/?sentry_version=7&sentry_key=87147ed6e2e97de",
+     "reason": "net::ERR_ABORTED"
+    },
+    {
+     "page": "https://tawveeri.com/ar/compare",
+     "type": "error",
+     "text": "The Content Security Policy directive 'upgrade-insecure-requests' is ignored when delivered in a report-only policy."
+    },
+    {
+     "page": "https://tawveeri.com/ar/compare",
+     "type": "error",
+     "text": "[Report Only] Refused to load the script 'https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495' because it violates the following Content Security Policy "
+    },
+    {
+     "page": "https://tawveeri.com/ar/compare",
+     "failed": "https://o4511874557018112.ingest.us.sentry.io/api/4511874595815424/envelope/?sentry_version=7&sentry_key=87147ed6e2e97de",
+     "reason": "net::ERR_ABORTED"
+    },
+    {
+     "page": "https://tawveeri.com/ar/compare",
+     "type": "error",
+     "text": "The Content Security Policy directive 'upgrade-insecure-requests' is ignored when delivered in a report-only policy."
+    }
+   ]
+  }
+ ]
+}

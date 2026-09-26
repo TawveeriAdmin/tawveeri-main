@@ -173,11 +173,15 @@ export function SmartPickCard({ pick, locale }: { pick: SmartPick; locale: strin
             <Store className="h-3.5 w-3.5" aria-hidden />
             {/* `reason_ar` already carries the store count when it can be honoured — saying it
                 twice on one card reads as two separate claims. Name the store the price is at. */}
-            <span>{isRTL ? `أفضل سعر عند ${pick.store_name}` : `Best price at ${pick.store_name}`}</span>
+            {/* ADR-389: «أفضل سعر» is a comparison claim — only with a real multi-store comparison.
+                A single-store pick states the observed price at the store, nothing more. */}
+            <span>{claimsComparison
+              ? (isRTL ? `أفضل سعر مرصود عند ${pick.store_name}` : `Best observed price at ${pick.store_name}`)
+              : (isRTL ? `السعر المرصود لدى ${pick.store_name}` : `Observed price at ${pick.store_name}`)}</span>
           </p>
         </div>
         <div className="shrink-0 text-end">
-          <div className="text-xs text-on-surface-variant">{isRTL ? 'أفضل سعر' : 'Best price'}</div>
+          <div className="text-xs text-on-surface-variant">{claimsComparison ? (isRTL ? 'أفضل سعر مرصود' : 'Best observed price') : (isRTL ? 'السعر المرصود' : 'Observed price')}</div>
           <Price amount={pick.best_price} className="text-xl font-bold text-primary-700 dark:text-primary-300 tabular-nums" />
           {observedAge != null && (
             <div data-testid="smart-pick-observed" className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-on-surface-variant">

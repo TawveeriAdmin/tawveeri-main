@@ -80,6 +80,12 @@ interface Product {
   /** ADR-388: the knowledge layer's structured identity (a search-originated item carries
    *  it in the cache). Read for identity-derived specification rows — never displayed raw. */
   tps_identity_key?: string | null;
+  /** ADR-389: outcome of the knowledge-layer refresh for a tray item.
+   *  'ok' = current offers replaced the snapshot (possibly with none);
+   *  'gone' = the identity no longer resolves (404) — no current offers are shown;
+   *  'failed' = network/server failure — the saved snapshot is shown, with its ORIGINAL
+   *  observation times, and eligibility is re-evaluated against now. */
+  refresh_status?: 'ok' | 'failed' | 'gone';
 }
 
 /**
@@ -503,8 +509,11 @@ export interface KnowledgeLayerComparison {
 }
 
 export function applyKnowledgeLayerComparison(product: Product, comparison: KnowledgeLayerComparison | null | undefined): Product {
-  const offers = Array.isArray(comparison?.offers) ? comparison!.offers!.filter((o) => o && typeof o.price === 'number' && o.price > 0 && o.store_slug) : [];
-  if (offers.length === 0) return product;
+  // ADR-389: a well-formed response is authoritative even when it lists NO offers — an offer
+  // the knowledge layer no longer holds must not be resurrected from the snapshot. Only a
+  // malformed/absent response leaves the snapshot in place (status 'failed').
+  if (!comparison || !Array.isArray(comparison.offers)) return { ...product, refresh_status: 'failed' };
+  const offers = comparison.offers.filter((o) => o && typeof o.price === 'number' && o.price > 0 && o.store_slug);
   const product_stores: ProductStore[] = offers.map((o) => ({
     id: `tps-${o.store_slug}`,
     current_price: o.price,
@@ -542,26 +551,39 @@ export function applyKnowledgeLayerComparison(product: Product, comparison: Know
     brand: product.brand || c?.brand || '',
     image_urls: product.image_urls && product.image_urls.length > 0 ? product.image_urls : c?.image_url ? [c.image_url] : product.image_urls,
     product_stores,
+    refresh_status: 'ok',
   };
 }
 
 /** Availability wording for one offer row — «التوفر غير مذكور عند آخر رصد» when the merchant
  *  page stated nothing, otherwise the shared label. Exported for tests. */
 export function storeAvailabilityLabel(s: ProductStore, stale: boolean, isAr: boolean): { text: string; tone: 'ok' | 'muted' | 'bad' } | null {
-  if (s.availability_unstated) return { text: isAr ? 'التوفر غير مذكور عند آخر رصد' : 'Availability not stated at last observation', tone: 'muted' };
-  return availabilityLabelFor(s.availability, stale, isAr);
+  // ADR-389: the shared label owns all three states (in stock / out of stock / not stated).
+  return availabilityLabelFor(s.availability_unstated ? null : s.availability, stale, isAr);
 }
 
-async function refreshFromKnowledgeLayer(items: Product[], locale: string): Promise<Product[]> {
+/**
+ * ADR-389 — failure semantics, stated: a NETWORK/SERVER failure (thrown fetch, 5xx, 429)
+ * keeps the saved snapshot with its original observation times (`refresh_status: 'failed'`,
+ * disclosed on the page); a 404 means the identity no longer resolves — no current offers
+ * (`'gone'`); a 200 is applied as-is, empty offers included. Reading localStorage never
+ * becomes an observation time. Exported for tests (injectable fetch).
+ */
+export async function refreshFromKnowledgeLayer(
+  items: Product[],
+  locale: string,
+  fetchImpl: typeof fetch = (...args) => fetch(...args),
+): Promise<Product[]> {
   return Promise.all(items.map(async (p) => {
     if (!p.tps_identity_key) return p;
     try {
-      const res = await fetch(`/api/compare?key=${encodeURIComponent(p.tps_identity_key)}&locale=${locale === 'en' ? 'en' : 'ar'}`, { headers: { accept: 'application/json' } });
-      if (!res.ok) return p;
+      const res = await fetchImpl(`/api/compare?key=${encodeURIComponent(p.tps_identity_key)}&locale=${locale === 'en' ? 'en' : 'ar'}`, { headers: { accept: 'application/json' } });
+      if (res.status === 404) return { ...p, product_stores: [], refresh_status: 'gone' };
+      if (!res.ok) return { ...p, refresh_status: 'failed' };
       const json = (await res.json()) as KnowledgeLayerComparison;
       return applyKnowledgeLayerComparison(p, json);
     } catch {
-      return p;
+      return { ...p, refresh_status: 'failed' };
     }
   }));
 }
@@ -575,6 +597,8 @@ export default function ComparePage() {
   const [productIds, setProductIds] = useState<string[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  // ADR-389: long product names are clamped, and the full name is one tap away.
+  const [expandedNames, setExpandedNames] = useState<Set<string>>(() => new Set());
   const [error, setError] = useState<string | null>(null);
 
 
@@ -879,7 +903,14 @@ export default function ComparePage() {
         // ADR-387: no forced 700px table. A 96–140px label column + ≥140px per product lets
         // two products sit side by side at 390px; three or four scroll horizontally inside
         // the container while the label column stays pinned (sticky start).
-        const gridCols = `minmax(96px, 140px) repeat(${products.length}, minmax(140px, 1fr))`;
+        // ADR-389 (founder: "completeness of view beats absence of scroll"): with ≤2 products the
+        // columns share whatever width is left after a narrower label column, so nothing is ever
+        // clipped at 390px; with 3–4 the container scrolls horizontally BY DESIGN (min 150px per
+        // product, label column pinned) and says so above the table.
+        const gridCols = products.length <= 2
+          ? `minmax(84px, 112px) repeat(${products.length}, minmax(0, 1fr))`
+          : `minmax(96px, 140px) repeat(${products.length}, minmax(150px, 1fr))`;
+        const scrollsHorizontally = products.length >= 3;
         const totalCols = products.length + 1;
         const categories = new Set(products.map((p) => p.category).filter(Boolean));
         const mixedCategories = categories.size > 1;
@@ -940,6 +971,11 @@ export default function ComparePage() {
               </AlertDescription>
             </Alert>
           )}
+          {scrollsHorizontally && (
+            <p className="text-[11px] text-on-surface-variant md:hidden" data-scroll-hint>
+              {isAr ? '← اسحب أفقيًا لعرض بقية المنتجات؛ عمود العناوين يبقى ثابتًا' : 'Swipe horizontally to see the other products; the label column stays pinned →'}
+            </p>
+          )}
           <div className="overflow-x-auto rounded-lg border border-outline-variant/70">
             {/* ── Product Header Row ── */}
             <div
@@ -975,28 +1011,48 @@ export default function ComparePage() {
                         <X className="w-3 h-3" />
                       </button>
 
-                      {/* Product Image */}
-                      <div className="relative w-32 h-32 mb-3 rounded-lg bg-white dark:bg-gray-900 p-2 flex items-center justify-center">
-                        <Image
-                          src={imageUrl}
-                          alt={productName}
-                          width={120}
-                          height={120}
-                          className="object-contain max-h-[112px] w-auto"
-                          unoptimized
-                        />
+                      {/* ADR-389: the badge is in normal flow, ABOVE the image, and may wrap — it was
+                          absolutely positioned inside a 128px image box, so at 390px it spilled past
+                          the column edge and under the remove button. */}
+                      <div className="mb-1.5 flex min-h-[20px] w-full items-center justify-center pe-6">
                         {isBestPriceProduct && (
-                          <Badge variant="success" className="absolute top-1 start-1 text-[10px]">
+                          <Badge variant="success" className="max-w-full whitespace-normal text-center text-[10px] leading-tight" data-lowest-badge>
                             {/* "lowest among the selected", never "best": these may be different models */}
                             {locale === 'ar' ? 'الأقل سعرًا بين المختارة' : 'Lowest of the selected'}
                           </Badge>
                         )}
                       </div>
 
-                      {/* Product Name */}
-                      <h3 className="text-sm font-semibold text-on-surface line-clamp-2 leading-snug mb-0.5">
+                      {/* Product Image */}
+                      <div className="relative mb-3 flex h-28 w-28 items-center justify-center rounded-lg bg-white p-2 dark:bg-gray-900 sm:h-32 sm:w-32">
+                        <Image
+                          src={imageUrl}
+                          alt={productName}
+                          width={120}
+                          height={120}
+                          className="max-h-[112px] w-auto object-contain"
+                          unoptimized
+                        />
+                      </div>
+
+                      {/* Product Name — clamped, full name one tap away (never a shortened store name) */}
+                      <h3
+                        dir="auto"
+                        title={productName}
+                        className={cn('mb-0.5 text-sm font-semibold leading-snug text-on-surface break-words', !expandedNames.has(product.id) && 'line-clamp-2')}
+                      >
                         {productName}
                       </h3>
+                      {productName.length > 40 && (
+                        <button
+                          type="button"
+                          className="mb-1 text-[11px] text-primary-600 hover:underline"
+                          aria-expanded={expandedNames.has(product.id)}
+                          onClick={() => setExpandedNames((prev) => { const next = new Set(prev); if (next.has(product.id)) next.delete(product.id); else next.add(product.id); return next; })}
+                        >
+                          {expandedNames.has(product.id) ? (isAr ? 'اختصار الاسم' : 'Shorten name') : (isAr ? 'الاسم كاملًا' : 'Full name')}
+                        </button>
+                      )}
 
                       {/* Brand / Model — brand in the reader's language; a missing model is omitted, never a placeholder */}
                       <p className="text-xs text-on-surface-variant mb-2" dir="auto">
@@ -1025,28 +1081,56 @@ export default function ComparePage() {
                             )}
                           </div>
                         ) : (
-                          <span className="text-sm text-outline">{t('compare.notAvailable')}</span>
+                          <span className="text-sm text-outline">
+                            {product.refresh_status === 'gone'
+                              ? (isAr ? 'لا عروض حالية لهذا المنتج' : 'No current offers for this product')
+                              : t('compare.notAvailable')}
+                          </span>
+                        )}
+                        {/* ADR-389: a failed refresh is disclosed — the snapshot is shown with its
+                            ORIGINAL observation time; eligibility above is judged against now. */}
+                        {product.refresh_status === 'failed' && (
+                          <p className="mt-1 text-[10px] leading-snug text-amber-700 dark:text-amber-400" data-refresh-failed>
+                            {isAr ? 'تعذر تحديث العروض الآن — نعرض آخر لقطة محفوظة بزمن رصدها الأصلي' : 'Could not refresh offers — showing the last saved snapshot with its original observation time'}
+                          </p>
                         )}
                       </div>
 
-                      {/* CTA Button */}
+                      {/* CTA — full column width, names the destination store when known */}
                       {isUuid(product.id) ? (
-                        <Button asChild variant="default" size="sm" className="h-9 px-5 rounded-md text-sm font-semibold">
+                        <Button asChild variant="default" size="sm" className="h-9 w-full max-w-full rounded-md px-3 text-sm font-semibold">
                           <Link href={`/${locale}/products/${product.slug}`}>
                             {t('compare.viewProduct')}
                           </Link>
                         </Button>
                       ) : (
                         primaryStoreUrl && (
-                          <Button asChild variant="default" size="sm" className="h-9 px-5 rounded-md text-sm font-semibold">
+                          <Button asChild variant="default" size="sm" className="h-9 w-full max-w-full rounded-md px-3 text-sm font-semibold">
                             <a href={primaryStoreUrl} target="_blank" rel="noopener noreferrer"
                               onClick={() => recordFirstPartyInteraction({ goId: null, canonicalId: isUuid(product.id) ? product.id : null, surface: 'compare_list' })}
                             >
-                              {t('compare.viewStore')}
-                              <ExternalLink className="w-3.5 h-3.5 ms-1.5" />
+                              <span className="truncate">
+                                {bestStore?.stores
+                                  ? (isAr ? `اذهب إلى ${bestStore.stores.name_ar}` : `Go to ${bestStore.stores.name_en}`)
+                                  : t('compare.viewStore')}
+                              </span>
+                              <ExternalLink className="ms-1.5 h-3.5 w-3.5 shrink-0" />
                             </a>
                           </Button>
                         )
+                      )}
+                      {/* ADR-389: a clear path from the multi-product view to ALL of this product's
+                          offers (the single-product comparison), when the identity is known. */}
+                      {product.tps_identity_key && product.product_stores.length > 0 && (
+                        <Link
+                          href={`/${locale}/compare/${encodeURIComponent(product.tps_identity_key)}`}
+                          className="mt-2 inline-flex items-center gap-1 text-[11px] font-medium text-primary-600 hover:underline"
+                          data-all-offers-link
+                        >
+                          {isAr
+                            ? `كل عروض هذا المنتج (${product.product_stores.length})`
+                            : `All offers for this product (${product.product_stores.length})`}
+                        </Link>
                       )}
                     </div>
                   </div>
@@ -1129,30 +1213,50 @@ export default function ComparePage() {
                   );
                 },
               },
-              { key: 'deliveryTime', label: t('compare.deliveryTime'), render: (product: Product) => getDeliveryTimeLabel(bestStoreByProductId.get(product.id) || null) },
-              { key: 'shippingCost', label: t('compare.shippingCost'), render: (product: Product) => getShippingLabel(bestStoreByProductId.get(product.id) || null) },
-              {
-                key: 'warranty', label: t('compare.warranty'), render: (product: Product) => {
-                  const bs = bestStoreByProductId.get(product.id) || null;
-                  const warranty = bs?.stores ? (locale === 'ar' ? bs.stores.warranty_info_ar : bs.stores.warranty_info_en) : null;
-                  if (warranty) return <span className="text-on-surface">{warranty}</span>;
-                  const slug = getStoreSlug(bs?.stores || null);
-                  const policy = slug ? STORE_POLICIES[slug] : null;
-                  if (policy) return <span className="text-on-surface">{locale === 'ar' ? policy.warranty_ar : policy.warranty_en}</span>;
-                  return <span className="text-on-surface-variant">{t('compare.notSpecified')}</span>;
-                },
-              },
-              {
-                key: 'returnPolicy', label: t('compare.returnPolicy'), render: (product: Product) => {
-                  const bs = bestStoreByProductId.get(product.id) || null;
-                  const returnPolicy = bs?.stores ? (locale === 'ar' ? bs.stores.return_policy_ar : bs.stores.return_policy_en) : null;
-                  if (returnPolicy) return <span className="text-on-surface">{returnPolicy}</span>;
-                  const slug = getStoreSlug(bs?.stores || null);
-                  const policy = slug ? STORE_POLICIES[slug] : null;
-                  if (policy) return <span className="text-on-surface">{locale === 'ar' ? policy.return_ar : policy.return_en}</span>;
-                  return <span className="text-on-surface-variant">{t('compare.notSpecified')}</span>;
-                },
-              },
+              // ADR-389: service rows (delivery / shipping / warranty / returns) render only when
+              // at least one product states a value; the all-unknown ones collapse into ONE row
+              // that says so — four rows of «غير محدد» told the shopper nothing, at length.
+              ...(() => {
+                const notSpecified = t('compare.notSpecified');
+                const serviceRows: Array<{ key: string; label: string; value: (p: Product) => string | null }> = [
+                  { key: 'deliveryTime', label: t('compare.deliveryTime'), value: (p) => { const v = getDeliveryTimeLabel(bestStoreByProductId.get(p.id) || null); return v === notSpecified ? null : v; } },
+                  { key: 'shippingCost', label: t('compare.shippingCost'), value: (p) => { const v = getShippingLabel(bestStoreByProductId.get(p.id) || null); return typeof v === 'string' && (v === notSpecified || v === t('compare.notAvailable')) ? null : (typeof v === 'string' ? v : null); } },
+                  { key: 'warranty', label: t('compare.warranty'), value: (p) => {
+                    const bs = bestStoreByProductId.get(p.id) || null;
+                    const warranty = bs?.stores ? (locale === 'ar' ? bs.stores.warranty_info_ar : bs.stores.warranty_info_en) : null;
+                    if (warranty) return warranty;
+                    const slug = getStoreSlug(bs?.stores || null);
+                    const policy = slug ? STORE_POLICIES[slug] : null;
+                    return policy ? (locale === 'ar' ? policy.warranty_ar : policy.warranty_en) : null;
+                  } },
+                  { key: 'returnPolicy', label: t('compare.returnPolicy'), value: (p) => {
+                    const bs = bestStoreByProductId.get(p.id) || null;
+                    const returnPolicy = bs?.stores ? (locale === 'ar' ? bs.stores.return_policy_ar : bs.stores.return_policy_en) : null;
+                    if (returnPolicy) return returnPolicy;
+                    const slug = getStoreSlug(bs?.stores || null);
+                    const policy = slug ? STORE_POLICIES[slug] : null;
+                    return policy ? (locale === 'ar' ? policy.return_ar : policy.return_en) : null;
+                  } },
+                ];
+                const present = serviceRows.filter((r) => products.some((p) => r.value(p) !== null));
+                const missing = serviceRows.filter((r) => !present.includes(r));
+                const rows = present.map((r) => ({
+                  key: r.key, label: r.label,
+                  render: (p: Product) => { const v = r.value(p); return v ? <span className="text-on-surface">{v}</span> : <span className="text-on-surface-variant">{notSpecified}</span>; },
+                }));
+                if (missing.length > 0) {
+                  rows.push({
+                    key: 'services-unknown',
+                    label: missing.map((r) => r.label).join(' · '),
+                    render: () => (
+                      <span className="text-[11px] leading-snug text-on-surface-variant" data-services-unknown>
+                        {isAr ? 'غير مذكورة لهذه العروض — راجعها عند المتجر' : 'Not stated for these offers — check with the store'}
+                      </span>
+                    ),
+                  });
+                }
+                return rows;
+              })(),
               {
                 // ADR-387: this row used to render the MERCHANT'S claimed discount
                 // (original_price − current_price) as «توفير». Tawveeri's own measurement

@@ -93,6 +93,8 @@ type ProductQueryResult = ProductRow & {
 
 interface Product extends ProductRow {
  product_stores: ProductStore[];
+ /** ADR-389: the merchant's own title when the headline was replaced by the documented Arabic one. */
+ merchant_title?: string | null;
 }
 
 const mapProductRecord = (record: ProductQueryResult): Product => ({
@@ -119,7 +121,35 @@ const mapProductRecord = (record: ProductQueryResult): Product => ({
  })),
 });
 
-export default function ProductDetailClient() {
+/** ADR-389: the same-listing canonical the server proved (listing-URL equality), if any. */
+export interface ListingIdentityProps {
+ name_ar: string | null;
+ name_en: string | null;
+ image_url: string | null;
+ tps_identity_key: string;
+}
+
+/** Pure: apply the proven same-listing evidence to a storefront row — Arabic title only when the
+ *  row's own is not Arabic; image only when the row has none. Exported for tests. */
+export function applyListingIdentity<T extends { name_ar: string; name_en: string; image_urls: string[] | null }>(
+ product: T,
+ listing: ListingIdentityProps | null | undefined,
+): T & { merchant_title?: string | null } {
+ if (!listing) return product;
+ const arabic = /[؀-ۿ]/;
+ const useArabic = !arabic.test(product.name_ar || '') && !!listing.name_ar;
+ const useImage = !(product.image_urls && product.image_urls.length > 0) && !!listing.image_url;
+ if (!useArabic && !useImage) return product;
+ return {
+ ...product,
+ name_ar: useArabic ? (listing.name_ar as string) : product.name_ar,
+ image_urls: useImage ? [listing.image_url as string] : product.image_urls,
+ // the merchant's own title is kept visible (exact wording, codes intact) when we swap the headline
+ merchant_title: useArabic ? product.name_ar : null,
+ };
+}
+
+export default function ProductDetailClient({ listingIdentity = null }: { listingIdentity?: ListingIdentityProps | null } = {}) {
  const params = useParams();
  const router = useRouter();
  const locale = (params?.locale as string) || 'ar';
@@ -292,7 +322,8 @@ export default function ProductDetailClient() {
  // Never breaks the product page over this optional enrichment.
  }
 
- setProduct(mergedProduct);
+ // ADR-389: apply the server-proven same-listing evidence (Arabic title / listing image).
+ setProduct(applyListingIdentity(mergedProduct, listingIdentity));
  setViewCount(mergedProduct.view_count);
  // View count is now tracked via API route (see useEffect above)
 
@@ -927,6 +958,13 @@ export default function ProductDetailClient() {
  <h1 dir="auto" className="mb-3 text-2xl font-black leading-tight tracking-tight text-on-surface md:text-4xl">
  {productName}
  </h1>
+ {/* ADR-389: when the headline is the knowledge layer's documented Arabic title, the merchant's
+     own listing title stays visible — exact wording, model codes intact. */}
+ {locale === 'ar' && (product as Product & { merchant_title?: string | null }).merchant_title && (
+ <p dir="auto" className="-mt-1.5 mb-3 text-xs text-on-surface-variant" data-merchant-title>
+ {'اسم الإدراج عند المتجر: '}{(product as Product & { merchant_title?: string | null }).merchant_title}
+ </p>
+ )}
 
  <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-on-surface-variant">
  {subtitleParts.length > 0 && <span>{subtitleParts.join(' · ')}</span>}

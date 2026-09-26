@@ -22,6 +22,8 @@ import { recordFirstPartyInteraction } from '@/lib/analytics/interaction';
 import { ProductImageFrame, PRODUCT_PLACEHOLDER_IMAGE } from '@/components/products/shared-product-card';
 import { isFreshObservation, hoursSince, observedAgoLabel } from '@/lib/intelligence/evidence-engine';
 import { brandDisplayName } from '@/lib/compare/brand-display';
+import { ReferencePrice } from '@/components/ui/reference-price';
+import { partitionEligible, distinctStoreCount } from '@/lib/compare/offer-eligibility';
 
 interface ProductStore {
   id: string;
@@ -91,6 +93,28 @@ export function selectBestPriceStore(stores: ProductStore[]): {
   const hasDeal = stores.some((ps) => ps.original_price && ps.original_price > ps.current_price && isFreshStore(ps));
 
   return { bestPrice, hasDeal, storesWithPrices };
+}
+
+/**
+ * ADR-389 — what the card's store pill means. `total` = distinct stores with any known offer
+ * (the coverage the logos show); `eligible` = distinct stores whose offer may take part in a
+ * CURRENT comparison (positive price, not out of stock, observed within the window — the same
+ * rule /compare and /compare/[key] apply, offer-eligibility.ts). A card with no freshness data
+ * at all (legacy rows) keeps availability-only behaviour. Exported for tests.
+ */
+export function cardStoreCounts(stores: ProductStore[], nowMs: number = Date.now()): { total: number; eligible: number; excluded: number } {
+  const key = (ps: ProductStore) => ps.stores?.slug ?? ps.stores?.id ?? ps.id;
+  const freshnessUnknown = !stores.some((ps) => ps.observed_at != null);
+  const { eligible } = partitionEligible(stores, (ps) => ({ price: ps.current_price, availability: ps.availability, observed_at: ps.observed_at }), nowMs, { unknownAgeIsEligible: freshnessUnknown });
+  const total = distinctStoreCount(stores, key);
+  const eligibleCount = distinctStoreCount(eligible, key);
+  return { total, eligible: eligibleCount, excluded: Math.max(0, total - eligibleCount) };
+}
+
+/** The pill's text: «3 مؤهلة من 5» when some offers are outside the comparison, else the plain count. */
+export function storePillLabel(c: { total: number; eligible: number; excluded: number }, locale: string): string {
+  if (c.excluded === 0) return String(c.total);
+  return locale === 'ar' ? `${c.eligible} مؤهلة من ${c.total}` : `${c.eligible} eligible of ${c.total}`;
 }
 
 interface ProductCardProps {
@@ -326,7 +350,10 @@ export function ProductCard({
     }))
     .filter((s, i, arr) => arr.findIndex(x => x.id === s.id) === i);
 
-  const isWinner = isMultiStore && bestPrice && storesWithPrices.length > 1;
+  // ADR-389: «أفضل سعر» needs ≥2 ELIGIBLE stores (in stock, within the window) — not merely
+  // ≥2 known offers; and the pill states eligible vs total instead of a bare total.
+  const storeCounts = cardStoreCounts(product.product_stores);
+  const isWinner = isMultiStore && bestPrice && storeCounts.eligible > 1;
 
   // The store whose price the card actually shows. A multi-store card used to render only
   // two-letter avatar stubs ("اك" "أم" "جر"), so "من 840" named no store at all.
@@ -424,9 +451,16 @@ export function ProductCard({
 
           {isMultiStore && (
             <div className="absolute bottom-2 end-2">
-              <span className="inline-flex items-center gap-1 rounded-full bg-[color:var(--color-surface)]/95 backdrop-blur-sm px-2 py-1 text-[11px] font-semibold text-[var(--brand-green-dark)] shadow-[var(--elevation-1)] border border-[color:var(--color-outline-variant)]/40">
+              <span
+                className="inline-flex items-center gap-1 rounded-full bg-[color:var(--color-surface)]/95 backdrop-blur-sm px-2 py-1 text-[11px] font-semibold text-[var(--brand-green-dark)] shadow-[var(--elevation-1)] border border-[color:var(--color-outline-variant)]/40"
+                data-eligible-stores={storeCounts.eligible}
+                data-total-stores={storeCounts.total}
+                title={currentLocale === 'ar'
+                  ? `${storeCounts.eligible} متاجر بعروض حديثة ومتوفرة تدخل في المقارنة · ${storeCounts.total} متاجر معروفة إجمالًا`
+                  : `${storeCounts.eligible} stores with current, in-stock offers in the comparison · ${storeCounts.total} known stores in total`}
+              >
                 <Store className="w-3 h-3" />
-                {storeCount}
+                {storePillLabel(storeCounts, currentLocale)}
               </span>
             </div>
           )}
@@ -476,13 +510,7 @@ export function ProductCard({
                         className="text-xl font-extrabold text-on-surface"
                         symbolClassName="w-5 h-5"
                       />
-                      {originalPrice && originalPrice > bestPriceValue && (
-                        <Price
-                          amount={originalPrice}
-                          className="text-xs text-on-surface-variant line-through"
-                          symbolClassName="w-3 h-3"
-                        />
-                      )}
+                      <ReferencePrice amount={originalPrice} currentPrice={bestPriceValue} locale={currentLocale} compact priceClassName="text-xs" symbolClassName="w-3 h-3" />
                     </div>
                     {/* QUALITY PROGRAM P1 §14.1 (2026-08-28): the search-results grid showed
                         freshness on exactly one card (the Smart Pick) — every other card had

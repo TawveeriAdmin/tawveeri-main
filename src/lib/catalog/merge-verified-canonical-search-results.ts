@@ -109,11 +109,24 @@ function mergeCards(group: GroupedSearchProduct[]): GroupedSearchProduct {
 /** A merchant listing URL normalized for equality: scheme/host case, tracking query, fragment
  *  and trailing slash removed. Two cards carrying the same normalized URL for the same store
  *  are the SAME listing — the `url_exact` lane the identity projection itself trusts. */
+/**
+ * Query parameters that only track/attribute a visit and never select a different product,
+ * variant or seller. ANY other parameter is kept (sorted) so two listings that differ by a
+ * variant/seller selector (`?variant=`, `?sku=`, `?seller=`, `?color=`, `?size=`, Amazon
+ * `th`/`psc` …) are NEVER equated — ADR-389 (founder rule: strip tracking, never variants).
+ */
+const TRACKING_PARAM = /^(utm_[a-z]+|ref|ref_|refRID|gclid|fbclid|msclkid|ttclid|srsltid|tag|dib|dib_tag|keywords|sr|qid|sprefix|crid|pd_rd_[a-z]+|pf_rd_[a-z]+|_encoding|linkCode|linkId|camp|creative|creativeASIN|ascsubtag|mc_cid|mc_eid|yclid|igshid|si|source|src|campaign|affiliate|aff|clickid|click_id|cid|mkt_tok|gad_source|gbraid|wbraid)$/i;
+
 export function normalizeListingUrl(url: string | null | undefined): string | null {
   if (!url || !/^https?:\/\//i.test(url)) return null;
   try {
     const u = new URL(url);
-    return `${u.host.toLowerCase().replace(/^www\./, '')}${u.pathname.replace(/\/+$/, '').toLowerCase()}`;
+    const kept = [...u.searchParams.entries()]
+      .filter(([k]) => !TRACKING_PARAM.test(k))
+      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+      .map(([k, v]) => `${k.toLowerCase()}=${v}`);
+    const query = kept.length ? `?${kept.join('&')}` : '';
+    return `${u.host.toLowerCase().replace(/^www\./, '')}${u.pathname.replace(/\/+$/, '').toLowerCase()}${query}`;
   } catch { return null; }
 }
 
@@ -162,6 +175,53 @@ function pickRepresentativeFields(rep: GroupedSearchProduct) {
  * Store-neutral: only WHICH cards merge changes; prices/order are recomputed by the same
  * rules as every other merge.
  */
+/**
+ * ADR-389 — an identity-less "memory" canonical (discover-firecrawl's writer) carries NO URL:
+ * it is created FROM a `products` row and keyed on that row's exact `name_ar`
+ * (`.eq('name_ar', nameAr)` in discover-firecrawl/route.ts). When the storefront row itself is
+ * not among the retrieved candidates, the memory card cannot join the URL lane and renders as a
+ * link-less duplicate (live 2026-09-26 evening: «مكيف سامسونج 18000» → TPS card + `f9fa9c5a…`).
+ * This attaches the storefront row's listing URL as evidence (`listing_url`, never an exit)
+ * through the writer's OWN key — exact `name_ar` equality against an ACTIVE products row and
+ * the same store — so the URL lane can prove sameness. No fuzzy name/price matching.
+ * Pure; the route supplies the rows.
+ */
+export interface StorefrontListingRow {
+  id: string;
+  name_ar: string | null;
+  product_stores?: Array<{ store_id: number | string | null; product_url: string | null }> | null;
+}
+
+export function attachStorefrontListingUrls(products: GroupedSearchProduct[], rows: StorefrontListingRow[]): GroupedSearchProduct[] {
+  if (!rows.length) return products;
+  const byName = new Map<string, StorefrontListingRow[]>();
+  for (const r of rows) {
+    const n = (r.name_ar ?? '').trim().toLowerCase();
+    if (!n) continue;
+    byName.set(n, [...(byName.get(n) ?? []), r]);
+  }
+  return products.map((card) => {
+    if (card.tps_identity_key) return card;
+    if (card.stores.some((s) => (s.listing_url && s.listing_url.startsWith('http')) || (s.product_url && s.product_url.startsWith('http')))) return card;
+    const matches = byName.get((card.name_ar ?? '').trim().toLowerCase());
+    if (!matches?.length) return card;
+    let changed = false;
+    const stores = card.stores.map((s) => {
+      const slug = storeKey(s);
+      for (const row of matches) {
+        for (const ps of row.product_stores ?? []) {
+          if (!ps.product_url || !/^https?:\/\//i.test(ps.product_url)) continue;
+          if ((resolveApprovedSlug(ps.store_id) ?? String(ps.store_id)) !== slug) continue;
+          changed = true;
+          return { ...s, listing_url: ps.product_url };
+        }
+      }
+      return s;
+    });
+    return changed ? { ...card, stores } : card;
+  });
+}
+
 export function mergeSameListingCards(products: GroupedSearchProduct[]): GroupedSearchProduct[] {
   if (products.length < 2) return products;
   // Union-find over cards by shared listing keys.

@@ -370,8 +370,11 @@ export function SearchAutocomplete({
                           </span>
                           {/* Original price */}
                           {product.original_price && product.original_price > product.best_price && (
-                            <span className="text-[11px] text-[color:var(--color-on-surface-variant)] line-through">
-                              {Math.round(product.original_price).toLocaleString(isRTL ? 'ar-SA' : 'en-US')}
+                            <span className="text-[11px] text-[color:var(--color-on-surface-variant)]" title={isRTL ? 'سعر مرجعي يعلنه المتجر — لم نرصده ولا نحسب منه توفيرًا' : "Store's listed reference price — not observed by us, no saving computed"}>
+                              <span className="text-[9px]">{isRTL ? 'مرجعي: ' : 'ref: '}</span>
+                              <span className="line-through">
+                                {Math.round(product.original_price).toLocaleString(isRTL ? 'ar-SA' : 'en-US')}
+                              </span>
                             </span>
                           )}
                           {/* Store count */}

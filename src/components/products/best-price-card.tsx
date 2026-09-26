@@ -2,6 +2,7 @@
 
 import { ExternalLink, Trophy } from 'lucide-react';
 import { Price, SavingsLabel } from '@/components/ui/price';
+import { ReferencePrice } from '@/components/ui/reference-price';
 import { StoreLogo } from '@/components/ui/store-logo';
 import { useLocale } from '@/lib/simple-intl-provider';
 import { bestPrice as bestPriceCopy } from '@/lib/copy';
@@ -101,11 +102,9 @@ export function BestPriceCard({
           <Trophy className="h-3 w-3" />
           {eyebrow}
         </span>
-        {singleStore && (
-          <span className="text-[11px] text-on-surface-variant">
-            {isRTL ? 'متجر واحد — لا مقارنة أسعار لهذا المنتج بعد' : 'One store — no price comparison for this product yet'}
-          </span>
-        )}
+        {/* ADR-389: the single-store statement lives ONCE on the page (the chip beside the title,
+            «متجر واحد — لا مقارنة بعد»); the eyebrow «السعر المرصود» + «متوفر عند» already say
+            what this card claims, so the sentence is not repeated here. */}
       </div>
 
       {/* Store identity + price in a two-column layout */}
@@ -140,13 +139,7 @@ export function BestPriceCard({
             className="text-3xl md:text-4xl font-extrabold text-[var(--brand-green-dark)]"
             symbolClassName="w-6 h-6 md:w-7 md:h-7"
           />
-          {originalPrice && originalPrice > currentPrice && (
-            <Price
-              amount={originalPrice}
-              className="text-sm text-on-surface-variant line-through mt-0.5"
-              symbolClassName="w-3 h-3"
-            />
-          )}
+          <ReferencePrice amount={originalPrice} currentPrice={currentPrice} locale={locale} compact priceClassName="text-sm" symbolClassName="w-3 h-3" className="mt-0.5" />
         </div>
       </div>
 

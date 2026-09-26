@@ -4,6 +4,7 @@ import { ExternalLink, X, Truck, Tag } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Price } from '@/components/ui/price';
+import { ReferencePrice } from '@/components/ui/reference-price';
 import { CouponBadge } from '@/components/ui/coupon-badge';
 import { cn } from '@/lib/utils';
 import { track } from '@/lib/analytics/track';
@@ -132,13 +133,7 @@ export function StoreComparisonPanel({ product, locale, onClose }: StoreComparis
                     )}
                     symbolClassName="w-4 h-4"
                   />
-                  {ps.original_price && ps.original_price > ps.current_price && (
-                    <Price
-                      amount={ps.original_price}
-                      className="text-[11px] text-outline line-through tabular-nums"
-                      symbolClassName="w-3 h-3"
-                    />
-                  )}
+                  <ReferencePrice amount={ps.original_price} currentPrice={ps.current_price} locale={locale} compact priceClassName="text-[11px] tabular-nums" symbolClassName="w-3 h-3" />
                 </div>
 
                 {storeUrl && (

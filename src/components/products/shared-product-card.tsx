@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Package } from 'lucide-react';
 import { Price } from '@/components/ui/price';
+import { ReferencePrice } from '@/components/ui/reference-price';
 import { cn } from '@/lib/utils';
 
 export const PRODUCT_PLACEHOLDER_IMAGE =
@@ -223,13 +224,7 @@ export function SharedProductRailCard({
               className={cn('font-bold text-primary', isSm ? 'text-xs' : 'text-sm')}
               symbolClassName={isSm ? 'h-3 w-3' : 'h-3.5 w-3.5'}
             />
-            {originalPrice && originalPrice > currentPrice && (
-              <Price
-                amount={originalPrice}
-                className="text-[10px] text-on-surface-variant line-through"
-                symbolClassName="h-2.5 w-2.5"
-              />
-            )}
+            <ReferencePrice amount={originalPrice} currentPrice={currentPrice} locale={locale} compact priceClassName="text-[10px]" symbolClassName="h-2.5 w-2.5" />
           </div>
         ) : (
           <p className="mt-1 text-[10px] text-on-surface-variant">{priceUnavailableLabel}</p>

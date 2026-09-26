@@ -80,7 +80,7 @@ export const getProductSeoData = cache(async (slugOrId: string) => {
       image_urls,
       merchant_rating,
       merchant_review_count,
-      product_stores(current_price, store_id)
+      product_stores(current_price, store_id, product_url)
     `)
     .eq(column, slugOrId)
     .eq('is_active', true)
@@ -99,8 +99,10 @@ export const getProductSeoData = cache(async (slugOrId: string) => {
   }
   if (!data) return null;
 
-  const stores = (data as any).product_stores as Array<{ current_price: number; store_id: string }> | undefined;
+  const stores = (data as any).product_stores as Array<{ current_price: number; store_id: string; product_url?: string | null }> | undefined;
   const prices = (stores || []).map((ps) => ps.current_price).filter((p): p is number => p > 0);
+  // ADR-389: the listing URLs let the page prove a same-listing canonical (Arabic title/image).
+  const store_urls = (stores || []).map((ps) => ps.product_url ?? null).filter((u): u is string => !!u);
 
   return {
     name_ar: data.name_ar,
@@ -116,5 +118,6 @@ export const getProductSeoData = cache(async (slugOrId: string) => {
     min_price: prices.length > 0 ? Math.min(...prices) : null,
     max_price: prices.length > 0 ? Math.max(...prices) : null,
     store_count: prices.length,
+    store_urls,
   };
 });
