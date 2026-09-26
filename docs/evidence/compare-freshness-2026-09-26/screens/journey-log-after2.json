@@ -1,0 +1,143 @@
+{
+ "at": "2026-09-26T11:19:31.596Z",
+ "tag": "after2",
+ "log": [
+  {
+   "k": "compare-freshdv@390",
+   "v": {
+    "status": 200,
+    "title": "مكيف سبليت FreshDV إل جي، 18000 وحدة، انفرتر، بارد فقط — مقارنة الأسعار | توفيري",
+    "headers": 1,
+    "mains": 1,
+    "hasHorizontalScroll": false,
+    "scrollW": 390,
+    "clientW": 390
+   }
+  },
+  {
+   "k": "compare-freshdv@430",
+   "v": {
+    "status": 200,
+    "title": "مكيف سبليت FreshDV إل جي، 18000 وحدة، انفرتر، بارد فقط — مقارنة الأسعار | توفيري",
+    "headers": 1,
+    "mains": 1,
+    "hasHorizontalScroll": false,
+    "scrollW": 430,
+    "clientW": 430
+   }
+  },
+  {
+   "k": "compare-freshdv@1280",
+   "v": {
+    "status": 200,
+    "title": "مكيف سبليت FreshDV إل جي، 18000 وحدة، انفرتر، بارد فقط — مقارنة الأسعار | توفيري",
+    "headers": 1,
+    "mains": 1,
+    "hasHorizontalScroll": false,
+    "scrollW": 1280,
+    "clientW": 1280
+   }
+  },
+  {
+   "k": "compare-artcool@390",
+   "v": {
+    "status": 200,
+    "title": "مكيف سبليت ArtCool إل جي، 18000 وحدة، انفرتر، بارد فقط — مقارنة الأسعار | توفيري",
+    "headers": 1,
+    "mains": 1,
+    "hasHorizontalScroll": false,
+    "scrollW": 390,
+    "clientW": 390
+   }
+  },
+  {
+   "k": "compare-artcool@1280",
+   "v": {
+    "status": 200,
+    "title": "مكيف سبليت ArtCool إل جي، 18000 وحدة، انفرتر، بارد فقط — مقارنة الأسعار | توفيري",
+    "headers": 1,
+    "mains": 1,
+    "hasHorizontalScroll": false,
+    "scrollW": 1280,
+    "clientW": 1280
+   }
+  },
+  {
+   "k": "product-samsung@390",
+   "v": {
+    "status": 200,
+    "title": "Samsung Split AC 18000 BTU Rotary Compressor Heat and Cold | توفيري",
+    "headers": 1,
+    "mains": 1,
+    "hasHorizontalScroll": false,
+    "scrollW": 390,
+    "clientW": 390
+   }
+  },
+  {
+   "k": "legacy-redirect",
+   "v": {
+    "finalStatus": 200,
+    "finalUrl": "https://tawveeri.com/ar/products/samsung-split-ac-18000-bturotary-compressorheat-and-cold",
+    "chain": [
+     "308 https://tawveeri.com/ar/products/samsung-split-ac-18000-btu-rotary-compressor-heat-and-cold"
+    ]
+   }
+  },
+  {
+   "k": "journey-compare-link-on-search",
+   "v": "/ar/compare/lg%7Csplit%7CFreshDV%7C18000%7CInverter%7Ccool_only"
+  },
+  {
+   "k": "journey-featured-cta",
+   "v": null
+  },
+  {
+   "k": "tray-add-clicked",
+   "v": [
+    "إضافة للمقارنة: مكيف سبليت FreshDV إل جي، 18000 وحدة، انفرتر، بارد فقط",
+    "إضافة للمقارنة: مكيف سبليت ArtCool إل جي، 18000 وحدة، انفرتر، بارد فقط"
+   ]
+  },
+  {
+   "k": "tray-links",
+   "v": [
+    "/ar/compare/lg%7Csplit%7CArtCool%7C18000%7CInverter%7Ccool_only",
+    "/ar/compare/lg%7Csplit%7CFreshDV%7C18000%7CInverter%7Ccool_only",
+    "/ar/compare"
+   ]
+  },
+  {
+   "k": "tray-overlap",
+   "v": {
+    "trayTop": 776,
+    "viewportH": 885,
+    "visibleButtonsUnderTray": 0,
+    "visibleButtons": 1
+   }
+  },
+  {
+   "k": "tray-minimize-restore-clear",
+   "v": {
+    "minimized": true,
+    "restored": true,
+    "cleared": true,
+    "trayGone": true
+   }
+  },
+  {
+   "k": "tray-first-link-status",
+   "v": {
+    "status": 200,
+    "url": "https://tawveeri.com/ar/compare/lg%7Csplit%7CArtCool%7C18000%7CInverter%7Ccool_only"
+   }
+  },
+  {
+   "k": "multi-compare@390",
+   "v": {
+    "hasHorizontalPageScroll": false,
+    "products": 6
+   }
+  }
+ ]
+}

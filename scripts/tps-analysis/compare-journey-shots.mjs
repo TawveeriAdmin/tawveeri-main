@@ -58,7 +58,8 @@ try {
     if (compareHref) {
       await page.goto(new URL(compareHref, BASE).toString(), { waitUntil: 'networkidle2', timeout: 90000 });
       await page.screenshot({ path: `${outDir}/journey-2-compare-390-${tag}.png`, fullPage: false });
-      const featured = await page.evaluate(() => { const s = document.querySelector('section[aria-label]'); const a = s?.querySelector('a[href^="/go/"]'); return a ? { href: a.getAttribute('href'), text: a.textContent?.trim() } : null; });
+      // The decision block is the section labelled «العرض المقترح» (the identity card is a section too, with no exit).
+      const featured = await page.evaluate(() => { const s = document.querySelector('section[aria-label="العرض المقترح"], section[aria-label="Suggested offer"]'); const a = s?.querySelector('a[href^="/go/"]'); return a ? { href: a.getAttribute('href'), text: a.textContent?.trim() } : null; });
       note('journey-featured-cta', featured);
       if (featured?.href) {
         const goRes = await fetch(new URL(featured.href, BASE), { redirect: 'manual', headers: { 'user-agent': 'Mozilla/5.0' } });
