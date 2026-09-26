@@ -21,6 +21,7 @@ import { track } from '@/lib/analytics/track';
 import { recordFirstPartyInteraction } from '@/lib/analytics/interaction';
 import { ProductImageFrame, PRODUCT_PLACEHOLDER_IMAGE } from '@/components/products/shared-product-card';
 import { isFreshObservation, hoursSince, observedAgoLabel } from '@/lib/intelligence/evidence-engine';
+import { brandDisplayName } from '@/lib/compare/brand-display';
 
 interface ProductStore {
   id: string;
@@ -451,7 +452,8 @@ export function ProductCard({
             </h3>
             {(product.brand || product.model) && (
               <p className="t-small text-on-surface-variant mb-3 line-clamp-1">
-                {[product.brand, product.model].filter(Boolean).join(' · ')}
+                {/* ADR-388: the brand is a reader-facing name, never the internal token («samsung» → «سامسونج»). */}
+                {[product.brand ? brandDisplayName(product.brand, currentLocale === 'ar' ? 'ar' : 'en') : '', product.model].filter(Boolean).join(' · ')}
               </p>
             )}
 

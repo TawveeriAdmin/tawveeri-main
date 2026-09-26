@@ -26,6 +26,7 @@ import { track, initTestModeFromUrl } from '@/lib/analytics/track';
 import { recordFirstPartyInteraction, appendInteractionId } from '@/lib/analytics/interaction';
 import { initCampaignFromUrl } from '@/lib/analytics/campaign';
 import { BestPriceCard } from '@/components/products/best-price-card';
+import { brandDisplayName } from '@/lib/compare/brand-display';
 import { ProductImageFrame, PRODUCT_PLACEHOLDER_IMAGE } from '@/components/products/shared-product-card';
 import {
  Heart,
@@ -819,7 +820,8 @@ export default function ProductDetailClient() {
 
  // Brand / model display — hide when missing or "Unknown" from scrapers
  const rawBrand = (product.brand || '').trim();
- const brandLabel = rawBrand && rawBrand.toLowerCase() !== 'unknown' ? rawBrand : '';
+ // ADR-388: reader-facing brand name, never the internal token («samsung» → «سامسونج»).
+ const brandLabel = rawBrand && rawBrand.toLowerCase() !== 'unknown' ? brandDisplayName(rawBrand, locale === 'ar' ? 'ar' : 'en') : '';
  const rawModel = (product.model || '').trim();
  // Don't repeat the product name if model just duplicates it
  const modelLabel =
