@@ -333,7 +333,10 @@ function normalizeProductStore(store: ProductStoreRecord): ProductStore {
     // through the localStorage cache path too (parseCachedCompareProducts also calls
     // this function), so a cached comparison carries the same freshness signal as a
     // fresh fetch.
-    observed_at: store.last_checked_at ?? store.last_seen_at ?? null,
+    // ADR-387: a search-card entry cached into the tray already carries the TPS observation
+    // time as `observed_at` (product-adapter.ts) — it was dropped here, so a 12-day-old Amazon
+    // row won "best store" on /compare while the same product's compare page excluded it.
+    observed_at: (store as { observed_at?: string | null }).observed_at ?? store.last_checked_at ?? store.last_seen_at ?? null,
     stores: normalizeStoreRecord(store.stores),
   };
 }
@@ -803,7 +806,8 @@ export default function ComparePage() {
                         />
                         {isBestPriceProduct && (
                           <Badge variant="success" className="absolute top-1 start-1 text-[10px]">
-                            {t('compare.bestPrice')}
+                            {/* "lowest among the selected", never "best": these may be different models */}
+                            {locale === 'ar' ? 'الأقل سعرًا بين المختارة' : 'Lowest of the selected'}
                           </Badge>
                         )}
                       </div>

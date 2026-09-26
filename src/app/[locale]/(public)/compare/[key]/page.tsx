@@ -396,7 +396,8 @@ export default async function TpsComparePage({
         </nav>
 
         {/* ── 1. Identity: which product, which version ── */}
-        <header className="rounded-2xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] p-4 md:p-5">
+        {/* a <section>, not a <header>: the page's ONE banner landmark is the shell's (ADR-386) */}
+        <section aria-label={isAr ? 'المنتج' : 'Product'} className="rounded-2xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] p-4 md:p-5">
           <div className="flex items-start gap-4">
             {canonical.image_url && (
               <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-white md:h-24 md:w-24">
@@ -421,7 +422,7 @@ export default async function TpsComparePage({
               </p>
             </div>
           </div>
-        </header>
+        </section>
 
         {/* ── 2. Decision: the lowest ELIGIBLE offer, when we saw it, and where to go ── */}
         <section

@@ -1,0 +1,114 @@
+{
+ "at": "2026-09-26T11:00:23.240Z",
+ "tag": "before",
+ "log": [
+  {
+   "k": "compare-freshdv@390",
+   "v": {
+    "status": 200,
+    "title": "مكيف سبليت FreshDV إل جي، 18000 وحدة، انفرتر، بارد فقط — مقارنة الأسعار | توفيري",
+    "headers": 1,
+    "mains": 1,
+    "hasHorizontalScroll": false,
+    "scrollW": 390,
+    "clientW": 390
+   }
+  },
+  {
+   "k": "compare-freshdv@430",
+   "v": {
+    "status": 200,
+    "title": "مكيف سبليت FreshDV إل جي، 18000 وحدة، انفرتر، بارد فقط — مقارنة الأسعار | توفيري",
+    "headers": 1,
+    "mains": 1,
+    "hasHorizontalScroll": false,
+    "scrollW": 430,
+    "clientW": 430
+   }
+  },
+  {
+   "k": "compare-freshdv@1280",
+   "v": {
+    "status": 200,
+    "title": "مكيف سبليت FreshDV إل جي، 18000 وحدة، انفرتر، بارد فقط — مقارنة الأسعار | توفيري",
+    "headers": 1,
+    "mains": 1,
+    "hasHorizontalScroll": false,
+    "scrollW": 1280,
+    "clientW": 1280
+   }
+  },
+  {
+   "k": "compare-artcool@390",
+   "v": {
+    "status": 200,
+    "title": "مكيف سبليت ArtCool إل جي، 18000 وحدة، انفرتر، بارد فقط — مقارنة الأسعار | توفيري",
+    "headers": 1,
+    "mains": 1,
+    "hasHorizontalScroll": false,
+    "scrollW": 390,
+    "clientW": 390
+   }
+  },
+  {
+   "k": "compare-artcool@1280",
+   "v": {
+    "status": 200,
+    "title": "مكيف سبليت ArtCool إل جي، 18000 وحدة، انفرتر، بارد فقط — مقارنة الأسعار | توفيري",
+    "headers": 1,
+    "mains": 1,
+    "hasHorizontalScroll": false,
+    "scrollW": 1280,
+    "clientW": 1280
+   }
+  },
+  {
+   "k": "product-samsung@390",
+   "v": {
+    "status": 200,
+    "title": "Samsung Split AC 18000 BTU Rotary Compressor Heat and Cold | توفيري",
+    "headers": 1,
+    "mains": 1,
+    "hasHorizontalScroll": false,
+    "scrollW": 390,
+    "clientW": 390
+   }
+  },
+  {
+   "k": "legacy-redirect",
+   "v": {
+    "finalStatus": 404,
+    "finalUrl": "https://tawveeri.com/ar/products/samsung-split-ac-18000-btu-rotary-compressor-heat-and-cold",
+    "chain": []
+   }
+  },
+  {
+   "k": "journey-compare-link-on-search",
+   "v": null
+  },
+  {
+   "k": "tray-add-clicked",
+   "v": []
+  },
+  {
+   "k": "tray-links",
+   "v": []
+  },
+  {
+   "k": "tray-minimize-restore-clear",
+   "v": {
+    "minimized": false,
+    "restored": false,
+    "cleared": false,
+    "trayGone": true
+   }
+  },
+  {
+   "k": "multi-compare@390",
+   "v": {
+    "hasHorizontalPageScroll": true,
+    "cols": 6
+   }
+  }
+ ]
+}

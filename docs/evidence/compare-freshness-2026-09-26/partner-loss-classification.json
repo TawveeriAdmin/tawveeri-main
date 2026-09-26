@@ -1,0 +1,222 @@
+{
+ "readAt": "2026-09-26T11:03:28.010Z",
+ "q": {
+  "artcool_amazon_storefront": [
+   {
+    "id": "80ff9d4e-29f1-4c56-9647-791f9c86fff1",
+    "store_id": 2,
+    "current_price": "2949",
+    "availability": "limited_stock",
+    "last_checked_at": "2026-09-13T13:37:33.288Z",
+    "updated_at": "2026-09-07T16:00:13.071Z",
+    "scrape_status": "ok",
+    "consecutive_misses": 0,
+    "url": "https://www.amazon.sa/-/en/LG-Conditioner-Inverter-Pre-cooling-AM182C0-UK1/dp/B0F945GXKC/r"
+   }
+  ],
+  "artcool_noon_storefront": [
+   {
+    "id": "b8f83492-5451-48bd-907c-7ab15e7504af",
+    "store_id": 3,
+    "current_price": "3369",
+    "availability": "in_stock",
+    "last_checked_at": "2026-09-07T01:25:34.070Z",
+    "updated_at": "2026-07-30T06:48:35.404Z",
+    "scrape_status": "failed",
+    "consecutive_misses": 4,
+    "url": "https://www.noon.com/saudi-en/artcool-split-ac-18000-btu-cool-only-inverter-with-gold-fin-"
+   }
+  ],
+  "artcool_amazon_raw_attempts": [
+   {
+    "n": "1",
+    "last_raw": "2026-09-07T15:43:26.969Z"
+   }
+  ],
+  "artcool_noon_raw_attempts": [
+   {
+    "n": "0",
+    "last_raw": null
+   }
+  ],
+  "noon_recent_raw": [
+   {
+    "n": "212",
+    "last": "2026-09-26T02:43:31.680Z"
+   }
+  ],
+  "amazon_recent_raw": [
+   {
+    "n": "8339",
+    "last": "2026-09-26T06:07:56.849Z"
+   }
+  ],
+  "samsung_recent_raw": [
+   {
+    "n": "38600",
+    "last": "2026-09-26T08:06:27.721Z"
+   }
+  ],
+  "amazon_runs_48h": [
+   {
+    "status": "failed",
+    "n": "7",
+    "avg_ms": 463317,
+    "updated": "0",
+    "failed": "0"
+   },
+   {
+    "status": "success",
+    "n": "4",
+    "avg_ms": 214607,
+    "updated": "983",
+    "failed": "0"
+   },
+   {
+    "status": "partial",
+    "n": "9",
+    "avg_ms": 65519,
+    "updated": "844",
+    "failed": "0"
+   }
+  ],
+  "noon_runs_48h": [
+   {
+    "status": "success",
+    "n": "4",
+    "updated": "15",
+    "failed": "0",
+    "err": null
+   },
+   {
+    "status": "partial",
+    "n": "72",
+    "updated": "55",
+    "failed": "0",
+    "err": null
+   },
+   {
+    "status": "running",
+    "n": "1",
+    "updated": "0",
+    "failed": "0",
+    "err": null
+   }
+  ],
+  "samsung_runs_48h": [
+   {
+    "status": "failed",
+    "n": "36",
+    "updated": "0",
+    "failed": "0"
+   },
+   {
+    "status": "partial",
+    "n": "9",
+    "updated": "99",
+    "failed": "0"
+   }
+  ],
+  "reclass_after": [
+   {
+    "category": "accessories",
+    "n": "3078"
+   },
+   {
+    "category": "appliance",
+    "n": "1191"
+   },
+   {
+    "category": "laptop",
+    "n": "1107"
+   },
+   {
+    "category": "kitchen",
+    "n": "712"
+   },
+   {
+    "category": "air_conditioner",
+    "n": "638"
+   },
+   {
+    "category": "smartphone",
+    "n": "576"
+   },
+   {
+    "category": "tablet",
+    "n": "534"
+   },
+   {
+    "category": "smartwatch",
+    "n": "378"
+   },
+   {
+    "category": "tv",
+    "n": "306"
+   },
+   {
+    "category": "monitor",
+    "n": "292"
+   },
+   {
+    "category": "audio",
+    "n": "181"
+   },
+   {
+    "category": "gaming",
+    "n": "6"
+   },
+   {
+    "category": "camera",
+    "n": "2"
+   },
+   {
+    "category": "printer",
+    "n": "1"
+   }
+  ],
+  "samsung_row_after": [
+   {
+    "id": "c938d587-65b2-4474-8a51-507060668aa0",
+    "category": "air_conditioner"
+   }
+  ],
+  "freshdv_tco_after": [
+   {
+    "store_id": 4,
+    "status": "valid",
+    "price": "3099",
+    "observed_at": "2026-09-23T18:04:20.572Z",
+    "superseded": null
+   },
+   {
+    "store_id": 5,
+    "status": "valid",
+    "price": "3919",
+    "observed_at": "2026-09-25T21:56:45.875Z",
+    "superseded": "lg|split|Fresh|18000|Inverter|cool_only"
+   },
+   {
+    "store_id": 7,
+    "status": "valid",
+    "price": "2799.1",
+    "observed_at": "2026-09-26T04:59:23.085Z",
+    "superseded": null
+   },
+   {
+    "store_id": 9,
+    "status": "valid",
+    "price": "2978.01",
+    "observed_at": "2026-09-26T04:59:43.278Z",
+    "superseded": null
+   },
+   {
+    "store_id": 18,
+    "status": "valid",
+    "price": "2799",
+    "observed_at": "2026-09-26T05:00:28.934Z",
+    "superseded": null
+   }
+  ]
+ }
+}
