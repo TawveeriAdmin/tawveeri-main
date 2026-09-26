@@ -983,7 +983,7 @@ export default function ComparePage() {
               style={{ gridTemplateColumns: gridCols }}
             >
               {/* Empty label column */}
-              <div className="sticky start-0 z-[1] border-e border-outline-variant/50 bg-inherit p-4" />
+              <div className="sticky start-0 z-[1] border-e border-outline-variant/50 bg-inherit p-2.5 sm:p-4" />
               {products.map((product, colIdx) => {
                 const productName = getProductName(product);
                 const facts = factsByProductId.get(product.id) ?? deriveProductOfferFacts([]);
@@ -997,7 +997,7 @@ export default function ComparePage() {
                   <div
                     key={product.id}
                     className={cn(
-                      'p-4 text-center',
+                      'p-2.5 text-center sm:p-4',
                       colIdx < products.length - 1 && 'border-e border-outline-variant/30'
                     )}
                   >
@@ -1014,7 +1014,7 @@ export default function ComparePage() {
                       {/* ADR-389: the badge is in normal flow, ABOVE the image, and may wrap — it was
                           absolutely positioned inside a 128px image box, so at 390px it spilled past
                           the column edge and under the remove button. */}
-                      <div className="mb-1.5 flex min-h-[20px] w-full items-center justify-center pe-6">
+                      <div className="mb-1.5 flex min-h-[20px] w-full items-center justify-center px-5">
                         {isBestPriceProduct && (
                           <Badge variant="success" className="max-w-full whitespace-normal text-center text-[10px] leading-tight" data-lowest-badge>
                             {/* "lowest among the selected", never "best": these may be different models */}
@@ -1098,23 +1098,24 @@ export default function ComparePage() {
 
                       {/* CTA — full column width, names the destination store when known */}
                       {isUuid(product.id) ? (
-                        <Button asChild variant="default" size="sm" className="h-9 w-full max-w-full rounded-md px-3 text-sm font-semibold">
+                        <Button asChild variant="default" size="sm" className="h-auto min-h-9 w-full max-w-full whitespace-normal rounded-md px-2 py-2 text-sm font-semibold leading-snug">
                           <Link href={`/${locale}/products/${product.slug}`}>
                             {t('compare.viewProduct')}
                           </Link>
                         </Button>
                       ) : (
+                        // The label WRAPS — a store name is never shortened (live 390: «اذه…»).
                         primaryStoreUrl && (
-                          <Button asChild variant="default" size="sm" className="h-9 w-full max-w-full rounded-md px-3 text-sm font-semibold">
+                          <Button asChild variant="default" size="sm" className="h-auto min-h-9 w-full max-w-full whitespace-normal rounded-md px-2 py-2 text-sm font-semibold leading-snug">
                             <a href={primaryStoreUrl} target="_blank" rel="noopener noreferrer"
                               onClick={() => recordFirstPartyInteraction({ goId: null, canonicalId: isUuid(product.id) ? product.id : null, surface: 'compare_list' })}
                             >
-                              <span className="truncate">
+                              <span className="text-center">
                                 {bestStore?.stores
                                   ? (isAr ? `اذهب إلى ${bestStore.stores.name_ar}` : `Go to ${bestStore.stores.name_en}`)
                                   : t('compare.viewStore')}
                               </span>
-                              <ExternalLink className="ms-1.5 h-3.5 w-3.5 shrink-0" />
+                              <ExternalLink className="ms-1 h-3.5 w-3.5 shrink-0" />
                             </a>
                           </Button>
                         )

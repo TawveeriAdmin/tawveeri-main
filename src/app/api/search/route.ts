@@ -1672,7 +1672,9 @@ export function selectClosestOptions(
 
 function buildReasonAr(p: GroupedSearchProduct, isCheapest: boolean): string {
   const parts: string[] = [];
-  if (isCheapest) parts.push('أرخص سعر');
+  // ADR-389: «أرخص سعر» read as a cross-store claim on a single-store pick. `isCheapest` is
+  // "cheapest among THESE results" — say exactly that.
+  if (isCheapest) parts.push('الأرخص بين النتائج');
   // ADR-136: the store count is only stated where a comparison surface exists to honour it.
   // A "متوفر في 3 متاجر" line with nowhere to see those 3 stores is a claim we cannot back.
   if (p.store_count >= 2 && !!p.tps_compare_url) parts.push(`متوفر في ${p.store_count} متاجر`);
@@ -1686,7 +1688,7 @@ function buildReasonAr(p: GroupedSearchProduct, isCheapest: boolean): string {
     }
   }
   const inStock = p.stores.some((s) => s.availability === 'in_stock');
-  if (inStock && parts.length === 0) parts.push('متوفر الآن');
+  if (inStock && parts.length === 0) parts.push('متوفر بحسب آخر رصد');
   return parts.length ? parts.join(' · ') : 'خيار مناسب';
 }
 
