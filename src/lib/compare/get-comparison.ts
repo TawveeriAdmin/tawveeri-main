@@ -86,6 +86,9 @@ export interface ComparisonResult {
     tps_identity_key: string;
     identity_confidence: number;
     attributes: Record<string, unknown>;
+    /** Canonical product image when the knowledge layer holds one (ADR-387: shown on the
+     *  compare page header so a shopper can confirm they are looking at the right product). */
+    image_url: string | null;
   };
   summary: {
     cheapest_store: string | null;
@@ -121,7 +124,7 @@ export async function getComparison(params: {
   // ── 1. canonical product ─────────────────────────────────────
   let canonicalQuery = supabase
     .from('canonical_products')
-    .select('id, name_ar, name_en, brand, category, tps_identity_key, identity_confidence, is_active, attributes')
+    .select('id, name_ar, name_en, brand, category, tps_identity_key, identity_confidence, is_active, attributes, image_url')
     .eq('is_active', true);
 
   canonicalQuery = canonicalId
@@ -142,6 +145,7 @@ export async function getComparison(params: {
     tps_identity_key: canonical.tps_identity_key,
     identity_confidence: canonical.identity_confidence,
     attributes: canonical.attributes,
+    image_url: (canonical as { image_url?: string | null }).image_url ?? null,
   };
 
   const empty: ComparisonResult = {
@@ -176,15 +180,25 @@ export async function getComparison(params: {
     .select('store_slug')
     .eq('canonical_product_id', canonical.id);
   const delistedSlugs = new Set((delistRows ?? []).map((d) => (d as { store_slug: string }).store_slug));
-  // A repaired exact manufacturer identity must not retain the old generic
-  // identity's historical offer. History stays immutable; the current-state
-  // retirement records why that particular merchant offer moved.
-  const { data: retiredOffers } = await (supabase as unknown as SupabaseClient).from('tps_current_offers')
-    .select('store_id, payload').eq('identity_key', canonicalOut.tps_identity_key)
-    .not('payload->>_superseded_by_identity', 'is', null);
-  for (const row of retiredOffers ?? []) {
+  // CURRENT STATE, one row per (identity, store) — `tps_current_offers` (ADR-252's hot table,
+  // maintained by the SAME normalize step that writes price_history/npo). Read for two things:
+  //   a. A repaired exact manufacturer identity must not retain the old generic identity's
+  //      historical offer (`_superseded_by_identity`). History stays immutable; the retirement
+  //      records why that merchant offer moved.
+  //   b. ADR-387 completeness: each displayable store's NEWEST observation (time, price,
+  //      availability, listing URL) — independent of how many observation rows other stores
+  //      have accumulated. This is what makes the derivation complete regardless of any row
+  //      window below: the newest-first npo window is still read (titles, provenance), but a
+  //      store's currency can never again be lost to another store's volume.
+  type CurrentOfferRow = { store_id: number | string; status: string | null; price: number | string | null; url: string | null; raw_obs_id: number | string | null; observed_at: string | null; payload: { _availability?: string; _superseded_by_identity?: string } | null };
+  const { data: currentOfferRows } = await (supabase as unknown as SupabaseClient).from('tps_current_offers')
+    .select('store_id, status, price, url, raw_obs_id, observed_at, payload').eq('identity_key', canonicalOut.tps_identity_key);
+  const currentBySlug = new Map<string, CurrentOfferRow>();
+  for (const row of (currentOfferRows ?? []) as unknown as CurrentOfferRow[]) {
     const slug = resolveApprovedSlug(row.store_id);
-    if (slug && row.payload?._superseded_by_identity) delistedSlugs.add(slug);
+    if (!slug) continue;
+    if (row.payload?._superseded_by_identity) { delistedSlugs.add(slug); continue; }
+    if (row.status === 'valid' && isDisplayableRetailer(slug)) currentBySlug.set(slug, row);
   }
 
   // Latest price per DISPLAYABLE retailer. Rows are already newest-first, so the first
@@ -209,6 +223,30 @@ export async function getComparison(params: {
       observed_at: row.observed_at,
       obsId: row.tps_observation_id,
     });
+  }
+  // ADR-387 — fold the current-state row in as the per-store authority on "what we saw last".
+  // Same rule the search route applies (route.ts, tps_current_offers merge): when the current
+  // row is at least as recent as the price_history-derived latest, its price/availability/time
+  // ARE the offer; an older current row never overrides a newer price event. A store that has
+  // a valid current row but no displayable price_history row is added, never dropped.
+  const currentRawIdBySlug = new Map<string, number>();
+  for (const [slug, row] of currentBySlug) {
+    const price = Number(row.price);
+    const t = row.observed_at ? Date.parse(row.observed_at) : NaN;
+    if (!Number.isFinite(price) || price <= 0 || !Number.isFinite(t) || delistedSlugs.has(slug)) continue;
+    const rawId = Number(row.raw_obs_id);
+    if (Number.isFinite(rawId)) currentRawIdBySlug.set(slug, rawId);
+    const existing = latestBySlug.get(slug);
+    if (!existing || t >= Date.parse(existing.observed_at)) {
+      latestBySlug.set(slug, {
+        price: Math.round(price * 100) / 100,
+        availability: row.payload?._availability ?? existing?.availability ?? null,
+        observed_at: row.observed_at!,
+        // Keep the price-change observation id (the attributed /go exit) when the price is
+        // unchanged; a genuinely newer price gets its exit re-resolved via raw_obs_id below.
+        obsId: existing && existing.price === Math.round(price * 100) / 100 ? existing.obsId : null,
+      });
+    }
   }
   if (latestBySlug.size === 0) return empty;
 
@@ -241,16 +279,16 @@ export async function getComparison(params: {
     .limit(NPO_NEWEST_WINDOW);
   const observations: ObsRow[] = [...((newestObservations ?? []) as unknown as ObsRow[])];
   {
+    // Same narrow loose view the raw_observations lookup below uses — the generated types
+    // for this table reject the typed builder here (pre-existing codegen drift in this file).
+    const db = supabase as unknown as {
+      from(t: string): { select(c: string): { in(col: string, vals: unknown[]): Promise<{ data: unknown }> } };
+    };
     const seen = new Set(observations.map((o) => o.id));
     const missingPriceLinked = [...latestBySlug.values()]
       .map((p) => p.obsId)
       .filter((id): id is string => !!id && !seen.has(id));
     if (missingPriceLinked.length) {
-      // Same narrow loose view the raw_observations lookup below uses — the generated types
-      // for this table reject the typed builder here (pre-existing codegen drift in this file).
-      const db = supabase as unknown as {
-        from(t: string): { select(c: string): { in(col: string, vals: unknown[]): Promise<{ data: unknown }> } };
-      };
       const { data: linked } = await db
         .from('normalized_product_observations')
         .select('id, store_id, raw_name, confidence, observed_at, normalized_payload')
@@ -259,6 +297,21 @@ export async function getComparison(params: {
       // (newest) row per retailer, so an older price-change row can only ever feed
       // `rawIdByObsId`, never displace a newer listing title/URL.
       observations.push(...((linked ?? []) as unknown as ObsRow[]));
+    }
+    // ADR-387: the current-state row's own observation (by raw id) — the row that carries the
+    // exit URL/title for a store whose newest observation is outside the window above. This
+    // is the completeness guarantee: a store's newest row is fetched by identity, never by
+    // hoping it fits in a shared page.
+    const seenRawIds = new Set(observations.map((o) => Number((o.normalized_payload as Record<string, unknown> | null)?._raw_id)).filter(Number.isFinite));
+    const missingCurrentRawIds = [...currentRawIdBySlug.values()].filter((id) => !seenRawIds.has(id));
+    if (missingCurrentRawIds.length) {
+      const { data: byRaw } = await db
+        .from('normalized_product_observations')
+        .select('id, store_id, raw_name, confidence, observed_at, normalized_payload')
+        .in('normalized_payload->>_raw_id', missingCurrentRawIds.map(String));
+      // PREPENDED: these are, by definition, each store's newest observation — they must win
+      // the first-seen-per-retailer rule for listing title/URL below.
+      observations.unshift(...((byRaw ?? []) as unknown as ObsRow[]));
     }
   }
 
@@ -293,6 +346,15 @@ export async function getComparison(params: {
     if (listingBySlug.has(slug)) continue;
     const url = typeof obs.normalized_payload?._url === 'string' ? (obs.normalized_payload._url as string) : null;
     listingBySlug.set(slug, { url, rawName: obs.raw_name, confidence: obs.confidence, obsId: obs.id });
+  }
+  // ADR-387: the current-state row IS a trusted re-observation of the pair (written by the same
+  // normalize step, after the provenance fix) — fold its time in so «رصدناه» can never read
+  // older than the newest thing the pipeline actually saw, whatever the npo window held.
+  for (const [slug, row] of currentBySlug) {
+    if (!row.observed_at) continue;
+    const t = Date.parse(row.observed_at);
+    const prev = reobservedBySlug.get(slug);
+    if (Number.isFinite(t) && t >= NPO_PROVENANCE_TRUSTED_FROM && (!prev || t > Date.parse(prev))) reobservedBySlug.set(slug, row.observed_at);
   }
 
   // Resolve the true observation time for the offers we are about to render. Read-only, one
@@ -346,8 +408,16 @@ export async function getComparison(params: {
     })
     .map(([slug, p]) => {
       const listing = listingBySlug.get(slug);
-      // Prefer the measured /go exit (attributed) and fall back to the observed listing URL.
-      const exitId = p.obsId ?? listing?.obsId ?? null;
+      // Exit id: the price-change observation when the price is unchanged; otherwise the
+      // current-state row's own observation (looked up by raw id — ADR-387), then the newest
+      // listing row. Price, time and destination therefore always belong to the SAME offer.
+      const currentObsId = (() => {
+        const rawId = currentRawIdBySlug.get(slug);
+        if (rawId == null) return null;
+        for (const [obsId, rid] of rawIdByObsId) if (rid === rawId) return obsId;
+        return null;
+      })();
+      const exitId = p.obsId ?? currentObsId ?? listing?.obsId ?? null;
       // FRESHNESS, two rules composed:
       // 1. For the PRICE-CHANGE event: the oldest verified provenance signal, never the
       //    newest (observed-freshness.ts — signals describing the same event).

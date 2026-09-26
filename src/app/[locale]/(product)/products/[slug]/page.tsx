@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import ProductDetailClient from './product-detail-client';
-import { getProductSeoData } from '@/lib/seo/product-data';
+import { getProductSeoData, resolveLegacyProductSlug } from '@/lib/seo/product-data';
 import { buildAlternates, getBaseUrl } from '@/lib/seo/metadata';
 import { JsonLd, buildProductJsonLd } from '@/lib/seo/json-ld';
 import { formatPrice } from '@/lib/utils';
@@ -86,7 +86,18 @@ export default async function ProductPage({
   // `../layout.tsx` for the full root cause and the standing rule never to add one back here.
   // Re-verified live 2026-09-07 (operational alert closure pass): a genuinely nonexistent
   // product slug now returns a real HTTP 404 on both locales, confirmed on multiple slugs.
-  if (product === null) notFound();
+  //
+  // ADR-387: before 404ing, an OLD title-derived slug (the shape search cards/the compare
+  // tray emitted until ADR-386 — e.g. `samsung-split-ac-18000-btu-rotary-compressor-heat-
+  // and-cold` for the row stored as `…-bturotary-compressorheat-and-cold`) is resolved to
+  // its real slug ONLY when exactly one active product's title re-derives to it, and then
+  // 308s there (permanent, same as `/product/[slug]` → `/products/[slug]`). Ambiguous or
+  // unmatched → the honest 404 below, never a guess and never the homepage.
+  if (product === null) {
+    const real = await resolveLegacyProductSlug(slug);
+    if (real) permanentRedirect(`/${locale}/products/${real}`);
+    notFound();
+  }
 
   return (
     <>

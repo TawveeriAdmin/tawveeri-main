@@ -1,6 +1,6 @@
 import { classifyCondition, type MerchantCondition } from '@/lib/campaigns/condition';
 
-const CONDITION_LABELS: Record<MerchantCondition, { ar: string; en: string }> = {
+export const CONDITION_LABELS: Record<MerchantCondition, { ar: string; en: string }> = {
   NEW: { ar: 'جديد بحسب الوصف', en: 'New according to description' },
   RENEWED: { ar: 'مجدّد بحسب الوصف', en: 'Renewed according to description' },
   REFURBISHED: { ar: 'مجدّد بحسب الوصف', en: 'Refurbished according to description' },

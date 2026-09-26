@@ -1,72 +1,37 @@
 // src/app/[locale]/(public)/compare/[key]/page.tsx
-// TPS Layer 4 — صفحة مقارنة الأسعار
-// تقرأ من /api/compare?key=<tps_identity_key>
+// TPS Layer 4 — صفحة مقارنة أسعار النسخة نفسها عبر المتاجر
+// تقرأ مباشرة من getComparison() (ADR-135: نفس اشتقاق بطاقة البحث)
 // لا تلمس products أو product_stores أو search
+//
+// ADR-387 redesign (2026-09-26). One job: let a shopper answer, within a screen, four
+// questions — is this the same product/version? what is the lowest ELIGIBLE price and when
+// did we see it? why this offer, and what differs? where do I click to go to the store? —
+// then leave with confidence. Information hierarchy follows that order: identity header →
+// decision block (one CTA that names the store) → scannable offer rows (store | price |
+// observed | availability | go) with details collapsed → offers outside the comparison,
+// each with its reason → one shared disclaimer instead of one per row. Mobile first: rows
+// stack, nothing forces a wide table, the tray never has to cover a button.
 
 import { Metadata } from 'next';
-import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ExternalLink, ShieldCheck, Trophy, ArrowRight, Gift, AlertTriangle, History } from 'lucide-react';
+import Image from 'next/image';
+import { ExternalLink, ShieldCheck, Trophy, ArrowRight, Gift, AlertTriangle, History, ChevronDown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Price } from '@/components/ui/price';
-import { getComparison, isComparisonError, partitionOffersByEligibility, type CompareOffer as LoaderOffer } from '@/lib/compare/get-comparison';
+import { StoreLogo } from '@/components/ui/store-logo';
+import { getComparison, isComparisonError, partitionOffersByEligibility, type CompareOffer, type ComparisonResult } from '@/lib/compare/get-comparison';
 import { categoryLabel } from '@/lib/agent/advisor-api';
+import { classifyCondition } from '@/lib/campaigns/condition';
+import { CONDITION_LABELS } from '@/components/compare/offer-description';
+import { PICK_FRESHNESS_MAX_HOURS } from '@/lib/intelligence/evidence-engine';
 import { buildAlternates } from '@/lib/seo/metadata';
 import { retailerDisplayName, resolveApprovedSlug } from '@/lib/retailers/approved-retailers';
 import { CompareStateSync } from '@/components/agent/compare-state-sync';
-import { readCategoryAttribution } from '@/lib/catalog/category-link';
+import { readCategoryAttribution, type CategoryAttribution } from '@/lib/catalog/category-link';
 import { CategoryExitLink } from '@/components/catalog/category-exit-link';
 import { ExitLink } from '@/components/catalog/exit-link';
-import { OfferDescription } from '@/components/compare/offer-description';
 
-interface CampaignEligibility {
-  eligible: true;
-  message_ar: string;
-  message_en: string;
-  official_source_url: string;
-  last_verified_at: string;
-}
-
-interface CompareOffer {
-  store_name:   string;
-  raw_name:     string;
-  price:        number;
-  availability: string | null;
-  product_url:  string | null;
-  confidence:   number;
-  observed_at:  string;
-  stale:        boolean;
-  is_verified:  boolean;
-  campaign_eligibility: CampaignEligibility | null;
-}
-
-interface CompareResult {
-  canonical: {
-    id:                  string;
-    name_ar:             string;
-    name_en:             string;
-    brand:               string;
-    category:            string;
-    tps_identity_key:    string;
-    identity_confidence: number;
-    attributes:          Record<string, unknown>;
-  };
-  summary: {
-    cheapest_store: string | null;
-    lowest_price:   number | null;
-    highest_price:  number | null;
-    saving:         number | null;
-    store_count:    number;
-    cheapest_stale: boolean;
-  };
-  offers: CompareOffer[];
-  // QUALITY PROGRAM P1 §14.1 (2026-08-28): `getComparison()` (get-comparison.ts, §12)
-  // already returns this honest-zero message when no offer is fresh enough to back a
-  // price claim — this local interface never declared it, so `result as unknown as
-  // CompareResult` silently discarded a real runtime field and the summary bar just
-  // rendered nothing, reading as a broken page rather than an honest state.
-  message?: string;
-}
+type CompareResult = ComparisonResult;
 
 // Reads the database directly. This used to fetch `${SITE_URL}/api/compare` — a
 // server-to-server round trip out of Railway and back in through our own edge, which
@@ -79,7 +44,7 @@ async function fetchCompare(key: string): Promise<CompareResult | null> {
   try {
     const result = await getComparison({ identityKey: key });
     if (isComparisonError(result)) return null;
-    return result as unknown as CompareResult;
+    return result;
   } catch {
     return null;
   }
@@ -92,7 +57,6 @@ async function fetchCompare(key: string): Promise<CompareResult | null> {
  *   1. `generateMetadata` passed the RAW `key` to `fetchCompare` while the page body passed
  *      `decodeURIComponent(key)`. The two disagreed, so the body rendered a real five-retailer
  *      comparison under the generic fallback title «مقارنة الأسعار | توفيري» — on EVERY page.
- *      Measured live before the fix: body contains "iPhone 16", title does not.
  *   2. No `alternates`, so the page inherited the root canonical and declared itself a duplicate
  *      of the HOMEPAGE — it could never be indexed (the ADR-156 failure, in a new place).
  *   3. The title was Arabic-only regardless of locale.
@@ -147,8 +111,7 @@ export async function generateMetadata({
   };
 }
 
-/** Same day-count freshness phrasing already used for `observed_at` below, reused for the
- *  campaign's "last verified" disclosure so the two freshness signals read consistently. */
+/** Same day-count freshness phrasing for every observation on the page. */
 function freshnessLabel(iso: string, isAr: boolean): string {
   const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
   if (days <= 0) return isAr ? 'اليوم' : 'today';
@@ -158,7 +121,7 @@ function freshnessLabel(iso: string, isAr: boolean): string {
   return `${days} days ago`;
 }
 
-/** «رصدناه اليوم / أمس / قبل N يومًا» — ONE phrasing for every offer, featured or listed. */
+/** «رصدناه اليوم / أمس / قبل N …» — ONE phrasing for every offer, featured or listed. */
 function observedLabel(iso: string, isAr: boolean): string {
   return isAr ? `رصدناه ${freshnessLabel(iso, true)}` : `observed ${freshnessLabel(iso, false)}`;
 }
@@ -170,6 +133,33 @@ function categoryBadgeLabel(category: string, isAr: boolean): string {
   if (category === 'ac') return isAr ? 'مكيفات' : 'Air conditioners';
   if (category === 'mobile') return isAr ? 'جوالات' : 'Phones';
   return categoryLabel(category, isAr ? 'ar' : 'en');
+}
+
+/** Availability wording is always bound to the observation it came from — «الآن» is never
+ *  claimed. Stale evidence says so explicitly. */
+function availabilityLabel(offer: CompareOffer, isAr: boolean): { text: string; tone: 'ok' | 'muted' | 'bad' } | null {
+  if (offer.availability === 'out_of_stock') return { text: isAr ? 'غير متوفر عند آخر رصد' : 'Out of stock at last observation', tone: 'bad' };
+  if (offer.availability === 'in_stock' || offer.availability === 'limited_stock') {
+    if (offer.stale) return { text: isAr ? 'متوفر بحسب آخر رصد' : 'In stock at last observation', tone: 'muted' };
+    return { text: offer.availability === 'limited_stock' ? (isAr ? 'كمية محدودة' : 'Limited stock') : (isAr ? 'متوفر' : 'In stock'), tone: 'ok' };
+  }
+  return null;
+}
+
+/** Why an offer sits outside the comparison — one reason per offer, never a blanket label
+ *  (a fresh out-of-stock offer is not "old"; founder review 2026-09-26). */
+function exclusionReason(offer: CompareOffer, isAr: boolean): string {
+  if (offer.availability === 'out_of_stock') return isAr ? 'غير متوفر عند آخر رصد' : 'Out of stock at last observation';
+  const days = Math.max(1, Math.floor((Date.now() - Date.parse(offer.observed_at)) / 86400000));
+  return isAr ? `آخر رصد قبل ${days} يومًا — أقدم من ${PICK_FRESHNESS_MAX_HOURS / 24} أيام` : `Last observed ${days} days ago — older than ${PICK_FRESHNESS_MAX_HOURS / 24} days`;
+}
+
+/** Model codes the knowledge layer holds for this canonical, if any — a shopper's fastest
+ *  "is it the same version?" check. Never derived from the identity key's sentinels. */
+function modelCodes(attributes: Record<string, unknown> | null | undefined): string | null {
+  if (!attributes) return null;
+  const v = attributes.model_number ?? attributes.model ?? attributes.mpn;
+  return typeof v === 'string' && v.trim() && !/^(NO_|NA$)/.test(v) ? v.trim() : null;
 }
 
 /**
@@ -201,12 +191,8 @@ function CampaignEligibilityNote({ offer, isAr }: { offer: CompareOffer; isAr: b
 }
 
 /**
- * P0 stale-price safety (2026-08-07): a price built from evidence older than
- * STALE_CAVEAT_HOURS (evidence-engine.ts) must never be presented as freshly
- * verified, especially when it is winning "cheapest". Disclosure, not exclusion —
- * `offer.stale`/`get-comparison.ts` compute this from the SAME observed_at already
- * rendered per offer below; this just makes it impossible to miss on the offer that
- * actually determines the page's headline claim. Renders nothing once re-observed.
+ * P0 stale-price safety (2026-08-07): evidence older than STALE_CAVEAT_HOURS must never be
+ * presented as freshly verified — shown on the offer that carries it, and only there.
  */
 function StaleEvidenceNote({ offer, isAr }: { offer: CompareOffer; isAr: boolean }) {
   if (!offer.stale) return null;
@@ -219,6 +205,90 @@ function StaleEvidenceNote({ offer, isAr }: { offer: CompareOffer; isAr: boolean
           : "This price is based on our last observation and may not reflect the retailer's current price — verify before buying."}
       </p>
     </div>
+  );
+}
+
+/** The store exit — attributed through /go (never a raw store URL), with the same category
+ *  attribution the rest of the catalog uses. Names the store on the button. */
+function GoButton({ offer, isAr, attribution, canonicalId, surface, primary }: {
+  offer: CompareOffer; isAr: boolean; attribution: CategoryAttribution | null; canonicalId: string;
+  surface: 'compare_featured' | 'compare_all_offers'; primary: boolean;
+}) {
+  const label = isAr ? `اذهب إلى ${offer.store_name}` : `Go to ${offer.store_name}`;
+  const cls = primary
+    ? 'inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-[var(--brand-green)] px-5 text-sm font-semibold text-white shadow-[var(--elevation-1)] transition-colors hover:bg-[var(--brand-green-dark)]'
+    : 'inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-full border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface)] px-3 text-xs font-semibold text-on-surface transition-colors hover:border-[var(--brand-green)]/50 hover:bg-[var(--brand-bg-green)] sm:w-auto';
+  if (!offer.product_url) {
+    return (
+      <span className={`${primary ? 'inline-flex h-11 w-full items-center justify-center rounded-full border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container)] px-5 text-sm font-medium text-on-surface-variant' : 'text-xs text-on-surface-variant'}`}>
+        {isAr ? 'رابط المتجر غير متاح لهذا العرض' : 'No store link available for this offer'}
+      </span>
+    );
+  }
+  const inner = (<><span>{label}</span><ExternalLink className={primary ? 'h-4 w-4' : 'h-3 w-3'} /></>);
+  return attribution ? (
+    <CategoryExitLink href={offer.product_url} className={cls} attribution={attribution} store={offer.store_name} canonicalId={canonicalId}>{inner}</CategoryExitLink>
+  ) : (
+    <ExitLink href={offer.product_url} className={cls} store={offer.store_name} canonicalId={canonicalId} surface={surface}>{inner}</ExitLink>
+  );
+}
+
+/** One scannable offer row: store | price | observed · availability | go — details collapsed. */
+function OfferRow({ offer, isAr, attribution, canonicalId, isLowest, excluded }: {
+  offer: CompareOffer; isAr: boolean; attribution: CategoryAttribution | null; canonicalId: string; isLowest: boolean; excluded: boolean;
+}) {
+  const avail = availabilityLabel(offer, isAr);
+  const condition = classifyCondition(offer.raw_name);
+  const conditionLabel = CONDITION_LABELS[condition][isAr ? 'ar' : 'en'];
+  return (
+    <li className={`px-4 py-3.5 ${excluded ? 'opacity-80' : 'hover:bg-[color:var(--color-surface-container-low)]'} transition-colors`}>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 sm:flex-nowrap">
+        {/* store */}
+        <div className="flex min-w-0 flex-1 items-center gap-2.5 basis-[55%] sm:basis-auto sm:w-44 sm:flex-none">
+          <StoreLogo slug={offer.store_slug} size="md" alt={offer.store_name} locale={isAr ? 'ar' : 'en'} />
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold text-on-surface">{offer.store_name}</p>
+            <p className="text-[11px] text-on-surface-variant">{observedLabel(offer.observed_at, isAr)}</p>
+          </div>
+        </div>
+        {/* price */}
+        <div className="shrink-0 text-end sm:w-32">
+          <Price amount={offer.price} className={`text-lg font-bold tabular-nums ${isLowest ? 'text-[var(--brand-green-dark)]' : 'text-on-surface'}`} symbolClassName="w-4 h-4" />
+          {isLowest && !excluded && (
+            <p className="text-[10px] font-semibold text-[var(--brand-green-dark)]">{isAr ? 'الأقل' : 'Lowest'}</p>
+          )}
+        </div>
+        {/* availability / reason */}
+        <div className="min-w-0 basis-full sm:basis-auto sm:flex-1">
+          {excluded ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-[color:var(--color-surface-container)] px-2 py-0.5 text-[11px] text-on-surface-variant">
+              <History className="h-3 w-3" />{exclusionReason(offer, isAr)}
+            </span>
+          ) : avail ? (
+            <span className={`text-xs font-medium ${avail.tone === 'ok' ? 'text-[var(--brand-green)]' : avail.tone === 'bad' ? 'text-[var(--color-error)]' : 'text-on-surface-variant'}`}>● {avail.text}</span>
+          ) : null}
+        </div>
+        {/* go */}
+        <div className="basis-full sm:basis-auto sm:shrink-0">
+          <GoButton offer={offer} isAr={isAr} attribution={attribution} canonicalId={canonicalId} surface="compare_all_offers" primary={false} />
+        </div>
+      </div>
+      <CampaignEligibilityNote offer={offer} isAr={isAr} />
+      {!excluded && <StaleEvidenceNote offer={offer} isAr={isAr} />}
+      {/* details — collapsed: the merchant's own listing title and stated condition */}
+      <details className="group mt-2">
+        <summary className="inline-flex cursor-pointer list-none items-center gap-1 text-[11px] text-on-surface-variant hover:text-on-surface [&::-webkit-details-marker]:hidden">
+          <ChevronDown className="h-3 w-3 transition-transform group-open:rotate-180" />
+          {isAr ? 'وصف العرض عند المتجر' : 'Listing as stated by the store'}
+        </summary>
+        <div className="mt-1.5 rounded-lg border border-[color:var(--color-outline-variant)]/60 px-3 py-2 text-xs leading-relaxed" data-offer-description>
+          <p className="font-semibold text-on-surface">{conditionLabel}</p>
+          <p dir="auto" className="mt-1 whitespace-normal break-words [overflow-wrap:anywhere] text-on-surface">
+            {offer.raw_name?.trim() || (isAr ? 'لم يتوفر وصف لهذا العرض.' : 'No description available for this offer.')}
+          </p>
+        </div>
+      </details>
+    </li>
   );
 }
 
@@ -239,14 +309,8 @@ export default async function TpsComparePage({
   // untracked `<a>`. Every other visitor's experience is byte-identical to before this.
   const attribution = readCategoryAttribution(await searchParams);
 
-  // No multi-store comparison for this product yet → a helpful state with a search fallback,
-  // NEVER a 404/error (the compare button used to dead-end here). This is honest empty-state
-  // handling, not a cosmetic mask: many products are single-store while coverage grows.
   // No PublicPageShell in this file: `(public)/layout.tsx` already wraps the route group with
-  // it. This page wrapped itself AGAIN, so every compare page shipped TWO <header>/<main>/
-  // <footer> landmark sets and a second fixed header stacked on the first — measured live
-  // 2026-09-26 (header=2 footer=2 main=2, vs 1 on /stores). Removed here and on the two
-  // other pages with the same duplication (categories, offers/[merchant]) — ADR-386.
+  // it (ADR-386 removed the second wrapper that doubled every landmark).
   if (!data || data.offers.length === 0) {
     const nm = data?.canonical ? (isAr ? (data.canonical.name_ar || data.canonical.name_en) : (data.canonical.name_en || data.canonical.name_ar)) : null;
     return (
@@ -272,38 +336,27 @@ export default async function TpsComparePage({
 
   const { canonical, summary, offers, message } = data;
   const name = isAr ? (canonical.name_ar || canonical.name_en) : (canonical.name_en || canonical.name_ar);
-
-  const cheapestOffer = offers.find(o => o.store_name === summary.cheapest_store) ?? offers[0];
+  const codes = modelCodes(canonical.attributes);
 
   // ONE eligibility rule, shared with the summary (get-comparison.ts): an offer backs the
-  // comparison only if it is in stock AND observed within PICK_FRESHNESS_MAX_HOURS. Older
-  // evidence is still shown — as "last observed", clearly separated, never as a current
-  // offer competing for «الأرخص» (ADR-386; founder review: a 12-day-old cheaper Amazon row
-  // sat in the same list as today's offers with equal visual weight).
-  const { eligible: eligibleOffers, older: olderOffers } = partitionOffersByEligibility(offers as unknown as LoaderOffer[]) as unknown as { eligible: CompareOffer[]; older: CompareOffer[] };
+  // comparison only if it is in stock AND observed within PICK_FRESHNESS_MAX_HOURS. Everything
+  // else is shown — with its own reason — outside the comparison, never as a competitor.
+  const { eligible: eligibleOffers, older: excludedOffers } = partitionOffersByEligibility(offers);
+  const featured = offers.find((o) => o.store_name === summary.cheapest_store) ?? eligibleOffers[0] ?? offers[0];
+  const featuredIsEligible = eligibleOffers.includes(featured);
+  const alternatives = eligibleOffers.filter((o) => o !== featured);
 
   /**
-   * THE OFFERS, IN A FORM A MACHINE CAN READ (ADR-189).
-   *
-   * A crawler or an AI assistant reading this page saw prose and had to infer that it was a
-   * price comparison. `AggregateOffer` states it: this many retailers, this low price, this
-   * high price, this currency. That is the whole reason to publish a comparison page at all.
-   *
-   * EVERY FIGURE HERE IS ONE THE PAGE ALREADY RENDERS, taken from the same `summary`/`offers`
-   * the body reads — never recomputed, never rounded differently, never a figure the customer
-   * cannot see. Structured data that disagrees with the visible page is a fabricated claim
-   * with a schema wrapper on it, and it is also what gets a site penalised.
-   *
-   * The nested offers are the ELIGIBLE set — the exact set `lowPrice`/`highPrice` were computed
-   * from. Measured live 2026-09-26 (FreshDV): lowPrice "3099" while a nested Offer said "2799",
-   * because every stored price was published as a current Offer regardless of age. An offer
-   * the page itself shows only as «آخر رصد» is not a current offer and is not published as one.
+   * THE OFFERS, IN A FORM A MACHINE CAN READ (ADR-189). Every figure here is one the page
+   * renders; the nested offers are the ELIGIBLE set the lowPrice/highPrice came from (ADR-386).
    */
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Product',
     name,
     ...(canonical.brand ? { brand: { '@type': 'Brand', name: canonical.brand } } : {}),
+    ...(canonical.image_url ? { image: canonical.image_url } : {}),
+    ...(codes ? { mpn: codes } : {}),
     ...(summary.lowest_price != null ? {
       offers: {
         '@type': 'AggregateOffer',
@@ -311,7 +364,6 @@ export default async function TpsComparePage({
         lowPrice: String(summary.lowest_price),
         ...(summary.highest_price != null ? { highPrice: String(summary.highest_price) } : {}),
         offerCount: eligibleOffers.length,
-        // Named sellers, so the comparison is checkable rather than asserted.
         offers: eligibleOffers
           .filter((o) => o.price > 0)
           .map((o) => ({
@@ -319,365 +371,180 @@ export default async function TpsComparePage({
             price: String(o.price),
             priceCurrency: 'SAR',
             ...(o.product_url ? { url: o.product_url } : {}),
-            // Name the retailer in the page's own language. The comparison loader returns the
-            // Arabic display name regardless of locale, so an English citation would otherwise
-            // list «مكتبة جرير» to an English reader. Falls back to what the page renders —
-            // a retailer we cannot resolve is still named exactly as the page names it, never
-            // dropped and never guessed.
-            seller: {
-              '@type': 'Organization',
-              name: retailerDisplayName(resolveApprovedSlug(o.store_name), isAr ? 'ar' : 'en') ?? o.store_name,
-            },
-            availability: o.availability === 'out_of_stock'
-              ? 'https://schema.org/OutOfStock'
-              : 'https://schema.org/InStock',
+            seller: { '@type': 'Organization', name: retailerDisplayName(resolveApprovedSlug(o.store_name), isAr ? 'ar' : 'en') ?? o.store_name },
+            availability: o.availability === 'out_of_stock' ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock',
           })),
       },
     } : {}),
   };
 
+  const featuredAvail = availabilityLabel(featured, isAr);
+
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <CompareStateSync canonicalId={canonical.id} />
-      <div className="max-w-3xl mx-auto space-y-6">
+      <div className="mx-auto max-w-3xl space-y-5">
 
         {/* ── Breadcrumb ── */}
         <nav className="flex items-center gap-2 text-sm text-on-surface-variant">
-          <Link href={`/${locale}`} className="hover:text-on-surface transition-colors">
-            {isAr ? 'الرئيسية' : 'Home'}
-          </Link>
+          <Link href={`/${locale}`} className="hover:text-on-surface transition-colors">{isAr ? 'الرئيسية' : 'Home'}</Link>
           <ArrowRight className="h-3.5 w-3.5 shrink-0 opacity-50 rtl:rotate-180" />
-          <Link href={`/${locale}/search`} className="hover:text-on-surface transition-colors">
-            {isAr ? 'البحث' : 'Search'}
-          </Link>
+          <Link href={`/${locale}/search`} className="hover:text-on-surface transition-colors">{isAr ? 'البحث' : 'Search'}</Link>
           <ArrowRight className="h-3.5 w-3.5 shrink-0 opacity-50 rtl:rotate-180" />
-          <span className="text-on-surface font-medium truncate max-w-[200px]">{name}</span>
+          <span className="truncate max-w-[200px] font-medium text-on-surface">{name}</span>
         </nav>
 
-        {/* ── Product Header ── */}
-        <div className="rounded-2xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] p-5 md:p-6">
-          <div className="flex flex-col gap-1 mb-4">
-            <div className="flex items-center gap-2 flex-wrap">
-              <Badge variant="secondary" className="text-xs capitalize">
-                {categoryBadgeLabel(canonical.category, isAr)}
-              </Badge>
-              {canonical.brand && (
-                <Badge variant="outline" className="text-xs">{canonical.brand}</Badge>
-              )}
-              {/* `identity_confidence` is an INTERNAL matching score. It was rendered as
-                  «ثقة 95%» / «تم التحقق من المطابقة بدقة 95%» — a measured-accuracy claim
-                  no measurement backs (the platform's match precision has never been
-                  audited to that figure). Replaced with what is actually true: the offers
-                  were matched on the model's declared specifications (ADR-386). */}
-              <span className="inline-flex items-center gap-1 text-xs text-on-surface-variant">
+        {/* ── 1. Identity: which product, which version ── */}
+        <header className="rounded-2xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] p-4 md:p-5">
+          <div className="flex items-start gap-4">
+            {canonical.image_url && (
+              <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-white md:h-24 md:w-24">
+                <Image src={canonical.image_url} alt="" fill sizes="96px" className="object-contain p-1.5" unoptimized />
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
+              <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
+                <Badge variant="secondary" className="text-xs">{categoryBadgeLabel(canonical.category, isAr)}</Badge>
+                {canonical.brand && <Badge variant="outline" className="text-xs capitalize">{canonical.brand}</Badge>}
+                {codes && <Badge variant="outline" className="text-xs tabular-nums" dir="ltr">{codes}</Badge>}
+              </div>
+              <h1 className="text-lg font-bold leading-snug text-on-surface md:text-2xl">{name}</h1>
+              {/* `identity_confidence` is an INTERNAL score, never rendered as measured accuracy
+                  (ADR-386). What IS true: these offers were grouped on the model's declared
+                  specifications; the shopper can confirm the model code at the store. */}
+              <p className="mt-1.5 inline-flex items-center gap-1 text-xs text-on-surface-variant">
                 <ShieldCheck className="h-3.5 w-3.5 text-[var(--brand-green)]" />
-                {isAr ? 'مطابقة على مواصفات الموديل' : 'Matched on model specifications'}
+                {isAr
+                  ? 'عروض النسخة نفسها — جُمعت على مواصفات الموديل المعلنة'
+                  : 'Same-version offers — grouped on the model’s declared specifications'}
+              </p>
+            </div>
+          </div>
+        </header>
+
+        {/* ── 2. Decision: the lowest ELIGIBLE offer, when we saw it, and where to go ── */}
+        <section
+          aria-label={isAr ? 'العرض المقترح' : 'Suggested offer'}
+          className={`relative overflow-hidden rounded-2xl border-2 p-4 md:p-6 ${featuredIsEligible ? 'border-[var(--brand-green)]/40' : 'border-[color:var(--color-outline-variant)]'} bg-[color:var(--color-surface-container-low)]`}
+        >
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide ${featuredIsEligible ? 'bg-[var(--brand-green)] text-white' : 'bg-[color:var(--color-surface-container-high)] text-on-surface-variant'}`}>
+              <Trophy className="h-3 w-3" />
+              {featuredIsEligible
+                ? (eligibleOffers.length > 1 ? (isAr ? 'أقل سعر مرصود' : 'Lowest observed price') : (isAr ? 'العرض المرصود' : 'Observed offer'))
+                : (isAr ? 'آخر سعر رصدناه' : 'Last observed price')}
+            </span>
+            {eligibleOffers.length > 1 && (
+              <span className="text-xs text-on-surface-variant">
+                {isAr ? `من ${eligibleOffers.length} متاجر رُصدت خلال ${PICK_FRESHNESS_MAX_HOURS / 24} أيام` : `across ${eligibleOffers.length} stores observed within ${PICK_FRESHNESS_MAX_HOURS / 24} days`}
               </span>
-            </div>
-            <h1 className="text-xl md:text-2xl font-bold text-on-surface leading-snug mt-1">
-              {name}
-            </h1>
+            )}
+            {eligibleOffers.length === 1 && excludedOffers.length > 0 && (
+              <span className="text-xs text-on-surface-variant">{isAr ? 'متجر واحد مؤهل حاليًا — لا مقارنة سعر حديثة' : 'One eligible store right now — no current price comparison'}</span>
+            )}
           </div>
 
-          {/* Summary Bar */}
-          {summary.lowest_price && (
-            <div className="grid grid-cols-3 gap-3">
-              <div className="rounded-xl bg-[var(--brand-bg-green)] border border-[var(--brand-green)]/20 p-3 text-center">
-                <p className="text-xs text-on-surface-variant mb-1">{isAr ? 'أرخص سعر' : 'Lowest Price'}</p>
-                <Price
-                  amount={summary.lowest_price}
-                  className="text-lg font-extrabold text-[var(--brand-green-dark)]"
-                  symbolClassName="w-4 h-4"
-                />
-              </div>
-              {summary.highest_price && summary.highest_price !== summary.lowest_price && (
-                <div className="rounded-xl bg-[color:var(--color-surface-container)] p-3 text-center">
-                  <p className="text-xs text-on-surface-variant mb-1">{isAr ? 'أعلى سعر' : 'Highest Price'}</p>
-                  <Price
-                    amount={summary.highest_price}
-                    className="text-lg font-bold text-on-surface"
-                    symbolClassName="w-4 h-4"
-                  />
-                </div>
-              )}
-              {summary.saving && summary.saving > 0 && (
-                <div className="rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 p-3 text-center">
-                  <p className="text-xs text-on-surface-variant mb-1">{isAr ? 'توفّر' : 'You Save'}</p>
-                  <Price
-                    amount={summary.saving}
-                    className="text-lg font-bold text-amber-700 dark:text-amber-400"
-                    symbolClassName="w-4 h-4"
-                  />
-                </div>
-              )}
-            </div>
-          )}
-          {/* QUALITY PROGRAM P1 §14.1 (2026-08-28): the honest-zero counterpart to the
-              Summary Bar above — when no offer is fresh enough to back a price claim,
-              this renders instead of nothing, so the page reads as "we checked and have
-              no current price" rather than as broken. `offers` below still lists every
-              known price with its own stale disclosure; only the crowned summary is
-              withheld. */}
           {!summary.lowest_price && message && (
-            <div className="rounded-xl bg-[color:var(--color-surface-container)] border border-[color:var(--color-outline-variant)]/40 p-3 text-center">
-              <p className="text-sm text-on-surface-variant">{message}</p>
-            </div>
+            <p className="mb-3 rounded-xl border border-[color:var(--color-outline-variant)]/40 bg-[color:var(--color-surface-container)] p-3 text-center text-sm text-on-surface-variant">{message}</p>
           )}
-        </div>
 
-        {/* ── Cheapest Offer (featured) ── */}
-        {cheapestOffer && (
-          <div className="relative overflow-hidden rounded-2xl border-2 border-[var(--brand-green)]/40 bg-[color:var(--color-surface-container-low)] p-5 md:p-6">
-            {/* With a single offer there is no "best" — claiming one would be a false
-                comparison (ADR-135). The badge appears only when something was compared.
-                P0 claim-safety (2026-08-07): «أفضل سعر الآن» ("best price NOW") is the same
-                overclaim §10 of docs/LAUNCH_VOCABULARY.md already retired («أفضل سعر حالياً» /
-                "Current best price") — a superiority-plus-currency claim this evidence cannot
-                back once it is stale (measured: 86.7% of comparable canonicals currently have a
-                stale offer sitting at the numeric minimum). When `cheapestOffer.stale`, this
-                switches to the ALREADY-GOVERNED replacement text (§10: «آخر سعر رصدناه» /
-                "Last Observed Price" — reused verbatim, not new copy) instead of the superiority
-                badge. Still the numerically lowest offer, still shown, still fully priced — only
-                the claim of verified currentness is withdrawn. Fresh offers are unaffected. */}
-            {offers.length > 1 && (
-              <div className="flex items-center gap-2 mb-4">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--brand-green)] px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white">
-                  <Trophy className="h-3 w-3" />
-                  {cheapestOffer.stale
-                    ? (isAr ? 'آخر سعر رصدناه' : 'Last Observed Price')
-                    : (isAr ? 'أفضل سعر مرصود' : 'Best Observed Price')}
-                </span>
-              </div>
-            )}
-
-            <div className="flex items-start justify-between gap-4 mb-5">
-              <div className="flex flex-col min-w-0">
-                {/* «الآن» dropped from the fresh label too: the claim this page can back is
-                    "best price we OBSERVED, at this time" — the observation time is now
-                    rendered right here on the featured offer (it was only shown in the list
-                    below), so the reader sees the price, the store and WHEN together. */}
-                <span className="text-xs text-on-surface-variant mb-1">
-                  {offers.length > 1
-                    ? (cheapestOffer.stale
-                        ? (isAr ? 'آخر سعر رصدناه عند' : 'Last observed price at')
-                        : (isAr ? 'أفضل سعر مرصود عند' : 'Best observed price at'))
-                    : (isAr ? 'متوفر عند' : 'Available at')}
-                </span>
-                <span className="text-base font-bold text-on-surface">
-                  {cheapestOffer.store_name}
-                </span>
-                {cheapestOffer.observed_at && (
-                  <span className="text-[11px] text-on-surface-variant mt-0.5">
-                    {observedLabel(cheapestOffer.observed_at, isAr)}
-                  </span>
-                )}
-                {cheapestOffer.availability === 'in_stock' && (
-                  <span className="text-xs text-[var(--brand-green)] font-medium mt-0.5">
-                    {cheapestOffer.stale
-                      ? (isAr ? '● متوفر بحسب آخر رصد' : '● In stock at last observation')
-                      : (isAr ? '● متوفر' : '● In Stock')}
-                  </span>
-                )}
-                {/* QUALITY PROGRAM P1 §14.1 (2026-08-28): `availability` already carries
-                    'out_of_stock' (price_history.availability, populated) but only the
-                    in-stock branch ever rendered — directly relevant to §11's own finding
-                    that a stale offer usually manifests as a live page with a soft
-                    out-of-stock badge, not a 404; this is exactly the signal that catches
-                    that pattern for a shopper, already in the payload, unused until now. */}
-                {cheapestOffer.availability === 'out_of_stock' && (
-                  <span className="text-xs text-[var(--color-error)] font-medium mt-0.5">
-                    {isAr ? '● غير متوفر حالياً' : '● Out of Stock'}
-                  </span>
-                )}
-              </div>
-
-              <div className="flex flex-col items-end shrink-0">
-                <Price
-                  amount={cheapestOffer.price}
-                  className="text-3xl md:text-4xl font-extrabold text-[var(--brand-green-dark)]"
-                  symbolClassName="w-6 h-6 md:w-7 md:h-7"
-                />
+          <div className="mb-4 flex items-start justify-between gap-4">
+            <div className="flex min-w-0 items-center gap-3">
+              <StoreLogo slug={featured.store_slug} size="lg" alt={featured.store_name} locale={isAr ? 'ar' : 'en'} />
+              <div className="min-w-0">
+                <p className="text-xs text-on-surface-variant">{featuredIsEligible ? (isAr ? 'عند' : 'at') : (isAr ? 'آخر سعر رصدناه عند' : 'Last observed price at')}</p>
+                <p className="truncate text-base font-bold text-on-surface">{featured.store_name}</p>
+                <p className="text-[11px] text-on-surface-variant">
+                  {observedLabel(featured.observed_at, isAr)}
+                  {featuredAvail && <span className={featuredAvail.tone === 'ok' ? 'text-[var(--brand-green)]' : featuredAvail.tone === 'bad' ? 'text-[var(--color-error)]' : ''}>{' · '}{featuredAvail.text}</span>}
+                </p>
               </div>
             </div>
-
-            <OfferDescription rawName={cheapestOffer.raw_name} isAr={isAr} />
-            <CampaignEligibilityNote offer={cheapestOffer} isAr={isAr} />
-            <StaleEvidenceNote offer={cheapestOffer} isAr={isAr} />
-
-            {cheapestOffer.product_url ? (
-              attribution ? (
-                <CategoryExitLink
-                  href={cheapestOffer.product_url}
-                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-[var(--brand-green)] px-5 text-sm font-semibold text-white shadow-[var(--elevation-1)] transition-colors hover:bg-[var(--brand-green-dark)]"
-                  attribution={attribution}
-                  store={cheapestOffer.store_name}
-                  canonicalId={canonical.id}
-                >
-                  <span>{isAr ? `اذهب إلى ${cheapestOffer.store_name}` : `Go to ${cheapestOffer.store_name}`}</span>
-                  <ExternalLink className="h-4 w-4" />
-                </CategoryExitLink>
-              ) : (
-                <ExitLink
-                  href={cheapestOffer.product_url}
-                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-[var(--brand-green)] px-5 text-sm font-semibold text-white shadow-[var(--elevation-1)] transition-colors hover:bg-[var(--brand-green-dark)]"
-                  store={cheapestOffer.store_name}
-                  canonicalId={canonical.id}
-                  surface="compare_featured"
-                >
-                  <span>{isAr ? `اذهب إلى ${cheapestOffer.store_name}` : `Go to ${cheapestOffer.store_name}`}</span>
-                  <ExternalLink className="h-4 w-4" />
-                </ExitLink>
-              )
-            ) : (
-              // No exit URL for this listing. Say exactly that — the old copy read
-              // "شوف في المتاجر" but ran another search, doing the opposite of what it said.
-              <div className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container)] px-5 text-sm font-medium text-on-surface-variant">
-                {isAr ? 'رابط المتجر غير متاح لهذا العرض' : 'No store link available for this offer'}
-              </div>
-            )}
+            <div className="shrink-0 text-end">
+              <Price amount={featured.price} className="text-3xl font-extrabold tabular-nums text-[var(--brand-green-dark)] md:text-4xl" symbolClassName="w-6 h-6 md:w-7 md:h-7" />
+              {summary.highest_price != null && summary.saving != null && summary.saving > 0 && featuredIsEligible && (
+                <p className="mt-0.5 text-xs text-on-surface-variant">
+                  {isAr ? 'أعلى سعر مؤهل' : 'Highest eligible'} <Price amount={summary.highest_price} className="text-xs font-semibold text-on-surface" symbolClassName="w-3 h-3" />
+                  {' · '}
+                  <span className="font-semibold text-amber-700 dark:text-amber-400">{isAr ? 'الفرق' : 'spread'} <Price amount={summary.saving} className="text-xs font-semibold" symbolClassName="w-3 h-3" /></span>
+                </p>
+              )}
+            </div>
           </div>
+
+          <CampaignEligibilityNote offer={featured} isAr={isAr} />
+          <StaleEvidenceNote offer={featured} isAr={isAr} />
+          <div className="mt-3">
+            <GoButton offer={featured} isAr={isAr} attribution={attribution} canonicalId={canonical.id} surface="compare_featured" primary />
+          </div>
+          {alternatives.length > 0 && (
+            <p className="mt-2 text-center text-[11px] text-on-surface-variant">
+              {isAr
+                ? `${alternatives.length} ${alternatives.length === 1 ? 'عرض آخر مؤهل' : 'عروض أخرى مؤهلة'} أدناه — ${alternatives[0].store_name} بـ `
+                : `${alternatives.length} other eligible ${alternatives.length === 1 ? 'offer' : 'offers'} below — ${alternatives[0].store_name} at `}
+              <Price amount={alternatives[0].price} className="text-[11px] font-semibold" symbolClassName="w-2.5 h-2.5" />
+            </p>
+          )}
+        </section>
+
+        {/* ── 3. All eligible offers, scannable ── */}
+        {eligibleOffers.length > 1 && (
+          <section className="overflow-hidden rounded-2xl border border-[color:var(--color-outline-variant)]">
+            <div className="border-b border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container)] px-4 py-3">
+              <h2 className="text-sm font-bold text-on-surface">
+                {isAr ? `العروض الداخلة في المقارنة (${eligibleOffers.length} متاجر)` : `Offers in this comparison (${eligibleOffers.length} stores)`}
+              </h2>
+              <p className="mt-0.5 text-[11px] text-on-surface-variant">
+                {isAr
+                  ? `رُصدت خلال آخر ${PICK_FRESHNESS_MAX_HOURS / 24} أيام ومتوفرة بحسب آخر رصد — منها يُحسب الأقل والأعلى. الترتيب بالسعر.`
+                  : `Observed within ${PICK_FRESHNESS_MAX_HOURS / 24} days and in stock at last observation — lowest/highest come from these. Ordered by price.`}
+              </p>
+            </div>
+            <ul className="divide-y divide-[color:var(--color-outline-variant)]/50">
+              {eligibleOffers.map((offer, idx) => (
+                <OfferRow key={`${offer.store_slug}-${idx}`} offer={offer} isAr={isAr} attribution={attribution} canonicalId={canonical.id} isLowest={offer.price === summary.lowest_price} excluded={false} />
+              ))}
+            </ul>
+          </section>
         )}
 
-        {/* ── All Offers — eligible comparison set first, older evidence separated ── */}
-        {offers.length > 1 && (() => {
-          const renderOffer = (offer: CompareOffer, idx: number) => (
-                <div
-                  key={`${offer.store_name}-${idx}`}
-                  className="px-4 py-4 hover:bg-[color:var(--color-surface-container-low)] transition-colors"
-                >
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-                  <div className="flex flex-col min-w-0 flex-1">
-                    <span className="text-sm font-semibold text-on-surface">{offer.store_name}</span>
-                    <OfferDescription rawName={offer.raw_name} isAr={isAr} />
-                    {offer.availability === 'in_stock' && (
-                      <span className="text-xs text-[var(--brand-green)] font-medium mt-0.5">
-                        {isAr ? '● متوفر' : '● In Stock'}
-                      </span>
-                    )}
-                    {/* QUALITY PROGRAM P1 §14.1 (2026-08-28): same gap as the featured
-                        offer above — availability already carries 'out_of_stock', it just
-                        never rendered anywhere in this list. */}
-                    {offer.availability === 'out_of_stock' && (
-                      <span className="text-xs text-[var(--color-error)] font-medium mt-0.5">
-                        {isAr ? '● غير متوفر' : '● Out of Stock'}
-                      </span>
-                    )}
-                    {/* WHEN we saw this price. Measured 2026-07-31: 13.6% of served offers
-                        were last observed more than 30 days ago, and the page showed them
-                        as if current — a price presented without its date is a marketing
-                        number, which is the one thing `بالأدلة، لا أرقام مسوّقة` forbids.
-                        Disclosed rather than suppressed: an old price is still evidence,
-                        provided we say how old. */}
-                    {offer.observed_at && (
-                      <span className="text-[11px] text-on-surface-variant mt-0.5">
-                        {observedLabel(offer.observed_at, isAr)}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-3 shrink-0">
-                    <Price
-                      amount={offer.price}
-                      className={`text-lg font-bold ${offer.price === summary.lowest_price ? 'text-[var(--brand-green-dark)]' : 'text-on-surface'}`}
-                      symbolClassName="w-4 h-4"
-                    />
-                    {offer.product_url ? (
-                      attribution ? (
-                        <CategoryExitLink
-                          href={offer.product_url}
-                          className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface)] px-3 text-xs font-semibold text-on-surface transition-colors hover:border-[var(--brand-green)]/50 hover:bg-[var(--brand-bg-green)]"
-                          attribution={attribution}
-                          store={offer.store_name}
-                          canonicalId={canonical.id}
-                        >
-                          {isAr ? `اذهب إلى ${offer.store_name}` : `Go to ${offer.store_name}`}
-                          <ExternalLink className="h-3 w-3" />
-                        </CategoryExitLink>
-                      ) : (
-                        <ExitLink
-                          href={offer.product_url}
-                          className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface)] px-3 text-xs font-semibold text-on-surface transition-colors hover:border-[var(--brand-green)]/50 hover:bg-[var(--brand-bg-green)]"
-                          store={offer.store_name}
-                          canonicalId={canonical.id}
-                          surface="compare_all_offers"
-                        >
-                          {isAr ? `اذهب إلى ${offer.store_name}` : `Go to ${offer.store_name}`}
-                          <ExternalLink className="h-3 w-3" />
-                        </ExitLink>
-                      )
-                    ) : (
-                      // "في المتاجر" looked like a link and ran a search. If we have no exit
-                      // URL, show plain text — never a control that pretends to reach the store.
-                      <span className="text-xs text-on-surface-variant">
-                        {isAr ? 'لا يوجد رابط' : 'No link'}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <CampaignEligibilityNote offer={offer} isAr={isAr} />
-                <StaleEvidenceNote offer={offer} isAr={isAr} />
-                </div>
-          );
-          return (
-            <div className="space-y-4">
-              {eligibleOffers.length > 0 && (
-                <div className="rounded-2xl border border-[color:var(--color-outline-variant)] overflow-hidden">
-                  <div className="bg-[color:var(--color-surface-container)] px-4 py-3 border-b border-[color:var(--color-outline-variant)]">
-                    <h2 className="text-sm font-bold text-on-surface">
-                      {isAr
-                        ? `العروض الداخلة في المقارنة (${eligibleOffers.length} ${eligibleOffers.length === 1 ? 'متجر' : 'متاجر'})`
-                        : `Offers in this comparison (${eligibleOffers.length} ${eligibleOffers.length === 1 ? 'store' : 'stores'})`}
-                    </h2>
-                    <p className="mt-0.5 text-[11px] text-on-surface-variant">
-                      {isAr
-                        ? 'رُصدت خلال آخر 7 أيام ومتوفرة بحسب آخر رصد — منها يُحسب «الأرخص» و«الأعلى».'
-                        : 'Observed within the last 7 days and in stock at last observation — lowest/highest are computed from these.'}
-                    </p>
-                  </div>
-                  <div className="divide-y divide-[color:var(--color-outline-variant)]/50">
-                    {eligibleOffers.map(renderOffer)}
-                  </div>
-                </div>
-              )}
-              {olderOffers.length > 0 && (
-                <div className="rounded-2xl border border-dashed border-[color:var(--color-outline-variant)] overflow-hidden">
-                  <div className="bg-[color:var(--color-surface-container-low)] px-4 py-3 border-b border-[color:var(--color-outline-variant)]/60">
-                    <h2 className="inline-flex items-center gap-1.5 text-sm font-bold text-on-surface-variant">
-                      <History className="h-3.5 w-3.5" />
-                      {isAr
-                        ? `أسعار أقدم — آخر رصد لدينا (${olderOffers.length})`
-                        : `Older prices — our last observation (${olderOffers.length})`}
-                    </h2>
-                    <p className="mt-0.5 text-[11px] text-on-surface-variant">
-                      {isAr
-                        ? 'أقدم من 7 أيام أو غير متوفرة عند آخر رصد؛ لا تدخل في حساب الأرخص وقد لا تعكس سعر المتجر الحالي.'
-                        : 'Older than 7 days or out of stock at last observation; excluded from the lowest-price claim and may not reflect the retailer’s current price.'}
-                    </p>
-                  </div>
-                  <div className="divide-y divide-[color:var(--color-outline-variant)]/50">
-                    {olderOffers.map(renderOffer)}
-                  </div>
-                </div>
-              )}
+        {/* ── 4. Outside the comparison — each with its reason ── */}
+        {excludedOffers.length > 0 && (
+          <section className="overflow-hidden rounded-2xl border border-dashed border-[color:var(--color-outline-variant)]">
+            <div className="border-b border-[color:var(--color-outline-variant)]/60 bg-[color:var(--color-surface-container-low)] px-4 py-3">
+              <h2 className="inline-flex items-center gap-1.5 text-sm font-bold text-on-surface-variant">
+                <History className="h-3.5 w-3.5" />
+                {isAr ? `عروض خارج المقارنة (${excludedOffers.length})` : `Offers outside the comparison (${excludedOffers.length})`}
+              </h2>
+              <p className="mt-0.5 text-[11px] text-on-surface-variant">
+                {isAr
+                  ? 'لا تدخل في حساب الأقل والأعلى؛ السبب مذكور عند كل عرض. قد لا تعكس سعر المتجر الحالي.'
+                  : 'Not part of the lowest/highest calculation; the reason is stated on each offer. May not reflect the store’s current price.'}
+              </p>
             </div>
-          );
-        })()}
+            <ul className="divide-y divide-[color:var(--color-outline-variant)]/50">
+              {excludedOffers.map((offer, idx) => (
+                <OfferRow key={`${offer.store_slug}-x-${idx}`} offer={offer} isAr={isAr} attribution={attribution} canonicalId={canonical.id} isLowest={false} excluded />
+              ))}
+            </ul>
+          </section>
+        )}
 
-        {/* ── TPS Badge — states the matching METHOD, never a measured-accuracy figure ── */}
-        <div className="flex items-center justify-center gap-2 py-2 text-xs text-on-surface-variant">
-          <ShieldCheck className="h-3.5 w-3.5 text-[var(--brand-green)]" />
-          <span>
+        {/* ── 5. One shared note, instead of one per offer ── */}
+        <footer className="space-y-1.5 px-1 py-2 text-center text-[11px] leading-relaxed text-on-surface-variant">
+          <p>
             {isAr
-              ? 'جُمعت هذه العروض على مواصفات الموديل المعلنة؛ تحقق من رقم الموديل لدى المتجر قبل الشراء • مدعوم بـ TPS'
-              : 'These offers were grouped on the model’s declared specifications; confirm the model number with the retailer before buying • Powered by TPS'
-            }
-          </span>
-        </div>
-
+              ? 'الأسعار كما رصدناها في وقت الرصد المذكور، دون شحن أو تركيب. تحقق من الحالة واللون والضمان لدى المتجر قبل الشراء؛ قد تختلف شروط العروض.'
+              : 'Prices are as observed at the stated time, excluding shipping and installation. Confirm condition, colour and warranty with the retailer before buying; offer terms may differ.'}
+          </p>
+          <p className="inline-flex items-center justify-center gap-1.5">
+            <ShieldCheck className="h-3.5 w-3.5 text-[var(--brand-green)]" />
+            {isAr
+              ? 'جُمعت هذه العروض على مواصفات الموديل المعلنة؛ تحقق من رقم الموديل لدى المتجر • مدعوم بـ TPS'
+              : 'These offers were grouped on the model’s declared specifications; confirm the model number with the retailer • Powered by TPS'}
+          </p>
+        </footer>
       </div>
     </>
   );

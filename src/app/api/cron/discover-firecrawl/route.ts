@@ -5,6 +5,26 @@ import type { StoreAdapter, NormalizedOffer } from '@/lib/scraping/adapters';
 import { startRun, finishRun, hasActiveRun } from '@/lib/scraping/services/run-logger';
 import { resolveStoreId } from '@/lib/scraping/store-identity';
 import { slugCandidates } from '@/lib/scraping/services/slugify';
+import { classifyFromTitle } from '@/lib/scraping/utils/category-utils';
+
+/**
+ * Category for a newly-discovered product. PROVEN DEFECT (ADR-306 flagged it 2026-09-08;
+ * measured 2026-09-26, ADR-387): `p.category || 'accessories'` stamped EVERY adapter-
+ * uncategorized product as an accessory — 5,211 active rows created since the 2026-09-07
+ * slug fix (iPhone 17 Pro, iPads, AirPods, 24k-BTU split ACs, tower fans…), which then
+ * rendered «إكسسوارات» on their product pages, were excluded from AC/phone category
+ * queries, and were vetoed by the identity projection's R17 accessory rule. The shared
+ * keyword classifier every scraper already uses runs first; 'accessories' is only what it
+ * returns when NOTHING in the title matches a real category.
+ */
+function categoryForDiscovered(p: NormalizedOffer): string {
+  // The almanea/extra adapters used to hardcode 'accessories' as their own placeholder, so
+  // an adapter-supplied 'accessories' is treated as "unknown" and re-derived, never trusted.
+  if (p.category && p.category !== 'accessories') return p.category;
+  // High-confidence form: returns null (→ the old default) whenever the title looks like an
+  // accessory or matches no category, so an unknown stays honestly unknown — never a guess.
+  return classifyFromTitle(p.name_en || p.name_ar || '') ?? 'accessories';
+}
 
 export const runtime = 'nodejs';
 export const maxDuration = 900;
@@ -87,7 +107,7 @@ async function ensureCanonicalProduct(nameAr: string, p: NormalizedOffer): Promi
     const { data: existing } = await sb.from('canonical_products').select('id').eq('name_ar', nameAr).maybeSingle();
     if (existing?.id) return existing.id;
     const { data: inserted, error } = await sb.from('canonical_products').insert({
-      name_ar: nameAr, name_en: p.name_en || nameAr, brand: p.brand || 'Unknown', category: p.category || 'accessories',
+      name_ar: nameAr, name_en: p.name_en || nameAr, brand: p.brand || 'Unknown', category: categoryForDiscovered(p),
     }).select('id').single();
     if (error || !inserted?.id) { if (error) console.error('[memory:canonical]', error.message); return null; }
     return inserted.id;
@@ -159,7 +179,7 @@ async function saveProducts(offers: NormalizedOffer[], storeName: string, storeI
         let insertErr: { message: string } | null = null;
         for (const slug of slugCandidates(p.name_en || nameAr, p.external_id)) {
           const res = await sb.from('products')
-            .insert({ name_ar: nameAr, name_en: p.name_en || nameAr, slug, brand: p.brand || 'Unknown', category: p.category || 'accessories' })
+            .insert({ name_ar: nameAr, name_en: p.name_en || nameAr, slug, brand: p.brand || 'Unknown', category: categoryForDiscovered(p) })
             .select('id').single();
           if (!res.error && res.data) { inserted = res.data; insertErr = null; break; }
           insertErr = res.error;

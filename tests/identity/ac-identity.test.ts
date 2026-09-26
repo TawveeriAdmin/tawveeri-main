@@ -35,6 +35,42 @@ describe("AC identity — LG design series distinguish products", () => {
   });
 });
 
+// ADR-387 (2026-09-26). Manufacturer source (lg.com/sa_en): NF182C2 = "18000 BTU Split AC
+// Cool Only Fresh Inverter" and ND182C0 = "Fresh DV, Dual Inverter Compressor, Cool Only" are
+// two DIFFERENT products. Bare «فريش»/"Fresh" used to map to FreshDV, so Almanea's NF182C2
+// (3,919 SAR) sat inside the ND182C0 comparison and Shaker's two listings (one per line)
+// alternated 2,369↔3,221 as one "price" for a month — 217 price_history rows.
+describe("AC identity — LG 'Fresh' vs 'Fresh DV' are distinct lines", () => {
+  const buildAr = (ar: string, en: string) => {
+    const n = acN(ar, en, "LG");
+    return { ...acPlugin.buildIdentityKey("LG", n.payload, { model_number: n.model_number }), p: n.payload as Record<string, unknown> };
+  };
+  it("Almanea's NF182C2 'Fresh Inverter' title is the Fresh line, never FreshDV", () => {
+    const r = buildAr("", "LG AC Split, Fresh Inverter, 18000 BTU, Cool Only, NF182C2 NK1 - NF182C2 UK1");
+    expect(r.p.series_or_platform).toBe("Fresh");
+    expect(r.key).toContain("|Fresh|");
+    expect(r.key).not.toContain("|FreshDV|");
+  });
+  it("Shaker's retired 'Split Fresh – Dual Inverter' title (no DV) is the Fresh line", () => {
+    expect(buildAr("", "LG Air Conditioner Split Fresh – 18000 BTU – Dual Inverter Cool").p.series_or_platform).toBe("Fresh");
+  });
+  it("Najm's Arabic ND182C0 title («فريش … ريش مزدوجة») is FreshDV", () => {
+    const r = buildAr("ال جي فريش مكيف سبليت 18000 وحدة ريش مزدوجة انفرتر - بارد فقط - أبيض - ND182C0", "");
+    expect(r.p.series_or_platform).toBe("FreshDV");
+    expect(r.key).toContain("|FreshDV|");
+  });
+  it("Alnakheel's Arabic title with dual vanes but no model code is FreshDV (LG's own DV wording)", () => {
+    expect(buildAr("ال جي مكيف سبليت فريش ريش مزدوجة 18000 وحدة بارد فقط – إنفرتر", "").p.series_or_platform).toBe("FreshDV");
+  });
+  it("Shaker's live 'Fresh DV Inverter Series' and Extra's 'Fresh DV' stay FreshDV (no regression)", () => {
+    expect(buildAr("", "LG Split 18000 BTU Cool-Only AC – Fresh DV Inverter Series").p.series_or_platform).toBe("FreshDV");
+    expect(buildAr("", "LG Spilt AC, 18000 BTU, Cool Only, Fresh DV, Dual Inverter Compressor, White").p.series_or_platform).toBe("FreshDV");
+  });
+  it("a bare Arabic «فريش» with no DV evidence is the Fresh line, not FreshDV", () => {
+    expect(buildAr("مكيف ال جي سبليت فريش 18000 وحدة انفرتر بارد", "").p.series_or_platform).toBe("Fresh");
+  });
+});
+
 // Proven live (2026-09-13, Phase 1 execution): Samsung KSA's own residential wall-split
 // line is titled "Wall Mounted [name]" (samsung.com/sa_en/air-conditioners/wall-mount/...)
 // and never says "split"/"جداري" — ac_type came back null (a hard `invalid`, per

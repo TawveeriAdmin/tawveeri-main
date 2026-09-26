@@ -1,0 +1,28 @@
+{
+ "at": "2026-09-26T10:51:25.511Z",
+ "apply": true,
+ "from": "lg|split|FreshDV|18000|Inverter|cool_only",
+ "to": "lg|split|Fresh|18000|Inverter|cool_only",
+ "store_id": 5,
+ "before": {
+  "category": "air_conditioner",
+  "identity_key": "lg|split|FreshDV|18000|Inverter|cool_only",
+  "store_id": 5,
+  "status": "valid",
+  "price": "3919",
+  "url": "https://www.almanea.sa/en/product/p-110300701318019",
+  "name": "LG AC Split, Fresh Inverter, 18000 BTU, Cool Only, NF182C2 NK1 - NF182C2 UK1",
+  "observed_at": "2026-09-25T21:56:45.875Z",
+  "payload": {
+   "_image": "https://imgs.dev-almanea.com/media/catalog/product/cache/3f5e2732ebf5252ed6c4cf6bde3bd738/1/1/110300701318019.jpg",
+   "ac_type": "split",
+   "technology": "Inverter",
+   "capacity_btu": 18000,
+   "cooling_mode": "cool_only",
+   "_availability": "in_stock",
+   "_original_price": 4899.49,
+   "compressor_type": null,
+   "series_or_platform": "FreshDV"
+  }
+ }
+}

@@ -112,6 +112,25 @@
     "kitchen": "مطبخ",
     "personal_care": "عناية شخصية",
     "accessories": "إكسسوارات",
-    "refrigerator": "ثلاجات"
+    "refrigerator": "ثلاجات",
+    "air_conditioner": "مكيفات",
+    "washing_machine": "غسالات",
+    "dishwasher": "غسالات صحون",
+    "oven": "أفران",
+    "cooker": "طباخات",
+    "microwave": "مايكرويف",
+    "vacuum": "مكانس",
+    "smartwatch": "ساعات ذكية",
+    "powerbank": "بطاريات متنقلة",
+    "tripod": "حوامل تصوير",
+    "strap": "أساور",
+    "air_purifier": "منقيات هواء",
+    "coffee_maker": "صانعات قهوة",
+    "kettle": "غلايات",
+    "air_fryer": "قلايات هوائية",
+    "blender": "خلاطات",
+    "toaster": "محامص",
+    "ac": "مكيفات",
+    "mobile": "جوالات"
   }
 }

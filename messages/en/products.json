@@ -112,6 +112,25 @@
     "kitchen": "Kitchen",
     "personal_care": "Personal Care",
     "accessories": "Accessories",
-    "refrigerator": "Refrigerators"
+    "refrigerator": "Refrigerators",
+    "air_conditioner": "Air conditioners",
+    "washing_machine": "Washing machines",
+    "dishwasher": "Dishwashers",
+    "oven": "Ovens",
+    "cooker": "Cookers",
+    "microwave": "Microwaves",
+    "vacuum": "Vacuums",
+    "smartwatch": "Smartwatches",
+    "powerbank": "Power banks",
+    "tripod": "Tripods",
+    "strap": "Straps",
+    "air_purifier": "Air purifiers",
+    "coffee_maker": "Coffee makers",
+    "kettle": "Kettles",
+    "air_fryer": "Air fryers",
+    "blender": "Blenders",
+    "toaster": "Toasters",
+    "ac": "Air conditioners",
+    "mobile": "Phones"
   }
 }

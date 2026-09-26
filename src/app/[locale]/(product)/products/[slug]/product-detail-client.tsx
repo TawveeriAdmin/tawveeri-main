@@ -44,6 +44,7 @@ import {
 } from 'lucide-react';
 import type { AvailabilityStatus, Database, DiscountType } from '@/lib/database/types';
 import { selectBestPriceOffer } from '@/lib/catalog/select-best-price-offer';
+import { isFreshObservation } from '@/lib/intelligence/evidence-engine';
 import { CouponBadge } from '@/components/ui/coupon-badge';
 import { Ticket } from 'lucide-react';
 import { AdvisorAnswer } from '@/components/agent/advisor-answer';
@@ -896,10 +897,19 @@ export default function ProductDetailClient() {
  {t(`products.categories.${product.category}`)}
  </Badge>
  )}
- {bestPriceStore && (
+ {/* ADR-387: «أفضل سعر مؤكد» was rendered for EVERY product with any offer — a single-store
+     product has nothing to be "best" against, and "confirmed" overstated a scraped
+     observation. Same policy as the compare page: the chip exists only when ≥2 stores
+     were actually compared AND the winning evidence is within the eligibility window. */}
+ {bestPriceStore && storeCount > 1 && isFreshObservation(bestPriceStore.updated_at) && (
  <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-[var(--brand-bg-green)] px-3 text-xs font-semibold text-[var(--brand-green-dark)]">
  <ShieldCheck className="h-3.5 w-3.5" />
- {locale === 'ar' ? 'أفضل سعر مؤكد' : 'Best price checked'}
+ {locale === 'ar' ? `أفضل سعر مرصود بين ${storeCount} متاجر` : `Best observed price across ${storeCount} stores`}
+ </span>
+ )}
+ {bestPriceStore && storeCount <= 1 && (
+ <span className="inline-flex h-8 items-center gap-1.5 rounded-full border border-[color:var(--color-outline-variant)]/60 px-3 text-xs font-medium text-on-surface-variant">
+ {locale === 'ar' ? 'متجر واحد — لا مقارنة بعد' : 'One store — no comparison yet'}
  </span>
  )}
  {viewCount !== null && viewCount > 0 && (
@@ -995,6 +1005,9 @@ export default function ProductDetailClient() {
  availability={bestPriceStore.availability}
  url={bestPriceStore.affiliate_url || bestPriceStore.product_url}
  onClick={() => handleViewAtStore(bestPriceStore)}
+ observedAt={bestPriceStore.updated_at ?? null}
+ stale={!isFreshObservation(bestPriceStore.updated_at)}
+ storeCount={storeCount}
  />
  )}
 

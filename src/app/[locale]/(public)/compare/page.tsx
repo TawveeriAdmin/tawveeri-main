@@ -20,7 +20,7 @@ import {
   BarChart3,
   ExternalLink,
 } from 'lucide-react';
-import { cn, calculateSavings } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import type { ProductCategory, AvailabilityStatus } from '@/lib/database/types';
 import { isFreshObservation } from '@/lib/intelligence/evidence-engine';
 
@@ -694,8 +694,26 @@ export default function ComparePage() {
       )}
 
       {products.length > 0 && (() => {
-        const gridCols = `160px repeat(${products.length}, 1fr)`;
+        // ADR-387: no forced 700px table. A 96–140px label column + ≥140px per product lets
+        // two products sit side by side at 390px; three or four scroll horizontally inside
+        // the container while the label column stays pinned (sticky start).
+        const gridCols = `minmax(96px, 140px) repeat(${products.length}, minmax(140px, 1fr))`;
         const totalCols = products.length + 1;
+        const categories = new Set(products.map((p) => p.category).filter(Boolean));
+        const mixedCategories = categories.size > 1;
+        // Specification rows: every primitive key any product carries, differences highlighted,
+        // unknown shown as «غير متاح» — never a zero, never an implied match.
+        const specKeys = Array.from(new Set(products.flatMap((p) => Object.entries(p.specifications ?? {})
+          .filter(([, v]) => v !== null && v !== undefined && (typeof v !== 'object'))
+          .map(([k]) => k)))).slice(0, 14);
+        const specValue = (p: Product, k: string): string | null => {
+          const v = (p.specifications ?? {})[k];
+          if (v === null || v === undefined || typeof v === 'object') return null;
+          const s = String(v).trim();
+          return s ? s : null;
+        };
+        const humanizeKey = (k: string) => k.replace(/[_-]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+        const differs = (k: string) => { const vals = products.map((p) => specValue(p, k)); return vals.every((v) => v !== null) && new Set(vals).size > 1; };
 
         /** Renders one grid-row with a label cell + one cell per product */
         const renderDataRow = (
@@ -711,7 +729,7 @@ export default function ComparePage() {
             )}
             style={{ gridTemplateColumns: gridCols }}
           >
-            <div className="py-3 px-4 text-sm font-bold text-on-surface whitespace-nowrap border-e border-outline-variant/50 flex items-center">
+            <div className="sticky start-0 z-[1] flex items-center border-e border-outline-variant/50 bg-inherit px-3 py-3 text-xs font-bold text-on-surface sm:px-4 sm:text-sm">
               {label}
             </div>
             {products.map((product, colIdx) => (
@@ -729,14 +747,25 @@ export default function ComparePage() {
         );
 
         return (
-          <div className="overflow-x-auto rounded-lg border border-outline-variant/70 min-w-[700px]">
+          <div className="space-y-3">
+          {mixedCategories && (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                {locale === 'ar'
+                  ? 'هذه منتجات من فئات مختلفة — قارن المواصفات بينها، أما فرق السعر بينها فليس توفيرًا على المنتج نفسه.'
+                  : 'These products are from different categories — compare their specifications; a price gap between them is not a saving on the same product.'}
+              </AlertDescription>
+            </Alert>
+          )}
+          <div className="overflow-x-auto rounded-lg border border-outline-variant/70">
             {/* ── Product Header Row ── */}
             <div
               className="grid border-b border-outline-variant/50 bg-surface-container-lowest"
               style={{ gridTemplateColumns: gridCols }}
             >
               {/* Empty label column */}
-              <div className="border-e border-outline-variant/50 p-4" />
+              <div className="sticky start-0 z-[1] border-e border-outline-variant/50 bg-inherit p-4" />
               {products.map((product, colIdx) => {
                 const productName = getProductName(product);
                 const bestStore = bestStoreByProductId.get(product.id) || null;
@@ -879,18 +908,55 @@ export default function ComparePage() {
                 },
               },
               {
-                key: 'savings', label: t('compare.savings'), render: (product: Product) => {
-                  const bs = bestStoreByProductId.get(product.id) || null;
-                  const hasSavings = bs?.original_price && bs.original_price > bs.current_price;
-                  return hasSavings ? (
-                    <Badge variant="success-light" className="text-xs">
-                      <Price amount={calculateSavings(bs.original_price!, bs.current_price)} className="text-xs font-semibold" symbolClassName="w-3 h-3" />
-                    </Badge>
-                  ) : <span className="text-on-surface-variant">-</span>;
+                // ADR-387: this row used to render the MERCHANT'S claimed discount
+                // (original_price − current_price) as «توفير». Tawveeri's own measurement
+                // (ADR-134: 71% of advertised reference prices were never observed) is exactly
+                // why that claim is not ours to repeat. What we CAN state is observed: the spread
+                // between this product's own stores' prices.
+                key: 'spread', label: locale === 'ar' ? 'فرق السعر بين المتاجر' : 'Price spread across stores', render: (product: Product) => {
+                  const sorted = (sortedStoresByProductId.get(product.id) || []).filter((s) => s.availability !== 'out_of_stock' && s.current_price > 0);
+                  if (sorted.length < 2) return <span className="text-on-surface-variant">{locale === 'ar' ? 'متجر واحد' : 'One store'}</span>;
+                  const spread = sorted[sorted.length - 1].current_price - sorted[0].current_price;
+                  return spread > 0
+                    ? <Price amount={spread} className="text-sm font-semibold text-[var(--brand-gold-dark)]" symbolClassName="w-3 h-3" />
+                    : <span className="text-on-surface-variant">{locale === 'ar' ? 'نفس السعر' : 'Same price'}</span>;
                 },
               },
             ].map((row, rowIdx) => renderDataRow(row.label, (product) => <>{row.render(product)}</>, rowIdx))}
 
+            {/* ── Specifications — differences highlighted, unknowns stated ── */}
+            <div className="border-b border-outline-variant/50 bg-surface-container py-2.5 px-4">
+              <h2 className="text-sm font-bold text-on-surface uppercase tracking-wide">
+                {locale === 'ar' ? 'المواصفات' : 'Specifications'}
+              </h2>
+              <p className="text-[11px] text-on-surface-variant">
+                {locale === 'ar' ? 'الصفوف المظللة تختلف بين المنتجات. «غير متاح» يعني أن المتجر لم يذكرها — لا أنها متطابقة.' : 'Shaded rows differ between products. “Not available” means the store did not state it — not that it matches.'}
+              </p>
+            </div>
+            {[
+              { key: '__category', label: locale === 'ar' ? 'الفئة' : 'Category', get: (p: Product) => (p.category ? t(`products.categories.${p.category}`) : null), diff: mixedCategories },
+              { key: '__brand', label: locale === 'ar' ? 'العلامة' : 'Brand', get: (p: Product) => p.brand || null, diff: new Set(products.map((p) => (p.brand || '').toLowerCase())).size > 1 },
+              { key: '__model', label: locale === 'ar' ? 'الموديل' : 'Model', get: (p: Product) => p.model || null, diff: false },
+              ...specKeys.map((k) => ({ key: k, label: humanizeKey(k), get: (p: Product) => specValue(p, k), diff: differs(k) })),
+            ].map((row, rowIdx) => (
+              <div
+                key={row.key}
+                className={cn('grid border-b border-outline-variant/50', row.diff ? 'bg-amber-50/60 dark:bg-amber-950/10' : rowIdx % 2 === 0 ? 'bg-surface-container-lowest' : 'bg-surface-container-low/30')}
+                style={{ gridTemplateColumns: gridCols }}
+              >
+                <div className="sticky start-0 z-[1] flex items-center border-e border-outline-variant/50 bg-inherit px-3 py-3 text-xs font-bold text-on-surface sm:px-4 sm:text-sm">{row.label}</div>
+                {products.map((product, colIdx) => {
+                  const v = row.get(product);
+                  return (
+                    <div key={product.id} className={cn('flex items-center justify-center px-3 py-3 text-center text-sm', colIdx < products.length - 1 && 'border-e border-outline-variant/30', v ? 'text-on-surface' : 'text-on-surface-variant')} dir="auto">
+                      {v ?? t('compare.notAvailable')}
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+
+          </div>
           </div>
         );
       })()}

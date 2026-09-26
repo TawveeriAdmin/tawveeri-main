@@ -27,7 +27,9 @@ describe('product detail soft-404 fix (regression guard)', () => {
       join(productGroupDir, 'products/[slug]/page.tsx'),
       'utf8',
     );
-    expect(pageSrc).toMatch(/if \(product === null\) notFound\(\);/);
+    // ADR-387: the null branch may first resolve an OLD title-derived slug to a 308 (exact,
+    // unique match only) before it 404s — the guard is that ONLY `=== null` reaches notFound().
+    expect(pageSrc).toMatch(/if \(product === null\) \{[\s\S]*?notFound\(\);\s*\}/);
     expect(pageSrc).not.toMatch(/if \(!product\) notFound\(\);/);
   });
 });

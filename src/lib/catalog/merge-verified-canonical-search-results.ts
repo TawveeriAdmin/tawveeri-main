@@ -106,6 +106,104 @@ function mergeCards(group: GroupedSearchProduct[]): GroupedSearchProduct {
   };
 }
 
+/** A merchant listing URL normalized for equality: scheme/host case, tracking query, fragment
+ *  and trailing slash removed. Two cards carrying the same normalized URL for the same store
+ *  are the SAME listing — the `url_exact` lane the identity projection itself trusts. */
+export function normalizeListingUrl(url: string | null | undefined): string | null {
+  if (!url || !/^https?:\/\//i.test(url)) return null;
+  try {
+    const u = new URL(url);
+    return `${u.host.toLowerCase().replace(/^www\./, '')}${u.pathname.replace(/\/+$/, '').toLowerCase()}`;
+  } catch { return null; }
+}
+
+function rawListingUrls(card: GroupedSearchProduct): string[] {
+  const out: string[] = [];
+  for (const s of card.stores) {
+    const n = normalizeListingUrl(s.listing_url ?? (s.product_url?.startsWith('http') ? s.product_url : null));
+    if (n) out.push(`${storeKey(s)}|${n}`);
+  }
+  return out;
+}
+
+/** Which card should represent a same-listing group: the one that can be COMPARED (carries a
+ *  TPS identity key), else the one that can be routed (a product_slug), else the first. */
+function pickRepresentative(group: GroupedSearchProduct[]): GroupedSearchProduct {
+  return group.find((c) => !!c.tps_identity_key) ?? group.find((c) => !!c.product_slug) ?? group[0];
+}
+
+function mergeSameListingGroup(group: GroupedSearchProduct[]): GroupedSearchProduct {
+  const rep = pickRepresentative(group);
+  const merged = mergeCards([rep, ...group.filter((c) => c !== rep)]);
+  // mergeCards picks its metadata by price; for a SAME-LISTING group the identity-bearing
+  // card must stay the representative (its compare URL is the shopper's real destination).
+  return { ...merged, ...pickRepresentativeFields(rep) };
+}
+
+function pickRepresentativeFields(rep: GroupedSearchProduct) {
+  return {
+    name_ar: rep.name_ar, name_en: rep.name_en, brand: rep.brand, image_urls: rep.image_urls,
+    product_id: rep.product_id, product_slug: rep.product_slug, tps_identity_key: rep.tps_identity_key,
+    tps_compare_url: rep.tps_compare_url, has_tps_comparison: rep.has_tps_comparison, category: rep.category,
+  };
+}
+
+/**
+ * ADR-387 — two evidence lanes that need no database:
+ *   1. SAME LISTING: cards sharing a (store, normalized listing URL) pair are one merchant
+ *      listing rendered twice (a storefront `products` row and a TPS canonical, or a TPS
+ *      canonical and an Algolia hit). Live case: «مكيف سامسونج 18000» → three cards, one
+ *      Extra URL `/p/100226575`.
+ *   2. IDENTITY-LESS SHADOW: `canonical_products` rows with NO `tps_identity_key` (the
+ *      discover-firecrawl "memory" writer creates one per product name — 9,882 active rows,
+ *      2026-09-26) surface as cards with no compare URL and often no exit. One whose
+ *      `name_ar`/`name_en` is EXACTLY another card's is that card's shadow (the writer keys
+ *      them on `name_ar` equality) and is folded into it — never a fuzzy title match.
+ * Store-neutral: only WHICH cards merge changes; prices/order are recomputed by the same
+ * rules as every other merge.
+ */
+export function mergeSameListingCards(products: GroupedSearchProduct[]): GroupedSearchProduct[] {
+  if (products.length < 2) return products;
+  // Union-find over cards by shared listing keys.
+  const parent = products.map((_, i) => i);
+  const find = (i: number): number => (parent[i] === i ? i : (parent[i] = find(parent[i])));
+  const union = (a: number, b: number) => { const ra = find(a), rb = find(b); if (ra !== rb) parent[rb] = ra; };
+
+  const byListing = new Map<string, number>();
+  products.forEach((card, i) => {
+    for (const k of rawListingUrls(card)) {
+      const j = byListing.get(k);
+      if (j == null) byListing.set(k, i); else union(i, j);
+    }
+  });
+  const norm = (s: string | null | undefined) => (s ?? '').trim().toLowerCase();
+  const byName = new Map<string, number>();
+  products.forEach((card, i) => {
+    for (const n of [norm(card.name_ar), norm(card.name_en)]) {
+      if (!n) continue;
+      const j = byName.get(n);
+      if (j == null) { byName.set(n, i); continue; }
+      // Only an identity-less canonical card is a "shadow" — two identity-bearing cards with
+      // the same title are left alone (a title is not identity).
+      if (!card.tps_identity_key || !products[j].tps_identity_key) union(i, j);
+    }
+  });
+
+  const groups = new Map<number, GroupedSearchProduct[]>();
+  products.forEach((card, i) => { const r = find(i); const g = groups.get(r); if (g) g.push(card); else groups.set(r, [card]); });
+  if (groups.size === products.length) return products;
+  const out: GroupedSearchProduct[] = [];
+  const emitted = new Set<number>();
+  products.forEach((_, i) => {
+    const r = find(i);
+    if (emitted.has(r)) return;
+    emitted.add(r);
+    const g = groups.get(r)!;
+    out.push(g.length === 1 ? g[0] : mergeSameListingGroup(g));
+  });
+  return out;
+}
+
 /**
  * Merges search-result cards that are VERIFIED to be the same real-world product
  * (a different `products.id` each, per `storefront_identity_links`), and collapses
@@ -113,8 +211,11 @@ function mergeCards(group: GroupedSearchProduct[]): GroupedSearchProduct {
  * un-merged (but still store-deduped) list on any error.
  */
 export async function mergeVerifiedCanonicalSearchResults(
-  products: GroupedSearchProduct[],
+  input: GroupedSearchProduct[],
 ): Promise<GroupedSearchProduct[]> {
+  // ADR-387: the no-database lanes run first, so a verified-link group below can still
+  // absorb whatever they produced.
+  const products = mergeSameListingCards(input);
   if (products.length < 2) return products.map(dedupeCardStores);
 
   try {

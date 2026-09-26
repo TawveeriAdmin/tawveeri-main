@@ -22,4 +22,7 @@ export type SearchProduct = ScrapedProduct & {
   /** ISO time this price was observed (TPS `price_history` rows). Absent on live-scraped
    *  entries, whose observation is the request itself. */
   observed_at?: string | null;
+  /** The merchant's RAW listing URL when `product_url` is an attributed /go link (TPS
+   *  entries). Dedup evidence only — never rendered, never the exit (ADR-387). */
+  listing_url?: string | null;
 };

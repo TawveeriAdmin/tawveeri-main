@@ -23,6 +23,23 @@ interface BestPriceCardProps {
   url?: string | null;
   /** Affiliate-tracked link click — call BEFORE navigation. */
   onClick?: () => void;
+  /** ISO time of the last CREDIBLE price confirmation for this offer (`product_stores.updated_at`,
+   *  ADR-380). Rendered as «رصدناه …»; absent → no time claim is made. */
+  observedAt?: string | null;
+  /** True when the evidence is older than the comparison eligibility window. */
+  stale?: boolean;
+  /** How many stores this product has — with ONE store there is nothing to be "best" against. */
+  storeCount?: number;
+}
+
+/** «رصدناه اليوم/أمس/قبل يومين/قبل N أيام/قبل N يومًا» — the same phrasing the compare page uses. */
+function observedLabel(iso: string, isRTL: boolean): string {
+  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+  if (!Number.isFinite(days)) return '';
+  if (days <= 0) return isRTL ? 'رصدناه اليوم' : 'observed today';
+  if (days === 1) return isRTL ? 'رصدناه أمس' : 'observed yesterday';
+  if (isRTL) return days === 2 ? 'رصدناه قبل يومين' : days <= 10 ? `رصدناه قبل ${days} أيام` : `رصدناه قبل ${days} يومًا`;
+  return `observed ${days} days ago`;
 }
 
 /**
@@ -36,6 +53,9 @@ export function BestPriceCard({
   availability,
   url,
   onClick,
+  observedAt = null,
+  stale = false,
+  storeCount,
 }: BestPriceCardProps) {
   const { isRTL, locale } = useLocale();
   const storeName = (isRTL ? store.name_ar : store.name_en) || store.name_en || store.name_ar || '';
@@ -43,6 +63,19 @@ export function BestPriceCard({
     originalPrice && originalPrice > currentPrice ? originalPrice - currentPrice : 0;
   const isOutOfStock = availability === 'out_of_stock';
   const canBuy = Boolean(url) && !isOutOfStock;
+  // ADR-387 — the SAME claim policy as the compare page: "best" only exists against ≥2 stores;
+  // «الآن» is never claimed (the observation time is shown instead); stale evidence says so.
+  const singleStore = typeof storeCount === 'number' && storeCount <= 1;
+  const eyebrow = singleStore
+    ? (isRTL ? 'السعر المرصود' : 'Observed price')
+    : stale
+      ? (isRTL ? 'آخر سعر رصدناه' : 'Last observed price')
+      : bestPriceCopy(locale as 'ar' | 'en');
+  const atLabel = singleStore
+    ? (isRTL ? 'متوفر عند' : 'Available at')
+    : stale
+      ? (isRTL ? 'آخر سعر رصدناه عند' : 'Last observed price at')
+      : (isRTL ? 'أفضل سعر مرصود عند' : 'Best observed price at');
 
   const ctaLabel = canBuy
     ? storeName
@@ -66,8 +99,13 @@ export function BestPriceCard({
       <div className="flex items-center gap-2 mb-4">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--brand-green)] px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white">
           <Trophy className="h-3 w-3" />
-          {bestPriceCopy(locale as 'ar' | 'en')}
+          {eyebrow}
         </span>
+        {singleStore && (
+          <span className="text-[11px] text-on-surface-variant">
+            {isRTL ? 'متجر واحد — لا مقارنة أسعار لهذا المنتج بعد' : 'One store — no price comparison for this product yet'}
+          </span>
+        )}
       </div>
 
       {/* Store identity + price in a two-column layout */}
@@ -77,11 +115,21 @@ export function BestPriceCard({
           <StoreLogo slug={store.slug || store.id} size="lg" alt={storeName} locale={locale as 'ar' | 'en'} />
           <div className="flex flex-col min-w-0">
             <span className="text-xs text-on-surface-variant">
-              {isRTL ? 'أفضل سعر الآن عند' : 'Best price at'}
+              {atLabel}
             </span>
             <span className="text-base font-bold text-on-surface truncate">
               {storeName || (isRTL ? 'المتجر' : 'Store')}
             </span>
+            {observedAt && (
+              <span className="text-[11px] text-on-surface-variant">
+                {observedLabel(observedAt, isRTL)}
+                {isOutOfStock
+                  ? (isRTL ? ' · غير متوفر عند آخر رصد' : ' · out of stock at last observation')
+                  : stale
+                    ? (isRTL ? ' · متوفر بحسب آخر رصد' : ' · in stock at last observation')
+                    : (isRTL ? ' · متوفر' : ' · in stock')}
+              </span>
+            )}
           </div>
         </div>
 

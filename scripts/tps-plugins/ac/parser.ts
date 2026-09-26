@@ -76,8 +76,20 @@ export function normalize(nameAr: string, nameEn: string, _rawBrand: string | nu
   // one false comparison (measured 1650→5280 SAR). "Dual Inverter" is a compressor
   // tech, not a design line, so it is deliberately NOT treated as a series.
   if (!series_or_platform) {
+    // LG sells TWO distinct 18k cool-only inverter lines under "Fresh" (manufacturer source,
+    // lg.com/sa_en, verified 2026-09-26 — ADR-387): "Fresh Inverter" (NF182C2, older line;
+    // Almanea titles it "LG AC Split, Fresh Inverter … NF182C2 NK1 - NF182C2 UK1") and
+    // "Fresh DV" (ND182C0, dual-vane line; Najm/Alnakheel title it «فريش ريش مزدوجة … ND182C0»,
+    // Shaker "Fresh DV Inverter Series"). The old rule mapped bare «فريش» to FreshDV, so the
+    // NF182C2 offer (3,919 SAR) sat inside the ND182C0 comparison (2,799–3,099), and Shaker's
+    // two listings — one per line — alternated 2,369↔3,221 as a single "price" for a month.
+    // "DV" is proven by the DV token, by LG's own Arabic wording for dual vanes («ريش مزدوجة»),
+    // or by the model code (ND18…). Bare "Fresh"/«فريش» (or an NF… code) is the OTHER line.
+    const dvToken = /\bfresh\s*(?:dv|dry)\b|\bdual\s*vane\b|ريش\s*مزدوجة|\bnd\s?\d{2}\d?c/i.test(combined);
+    const freshToken = /\bfresh\b|فريش|\bnf\s?\d{2}\d?c/i.test(combined);
     if (combined.includes("artcool")||combined.includes("art cool")||combined.includes("ارت كول")) series_or_platform = "ArtCool";
-    else if (combined.includes("fresh dv")||combined.includes("fresh dry")||combined.includes("فريش")) series_or_platform = "FreshDV";
+    else if (dvToken) series_or_platform = "FreshDV";
+    else if (freshToken) series_or_platform = "Fresh";
     else if (combined.includes("airfit")||combined.includes("air fit")||combined.includes("اير فيت")) series_or_platform = "AirFit";
   }
   if (!technology) {

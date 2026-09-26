@@ -2070,11 +2070,18 @@ async function searchTPSCanonical(
     // as the price chunks above.
     const trueObserved = new Map<string, string>();
     const exactObservationIds = new Map<string, string>();
+    // ADR-387: the newest RAW listing URL per (canonical, store) — carried on the store entry
+    // as `listing_url` (never rendered; the exit stays the attributed /go link) so the
+    // results merge can recognize the SAME merchant listing surfacing as two cards (a
+    // storefront row and a TPS canonical, e.g. the Samsung 18000 case: three cards, one
+    // Extra listing) by exact URL equality — evidence, not title similarity.
+    const listingUrlByKey = new Map<string, string>();
     for (const r of obsChunks.flatMap((c) => (c.data ?? []) as unknown as ObsRow[])) {
       const slug = resolveApprovedSlug(r.store_id ?? '');
       if (!slug || !isDisplayableRetailer(slug) || !r.observed_at) continue;
       const key = `${r.canonical_product_id}|${slug}`;
       if (r.raw_id && r.url && r.id) exactObservationIds.set(`${key}|${r.raw_id}`, r.id);
+      if (r.url && !listingUrlByKey.has(key)) listingUrlByKey.set(key, r.url);
       if (!trueObserved.has(key)) trueObserved.set(key, r.observed_at);
     }
 
@@ -2237,6 +2244,7 @@ async function searchTPSCanonical(
         // TRUE observation (ADR-194) wins over the price-change date; the price-change
         // date remains the floor so the field is never younger than real evidence.
         observed_at: trueObserved.get(`${p.id}|${storeSlug}`) ?? v.observedAt ?? null,
+        listing_url: listingUrlByKey.get(`${(p as { id: string }).id}|${storeSlug}`) ?? null,
         image_urls: p.image_url ? [p.image_url] : [],
         specifications: {} as Record<string, unknown>,
         // Per-canonical now that more than one category can be searched at once. The UI
