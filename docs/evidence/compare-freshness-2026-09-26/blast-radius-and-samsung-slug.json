@@ -1,0 +1,207 @@
+{
+ "readAt": "2026-09-26T06:37:32.755Z",
+ "q": {
+  "cols": [
+   {
+    "table_name": "products",
+    "cols": "id,name_ar,name_en,brand,category,image_url,is_active,created_at,search_vector,canonical_product_id,description_ar,description_en,enriched_at,merchant_rating,merchant_review_count,image_urls,specifications,model,sku,slug"
+   },
+   {
+    "table_name": "raw_observations",
+    "cols": "id,store_name,source_method,raw_name,raw_url,price,original_price,availability,coupon_code,payload,scraped_at,scraping_run_id,external_product_id,payload_hash,parser_version,processing_status,processing_error,store_id"
+   },
+   {
+    "table_name": "storefront_identity_links",
+    "cols": "id,product_id,canonical_product_id,store_id,evidence_class,matched_value,storefront_url,tps_npo_id,tps_identity_key,identity_key_status,rule_version,status,linked_at,drift_detected_at,note,prior_canonical_product_id"
+   },
+   {
+    "table_name": "tps_product_projection",
+    "cols": "id,canonical_id,tps_identity_key,display_name_ar,display_name_en,brand,category,lowest_price,highest_price,saving,cheapest_store,store_count,compare_url,has_comparison,image_url,identity_confidence,built_at,updated_at,text_for_search,affiliate_best_url,price_spread_pct,algolia_synced_at,click_count,compare_count,model_number,last_observed_at"
+   }
+  ],
+  "npo_over_cap": [
+   {
+    "canonicals_over_1000": "79",
+    "comparable_over_1000": "79",
+    "max_rows": "3309"
+   }
+  ],
+  "npo_over_cap_examples": [
+   {
+    "tps_identity_key": "lg|NA|14",
+    "n": "3309",
+    "stores": "5"
+   },
+   {
+    "tps_identity_key": "اكسبير|NA|1.7",
+    "n": "2801",
+    "stores": "2"
+   },
+   {
+    "tps_identity_key": "samsung|Galaxy A|A17|Standard|128",
+    "n": "2118",
+    "stores": "5"
+   },
+   {
+    "tps_identity_key": "apple|iPhone|17|Pro|512",
+    "n": "1945",
+    "stores": "3"
+   },
+   {
+    "tps_identity_key": "apple|iPhone|17|Pro Max|512",
+    "n": "1903",
+    "stores": "3"
+   },
+   {
+    "tps_identity_key": "lg|front_load|9|combo",
+    "n": "1888",
+    "stores": "7"
+   },
+   {
+    "tps_identity_key": "gree|split|NO_SERIES|18000|Inverter|cool_only",
+    "n": "1879",
+    "stores": "3"
+   },
+   {
+    "tps_identity_key": "apple|iPhone|17|Pro|256",
+    "n": "1867",
+    "stores": "4"
+   },
+   {
+    "tps_identity_key": "lg|top_load|15|washer",
+    "n": "1853",
+    "stores": "5"
+   },
+   {
+    "tps_identity_key": "huawei|freeclip 2",
+    "n": "1802",
+    "stores": "5"
+   },
+   {
+    "tps_identity_key": "ميتاج|top_load|12|washer",
+    "n": "1758",
+    "stores": "3"
+   },
+   {
+    "tps_identity_key": "samsung|Galaxy S|S26|Ultra|512",
+    "n": "1747",
+    "stores": "4"
+   },
+   {
+    "tps_identity_key": "lg|front_load|8|washer",
+    "n": "1679",
+    "stores": "3"
+   },
+   {
+    "tps_identity_key": "toshiba|NA|14",
+    "n": "1676",
+    "stores": "3"
+   },
+   {
+    "tps_identity_key": "samsung|Galaxy Z|Z Fold 7|Standard|256",
+    "n": "1600",
+    "stores": "3"
+   }
+  ],
+  "ph_over_cap": [
+   {
+    "canonicals_over_1000": "1",
+    "max_rows": "53381"
+   }
+  ],
+  "ph_dist": [
+   {
+    "p50": "2",
+    "p95": "46",
+    "p99": "302",
+    "mx": "53381",
+    "canonicals": "19453"
+   }
+  ],
+  "npo_dist": [
+   {
+    "p50": "20",
+    "p95": "362",
+    "p99": "927",
+    "mx": "3309",
+    "canonicals": "9511"
+   }
+  ],
+  "samsung_slug": [
+   {
+    "id": "c938d587-65b2-4474-8a51-507060668aa0",
+    "slug": "samsung-split-ac-18000-bturotary-compressorheat-and-cold",
+    "name_en": "Samsung Split AC, 18000 BTU,Rotary Compressor,Heat and Cold",
+    "brand": "سامسونج",
+    "category": "accessories",
+    "is_active": true,
+    "created_at": "2026-09-10T12:05:14.971Z"
+   }
+  ],
+  "samsung_ac_products": [],
+  "samsung_canonicals": [
+   {
+    "id": "eea9c4f2-69a6-4116-b59e-1282cc7715a1",
+    "tps_identity_key": "samsung|split|NO_SERIES|18000|Standard|NO_MODE",
+    "name_en": "Samsung Split AC 18000 BTU Standard",
+    "is_active": true,
+    "stores": "1"
+   }
+  ],
+  "shaker_freshdv": [
+   {
+    "raw_name": "LG Split 18000 BTU Cool-Only AC – Fresh DV Inverter Series",
+    "url": "https://shakersa.com/product/%d8%a5%d9%84-%d8%ac%d9%8a-%d9%85%d9%83%d9%8a%d9%81-%d8%b3%d8%a8%d9%84%d9%8a%d8%aa-%d9%81%d8%b1%d9%8a%d8%b4-%d8%b1%d9%8a%d8%b4-%d9%85%d8%b2%d8%af%d9%88%d8%ac%d8%a9-18000-%d9%88%d8%ad%d8%af%d8%a9/",
+    "sku": null,
+    "model": null,
+    "first_seen": "2026-08-10T21:14:40.527Z",
+    "last_seen": "2026-09-26T04:59:23.085Z",
+    "n": "183"
+   },
+   {
+    "raw_name": "LG Air Conditioner Split Fresh – 18000 BTU – Dual Inverter Cool",
+    "url": "https://shakersa.com/product/%d9%85%d9%83%d9%8a%d9%81-%d8%b3%d8%a8%d9%84%d9%8a%d8%aa-%d9%a1%d9%a8-%d9%88%d8%ad%d8%af%d8%a9-lg-%d8%a7%d9%84%d8%b3%d8%b9%d9%88%d8%af%d9%8a%d8%a9/",
+    "sku": null,
+    "model": null,
+    "first_seen": "2026-07-24T23:13:09.843Z",
+    "last_seen": "2026-09-13T07:09:40.408Z",
+    "n": "289"
+   }
+  ],
+  "freshdv_payload_keys": [
+   {
+    "k": "_original_price"
+   },
+   {
+    "k": "cooling_mode"
+   },
+   {
+    "k": "_raw_id"
+   },
+   {
+    "k": "series_or_platform"
+   },
+   {
+    "k": "_url"
+   },
+   {
+    "k": "capacity_btu"
+   },
+   {
+    "k": "technology"
+   },
+   {
+    "k": "compressor_type"
+   },
+   {
+    "k": "ac_type"
+   },
+   {
+    "k": "_image"
+   },
+   {
+    "k": "_availability"
+   }
+  ]
+ }
+}

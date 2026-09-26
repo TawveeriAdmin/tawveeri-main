@@ -1,0 +1,73 @@
+{
+ "readAt": "2026-09-26T06:41:55.409Z",
+ "q": {
+  "samsung_row_stores": [
+   {
+    "id": "a221ec30-bb1a-4ccd-9185-c3a8705ebca2",
+    "store_id": 4,
+    "store_name": "اكسترا",
+    "current_price": "1155",
+    "availability": "in_stock",
+    "last_checked_at": "2026-09-19T20:36:56.082Z",
+    "updated_at": "2026-09-24T00:05:52.618Z",
+    "url": "https://www.extra.com/en-sa/large-appliances-/air-conditioner/split-air-conditioner/samsung-split-ac-18000-btu-rotary-co"
+   }
+  ],
+  "samsung_row_links": [],
+  "samsung_row": [
+   {
+    "id": "c938d587-65b2-4474-8a51-507060668aa0",
+    "slug": "samsung-split-ac-18000-bturotary-compressorheat-and-cold",
+    "name_en": "Samsung Split AC, 18000 BTU,Rotary Compressor,Heat and Cold",
+    "name_ar": "Samsung Split AC 18000 BTU Rotary Compressor Heat and Cold",
+    "brand": "سامسونج",
+    "category": "accessories",
+    "is_active": true,
+    "canonical_product_id": null,
+    "sku": null,
+    "model": null,
+    "created_at": "2026-09-10T12:05:14.971Z"
+   }
+  ],
+  "ph_pathological": [],
+  "slug_variant_risk": [
+   {
+    "n": "6725"
+   }
+  ],
+  "slug_variant_examples": [
+   {
+    "slug": "hitachi-canister-vacuum-cleaner-45l-1600w-brilliant-red",
+    "name_en": "Hitachi Canister Vacuum Cleaner, 4.5L, 1600W, Brilliant Red"
+   },
+   {
+    "slug": "hp-elitedesk-800-g2-mini-business-desktop-pc-intel-quad-core-i5-6500t-up-to-31g-8g-ddr4-240g-ssd-vga-dp-port-windows-10-professional-64-bit-multilingual-englishspanish-refurbished",
+    "name_en": "HP EliteDesk 800 G2 Mini Business Desktop PC Intel Quad-Core i5-6500T Up to 3.1G 8G DDR4 240G SSD VGA DP Port Windows 10 Professional 64-bit Multilingual English/Spanish Refurbished"
+   },
+   {
+    "slug": "canon-selphy-cp1500-dye-sublimation-printing-photo-printer-wi-fiusb-black",
+    "name_en": "Canon SELPHY CP1500 Dye Sublimation Printing Photo Printer, Wi-Fi/USB, Black"
+   },
+   {
+    "slug": "huawei-nova-y74-8gb256gb-black-dual-card",
+    "name_en": "HUAWEI nova Y74 8GB+256GB Black Dual Card"
+   },
+   {
+    "slug": "apple-watch-series-11-gps-cellular-42mm-silver-aluminium-case-with-purple-fog-sport-band-sm",
+    "name_en": "Apple Watch Series 11 GPS + Cellular 42mm Silver Aluminium Case with Purple Fog Sport Band S/M"
+   },
+   {
+    "slug": "eufy-x10-pro-omni-8000-pa-suction-aisee-60-day-hands-free-pro-detangle-comb-black",
+    "name_en": "eufy X10 Pro Omni, 8000 Pa Suction, AI.See™️,  60-day hands-free, Pro-Detangle Comb™, Black."
+   },
+   {
+    "slug": "promate-travel-luggage-scale-with-touch-screen-lcd-40kg-max-capacity-compact-digital-suitcase-weighing-scale-kglbs-units-auto-hold-reading-long-battery-life-polypropylene-strap",
+    "name_en": "Promate Travel Luggage Scale with Touch Screen LCD, 40kg Max Capacity, Compact Digital Suitcase Weighing Scale, KG/LBS Units, Auto Hold Reading, Long Battery Life, Polypropylene Strap"
+   },
+   {
+    "slug": "28-inches-4k-uhd-144hz-refresh-rate-05ms-mprt-hdmi-21-gaming-monitor-with-g-sync-and-free-sync-support-ps5-gop28uhd144ips-black",
+    "name_en": "28 Inches 4K UHD 144Hz Refresh rate 0.5ms MPRT HDMI 2.1 Gaming Monitor With G-Sync and Free Sync Support PS5 GOP28UHD144IPS Black"
+   }
+  ]
+ }
+}

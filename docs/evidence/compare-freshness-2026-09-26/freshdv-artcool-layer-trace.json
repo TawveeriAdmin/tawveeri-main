@@ -1,0 +1,317 @@
+{
+ "readAt": "2026-09-26T06:33:40.750Z",
+ "identity": {
+  "db": "postgres",
+  "addr": "2406:da1c:f42:ae0b:96b:e360:47ef:367c"
+ },
+ "canonicals": [
+  {
+   "id": "610b44af-97ad-402c-87ac-11e1fcb43dfe",
+   "tps_identity_key": "lg|split|ArtCool|18000|Inverter|cool_only",
+   "name_ar": "مكيف سبليت ArtCool إل جي، 18000 وحدة، انفرتر، بارد فقط",
+   "brand": "lg",
+   "category": "air_conditioner",
+   "identity_confidence": 95,
+   "is_active": true,
+   "attributes": {
+    "source": "progressive",
+    "stores": [
+     18,
+     7,
+     4,
+     2,
+     3
+    ],
+    "ac_type": "split",
+    "technology": "Inverter",
+    "capacity_btu": 18000,
+    "cooling_mode": "cool_only",
+    "identity_key": "lg|split|ArtCool|18000|Inverter|cool_only",
+    "offers_count": 5,
+    "identity_tier": "fallback",
+    "parser_version": "ac-v1",
+    "series_or_platform": "ArtCool",
+    "comparison_eligible": true
+   }
+  },
+  {
+   "id": "3494e903-d5dd-49ec-93c3-7318251f2ec7",
+   "tps_identity_key": "lg|split|FreshDV|18000|Inverter|cool_only",
+   "name_ar": "مكيف سبليت FreshDV إل جي، 18000 وحدة، انفرتر، بارد فقط",
+   "brand": "lg",
+   "category": "air_conditioner",
+   "identity_confidence": 95,
+   "is_active": true,
+   "attributes": {
+    "source": "progressive",
+    "stores": [
+     18,
+     9,
+     7,
+     5,
+     4
+    ],
+    "ac_type": "split",
+    "technology": "Inverter",
+    "capacity_btu": 18000,
+    "cooling_mode": "cool_only",
+    "identity_key": "lg|split|FreshDV|18000|Inverter|cool_only",
+    "offers_count": 5,
+    "identity_tier": "fallback",
+    "parser_version": "ac-v1",
+    "series_or_platform": "FreshDV",
+    "comparison_eligible": true
+   }
+  }
+ ],
+ "price_history_latest_per_store": {
+  "3494e903-d5dd-49ec-93c3-7318251f2ec7": {
+   "اكسترا": {
+    "price": "3099.00",
+    "observed_at": "2026-09-19T12:04:04.096Z",
+    "tps_observation_id": "f68e597a-4067-4202-997d-2a4cefcb97d8"
+   },
+   "نجم الأجهزة": {
+    "price": "2978.01",
+    "observed_at": "2026-09-17T21:26:30.165Z",
+    "tps_observation_id": "79f17976-5036-48b9-932d-c26d541bf9e8"
+   },
+   "شاكر": {
+    "price": "2799.10",
+    "observed_at": "2026-09-17T21:26:02.914Z",
+    "tps_observation_id": "cf67aef5-7f9e-4cfb-9a3e-bec930b6a48b"
+   },
+   "متجر النخيل": {
+    "price": "2799.00",
+    "observed_at": "2026-09-16T12:15:48.286Z",
+    "tps_observation_id": "6d92d25d-0298-4e66-96a3-6eba46609919"
+   },
+   "المنيع": {
+    "price": "3919.00",
+    "observed_at": "2026-08-15T16:11:17.095Z",
+    "tps_observation_id": "6c4b22ff-ae39-4a76-8e3c-8ffa97b7c7d1"
+   }
+  },
+  "610b44af-97ad-402c-87ac-11e1fcb43dfe": {
+   "اكسترا": {
+    "price": "3669.00",
+    "observed_at": "2026-09-19T12:04:04.096Z",
+    "tps_observation_id": "70a36822-ff62-42eb-b8d2-4fe180794203"
+   },
+   "شاكر": {
+    "price": "3299.35",
+    "observed_at": "2026-09-17T21:26:02.914Z",
+    "tps_observation_id": "03335343-318e-4f1e-be4d-b66b1fceafd1"
+   },
+   "متجر النخيل": {
+    "price": "3269.00",
+    "observed_at": "2026-09-16T12:15:48.286Z",
+    "tps_observation_id": "65b310c6-d474-4cb2-b64d-69f47d9477f4"
+   },
+   "أمازون": {
+    "price": "2949.00",
+    "observed_at": "2026-09-13T13:37:33.106Z",
+    "tps_observation_id": "ee6481b8-a613-4a78-9dbe-7c3c3799b6ec"
+   },
+   "نون": {
+    "price": "3369.00",
+    "observed_at": "2026-08-16T18:26:19.893Z",
+    "tps_observation_id": "320117b7-2731-4312-b3a6-93c9c5de0cdc"
+   }
+  }
+ },
+ "price_history_row_counts": {
+  "3494e903-d5dd-49ec-93c3-7318251f2ec7": {
+   "اكسترا": 7,
+   "نجم الأجهزة": 5,
+   "شاكر": 217,
+   "متجر النخيل": 3,
+   "المنيع": 2
+  },
+  "610b44af-97ad-402c-87ac-11e1fcb43dfe": {
+   "اكسترا": 6,
+   "شاكر": 4,
+   "متجر النخيل": 4,
+   "أمازون": 2,
+   "نون": 3
+  }
+ },
+ "npo_row_counts": {
+  "3494e903-d5dd-49ec-93c3-7318251f2ec7": {
+   "4": 80,
+   "5": 440,
+   "7": 472,
+   "9": 310,
+   "18": 263,
+   "total": 1565
+  },
+  "610b44af-97ad-402c-87ac-11e1fcb43dfe": {
+   "2": 2,
+   "3": 5,
+   "4": 78,
+   "7": 183,
+   "18": 263,
+   "total": 531
+  }
+ },
+ "npo_newest_per_store": {
+  "3494e903-d5dd-49ec-93c3-7318251f2ec7": {
+   "4": {
+    "observed_at": "2026-09-23T18:04:20.572Z",
+    "id": "aa6b0561-fb56-4496-968c-45af508b8586",
+    "raw_id": "2926057",
+    "url": "https://www.extra.com/en-sa/large-appliances-/air-conditioner/split-air-conditioner/lg-spilt-ac-18000-btu-cool-only-fresh-dv-dual-inverter-compressor-white/p/100369841"
+   },
+   "5": {
+    "observed_at": "2026-09-25T21:56:45.875Z",
+    "id": "3aa1a200-b180-42b3-ba8d-503b11977a09",
+    "raw_id": "2994641",
+    "url": "https://www.almanea.sa/en/product/p-110300701318019"
+   },
+   "7": {
+    "observed_at": "2026-09-26T04:59:23.085Z",
+    "id": "82c1e064-4fae-4561-a1af-a2c1797f278e",
+    "raw_id": "3004441",
+    "url": "https://shakersa.com/product/%d8%a5%d9%84-%d8%ac%d9%8a-%d9%85%d9%83%d9%8a%d9%81-%d8%b3%d8%a8%d9%84%d9%8a%d8%aa-%d9%81%d8%b1%d9%8a%d8%b4-%d8%b1%d9%8a%d8%b4-%d9%85%d8%b2%d8%af%d9%88%d8%ac%d8%a9-18000-%d9%88%d8%ad%d8%af%d8%a9/"
+   },
+   "9": {
+    "observed_at": "2026-09-26T04:59:43.278Z",
+    "id": "40b849d0-479e-47d6-9f27-3c351451370d",
+    "raw_id": "3004751",
+    "url": "https://najm.store/ال-جي-فريش-مكيف-سبليت-18000-وحدة/p1989088267"
+   },
+   "18": {
+    "observed_at": "2026-09-26T05:00:28.934Z",
+    "id": "d7a5687b-0308-489c-bc5b-e1efe2a17611",
+    "raw_id": "3005776",
+    "url": "https://alnakheelk.com/en/ال-جي-مكيف-سبليت-فريش-ريش-مزدوجة-18000-وحدة-بارد-فقط-إنفرتر/p737069420"
+   }
+  },
+  "610b44af-97ad-402c-87ac-11e1fcb43dfe": {
+   "2": {
+    "observed_at": "2026-09-13T13:37:33.106Z",
+    "id": "ee6481b8-a613-4a78-9dbe-7c3c3799b6ec",
+    "raw_id": "2616710",
+    "url": "https://www.amazon.sa/-/en/LG-Conditioner-Inverter-Pre-cooling-AM182C0-UK1/dp/B0F945GXKC/ref=sr_1_41?dib=eyJ2IjoiMSJ9.fOYvyMOasRnxmWh6g_X6zj3U7iJedyj-rJKPovKq713WUohGK8KyjgQaR3i8Fd9A1_GXmZklxWOjr4rOUBIegBoqk1FQ6u8IwdORG502yjiyA88Zu2rnr_RTEn0d-z44ME0fRXBKaNSoW2rcevDoerfgHVW_ubsi23g_AZVUCERxOZagYzFbCuHb1znPfKklgfHBGMM6Fe4b8KKj1hTLMJmA4TgPU_s3YAvjrWsvDCVYflfT3NzNLnXAmMKAb_XOCdqsn_NHnI-zKOhvzc1yNjk2qhvUFae0GMENTAU2hTw.R7FHmvVl3JwdFkUWHhl4VD-l7JHB2jK3XzFHOpb4p6s&dib_tag=se&keywords=split+air+conditioner+18000+btu&qid=1788795785&sr=8-41"
+   },
+   "3": {
+    "observed_at": "2026-08-20T19:03:23.971Z",
+    "id": "fd8a456f-8f7c-46ed-951f-ac7206d27d4c",
+    "raw_id": "1931082",
+    "url": "https://www.noon.com/saudi-en/artcool-split-ac-18000-btu-cool-only-inverter-with-gold-fin-am182c0-black/N70199707V/p/"
+   },
+   "4": {
+    "observed_at": "2026-09-23T18:04:20.572Z",
+    "id": "0717dc1f-b581-483a-9a38-b373efd6dac8",
+    "raw_id": "2926201",
+    "url": "https://www.extra.com/en-sa/large-appliances-/air-conditioner/split-air-conditioner/lg-spilt-ac-18-000-btu-cold-only-art-cool-dual-inverter-compressor-black/p/100369844"
+   },
+   "7": {
+    "observed_at": "2026-09-26T04:59:23.085Z",
+    "id": "5817dc7a-faf2-4cef-9257-b3eedefec223",
+    "raw_id": "3004449",
+    "url": "https://shakersa.com/product/%d8%a5%d9%84-%d8%ac%d9%8a-%d9%85%d9%83%d9%8a%d9%81-%d8%b3%d8%a8%d9%84%d9%8a%d8%aa-%d9%81%d8%b1%d9%8a%d8%b4-18000-%d9%88%d8%ad%d8%af%d8%a9-%d8%a8%d8%a7%d8%b1%d8%af-%d9%81%d9%82%d8%b7-%d8%a5%d9%86/"
+   },
+   "18": {
+    "observed_at": "2026-09-26T05:00:28.934Z",
+    "id": "197f06e8-ad6a-46e3-9f67-57c80cf1a423",
+    "raw_id": "3005778",
+    "url": "https://alnakheelk.com/en/مكيف-ال-جي-سبليت-ارت-كول-18000-وحدة-بارد-فقط-إنفرتر-موفر-للطاقة-لون-أسود/p1186983996"
+   }
+  }
+ },
+ "tps_current_offers": [
+  {
+   "identity_key": "lg|split|ArtCool|18000|Inverter|cool_only",
+   "store_id": 2,
+   "status": "valid",
+   "price": "2949",
+   "observed_at": "2026-09-13T13:37:33.106Z",
+   "raw_obs_id": "2616710"
+  },
+  {
+   "identity_key": "lg|split|ArtCool|18000|Inverter|cool_only",
+   "store_id": 3,
+   "status": "valid",
+   "price": "3369",
+   "observed_at": "2026-08-20T19:03:23.971Z",
+   "raw_obs_id": "1931082"
+  },
+  {
+   "identity_key": "lg|split|ArtCool|18000|Inverter|cool_only",
+   "store_id": 4,
+   "status": "valid",
+   "price": "3669",
+   "observed_at": "2026-09-23T18:04:20.572Z",
+   "raw_obs_id": "2926201"
+  },
+  {
+   "identity_key": "lg|split|ArtCool|18000|Inverter|cool_only",
+   "store_id": 7,
+   "status": "valid",
+   "price": "3299.35",
+   "observed_at": "2026-09-26T04:59:23.085Z",
+   "raw_obs_id": "3004449"
+  },
+  {
+   "identity_key": "lg|split|ArtCool|18000|Inverter|cool_only",
+   "store_id": 18,
+   "status": "valid",
+   "price": "3269",
+   "observed_at": "2026-09-26T05:00:28.934Z",
+   "raw_obs_id": "3005778"
+  },
+  {
+   "identity_key": "lg|split|FreshDV|18000|Inverter|cool_only",
+   "store_id": 4,
+   "status": "valid",
+   "price": "3099",
+   "observed_at": "2026-09-23T18:04:20.572Z",
+   "raw_obs_id": "2926057"
+  },
+  {
+   "identity_key": "lg|split|FreshDV|18000|Inverter|cool_only",
+   "store_id": 5,
+   "status": "valid",
+   "price": "3919",
+   "observed_at": "2026-09-25T21:56:45.875Z",
+   "raw_obs_id": "2994641"
+  },
+  {
+   "identity_key": "lg|split|FreshDV|18000|Inverter|cool_only",
+   "store_id": 7,
+   "status": "valid",
+   "price": "2799.1",
+   "observed_at": "2026-09-26T04:59:23.085Z",
+   "raw_obs_id": "3004441"
+  },
+  {
+   "identity_key": "lg|split|FreshDV|18000|Inverter|cool_only",
+   "store_id": 9,
+   "status": "valid",
+   "price": "2978.01",
+   "observed_at": "2026-09-26T04:59:43.278Z",
+   "raw_obs_id": "3004751"
+  },
+  {
+   "identity_key": "lg|split|FreshDV|18000|Inverter|cool_only",
+   "store_id": 18,
+   "status": "valid",
+   "price": "2799",
+   "observed_at": "2026-09-26T05:00:28.934Z",
+   "raw_obs_id": "3005776"
+  }
+ ],
+ "implausibility": [
+  {
+   "canonical_product_id": "610b44af-97ad-402c-87ac-11e1fcb43dfe",
+   "store_display_name": "أمازون",
+   "observed_price": "2948",
+   "plausible_floor": "2948",
+   "reason": "non-positive or non-finite price (price-transition-guard)",
+   "detected_at": "2026-09-07T16:05:41.542Z",
+   "source": "price-transition-guard"
+  }
+ ],
+ "delist": []
+}

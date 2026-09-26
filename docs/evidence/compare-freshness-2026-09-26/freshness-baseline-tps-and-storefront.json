@@ -1,0 +1,207 @@
+{
+ "readAt": "2026-09-26T06:50:15.683Z",
+ "q": {
+  "tco_by_store": [
+   {
+    "store_id": 1,
+    "valid_offers": "259",
+    "p50_h": "912",
+    "p95_h": "948",
+    "older_than_7d": "239",
+    "older_than_72h": "239"
+   },
+   {
+    "store_id": 2,
+    "valid_offers": "1197",
+    "p50_h": "91",
+    "p95_h": "775",
+    "older_than_7d": "485",
+    "older_than_72h": "665"
+   },
+   {
+    "store_id": 3,
+    "valid_offers": "1085",
+    "p50_h": "864",
+    "p95_h": "922",
+    "older_than_7d": "1007",
+    "older_than_72h": "1022"
+   },
+   {
+    "store_id": 4,
+    "valid_offers": "2163",
+    "p50_h": "73",
+    "p95_h": "787",
+    "older_than_7d": "630",
+    "older_than_72h": "1124"
+   },
+   {
+    "store_id": 5,
+    "valid_offers": "1553",
+    "p50_h": "9",
+    "p95_h": "860",
+    "older_than_7d": "399",
+    "older_than_72h": "428"
+   },
+   {
+    "store_id": 6,
+    "valid_offers": "1284",
+    "p50_h": "4",
+    "p95_h": "4",
+    "older_than_7d": "3",
+    "older_than_72h": "3"
+   },
+   {
+    "store_id": 7,
+    "valid_offers": "275",
+    "p50_h": "2",
+    "p95_h": "860",
+    "older_than_7d": "111",
+    "older_than_72h": "111"
+   },
+   {
+    "store_id": 9,
+    "valid_offers": "297",
+    "p50_h": "2",
+    "p95_h": "860",
+    "older_than_7d": "133",
+    "older_than_72h": "136"
+   },
+   {
+    "store_id": 10,
+    "valid_offers": "100",
+    "p50_h": "2",
+    "p95_h": "854",
+    "older_than_7d": "13",
+    "older_than_72h": "13"
+   },
+   {
+    "store_id": 11,
+    "valid_offers": "1",
+    "p50_h": "1508",
+    "p95_h": "1508",
+    "older_than_7d": "1",
+    "older_than_72h": "1"
+   },
+   {
+    "store_id": 14,
+    "valid_offers": "1",
+    "p50_h": "1508",
+    "p95_h": "1508",
+    "older_than_7d": "1",
+    "older_than_72h": "1"
+   },
+   {
+    "store_id": 15,
+    "valid_offers": "2",
+    "p50_h": "1507",
+    "p95_h": "1507",
+    "older_than_7d": "2",
+    "older_than_72h": "2"
+   },
+   {
+    "store_id": 16,
+    "valid_offers": "2",
+    "p50_h": "1487",
+    "p95_h": "1487",
+    "older_than_7d": "2",
+    "older_than_72h": "2"
+   },
+   {
+    "store_id": 17,
+    "valid_offers": "2",
+    "p50_h": "1487",
+    "p95_h": "1487",
+    "older_than_7d": "2",
+    "older_than_72h": "2"
+   },
+   {
+    "store_id": 18,
+    "valid_offers": "280",
+    "p50_h": "2",
+    "p95_h": "860",
+    "older_than_7d": "36",
+    "older_than_72h": "36"
+   },
+   {
+    "store_id": 21,
+    "valid_offers": "6",
+    "p50_h": "1486",
+    "p95_h": "1486",
+    "older_than_7d": "6",
+    "older_than_72h": "6"
+   },
+   {
+    "store_id": 23,
+    "valid_offers": "72",
+    "p50_h": "3",
+    "p95_h": "936",
+    "older_than_7d": "17",
+    "older_than_72h": "23"
+   }
+  ],
+  "tco_comparable": [
+   {
+    "comparable_identities": "1323",
+    "with_2plus_fresh_offers": "830",
+    "with_no_fresh_offer": "156"
+   }
+  ],
+  "tco_total": [
+   {
+    "valid_offers": "8579",
+    "older_than_7d": "3087"
+   }
+  ],
+  "storefront_by_store": [
+   {
+    "store_id": 1,
+    "rows": "7300",
+    "p50_last_checked_h": "282",
+    "p50_updated_h": "1462",
+    "updated_older_7d": "7271"
+   },
+   {
+    "store_id": 2,
+    "rows": "11953",
+    "p50_last_checked_h": "205",
+    "p50_updated_h": "449",
+    "updated_older_7d": "8744"
+   },
+   {
+    "store_id": 3,
+    "rows": "4434",
+    "p50_last_checked_h": "413",
+    "p50_updated_h": "1394",
+    "updated_older_7d": "4383"
+   },
+   {
+    "store_id": 4,
+    "rows": "5567",
+    "p50_last_checked_h": "203",
+    "p50_updated_h": "55",
+    "updated_older_7d": "1138"
+   },
+   {
+    "store_id": 5,
+    "rows": "1466",
+    "p50_last_checked_h": "1311",
+    "p50_updated_h": "1464",
+    "updated_older_7d": "1146"
+   },
+   {
+    "store_id": 6,
+    "rows": "425",
+    "p50_last_checked_h": "18",
+    "p50_updated_h": "26",
+    "updated_older_7d": "189"
+   },
+   {
+    "store_id": 7,
+    "rows": "265",
+    "p50_last_checked_h": "1521",
+    "p50_updated_h": "1524",
+    "updated_older_7d": "265"
+   }
+  ]
+ }
+}

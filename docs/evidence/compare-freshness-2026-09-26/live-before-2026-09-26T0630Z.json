@@ -1,0 +1,204 @@
+{
+ "fetchedAt": "2026-09-26T06:30Z",
+ "freshdv": {
+  "header": 2,
+  "footer": 2,
+  "main": 2,
+  "jsonld_product": {
+   "@context": "https://schema.org",
+   "@type": "Product",
+   "name": "مكيف سبليت FreshDV إل جي، 18000 وحدة، انفرتر، بارد فقط",
+   "brand": {
+    "@type": "Brand",
+    "name": "lg"
+   },
+   "offers": {
+    "@type": "AggregateOffer",
+    "priceCurrency": "SAR",
+    "lowPrice": "3099",
+    "highPrice": "3099",
+    "offerCount": 5,
+    "offers": [
+     {
+      "@type": "Offer",
+      "price": "2799",
+      "priceCurrency": "SAR",
+      "url": "/go/6d92d25d-0298-4e66-96a3-6eba46609919?gt=1790404254116.746ffeec81817081816c8193738652b98683467aad0714245e5f4822692aada4",
+      "seller": {
+       "@type": "Organization",
+       "name": "متجر النخيل"
+      },
+      "availability": "https://schema.org/InStock"
+     },
+     {
+      "@type": "Offer",
+      "price": "2799.1",
+      "priceCurrency": "SAR",
+      "url": "/go/cf67aef5-7f9e-4cfb-9a3e-bec930b6a48b?gt=1790404254116.590a70dc2b1cc3d13061517f1dc01e4a1295e56dec1cc1f847a48820e681bf02",
+      "seller": {
+       "@type": "Organization",
+       "name": "شاكر"
+      },
+      "availability": "https://schema.org/InStock"
+     },
+     {
+      "@type": "Offer",
+      "price": "2978.01",
+      "priceCurrency": "SAR",
+      "url": "/go/79f17976-5036-48b9-932d-c26d541bf9e8?gt=1790404254116.ef12af0ede04b6cd63d9db275e2387e5d77b3ad9d1205d60287cbf6539be81dd",
+      "seller": {
+       "@type": "Organization",
+       "name": "نجم الأجهزة"
+      },
+      "availability": "https://schema.org/InStock"
+     },
+     {
+      "@type": "Offer",
+      "price": "3099",
+      "priceCurrency": "SAR",
+      "url": "/go/f68e597a-4067-4202-997d-2a4cefcb97d8?gt=1790404254116.6ec083ec2d193c27eac9c456f149a2139a60896b3c146ad07eadd13c2476e5ce",
+      "seller": {
+       "@type": "Organization",
+       "name": "إكسترا"
+      },
+      "availability": "https://schema.org/InStock"
+     },
+     {
+      "@type": "Offer",
+      "price": "3919",
+      "priceCurrency": "SAR",
+      "url": "/go/6c4b22ff-ae39-4a76-8e3c-8ffa97b7c7d1?gt=1790404254116.4507fb99c9ae943bca0af010f8d119b2d51d0ba73cc3b66383dc41f798d0263c",
+      "seller": {
+       "@type": "Organization",
+       "name": "المنيع"
+      },
+      "availability": "https://schema.org/InStock"
+     }
+    ]
+   }
+  },
+  "text_signals": [
+   "ثقة 95%",
+   "أرخص سعر",
+   "آخر سعر رصدناه",
+   "آخر سعر رصدناه عند",
+   "حالة المنتج غير مؤكدة",
+   "جميع العروض (5 متاجر)",
+   "● متوفر",
+   "رصدناه قبل 9 يومًا",
+   "تم التحقق من المطابقة بدقة 95% • مدعوم بـ TPS",
+   "رصدناه قبل 8 يومًا",
+   "رصدناه قبل 6 يومًا",
+   "رصدناه قبل 33 يومًا"
+  ]
+ },
+ "artcool": {
+  "header": 2,
+  "footer": 2,
+  "main": 2,
+  "jsonld_product": {
+   "@context": "https://schema.org",
+   "@type": "Product",
+   "name": "مكيف سبليت ArtCool إل جي، 18000 وحدة، انفرتر، بارد فقط",
+   "brand": {
+    "@type": "Brand",
+    "name": "lg"
+   },
+   "offers": {
+    "@type": "AggregateOffer",
+    "priceCurrency": "SAR",
+    "lowPrice": "3269",
+    "highPrice": "3669",
+    "offerCount": 5,
+    "offers": [
+     {
+      "@type": "Offer",
+      "price": "2949",
+      "priceCurrency": "SAR",
+      "url": "/go/ee6481b8-a613-4a78-9dbe-7c3c3799b6ec?gt=1790404256283.a44c60cd8abfedd60d2031ac346fe3fec3a3fc7b85c781fb36e8708961905535",
+      "seller": {
+       "@type": "Organization",
+       "name": "أمازون السعودية"
+      },
+      "availability": "https://schema.org/InStock"
+     },
+     {
+      "@type": "Offer",
+      "price": "3269",
+      "priceCurrency": "SAR",
+      "url": "/go/65b310c6-d474-4cb2-b64d-69f47d9477f4?gt=1790404256283.7bbec5eb2e9dd79a2631ceee090d144fb66aded2d510647be4fec73cea42c1c2",
+      "seller": {
+       "@type": "Organization",
+       "name": "متجر النخيل"
+      },
+      "availability": "https://schema.org/InStock"
+     },
+     {
+      "@type": "Offer",
+      "price": "3299.35",
+      "priceCurrency": "SAR",
+      "url": "/go/03335343-318e-4f1e-be4d-b66b1fceafd1?gt=1790404256283.617f105923f27462a4d630f19b3b01ca6c68c059b47eb09bf9095d99df849e00",
+      "seller": {
+       "@type": "Organization",
+       "name": "شاكر"
+      },
+      "availability": "https://schema.org/InStock"
+     },
+     {
+      "@type": "Offer",
+      "price": "3369",
+      "priceCurrency": "SAR",
+      "url": "/go/320117b7-2731-4312-b3a6-93c9c5de0cdc?gt=1790404256283.6a0e80a5bca53a18c8f09477efa2814bb2ee39daf89af2afafea1e0b4178c683",
+      "seller": {
+       "@type": "Organization",
+       "name": "نون"
+      },
+      "availability": "https://schema.org/InStock"
+     },
+     {
+      "@type": "Offer",
+      "price": "3669",
+      "priceCurrency": "SAR",
+      "url": "/go/70a36822-ff62-42eb-b8d2-4fe180794203?gt=1790404256283.616ebd88d0d0cc03f9a9e630b4c9db8cafc03926a949f8daeb283b071e5bd77b",
+      "seller": {
+       "@type": "Organization",
+       "name": "إكسترا"
+      },
+      "availability": "https://schema.org/InStock"
+     }
+    ]
+   }
+  },
+  "text_signals": [
+   "ثقة 95%",
+   "أرخص سعر",
+   "أعلى سعر",
+   "توفّر",
+   "أفضل سعر",
+   "أفضل سعر الآن عند",
+   "● متوفر الآن",
+   "حالة المنتج غير مؤكدة",
+   "جميع العروض (5 متاجر)",
+   "رصدناه قبل 12 يومًا",
+   "تم التحقق من المطابقة بدقة 95% • مدعوم بـ TPS",
+   "● متوفر",
+   "رصدناه اليوم",
+   "رصدناه قبل 36 يومًا",
+   "رصدناه قبل 2 يومًا"
+  ]
+ },
+ "categories_header_count": 2,
+ "stores_reference_header_count": 1,
+ "samsung_404_url": "https://tawveeri.com/ar/products/samsung-split-ac-18000-btu-rotary-compressor-heat-and-cold",
+ "samsung_404_status": 404,
+ "search_api_freshdv_alnakheelk": {
+  "observed_at": "2026-09-26T05:00:28.934+00:00",
+  "price": 2799,
+  "go_id": "d7a5687b-0308-489c-bc5b-e1efe2a17611"
+ },
+ "compare_page_freshdv_alnakheelk": {
+  "text": "رصدناه قبل 9 يومًا",
+  "price": 2799,
+  "go_id": "6d92d25d-0298-4e66-96a3-6eba46609919"
+ }
+}

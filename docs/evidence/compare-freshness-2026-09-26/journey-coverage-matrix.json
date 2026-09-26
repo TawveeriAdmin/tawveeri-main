@@ -1,0 +1,269 @@
+{
+ "readAt": "2026-09-26T07:04:32.037Z",
+ "out": [
+  {
+   "q": "ايفون 16 128",
+   "total": 4,
+   "cards": [
+    {
+     "name": "جوال آبل iPhone 16 128 جيجابايت",
+     "key": "apple|iPhone|16|Standard|128",
+     "slug": "apple-iphone-16-standard-128",
+     "best": 2239,
+     "compare": "/ar/compare/apple%7CiPhone%7C16%7CStandard%7C128",
+     "stores": [
+      "jarir:1899@2026-07-29",
+      "extra:2239@2026-09-25",
+      "amazon:2959@2026-09-21",
+      "almanea:3799@2026-09-26"
+     ]
+    },
+    {
+     "name": "جوال آبل iPhone 16 Plus 128 جيجابايت",
+     "key": "apple|iPhone|16|Plus|128",
+     "slug": "apple-iphone-16-plus-128",
+     "best": 3699,
+     "compare": "/ar/compare/apple%7CiPhone%7C16%7CPlus%7C128",
+     "stores": [
+      "amazon:3267@2026-08-03",
+      "almanea:3445@2026-09-12",
+      "extra:3699@2026-09-25"
+     ]
+    },
+    {
+     "name": "ايفون 16، 128 جيجا، 5 جي، وردي",
+     "key": null,
+     "slug": null,
+     "best": 3299.01,
+     "compare": null,
+     "stores": [
+      "almanea:3299.01@2026-09-26"
+     ]
+    },
+    {
+     "name": "ايفون 16، 128 جيجا، 5 جي، اخضر",
+     "key": null,
+     "slug": null,
+     "best": 3299.01,
+     "compare": null,
+     "stores": [
+      "almanea:3299.01@2026-09-26"
+     ]
+    }
+   ]
+  },
+  {
+   "q": "Lenovo Legion 5 gaming laptop",
+   "total": 23,
+   "cards": [
+    {
+     "name": "Lenovo Legion LOQ AI-Powered Gaming Laptop - Intel Core i7-1",
+     "key": null,
+     "slug": "044a873d-5038-4b2c-b9b5-a62783c93f83",
+     "best": 5490,
+     "compare": null,
+     "stores": [
+      "أمازون:5490@"
+     ]
+    },
+    {
+     "name": "لابتوب ألعاب LOQ 17IRX10 بشاشة 15.3 بوصة WUXGA (1920X1080) ب",
+     "key": null,
+     "slug": "0c1d10ff-b79e-4392-b989-d66b6504b22a",
+     "best": 5750,
+     "compare": null,
+     "stores": [
+      "نون:5750@"
+     ]
+    },
+    {
+     "name": "لابتوب العاب ليجيون 5 بشاشة WQXGA مقاس 16 بوصة (2560x1600) و",
+     "key": null,
+     "slug": "2636b9f4-6280-4546-95af-0ae2b8851b58",
+     "best": 6204.82,
+     "compare": null,
+     "stores": [
+      "نون:6204.82@"
+     ]
+    },
+    {
+     "name": "لابتوب الألعاب ليجن 5i - معالج إنتل كور i9-14900HX، 16 جيجاب",
+     "key": null,
+     "slug": "1deba55c-8ccc-41ec-95d3-b15df101fac9",
+     "best": 7815,
+     "compare": null,
+     "stores": [
+      "نون:7815@"
+     ]
+    }
+   ]
+  },
+  {
+   "q": "Samsung 55 inch OLED S90H",
+   "total": 1,
+   "cards": [
+    {
+     "name": "Samsung 55 Inch OLED S90H 4K Vision AI Smart TV, NQ4 AI Gen3",
+     "key": "samsung|MODEL:QA55S90HAUXSA",
+     "slug": "693c30ec-4436-4ef1-9144-974165958099",
+     "best": 6499,
+     "compare": null,
+     "stores": [
+      "أمازون السعودية:6499@",
+      "اكسترا:6499@"
+     ]
+    }
+   ]
+  },
+  {
+   "q": "LG FreshDV 18000",
+   "total": 91,
+   "cards": [
+    {
+     "name": "مكيف سبليت ال جي 18000 وحدة إنفرتر",
+     "key": null,
+     "slug": "cbbd4a9d-99b7-4b78-8d7e-cabfe25bd82e",
+     "best": 1559,
+     "compare": null,
+     "stores": [
+      "اكسترا:1559@"
+     ]
+    },
+    {
+     "name": "LG Split AC Gold Plus Dual Inverter 18000 BTU Cool UV Nano I",
+     "key": null,
+     "slug": "3e310b4c-1694-451a-b331-44961c714719",
+     "best": 1559,
+     "compare": null,
+     "stores": [
+      "اكسترا:1559@"
+     ]
+    },
+    {
+     "name": "LG Spilt AC 18000 BTU Heat & Cool Win Dual Inverter Compress",
+     "key": null,
+     "slug": "9ed5e139-4ae2-4283-bf7a-d19ae612eaaf",
+     "best": 2399,
+     "compare": null,
+     "stores": [
+      "اكسترا:2399@"
+     ]
+    },
+    {
+     "name": "LG Split AC 18000 BTU Jet Cool WiFi 4-Way Rotary Heat & Cool",
+     "key": null,
+     "slug": "1cef5d3f-b687-4115-b9f4-777392eb8065",
+     "best": 2559,
+     "compare": null,
+     "stores": [
+      "اكسترا:2559@"
+     ]
+    }
+   ]
+  },
+  {
+   "q": "LG ArtCool 18000",
+   "total": 91,
+   "cards": [
+    {
+     "name": "مكيف سبليت ال جي 18000 وحدة إنفرتر",
+     "key": null,
+     "slug": "cbbd4a9d-99b7-4b78-8d7e-cabfe25bd82e",
+     "best": 1559,
+     "compare": null,
+     "stores": [
+      "اكسترا:1559@"
+     ]
+    },
+    {
+     "name": "LG Split AC Gold Plus Dual Inverter 18000 BTU Cool UV Nano I",
+     "key": null,
+     "slug": "3e310b4c-1694-451a-b331-44961c714719",
+     "best": 1559,
+     "compare": null,
+     "stores": [
+      "اكسترا:1559@"
+     ]
+    },
+    {
+     "name": "LG Spilt AC 18000 BTU Heat & Cool Win Dual Inverter Compress",
+     "key": null,
+     "slug": "9ed5e139-4ae2-4283-bf7a-d19ae612eaaf",
+     "best": 2399,
+     "compare": null,
+     "stores": [
+      "اكسترا:2399@"
+     ]
+    },
+    {
+     "name": "LG Split AC 18000 BTU Jet Cool WiFi 4-Way Rotary Heat & Cool",
+     "key": null,
+     "slug": "1cef5d3f-b687-4115-b9f4-777392eb8065",
+     "best": 2559,
+     "compare": null,
+     "stores": [
+      "اكسترا:2559@"
+     ]
+    }
+   ]
+  },
+  {
+   "q": "غسالة صحون Midea",
+   "total": 14,
+   "cards": [
+    {
+     "name": "غسالة صحون midea 12 مكان",
+     "key": "midea|NA|12",
+     "slug": "midea-na-12",
+     "best": 479,
+     "compare": "/ar/compare/midea%7CNA%7C12",
+     "stores": [
+      "extra:479@2026-09-25",
+      "alnakheelk:1049@2026-07-26",
+      "amazon:1099@2026-09-23",
+      "swsg:1199@2026-08-02",
+      "blackbox:1221@2026-09-26",
+      "shaker:1221.12@2026-09-26"
+     ]
+    },
+    {
+     "name": "غسالة صحون midea 14 مكان",
+     "key": "midea|NA|14",
+     "slug": "midea-na-14",
+     "best": 1498.89,
+     "compare": "/ar/compare/midea%7CNA%7C14",
+     "stores": [
+      "extra:1175@2026-08-21",
+      "alnakheelk:1469@2026-07-26",
+      "shaker:1498.89@2026-09-26",
+      "amazon:1590@2026-09-23"
+     ]
+    },
+    {
+     "name": "غسالة صحون midea 15 مكان",
+     "key": "midea|NA|15",
+     "slug": "midea-na-15",
+     "best": 2776.66,
+     "compare": "/ar/compare/midea%7CNA%7C15",
+     "stores": [
+      "swsg:1999@2026-08-02",
+      "alnakheelk:2199@2026-07-26",
+      "extra:2339@2026-09-14",
+      "shaker:2776.66@2026-09-26"
+     ]
+    },
+    {
+     "name": "غسالة صحون midea WQP125201CS",
+     "key": "midea|MODEL:WQP125201CS",
+     "slug": "midea-model:wqp125201cs",
+     "best": 540,
+     "compare": "/ar/compare/midea%7CMODEL%3AWQP125201CS",
+     "stores": [
+      "extra:540@2026-09-24",
+      "amazon:1099@2026-09-23"
+     ]
+    }
+   ]
+  }
+ ]
+}

@@ -153,7 +153,9 @@ function freshnessLabel(iso: string, isAr: boolean): string {
   const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
   if (days <= 0) return isAr ? 'اليوم' : 'today';
   if (days === 1) return isAr ? 'أمس' : 'yesterday';
-  return isAr ? `قبل ${days} يومًا` : `${days} days ago`;
+  // Arabic number agreement: dual for 2, plural noun for 3–10, singular accusative beyond.
+  if (isAr) return days === 2 ? 'قبل يومين' : days <= 10 ? `قبل ${days} أيام` : `قبل ${days} يومًا`;
+  return `${days} days ago`;
 }
 
 /** «رصدناه اليوم / أمس / قبل N يومًا» — ONE phrasing for every offer, featured or listed. */
