@@ -58,6 +58,11 @@ export interface ProductStore {
   // separate localStorage-backed multi-product compare TOOL, distinct from
   // /compare/[key] which §12 already fixed).
   observed_at?: string | null;
+  /** ADR-388: the knowledge layer records some offers with NO availability statement (e.g.
+   *  Extra's current row). The shared eligibility rule treats "not stated" as not-out-of-stock
+   *  (exactly as /compare/[key] does), so `availability` holds the eligible value while this
+   *  flag keeps the label honest («التوفر غير مذكور عند آخر رصد»), never «متوفر». */
+  availability_unstated?: boolean;
   stores: StoreInfo | null;
 }
 
@@ -504,7 +509,11 @@ export function applyKnowledgeLayerComparison(product: Product, comparison: Know
     id: `tps-${o.store_slug}`,
     current_price: o.price,
     original_price: null,
-    availability: normalizeAvailability(o.availability),
+    // null = the merchant page stated nothing — NOT out of stock (the shared rule and
+    // /compare/[key] agree); `normalizeAvailability(null)` would have said out_of_stock and
+    // wrongly excluded the offer (live: Extra dropped from ArtCool/FreshDV, spread 30 vs 400).
+    availability: o.availability == null ? 'in_stock' : normalizeAvailability(o.availability),
+    availability_unstated: o.availability == null,
     delivery_time_days: null,
     delivery_cost: null,
     is_free_delivery: null,
@@ -534,6 +543,13 @@ export function applyKnowledgeLayerComparison(product: Product, comparison: Know
     image_urls: product.image_urls && product.image_urls.length > 0 ? product.image_urls : c?.image_url ? [c.image_url] : product.image_urls,
     product_stores,
   };
+}
+
+/** Availability wording for one offer row — «التوفر غير مذكور عند آخر رصد» when the merchant
+ *  page stated nothing, otherwise the shared label. Exported for tests. */
+export function storeAvailabilityLabel(s: ProductStore, stale: boolean, isAr: boolean): { text: string; tone: 'ok' | 'muted' | 'bad' } | null {
+  if (s.availability_unstated) return { text: isAr ? 'التوفر غير مذكور عند آخر رصد' : 'Availability not stated at last observation', tone: 'muted' };
+  return availabilityLabelFor(s.availability, stale, isAr);
 }
 
 async function refreshFromKnowledgeLayer(items: Product[], locale: string): Promise<Product[]> {
@@ -939,7 +955,7 @@ export default function ComparePage() {
                 const imageUrl = product.image_urls?.[0] || PLACEHOLDER_IMAGE;
                 const isBestPriceProduct = lowestBestPrice !== null && facts.bestIsEligible && bestStore?.current_price === lowestBestPrice && products.length > 1;
                 const primaryStoreUrl = getStoreUrl(bestStore);
-                const bestAvail = bestStore ? availabilityLabelFor(bestStore.availability, !facts.bestIsEligible, isAr) : null;
+                const bestAvail = bestStore ? storeAvailabilityLabel(bestStore, !facts.bestIsEligible, isAr) : null;
 
                 return (
                   <div
@@ -1087,7 +1103,7 @@ export default function ComparePage() {
                   const f = factsByProductId.get(product.id);
                   const bs = f?.best ?? null;
                   if (!bs) return <Badge variant="secondary">{t('product.outOfStock')}</Badge>;
-                  const a = availabilityLabelFor(bs.availability, !f!.bestIsEligible, isAr);
+                  const a = storeAvailabilityLabel(bs, !f!.bestIsEligible, isAr);
                   if (!a) return getAvailabilityBadge(bs.availability);
                   return <Badge variant={a.tone === 'ok' ? 'success' : a.tone === 'bad' ? 'secondary' : 'outline'}>{a.text}</Badge>;
                 },

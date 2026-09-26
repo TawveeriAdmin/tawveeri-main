@@ -1,7 +1,7 @@
 // tests/compare/multi-compare-knowledge-refresh.test.ts — ADR-388.
 // The multi-product tool restores CURRENT offers for a tray item from its saved identity key
 // (the knowledge layer's own comparison) instead of trusting the localStorage snapshot.
-import { applyKnowledgeLayerComparison, deriveProductOfferFacts, type ProductStore } from '@/app/[locale]/(public)/compare/page';
+import { applyKnowledgeLayerComparison, deriveProductOfferFacts, storeAvailabilityLabel, type ProductStore } from '@/app/[locale]/(public)/compare/page';
 
 const NOW = Date.parse('2026-09-26T12:00:00Z');
 const daysAgo = (d: number) => new Date(NOW - d * 86_400_000).toISOString();
@@ -41,6 +41,24 @@ describe('applyKnowledgeLayerComparison', () => {
     const facts = deriveProductOfferFacts(out.product_stores, NOW);
     expect(facts.best?.stores?.id).toBe('alnakheelk');
     expect(facts.eligibleStoreCount).toBe(2);
+    expect(facts.spread).toBe(400);
+  });
+
+  it('an offer with NO availability statement stays eligible (not out of stock) and is labelled as unstated — live: Extra was dropped and the spread read 30 instead of 400', () => {
+    const out = applyKnowledgeLayerComparison(snapshot, {
+      offers: [
+        { store_slug: 'alnakheelk', store_name: 'متجر النخيل', price: 3269, availability: 'in_stock', product_url: '/go/1', observed_at: daysAgo(1) },
+        { store_slug: 'shaker', store_name: 'شاكر', price: 3299.35, availability: 'in_stock', product_url: '/go/2', observed_at: daysAgo(1) },
+        { store_slug: 'extra', store_name: 'إكسترا', price: 3669, availability: null, product_url: '/go/3', observed_at: daysAgo(2) },
+      ],
+    });
+    const extra = out.product_stores.find((s) => s.stores?.id === 'extra')!;
+    expect(extra.availability).toBe('in_stock');
+    expect(extra.availability_unstated).toBe(true);
+    expect(storeAvailabilityLabel(extra, false, true)).toEqual({ text: 'التوفر غير مذكور عند آخر رصد', tone: 'muted' });
+    expect(storeAvailabilityLabel(out.product_stores[0], false, true)?.text).toBe('متوفر');
+    const facts = deriveProductOfferFacts(out.product_stores, NOW);
+    expect(facts.eligibleStoreCount).toBe(3);
     expect(facts.spread).toBe(400);
   });
 
