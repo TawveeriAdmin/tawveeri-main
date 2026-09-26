@@ -1248,7 +1248,10 @@ export default function ComparePage() {
                 if (missing.length > 0) {
                   rows.push({
                     key: 'services-unknown',
-                    label: missing.map((r) => r.label).join(' · '),
+                    // one short label (the four names wrapped into six lines at 1280px)
+                    label: missing.length === serviceRows.length
+                      ? (isAr ? 'التوصيل والضمان والإرجاع' : 'Delivery, warranty & returns')
+                      : missing.map((r) => r.label).join(' · '),
                     render: () => (
                       <span className="text-[11px] leading-snug text-on-surface-variant" data-services-unknown>
                         {isAr ? 'غير مذكورة لهذه العروض — راجعها عند المتجر' : 'Not stated for these offers — check with the store'}
