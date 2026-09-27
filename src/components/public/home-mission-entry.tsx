@@ -25,10 +25,10 @@ export function HomeMissionEntry({ locale, source, compact = false }: { locale: 
   const Arrow = ar ? ArrowLeft : ArrowRight;
   if (source === 'navigation') return <div ref={ref} className="shrink-0"><Link prefetch={false} href={`/${locale}/home-mission?source=navigation`} onClick={() => trackHome('entry_click', source)} className="inline-flex min-h-9 items-center gap-1.5 whitespace-nowrap rounded-full px-3 text-[13px] font-semibold text-primary-800 dark:text-primary-200"><House size={15} aria-hidden="true" />{ar ? 'جهّز بيتك' : 'Equip your home'}</Link></div>;
   return <div ref={ref} data-home-entry={source} className="my-5 rounded-3xl border border-primary-200 bg-primary-50 p-5 text-on-surface dark:border-primary-800 dark:bg-primary-950 sm:p-6">
-    <div className="flex items-center gap-2 text-sm font-bold text-primary-800 dark:text-primary-200"><House size={19} aria-hidden="true" />{ar ? 'جهّز بيتك بذكاء' : 'Equip your home intelligently'}</div>
+    <div className="flex items-center gap-2 text-base font-bold text-primary-800 dark:text-primary-200"><House size={19} aria-hidden="true" />{ar ? 'جهّز بيتك بذكاء' : 'Equip your home intelligently'}</div>
     <h2 className="mt-3 text-xl font-bold leading-8 sm:text-2xl">{compact
       ? (source === 'ac_results' ? (ar ? 'تحتاج أكثر من مكيف؟ خطّط لمكيفات الغرف وباقي أجهزة البيت حسب ميزانيتك.' : 'Need more than one AC? Plan your rooms and home appliances within your budget.') : (ar ? 'تجهّز البيت كامل؟ وزّع ميزانيتك على الأجهزة بخطة واحدة.' : 'Equipping your home? Plan your appliance budget in one place.'))
-      : (ar ? 'تتزوج أو تنتقل لبيت جديد؟ جهّز أجهزتك بميزانيتك' : 'Getting married or moving? Plan your home appliances within your budget')}</h2>
+      : (ar ? 'بتتزوج أو تنتقل لبيت جديد؟ جهّز أجهزتك بميزانيتك' : 'Getting married or moving? Plan your home appliances within your budget')}</h2>
     {!compact && <>
       <p className="mt-2 text-sm leading-7 text-on-surface-variant">{ar ? 'حدّد غرفك ومساحاتها والأجهزة اللي تحتاجها، وخلّ توفيري تقترح لك الخيارات وتوزّع ميزانيتك عليها من متاجر السعودية.' : 'Tell us your rooms, sizes and appliance needs. Tawveeri suggests options and allocates your budget across Saudi stores.'}</p>
       <div className="mt-4 rounded-2xl bg-surface p-4">
