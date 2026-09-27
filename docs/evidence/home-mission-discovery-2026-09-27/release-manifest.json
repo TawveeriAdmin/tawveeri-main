@@ -1,0 +1,32 @@
+﻿{
+    "sourceCommit":  "a587cfe0",
+    "baseCommit":  "3610d3b1",
+    "deploymentId":  "fb125c25-1f29-4d5f-b124-8a15de45da30",
+    "service":  "tawveeri-main",
+    "method":  "isolated git archive, direct Railway CLI upload",
+    "archiveSha256":  "660017865DD3B641BA5378D513244F0F946A1E4133E15B1FCD82F57045BD4978",
+    "files":  [
+                  "scripts/tps-analysis/home-discovery-browser.cjs",
+                  "scripts/tps-analysis/home-discovery-category-probe.cjs",
+                  "scripts/tps-analysis/home-discovery-event-readback.cjs",
+                  "scripts/tps-analysis/home-discovery-funnel.sql",
+                  "scripts/tps-analysis/home-discovery-journey.cjs",
+                  "src/app/[locale]/(public)/search/search-client.tsx",
+                  "src/app/[locale]/home-mission/example/page.tsx",
+                  "src/app/[locale]/home-mission/home-mission-client.tsx",
+                  "src/app/[locale]/plan/[token]/shared-plan-view.tsx",
+                  "src/app/api/v1/agent/home-mission/example/route.ts",
+                  "src/components/public/home-mission-entry.tsx",
+                  "src/components/public/home-mission-example.tsx",
+                  "src/components/public/public-page-shell.tsx",
+                  "src/components/public/unified-home.tsx",
+                  "src/lib/agent/home-mission-discovery.ts",
+                  "src/lib/analytics/home-mission.ts",
+                  "src/lib/analytics/track.ts",
+                  "src/lib/search/home-mission-entry-source.ts",
+                  "tests/agent/home-mission-discovery.test.tsx",
+                  "tests/agent/home-mission-example-route.test.ts",
+                  "tests/agent/home-mission-tracking.test.ts",
+                  "tests/search/home-mission-entry-source.test.ts"
+              ]
+}

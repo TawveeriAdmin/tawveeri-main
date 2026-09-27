@@ -1,0 +1,31 @@
+{
+  "passed": true,
+  "emitted": 34,
+  "persisted": 34,
+  "all_test": true,
+  "no_free_text": true,
+  "counts": {
+    "home_mission|navigation|personal|entry_view": 7,
+    "home_mission|homepage_card|personal|entry_view": 3,
+    "home_mission|navigation|personal|entry_click": 1,
+    "home_mission|homepage_card|personal|entry_click": 1,
+    "home_mission|homepage_card|example|entry_click": 1,
+    "home_mission|homepage_card|example|example_view": 1,
+    "home_mission|example|personal|started": 2,
+    "home_mission|example|personal|reviewed": 2,
+    "home_mission|example|personal|plan": 1,
+    "home_mission|navigation|example|example_view": 1,
+    "home_mission|web||resumed": 3,
+    "home_mission|fridge_results|personal|share_click": 1,
+    "home_share|fridge_results|personal|copied": 1,
+    "home_share|fridge_results|personal|created": 1,
+    "home_share|shared_link|shared|opened": 1,
+    "go_click|home_mission|personal|": 1,
+    "home_mission|web||returned_from_retailer": 1,
+    "home_mission|ac_results|personal|started": 1,
+    "home_mission|ac_results|personal|reviewed": 1,
+    "home_mission|ac_results|personal|entry_view": 1,
+    "home_mission|fridge_results|personal|entry_view": 1,
+    "home_mission|washer_results|personal|entry_view": 1
+  }
+}
