@@ -1211,7 +1211,9 @@ export default function SearchClient() {
           setLoading(false);
           return;
         }
-        if (!q && cached.query) {
+        // A category URL is a new explicit search, even without q. Restoring an
+        // older query here would replace washers with the previous fridge/phone.
+        if (!q && !searchParams.get('category') && cached.query) {
           setRawProducts(cached.products);
           setServerTotal(cached.total);
           // selectedCategory is about to become cached.category below — compute the
