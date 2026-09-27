@@ -1688,7 +1688,7 @@ export default function SearchClient() {
         </div>
       )}
 
-      {!loading && categorySource(effectiveCategory) && <HomeMissionEntry key={effectiveCategory} locale={locale} source={categorySource(effectiveCategory)!} compact />}
+      {!loading && !error && (debouncedQuery || selectedCategory !== 'all') && categorySource(effectiveCategory) && <HomeMissionEntry key={effectiveCategory} locale={locale} source={categorySource(effectiveCategory)!} compact />}
 
       {/* ── Active Search State ── shows when user has a query OR is browsing a category */}
       {(debouncedQuery || (selectedCategory && selectedCategory !== 'all')) && (
