@@ -1,0 +1,12 @@
+{
+    "archiveSha256":  "53442F8C2F9DFAC69A826FCF8F03930BC8A15D1D78D83A336C8191A34C0F6F0F",
+    "method":  "git archive; web service only; no git push",
+    "webService":  "e83d5ea5-4de5-48b8-8a2c-728a1b300090",
+    "previousCode":  "a587cfe0",
+    "archive":  "C:\\Users\\Hp\\AppData\\Local\\Temp\\tawveeri-home-card-70c0da65.tar",
+    "scope":  [
+                  "src/components/public/home-mission-entry.tsx"
+              ],
+    "createdAt":  "2026-09-27T06:30:18.9562715Z",
+    "commit":  "70c0da65c2f38ac8d737960f53dfe209b7a389df"
+}

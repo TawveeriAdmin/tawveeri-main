@@ -4,6 +4,14 @@
 
 Status legend: **Accepted** · **Superseded** · **Proposed**.
 
+### ADR-391 — تحسين بطاقة البيت المعتمد، وفصل دراسة النقل الجماعي عن تنفيذ رحلة الشراء · Accepted / research recommendation Proposed (2026-09-27)
+
+**السياق والقرار المعتمد.** أمر المؤسس بتكبير اسم الخدمة قليلًا واستبدال «تتزوج» بـ«بتتزوج»، مع الاختبار والنشر. كود الإصدار `70c0da65`: حجم الاسم 14 ← 16 بكسل، وتعديل النص فقط. نجح 4077 اختبارًا قبل وبعد، والتغطية 89.36/67.6/100/97.33 بلا تراجع؛ يطبق استثناء المالك القائم لعتبة الفروع. [التنفيذ والصور والنشر](report/HOME-CARD-REFINEMENT-2026-09-27.md).
+
+**توجيه الشراء الملزم.** تجربة «افتح منتجًا، ارجع، علّم حالته، افتح التالي» مرفوضة بوصفها الحل المستهدف، حتى بتحسين الأسماء؛ هذا يقيّد قبول ADR-255/256 السابق لتلك الرحلة ويعيد فتح بحث اختصارها. تبقى ملكية الدفع والسلة للمتجر. لا تفويض الآن لتغيير أزرار الشراء أو علاماته أو `/go` أو الإسناد أو المحرك؛ الكود الحالي لم يُغير في هذه المهمة.
+
+**نتيجة البحث والتوصية المقترحة فقط.** لم يثبت مسار رسمي حالي متاح لتوفيري ينقل خطة سعودية كاملة بمنتجاتها وكمياتها وإسنادها لأي من المتاجر الثلاثة. هذا ليس إثبات استحالة. وثّقت قوائم أمازون السعودية ونون، وإيقاف PA-API مقابل عدم حسم استمرار نموذج Add-to-Cart، وحدود Creators API، ورحلة سامسونج العادية ومسار DCM. المقترح حسم عقد النقل السعودي مع أمازون أولًا قبل تنفيذ تكامل؛ القوائم اليدوية والتبويبات المتعددة ليست بديلًا يحقق الهدف للخطة الشخصية. لم يحدث تواصل خارجي أو دخول حساب أو شراء. [الدراسة العربية والمصادر وحدود الإثبات والتكلفة المشروطة](report/HOME-MISSION-PURCHASE-HANDOFF-STUDY-2026-09-27.md). قبول التوجيه لا يعني اعتماد تكامل أو التصميم المقترح.
+
 ### ADR-390 — Home Mission discovery: visible entry, appliance-context links, real-data example, preserved drafts and source-aware funnel · Accepted (2026-09-27)
 
 **Context.** Founder execution mandate: make «جهّز بيتك بذكاء» understandable and discoverable through the existing homepage card, navigation and appliance searches; demonstrate a real plan before intake. Founder-reported ≤5 visitors in two months is not audited usage. This instruction supersedes ADR-257's restrained/dismissible entry and navigation gate for this scope; no recommendation-engine, affiliate, scheduler or sharing-system rebuild is authorized.
