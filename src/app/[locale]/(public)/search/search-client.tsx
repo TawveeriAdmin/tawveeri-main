@@ -1,5 +1,7 @@
 'use client';
 
+import { HomeMissionEntry } from '@/components/public/home-mission-entry';
+import { categorySource } from '@/lib/agent/home-mission-discovery';
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useParams, useSearchParams, useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -1685,6 +1687,8 @@ export default function SearchClient() {
           </div>
         </div>
       )}
+
+      {!loading && categorySource(effectiveCategory) && <HomeMissionEntry key={effectiveCategory} locale={locale} source={categorySource(effectiveCategory)!} compact />}
 
       {/* ── Active Search State ── shows when user has a query OR is browsing a category */}
       {(debouncedQuery || (selectedCategory && selectedCategory !== 'all')) && (

@@ -113,7 +113,12 @@ const DUPLICATE_SUPPRESS_MS = 1500;
 // exactly the pattern this exists to catch.
 function dedupeKey(event_type: EventType, props?: Record<string, unknown>): string {
   const pick = (k: string) => (typeof props?.[k] === "string" ? (props[k] as string) : "");
-  return [event_type, pick("query_text"), pick("category"), pick("canonical_id"), pick("store"), pick("source")].join("|");
+  // Home uses one event type for distinct funnel steps. Do not suppress review
+  // immediately after start, or example entry immediately after personal entry.
+  const meta = props?.meta as Record<string, unknown> | undefined;
+  const homeStep = event_type === 'home_mission' || event_type === 'home_share'
+    ? `${meta?.step ?? ''}|${meta?.mode ?? ''}` : '';
+  return [event_type, pick("query_text"), pick("category"), pick("canonical_id"), pick("store"), pick("source"), homeStep].join("|");
 }
 
 /** True if an event with this exact identity fired within the suppression window — call
