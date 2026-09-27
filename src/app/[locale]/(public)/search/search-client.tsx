@@ -1,7 +1,7 @@
 'use client';
 
 import { HomeMissionEntry } from '@/components/public/home-mission-entry';
-import { categorySource } from '@/lib/agent/home-mission-discovery';
+import { homeMissionEntrySource } from '@/lib/search/home-mission-entry-source';
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useParams, useSearchParams, useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -300,6 +300,7 @@ export default function SearchClient() {
   // request itself, and never overrides an explicit filter. null when neither is known —
   // unknown beats incorrect, no fabricated category.
   const [effectiveCategory, setEffectiveCategory] = useState<string | null>(null);
+  const homeEntrySource = useMemo(() => homeMissionEntrySource(effectiveCategory, debouncedQuery), [effectiveCategory, debouncedQuery]);
   // ADR-270 Fix 4 (2026-08-22) — "Tawveeri never shows an empty result": when a stated/
   // inferred budget zeroed retrieval, the API's `closestOptions` names the 1-3 cheapest
   // still-relevant candidates with why each missed. Never rendered as "اختيار توفيري".
@@ -1690,7 +1691,7 @@ export default function SearchClient() {
         </div>
       )}
 
-      {!loading && !error && (debouncedQuery || selectedCategory !== 'all') && categorySource(effectiveCategory) && <HomeMissionEntry key={effectiveCategory} locale={locale} source={categorySource(effectiveCategory)!} compact />}
+      {!loading && !error && (debouncedQuery || selectedCategory !== 'all') && homeEntrySource && <HomeMissionEntry key={homeEntrySource} locale={locale} source={homeEntrySource} compact />}
 
       {/* ── Active Search State ── shows when user has a query OR is browsing a category */}
       {(debouncedQuery || (selectedCategory && selectedCategory !== 'all')) && (

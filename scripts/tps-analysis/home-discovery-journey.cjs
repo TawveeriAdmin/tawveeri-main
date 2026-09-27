@@ -64,9 +64,11 @@ const dir = 'docs/evidence/home-mission-discovery-2026-09-27';
     await visit('/ar/home-mission?source=ac_results&test=1');
     const contextual=await page.evaluate(()=>JSON.parse(localStorage.getItem('tw_home_mission_draft_v1')).draft);
     assert.equal(contextual.budget_total,null);assert.equal(contextual.quantities.air_conditioner,1);
-    for(const [category,source] of [['air_conditioner','ac_results'],['refrigerator','fridge_results'],['washing_machine','washer_results'],['smartphone',null]]) {
+    // Use the public category links' actual query routes, not raw internal
+    // canonical category names that the storefront filter enum does not support.
+    for(const [query,source] of [['مكيف','ac_results'],['ثلاجة','fridge_results'],['غسالة','washer_results'],['ايفون',null]]) {
       const searchResponse = page.waitForResponse(r=>r.url().endsWith('/api/search')&&r.request().method()==='POST',{timeout:90000});
-      await visit(`/ar/search?category=${category}&test=1`);
+      await visit(`/ar/search?q=${encodeURIComponent(query)}&test=1`);
       await searchResponse;
       if(source) await page.waitForSelector(`[data-home-entry="${source}"]`,{timeout:90000});
       const entries=await page.$$eval('[data-home-entry]',nodes=>nodes.map(n=>n.dataset.homeEntry));
