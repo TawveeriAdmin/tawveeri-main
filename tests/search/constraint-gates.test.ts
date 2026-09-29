@@ -103,6 +103,21 @@ describe('F-005 · Q11 — Pro, Pro Max and base are different Commercial Varian
     expect(conflictsWithRequestedTier(null, '', 'Apple iPhone 17 Pro Max 256GB')).toBe(false);
   });
 
+  it('does not mistake ProMotion / «برو موشن» (a display technology) for the Pro tier', () => {
+    // Measured live after the first deploy: these exact BASE iPhone 17 cards survived a
+    // «برو» request because their Arabic titles say «برو موشن».
+    expect(phoneTierOf('ايفون 17 سعة 256 جيجابايت، جوال بشاشة 6.3 بوصة مع تقنية برو موشن')).toBe('base');
+    expect(phoneTierOf('Apple iPhone 17 256 GB: 6.3-inch Display with ProMotion, A19 Chip')).toBe('base');
+    // and a genuine Pro that ALSO mentions ProMotion is still Pro
+    expect(phoneTierOf('Apple iPhone 17 Pro 256 GB: Display with ProMotion up to 120Hz, A19 Pro Chip')).toBe('pro');
+    expect(phoneTierOf('جوال ابل ايفون 17 برو 256 جيجابايت: شاشة 6.3 بوصة مع برو موشن')).toBe('pro');
+  });
+
+  it('excludes those base cards from a «برو» request once ProMotion is discounted', () => {
+    const requested = requestedPhoneTier('ايفون 17 برو 256');
+    expect(conflictsWithRequestedTier(requested, 'ايفون 17 سعة 256 جيجابايت، جوال بشاشة 6.3 بوصة مع تقنية برو موشن', 'Apple iPhone 17 256 GB: 6.3-inch Display with ProMotion, A19 Chip')).toBe(true);
+  });
+
   it('excludes exactly the two leaks Q11 showed live, and keeps the two correct cards', () => {
     const requested = requestedPhoneTier('ايفون 17 برو 256');
     // leaked live at rank 1 and ranks 3-4

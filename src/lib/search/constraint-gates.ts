@@ -103,7 +103,17 @@ export type PhoneTier = 'pro_max' | 'pro' | 'plus' | 'ultra' | 'base';
  * otherwise every Pro Max reads as a Pro and the leak this gate exists to stop survives.
  */
 export function phoneTierOf(text: string): PhoneTier {
-  const t = lower(text);
+  // MEASURED LIVE (production, 2026-09-29, first deploy of this gate): the Q11 leak only
+  // half-closed. "Apple iPhone 17 256 GB: 6.3-inch Display with ProMotion…" — a BASE iPhone —
+  // survived a «برو» request, because its Arabic title renders ProMotion as «برو موشن» and the
+  // bare «برو» test matched that. ProMotion is a DISPLAY TECHNOLOGY, present on Pro and
+  // non-Pro alike; it says nothing about the commercial tier. Strip these marketing compounds
+  // before reading the tier. ("\bpro\b" never matched the Latin "ProMotion" — only the Arabic
+  // transliteration leaked, which is exactly the Arabic-token trap this codebase keeps hitting.)
+  const t = lower(text)
+    .replace(/promotion/g, ' ')
+    .replace(/برو\s*موشن/g, ' ')
+    .replace(/prores|promax\b/g, (m) => (m === 'promax' ? ' pro max ' : ' '));
   const hasPro = /\bpro\b|برو/.test(t);
   const hasMax = /\bmax\b|ماكس/.test(t);
   const hasPlus = /\bplus\b|\+|بلس|بلاس/.test(t);
