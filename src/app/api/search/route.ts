@@ -13,6 +13,16 @@ import { normalizeExitUrl } from '@/lib/retailers/exit-url';
 import { routeQuery } from '@/lib/agent/route-query';
 import type { CompareIntent } from '@/lib/agent/compare-intent';
 import { parseShoppingTask, isPriorityDescriptorWord, parseScreenSizeComparator, sizeSatisfiesComparator } from '@/lib/agent/task-parser';
+// F-005 constraint gates (2026-09-29). Pure, title-evidence-only, positive-conflict-only —
+// see `src/lib/search/constraint-gates.ts` for the three live-measured defects they close
+// and for why none of them may read the `products.category` column.
+import {
+  hasConflictingMonitorSignal,
+  extractStrongModelToken,
+  titleCarriesModelToken,
+  requestedPhoneTier,
+  conflictsWithRequestedTier,
+} from '@/lib/search/constraint-gates';
 import { assessRecoveryEligibility } from '@/lib/agent/recovery-eligibility';
 import { resolveComparisonRoute } from '@/lib/agent/resolve-comparison';
 import { toStorefrontCategory } from '@/lib/search/canonical-category';
@@ -820,6 +830,7 @@ export function excludeIneligibleCandidates<T extends { name_ar?: string | null;
   isOvenQuery = false,
   isCookerQuery = false,
   queryFuelType?: 'gas' | 'electric',
+  isTvQuery = false,
 ): T[] {
   let result = products;
   const keywordFiltered = result.filter((p) => !hasAccessoryHint(p.name_ar || '', p.name_en || ''));
@@ -859,6 +870,24 @@ export function excludeIneligibleCandidates<T extends { name_ar?: string | null;
   if (isMonitorQuery) {
     const monitorFiltered = result.filter((p) => hasStrongMonitorSignal(p.name_ar || '', p.name_en || ''));
     result = monitorFiltered.length > 0 ? monitorFiltered : (needShapedWithCategory ? [] : result);
+  }
+
+  // F-005 / Q09 — THE MIRROR OF THE GATE ABOVE, WHICH DID NOT EXIST (measured live on
+  // production 2026-09-29, `59b3a53c`): `hasUnambiguousTvNoun` already stops a TV query
+  // from being treated as a MONITOR query, but nothing ever stopped a genuine computer
+  // MONITOR from answering a TV query. «تلفزيون سامسونج ٥٥ بوصة أقل من ٣٠٠٠» returned
+  // "Samsung 55\" 4K 144Hz Monitor" at rank 4 of 8.
+  //
+  // Excludes on POSITIVE CONFLICT ONLY (the same discipline as `applyFuelTypeFilter`
+  // below): the candidate must call itself a monitor AND name no TV noun. Verified against
+  // that same live result set — the genuine Samsung TV titled «سامسونج شاشة UHD 55 بوصة …
+  // UA55DU7000UXSA», which names NO TV noun at all, is NOT touched, because the bare word
+  // «شاشة» is deliberately not a monitor signal. The `products.category` column is NOT
+  // consulted: measured the same day, it files 9 Samsung washing machines under
+  // `accessories` and 2 under `tv`, so it cannot gate anything in either direction.
+  if (isTvQuery) {
+    const tvFiltered = result.filter((p) => !hasConflictingMonitorSignal(p.name_ar, p.name_en));
+    result = tvFiltered.length > 0 ? tvFiltered : (needShapedWithCategory ? [] : result);
   }
 
   // MEASURED DEFECT (2026-08-10, same session, founder follow-up "check other categories for
@@ -2874,13 +2903,59 @@ export async function POST(request: NextRequest) {
 
   products = applyPostFilters(products, body);
 
+  // ── F-005 / Q10 — A MODEL NUMBER IS EXACT, OR IT IS AN HONEST ZERO ──────────────────
+  // MEASURED LIVE (production, 2026-09-29, `59b3a53c`): «Samsung WW90T554DAN» — a washing
+  // machine model — returned 95 results whose top ten were earbuds, three phone screen
+  // films, a Galaxy A16, three monitors and a microwave. Not one washing machine, and no
+  // statement that we simply do not carry it. Verified against production the same day:
+  // WW90T554DAN is genuinely absent from the catalog (the nearest row is a DIFFERENT
+  // model, WW90T754DB), so the truthful answer here is zero, not a page of accessories.
+  //
+  // Runs OUTSIDE the `queryIsMainProduct` gate below on purpose: a bare model number names
+  // no product-type noun, so that gate never fires for exactly the queries that need this
+  // most. A near-miss model is NOT accepted as a match (see the unit test pinning
+  // WW90T754DB against a WW90T554DAN request) — "unknown beats incorrect".
+  //
+  // The zero is disclosed, never silent: with no source failure the response's `dataState`
+  // is `zero_after_success`, and `categoryEnforcedZero` gives the client the same honest
+  // "ما لقينا" message it already renders for every other withheld-results path.
+  const strongModelToken = rawQuery ? extractStrongModelToken(rawQuery) : null;
+  if (strongModelToken && products.length > 0) {
+    const modelMatched = products.filter((p) => titleCarriesModelToken(p.name_ar, p.name_en, strongModelToken));
+    if (modelMatched.length > 0) {
+      products = modelMatched;
+    } else {
+      console.warn(`[model-enforced-zero] "${rawQuery.slice(0, 60)}" — model ${strongModelToken} matched none of ${products.length} candidate(s); returning honest zero instead of unrelated products`);
+      products = [];
+      categoryEnforcedZero = true;
+    }
+  }
+
+  // ── F-005 / Q11 — PRO, PRO MAX AND BASE ARE DIFFERENT COMMERCIAL VARIANTS ───────────
+  // MEASURED LIVE (same run): «ايفون 17 برو 256» ranked "iPhone 17 Pro Max 256GB" FIRST,
+  // and put two plain "iPhone 17 256 GB" cards above one of the two correct "Pro" cards.
+  // Generation (17) and capacity (256) were already honoured; the COMMERCIAL VARIANT was
+  // not — and Pro / Pro Max / base are three different products at three different prices.
+  //
+  // Positive conflict only, and only when the shopper actually named a tier: a bare
+  // «ايفون 17» is a legitimately broad request and keeps returning the whole family.
+  // Falls back rather than emptying the page, the same as every sibling gate in this file.
+  const requestedTier = rawQuery ? requestedPhoneTier(rawQuery) : null;
+  if (requestedTier && products.length > 0) {
+    const tierMatched = products.filter((p) => !conflictsWithRequestedTier(requestedTier, p.name_ar, p.name_en));
+    if (tierMatched.length > 0 && tierMatched.length !== products.length) {
+      console.warn(`[variant-tier-gate] "${rawQuery.slice(0, 60)}" — requested ${requestedTier}; dropped ${products.length - tierMatched.length} conflicting-variant card(s)`);
+      products = tierMatched;
+    }
+  }
+
   // Part B eligibility hardening — see `excludeIneligibleCandidates`'s own doc comment for
   // the full measured evidence and reasoning. Gated the same way as every other eligibility
   // rule in this file: only for a confirmed device-type query that does NOT itself signal
   // accessory intent.
   if (rawQuery && queryIsMainProduct && !isAccessoryShapedQuery(rawQuery)) {
     const beforeCount = products.length;
-    products = excludeIneligibleCandidates(products, isAcQuery, isMonitorQuery, isWatchQuery, isDishwasherQuery, needShapedWithCategory, isOvenQuery, isCookerQuery, queryFuelType);
+    products = excludeIneligibleCandidates(products, isAcQuery, isMonitorQuery, isWatchQuery, isDishwasherQuery, needShapedWithCategory, isOvenQuery, isCookerQuery, queryFuelType, hasUnambiguousTvNoun);
     if (products.length !== beforeCount) {
       console.warn(`[candidate-eligibility] "${rawQuery.slice(0, 60)}" — excluded ${beforeCount - products.length} ineligible candidate(s) (accessory hint and/or statistical price-floor outlier)`);
     }
