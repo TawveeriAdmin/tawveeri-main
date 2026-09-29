@@ -368,6 +368,28 @@ export class ScrapingOrchestrator {
     const startTime = Date.now();
     const supabase = createServerClient();
 
+    // F-003 BUDGET SELF-DEADLINE (2026-09-29). MEASURED, not hypothesised: amazon's
+    // price_update is spawned with a HARD 8-minute per-store kill (`price-update.ts`'s
+    // `perStoreTimeoutMs`) while its batch is `max_products=300`. That is 1.6s per product
+    // for a store whose product pages go through Puppeteer/Browserless — unreachable. This
+    // file's own Amazon-dedupe comment above already records the consequence from an earlier
+    // investigation: "~90 real slots" per cycle, the 300 limit "never reached before the
+    // per-store timeout fires". Live confirmation (production, 2026-09-29): the two most
+    // recent amazon price_update runs ended at 480,443ms and 480,462ms — the kill ceiling
+    // exactly — recorded `status=failed`, `products_updated=0`, `stages` absent.
+    //
+    // The per-product writes DO land as it goes (the same runs' logs show "[IngestionService]
+    // amazon: saved 1/1 raw observations"), so what the kill destroys is not the data — it is
+    // the RUN'S HONEST ACCOUNTING: a cycle that really refreshed ~90 offers reports zero, and
+    // F-004's whole point is that a job must not misreport what it did.
+    //
+    // So: stop STARTING new products shortly before the external kill, and exit through the
+    // normal path with real counts. Deliberately NOT a change to any merchant cap, request
+    // rate, or crawl breadth — nothing new is fetched; a run simply stops sooner and tells
+    // the truth about where it stopped. Unset env => byte-for-byte the previous behaviour,
+    // so every other caller (admin routes, other stores, tests) is untouched.
+    const softDeadlineMs = parseInt(process.env.WORKER_PRICE_UPDATE_SOFT_DEADLINE_MS || '0', 10);
+
     try {
       const olderThanHours = options.older_than_hours || 24;
       const cutoffTime = new Date();
@@ -607,6 +629,18 @@ export class ScrapingOrchestrator {
           for (const productStore of products) {
             const productStoreId = productStore.id;
             const productUrl = productStore.product_url;
+
+            // F-003 budget self-deadline — see this method's header comment. Mirrors the
+            // Browserless-quota deferral a few lines below EXACTLY: the remaining products
+            // are neither touched nor stamped, so the next cycle's staleness ordering picks
+            // them up first, and they are counted as `deferred`, never as `errors` — they
+            // were not attempted and did not fail.
+            if (softDeadlineMs > 0 && Date.now() - startTime >= softDeadlineMs) {
+              const remaining = products.length - products.indexOf(productStore);
+              console.warn(`[price] ${storeSlug}: budget self-deadline reached after ${Math.round((Date.now() - startTime) / 1000)}s — deferring ${remaining} remaining product(s) so this run can record what it actually did instead of being killed mid-batch`);
+              stages.deferred += remaining;
+              break;
+            }
 
             try {
               stages.attempted++;

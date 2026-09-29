@@ -122,6 +122,8 @@ async function main() {
   // pass), short enough that one bad store cannot consume the whole run.
   // Reversible via env var without a code change.
   const perStoreTimeoutMs = parseInt(process.env.WORKER_PRICE_UPDATE_PER_STORE_TIMEOUT_MS || String(8 * 60 * 1000), 10);
+  // How long before the hard kill the child must stop starting new products (F-003).
+  const PER_STORE_SOFT_DEADLINE_MARGIN_MS = parseInt(process.env.WORKER_PRICE_UPDATE_SOFT_DEADLINE_MARGIN_MS || String(45 * 1000), 10);
 
   console.log(`[worker:price-update] starting — stores=[${stores.join(',')}] perStoreTimeoutMs=${perStoreTimeoutMs} probeStores=[${probeStores.join(',')}] probeMax=${probeMax} excludedStores=[${excludedStores.join(',')}]`);
   const summary: string[] = [];
@@ -166,7 +168,13 @@ async function main() {
       [TSX_BIN, STORE_JOB, slug, String(runId), String(maxProducts), String(olderThanHours)],
       // WORKER_CURRENT_JOB_TYPE: read by base-scraper.ts's session tracking
       // (worker_browser_sessions.job_type) — see migration 034.
-      { timeoutMs: perStoreTimeoutMs, graceMs: 10000, jobName: `price-update:${slug}`, partialExitCode: PARTIAL_JOB_EXIT_CODE, env: { ...process.env, WORKER_CURRENT_JOB_TYPE: 'price_update' } },
+      // F-003 (2026-09-29): the child stops STARTING new products one margin before this
+      // same hard kill, so a store that cannot finish its batch (measured: amazon, every
+      // cycle, killed at exactly 480s with `failed`/`updated=0`) exits through the normal
+      // path and records what it genuinely refreshed. Derived from `perStoreTimeoutMs` here
+      // rather than configured separately, so the soft and hard limits can never drift apart.
+      // Margin covers the in-flight product plus the run's own close-out writes.
+      { timeoutMs: perStoreTimeoutMs, graceMs: 10000, jobName: `price-update:${slug}`, partialExitCode: PARTIAL_JOB_EXIT_CODE, env: { ...process.env, WORKER_CURRENT_JOB_TYPE: 'price_update', WORKER_PRICE_UPDATE_SOFT_DEADLINE_MS: String(Math.max(30_000, perStoreTimeoutMs - PER_STORE_SOFT_DEADLINE_MARGIN_MS)) } },
     );
     activeCancel = guarded.cancel;
     const result = await guarded.result;
