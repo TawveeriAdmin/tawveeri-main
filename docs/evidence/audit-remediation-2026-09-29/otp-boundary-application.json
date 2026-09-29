@@ -1,0 +1,90 @@
+{
+  "at": "2026-09-29T07:33:53.386Z",
+  "migrationSha256": "bc857a072c42d4ba8ed78e8f98e03f0fdc7390dc0d613d5e1efc83adec267f87",
+  "committed": true,
+  "columns": [
+    {
+      "column_name": "id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "NO",
+      "column_default": "uuid_generate_v4()"
+    },
+    {
+      "column_name": "phone",
+      "data_type": "character varying",
+      "udt_name": "varchar",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "column_name": "otp_code",
+      "data_type": "character varying",
+      "udt_name": "varchar",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "column_name": "expires_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "column_name": "is_used",
+      "data_type": "boolean",
+      "udt_name": "bool",
+      "is_nullable": "NO",
+      "column_default": "false"
+    },
+    {
+      "column_name": "attempts",
+      "data_type": "integer",
+      "udt_name": "int4",
+      "is_nullable": "NO",
+      "column_default": "0"
+    },
+    {
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "YES",
+      "column_default": "now()"
+    },
+    {
+      "column_name": "verified_at",
+      "data_type": "timestamp with time zone",
+      "udt_name": "timestamptz",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "column_name": "purpose",
+      "data_type": "text",
+      "udt_name": "text",
+      "is_nullable": "NO",
+      "column_default": "'legacy'::text"
+    },
+    {
+      "column_name": "account_id",
+      "data_type": "uuid",
+      "udt_name": "uuid",
+      "is_nullable": "YES",
+      "column_default": null
+    }
+  ],
+  "rpc": [
+    {
+      "proname": "consume_phone_otp",
+      "prosecdef": false,
+      "proacl": "{postgres=X/postgres,service_role=X/postgres}",
+      "definition": "CREATE OR REPLACE FUNCTION public.consume_phone_otp(p_phone text, p_otp text, p_purpose text, p_account_id uuid DEFAULT NULL::uuid, p_consume boolean DEFAULT true)\n RETURNS boolean\n LANGUAGE plpgsql\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\nDECLARE candidate public.phone_otps%ROWTYPE;\nBEGIN\n  IF p_purpose NOT IN ('phone_signin', 'password_reset', 'phone_verify', 'email_verify')\n     OR p_purpose IS NULL OR p_otp IS NULL OR p_otp !~ '^[0-9]{6}$' THEN\n    RETURN false;\n  END IF;\n  IF p_purpose <> 'phone_signin' AND p_account_id IS NULL THEN RETURN false; END IF;\n\n  -- Lock the latest challenge, including already-used rows. Never fall back to\n  -- an older challenge when the latest one was consumed or exhausted.\n  SELECT * INTO candidate FROM public.phone_otps\n    WHERE phone = p_phone AND purpose = p_purpose\n      AND account_id IS NOT DISTINCT FROM p_account_id\n    ORDER BY created_at DESC NULLS LAST, id DESC LIMIT 1 FOR UPDATE;\n  IF NOT FOUND OR candidate.is_used OR candidate.expires_at <= clock_timestamp()\n     OR candidate.attempts >= 5 THEN RETURN false; END IF;\n\n  IF candidate.otp_code IS DISTINCT FROM p_otp THEN\n    UPDATE public.phone_otps SET attempts = attempts + 1 WHERE id = candidate.id;\n    RETURN false;\n  END IF;\n  IF p_consume THEN\n    UPDATE public.phone_otps SET is_used = true, verified_at = clock_timestamp()\n      WHERE id = candidate.id;\n  END IF;\n  RETURN true;\nEND;\n$function$\n"
+    }
+  ],
+  "permissions": {
+    "anon": false,
+    "authenticated": false,
+    "service_role": true
+  }
+}

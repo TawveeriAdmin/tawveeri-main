@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/database';
 import { authenticaService } from '@/lib/auth/authentica';
 import { validateSaudiPhone, generateOTP } from '@/lib/auth/phone-validation';
+import { getRequestUser } from '@/lib/auth/api-auth';
 
 // Ensure this is a route handler
 export const runtime = 'nodejs';
@@ -36,7 +37,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { phone } = body;
+    const { phone, purpose = 'phone_signin' } = body;
+    if (!['phone_signin', 'password_reset', 'phone_verify'].includes(purpose)) {
+      return NextResponse.json({ error: 'Invalid verification purpose' }, { status: 400 });
+    }
 
     if (!phone) {
       return NextResponse.json(
@@ -73,11 +77,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Invalidate any existing active OTPs for this phone
+    const { data: account, error: accountError } = await supabase
+      .from('users').select('id').eq('phone', formattedPhone).maybeSingle();
+    if (accountError) {
+      return NextResponse.json({ error: OTP_SEND_FAILED_MESSAGE }, { status: 503 });
+    }
+    if (purpose === 'phone_verify') {
+      const user = await getRequestUser(request);
+      if (!user || !account || user.id !== account.id) {
+        return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+      }
+    }
+    if (purpose === 'password_reset' && !account) {
+      // Same public acknowledgement; do not send a reset code for no account.
+      return NextResponse.json({ success: true, message: 'OTP sent successfully' });
+    }
+
+    // Invalidate only this purpose; another flow cannot consume these codes.
     await supabase
       .from('phone_otps')
       .update({ is_used: true })
       .eq('phone', formattedPhone)
+      .eq('purpose', purpose)
       .eq('is_used', false);
 
     // Store new OTP in database
@@ -85,6 +106,8 @@ export async function POST(request: NextRequest) {
       .from('phone_otps')
       .insert({
         phone: formattedPhone,
+        purpose,
+        account_id: account?.id ?? null,
         otp_code: otpCode,
         expires_at: expiresAt.toISOString(),
       });

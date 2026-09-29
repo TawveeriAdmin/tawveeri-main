@@ -123,7 +123,7 @@ export default function ForgotPasswordPage() {
     const response = await fetch('/api/auth/send-phone-otp', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone: formData.phone }),
+      body: JSON.stringify({ phone: formData.phone, purpose: 'password_reset' }),
     });
 
     const data = await response.json();

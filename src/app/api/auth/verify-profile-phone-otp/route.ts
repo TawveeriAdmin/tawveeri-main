@@ -1,3 +1,5 @@
+import { consumeOtp } from '@/lib/auth/consume-otp';
+import { getRequestUser } from '@/lib/auth/api-auth';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/database';
@@ -36,62 +38,28 @@ export async function POST(request: NextRequest) {
 
     const supabase = createServerClient();
 
-    // Find active OTP for this phone
-    const { data: otpRecord, error: otpError } = await supabase
-      .from('phone_otps')
-      .select('*')
-      .eq('phone', formattedPhone)
-      .eq('is_used', false)
-      .gt('expires_at', new Date().toISOString())
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
-
-    if (otpError || !otpRecord) {
-      return NextResponse.json(
-        { error: 'Invalid or expired verification code' },
-        { status: 400 }
-      );
-    }
-
-    if (otpRecord.otp_code !== otp) {
-      await supabase
-        .from('phone_otps')
-        .update({ attempts: otpRecord.attempts + 1 })
-        .eq('id', otpRecord.id);
-
-      return NextResponse.json(
-        { error: 'Invalid verification code' },
-        { status: 400 }
-      );
-    }
-
-    // Mark OTP as used
-    await supabase
-      .from('phone_otps')
-      .update({
-        is_used: true,
-        verified_at: new Date().toISOString(),
-      })
-      .eq('id', otpRecord.id);
-
     // Update phone_verified in users table
-    const { data: userRecord } = await supabase
-      .from('users')
-      .select('id')
-      .eq('phone', formattedPhone)
-      .single();
+    const user = await getRequestUser(request);
+    if (!user) return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    const { data: userRecord, error: profileError } = await supabase
+      .from('users').select('id').eq('id', user.id).eq('phone', formattedPhone).maybeSingle();
+    if (profileError) return NextResponse.json({ error: 'Verification unavailable' }, { status: 503 });
+    if (!userRecord || !(await consumeOtp(supabase, formattedPhone, otp, 'phone_verify', user.id))) {
+      return NextResponse.json({ error: 'Invalid or expired verification code' }, { status: 400 });
+    }
 
     if (userRecord) {
-      await supabase
+      const { error: authError } = await supabase.auth.admin.updateUserById(userRecord.id, {
+        phone: formattedPhone,
+        phone_confirm: true,
+      });
+      if (authError) return NextResponse.json({ error: 'Phone verification could not be saved' }, { status: 503 });
+      const { error: saveError } = await supabase
         .from('users')
         .update({ phone_verified: true })
         .eq('id', userRecord.id);
 
-      // Update Supabase Auth phone_confirmed_at
-      await supabase.auth.admin.updateUserById(userRecord.id, {
-        phone_confirm: true,
-      });
+      if (saveError) return NextResponse.json({ error: 'Phone verification could not be saved' }, { status: 503 });
 
       // In-app notification
       await createNotification({
