@@ -40,6 +40,9 @@ import path from 'path';
 import { acquireGlobalLock, type GlobalLock } from './lib/global-lock';
 import { runGuarded, type JobOutcome } from './lib/proc-guard';
 import { aggregateJobOutcomes, PARTIAL_JOB_EXIT_CODE } from './lib/job-outcome';
+import { createRestAdmission } from './lib/rest-admission';
+import { RunLifecycle } from './lib/run-lifecycle';
+import { collectProcessSnapshot } from './lib/process-snapshot';
 import { heartbeat, pressureOk, jobDue, jobDone, admit, reapOrphanedRuns, reapOrphanedSamsungRuns } from './lib/job-state';
 import { samsungRuntimeResources } from '../tps-core/samsung-runtime-resources';
 import { resolveSamsungDeltaRuntime } from '../tps-core/samsung-delta-runtime';
@@ -186,8 +189,11 @@ const pending = new Set<JobName>();
 let currentLock: GlobalLock | null = null;
 let currentCancel: ((reason: string) => void) | null = null;
 let currentJob: JobName | null = null;
+const lifecycle = new RunLifecycle();
+const admitRest = createRestAdmission(fetch);
 
 function enqueue(name: JobName) {
+  if (lifecycle.stopping) return;
   if (pending.has(name) || currentJob === name) return; // no duplicate queueing
   pending.add(name);
   console.log(`[worker] enqueued ${name} (queue: ${[...pending].join(',') || '-'})`);
@@ -207,6 +213,7 @@ async function runFeedIngest(job: JobDef): Promise<{ outcome: JobOutcome; note: 
   const results: string[] = [];
   const outcomes: JobOutcome[] = [];
   for (const slug of stores) {
+    if (lifecycle.stopping || currentLock?.isLost()) return { outcome: 'cancelled', note: results.join(' ') };
     const args = [TSX_BIN, path.join(REPO_ROOT, 'scripts/tps-core/ingest-via-provider.ts'), slug];
     const perStoreTimeout = Math.max(60_000, Math.floor(job.timeoutMs / Math.max(1, stores.length)));
     const guarded = runGuarded(process.execPath, args, { cwd: REPO_ROOT, env: process.env, timeoutMs: perStoreTimeout, jobName: `feed_ingest:${slug}` });
@@ -238,6 +245,12 @@ async function runOneJob(job: JobDef) {
     return;
   }
   currentLock = lock;
+  if (lifecycle.stopping) {
+    await lock.release();
+    currentLock = null;
+    currentJob = null;
+    return;
+  }
 
   let outcome: JobOutcome = 'failed';
   let note = '';
@@ -251,7 +264,7 @@ async function runOneJob(job: JobDef) {
   try {
     if (job.name === 'feed_ingest') {
       const r = await runFeedIngest(job);
-      outcome = r.outcome;
+      outcome = lockLostReason ? 'cancelled' : r.outcome;
       note = r.note;
     } else {
       const { cmd, args } = job.spawn();
@@ -280,11 +293,21 @@ async function runOneJob(job: JobDef) {
 }
 
 async function supervisorTick() {
-  if (currentJob) return; // one at a time — already running
+  if (currentJob || lifecycle.stopping) return;
   const name = nextFromQueue();
   if (!name) return;
   const job = JOBS.find((j) => j.name === name)!;
-  await runOneJob(job);
+  await lifecycle.run(async () => {
+    const admission = await admitRest(job.name, process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+    if (lifecycle.stopping) return;
+    if (!admission.allowed) {
+      pending.delete(job.name); // the ordinary schedule will retry; no hot loop
+      console.log(`[worker] ${job.name} deferred: supabase_rest_${admission.reason}`);
+      await jobDone(job.name, 'failed', `deferred: supabase_rest_${admission.reason}`);
+      return;
+    }
+    try { await runOneJob(job); } finally { currentJob = null; }
+  });
 }
 
 // ── Scheduling: identical boot-kick + interval shape to scripts/scheduler.js,
@@ -313,6 +336,12 @@ function scheduleJob(job: JobDef) {
 
 async function main() {
   console.log(`[worker] starting — pid=${process.pid} JOBS_ENABLED=${JOBS_ENABLED}`);
+  const logProcesses = () => {
+    try { console.log(`[worker-processes] ${JSON.stringify(collectProcessSnapshot())}`); }
+    catch { console.warn('[worker-processes] snapshot unavailable'); }
+  };
+  logProcesses();
+  setInterval(logProcesses, 15 * 60 * 1000);
   await heartbeat('boot');
   // Close out any scraping_runs row left 'running' by a container this
   // fresh boot has replaced (redeploy mid-job) — see job-state.ts's own
@@ -343,10 +372,16 @@ async function main() {
   }, 60_000);
 
   process.on('SIGTERM', async () => {
+    if (lifecycle.stopping) return;
     console.log('[worker] SIGTERM received');
-    if (currentCancel) currentCancel('SIGTERM to worker');
-    if (currentLock) await currentLock.release().catch(() => {});
-    process.exit(0);
+    pending.clear();
+    try {
+      await lifecycle.stop(() => currentCancel?.('SIGTERM to worker'));
+      // runOneJob releases its lock only after its guarded child has exited.
+      process.exit(0);
+    } catch {
+      process.exit(1);
+    }
   });
 }
 

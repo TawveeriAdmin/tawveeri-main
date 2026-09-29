@@ -1,0 +1,36 @@
+{
+  "at": "2026-09-29T08:33:02.307Z",
+  "tests": {
+    "suites": 312,
+    "passedSuites": 312,
+    "total": 4151,
+    "passed": 4151,
+    "failed": 0
+  },
+  "coverage": {
+    "statements": {
+      "covered": 84,
+      "total": 94
+    },
+    "functions": {
+      "covered": 15,
+      "total": 15
+    },
+    "branches": {
+      "covered": 48,
+      "total": 71
+    }
+  },
+  "typecheck": {
+    "before": 652,
+    "after": 652,
+    "added": [],
+    "removed": [],
+    "normalization": "same as jobs-gate-summary.json"
+  },
+  "build": {
+    "passed": true,
+    "buildId": "build-1790670577714"
+  },
+  "coverageException": "Unchanged pre-existing branch coverage 48/71 (67.60%); owner nonregression exception, threshold remains 70%"
+}
