@@ -364,17 +364,22 @@ export class ProductService {
      * every other store's call site (which never passes this) is unaffected.
      */
     newProductUrl?: string,
-  ): Promise<void> {
+    productStoreId?: string,
+  ): Promise<{ accepted: boolean }> {
     // See linkProductToStore() — (product_id, store_id) can have duplicate rows in
     // production, so .single() throws "multiple rows returned" for those pairs and
     // the price update fails outright. Pick the most recently seen row deterministically.
-    const { data: existingRows, error: fetchError } = await this.supabase
+    let existingQuery = this.supabase
       .from('product_stores')
       .select('id, current_price, price_pending_value')
       .eq('product_id', productId)
       .eq('store_id', storeId)
       .order('last_seen_at', { ascending: false, nullsFirst: false })
       .order('updated_at', { ascending: false, nullsFirst: false });
+
+    // Update the exact queued offer, not a different duplicate selected by recency.
+    if (productStoreId) existingQuery = existingQuery.eq('id', productStoreId);
+    const { data: existingRows, error: fetchError } = await existingQuery.limit(1);
 
     const existing = existingRows?.[0];
 
@@ -404,7 +409,7 @@ export class ProductService {
         rejected_price: price, prior_price: existing.current_price, reason: transition.reason,
         at: new Date().toISOString(),
       })}`);
-      await this.supabase
+      const { error: quarantineError } = await this.supabase
         .from('product_stores')
         .update({
           price_quarantined_at: new Date().toISOString(),
@@ -414,7 +419,8 @@ export class ProductService {
           last_checked_at: new Date().toISOString(),
         })
         .eq('id', existing.id);
-      return;
+      if (quarantineError) throw new Error('Failed to record price quarantine');
+      return { accepted: false };
     }
 
     const updateData: Partial<ProductStoreRow> = {
@@ -472,6 +478,7 @@ export class ProductService {
     if (error) {
       throw new Error(`Failed to update price: ${error.message}`);
     }
+    return { accepted: true };
   }
 
   /**

@@ -11,7 +11,7 @@ import Link from "next/link";
 import { track } from "@/lib/analytics/track";
 import { fmt } from "@/lib/agent/home-mission-view";
 import type { ShareSnapshot } from "@/lib/agent/home-mission-share";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 const T = (isAr: boolean) => ({
   title: isAr ? "خطة مشتريات" : "A purchase plan",
@@ -50,15 +50,16 @@ export function SharedPlanView({ locale, token, snapshot }: { locale: "ar" | "en
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState(false);
 
+  const opened = useRef(false);
   useEffect(() => {
-    if (snapshot) track("home_share", { meta: { step: "opened", legs: snapshot.legs.length } });
+    if (snapshot && !opened.current) { opened.current = true; track("home_share", { source: "shared_link", meta: { step: "opened", mode: "shared", legs: snapshot.legs.length } }); }
   }, [snapshot]);
 
   if (!snapshot) {
     return (
       <div dir={isAr ? "rtl" : "ltr"} className="min-h-screen bg-surface-container-lowest px-4 py-16 text-center text-on-surface">
         <p className="text-sm leading-6 text-on-surface-variant">{t.gone}</p>
-        <Link href={`/${locale}/home-mission`} className="mt-4 inline-block min-h-[44px] rounded-xl bg-primary-600 px-5 py-3 text-sm font-bold text-white">{t.buildYours}</Link>
+        <Link href={`/${locale}/home-mission?source=shared_link`} className="mt-4 inline-block min-h-[44px] rounded-xl bg-primary-600 px-5 py-3 text-sm font-bold text-white">{t.buildYours}</Link>
       </div>
     );
   }
@@ -176,7 +177,7 @@ export function SharedPlanView({ locale, token, snapshot }: { locale: "ar" | "en
           )}
         </section>
 
-        <Link href={`/${locale}/home-mission`}
+        <Link href={`/${locale}/home-mission?source=shared_link`}
           className="mt-4 block min-h-[44px] rounded-xl border border-primary-600 px-5 py-3 text-center text-sm font-bold text-primary-700 dark:text-primary-300">
           {t.buildYours}
         </Link>

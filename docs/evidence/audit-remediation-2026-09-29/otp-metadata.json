@@ -1,0 +1,55 @@
+{
+  "capturedAt": "2026-09-29T07:16:15.612Z",
+  "mode": "otp-metadata",
+  "safety": "Single connection; BEGIN READ ONLY; 8s statements; 1s locks; no application/RPC function calls; rollback; aggregate or bounded non-personal outputs",
+  "data": {
+    "table": {
+      "ms": 336,
+      "rows": [
+        {
+          "relname": "phone_otps",
+          "relrowsecurity": true,
+          "relforcerowsecurity": true
+        }
+      ]
+    },
+    "constraints": {
+      "ms": 348,
+      "rows": [
+        {
+          "conname": "phone_otps_pkey",
+          "definition": "PRIMARY KEY (id)"
+        }
+      ]
+    },
+    "triggers": {
+      "ms": 337,
+      "rows": []
+    },
+    "indexes": {
+      "ms": 355,
+      "rows": [
+        {
+          "indexname": "phone_otps_pkey",
+          "indexdef": "CREATE UNIQUE INDEX phone_otps_pkey ON public.phone_otps USING btree (id)"
+        },
+        {
+          "indexname": "idx_phone_otps_phone",
+          "indexdef": "CREATE INDEX idx_phone_otps_phone ON public.phone_otps USING btree (phone)"
+        },
+        {
+          "indexname": "idx_phone_otps_expires_at",
+          "indexdef": "CREATE INDEX idx_phone_otps_expires_at ON public.phone_otps USING btree (expires_at)"
+        },
+        {
+          "indexname": "idx_phone_otps_phone_active",
+          "indexdef": "CREATE INDEX idx_phone_otps_phone_active ON public.phone_otps USING btree (phone, is_used, expires_at) WHERE (is_used = false)"
+        }
+      ]
+    },
+    "existing_rpc": {
+      "ms": 416,
+      "rows": []
+    }
+  }
+}

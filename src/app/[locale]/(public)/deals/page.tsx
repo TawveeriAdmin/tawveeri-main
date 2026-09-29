@@ -1,3 +1,4 @@
+import { serializeJsonLd } from '@/lib/seo/serialize-json-ld';
 // src/app/[locale]/deals/page.tsx
 // ─────────────────────────────────────────────────────────────────────────────
 // صفحة العروض — مستهلك نقي لـ getDeals() (Deal Engine Knowledge Layer)
@@ -109,7 +110,7 @@ export default async function DealsPage(props: { params: Promise<{ locale: strin
     <main dir={isAr ? "rtl" : "ltr"} className="mx-auto max-w-5xl px-4 py-8">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
       />
 
       <h1 className="text-2xl font-bold text-on-surface">{t.h1}</h1>

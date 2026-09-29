@@ -10,6 +10,7 @@ import { createClient } from '@supabase/supabase-js';
 import { createServerClient } from '@/lib/database';
 import type { UserRole } from '@/lib/database/types';
 import type { User } from '@supabase/supabase-js';
+import { adminMfaRequired, assertAdminAssurance } from '@/lib/auth/admin-assurance';
 
 function getConfiguredAdminEmails() {
   return new Set(
@@ -77,6 +78,17 @@ export async function getRequestUserProfile(request: Request) {
   const isBootstrapAdmin = user.email
     ? getConfiguredAdminEmails().has(user.email.toLowerCase())
     : false;
+
+  if (adminMfaRequired() && (isBootstrapAdmin || data?.role === 'admin')) {
+    try {
+      await assertAdminAssurance(await createCookieClient(), user.id);
+    } catch {
+      const header = request.headers.get('Authorization');
+      if (!header?.startsWith('Bearer ')) throw new Error('Admin access required');
+      const tokenClient = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+      await assertAdminAssurance(tokenClient, user.id, header.slice(7));
+    }
+  }
 
   if (!data) {
     return {

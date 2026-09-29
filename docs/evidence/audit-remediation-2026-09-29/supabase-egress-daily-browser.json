@@ -1,0 +1,32 @@
+{
+  "observedAt": "2026-09-29T08:20:20.954Z",
+  "source": "visible Egress chart tooltips",
+  "samples": [
+    "Auth Egress (0.0%):\n\n277.895KB\n\nPostgREST Egress (3.4%):\n\n397.459MB\n\nShared Pooler Egress (96.6%):\n\n11.108GB\n\n04 Sep 2026",
+    "Auth Egress (0.0%):\n\n202.934KB\n\nPostgREST Egress (5.2%):\n\n463.159MB\n\nShared Pooler Egress (94.8%):\n\n8.321GB\n\n05 Sep 2026",
+    "Auth Egress (0.0%):\n\n129.925KB\n\nPostgREST Egress (3.5%):\n\n483.967MB\n\nShared Pooler Egress (96.5%):\n\n13.192GB\n\n06 Sep 2026",
+    "Auth Egress (0.0%):\n\n84.907KB\n\nPostgREST Egress (4.3%):\n\n478.234MB\n\nShared Pooler Egress (95.7%):\n\n10.386GB\n\n07 Sep 2026",
+    "Auth Egress (0.0%):\n\n153.745KB\n\nPostgREST Egress (5.2%):\n\n491.838MB\n\nShared Pooler Egress (94.8%):\n\n8.826GB\n\n08 Sep 2026",
+    "Auth Egress (0.0%):\n\n320.639KB\n\nPostgREST Egress (4.9%):\n\n596.488MB\n\nShared Pooler Egress (95.1%):\n\n11.329GB\n\n09 Sep 2026",
+    "Auth Egress (0.0%):\n\n118.65KB\n\nPostgREST Egress (5.4%):\n\n615.006MB\n\nShared Pooler Egress (94.6%):\n\n10.493GB\n\n10 Sep 2026",
+    "Auth Egress (0.0%):\n\n31.04KB\n\nPostgREST Egress (3.4%):\n\n527.965MB\n\nShared Pooler Egress (96.6%):\n\n14.81GB\n\n11 Sep 2026",
+    "Auth Egress (0.0%):\n\n273.778KB\n\nPostgREST Egress (7.5%):\n\n902.815MB\n\nShared Pooler Egress (92.5%):\n\n10.915GB\n\n12 Sep 2026",
+    "Auth Egress (0.0%):\n\n170.513KB\n\nPostgREST Egress (17.5%):\n\n2.261GB\n\nShared Pooler Egress (82.5%):\n\n10.649GB\n\n13 Sep 2026",
+    "Auth Egress (0.0%):\n\n122.83KB\n\nPostgREST Egress (15.6%):\n\n2.281GB\n\nShared Pooler Egress (84.4%):\n\n12.322GB\n\n14 Sep 2026",
+    "Auth Egress (0.0%):\n\n255.434KB\n\nPostgREST Egress (13.8%):\n\n2.447GB\n\nShared Pooler Egress (86.2%):\n\n15.305GB\n\n15 Sep 2026",
+    "Auth Egress (0.0%):\n\n148.153KB\n\nPostgREST Egress (18.3%):\n\n2.494GB\n\nShared Pooler Egress (81.7%):\n\n11.118GB\n\n16 Sep 2026",
+    "Auth Egress (0.0%):\n\n145.888KB\n\nPostgREST Egress (20.1%):\n\n1.599GB\n\nShared Pooler Egress (79.9%):\n\n6.373GB\n\n17 Sep 2026",
+    "Auth Egress (0.0%):\n\n49.574KB\n\nPostgREST Egress (18.6%):\n\n2.387GB\n\nShared Pooler Egress (81.4%):\n\n10.459GB\n\n18 Sep 2026",
+    "Auth Egress (0.0%):\n\n29.67KB\n\nPostgREST Egress (19.5%):\n\n2.374GB\n\nShared Pooler Egress (80.5%):\n\n9.805GB\n\n19 Sep 2026",
+    "Auth Egress (0.0%):\n\n192.441KB\n\nPostgREST Egress (13.3%):\n\n2.41GB\n\nShared Pooler Egress (86.7%):\n\n15.741GB\n\n20 Sep 2026",
+    "Auth Egress (0.0%):\n\n64.035KB\n\nPostgREST Egress (18.8%):\n\n2.725GB\n\nShared Pooler Egress (81.2%):\n\n11.748GB\n\n21 Sep 2026",
+    "Auth Egress (0.0%):\n\n97.044KB\n\nPostgREST Egress (21.3%):\n\n2.759GB\n\nShared Pooler Egress (78.7%):\n\n10.219GB\n\n22 Sep 2026",
+    "Auth Egress (0.0%):\n\n11.683KB\n\nPostgREST Egress (20.9%):\n\n2.738GB\n\nShared Pooler Egress (79.1%):\n\n10.361GB\n\n23 Sep 2026",
+    "Auth Egress (0.0%):\n\n107.11KB\n\nPostgREST Egress (18.3%):\n\n2.627GB\n\nShared Pooler Egress (81.7%):\n\n11.72GB\n\n24 Sep 2026",
+    "Auth Egress (0.0%):\n\n3.308MB\n\nPostgREST Egress (23.5%):\n\n3.079GB\n\nShared Pooler Egress (76.5%):\n\n10.044GB\n\n25 Sep 2026",
+    "Auth Egress (0.0%):\n\n243.655KB\n\nPostgREST Egress (22.6%):\n\n2.871GB\n\nShared Pooler Egress (77.4%):\n\n9.839GB\n\n26 Sep 2026",
+    "Auth Egress (0.0%):\n\n210.434KB\n\nPostgREST Egress (22.6%):\n\n3.168GB\n\nShared Pooler Egress (77.4%):\n\n10.859GB\n\n27 Sep 2026",
+    "Auth Egress (0.0%):\n\n89.503KB\n\nPostgREST Egress (21.3%):\n\n3.047GB\n\nShared Pooler Egress (78.7%):\n\n11.242GB\n\n28 Sep 2026",
+    "Auth Egress (0.0%):\n\n3.908KB\n\nPostgREST Egress (0.6%):\n\n23.885MB\n\nShared Pooler Egress (99.4%):\n\n4.078GB\n\n29 Sep 2026"
+  ]
+}

@@ -1,0 +1,244 @@
+{
+  "passed": true,
+  "picks": 4,
+  "total": 9630,
+  "remaining": 5370,
+  "steps": [
+    "example_view",
+    "started",
+    "reviewed",
+    "started",
+    "reviewed",
+    "plan",
+    "example_view",
+    "resumed",
+    "share_click",
+    "started",
+    "reviewed",
+    "entry_view",
+    "entry_view",
+    "entry_view",
+    "entry_view",
+    "entry_view",
+    "entry_view",
+    "entry_view"
+  ],
+  "events": [
+    {
+      "event_type": "home_mission",
+      "session_id": "30352c0d-63fc-4305-b448-a0db5b8d6a33",
+      "source": "homepage_card",
+      "meta": {
+        "step": "example_view",
+        "mode": "example",
+        "variant": "search"
+      }
+    },
+    {
+      "event_type": "home_mission",
+      "session_id": "30352c0d-63fc-4305-b448-a0db5b8d6a33",
+      "source": "example",
+      "meta": {
+        "step": "started",
+        "mode": "personal",
+        "variant": "search"
+      }
+    },
+    {
+      "event_type": "home_mission",
+      "session_id": "30352c0d-63fc-4305-b448-a0db5b8d6a33",
+      "source": "example",
+      "meta": {
+        "step": "reviewed",
+        "mode": "personal",
+        "variant": "search"
+      }
+    },
+    {
+      "event_type": "home_mission",
+      "session_id": "30352c0d-63fc-4305-b448-a0db5b8d6a33",
+      "source": "example",
+      "meta": {
+        "step": "started",
+        "mode": "personal",
+        "variant": "search"
+      }
+    },
+    {
+      "event_type": "home_mission",
+      "session_id": "30352c0d-63fc-4305-b448-a0db5b8d6a33",
+      "source": "example",
+      "meta": {
+        "step": "reviewed",
+        "mode": "personal",
+        "variant": "search"
+      }
+    },
+    {
+      "event_type": "home_mission",
+      "session_id": "30352c0d-63fc-4305-b448-a0db5b8d6a33",
+      "source": "example",
+      "meta": {
+        "state": "ok",
+        "legs": 4,
+        "feasible": true,
+        "step": "plan",
+        "mode": "personal",
+        "variant": "search"
+      }
+    },
+    {
+      "event_type": "home_mission",
+      "session_id": "30352c0d-63fc-4305-b448-a0db5b8d6a33",
+      "source": "navigation",
+      "meta": {
+        "step": "example_view",
+        "mode": "example",
+        "variant": "search"
+      }
+    },
+    {
+      "event_type": "home_mission",
+      "session_id": "30352c0d-63fc-4305-b448-a0db5b8d6a33",
+      "source": "web",
+      "meta": {
+        "step": "resumed",
+        "age_min": 0,
+        "variant": "search"
+      }
+    },
+    {
+      "event_type": "home_mission",
+      "session_id": "30352c0d-63fc-4305-b448-a0db5b8d6a33",
+      "source": "fridge_results",
+      "meta": {
+        "step": "share_click",
+        "mode": "personal",
+        "variant": "search"
+      }
+    },
+    {
+      "event_type": "home_share",
+      "session_id": "30352c0d-63fc-4305-b448-a0db5b8d6a33",
+      "source": "fridge_results",
+      "meta": {
+        "step": "created",
+        "mode": "personal",
+        "legs": 4,
+        "variant": "search"
+      }
+    },
+    {
+      "event_type": "home_share",
+      "session_id": "30352c0d-63fc-4305-b448-a0db5b8d6a33",
+      "source": "fridge_results",
+      "meta": {
+        "step": "copied",
+        "mode": "personal",
+        "variant": "search"
+      }
+    },
+    {
+      "event_type": "home_share",
+      "session_id": "30352c0d-63fc-4305-b448-a0db5b8d6a33",
+      "source": "shared_link",
+      "meta": {
+        "step": "opened",
+        "mode": "shared",
+        "legs": 4,
+        "variant": "search"
+      }
+    },
+    {
+      "event_type": "home_mission",
+      "session_id": "30352c0d-63fc-4305-b448-a0db5b8d6a33",
+      "source": "ac_results",
+      "meta": {
+        "step": "started",
+        "mode": "personal",
+        "variant": "search"
+      }
+    },
+    {
+      "event_type": "home_mission",
+      "session_id": "30352c0d-63fc-4305-b448-a0db5b8d6a33",
+      "source": "ac_results",
+      "meta": {
+        "step": "reviewed",
+        "mode": "personal",
+        "variant": "search"
+      }
+    },
+    {
+      "event_type": "home_mission",
+      "session_id": "30352c0d-63fc-4305-b448-a0db5b8d6a33",
+      "source": "navigation",
+      "meta": {
+        "step": "entry_view",
+        "mode": "personal",
+        "variant": "search"
+      }
+    },
+    {
+      "event_type": "home_mission",
+      "session_id": "30352c0d-63fc-4305-b448-a0db5b8d6a33",
+      "source": "ac_results",
+      "meta": {
+        "step": "entry_view",
+        "mode": "personal",
+        "variant": "search"
+      }
+    },
+    {
+      "event_type": "home_mission",
+      "session_id": "30352c0d-63fc-4305-b448-a0db5b8d6a33",
+      "source": "navigation",
+      "meta": {
+        "step": "entry_view",
+        "mode": "personal",
+        "variant": "search"
+      }
+    },
+    {
+      "event_type": "home_mission",
+      "session_id": "30352c0d-63fc-4305-b448-a0db5b8d6a33",
+      "source": "fridge_results",
+      "meta": {
+        "step": "entry_view",
+        "mode": "personal",
+        "variant": "search"
+      }
+    },
+    {
+      "event_type": "home_mission",
+      "session_id": "30352c0d-63fc-4305-b448-a0db5b8d6a33",
+      "source": "navigation",
+      "meta": {
+        "step": "entry_view",
+        "mode": "personal",
+        "variant": "search"
+      }
+    },
+    {
+      "event_type": "home_mission",
+      "session_id": "30352c0d-63fc-4305-b448-a0db5b8d6a33",
+      "source": "washer_results",
+      "meta": {
+        "step": "entry_view",
+        "mode": "personal",
+        "variant": "search"
+      }
+    },
+    {
+      "event_type": "home_mission",
+      "session_id": "30352c0d-63fc-4305-b448-a0db5b8d6a33",
+      "source": "navigation",
+      "meta": {
+        "step": "entry_view",
+        "mode": "personal",
+        "variant": "search"
+      }
+    }
+  ],
+  "errors": []
+}

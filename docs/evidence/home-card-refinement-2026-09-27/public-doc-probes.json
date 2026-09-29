@@ -1,0 +1,36 @@
+{
+    "checkedAt":  "2026-09-27T06:23:49.815Z",
+    "authenticated":  false,
+    "cartWrites":  false,
+    "results":  [
+                    {
+                        "name":  "amazon-list",
+                        "requested":  "https://www.amazon.sa/hz/wishlist/intro",
+                        "final":  "https://www.amazon.sa/hz/wishlist/intro",
+                        "status":  200,
+                        "title":  "Your List",
+                        "snippets":  "Hello, sign in Account \u0026 Lists Cart Your Lists Lists Sign In Remember your friends\u0027 lists and share yours Check"
+                    },
+                    {
+                        "name":  "amazon-legacy-doc",
+                        "requested":  "https://webservices.amazon.com/paapi5/documentation/add-to-cart-form.html",
+                        "final":  "https://affiliate-program.amazon.com/creatorsapi/docs/en-us/paapiv5-deprecation",
+                        "status":  200,
+                        "title":  "Amazon.com Associates Central - Creators API Documentation",
+                        "snippets":  "The Amazon Product Advertising API 5.0 (PA-API 5) has been deprecated and is being replaced by the Creators API. New"
+                    },
+                    {
+                        "name":  "noon-attribution",
+                        "requested":  "https://affiliates.noon.com/en/questions?category=commission",
+                        "error":  "net::ERR_HTTP2_PROTOCOL_ERROR at https://affiliates.noon.com/en/questions?category=commission"
+                    },
+                    {
+                        "name":  "samsung-order-help",
+                        "requested":  "https://www.samsung.com/sa_en/shop-faq/products-and-orders/How-do-i-place-an-order.html",
+                        "final":  "https://www.samsung.com/sa_en/shop-faq/products-and-orders/How-do-i-place-an-order/",
+                        "status":  200,
+                        "title":  "How do I place an order? | Samsung Saudi Arabia",
+                        "snippets":  "Samsung and Cookies This site uses cookies to personalise your experience, analyse site traffic and keep track of items stored"
+                    }
+                ]
+}

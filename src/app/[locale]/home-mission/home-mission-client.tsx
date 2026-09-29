@@ -14,6 +14,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import Link from "next/link";
 import { track } from "@/lib/analytics/track";
+import { trackHome, currentHomeSource } from "@/lib/analytics/home-mission";
+import { HOME_DRAFT_KEY, missionFromSource } from "@/lib/agent/home-mission-discovery";
 import { recordFirstPartyInteraction, appendInteractionId } from "@/lib/analytics/interaction";
 import {
   groupLegs, groupByStore, storeProgress, nextExit, groupFeedback, budgetBar, fitChip, evidenceChip, energyChip, ageLabel, diffLabel, fmt, parseDelta, setQuantity,
@@ -73,12 +75,12 @@ const T = (locale: Locale) => ({
   title: locale === "ar" ? "جهّز بيتك بذكاء" : "Equip your home",
   back: locale === "ar" ? "توفيري" : "Tawveeri",
   sub: locale === "ar"
-    ? "صف بيتك بكلامك: الغرف ومساحاتها، أفراد الأسرة، الميزانية، وأولوياتك."
+    ? "حدّد الغرف ومساحاتها، والأجهزة اللي تحتاجها، وميزانيتك. نساعدك تبني خطة وتراجع خياراتك قبل الشراء"
     : "Describe your home: rooms and sizes, household, budget, priorities.",
   placeholder: locale === "ar" ? EXAMPLE_AR : "New apartment, family of 4, bedroom 16m², living 28m², budget 20k SAR…",
   tryExample: locale === "ar" ? "جرّب المثال" : "Try the example",
   build: locale === "ar" ? "ابنِ الخطة" : "Build my plan",
-  review: locale === "ar" ? "راجع المهمة" : "Review mission",
+  review: locale === "ar" ? "راجع احتياجاتك" : "Review mission",
   startByTapping: locale === "ar" ? "أو ابدأ بالاختيار مباشرة" : "or start by tapping",
   missionCardTitle: locale === "ar" ? "مهمتك" : "Your mission",
   missionCardSub: locale === "ar" ? "عدّل الأعداد والتفاصيل قبل بناء الخطة — الصفر يعني «ما أحتاجه»." : "Adjust counts and details before the plan — zero means \"don't need it\".",
@@ -128,7 +130,7 @@ const T = (locale: Locale) => ({
   // BROWSING in real Saudi carts (Jarir) and is the wrong connotation. «تم» — never
   // «اشتريت» — because a self-marked purchase is not an observed fact. MSA-warm
   // prompts (dialect lives in marketing, not transactional trust surfaces).
-  buyTitle: locale === "ar" ? "خطة مشترياتك" : "Your purchase plan",
+  buyTitle: locale === "ar" ? "قائمة مشتريات حسب المتجر" : "Your purchase plan",
   buySub: locale === "ar"
     ? "رتبنا مشترياتك حسب المتاجر. افتح العرض، أكمل شراءك عند المتجر، وارجع نكمل معك."
     : "Your purchases, arranged by store. Open the offer, complete checkout at the store, and come back — we pick up where you left off.",
@@ -401,6 +403,7 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
   const [familyFeedback, setFamilyFeedback] = useState<Array<{ leg_id: string; reaction: string; note: string | null; reviewer_name: string | null }>>([]);
   const startedTracked = useRef(false);
   const restoredRef = useRef(false);
+  const [hydrated, setHydrated] = useState(false);
   const completedStoresRef = useRef<Set<string>>(new Set());
   const missionCompleteRef = useRef(false);
 
@@ -411,6 +414,28 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
     // Arm the writer FIRST: the early no-saved-state return must never leave the save
     // effect disarmed (a fresh visitor's first plan has to persist).
     restoredRef.current = true;
+    setHydrated(true);
+    try {
+      const storedDraft = localStorage.getItem(HOME_DRAFT_KEY);
+      if (storedDraft) {
+        const savedDraft = JSON.parse(storedDraft);
+        if (Date.now() - savedDraft.ts < STATE_TTL_MS) {
+          setText(typeof savedDraft.text === 'string' ? savedDraft.text : '');
+          if (savedDraft.draft?.categories && Array.isArray(savedDraft.draft.spaces)) {
+            setDraft(savedDraft.draft);
+            if (currentHomeSource() === 'example') {
+              trackHome('started'); trackHome('reviewed'); startedTracked.current = true;
+            }
+          }
+        }
+      }
+      if (!storedDraft && !localStorage.getItem(STORAGE_KEY)) {
+        const contextual = missionFromSource(currentHomeSource());
+        if (contextual) {
+          setDraft(contextual); trackHome('started'); trackHome('reviewed'); startedTracked.current = true;
+        }
+      }
+    } catch { /* local storage may be unavailable */ }
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return;
@@ -441,12 +466,19 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => {
-    if (!restoredRef.current) return;
+    if (!hydrated) return;
     try {
-      if (plan) localStorage.setItem(STORAGE_KEY, JSON.stringify({ plan, excludedIds, pinnedIds, purchased, purchaseMode, exitMarker, myShares, ts: Date.now() }));
+      if (plan) localStorage.setItem(STORAGE_KEY, JSON.stringify({ plan, excludedIds, pinnedIds, purchased, purchaseMode, exitMarker, myShares, ts: planTs }));
       else localStorage.removeItem(STORAGE_KEY);
     } catch { /* noop */ }
-  }, [plan, excludedIds, pinnedIds, purchased, purchaseMode, exitMarker, myShares]);
+  }, [hydrated, plan, planTs, excludedIds, pinnedIds, purchased, purchaseMode, exitMarker, myShares]);
+  useEffect(() => {
+    if (!hydrated) return;
+    try {
+      if (text || draft) localStorage.setItem(HOME_DRAFT_KEY, JSON.stringify({ text, draft, ts: Date.now() }));
+      else localStorage.removeItem(HOME_DRAFT_KEY);
+    } catch { /* keep working in memory if storage is unavailable */ }
+  }, [hydrated, text, draft]);
 
   // ── Welcome-back moment: iOS restores the page via bfcache (pageshow persisted) or a
   //    cold reload (handled by the restore above). Either way, a recent /go exit that
@@ -477,10 +509,11 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
       const data = (await res.json()) as PlanResponse;
       setPlan((old) => { setPrevPlan(old); return data; });
       setPlanTs(Date.now());
-      track("home_mission", { meta: { step, state: data.state, legs: data.legs?.length ?? 0, feasible: data.allocation?.feasible ?? null } });
+      if (step === "plan") { setDraft(null); setText(""); }
+      trackHome(step, undefined, "personal", { state: data.state, legs: data.legs?.length ?? 0, feasible: data.allocation?.feasible ?? null });
     } catch {
       setError(true);
-      track("error", { source: "home_mission", meta: { step } });
+      trackHome("plan_failed", undefined, "personal", { operation: step });
     } finally { setLoading(false); }
   }, []);
 
@@ -500,7 +533,7 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
 
   const review = useCallback((fromText: string | null) => {
     if (loading) return;
-    if (!startedTracked.current) { track("home_mission", { meta: { step: "started" }, query_text: (fromText ?? "").slice(0, 200) }); startedTracked.current = true; }
+    if (!startedTracked.current) { trackHome("started"); startedTracked.current = true; }
     let m: Mission = fromText?.trim() ? (parseHomeMission(fromText) as unknown as Mission) : emptyMission();
     // Present categories default to quantity 1 on the card (AC follows its named spaces).
     for (const cat of Object.keys(m.categories)) {
@@ -510,17 +543,12 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
     }
     // Unsupported-category DEMAND is a measurement input (ADR-257 §9): real requests
     // for categories we honestly refuse tell us what to build next.
-    track("home_mission", {
-      meta: {
-        step: "reviewed", cats: Object.keys(m.quantities).length,
-        unsupported: m.unsupported_mentions.slice(0, 4).join("،") || null,
-      },
-    });
+    trackHome("reviewed", undefined, "personal", { cats: Object.keys(m.quantities).length });
     setDraft(m);
   }, [loading]);
 
   const generate = useCallback((m: Mission) => {
-    setExcludedIds([]); setPinnedIds({}); setOpenWhy(null); setDraft(null);
+    setExcludedIds([]); setPinnedIds({}); setOpenWhy(null);
     setPurchased({}); setPurchaseMode(false); setExitMarker(null);
     setMyShares([]); setFamilyFeedback([]);
     completedStoresRef.current = new Set(); missionCompleteRef.current = false;
@@ -558,7 +586,7 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
 
   const onGoExit = useCallback((e: MouseEvent<HTMLAnchorElement>, leg: LegOut, r: RecOut, source: string) => {
     setExitMarker({ store: r.stores[0] ?? "—", ts: Date.now() });
-    track("go_click", { canonical_id: r.canonical_id, store: r.stores[0] ?? null, category: leg.category, source });
+    track("go_click", { canonical_id: r.canonical_id, store: r.stores[0] ?? null, category: leg.category, source, meta: { entry_source: currentHomeSource(), mode: "personal" } });
     // ADR-286 — decision-grade interaction evidence, minted synchronously in this real onClick.
     // The original anchors carry no `target` (same-tab navigation) — preserved here via
     // location.href rather than window.open, which would have silently switched these to a
@@ -575,6 +603,7 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
   //    re-derives every displayed fact, so nothing fabricated can ship. ──
   const sharePlan = useCallback(async () => {
     if (!plan?.legs || !mission) return;
+    trackHome("share_click");
     const legs = plan.legs
       .filter((l) => l.state === "ok" && l.picked)
       .map((l) => ({
@@ -605,7 +634,7 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
         if (!res.ok) throw new Error(String(res.status));
         const data = (await res.json()) as { token: string; owner_key: string; url: string };
         setMyShares((s) => [...s, { token: data.token, owner_key: data.owner_key, ts: Date.now() }].slice(-5));
-        track("home_share", { meta: { step: "created", legs: legs.length } });
+        track("home_share", { source: currentHomeSource(), meta: { step: "created", mode: "personal", legs: legs.length } });
         url = data.url;
       }
       const msg = t.shareMsg(url);
@@ -613,6 +642,7 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
         try { await navigator.share({ text: msg }); return; } catch { /* user cancelled → fall through to copy */ }
       }
       await navigator.clipboard.writeText(msg);
+      track("home_share", { source: currentHomeSource(), meta: { step: "copied", mode: "personal" } });
       setShareToast(t.linkCopied);
       setTimeout(() => setShareToast(null), 4000);
     } catch {
@@ -1042,7 +1072,8 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
           <section className="pt-4">
             <h1 className="text-2xl font-bold leading-9">{t.title}</h1>
             <p className="mt-1 text-sm leading-6 text-on-surface-variant">{t.sub}</p>
-            <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder={t.placeholder} rows={5}
+            <Link href={`/${locale}/home-mission/example?source=${currentHomeSource()}`} prefetch={false} className="my-3 inline-flex min-h-11 items-center text-sm font-bold text-primary-700 underline">{isAr ? "شوف مثال لخطة جاهزة" : "Explore a sample plan"}</Link>
+            <textarea aria-label={isAr ? "وصف احتياجات بيتك" : "Describe your home needs"} value={text} onChange={(e) => setText(e.target.value)} placeholder={t.placeholder} rows={5}
               className="mt-4 w-full resize-y rounded-xl border border-outline-variant bg-white p-3 text-sm leading-6 outline-none focus:border-primary-500 dark:bg-gray-900" />
             <div className="mt-3 flex items-center gap-2">
               <button onClick={() => review(text)} disabled={loading || !text.trim()}
@@ -1095,6 +1126,12 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
         {/* ── PLAN OVERVIEW — the whole plan in seconds ── */}
         {!purchaseMode && plan && plan.state !== "need_categories" && plan.allocation && (
           <section className="mt-1 rounded-2xl border border-outline-variant bg-white p-3 dark:bg-gray-900">
+            <p className="mb-2 text-sm font-bold">{plan.state === 'ok' && okLegs.length === plan.legs?.length
+              ? (isAr ? 'خطة مكتملة' : 'Complete plan')
+              : (isAr ? 'خطة جزئية — راجع الأجهزة التي تحتاج استكمالًا' : 'Partial plan — review the remaining appliances')}</p>
+            <p className="mb-3 text-xs leading-6 text-on-surface-variant">{isAr
+              ? 'المتبقي من ميزانيتك ليس توفيرًا مثبتًا. الشحن والتركيب غير محسوبين، ولا يلزم إنفاق كامل الميزانية.'
+              : 'Remaining budget is not verified savings. Shipping and installation are excluded; you do not need to spend the full budget.'}</p>
             <div className="flex items-baseline justify-between gap-2">
               <p className="text-[13px] font-bold">
                 {groups.map((g) => `${isAr ? g.label_ar : g.label_en}${g.legs.length > 1 ? ` ×${g.legs.length}` : ""}`).join(" · ")}

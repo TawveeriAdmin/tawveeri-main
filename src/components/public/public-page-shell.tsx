@@ -31,6 +31,7 @@ import { SearchAutocomplete } from '@/components/search/search-autocomplete';
 import { Footer } from '@/components/layout/footer';
 import { useNavigableCategories } from '@/lib/intelligence/navigable-categories-context';
 import { navigateToLocale } from '@/lib/i18n/switch-locale';
+import { HomeMissionEntry } from './home-mission-entry';
 import { CompareFloatingBar } from '@/components/compare/compare-floating-bar';
 
 const subscribe = () => () => {};
@@ -453,6 +454,7 @@ export function PublicPageShell({ locale, children, fullBleed = false }: PublicP
 
             <span aria-hidden className="mx-1 hidden h-5 w-px shrink-0 bg-outline-variant md:block" />
 
+            <HomeMissionEntry locale={locale} source="navigation" />
             {quickNavLinks.map((item) => {
               const isActive = item.href === `/${locale}` ? pathname === item.href : isActivePath(pathname, item.href);
               return (

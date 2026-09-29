@@ -1,3 +1,4 @@
+import { serializeJsonLd } from '@/lib/seo/serialize-json-ld';
 // src/app/[locale]/(category)/categories/[slug]/[facet]/page.tsx
 // ─────────────────────────────────────────────────────────────────────────────
 // Facet tier, one level below the existing /categories/[slug] page (ADR-226).
@@ -180,12 +181,12 @@ export default async function CategoryFacetPage({
       <CategoryViewTracker category={cat.key} facet={f.slug} />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
       />
       {guideJsonLd && (
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(guideJsonLd) }}
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(guideJsonLd) }}
         />
       )}
       <div className="max-w-5xl mx-auto space-y-6">

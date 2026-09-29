@@ -1,3 +1,4 @@
+import { serializeJsonLd } from '@/lib/seo/serialize-json-ld';
 // src/app/[locale]/(public)/compare/[key]/page.tsx
 // TPS Layer 4 — صفحة مقارنة أسعار النسخة نفسها عبر المتاجر
 // تقرأ مباشرة من getComparison() (ADR-135: نفس اشتقاق بطاقة البحث)
@@ -380,7 +381,7 @@ export default async function TpsComparePage({
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
       <CompareStateSync canonicalId={canonical.id} />
       <div className="mx-auto max-w-3xl space-y-5">
 

@@ -1,5 +1,5 @@
 /**
- * Pure merge logic for the INCREMENTAL listing-facts sync (ADR-390).
+ * Pure merge logic for the INCREMENTAL listing-facts sync (ADR-392).
  *
  * `tps_listing_price_facts` used to be rebuilt from the FULL `raw_observations`
  * history every hour (cursor reset to 0 on every run). This module lets the
@@ -35,7 +35,7 @@ export interface ListingFactsRow {
   distinct_days: number;
   first_seen: Date;
   last_seen: Date;
-  /** ISO days (YYYY-MM-DD) already counted, or null for rows written before ADR-390. */
+  /** ISO days (YYYY-MM-DD) already counted, or null for rows written before ADR-392. */
   observed_days: string[] | null;
 }
 

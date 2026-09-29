@@ -7,6 +7,9 @@ const createJestConfig = nextJest({
 })
 
 // Add any custom config to be passed to Jest
+// Jest receives native Windows paths; keep existing exclusions portable.
+const portablePath = value => value.replace('<rootDir>/', '').split('/').join('[/\\\\]');
+
 const customJestConfig = {
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   testEnvironment: 'node',
@@ -33,15 +36,15 @@ const customJestConfig = {
     // so the old-vs-new backtest compares against real catalog capability, not a guessed constant.
     // Same reproducibility caveat as the suites above — run explicitly, not part of the fast gate.
     '<rootDir>/tests/growth/rank-redesign-backtest.test.ts',
-  ],
+  ].map(portablePath),
   modulePathIgnorePatterns: [
     '<rootDir>/.next/',
     '<rootDir>/mobile/',
-  ],
+  ].map(portablePath),
   coveragePathIgnorePatterns: [
     '<rootDir>/.next/',
     '<rootDir>/mobile/',
-  ],
+  ].map(portablePath),
   collectCoverageFrom: [
     'src/lib/utils.ts',
     'src/lib/scraping/product-filter.ts',

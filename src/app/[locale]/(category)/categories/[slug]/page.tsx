@@ -1,3 +1,4 @@
+import { serializeJsonLd } from '@/lib/seo/serialize-json-ld';
 // src/app/[locale]/(public)/categories/[slug]/page.tsx
 // ─────────────────────────────────────────────────────────────────────────────
 // A real, indexable category decision page — not a redirect.
@@ -217,11 +218,11 @@ export default async function CategorySlugPage({
       <CategoryViewTracker category={cat.key} facet={null} />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(guideJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(guideJsonLd) }}
       />
       <div className="max-w-5xl mx-auto space-y-6">
 

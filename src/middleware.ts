@@ -384,6 +384,15 @@ export async function middleware(request: NextRequest) {
       redirectUrl.pathname = `/${validLocale}/unauthorized`;
       return createRedirect(redirectUrl);
     }
+    if (process.env.ADMIN_MFA_REQUIRED === '1') {
+      const { data: claims, error: claimsError } = await supabase.auth.getClaims();
+      if (claimsError || claims?.claims.sub !== user.id || claims.claims.aal !== 'aal2') {
+        const redirectUrl = request.nextUrl.clone();
+        redirectUrl.pathname = `/${validLocale}/auth/mfa`;
+        redirectUrl.search = '';
+        return createRedirect(redirectUrl);
+      }
+    }
   }
 
   // Check role-based access for store routes

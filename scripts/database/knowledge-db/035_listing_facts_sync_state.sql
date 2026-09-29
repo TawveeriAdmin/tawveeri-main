@@ -1,4 +1,4 @@
--- 035_listing_facts_sync_state.sql — ADR-390 (Supabase egress incident, 2026-09-29)
+-- 035_listing_facts_sync_state.sql — ADR-392 (Supabase egress incident, 2026-09-29)
 --
 -- WHY: `build-listing-facts.ts` (the hourly `facts` step of the intelligence refresh)
 -- reset its cursor to 0 on EVERY run and paged the whole `raw_observations` table for

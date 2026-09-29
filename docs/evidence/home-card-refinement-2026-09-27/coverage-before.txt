@@ -1,0 +1,17 @@
+
+--------------------|---------|----------|---------|---------|-------------------
+File                | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
+--------------------|---------|----------|---------|---------|-------------------
+All files           |   89.36 |     67.6 |     100 |   97.33 |
+ lib                |     100 |    77.77 |     100 |     100 |
+  utils.ts          |     100 |    77.77 |     100 |     100 | 14,22
+ lib/scraping       |    86.3 |    66.12 |     100 |   96.36 |
+  product-filter.ts |    86.3 |    66.12 |     100 |   96.36 | 439-445
+--------------------|---------|----------|---------|---------|-------------------
+Jest: "global" coverage threshold for branches (70%) not met: 67.6%
+
+Test Suites: 297 passed, 297 total
+Tests:       4077 passed, 4077 total
+Snapshots:   0 total
+Time:        219.365 s
+Ran all test suites.

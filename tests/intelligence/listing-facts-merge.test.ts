@@ -1,5 +1,5 @@
 /**
- * ADR-390 — incremental listing-facts merge. The builder used to replay the whole
+ * ADR-392 — incremental listing-facts merge. The builder used to replay the whole
  * raw_observations history every hour; these tests pin the arithmetic that lets it
  * fold only NEW observations into existing rows with identical results.
  */

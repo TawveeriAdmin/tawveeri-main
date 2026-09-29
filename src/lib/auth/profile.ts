@@ -427,7 +427,7 @@ export async function resendPhoneVerification(phone: string) {
     const response = await fetch('/api/auth/send-phone-otp', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone }),
+      body: JSON.stringify({ phone, purpose: 'phone_verify' }),
     });
 
     const data = await response.json();

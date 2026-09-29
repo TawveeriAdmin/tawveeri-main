@@ -29,7 +29,7 @@
 
 import { spawn, SpawnOptionsWithoutStdio } from 'child_process';
 
-export type JobOutcome = 'success' | 'failed' | 'timeout' | 'cancelled' | 'spawn_error';
+export type JobOutcome = 'success' | 'partial' | 'failed' | 'timeout' | 'cancelled' | 'spawn_error';
 
 export interface GuardedResult {
   outcome: JobOutcome;
@@ -51,6 +51,7 @@ export interface RunGuardedOptions extends SpawnOptionsWithoutStdio {
   timeoutMs: number;
   graceMs?: number;
   jobName: string;
+  partialExitCode?: number;
 }
 
 export function runGuarded(cmd: string, args: string[], opts: RunGuardedOptions): GuardedRun {
@@ -60,7 +61,7 @@ export function runGuarded(cmd: string, args: string[], opts: RunGuardedOptions)
   let timedOut = false;
   let settled = false;
 
-  const { timeoutMs, graceMs: _g, jobName, ...spawnOpts } = opts;
+  const { timeoutMs, graceMs: _g, jobName, partialExitCode, ...spawnOpts } = opts;
   const child = spawn(cmd, args, { ...spawnOpts, detached: true });
 
   // WHY mirror (found live, 2026-09-17): capturing into `tail` alone means a
@@ -110,7 +111,7 @@ export function runGuarded(cmd: string, args: string[], opts: RunGuardedOptions)
       settled = true;
       clearTimeout(timeoutTimer);
       if (killTimer) clearTimeout(killTimer);
-      const outcome: JobOutcome = cancelledReason ? 'cancelled' : timedOut ? 'timeout' : code === 0 ? 'success' : 'failed';
+      const outcome: JobOutcome = cancelledReason ? 'cancelled' : timedOut ? 'timeout' : code === 0 ? 'success' : partialExitCode !== undefined && code === partialExitCode ? 'partial' : 'failed';
       resolve({ outcome, code, signal, tail, durationMs: Date.now() - startedAt });
     });
     child.on('error', (err) => {

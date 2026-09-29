@@ -18,6 +18,7 @@ import { SwsgScraper } from '../stores/swsg-scraper';
 import { LuluScraper } from '../stores/lulu-scraper';
 import { SharafDgScraper } from '../stores/sharafdg-scraper';
 import { ProductService } from './product-service';
+import { priceUpdateOutcome } from './price-update-outcome';
 import { IngestionService } from './ingestion-service';
 import { DataValidator } from '../validation/data-validator';
 import { createServerClient } from '@/lib/database';
@@ -26,30 +27,6 @@ import { createNotification, sendBackInStockEmail } from '@/lib/auth/notificatio
 import { createAuditLog } from '@/lib/auth/audit';
 import { sendPushToUser } from '@/lib/push/expo-push';
 import { sendWebPushToUser } from '@/lib/push/web-push';
-
-async function retryAsync<T>(
-  fn: () => Promise<T>,
-  options: { maxAttempts: number; baseDelayMs: number }
-): Promise<T> {
-  let lastErr: unknown;
-  for (let attempt = 1; attempt <= options.maxAttempts; attempt++) {
-    try {
-      return await fn();
-    } catch (err) {
-      // A Browserless quota/rate-limit signal will fail identically on every
-      // retry — burning the retry budget just adds noise and delay for no
-      // chance of success. Rethrow immediately so the caller's own
-      // quota-specific handling (stop this store's loop, defer) runs right
-      // away instead of after 3 pointless attempts.
-      if (err instanceof BrowserlessQuotaError) throw err;
-      lastErr = err;
-      if (attempt === options.maxAttempts) break;
-      const delay = options.baseDelayMs * Math.pow(2, attempt - 1);
-      await new Promise((r) => setTimeout(r, delay));
-    }
-  }
-  throw lastErr;
-}
 
 /**
  * Given rows already ordered stalest-first (last_checked_at ASC, nulls first), keep only
@@ -191,7 +168,8 @@ export class ScrapingOrchestrator {
           if (!options.dry_run) {
             // storeId resolved once upstream; scrapingRunId owned by the caller.
             // Both written into raw_observations at insert time.
-            await this.ingestion.ingestBatch(storeSlug, scrapedProducts, Number(storeId), scrapingRunId);
+            const ingested = await this.ingestion.ingestBatch(storeSlug, scrapedProducts, Number(storeId), scrapingRunId);
+            errors += Math.max(0, scrapedProducts.length - ingested);
           }
           if (scrapedProducts.length > 0) {
             console.log(`    [${storeSlug}/${category}] scraped ${scrapedProducts.length} products — writing to DB…`);
@@ -277,7 +255,8 @@ export class ScrapingOrchestrator {
           console.log(`[${storeSlug}] running supplemental discovery…`);
           const supProducts = await scraperWithSup.discoverSupplementalProducts!(options.max_pages || 100);
           if (!options.dry_run) {
-            await this.ingestion.ingestBatch(storeSlug, supProducts, Number(storeId), scrapingRunId);
+            const ingested = await this.ingestion.ingestBatch(storeSlug, supProducts, Number(storeId), scrapingRunId);
+            errors += Math.max(0, supProducts.length - ingested);
           }
 
           if (supProducts.length > 0) {
@@ -354,7 +333,7 @@ export class ScrapingOrchestrator {
       }
 
       return {
-        success: true,
+        success: errors === 0 || productsLinked + productsCreated > 0,
         store: storeSlug,
         category: categories.join(','),
         products_discovered: productsDiscovered,
@@ -454,201 +433,229 @@ export class ScrapingOrchestrator {
       // real per-product failure — kept separate from `errors` so a quota
       // pause doesn't read as a wave of scrape failures for that store.
       const deferredQuotaStores: string[] = [];
+      const stages = { selected: rows.length, attempted: 0, extracted: 0, accepted: 0, written: 0, observations_ingested: 0, product_only: 0, rejected: 0, deferred: 0 };
 
       for (const [storeSlug, products] of Object.entries(byStore)) {
+        const acceptedBeforeStore = productsUpdated;
         const scraper = this.getScraperForStore(storeSlug);
         if (!scraper) {
           console.warn(`Scraper not found for store: ${storeSlug}`);
+          errors += products.length;
           continue;
         }
 
-        const rateLimit = (scraper as unknown as { config?: { rate_limit?: RateLimitConfig } }).config?.rate_limit;
-        const minDelayMs: number = rateLimit?.min_delay_ms ?? 1000;
-        const maxDelayMs: number = rateLimit?.max_delay_ms ?? minDelayMs;
+        try {
+          const rateLimit = (scraper as unknown as { config?: { rate_limit?: RateLimitConfig } }).config?.rate_limit;
+          const minDelayMs: number = rateLimit?.min_delay_ms ?? 1000;
+          const maxDelayMs: number = rateLimit?.max_delay_ms ?? minDelayMs;
 
-        // Applies the SAME side effects (persist, observe, stamp, notify, count) regardless
-        // of whether the scraped product came from the per-URL loop or a batch provider —
-        // one place, not duplicated between the two paths below.
-        const applyResult = async (
-          productStore: PriceUpdateStoreRow,
-          scrapedProduct: ScrapedProduct | null,
-        ): Promise<void> => {
-          const productStoreId = productStore.id;
-          const productId = productStore.product_id;
-          const storeId = productStore.store_id;
-          const productUrl = productStore.product_url;
+          // Applies the SAME side effects (persist, observe, stamp, notify, count) regardless
+          // of whether the scraped product came from the per-URL loop or a batch provider —
+          // one place, not duplicated between the two paths below.
+          const applyResult = async (
+            productStore: PriceUpdateStoreRow,
+            scrapedProduct: ScrapedProduct | null,
+          ): Promise<void> => {
+            const productStoreId = productStore.id;
+            const productId = productStore.product_id;
+            const storeId = productStore.store_id;
+            const productUrl = productStore.product_url;
+            if (scrapedProduct) stages.extracted++;
 
-          // Product-Truth vs Offer-Truth (2026-09-13, Phase 0 hardening — ADR-356). A scraper
-          // may now confirm a product is still current with strong identity evidence but NO
-          // provable current price (Samsung's own no-longer-purchasable/archived PDPs). This is
-          // NOT a scrape failure — `productStore.current_price` must NEVER be nulled out or run
-          // through the price-quarantine transition gate over a genuinely missing signal (that
-          // gate exists for a suspicious NUMBER, not an honest absence). Skip the legacy
-          // `product_stores` price write entirely here — the last known price/availability
-          // stays exactly as it was — but still feed the TPS knowledge layer below so Product
-          // Truth reflects "still current, no active offer" (STATE B/D in the mission's model).
-          if (scrapedProduct && scrapedProduct.current_price == null) {
-            await this.ingestion
-              .ingestBatch(storeSlug, [scrapedProduct], Number(storeId), null)
-              .catch((e) => console.error('[price] no-offer observation ingest failed:', e instanceof Error ? e.message : e));
-            await this.stampChecked(productStoreId, true);
-            return;
-          }
-
-          if (scrapedProduct) {
-            const oldPrice = productStore.current_price;
-            const newPrice = scrapedProduct.current_price;
-            // A marketplace SKU's winning offer can rotate to a different seller between
-            // refreshes (Noon price-contract review, 2026-09-10) — only write a new
-            // product_url when the provider actually returned a different one, keeping
-            // this a no-op for every store whose scraper never changes the URL.
-            const urlChanged = scrapedProduct.product_url && scrapedProduct.product_url !== productUrl;
-
-            await this.productService.updateProductPrice(
-              productId,
-              storeId,
-              newPrice,
-              scrapedProduct.availability,
-              urlChanged ? scrapedProduct.product_url : undefined,
-            );
-
-            // A REFRESHED PRICE MUST ALSO BECOME AN OBSERVATION.
-            //
-            // `ingestBatch` was called only in the DISCOVERY path, so the price loop
-            // refreshed the storefront `product_stores` row and wrote NOTHING the
-            // knowledge layer could see. Canonicals, the projection, and therefore every
-            // one of the 801 comparisons are fed exclusively by raw_observations — so
-            // the loop whose entire purpose is price freshness was invisible to the
-            // surface that shows prices. Measured 2026-08-02: 6 of 801 comparable
-            // products inside the 26h SLO, median 173.6h, while the storefront rows for
-            // the same retailers were being refreshed.
-            //
-            // Bounded by construction: the price loop is capped at max_products per
-            // store per cycle, so this cannot outrun normalization.
-            await this.ingestion
-              .ingestBatch(storeSlug, [scrapedProduct], Number(storeId), null)
-              .catch((e) => console.error('[price] observation ingest failed:', e instanceof Error ? e.message : e));
-            await this.stampChecked(productStoreId, true);
-            productsUpdated++;
-            if (oldPrice !== newPrice) priceChanges++;
-
-            const oldAvailability = productStore.availability;
-            const newAvailability = scrapedProduct.availability;
-            if (oldAvailability && oldAvailability !== 'in_stock' && newAvailability === 'in_stock') {
-              const store = productStore.stores;
-              this.notifyBackInStock(
-                supabase, productId, storeId, newPrice,
-                { name_ar: store.name_ar, name_en: store.name_en }
-              ).catch((err) => console.error('Back-in-stock notification error:', err));
+            // Product-Truth vs Offer-Truth (2026-09-13, Phase 0 hardening — ADR-356). A scraper
+            // may now confirm a product is still current with strong identity evidence but NO
+            // provable current price (Samsung's own no-longer-purchasable/archived PDPs). This is
+            // NOT a scrape failure — `productStore.current_price` must NEVER be nulled out or run
+            // through the price-quarantine transition gate over a genuinely missing signal (that
+            // gate exists for a suspicious NUMBER, not an honest absence). Skip the legacy
+            // `product_stores` price write entirely here — the last known price/availability
+            // stays exactly as it was — but still feed the TPS knowledge layer below so Product
+            // Truth reflects "still current, no active offer" (STATE B/D in the mission's model).
+            if (scrapedProduct && scrapedProduct.current_price == null) {
+              const saved = await this.ingestion.ingestBatch(storeSlug, [scrapedProduct], Number(storeId), null);
+              if (saved !== 1) throw new Error('Product-only observation was not persisted');
+              stages.observations_ingested += saved;
+              stages.product_only++;
+              // Identity evidence without a price must not refresh a successful price timestamp.
+              await this.stampChecked(productStoreId, null);
+              return;
             }
-          } else {
-            // ADR-149: an unexplained null is how Noon's 100% failure stayed invisible for
-            // an unknown period. `recordFailure` is a no-op (the columns do not exist in
-            // production and DDL is not safe before launch), so the reason is emitted as a
-            // single structured line instead — greppable in Railway logs and aggregatable
-            // without a migration. Post-launch this becomes a real column; see HANDOVER.
-            this.logPriceAttempt({
-              retailer: storeSlug, offer_id: productStoreId, url: productUrl,
-              result: 'FAILED', reason: 'scraper returned null (no price parsed)',
-              price_before: productStore.current_price, price_after: null,
-              next_action: 'diagnose parser for this retailer',
-            });
-            await this.recordFailure(productStoreId, 'scraper returned null');
-            await this.stampChecked(productStoreId, false);
-            errors++;
-          }
-        };
 
-        // Batch path (Noon commerce data truth mission, 2026-09-10; ADR-334): a scraper
-        // that implements updateProductPricesBatch is fetched ONCE for the whole store
-        // batch instead of once per product — the managed-provider transport (Apify) pays
-        // real per-run overhead, so one call for N products is materially cheaper and
-        // faster than N calls. Every OTHER store keeps the exact per-URL loop below,
-        // completely untouched.
-        const batchScraper = scraper as unknown as {
-          updateProductPricesBatch?: (urls: string[]) => Promise<Map<string, ScrapedProduct | null>>;
-        };
-        if (typeof batchScraper.updateProductPricesBatch === 'function') {
-          const urls = products.map((p) => p.product_url);
-          let results: Map<string, ScrapedProduct | null>;
-          try {
-            results = await batchScraper.updateProductPricesBatch(urls);
-          } catch (err) {
-            if (err instanceof BrowserlessQuotaError) {
-              console.error(`[price] ${storeSlug}: Browserless quota/rate-limit signal — deferring this store's remaining batch, not treating as N product failures: ${err.message}`);
-              deferredQuotaStores.push(storeSlug);
-              storesUpdated++;
-              continue;
-            }
-            console.error(`[price] batch fetch failed for ${storeSlug}:`, err instanceof Error ? err.message : err);
-            results = new Map();
-          }
-          for (const productStore of products) {
-            try {
-              await applyResult(productStore, results.get(productStore.product_url) ?? null);
-            } catch (err) {
-              const msg = err instanceof Error ? err.message.slice(0, 500) : String(err).slice(0, 500);
+            if (scrapedProduct) {
+              const oldPrice = productStore.current_price;
+              const newPrice = scrapedProduct.current_price;
+              // A marketplace SKU's winning offer can rotate to a different seller between
+              // refreshes (Noon price-contract review, 2026-09-10) — only write a new
+              // product_url when the provider actually returned a different one, keeping
+              // this a no-op for every store whose scraper never changes the URL.
+              const urlChanged = scrapedProduct.product_url && scrapedProduct.product_url !== productUrl;
+
+              const write = await this.productService.updateProductPrice(
+                productId,
+                storeId,
+                newPrice,
+                scrapedProduct.availability,
+                urlChanged ? scrapedProduct.product_url : undefined,
+                productStoreId,
+              );
+              if (!write.accepted) {
+                stages.rejected++;
+                errors++;
+                await this.stampChecked(productStoreId, false);
+                return;
+              }
+              stages.accepted++;
+              stages.written++;
+              productsUpdated++;
+              if (oldPrice !== newPrice) priceChanges++;
+
+              // A REFRESHED PRICE MUST ALSO BECOME AN OBSERVATION.
+              //
+              // `ingestBatch` was called only in the DISCOVERY path, so the price loop
+              // refreshed the storefront `product_stores` row and wrote NOTHING the
+              // knowledge layer could see. Canonicals, the projection, and therefore every
+              // one of the 801 comparisons are fed exclusively by raw_observations — so
+              // the loop whose entire purpose is price freshness was invisible to the
+              // surface that shows prices. Measured 2026-08-02: 6 of 801 comparable
+              // products inside the 26h SLO, median 173.6h, while the storefront rows for
+              // the same retailers were being refreshed.
+              //
+              // Bounded by construction: the price loop is capped at max_products per
+              // store per cycle, so this cannot outrun normalization.
+              try {
+                const saved = await this.ingestion.ingestBatch(storeSlug, [scrapedProduct], Number(storeId), null);
+                if (saved !== 1) throw new Error('Accepted price observation was not persisted');
+                stages.observations_ingested += saved;
+              } catch {
+                // The storefront write did succeed, but the knowledge pipeline is incomplete.
+                errors++;
+              }
+              await this.stampChecked(productStoreId, true);
+
+              const oldAvailability = productStore.availability;
+              const newAvailability = scrapedProduct.availability;
+              if (oldAvailability && oldAvailability !== 'in_stock' && newAvailability === 'in_stock') {
+                const store = productStore.stores;
+                this.notifyBackInStock(
+                  supabase, productId, storeId, newPrice,
+                  { name_ar: store.name_ar, name_en: store.name_en }
+                ).catch((err) => console.error('Back-in-stock notification error:', err));
+              }
+            } else {
+              // ADR-149: an unexplained null is how Noon's 100% failure stayed invisible for
+              // an unknown period. `recordFailure` is a no-op (the columns do not exist in
+              // production and DDL is not safe before launch), so the reason is emitted as a
+              // single structured line instead — greppable in Railway logs and aggregatable
+              // without a migration. Post-launch this becomes a real column; see HANDOVER.
               this.logPriceAttempt({
-                retailer: storeSlug, offer_id: productStore.id, url: productStore.product_url,
-                result: 'RETRYABLE', reason: msg,
+                retailer: storeSlug, offer_id: productStoreId, url: productUrl,
+                result: 'FAILED', reason: 'scraper returned null (no price parsed)',
                 price_before: productStore.current_price, price_after: null,
-                next_action: 'batch result apply threw; inspect persistence path',
+                next_action: 'diagnose parser for this retailer',
               });
-              await this.recordFailure(productStore.id, msg);
-              await this.stampChecked(productStore.id, false);
+              await this.recordFailure(productStoreId, 'scraper returned null');
+              await this.stampChecked(productStoreId, false);
               errors++;
             }
-          }
-          storesUpdated++;
-          continue;
-        }
+          };
 
-        for (const productStore of products) {
-          const productStoreId = productStore.id;
-          const productUrl = productStore.product_url;
-
-          try {
-            const scrapedProduct = await retryAsync(
-              () => scraper.updateProductPrice(productUrl),
-              { maxAttempts: 3, baseDelayMs: 500 }
-            );
-            await applyResult(productStore, scrapedProduct);
-          } catch (err) {
-            // Browserless cost incident, 2026-09-19: a quota/rate-limit
-            // signal will fail identically for EVERY remaining product in
-            // this store's batch — stop attempting them (they are neither
-            // touched nor stamped, so the next cycle's staleness ordering
-            // picks them up first) instead of burning through the whole
-            // list re-hitting the same exhausted quota. This is a deferral,
-            // not N product failures — `errors` is deliberately NOT
-            // incremented here.
-            if (err instanceof BrowserlessQuotaError) {
-              console.error(`[price] ${storeSlug}: Browserless quota/rate-limit signal — deferring ${products.length - products.indexOf(productStore)} remaining product(s), not attempting further this cycle: ${err.message}`);
-              deferredQuotaStores.push(storeSlug);
-              break;
+          // Batch path (Noon commerce data truth mission, 2026-09-10; ADR-334): a scraper
+          // that implements updateProductPricesBatch is fetched ONCE for the whole store
+          // batch instead of once per product — the managed-provider transport (Apify) pays
+          // real per-run overhead, so one call for N products is materially cheaper and
+          // faster than N calls. Every OTHER store keeps the exact per-URL loop below,
+          // completely untouched.
+          const batchScraper = scraper as unknown as {
+            updateProductPricesBatch?: (urls: string[]) => Promise<Map<string, ScrapedProduct | null>>;
+          };
+          if (typeof batchScraper.updateProductPricesBatch === 'function') {
+            const urls = products.map((p) => p.product_url);
+            let results: Map<string, ScrapedProduct | null>;
+            try {
+              stages.attempted += products.length;
+              results = await batchScraper.updateProductPricesBatch(urls);
+            } catch (err) {
+              if (err instanceof BrowserlessQuotaError) {
+                console.error(`[price] ${storeSlug}: Browserless quota/rate-limit signal — deferring this store's remaining batch, not treating as N product failures: ${err.message}`);
+                deferredQuotaStores.push(storeSlug);
+                stages.deferred += products.length;
+                continue;
+              }
+              console.error(`[price] batch fetch failed for ${storeSlug}:`, err instanceof Error ? err.message : err);
+              results = new Map();
             }
-            const msg = err instanceof Error ? err.message.slice(0, 500) : String(err).slice(0, 500);
-            this.logPriceAttempt({
-              retailer: storeSlug, offer_id: productStoreId, url: productUrl,
-              result: 'RETRYABLE', reason: msg,
-              price_before: productStore.current_price, price_after: null,
-              next_action: 'retried 3x and still failed; inspect network/anti-bot',
-            });
-            await this.recordFailure(productStoreId, msg);
-            await this.stampChecked(productStoreId, false);
-            errors++;
+            for (const productStore of products) {
+              try {
+                await applyResult(productStore, results.get(productStore.product_url) ?? null);
+              } catch (err) {
+                const msg = err instanceof Error ? err.message.slice(0, 500) : String(err).slice(0, 500);
+                this.logPriceAttempt({
+                  retailer: storeSlug, offer_id: productStore.id, url: productStore.product_url,
+                  result: 'RETRYABLE', reason: msg,
+                  price_before: productStore.current_price, price_after: null,
+                  next_action: 'batch result apply threw; inspect persistence path',
+                });
+                await this.recordFailure(productStore.id, msg);
+                await this.stampChecked(productStore.id, false);
+                errors++;
+              }
+            }
+            if (productsUpdated > acceptedBeforeStore) storesUpdated++;
+            continue;
           }
 
-          const delay = minDelayMs + Math.floor(Math.random() * Math.max(0, maxDelayMs - minDelayMs));
-          if (delay > 0) {
-            await new Promise((r) => setTimeout(r, delay));
+          for (const productStore of products) {
+            const productStoreId = productStore.id;
+            const productUrl = productStore.product_url;
+
+            try {
+              stages.attempted++;
+              // Providers own retry/backoff. Replaying the entire scraper here
+              // multiplied BaseScraper's six-request budget by three, even on 4xx.
+              const scrapedProduct = await scraper.updateProductPrice(productUrl);
+              await applyResult(productStore, scrapedProduct);
+            } catch (err) {
+              // Browserless cost incident, 2026-09-19: a quota/rate-limit
+              // signal will fail identically for EVERY remaining product in
+              // this store's batch — stop attempting them (they are neither
+              // touched nor stamped, so the next cycle's staleness ordering
+              // picks them up first) instead of burning through the whole
+              // list re-hitting the same exhausted quota. This is a deferral,
+              // not N product failures — `errors` is deliberately NOT
+              // incremented here.
+              if (err instanceof BrowserlessQuotaError) {
+                console.error(`[price] ${storeSlug}: Browserless quota/rate-limit signal — deferring ${products.length - products.indexOf(productStore)} remaining product(s), not attempting further this cycle: ${err.message}`);
+                deferredQuotaStores.push(storeSlug);
+                stages.deferred += products.length - products.indexOf(productStore);
+                break;
+              }
+              const msg = err instanceof Error ? err.message.slice(0, 500) : String(err).slice(0, 500);
+              this.logPriceAttempt({
+                retailer: storeSlug, offer_id: productStoreId, url: productUrl,
+                result: 'FAILED', reason: msg,
+                price_before: productStore.current_price, price_after: null,
+                next_action: 'provider failed or exhausted its retry budget; inspect provider/persistence',
+              });
+              await this.recordFailure(productStoreId, msg);
+              await this.stampChecked(productStoreId, false);
+              errors++;
+            }
+
+            const delay = minDelayMs + Math.floor(Math.random() * Math.max(0, maxDelayMs - minDelayMs));
+            if (delay > 0) {
+              await new Promise((r) => setTimeout(r, delay));
+            }
           }
+
+          if (productsUpdated > acceptedBeforeStore) storesUpdated++;
+        } finally {
+          // Price refresh does not enter discoverProducts(), whose finally previously
+          // owned cleanup. Close resources on success, quota deferral and write failure.
+          await scraper.cleanup().catch(() => { errors++; });
         }
-
-        storesUpdated++;
       }
 
-      return {
+      const result: PriceUpdateResult = {
         success: true,
         stores_updated: storesUpdated,
         products_updated: productsUpdated,
@@ -656,7 +663,11 @@ export class ScrapingOrchestrator {
         errors,
         duration_ms: Date.now() - startTime,
         deferred_quota_stores: deferredQuotaStores.length ? deferredQuotaStores : undefined,
+        stages,
       };
+      result.outcome = priceUpdateOutcome(result);
+      result.success = result.outcome !== 'failed';
+      return result;
     } catch (error) {
       console.error('runPriceUpdateJob failed:', error);
       return {
@@ -733,10 +744,14 @@ export class ScrapingOrchestrator {
    * `consecutive_failures`. Production has `consecutive_misses` and `scrape_status`
    * (migration 17), which is what this writes.
    */
-  private async stampChecked(productStoreId: string, ok: boolean): Promise<void> {
+  private async stampChecked(productStoreId: string, ok: boolean | null): Promise<void> {
     try {
       const supabase = createServerClient();
       const now = new Date().toISOString();
+      if (ok === null) {
+        await (supabase as any).from('product_stores').update({ last_checked_at: now }).eq('id', productStoreId);
+        return;
+      }
       if (ok) {
         await (supabase as any).from('product_stores')
           .update({ last_checked_at: now, last_scraped_at: now, consecutive_misses: 0, scrape_status: 'ok' })

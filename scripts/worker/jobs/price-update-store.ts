@@ -23,6 +23,8 @@ import type { PriceUpdateOptions } from '../../../src/lib/scraping/base/types';
 import { finishRun, failRun } from '../../../src/lib/scraping/services/run-logger';
 import { BrowserlessQuotaError } from '../../../src/lib/scraping/base/base-scraper';
 import { closeOrphanedBrowserSession } from '../lib/store-freshness';
+import { priceUpdateOutcome } from '../../../src/lib/scraping/services/price-update-outcome';
+import { jobExitCode } from '../lib/job-outcome';
 
 async function main() {
   const [, , slug, runIdArg, maxProductsArg, olderThanHoursArg] = process.argv;
@@ -42,20 +44,22 @@ async function main() {
     const orchestrator = new ScrapingOrchestrator();
     const result = await orchestrator.runPriceUpdateJob(options);
     const deferredQuota = result.deferred_quota_stores?.includes(slug) ?? false;
-    await finishRun({
+    const outcome = result.outcome ?? priceUpdateOutcome(result);
+    exitCode = jobExitCode(outcome);
+    const recorded = await finishRun({
       run_id: runId,
-      // Browserless cost incident, 2026-09-19: a quota-deferred store still
-      // did real, valid work for whatever products it reached before the
-      // signal — 'partial' (not 'failed') reflects that, with the reason
-      // recorded distinctly so it never reads as a scrape defect.
-      status: deferredQuota ? 'partial' : result.success ? (result.errors > 0 ? 'partial' : 'success') : 'failed',
+      // A quota stop is partial only if this run accepted some work;
+      // a stop before any accepted observation is failed with its reason.
+      status: outcome,
       products_updated: result.products_updated,
       price_changes_detected: result.price_changes,
       errors_count: result.errors,
-      error_summary: deferredQuota ? { reason: 'deferred_browserless_quota' } : undefined,
+      error_summary: { ...(deferredQuota ? { reason: 'deferred_browserless_quota' } : {}), stages: result.stages, outcome },
     });
-    console.log(`[worker:price-update] ${slug}: updated=${result.products_updated} changes=${result.price_changes} errors=${result.errors}${deferredQuota ? ' DEFERRED(browserless_quota)' : ''}`);
+    if (!recorded) exitCode = 1;
+    console.log(`[worker:price-update] ${slug}: outcome=${outcome} updated=${result.products_updated} changes=${result.price_changes} errors=${result.errors} stages=${JSON.stringify(result.stages ?? {})}${deferredQuota ? ' DEFERRED(browserless_quota)' : ''}`);
   } catch (err) {
+    exitCode = 1;
     // Defense-in-depth: runPriceUpdateJob's own per-product loop already
     // catches BrowserlessQuotaError internally, but if one somehow escapes
     // before that loop (e.g. during the initial product query), still

@@ -9,7 +9,7 @@
 // (Amazon embeds per-request tracking in URLs). Aggregation lives in TypeScript so
 // the key rule has exactly one implementation (src/lib/identity/listing-key.ts).
 //
-// ADR-390 (2026-09-29, Supabase egress incident) — this step used to reset its cursor
+// ADR-392 (2026-09-29, Supabase egress incident) — this step used to reset its cursor
 // to 0 on EVERY hourly run and page the WHOLE raw_observations table for six stores
 // through the Shared Pooler. That single read pattern is what burned the org's egress
 // quota. Now:
@@ -230,7 +230,7 @@ async function syncStoreIncremental(pg: Client, store: number, tally: Record<str
   return { fetched, written };
 }
 
-/** Full rebuild: the pre-ADR-390 algorithm, explicit and unscheduled. Reconciles stale keys. */
+/** Full rebuild: the pre-ADR-392 algorithm, explicit and unscheduled. Reconciles stale keys. */
 async function rebuildStoreFull(pg: Client, store: number, tally: Record<string, number>) {
   const t0 = Date.now();
   const agg = new Map<string, ListingFactsRow>();
@@ -263,7 +263,7 @@ async function rebuildStoreFull(pg: Client, store: number, tally: Record<string,
 
 (async () => {
   if (!ENABLED) {
-    // Kill switch (ADR-390). Exit 0 so the refresh chain records a skip, not a failure.
+    // Kill switch (ADR-392). Exit 0 so the refresh chain records a skip, not a failure.
     log("listing_facts_skipped", { reason: "OBSERVATION_SYNC_ENABLED is not 1/true — no observation reads performed" });
     return;
   }

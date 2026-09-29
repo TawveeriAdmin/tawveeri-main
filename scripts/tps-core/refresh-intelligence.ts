@@ -119,7 +119,7 @@ const STEPS: Step[] = [
     run: () => runScript("scripts/tps-analysis/rebuild-products-index.ts"),
   },
   {
-    // ADR-390 (Supabase egress incident, 2026-09-29): this step used to replay the WHOLE
+    // ADR-392 (Supabase egress incident, 2026-09-29): this step used to replay the WHOLE
     // raw_observations history every hour. It is now incremental (per-store watermark,
     // src/lib/intelligence/listing-facts-merge.ts) AND behind an explicit kill switch:
     // unless OBSERVATION_SYNC_ENABLED=1 the chain does not even spawn it — no
@@ -128,7 +128,7 @@ const STEPS: Step[] = [
     key: "facts", label: "per-listing price facts (observations → facts, incremental)", needs: [],
     run: () => {
       if (!/^(1|true)$/i.test(process.env.OBSERVATION_SYNC_ENABLED ?? "")) {
-        return { ok: true, detail: "skipped — OBSERVATION_SYNC_ENABLED is not set (ADR-390 kill switch); no observation read performed" };
+        return { ok: true, detail: "skipped — OBSERVATION_SYNC_ENABLED is not set (ADR-392 kill switch); no observation read performed" };
       }
       return runScript("scripts/tps-core/build-listing-facts.ts");
     },

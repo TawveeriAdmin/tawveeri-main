@@ -235,6 +235,18 @@ export interface DiscoveryResult {
  */
 export interface PriceUpdateResult {
   success: boolean;
+  outcome?: 'success' | 'partial' | 'failed';
+  stages?: {
+    selected: number;
+    attempted: number;
+    extracted: number;
+    accepted: number;
+    written: number;
+    observations_ingested: number;
+    product_only: number;
+    rejected: number;
+    deferred: number;
+  };
   stores_updated: number;
   products_updated: number;
   price_changes: number;

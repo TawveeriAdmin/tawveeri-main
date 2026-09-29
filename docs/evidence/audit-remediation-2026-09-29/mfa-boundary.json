@@ -1,0 +1,181 @@
+{
+  "capturedAt": "2026-09-29T07:43:12.843Z",
+  "mode": "mfa-boundary",
+  "safety": "Single connection; BEGIN READ ONLY; 8s statements; 1s locks; no application/RPC function calls; rollback; aggregate or bounded non-personal outputs",
+  "data": {
+    "functions": {
+      "ms": 411,
+      "rows": [
+        {
+          "proname": "current_user_role",
+          "definition": "CREATE OR REPLACE FUNCTION public.current_user_role()\n RETURNS user_role\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\n  select role from public.users where id = auth.uid();\n$function$\n"
+        },
+        {
+          "proname": "is_admin",
+          "definition": "CREATE OR REPLACE FUNCTION public.is_admin()\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\n  select exists(select 1 from public.users where id = auth.uid() and role = 'admin');\n$function$\n"
+        }
+      ]
+    },
+    "policies": {
+      "ms": 364,
+      "rows": [
+        {
+          "schemaname": "public",
+          "tablename": "admin_logs",
+          "policyname": "admin_logs_admin",
+          "roles": "{public}",
+          "cmd": "ALL",
+          "qual": "is_admin()",
+          "with_check": "is_admin()"
+        },
+        {
+          "schemaname": "public",
+          "tablename": "coupons",
+          "policyname": "coupons_admin",
+          "roles": "{public}",
+          "cmd": "ALL",
+          "qual": "is_admin()",
+          "with_check": "is_admin()"
+        },
+        {
+          "schemaname": "public",
+          "tablename": "coupons",
+          "policyname": "coupons_read",
+          "roles": "{public}",
+          "cmd": "SELECT",
+          "qual": "((is_active = true) OR is_admin())",
+          "with_check": null
+        },
+        {
+          "schemaname": "public",
+          "tablename": "login_sessions",
+          "policyname": "login_sessions_own",
+          "roles": "{public}",
+          "cmd": "ALL",
+          "qual": "((user_id = auth.uid()) OR is_admin())",
+          "with_check": "((user_id = auth.uid()) OR is_admin())"
+        },
+        {
+          "schemaname": "public",
+          "tablename": "notifications",
+          "policyname": "notifications_own",
+          "roles": "{public}",
+          "cmd": "ALL",
+          "qual": "((user_id = auth.uid()) OR is_admin())",
+          "with_check": "((user_id = auth.uid()) OR is_admin())"
+        },
+        {
+          "schemaname": "public",
+          "tablename": "price_alerts",
+          "policyname": "price_alerts_own",
+          "roles": "{public}",
+          "cmd": "ALL",
+          "qual": "((user_id = auth.uid()) OR is_admin())",
+          "with_check": "((user_id = auth.uid()) OR is_admin())"
+        },
+        {
+          "schemaname": "public",
+          "tablename": "product_reviews",
+          "policyname": "product_reviews_own",
+          "roles": "{public}",
+          "cmd": "ALL",
+          "qual": "((user_id = auth.uid()) OR is_admin())",
+          "with_check": "((user_id = auth.uid()) OR is_admin())"
+        },
+        {
+          "schemaname": "public",
+          "tablename": "saved_searches",
+          "policyname": "saved_searches_own",
+          "roles": "{public}",
+          "cmd": "ALL",
+          "qual": "((user_id = auth.uid()) OR is_admin())",
+          "with_check": "((user_id = auth.uid()) OR is_admin())"
+        },
+        {
+          "schemaname": "public",
+          "tablename": "search_history",
+          "policyname": "search_history_own",
+          "roles": "{public}",
+          "cmd": "ALL",
+          "qual": "((user_id = auth.uid()) OR is_admin())",
+          "with_check": "((user_id = auth.uid()) OR is_admin())"
+        },
+        {
+          "schemaname": "public",
+          "tablename": "store_reviews",
+          "policyname": "store_reviews_own",
+          "roles": "{public}",
+          "cmd": "ALL",
+          "qual": "((user_id = auth.uid()) OR is_admin())",
+          "with_check": "((user_id = auth.uid()) OR is_admin())"
+        },
+        {
+          "schemaname": "public",
+          "tablename": "transactions",
+          "policyname": "transactions_own",
+          "roles": "{public}",
+          "cmd": "ALL",
+          "qual": "((user_id = auth.uid()) OR is_admin())",
+          "with_check": "((user_id = auth.uid()) OR is_admin())"
+        },
+        {
+          "schemaname": "public",
+          "tablename": "user_preferences",
+          "policyname": "user_preferences_own",
+          "roles": "{public}",
+          "cmd": "ALL",
+          "qual": "((user_id = auth.uid()) OR is_admin())",
+          "with_check": "((user_id = auth.uid()) OR is_admin())"
+        },
+        {
+          "schemaname": "public",
+          "tablename": "user_wishlists",
+          "policyname": "user_wishlists_own",
+          "roles": "{public}",
+          "cmd": "ALL",
+          "qual": "((user_id = auth.uid()) OR is_admin())",
+          "with_check": "((user_id = auth.uid()) OR is_admin())"
+        },
+        {
+          "schemaname": "public",
+          "tablename": "users",
+          "policyname": "users_admin_delete",
+          "roles": "{public}",
+          "cmd": "DELETE",
+          "qual": "is_admin()",
+          "with_check": null
+        },
+        {
+          "schemaname": "public",
+          "tablename": "users",
+          "policyname": "users_select_self",
+          "roles": "{public}",
+          "cmd": "SELECT",
+          "qual": "((id = auth.uid()) OR is_admin())",
+          "with_check": null
+        },
+        {
+          "schemaname": "public",
+          "tablename": "users",
+          "policyname": "users_update_self",
+          "roles": "{public}",
+          "cmd": "UPDATE",
+          "qual": "((id = auth.uid()) OR is_admin())",
+          "with_check": "((id = auth.uid()) OR is_admin())"
+        }
+      ]
+    },
+    "admins": {
+      "ms": 514,
+      "rows": [
+        {
+          "administrators": "1"
+        }
+      ]
+    },
+    "factors": {
+      "ms": 561,
+      "rows": []
+    }
+  }
+}

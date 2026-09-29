@@ -1,3 +1,4 @@
+import { consumeOtp } from '@/lib/auth/consume-otp';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/database';
@@ -48,32 +49,6 @@ export async function POST(request: NextRequest) {
 
     const supabase = createServerClient();
 
-    // Verify OTP from database
-    const { data: otpRecord, error: otpError } = await supabase
-      .from('phone_otps')
-      .select('id, otp_code')
-      .eq('phone', formattedPhone)
-      .eq('otp_code', otp)
-      .eq('is_used', false)
-      .gt('expires_at', new Date().toISOString())
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single()
-      .returns<{ id: string; otp_code: string }>();
-
-    if (otpError || !otpRecord) {
-      return NextResponse.json(
-        { error: 'Invalid or expired OTP. Please request a new code.' },
-        { status: 400 },
-      );
-    }
-
-    // Mark OTP as used
-    await supabase
-      .from('phone_otps')
-      .update({ is_used: true })
-      .eq('id', otpRecord.id);
-
     // Find user by phone number
     const { data: userProfile, error: profileError } = await supabase
       .from('users')
@@ -86,6 +61,11 @@ export async function POST(request: NextRequest) {
         { error: 'No account found with this phone number' },
         { status: 404 },
       );
+    }
+
+    const accepted = await consumeOtp(supabase, formattedPhone, otp, 'password_reset', userProfile.id);
+    if (!accepted) {
+      return NextResponse.json({ error: 'Invalid or expired OTP. Please request a new code.' }, { status: 400 });
     }
 
     // Update password using admin API
@@ -138,7 +118,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Reset password phone error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Internal server error' },
+      { error: 'Password reset unavailable. Please try again.' },
       { status: 500 },
     );
   }

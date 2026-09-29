@@ -1,0 +1,9 @@
+{
+    "id":  "af15b2dd-a433-43b3-a31e-797086d6215b",
+    "status":  "SUCCESS",
+    "createdAt":  "2026-09-27T06:31:22.143Z",
+    "checkedAt":  "2026-09-27T06:34:59.8017638Z",
+    "sourceCommit":  "70c0da65c2f38ac8d737960f53dfe209b7a389df",
+    "sourceEvidence":  "release-manifest.json (git archive uploaded directly; commit not inferred from Railway metadata)",
+    "service":  "e83d5ea5-4de5-48b8-8a2c-728a1b300090"
+}

@@ -1,0 +1,74 @@
+﻿{"timestamp":"2026-09-29T07:18:54.585937807Z","message":"[worker] starting manual_trigger"}
+{"timestamp":"2026-09-29T07:18:54.585948477Z","message":"[worker] manual_trigger finished: outcome=failed duration=1.8s note=[worker:manual-trigger] fatal: scraping_runs pending select failed: Service for this project is restricted due to the following violations: exceed_egress_quota. The project owner must upgrade their plan or remove spend caps to restore service."}
+{"timestamp":"2026-09-29T07:19:54.774878987Z","message":"[worker] heartbeat mem=1413939200/1999998976 pids=765/1000 queue=[dispatch_sweep] running=-"}
+{"timestamp":"2026-09-29T07:19:54.774882487Z","message":"[worker] starting dispatch_sweep"}
+{"timestamp":"2026-09-29T07:19:54.774917597Z","message":"[worker] dispatch_sweep finished: outcome=success duration=1.8s note=[worker:dispatch-sweep] progressive sweep: ran=true scanned=0 | [dispatch] coverage snapshot skipped: coverage-ledger projection read failed: Service for this project is restricted due to the following violations: exceed_egress_quota. The project owner must upgrade their plan or remove spend caps to"}
+{"timestamp":"2026-09-29T07:20:55.059473771Z","message":"[worker] heartbeat mem=1414103040/1999998976 pids=765/1000 queue=[] running=-"}
+{"timestamp":"2026-09-29T07:20:55.059483530Z","message":"[worker] starting manual_trigger"}
+{"timestamp":"2026-09-29T07:20:55.059489090Z","message":"[worker] manual_trigger finished: outcome=failed duration=1.8s note=[worker:manual-trigger] fatal: scraping_runs pending select failed: Service for this project is restricted due to the following violations: exceed_egress_quota. The project owner must upgrade their plan or remove spend caps to restore service."}
+{"timestamp":"2026-09-29T07:21:55.442702667Z","message":"[worker] heartbeat mem=1414332416/1999998976 pids=765/1000 queue=[] running=-"}
+{"timestamp":"2026-09-29T07:22:55.843103746Z","message":"[worker] heartbeat mem=1414008832/1999998976 pids=765/1000 queue=[] running=-"}
+{"timestamp":"2026-09-29T07:22:55.843110456Z","message":"[worker] starting manual_trigger"}
+{"timestamp":"2026-09-29T07:22:55.843115846Z","message":"[worker] manual_trigger finished: outcome=failed duration=2.0s note=[worker:manual-trigger] fatal: scraping_runs pending select failed: Service for this project is restricted due to the following violations: exceed_egress_quota. The project owner must upgrade their plan or remove spend caps to restore service."}
+{"timestamp":"2026-09-29T07:23:56.427160130Z","message":"[worker] heartbeat mem=1413849088/1999998976 pids=765/1000 queue=[] running=-"}
+{"timestamp":"2026-09-29T07:24:56.783700323Z","message":"[worker] starting product_recovery"}
+{"timestamp":"2026-09-29T07:24:56.783716493Z","message":"[worker] heartbeat mem=1414279168/1999998976 pids=765/1000 queue=[product_recovery,dispatch_sweep] running=-"}
+{"timestamp":"2026-09-29T07:24:56.783724222Z","message":"[worker] starting manual_trigger"}
+{"timestamp":"2026-09-29T07:24:56.783738732Z","message":"[worker] manual_trigger finished: outcome=failed duration=1.9s note=[worker:manual-trigger] fatal: scraping_runs pending select failed: Service for this project is restricted due to the following violations: exceed_egress_quota. The project owner must upgrade their plan or remove spend caps to restore service."}
+{"timestamp":"2026-09-29T07:24:58.544160868Z","message":"[worker] product_recovery finished: outcome=failed duration=1.8s note=[worker:product-recovery] fatal: product_recovery_requests select failed: Service for this project is restricted due to the following violations: exceed_egress_quota. The project owner must upgrade their plan or remove spend caps to restore service."}
+{"timestamp":"2026-09-29T07:25:01.761558923Z","message":"[worker] starting dispatch_sweep"}
+{"timestamp":"2026-09-29T07:25:03.549945281Z","message":"[worker] dispatch_sweep finished: outcome=success duration=1.8s note=[worker:dispatch-sweep] progressive sweep: ran=true scanned=0 | [dispatch] coverage snapshot skipped: coverage-ledger projection read failed: Service for this project is restricted due to the following violations: exceed_egress_quota. The project owner must upgrade their plan or remove spend caps to"}
+{"timestamp":"2026-09-29T07:25:54.098112475Z","message":"[worker] heartbeat mem=1413861376/1999998976 pids=765/1000 queue=[] running=-"}
+{"timestamp":"2026-09-29T07:26:54.376847126Z","message":"[worker] heartbeat mem=1413791744/1999998976 pids=765/1000 queue=[] running=-"}
+{"timestamp":"2026-09-29T07:26:54.376858786Z","message":"[worker] starting manual_trigger"}
+{"timestamp":"2026-09-29T07:26:54.376865725Z","message":"[worker] manual_trigger finished: outcome=failed duration=2.0s note=[worker:manual-trigger] fatal: scraping_runs pending select failed: Service for this project is restricted due to the following violations: exceed_egress_quota. The project owner must upgrade their plan or remove spend caps to restore service."}
+{"timestamp":"2026-09-29T07:27:54.951253652Z","message":"[worker] heartbeat mem=1413931008/1999998976 pids=765/1000 queue=[] running=-"}
+{"timestamp":"2026-09-29T07:28:55.961585228Z","message":"[worker] heartbeat mem=1413873664/1999998976 pids=765/1000 queue=[] running=-"}
+{"timestamp":"2026-09-29T07:28:55.961600758Z","message":"[worker] starting manual_trigger"}
+{"timestamp":"2026-09-29T07:28:55.961611938Z","message":"[worker] manual_trigger finished: outcome=failed duration=2.0s note=[worker:manual-trigger] fatal: scraping_runs pending select failed: Service for this project is restricted due to the following violations: exceed_egress_quota. The project owner must upgrade their plan or remove spend caps to restore service."}
+{"timestamp":"2026-09-29T07:29:56.251154068Z","message":"[worker] heartbeat mem=1415438336/1999998976 pids=765/1000 queue=[dispatch_sweep] running=-"}
+{"timestamp":"2026-09-29T07:29:56.251159698Z","message":"[worker] starting dispatch_sweep"}
+{"timestamp":"2026-09-29T07:29:56.251209677Z","message":"[worker] dispatch_sweep finished: outcome=success duration=2.1s note=[worker:dispatch-sweep] progressive sweep: ran=true scanned=0 | [dispatch] coverage snapshot skipped: coverage-ledger projection read failed: Service for this project is restricted due to the following violations: exceed_egress_quota. The project owner must upgrade their plan or remove spend caps to"}
+{"timestamp":"2026-09-29T07:30:56.062692131Z","message":"[worker] heartbeat mem=1415569408/1999998976 pids=765/1000 queue=[] running=-"}
+{"timestamp":"2026-09-29T07:30:56.062699821Z","message":"[worker] starting manual_trigger"}
+{"timestamp":"2026-09-29T07:30:56.062707191Z","message":"[worker] manual_trigger finished: outcome=failed duration=2.0s note=[worker:manual-trigger] fatal: scraping_runs pending select failed: Service for this project is restricted due to the following violations: exceed_egress_quota. The project owner must upgrade their plan or remove spend caps to restore service."}
+{"timestamp":"2026-09-29T07:31:56.501957584Z","message":"[worker] heartbeat mem=1415352320/1999998976 pids=765/1000 queue=[] running=-"}
+{"timestamp":"2026-09-29T07:32:56.599856674Z","message":"[worker] heartbeat mem=1415282688/1999998976 pids=765/1000 queue=[] running=-"}
+{"timestamp":"2026-09-29T07:32:56.599864664Z","message":"[worker] starting manual_trigger"}
+{"timestamp":"2026-09-29T07:32:56.599873284Z","message":"[worker] manual_trigger finished: outcome=failed duration=2.1s note=[worker:manual-trigger] fatal: scraping_runs pending select failed: Service for this project is restricted due to the following violations: exceed_egress_quota. The project owner must upgrade their plan or remove spend caps to restore service."}
+{"timestamp":"2026-09-29T07:33:56.614777841Z","message":"[worker] heartbeat mem=1415880704/1999998976 pids=765/1000 queue=[] running=-"}
+{"timestamp":"2026-09-29T07:34:56.879755899Z","message":"[worker] heartbeat mem=1415229440/1999998976 pids=765/1000 queue=[product_recovery,dispatch_sweep] running=-"}
+{"timestamp":"2026-09-29T07:34:56.879765609Z","message":"[worker] starting manual_trigger"}
+{"timestamp":"2026-09-29T07:34:56.879772659Z","message":"[worker] manual_trigger finished: outcome=failed duration=2.0s note=[worker:manual-trigger] fatal: scraping_runs pending select failed: Service for this project is restricted due to the following violations: exceed_egress_quota. The project owner must upgrade their plan or remove spend caps to restore service."}
+{"timestamp":"2026-09-29T07:34:57.148578581Z","message":"[worker] starting product_recovery"}
+{"timestamp":"2026-09-29T07:34:58.914114963Z","message":"[worker] product_recovery finished: outcome=failed duration=1.7s note=[worker:product-recovery] fatal: product_recovery_requests select failed: Service for this project is restricted due to the following violations: exceed_egress_quota. The project owner must upgrade their plan or remove spend caps to restore service."}
+{"timestamp":"2026-09-29T07:35:02.132536595Z","message":"[worker] starting dispatch_sweep"}
+{"timestamp":"2026-09-29T07:35:03.998311222Z","message":"[worker] dispatch_sweep finished: outcome=success duration=1.9s note=[worker:dispatch-sweep] progressive sweep: ran=true scanned=0 | [dispatch] coverage snapshot skipped: coverage-ledger projection read failed: Service for this project is restricted due to the following violations: exceed_egress_quota. The project owner must upgrade their plan or remove spend caps to"}
+{"timestamp":"2026-09-29T07:35:54.066366519Z","message":"[worker] heartbeat mem=1415438336/1999998976 pids=765/1000 queue=[] running=-"}
+{"timestamp":"2026-09-29T07:36:54.282919836Z","message":"[worker] heartbeat mem=1415344128/1999998976 pids=765/1000 queue=[] running=-"}
+{"timestamp":"2026-09-29T07:36:54.282930916Z","message":"[worker] starting manual_trigger"}
+{"timestamp":"2026-09-29T07:36:54.282941756Z","message":"[worker] manual_trigger finished: outcome=failed duration=2.1s note=[worker:manual-trigger] fatal: scraping_runs pending select failed: Service for this project is restricted due to the following violations: exceed_egress_quota. The project owner must upgrade their plan or remove spend caps to restore service."}
+{"timestamp":"2026-09-29T07:37:54.500409175Z","message":"[worker] heartbeat mem=1415413760/1999998976 pids=765/1000 queue=[] running=-"}
+{"timestamp":"2026-09-29T07:38:54.832879146Z","message":"[worker] heartbeat mem=1415331840/1999998976 pids=765/1000 queue=[] running=-"}
+{"timestamp":"2026-09-29T07:38:54.832894636Z","message":"[worker] starting manual_trigger"}
+{"timestamp":"2026-09-29T07:38:54.832903405Z","message":"[worker] manual_trigger finished: outcome=failed duration=2.0s note=[worker:manual-trigger] fatal: scraping_runs pending select failed: Service for this project is restricted due to the following violations: exceed_egress_quota. The project owner must upgrade their plan or remove spend caps to restore service."}
+{"timestamp":"2026-09-29T07:39:55.184541479Z","message":"[worker] heartbeat mem=1415712768/1999998976 pids=765/1000 queue=[dispatch_sweep] running=-"}
+{"timestamp":"2026-09-29T07:39:55.184551749Z","message":"[worker] starting dispatch_sweep"}
+{"timestamp":"2026-09-29T07:39:55.184665458Z","message":"[worker] dispatch_sweep finished: outcome=success duration=2.0s note=[worker:dispatch-sweep] progressive sweep: ran=true scanned=0 | [dispatch] coverage snapshot skipped: coverage-ledger projection read failed: Service for this project is restricted due to the following violations: exceed_egress_quota. The project owner must upgrade their plan or remove spend caps to"}
+{"timestamp":"2026-09-29T07:40:55.781249658Z","message":"[worker] heartbeat mem=1415393280/1999998976 pids=765/1000 queue=[] running=-"}
+{"timestamp":"2026-09-29T07:40:55.781258268Z","message":"[worker] starting manual_trigger"}
+{"timestamp":"2026-09-29T07:40:55.781285858Z","message":"[worker] manual_trigger finished: outcome=failed duration=1.9s note=[worker:manual-trigger] fatal: scraping_runs pending select failed: Service for this project is restricted due to the following violations: exceed_egress_quota. The project owner must upgrade their plan or remove spend caps to restore service."}
+{"timestamp":"2026-09-29T07:41:56.135718137Z","message":"[worker] heartbeat mem=1415614464/1999998976 pids=765/1000 queue=[] running=-"}
+{"timestamp":"2026-09-29T07:42:56.303292521Z","message":"[worker] heartbeat mem=1415553024/1999998976 pids=765/1000 queue=[] running=-"}
+{"timestamp":"2026-09-29T07:42:56.303300001Z","message":"[worker] starting manual_trigger"}
+{"timestamp":"2026-09-29T07:42:56.303306351Z","message":"[worker] manual_trigger finished: outcome=failed duration=2.0s note=[worker:manual-trigger] fatal: scraping_runs pending select failed: Service for this project is restricted due to the following violations: exceed_egress_quota. The project owner must upgrade their plan or remove spend caps to restore service."}
+{"timestamp":"2026-09-29T07:43:56.193860402Z","message":"[worker] heartbeat mem=1385910272/1999998976 pids=765/1000 queue=[] running=-"}
+{"timestamp":"2026-09-29T07:44:56.546545101Z","message":"[worker] heartbeat mem=1385865216/1999998976 pids=765/1000 queue=[founder_daily,refresh,product_recovery,dispatch_sweep] running=-"}
+{"timestamp":"2026-09-29T07:44:56.546561001Z","message":"[worker] starting manual_trigger"}
+{"timestamp":"2026-09-29T07:44:56.546569901Z","message":"[worker] manual_trigger finished: outcome=failed duration=2.0s note=[worker:manual-trigger] fatal: scraping_runs pending select failed: Service for this project is restricted due to the following violations: exceed_egress_quota. The project owner must upgrade their plan or remove spend caps to restore service."}
+{"timestamp":"2026-09-29T07:44:57.617110199Z","message":"[worker] starting founder_daily"}
+{"timestamp":"2026-09-29T07:44:59.059441589Z","message":"[worker] founder_daily finished: outcome=failed duration=1.5s note=[worker:founder-daily] HTTP 500:  | [worker:founder-daily] fatal: founder-daily returned 500"}
+{"timestamp":"2026-09-29T07:45:02.573218120Z","message":"[worker] starting refresh"}
+{"timestamp":"2026-09-29T07:45:59.864733752Z","message":"[worker] heartbeat mem=1550921728/1999998976 pids=841/1000 queue=[product_recovery,dispatch_sweep] running=refresh"}
+{"timestamp":"2026-09-29T07:46:58.352628280Z","message":"[worker] heartbeat mem=1625804800/1999998976 pids=841/1000 queue=[product_recovery,dispatch_sweep] running=refresh"}
+{"timestamp":"2026-09-29T07:47:58.792245678Z","message":"[worker] heartbeat mem=1645563904/1999998976 pids=841/1000 queue=[product_recovery,dispatch_sweep,manual_trigger] running=refresh"}

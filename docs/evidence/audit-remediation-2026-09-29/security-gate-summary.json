@@ -1,0 +1,9 @@
+{
+  "at": "2026-09-29T07:13:24.833Z",
+  "suites": 299,
+  "failedSuites": 0,
+  "tests": 4092,
+  "failed": 0,
+  "sameCoverage": true,
+  "oldBranchShortfall": "48/71 = 67.60%; threshold remains 70%; owner nonregression exception applies"
+}

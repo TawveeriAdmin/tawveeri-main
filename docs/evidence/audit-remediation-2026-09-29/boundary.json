@@ -1,0 +1,712 @@
+{
+  "capturedAt": "2026-09-29T06:49:23.440Z",
+  "mode": "boundary",
+  "safety": "Single connection; BEGIN READ ONLY; 8s statements; 1s locks; no application/RPC function calls; rollback; aggregate or bounded non-personal outputs",
+  "data": {
+    "users_columns": {
+      "ms": 386,
+      "rows": [
+        {
+          "column_name": "id",
+          "data_type": "uuid",
+          "udt_name": "uuid",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "email",
+          "data_type": "character varying",
+          "udt_name": "varchar",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "phone",
+          "data_type": "character varying",
+          "udt_name": "varchar",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "full_name",
+          "data_type": "character varying",
+          "udt_name": "varchar",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "role",
+          "data_type": "USER-DEFINED",
+          "udt_name": "user_role",
+          "is_nullable": "NO",
+          "column_default": "'customer'::user_role"
+        },
+        {
+          "column_name": "auth_provider",
+          "data_type": "USER-DEFINED",
+          "udt_name": "auth_provider",
+          "is_nullable": "YES",
+          "column_default": "'email'::auth_provider"
+        },
+        {
+          "column_name": "auth_provider_id",
+          "data_type": "character varying",
+          "udt_name": "varchar",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "avatar_url",
+          "data_type": "text",
+          "udt_name": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "email_verified",
+          "data_type": "boolean",
+          "udt_name": "bool",
+          "is_nullable": "YES",
+          "column_default": "false"
+        },
+        {
+          "column_name": "phone_verified",
+          "data_type": "boolean",
+          "udt_name": "bool",
+          "is_nullable": "YES",
+          "column_default": "false"
+        },
+        {
+          "column_name": "preferred_language",
+          "data_type": "character varying",
+          "udt_name": "varchar",
+          "is_nullable": "YES",
+          "column_default": "'ar'::character varying"
+        },
+        {
+          "column_name": "is_active",
+          "data_type": "boolean",
+          "udt_name": "bool",
+          "is_nullable": "YES",
+          "column_default": "true"
+        },
+        {
+          "column_name": "last_login_at",
+          "data_type": "timestamp with time zone",
+          "udt_name": "timestamptz",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "udt_name": "timestamptz",
+          "is_nullable": "YES",
+          "column_default": "now()"
+        },
+        {
+          "column_name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "udt_name": "timestamptz",
+          "is_nullable": "YES",
+          "column_default": "now()"
+        }
+      ]
+    },
+    "policies": {
+      "ms": 479,
+      "rows": [
+        {
+          "schemaname": "public",
+          "tablename": "users",
+          "policyname": "users_admin_delete",
+          "permissive": "PERMISSIVE",
+          "roles": "{public}",
+          "cmd": "DELETE",
+          "qual": "is_admin()",
+          "with_check": null
+        },
+        {
+          "schemaname": "public",
+          "tablename": "users",
+          "policyname": "users_insert_self",
+          "permissive": "PERMISSIVE",
+          "roles": "{public}",
+          "cmd": "INSERT",
+          "qual": null,
+          "with_check": "(id = auth.uid())"
+        },
+        {
+          "schemaname": "public",
+          "tablename": "users",
+          "policyname": "users_select_self",
+          "permissive": "PERMISSIVE",
+          "roles": "{public}",
+          "cmd": "SELECT",
+          "qual": "((id = auth.uid()) OR is_admin())",
+          "with_check": null
+        },
+        {
+          "schemaname": "public",
+          "tablename": "users",
+          "policyname": "users_update_self",
+          "permissive": "PERMISSIVE",
+          "roles": "{public}",
+          "cmd": "UPDATE",
+          "qual": "((id = auth.uid()) OR is_admin())",
+          "with_check": "((id = auth.uid()) OR is_admin())"
+        }
+      ]
+    },
+    "table_grants": {
+      "ms": 361,
+      "rows": [
+        {
+          "grantee": "anon",
+          "table_name": "users",
+          "privilege_type": "SELECT"
+        },
+        {
+          "grantee": "authenticated",
+          "table_name": "users",
+          "privilege_type": "DELETE"
+        },
+        {
+          "grantee": "authenticated",
+          "table_name": "users",
+          "privilege_type": "INSERT"
+        },
+        {
+          "grantee": "authenticated",
+          "table_name": "users",
+          "privilege_type": "SELECT"
+        },
+        {
+          "grantee": "postgres",
+          "table_name": "phone_otps",
+          "privilege_type": "DELETE"
+        },
+        {
+          "grantee": "postgres",
+          "table_name": "phone_otps",
+          "privilege_type": "INSERT"
+        },
+        {
+          "grantee": "postgres",
+          "table_name": "phone_otps",
+          "privilege_type": "REFERENCES"
+        },
+        {
+          "grantee": "postgres",
+          "table_name": "phone_otps",
+          "privilege_type": "SELECT"
+        },
+        {
+          "grantee": "postgres",
+          "table_name": "phone_otps",
+          "privilege_type": "TRIGGER"
+        },
+        {
+          "grantee": "postgres",
+          "table_name": "phone_otps",
+          "privilege_type": "TRUNCATE"
+        },
+        {
+          "grantee": "postgres",
+          "table_name": "phone_otps",
+          "privilege_type": "UPDATE"
+        },
+        {
+          "grantee": "postgres",
+          "table_name": "users",
+          "privilege_type": "DELETE"
+        },
+        {
+          "grantee": "postgres",
+          "table_name": "users",
+          "privilege_type": "INSERT"
+        },
+        {
+          "grantee": "postgres",
+          "table_name": "users",
+          "privilege_type": "REFERENCES"
+        },
+        {
+          "grantee": "postgres",
+          "table_name": "users",
+          "privilege_type": "SELECT"
+        },
+        {
+          "grantee": "postgres",
+          "table_name": "users",
+          "privilege_type": "TRIGGER"
+        },
+        {
+          "grantee": "postgres",
+          "table_name": "users",
+          "privilege_type": "TRUNCATE"
+        },
+        {
+          "grantee": "postgres",
+          "table_name": "users",
+          "privilege_type": "UPDATE"
+        },
+        {
+          "grantee": "service_role",
+          "table_name": "phone_otps",
+          "privilege_type": "DELETE"
+        },
+        {
+          "grantee": "service_role",
+          "table_name": "phone_otps",
+          "privilege_type": "INSERT"
+        },
+        {
+          "grantee": "service_role",
+          "table_name": "phone_otps",
+          "privilege_type": "REFERENCES"
+        },
+        {
+          "grantee": "service_role",
+          "table_name": "phone_otps",
+          "privilege_type": "SELECT"
+        },
+        {
+          "grantee": "service_role",
+          "table_name": "phone_otps",
+          "privilege_type": "TRIGGER"
+        },
+        {
+          "grantee": "service_role",
+          "table_name": "phone_otps",
+          "privilege_type": "TRUNCATE"
+        },
+        {
+          "grantee": "service_role",
+          "table_name": "phone_otps",
+          "privilege_type": "UPDATE"
+        },
+        {
+          "grantee": "service_role",
+          "table_name": "users",
+          "privilege_type": "DELETE"
+        },
+        {
+          "grantee": "service_role",
+          "table_name": "users",
+          "privilege_type": "INSERT"
+        },
+        {
+          "grantee": "service_role",
+          "table_name": "users",
+          "privilege_type": "REFERENCES"
+        },
+        {
+          "grantee": "service_role",
+          "table_name": "users",
+          "privilege_type": "SELECT"
+        },
+        {
+          "grantee": "service_role",
+          "table_name": "users",
+          "privilege_type": "TRIGGER"
+        },
+        {
+          "grantee": "service_role",
+          "table_name": "users",
+          "privilege_type": "TRUNCATE"
+        },
+        {
+          "grantee": "service_role",
+          "table_name": "users",
+          "privilege_type": "UPDATE"
+        }
+      ]
+    },
+    "column_grants": {
+      "ms": 384,
+      "rows": [
+        {
+          "grantee": "anon",
+          "column_name": "auth_provider",
+          "privilege_type": "SELECT"
+        },
+        {
+          "grantee": "anon",
+          "column_name": "auth_provider_id",
+          "privilege_type": "SELECT"
+        },
+        {
+          "grantee": "anon",
+          "column_name": "avatar_url",
+          "privilege_type": "SELECT"
+        },
+        {
+          "grantee": "anon",
+          "column_name": "created_at",
+          "privilege_type": "SELECT"
+        },
+        {
+          "grantee": "anon",
+          "column_name": "email",
+          "privilege_type": "SELECT"
+        },
+        {
+          "grantee": "anon",
+          "column_name": "email_verified",
+          "privilege_type": "SELECT"
+        },
+        {
+          "grantee": "anon",
+          "column_name": "full_name",
+          "privilege_type": "SELECT"
+        },
+        {
+          "grantee": "anon",
+          "column_name": "id",
+          "privilege_type": "SELECT"
+        },
+        {
+          "grantee": "anon",
+          "column_name": "is_active",
+          "privilege_type": "SELECT"
+        },
+        {
+          "grantee": "anon",
+          "column_name": "last_login_at",
+          "privilege_type": "SELECT"
+        },
+        {
+          "grantee": "anon",
+          "column_name": "phone",
+          "privilege_type": "SELECT"
+        },
+        {
+          "grantee": "anon",
+          "column_name": "phone_verified",
+          "privilege_type": "SELECT"
+        },
+        {
+          "grantee": "anon",
+          "column_name": "preferred_language",
+          "privilege_type": "SELECT"
+        },
+        {
+          "grantee": "anon",
+          "column_name": "role",
+          "privilege_type": "SELECT"
+        },
+        {
+          "grantee": "anon",
+          "column_name": "updated_at",
+          "privilege_type": "SELECT"
+        },
+        {
+          "grantee": "authenticated",
+          "column_name": "auth_provider",
+          "privilege_type": "INSERT"
+        },
+        {
+          "grantee": "authenticated",
+          "column_name": "auth_provider",
+          "privilege_type": "SELECT"
+        },
+        {
+          "grantee": "authenticated",
+          "column_name": "auth_provider_id",
+          "privilege_type": "INSERT"
+        },
+        {
+          "grantee": "authenticated",
+          "column_name": "auth_provider_id",
+          "privilege_type": "SELECT"
+        },
+        {
+          "grantee": "authenticated",
+          "column_name": "avatar_url",
+          "privilege_type": "INSERT"
+        },
+        {
+          "grantee": "authenticated",
+          "column_name": "avatar_url",
+          "privilege_type": "SELECT"
+        },
+        {
+          "grantee": "authenticated",
+          "column_name": "avatar_url",
+          "privilege_type": "UPDATE"
+        },
+        {
+          "grantee": "authenticated",
+          "column_name": "created_at",
+          "privilege_type": "INSERT"
+        },
+        {
+          "grantee": "authenticated",
+          "column_name": "created_at",
+          "privilege_type": "SELECT"
+        },
+        {
+          "grantee": "authenticated",
+          "column_name": "email",
+          "privilege_type": "INSERT"
+        },
+        {
+          "grantee": "authenticated",
+          "column_name": "email",
+          "privilege_type": "SELECT"
+        },
+        {
+          "grantee": "authenticated",
+          "column_name": "email",
+          "privilege_type": "UPDATE"
+        },
+        {
+          "grantee": "authenticated",
+          "column_name": "email_verified",
+          "privilege_type": "INSERT"
+        },
+        {
+          "grantee": "authenticated",
+          "column_name": "email_verified",
+          "privilege_type": "SELECT"
+        },
+        {
+          "grantee": "authenticated",
+          "column_name": "full_name",
+          "privilege_type": "INSERT"
+        },
+        {
+          "grantee": "authenticated",
+          "column_name": "full_name",
+          "privilege_type": "SELECT"
+        },
+        {
+          "grantee": "authenticated",
+          "column_name": "full_name",
+          "privilege_type": "UPDATE"
+        },
+        {
+          "grantee": "authenticated",
+          "column_name": "id",
+          "privilege_type": "INSERT"
+        },
+        {
+          "grantee": "authenticated",
+          "column_name": "id",
+          "privilege_type": "SELECT"
+        },
+        {
+          "grantee": "authenticated",
+          "column_name": "is_active",
+          "privilege_type": "INSERT"
+        },
+        {
+          "grantee": "authenticated",
+          "column_name": "is_active",
+          "privilege_type": "SELECT"
+        },
+        {
+          "grantee": "authenticated",
+          "column_name": "last_login_at",
+          "privilege_type": "INSERT"
+        },
+        {
+          "grantee": "authenticated",
+          "column_name": "last_login_at",
+          "privilege_type": "SELECT"
+        },
+        {
+          "grantee": "authenticated",
+          "column_name": "last_login_at",
+          "privilege_type": "UPDATE"
+        },
+        {
+          "grantee": "authenticated",
+          "column_name": "phone",
+          "privilege_type": "INSERT"
+        },
+        {
+          "grantee": "authenticated",
+          "column_name": "phone",
+          "privilege_type": "SELECT"
+        },
+        {
+          "grantee": "authenticated",
+          "column_name": "phone",
+          "privilege_type": "UPDATE"
+        },
+        {
+          "grantee": "authenticated",
+          "column_name": "phone_verified",
+          "privilege_type": "INSERT"
+        },
+        {
+          "grantee": "authenticated",
+          "column_name": "phone_verified",
+          "privilege_type": "SELECT"
+        },
+        {
+          "grantee": "authenticated",
+          "column_name": "preferred_language",
+          "privilege_type": "INSERT"
+        },
+        {
+          "grantee": "authenticated",
+          "column_name": "preferred_language",
+          "privilege_type": "SELECT"
+        },
+        {
+          "grantee": "authenticated",
+          "column_name": "preferred_language",
+          "privilege_type": "UPDATE"
+        },
+        {
+          "grantee": "authenticated",
+          "column_name": "role",
+          "privilege_type": "INSERT"
+        },
+        {
+          "grantee": "authenticated",
+          "column_name": "role",
+          "privilege_type": "SELECT"
+        },
+        {
+          "grantee": "authenticated",
+          "column_name": "updated_at",
+          "privilege_type": "INSERT"
+        },
+        {
+          "grantee": "authenticated",
+          "column_name": "updated_at",
+          "privilege_type": "SELECT"
+        },
+        {
+          "grantee": "authenticated",
+          "column_name": "updated_at",
+          "privilege_type": "UPDATE"
+        }
+      ]
+    },
+    "triggers": {
+      "ms": 371,
+      "rows": [
+        {
+          "nspname": "public",
+          "relname": "users",
+          "tgname": "trg_users_role_immutable",
+          "definition": "CREATE TRIGGER trg_users_role_immutable BEFORE UPDATE ON public.users FOR EACH ROW EXECUTE FUNCTION enforce_user_role_immutable()",
+          "function_definition": "CREATE OR REPLACE FUNCTION public.enforce_user_role_immutable()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  jwt_role text;\nBEGIN\n  IF NEW.role IS NOT DISTINCT FROM OLD.role THEN\n    RETURN NEW;\n  END IF;\n\n  -- PostgREST publishes the verified JWT claims here. A `service_role` key produces\n  -- role='service_role'; an end user's token produces 'authenticated'. The claim is set\n  -- by PostgREST after signature verification, so it cannot be forged by the client.\n  BEGIN\n    jwt_role := coalesce(\n      current_setting('request.jwt.claim.role', true),\n      (nullif(current_setting('request.jwt.claims', true), '')::json ->> 'role')\n    );\n  EXCEPTION WHEN others THEN\n    jwt_role := NULL;   -- malformed/absent claims are never treated as authorization\n  END;\n\n  -- Allowed writers: the service-role API path, and direct maintenance connections\n  -- (migrations, psql), which are already trusted with the whole database.\n  IF jwt_role = 'service_role'\n     OR current_user IN ('postgres', 'supabase_admin', 'service_role') THEN\n    RETURN NEW;\n  END IF;\n\n  RAISE EXCEPTION\n    'users.role is not client-writable (attempted % -> %)', OLD.role, NEW.role\n    USING ERRCODE = '42501';\nEND;\n$function$\n"
+        },
+        {
+          "nspname": "public",
+          "relname": "users",
+          "tgname": "trg_users_updated",
+          "definition": "CREATE TRIGGER trg_users_updated BEFORE UPDATE ON public.users FOR EACH ROW EXECUTE FUNCTION set_updated_at()",
+          "function_definition": "CREATE OR REPLACE FUNCTION public.set_updated_at()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nbegin new.updated_at = now(); return new; end $function$\n"
+        }
+      ]
+    },
+    "role_functions": {
+      "ms": 394,
+      "rows": [
+        {
+          "proname": "is_admin",
+          "prosecdef": true,
+          "proacl": "{postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+          "definition": "CREATE OR REPLACE FUNCTION public.is_admin()\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\n  select exists(select 1 from public.users where id = auth.uid() and role = 'admin');\n$function$\n"
+        },
+        {
+          "proname": "current_user_role",
+          "prosecdef": true,
+          "proacl": "{postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+          "definition": "CREATE OR REPLACE FUNCTION public.current_user_role()\n RETURNS user_role\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\n  select role from public.users where id = auth.uid();\n$function$\n"
+        }
+      ]
+    },
+    "roles": {
+      "ms": 430,
+      "rows": [
+        {
+          "rolname": "authenticated",
+          "rolsuper": false,
+          "rolbypassrls": false,
+          "rolinherit": true
+        },
+        {
+          "rolname": "anon",
+          "rolsuper": false,
+          "rolbypassrls": false,
+          "rolinherit": true
+        },
+        {
+          "rolname": "service_role",
+          "rolsuper": false,
+          "rolbypassrls": true,
+          "rolinherit": true
+        }
+      ]
+    },
+    "otp_columns": {
+      "ms": 435,
+      "rows": [
+        {
+          "column_name": "id",
+          "data_type": "uuid",
+          "udt_name": "uuid",
+          "is_nullable": "NO",
+          "column_default": "uuid_generate_v4()"
+        },
+        {
+          "column_name": "phone",
+          "data_type": "character varying",
+          "udt_name": "varchar",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "otp_code",
+          "data_type": "character varying",
+          "udt_name": "varchar",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "expires_at",
+          "data_type": "timestamp with time zone",
+          "udt_name": "timestamptz",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "is_used",
+          "data_type": "boolean",
+          "udt_name": "bool",
+          "is_nullable": "NO",
+          "column_default": "false"
+        },
+        {
+          "column_name": "attempts",
+          "data_type": "integer",
+          "udt_name": "int4",
+          "is_nullable": "NO",
+          "column_default": "0"
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "udt_name": "timestamptz",
+          "is_nullable": "YES",
+          "column_default": "now()"
+        },
+        {
+          "column_name": "verified_at",
+          "data_type": "timestamp with time zone",
+          "udt_name": "timestamptz",
+          "is_nullable": "YES",
+          "column_default": null
+        }
+      ]
+    }
+  }
+}

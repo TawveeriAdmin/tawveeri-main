@@ -782,6 +782,8 @@ export interface Database {
         Row: {
           id: string;
           phone: string;
+          purpose: string;
+          account_id: string | null;
           otp_code: string;
           expires_at: string;
           is_used: boolean;
@@ -792,6 +794,8 @@ export interface Database {
         Insert: {
           id?: string;
           phone: string;
+          purpose?: string;
+          account_id?: string | null;
           otp_code: string;
           expires_at: string;
           is_used?: boolean;
@@ -802,6 +806,8 @@ export interface Database {
         Update: {
           id?: string;
           phone?: string;
+          purpose?: string;
+          account_id?: string | null;
           otp_code?: string;
           expires_at?: string;
           is_used?: boolean;
@@ -1057,6 +1063,10 @@ export interface Database {
       };
     };
     Functions: {
+      consume_phone_otp: {
+        Args: { p_phone: string; p_otp: string; p_purpose: string; p_account_id: string | null; p_consume: boolean };
+        Returns: boolean;
+      };
       current_user_id: { Args: never; Returns: string };
       current_user_role: { Args: never; Returns: UserRole };
       is_admin: { Args: never; Returns: boolean };

@@ -1,5 +1,7 @@
 'use client';
 
+import { HomeMissionEntry } from '@/components/public/home-mission-entry';
+import { homeMissionEntrySource } from '@/lib/search/home-mission-entry-source';
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useParams, useSearchParams, useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -298,6 +300,7 @@ export default function SearchClient() {
   // request itself, and never overrides an explicit filter. null when neither is known —
   // unknown beats incorrect, no fabricated category.
   const [effectiveCategory, setEffectiveCategory] = useState<string | null>(null);
+  const homeEntrySource = useMemo(() => homeMissionEntrySource(effectiveCategory, debouncedQuery), [effectiveCategory, debouncedQuery]);
   // ADR-270 Fix 4 (2026-08-22) — "Tawveeri never shows an empty result": when a stated/
   // inferred budget zeroed retrieval, the API's `closestOptions` names the 1-3 cheapest
   // still-relevant candidates with why each missed. Never rendered as "اختيار توفيري".
@@ -1209,7 +1212,9 @@ export default function SearchClient() {
           setLoading(false);
           return;
         }
-        if (!q && cached.query) {
+        // A category URL is a new explicit search, even without q. Restoring an
+        // older query here would replace washers with the previous fridge/phone.
+        if (!q && !searchParams.get('category') && cached.query) {
           setRawProducts(cached.products);
           setServerTotal(cached.total);
           // selectedCategory is about to become cached.category below — compute the
@@ -1685,6 +1690,8 @@ export default function SearchClient() {
           </div>
         </div>
       )}
+
+      {!loading && !error && (debouncedQuery || selectedCategory !== 'all') && homeEntrySource && <HomeMissionEntry key={homeEntrySource} locale={locale} source={homeEntrySource} compact />}
 
       {/* ── Active Search State ── shows when user has a query OR is browsing a category */}
       {(debouncedQuery || (selectedCategory && selectedCategory !== 'all')) && (

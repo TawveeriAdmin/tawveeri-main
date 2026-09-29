@@ -265,14 +265,16 @@ export abstract class BaseScraper {
    * Cleanup browser resources
    */
   async cleanup(): Promise<void> {
-    if (this.page) {
-      await this.page.close();
+    try {
+      if (this.page) await this.page.close();
+    } finally {
       this.page = null;
-    }
-    if (this.browser) {
-      await this.browser.close();
-      this.browser = null;
-      await this.recordSessionEnd('closed_ok');
+      // A failed page close must not prevent closing its browser process.
+      if (this.browser) {
+        await this.browser.close();
+        this.browser = null;
+        await this.recordSessionEnd('closed_ok');
+      }
     }
   }
 

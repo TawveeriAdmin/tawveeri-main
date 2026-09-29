@@ -1,0 +1,45 @@
+{
+  "at": "2026-09-29T07:30:29.336Z",
+  "postgres": {
+    "version": "PostgreSQL 18.3 (PGlite 0.5.8) on wasm32-unknown-emscripten, compiled by emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 3.1.74 (1092ec30a3fb1d46b1782ff1b4db5094d3d06ae5), 32-bit"
+  },
+  "concurrencyScope": "Concurrent promises on PGlite single serialized connection; live multi-session contention not exercised",
+  "results": [
+    {
+      "name": "only one of two concurrently submitted consumption requests succeeds",
+      "passed": true
+    },
+    {
+      "name": "expired code is rejected",
+      "passed": true
+    },
+    {
+      "name": "wrong purpose and wrong account are rejected",
+      "passed": true
+    },
+    {
+      "name": "five wrong attempts exhaust the challenge",
+      "passed": true
+    },
+    {
+      "name": "latest used challenge never falls back to an older unused code",
+      "passed": true
+    },
+    {
+      "name": "legacy challenge cannot authenticate in any new purpose",
+      "passed": true
+    },
+    {
+      "name": "signup preview does not consume; final authentication consumes once",
+      "passed": true
+    },
+    {
+      "name": "reset cannot authenticate an unbound account",
+      "passed": true
+    },
+    {
+      "name": "anon and authenticated cannot invoke private consumption RPC",
+      "passed": true
+    }
+  ]
+}
