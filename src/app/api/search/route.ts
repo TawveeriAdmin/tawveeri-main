@@ -2424,6 +2424,14 @@ export async function POST(request: NextRequest) {
   let totalCount = 0;
   let dbError: string | null = null;
   let relaxedResults = false; // true when we fell back to nearby/related products (no exact all-words match)
+  // F-005 (2026-09-29 audit): a source failure caught-and-logged here used to vanish —
+  // the response still carried `errors: null` and a bare `count`/`products` array even
+  // when Algolia (the primary retrieval path) threw. A shopper and the founder's own audit
+  // could not tell "genuinely nothing matches" from "we couldn't reach a data source", and
+  // the Constitution's "unknown beats incorrect" forbids presenting the second as the first.
+  // This flag is read below (see `dataState`) to disclose that distinction explicitly,
+  // additively — every existing response field (`errors`, `count`, `products`) is unchanged.
+  let algoliaFailed = false;
 
   let algoliaProducts: GroupedSearchProduct[] | null = null;
   if (rawQuery && isAlgoliaConfigured()) {
@@ -2532,6 +2540,7 @@ export async function POST(request: NextRequest) {
       }
     } catch (e) {
       console.error('[Algolia] error:', e);
+      algoliaFailed = true;
     }
     if (!algoliaProducts) console.log('[Algolia] falling back to Supabase');
   }
@@ -2968,6 +2977,32 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // F-005 explicit result-state contract (2026-09-29 audit; additive, nothing above reads
+  // or branches on this — see `algoliaFailed` for why it exists). Four states, in order of
+  // what the caller should do with them:
+  //   'full'              — every source that ran, ran cleanly. `count` is trustworthy as-is.
+  //   'zero_after_success' — every source ran cleanly AND returned nothing: an honest zero,
+  //                          safe to render as "no results", never as a source problem.
+  //   'degraded'          — a source failed but a DIFFERENT source still produced results;
+  //                         the results shown are real, just narrower/less-ranked than usual.
+  //   'cannot_trust'      — a source failed AND the response has zero results: this must
+  //                         NEVER be rendered as "no products match" (the historical bug —
+  //                         HTTP 200, `errors: null`, an empty array — this field exists to
+  //                         close). The caller should show "couldn't complete this search"
+  //                         instead of an empty-state.
+  // Only Algolia + the Supabase pool-query (`dbError`) are tracked — the two retrieval paths
+  // this route actually falls back between (see the SCOPED comment above `closestOptions`,
+  // which documents the same boundary for that feature). Enrichment-only failures elsewhere
+  // in the file already have their own narrower catch blocks and are out of this scope.
+  const sourceIssues: string[] = [
+    ...(algoliaFailed ? ['algolia'] : []),
+    ...(dbError ? ['supabase'] : []),
+  ];
+  const dataState: 'full' | 'degraded' | 'zero_after_success' | 'cannot_trust' =
+    sourceIssues.length === 0
+      ? (enrichedProducts.length > 0 ? 'full' : 'zero_after_success')
+      : (enrichedProducts.length > 0 ? 'degraded' : 'cannot_trust');
+
   const result: ScrapedSearchResult & {
     total: number;
     page: number;
@@ -2980,6 +3015,8 @@ export async function POST(request: NextRequest) {
     cheapestIntentApplied: boolean;
     closestOptions: ClosestOption[];
     resolvedCategory: string | null;
+    dataState: 'full' | 'degraded' | 'zero_after_success' | 'cannot_trust';
+    sourceIssues: string[];
   } = {
     products:          enrichedProducts,
     count:             enrichedProducts.length,
@@ -3015,6 +3052,8 @@ export async function POST(request: NextRequest) {
     },
     searchTime:        (Date.now() - started) / 1000,
     errors:            dbError ? { search: dbError } : null,
+    dataState,
+    sourceIssues,
     totalStores:       computeUniqueStores(enrichedProducts),
     successfulStores:  computeUniqueStores(enrichedProducts),
     decisionCard:      decision.decisionCard,
