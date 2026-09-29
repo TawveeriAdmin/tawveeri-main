@@ -23,7 +23,7 @@ describe('JSON-LD HTML boundary', () => {
     expect(JSON.parse(scripts[0].textContent!)).toEqual(data);
   });
 
-  it.each([null, undefined, () => 1, 1n])('emits valid null for unsupported optional data: %s', value => {
+  it.each([null, undefined, () => 1, BigInt(1)])('emits valid null for unsupported optional data: %s', value => {
     expect(JSON.parse(serializeJsonLd(value))).toBeNull();
   });
 
