@@ -1,0 +1,35 @@
+{
+  "at": "2026-09-29T07:44:35.395Z",
+  "deployment": "876082fa-2dd3-4d1b-a6c3-cc67e033b1db",
+  "requests": [
+    {
+      "path": "/api/health",
+      "status": 200,
+      "ms": 665,
+      "bytes": 67,
+      "location": null
+    },
+    {
+      "path": "/api/health/deep",
+      "status": 503,
+      "ms": 308,
+      "bytes": 223,
+      "location": null
+    },
+    {
+      "path": "/ar/auth/login",
+      "status": 200,
+      "ms": 707,
+      "bytes": 138193,
+      "location": null,
+      "expectedBuildId": true
+    },
+    {
+      "path": "/ar/admin/dashboard",
+      "status": 307,
+      "ms": 630,
+      "bytes": 133148,
+      "location": "/ar/unauthorized"
+    }
+  ]
+}

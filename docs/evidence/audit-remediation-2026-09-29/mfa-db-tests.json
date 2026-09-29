@@ -1,0 +1,35 @@
+{
+  "at": "2026-09-29T07:45:59.063Z",
+  "isolation": "PGlite fixture; JWT validation is tested separately in server tests; no real factor or recovery exercise",
+  "appliedToProduction": false,
+  "results": [
+    {
+      "name": "before: AAL1 admin can read inactive coupons",
+      "passed": true
+    },
+    {
+      "name": "AAL1 loses administrative privilege but keeps public data",
+      "passed": true
+    },
+    {
+      "name": "missing assurance fails closed",
+      "passed": true
+    },
+    {
+      "name": "AAL2 restores legitimate administrator authority",
+      "passed": true
+    },
+    {
+      "name": "AAL2 does not promote ordinary customer",
+      "passed": true
+    },
+    {
+      "name": "ordinary AAL1 customer behavior preserved",
+      "passed": true
+    },
+    {
+      "name": "factor downgrade closes administrative access again",
+      "passed": true
+    }
+  ]
+}

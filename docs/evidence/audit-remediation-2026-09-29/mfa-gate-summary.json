@@ -1,0 +1,39 @@
+{
+  "at": "2026-09-29T07:51:02.517Z",
+  "suites": 306,
+  "tests": 4124,
+  "failed": 0,
+  "coverageBefore": {
+    "statements": [
+      84,
+      94
+    ],
+    "branches": [
+      48,
+      71
+    ],
+    "functions": [
+      15,
+      15
+    ]
+  },
+  "coverageAfter": {
+    "statements": [
+      84,
+      94
+    ],
+    "branches": [
+      48,
+      71
+    ],
+    "functions": [
+      15,
+      15
+    ]
+  },
+  "coverageExit": 1,
+  "reason": "Pre-existing branches 67.60% below unchanged 70% threshold; owner nondeterioration exception applies",
+  "localBuild": "success; build-1790668112391",
+  "mfaFlag": "not enabled",
+  "sqlMigration65": "staged only, not applied"
+}

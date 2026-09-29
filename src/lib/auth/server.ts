@@ -8,6 +8,7 @@ import { cookies } from 'next/headers';
 import { cache } from 'react';
 import type { UserRole } from '@/lib/database/types';
 import { applySessionCookiePolicy, SESSION_ONLY_COOKIE } from '@/lib/auth/founder-shortcut';
+import { assertAdminAssurance } from '@/lib/auth/admin-assurance';
 
 /**
  * Create Supabase client for Server Components
@@ -177,7 +178,13 @@ export async function getUserProfile() {
  */
 export async function isAdmin() {
   const profile = await getUserProfile();
-  return profile?.role === 'admin';
+  if (profile?.role !== 'admin') return false;
+  try {
+    await assertAdminAssurance(await createClient(), profile.id);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /**
