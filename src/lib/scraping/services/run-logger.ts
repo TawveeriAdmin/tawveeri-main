@@ -162,15 +162,16 @@ export async function startRun(params: StartRunParams): Promise<number | null> {
  * Update the run row with final stats and status. Computes duration_ms.
  * Also updates the parent schedule's last_run_at / last_success_at.
  */
-export async function finishRun(params: FinishRunParams): Promise<void> {
+export async function finishRun(params: FinishRunParams): Promise<boolean> {
   try {
     const supabase = createServerClient();
 
-    const { data: existing } = await supabase
+    const { data: existing, error: readError } = await supabase
       .from('scraping_runs')
       .select('started_at, schedule_id')
       .eq('id', params.run_id as unknown as string)
       .single();
+    if (readError || !existing) return false;
 
     const startedAt = (existing as { started_at?: string } | null)?.started_at;
     const finishedAt = new Date();
@@ -208,18 +209,22 @@ export async function finishRun(params: FinishRunParams): Promise<void> {
     // "never throws" contract below) at least makes the failure visible.
     if (updateError) {
       console.error('[run-logger] finishRun update rejected by DB:', updateError.message, 'run_id=', params.run_id, 'status=', params.status);
+      return false;
     }
 
     const scheduleId = (existing as { schedule_id?: string | null } | null)?.schedule_id;
     if (scheduleId) {
       const update: Record<string, unknown> = { last_run_at: finishedAt.toISOString() };
-      if (params.status === 'success' || params.status === 'partial') {
+      if (params.status === 'success') {
         update.last_success_at = finishedAt.toISOString();
       }
-      await supabase.from('scraping_schedules').update(update as never).eq('id', scheduleId);
+      const { error: scheduleError } = await supabase.from('scraping_schedules').update(update as never).eq('id', scheduleId);
+      if (scheduleError) return false;
     }
+    return true;
   } catch (err) {
     console.error('[run-logger] finishRun threw:', err);
+    return false;
   }
 }
 

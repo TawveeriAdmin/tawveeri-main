@@ -1,0 +1,384 @@
+{
+  "capturedAt": "2026-09-29T08:20:50.789Z",
+  "mode": "egress-query-profile",
+  "safety": "Single connection; BEGIN READ ONLY; 8s statements; 1s locks; no application/RPC function calls; rollback; aggregate or bounded non-personal outputs",
+  "data": {
+    "statsWindow": {
+      "ms": 373,
+      "rows": [
+        {
+          "stats_reset": "2026-08-15T15:32:09.646Z"
+        }
+      ]
+    },
+    "topReturnedRows": {
+      "ms": 1245,
+      "rows": [
+        {
+          "queryid": "1491936573887849364",
+          "calls": "148730",
+          "rows": "1413158571",
+          "rows_per_call": "9501.50",
+          "total_ms": "62600697.09",
+          "mean_ms": "420.90",
+          "normalized_query": "select id, store_id, raw_name name, scraped_at,\n                coalesce(payload->>$3, payload->>$4, payload->>$5, raw_url) listing,\n                nullif(regexp_replace(coalesce(payload->>$6, payload->>$7, payload->>$8),$9,$10,$11),$12)::numeric price,\n                nullif(regexp_replace(coalesce(payload->>$13, payload->>$14),$15,$16,$17),$18)::numeric was,\n                coalesce(payload->>$19, payload->>$20) brand,\n                coalesce(payload->>$21, payload->>$22) category\n         from raw_observations\n         where store_id = $1 and id > $2\n         order by id asc limit $23"
+        },
+        {
+          "queryid": "4717963613526405263",
+          "calls": "588",
+          "rows": "301471032",
+          "rows_per_call": "512705.84",
+          "total_ms": "2243830.80",
+          "mean_ms": "3816.04",
+          "normalized_query": "create temp table _tps as\n      select n.store_id::int as store_id,\n             nullif(regexp_replace(regexp_replace(split_part(split_part(n.normalized_payload->>$1,$2,$3),$4,$5), $6, $7), $8, $9), $10) as u,\n             case when n.store_id = $11 then upper((regexp_match(n.normalized_payload->>$12, $13))[$14]) end as asin,\n             n.normalized_payload->>$15 as tps_raw_url,\n             n.canonical_product_id as cid, n.identity_key, n.identity_key_status,\n             n.observed_at, n.id as npo_id, cp.category as canon_category\n      from normalized_product_observations n\n      join canonical_products cp on cp.id = n.canonical_product_id and cp.is_active\n      where n.normalized_payload->>$16 is not null\n        and n.canonical_product_id is not null\n        and n.store_id ~ $17"
+        },
+        {
+          "queryid": "-5338362022345820318",
+          "calls": "569",
+          "rows": "292889493",
+          "rows_per_call": "514744.28",
+          "total_ms": "80707465.09",
+          "mean_ms": "141840.89",
+          "normalized_query": "select p.canonical_id,\n           n.id as offer_id,\n           ph.price::float8 as price,\n           coalesce(o.payload->>$1, o.payload->>$2, o.payload->>$3) as image_raw,\n           n.normalized_payload->>$4 as url,\n           c.image_url as canon_image\n    from tps_product_projection p\n    join canonical_products c on c.id = p.canonical_id\n    join normalized_product_observations n on n.canonical_product_id = p.canonical_id\n    left join raw_observations o\n      on (n.normalized_payload->>$5) ~ $6\n     and o.id = (n.normalized_payload->>$7)::bigint\n    left join lateral (\n      select price from price_history h\n      where h.canonical_product_id = p.canonical_id\n        and h.tps_observation_id = n.id\n      order by observed_at desc limit $8\n    ) ph on $9"
+        },
+        {
+          "queryid": "7212678676636114040",
+          "calls": "808",
+          "rows": "18928721",
+          "rows_per_call": "23426.63",
+          "total_ms": "1499400.35",
+          "mean_ms": "1855.69",
+          "normalized_query": "select p.id, p.name_ar, p.name_en, p.brand, p.category, p.image_url,\n           ps.store_name, s.name as store_display, ps.current_price, ps.original_price,\n           ps.availability, ps.product_url, ps.coupon_code, ps.store_id\n    from product_stores ps\n    join products p on p.id = ps.product_id\n    left join stores s on s.id = ps.store_id\n    where p.is_active and ps.current_price > $1"
+        },
+        {
+          "queryid": "-200764138795877259",
+          "calls": "588",
+          "rows": "14209711",
+          "rows_per_call": "24166.18",
+          "total_ms": "263966.01",
+          "mean_ms": "448.92",
+          "normalized_query": "create temp table _sf as\n      select ps.product_id, ps.store_id, p.category as sf_category,\n             p.canonical_product_id as existing_link,\n             ps.product_url,\n             nullif(regexp_replace(regexp_replace(split_part(split_part(ps.product_url,$1,$2),$3,$4), $5, $6), $7, $8), $9) as u,\n             case when ps.store_id = $10 then coalesce(\n               upper((regexp_match(ps.product_url, $11))[$12]),\n               case when p.sku ~* $13 then upper(p.sku) end\n             ) end as asin\n      from product_stores ps\n      join products p on p.id = ps.product_id\n      where ps.product_url is not null and ps.product_url <> $14"
+        },
+        {
+          "queryid": "1381348498373922256",
+          "calls": "591",
+          "rows": "4710049",
+          "rows_per_call": "7969.63",
+          "total_ms": "306581.02",
+          "mean_ms": "518.75",
+          "normalized_query": "select tps_identity_key from canonical_products where tps_identity_key is not null"
+        },
+        {
+          "queryid": "-367370555037199919",
+          "calls": "8612",
+          "rows": "4306000",
+          "rows_per_call": "500.00",
+          "total_ms": "296400.45",
+          "mean_ms": "34.42",
+          "normalized_query": "insert into tps_product_projection (canonical_id,tps_identity_key,display_name_ar,display_name_en,brand,category,lowest_price,highest_price,saving,price_spread_pct,cheapest_store,store_count,has_comparison,compare_url,identity_confidence,text_for_search,last_observed_at, updated_at)\n       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17, now()),($18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34, now()),($35,$36,$37,$38,$39,$40,$41,$42,$43,$44,$45,$46,$47,$48,$49,$50,$51, now()),($52,$53,$54,$55,$56,$57,$58,$59,$60,$61,$62,$63,$64,$65,$66,$67,$68, now()),($69,$70,$71,$72,$73,$74,$75,$76,$77,$78,$79,$80,$81,$82,$83,$84,$85, now()),($86,$87,$88,$89,$90,$91,$92,$93,$94,$95,$96,$97,$98,$99,$100,$101,$102, now()),($103,$104,$105,$106,$107,$108,$109,$110,$111,$112,$113,$114,$115,$116,$117,$118,$119, now()),($120,$121,$122,$123,$124,$125,$126,$127,$128,$129,$130,$131,$132,$133,$134,$135,$136, now()),($137,$138,$139,$140,$141,$142,$143,$144,$145,$146,$147,$148,$149,$150,$151,$152,$153, now()),($154,$155,$156,$157,$158,$159,$160,$161,$162,$163,$164,$165,$166,$167,$168,$169,$170, now()),($171,$172,$173,$174,$175,$176,$177,$178,$179,$180,$181,$182,$183,$184"
+        },
+        {
+          "queryid": "8053342492537637222",
+          "calls": "591",
+          "rows": "2523014",
+          "rows_per_call": "4269.06",
+          "total_ms": "27236.89",
+          "mean_ms": "46.09",
+          "normalized_query": "select lower(brand) b, model_number m from canonical_products where model_number is not null"
+        },
+        {
+          "queryid": "4160306283269759994",
+          "calls": "117",
+          "rows": "2319755",
+          "rows_per_call": "19826.97",
+          "total_ms": "559591.92",
+          "mean_ms": "4782.84",
+          "normalized_query": "select id, store_id, raw_name, payload,\n              coalesce(payload->>$2, payload->>$3, payload->>$4, raw_url) u\n       from raw_observations where id > $1 order by id asc limit $5"
+        },
+        {
+          "queryid": "4335102383257032166",
+          "calls": "221",
+          "rows": "1635056",
+          "rows_per_call": "7398.44",
+          "total_ms": "1925334.20",
+          "mean_ms": "8711.92",
+          "normalized_query": "with history_latest as (\n      select distinct on (ph.canonical_product_id, case ph.store_name when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' else ph.store_name end)\n             ph.canonical_product_id, case ph.store_name when $2 then $3 when $4 then $5 when $6 then $7 when $8 then $9 when $10 then $11 when $12 then $13 when $14 then $15 when $16 then $17 when $18 then $19 when $20 then $21 when $22 then $23 when $24 then $25 "
+        },
+        {
+          "queryid": "-7582026863992804662",
+          "calls": "203",
+          "rows": "1516157",
+          "rows_per_call": "7468.75",
+          "total_ms": "2729570.17",
+          "mean_ms": "13446.16",
+          "normalized_query": "with scoped_canonicals as materialized (\n      select c.* from canonical_products c\n      where not $2::boolean or (c.tps_identity_key like $3\n        and exists(select $4 from tps_current_offers scoped where scoped.identity_key=c.tps_identity_key and scoped.store_id=$5))\n    ), history_latest as (\n      select distinct on (ph.canonical_product_id, case ph.store_name when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' else ph.store_"
+        },
+        {
+          "queryid": "-1406071324978242030",
+          "calls": "129",
+          "rows": "808683",
+          "rows_per_call": "6268.86",
+          "total_ms": "264498.34",
+          "mean_ms": "2050.37",
+          "normalized_query": "with latest as (\n      select distinct on (ph.canonical_product_id, case ph.store_name when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' else ph.store_name end)\n             ph.canonical_product_id, case ph.store_name when $1 then $2 when $3 then $4 when $5 then $6 when $7 then $8 when $9 then $10 when $11 then $12 when $13 then $14 when $15 then $16 when $17 then $18 when $19 then $20 when $21 then $22 when $23 then $24 when $25 "
+        },
+        {
+          "queryid": "-8224598802300147475",
+          "calls": "798045",
+          "rows": "798045",
+          "rows_per_call": "1.00",
+          "total_ms": "6483975.81",
+          "mean_ms": "8.12",
+          "normalized_query": "WITH pgrst_source AS ( SELECT \"public\".\"tps_product_projection\".\"category\" FROM \"public\".\"tps_product_projection\" WHERE  \"public\".\"tps_product_projection\".\"has_comparison\" = $1  ORDER BY \"public\".\"tps_product_projection\".\"id\" ASC  LIMIT $2 OFFSET $3 )  SELECT $4::bigint AS total_result_set, pg_catalog.count(_postgrest_t) AS page_total, coalesce(json_agg(_postgrest_t), $5) AS body, nullif(current_setting($6, $7), $8) AS response_headers, nullif(current_setting($9, $10), $11) AS response_status, $12 AS response_inserted FROM ( SELECT * FROM pgrst_source ) _postgrest_t"
+        },
+        {
+          "queryid": "-8789855675433775488",
+          "calls": "672753",
+          "rows": "672753",
+          "rows_per_call": "1.00",
+          "total_ms": "6497779.02",
+          "mean_ms": "9.66",
+          "normalized_query": "WITH pgrst_source AS ( SELECT \"public\".\"canonical_products\".\"name_ar\", \"public\".\"canonical_products\".\"brand\" FROM \"public\".\"canonical_products\"  ORDER BY \"public\".\"canonical_products\".\"id\" ASC  LIMIT $1 OFFSET $2 )  SELECT $3::bigint AS total_result_set, pg_catalog.count(_postgrest_t) AS page_total, coalesce(json_agg(_postgrest_t), $4) AS body, nullif(current_setting($5, $6), $7) AS response_headers, nullif(current_setting($8, $9), $10) AS response_status, $11 AS response_inserted FROM ( SELECT * FROM pgrst_source ) _postgrest_t"
+        },
+        {
+          "queryid": "-4030361465525781566",
+          "calls": "74",
+          "rows": "504472",
+          "rows_per_call": "6817.19",
+          "total_ms": "304871.29",
+          "mean_ms": "4119.88",
+          "normalized_query": "with latest as (\n      select distinct on (ph.canonical_product_id, case ph.store_name when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' when '[literal]' then '[literal]' else ph.store_name end)\n             ph.canonical_product_id, case ph.store_name when $1 then $2 when $3 then $4 when $5 then $6 when $7 then $8 when $9 then $10 when $11 then $12 when $13 then $14 when $15 then $16 when $17 then $18 when $19 then $20 when $21 then $22 when $23 then $24 when $25 "
+        },
+        {
+          "queryid": "2872543973221663130",
+          "calls": "1125",
+          "rows": "439430",
+          "rows_per_call": "390.60",
+          "total_ms": "83788.23",
+          "mean_ms": "74.48",
+          "normalized_query": "select c.id, c.brand, c.attributes, p.lowest_price\n       from canonical_products c\n       left join tps_product_projection p on p.canonical_id = c.id\n       where c.category = $1 and c.tps_identity_key is not null and c.attributes ? $2"
+        },
+        {
+          "queryid": "-8406438899896858103",
+          "calls": "1904",
+          "rows": "359293",
+          "rows_per_call": "188.70",
+          "total_ms": "342433.78",
+          "mean_ms": "179.85",
+          "normalized_query": "select r.id, r.store_id, r.raw_name, r.payload\n      from tps_identity_staging s\n      join raw_observations r on r.id = s.raw_obs_id\n      where s.identity_key = $1"
+        },
+        {
+          "queryid": "7759912714954621780",
+          "calls": "229672",
+          "rows": "229672",
+          "rows_per_call": "1.00",
+          "total_ms": "3121199.64",
+          "mean_ms": "13.59",
+          "normalized_query": "WITH pgrst_source AS ( SELECT \"public\".\"canonical_products\".\"brand\", \"public\".\"canonical_products\".\"model_number\" FROM \"public\".\"canonical_products\" WHERE NOT \"public\".\"canonical_products\".\"model_number\" IS NULL  ORDER BY \"public\".\"canonical_products\".\"id\" ASC  LIMIT $1 OFFSET $2 )  SELECT $3::bigint AS total_result_set, pg_catalog.count(_postgrest_t) AS page_total, coalesce(json_agg(_postgrest_t), $4) AS body, nullif(current_setting($5, $6), $7) AS response_headers, nullif(current_setting($8, $9), $10) AS response_status, $11 AS response_inserted FROM ( SELECT * FROM pgrst_source ) _postgrest_t"
+        },
+        {
+          "queryid": "2087527524786526595",
+          "calls": "153445",
+          "rows": "153445",
+          "rows_per_call": "1.00",
+          "total_ms": "76296674.39",
+          "mean_ms": "497.22",
+          "normalized_query": "WITH pgrst_source AS ( SELECT \"public\".\"normalized_product_observations\".\"id\", \"public\".\"normalized_product_observations\".\"canonical_product_id\", \"public\".\"normalized_product_observations\".\"normalized_payload\" FROM \"public\".\"normalized_product_observations\" WHERE  \"public\".\"normalized_product_observations\".\"normalized_payload\"->>$1 = ANY ($2)    LIMIT $3 OFFSET $4 )  SELECT $5::bigint AS total_result_set, pg_catalog.count(_postgrest_t) AS page_total, coalesce(json_agg(_postgrest_t), $6) AS body, nullif(current_setting($7, $8), $9) AS response_headers, nullif(current_setting($10, $11), $12) AS response_status, $13 AS response_inserted FROM ( SELECT * FROM pgrst_source ) _postgrest_t"
+        },
+        {
+          "queryid": "-6423315619329121374",
+          "calls": "147499",
+          "rows": "147499",
+          "rows_per_call": "1.00",
+          "total_ms": "102971.30",
+          "mean_ms": "0.70",
+          "normalized_query": "WITH pgrst_source AS ( SELECT \"public\".\"products\".\"id\" FROM \"public\".\"products\" WHERE  \"public\".\"products\".\"name_ar\" = $1   LIMIT $2 OFFSET $3 )  SELECT $4::bigint AS total_result_set, pg_catalog.count(_postgrest_t) AS page_total, coalesce(json_agg(_postgrest_t), $5) AS body, nullif(current_setting($6, $7), $8) AS response_headers, nullif(current_setting($9, $10), $11) AS response_status, $12 AS response_inserted FROM ( SELECT * FROM pgrst_source ) _postgrest_t"
+        }
+      ]
+    },
+    "topCalls": {
+      "ms": 644,
+      "rows": [
+        {
+          "queryid": "-8224598802300147475",
+          "calls": "798045",
+          "rows": "798045",
+          "rows_per_call": "1.00",
+          "mean_ms": "8.12",
+          "normalized_query": "WITH pgrst_source AS ( SELECT \"public\".\"tps_product_projection\".\"category\" FROM \"public\".\"tps_product_projection\" WHERE  \"public\".\"tps_product_projection\".\"has_comparison\" = $1  ORDER BY \"public\".\"tps_product_projection\".\"id\" ASC  LIMIT $2 OFFSET $3 )  SELECT $4::bigint AS total_result_set, pg_catalog.count(_postgrest_t) AS page_total, coalesce(json_agg(_postgrest_t), $5) AS body, nullif(current_setting($6, $7), $8) AS response_headers, nullif(current_setting($9, $10), $11) AS response_status, $12 AS response_inserted FROM ( SELECT * FROM pgrst_source ) _postgrest_t"
+        },
+        {
+          "queryid": "-8789855675433775488",
+          "calls": "672753",
+          "rows": "672753",
+          "rows_per_call": "1.00",
+          "mean_ms": "9.66",
+          "normalized_query": "WITH pgrst_source AS ( SELECT \"public\".\"canonical_products\".\"name_ar\", \"public\".\"canonical_products\".\"brand\" FROM \"public\".\"canonical_products\"  ORDER BY \"public\".\"canonical_products\".\"id\" ASC  LIMIT $1 OFFSET $2 )  SELECT $3::bigint AS total_result_set, pg_catalog.count(_postgrest_t) AS page_total, coalesce(json_agg(_postgrest_t), $4) AS body, nullif(current_setting($5, $6), $7) AS response_headers, nullif(current_setting($8, $9), $10) AS response_status, $11 AS response_inserted FROM ( SELECT * FROM pgrst_source ) _postgrest_t"
+        },
+        {
+          "queryid": "7759912714954621780",
+          "calls": "229672",
+          "rows": "229672",
+          "rows_per_call": "1.00",
+          "mean_ms": "13.59",
+          "normalized_query": "WITH pgrst_source AS ( SELECT \"public\".\"canonical_products\".\"brand\", \"public\".\"canonical_products\".\"model_number\" FROM \"public\".\"canonical_products\" WHERE NOT \"public\".\"canonical_products\".\"model_number\" IS NULL  ORDER BY \"public\".\"canonical_products\".\"id\" ASC  LIMIT $1 OFFSET $2 )  SELECT $3::bigint AS total_result_set, pg_catalog.count(_postgrest_t) AS page_total, coalesce(json_agg(_postgrest_t), $4) AS body, nullif(current_setting($5, $6), $7) AS response_headers, nullif(current_setting($8, $9), $10) AS response_status, $11 AS response_inserted FROM ( SELECT * FROM pgrst_source ) _postgrest_t"
+        },
+        {
+          "queryid": "2087527524786526595",
+          "calls": "153445",
+          "rows": "153445",
+          "rows_per_call": "1.00",
+          "mean_ms": "497.22",
+          "normalized_query": "WITH pgrst_source AS ( SELECT \"public\".\"normalized_product_observations\".\"id\", \"public\".\"normalized_product_observations\".\"canonical_product_id\", \"public\".\"normalized_product_observations\".\"normalized_payload\" FROM \"public\".\"normalized_product_observations\" WHERE  \"public\".\"normalized_product_observations\".\"normalized_payload\"->>$1 = ANY ($2)    LIMIT $3 OFFSET $4 )  SELECT $5::bigint AS total_result_set, pg_catalog.count(_postgrest_t) AS page_total, coalesce(json_agg(_postgrest_t), $6) AS body, nullif(current_setting($7, $8), $9) AS response_headers, nullif(current_setting($10, $11), $12) AS response_status, $13 AS response_inserted FROM ( SELECT * FROM pgrst_source ) _postgrest_t"
+        },
+        {
+          "queryid": "1491936573887849364",
+          "calls": "148730",
+          "rows": "1413158571",
+          "rows_per_call": "9501.50",
+          "mean_ms": "420.90",
+          "normalized_query": "select id, store_id, raw_name name, scraped_at,\n                coalesce(payload->>$3, payload->>$4, payload->>$5, raw_url) listing,\n                nullif(regexp_replace(coalesce(payload->>$6, payload->>$7, payload->>$8),$9,$10,$11),$12)::numeric price,\n                nullif(regexp_replace(coalesce(payload->>$13, payload->>$14),$15,$16,$17),$18)::numeric was,\n                coalesce(payload->>$19, payload->>$20) brand,\n                coalesce(payload->>$21, payload->>$22) category\n         from raw_observations\n         where store_id = $1 and id > $2\n         order by id asc limit $23"
+        },
+        {
+          "queryid": "-6423315619329121374",
+          "calls": "147499",
+          "rows": "147499",
+          "rows_per_call": "1.00",
+          "mean_ms": "0.70",
+          "normalized_query": "WITH pgrst_source AS ( SELECT \"public\".\"products\".\"id\" FROM \"public\".\"products\" WHERE  \"public\".\"products\".\"name_ar\" = $1   LIMIT $2 OFFSET $3 )  SELECT $4::bigint AS total_result_set, pg_catalog.count(_postgrest_t) AS page_total, coalesce(json_agg(_postgrest_t), $5) AS body, nullif(current_setting($6, $7), $8) AS response_headers, nullif(current_setting($9, $10), $11) AS response_status, $12 AS response_inserted FROM ( SELECT * FROM pgrst_source ) _postgrest_t"
+        },
+        {
+          "queryid": "9076836428372925166",
+          "calls": "130730",
+          "rows": "130730",
+          "rows_per_call": "1.00",
+          "mean_ms": "3.88",
+          "normalized_query": "WITH pgrst_source AS ( SELECT \"public\".\"products\".\"name_ar\", \"public\".\"products\".\"name_en\", \"public\".\"products\".\"slug\", \"public\".\"products\".\"description_ar\", \"public\".\"products\".\"description_en\", \"public\".\"products\".\"brand\", \"public\".\"products\".\"image_urls\", \"public\".\"products\".\"merchant_rating\", \"public\".\"products\".\"merchant_review_count\", COALESCE( \"products_product_stores_1\".\"products_product_stores_1\", $7) AS \"product_stores\" FROM \"public\".\"products\" LEFT JOIN LATERAL ( SELECT json_agg(\"products_product_stores_1\")::jsonb AS \"products_product_stores_1\" FROM (SELECT \"product_stores_1\".\"current_price\", \"product_stores_1\".\"store_id\" FROM \"public\".\"product_stores\" AS \"product_stores_1\" WHERE  \"product_stores_1\".\"price_quarantined_at\" IS NULL AND \"product_stores_1\".\"product_id\" = \"public\".\"p"
+        },
+        {
+          "queryid": "-4807547007907972717",
+          "calls": "128544",
+          "rows": "128544",
+          "rows_per_call": "1.00",
+          "mean_ms": "0.87",
+          "normalized_query": "WITH pgrst_source AS ( SELECT \"public\".\"raw_observations\".\"id\" FROM \"public\".\"raw_observations\" WHERE  \"public\".\"raw_observations\".\"store_id\" = $1 AND  \"public\".\"raw_observations\".\"id\" > $2   LIMIT $3 OFFSET $4 )  SELECT $5::bigint AS total_result_set, pg_catalog.count(_postgrest_t) AS page_total, coalesce(json_agg(_postgrest_t), $6) AS body, nullif(current_setting($7, $8), $9) AS response_headers, nullif(current_setting($10, $11), $12) AS response_status, $13 AS response_inserted FROM ( SELECT * FROM pgrst_source ) _postgrest_t"
+        },
+        {
+          "queryid": "-7907753209771004475",
+          "calls": "105313",
+          "rows": "105313",
+          "rows_per_call": "1.00",
+          "mean_ms": "5.18",
+          "normalized_query": "WITH pgrst_source AS ( SELECT \"public\".\"tps_product_projection\".\"category\" FROM \"public\".\"tps_product_projection\" WHERE  \"public\".\"tps_product_projection\".\"has_comparison\" = $1   LIMIT $2 OFFSET $3 )  SELECT $4::bigint AS total_result_set, pg_catalog.count(_postgrest_t) AS page_total, coalesce(json_agg(_postgrest_t), $5) AS body, nullif(current_setting($6, $7), $8) AS response_headers, nullif(current_setting($9, $10), $11) AS response_status, $12 AS response_inserted FROM ( SELECT * FROM pgrst_source ) _postgrest_t"
+        },
+        {
+          "queryid": "-3826925871768965228",
+          "calls": "100128",
+          "rows": "100128",
+          "rows_per_call": "1.00",
+          "mean_ms": "0.39",
+          "normalized_query": "WITH pgrst_source AS ( SELECT \"public\".\"product_stores\".\"consecutive_misses\" FROM \"public\".\"product_stores\" WHERE  \"public\".\"product_stores\".\"id\" = $1   LIMIT $2 OFFSET $3 )  SELECT $4::bigint AS total_result_set, pg_catalog.count(_postgrest_t) AS page_total, coalesce(json_agg(_postgrest_t), $5) AS body, nullif(current_setting($6, $7), $8) AS response_headers, nullif(current_setting($9, $10), $11) AS response_status, $12 AS response_inserted FROM ( SELECT * FROM pgrst_source ) _postgrest_t"
+        },
+        {
+          "queryid": "4689560339382115121",
+          "calls": "100126",
+          "rows": "100126",
+          "rows_per_call": "1.00",
+          "mean_ms": "0.48",
+          "normalized_query": "WITH pgrst_source AS (UPDATE \"public\".\"product_stores\" SET \"consecutive_misses\" = \"pgrst_body\".\"consecutive_misses\", \"last_checked_at\" = \"pgrst_body\".\"last_checked_at\", \"scrape_status\" = \"pgrst_body\".\"scrape_status\" FROM (SELECT $1 AS json_data) pgrst_payload, LATERAL (SELECT \"consecutive_misses\", \"last_checked_at\", \"scrape_status\" FROM json_to_record(pgrst_payload.json_data) AS _(\"consecutive_misses\" integer, \"last_checked_at\" timestamp with time zone, \"scrape_status\" text) ) pgrst_body  WHERE  \"public\".\"product_stores\".\"id\" = $2 RETURNING $3) SELECT $4 AS total_result_set, pg_catalog.count(_postgrest_t) AS page_total, array[]::text[] AS header, $5::text AS body, nullif(current_setting($6, $7), $8) AS response_headers, nullif(current_setting($9, $10), $11) AS response_status, $12 AS respo"
+        },
+        {
+          "queryid": "2996752861749654299",
+          "calls": "90220",
+          "rows": "90220",
+          "rows_per_call": "1.00",
+          "mean_ms": "1.50",
+          "normalized_query": "WITH pgrst_source AS ( SELECT \"public\".\"product_stores\".\"id\", \"public\".\"product_stores\".\"current_price\", \"public\".\"product_stores\".\"price_pending_value\" FROM \"public\".\"product_stores\" WHERE  \"public\".\"product_stores\".\"product_id\" = $1 AND  \"public\".\"product_stores\".\"store_id\" = $2   LIMIT $3 OFFSET $4 )  SELECT $5::bigint AS total_result_set, pg_catalog.count(_postgrest_t) AS page_total, coalesce(json_agg(_postgrest_t)->$6, $7) AS body, nullif(current_setting($8, $9), $10) AS response_headers, nullif(current_setting($11, $12), $13) AS response_status, $14 AS response_inserted FROM ( SELECT * FROM pgrst_source ) _postgrest_t"
+        },
+        {
+          "queryid": "3393615618387224802",
+          "calls": "85473",
+          "rows": "85473",
+          "rows_per_call": "1.00",
+          "mean_ms": "1.59",
+          "normalized_query": "WITH pgrst_source AS (INSERT INTO \"public\".\"product_stores\"(\"availability\", \"current_price\", \"original_price\", \"product_id\", \"product_url\", \"store_id\", \"store_name\", \"updated_at\") SELECT \"pgrst_body\".\"availability\", \"pgrst_body\".\"current_price\", \"pgrst_body\".\"original_price\", \"pgrst_body\".\"product_id\", \"pgrst_body\".\"product_url\", \"pgrst_body\".\"store_id\", \"pgrst_body\".\"store_name\", \"pgrst_body\".\"updated_at\" FROM (SELECT $1 AS json_data) pgrst_payload, LATERAL (SELECT \"availability\", \"current_price\", \"original_price\", \"product_id\", \"product_url\", \"store_id\", \"store_name\", \"updated_at\" FROM json_to_record(pgrst_payload.json_data) AS _(\"availability\" text, \"current_price\" numeric, \"original_price\" numeric, \"product_id\" uuid, \"product_url\" text, \"store_id\" integer, \"store_name\" text, \"updated_a"
+        },
+        {
+          "queryid": "-2860313775551946166",
+          "calls": "84925",
+          "rows": "84925",
+          "rows_per_call": "1.00",
+          "mean_ms": "4.57",
+          "normalized_query": "WITH pgrst_source AS ( SELECT \"public\".\"canonical_products\".\"id\" FROM \"public\".\"canonical_products\" WHERE  \"public\".\"canonical_products\".\"name_ar\" = $1   LIMIT $2 OFFSET $3 )  SELECT $4::bigint AS total_result_set, pg_catalog.count(_postgrest_t) AS page_total, coalesce(json_agg(_postgrest_t), $5) AS body, nullif(current_setting($6, $7), $8) AS response_headers, nullif(current_setting($9, $10), $11) AS response_status, $12 AS response_inserted FROM ( SELECT * FROM pgrst_source ) _postgrest_t"
+        },
+        {
+          "queryid": "-7079653585196741651",
+          "calls": "83612",
+          "rows": "83612",
+          "rows_per_call": "1.00",
+          "mean_ms": "3.11",
+          "normalized_query": "WITH pgrst_source AS (INSERT INTO \"public\".\"price_history\"(\"availability\", \"canonical_product_id\", \"effective_price\", \"original_price\", \"price\", \"raw_observation_id\", \"scraping_run_id\", \"store_id\", \"store_name\") SELECT \"pgrst_body\".\"availability\", \"pgrst_body\".\"canonical_product_id\", \"pgrst_body\".\"effective_price\", \"pgrst_body\".\"original_price\", \"pgrst_body\".\"price\", \"pgrst_body\".\"raw_observation_id\", \"pgrst_body\".\"scraping_run_id\", \"pgrst_body\".\"store_id\", \"pgrst_body\".\"store_name\" FROM (SELECT $1 AS json_data) pgrst_payload, LATERAL (SELECT \"availability\", \"canonical_product_id\", \"effective_price\", \"original_price\", \"price\", \"raw_observation_id\", \"scraping_run_id\", \"store_id\", \"store_name\" FROM json_to_record(pgrst_payload.json_data) AS _(\"availability\" text, \"canonical_product_id\" uuid,"
+        }
+      ]
+    },
+    "activeApplications": {
+      "ms": 359,
+      "rows": [
+        {
+          "application_name": "Supavisor",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": "3"
+        },
+        {
+          "application_name": "Supabase Storage API",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": "2"
+        },
+        {
+          "application_name": "postgrest",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": "2"
+        },
+        {
+          "application_name": "pg_net 0.19.5",
+          "backend_type": "pg_net 0.19.5 worker",
+          "state": null,
+          "connections": "1"
+        },
+        {
+          "application_name": "postgres_exporter",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": "1"
+        },
+        {
+          "application_name": "",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": "1"
+        },
+        {
+          "application_name": "Supavisor (auth_query)",
+          "backend_type": "client backend",
+          "state": "idle",
+          "connections": "1"
+        },
+        {
+          "application_name": "independent_readonly_audit",
+          "backend_type": "client backend",
+          "state": "active",
+          "connections": "1"
+        },
+        {
+          "application_name": "pg_cron scheduler",
+          "backend_type": "pg_cron launcher",
+          "state": null,
+          "connections": "1"
+        }
+      ]
+    }
+  }
+}

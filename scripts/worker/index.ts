@@ -39,6 +39,7 @@ if (process.env.SUPABASE_DB_URL) process.env.SUPABASE_DB_URL = toPoolerDbUrl(pro
 import path from 'path';
 import { acquireGlobalLock, type GlobalLock } from './lib/global-lock';
 import { runGuarded, type JobOutcome } from './lib/proc-guard';
+import { aggregateJobOutcomes, PARTIAL_JOB_EXIT_CODE } from './lib/job-outcome';
 import { heartbeat, pressureOk, jobDue, jobDone, admit, reapOrphanedRuns, reapOrphanedSamsungRuns } from './lib/job-state';
 import { samsungRuntimeResources } from '../tps-core/samsung-runtime-resources';
 import { resolveSamsungDeltaRuntime } from '../tps-core/samsung-delta-runtime';
@@ -204,18 +205,20 @@ async function runFeedIngest(job: JobDef): Promise<{ outcome: JobOutcome; note: 
   const stores = (process.env.WORKER_FEED_STORES || 'almanea,shaker,najm,alnakheelk,swsg')
     .split(',').map((s) => s.trim()).filter(Boolean);
   const results: string[] = [];
+  const outcomes: JobOutcome[] = [];
   for (const slug of stores) {
     const args = [TSX_BIN, path.join(REPO_ROOT, 'scripts/tps-core/ingest-via-provider.ts'), slug];
     const perStoreTimeout = Math.max(60_000, Math.floor(job.timeoutMs / Math.max(1, stores.length)));
     const guarded = runGuarded(process.execPath, args, { cwd: REPO_ROOT, env: process.env, timeoutMs: perStoreTimeout, jobName: `feed_ingest:${slug}` });
     currentCancel = guarded.cancel;
     const r = await guarded.result;
+    outcomes.push(r.outcome);
     results.push(`${slug}=${r.outcome}`);
-    if (r.outcome === 'timeout' || r.outcome === 'cancelled') {
+    if (r.outcome === 'cancelled') {
       return { outcome: r.outcome, note: results.join(' ') };
     }
   }
-  return { outcome: 'success', note: results.join(' ') };
+  return { outcome: aggregateJobOutcomes(outcomes), note: results.join(' ') };
 }
 
 async function runOneJob(job: JobDef) {
@@ -252,7 +255,7 @@ async function runOneJob(job: JobDef) {
       note = r.note;
     } else {
       const { cmd, args } = job.spawn();
-      const guarded = runGuarded(cmd, args, { cwd: REPO_ROOT, env: process.env, timeoutMs: job.timeoutMs, jobName: job.name });
+      const guarded = runGuarded(cmd, args, { cwd: REPO_ROOT, env: process.env, timeoutMs: job.timeoutMs, jobName: job.name, partialExitCode: ['price_update', 'discovery', 'manual_trigger'].includes(job.name) ? PARTIAL_JOB_EXIT_CODE : undefined });
       currentCancel = guarded.cancel;
       const r = await guarded.result;
       outcome = lockLostReason ? 'cancelled' : r.outcome;

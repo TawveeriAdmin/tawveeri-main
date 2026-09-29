@@ -1,0 +1,35 @@
+{
+  "tests": {
+    "suites": 310,
+    "passedSuites": 310,
+    "tests": 4143,
+    "passedTests": 4143,
+    "failedTests": 0
+  },
+  "typecheck": {
+    "baseline": "preceding MFA commit f5259aa9",
+    "normalization": "Ignore line/column and order-dependent table names in pre-existing truncated SelectQueryError unions; retain file, TS code, column and all other diagnostic text",
+    "before": 652,
+    "after": 652,
+    "added": [],
+    "removed": []
+  },
+  "build": {
+    "status": "passed",
+    "buildId": "build-1790669528578"
+  },
+  "coverage": {
+    "statements": {
+      "covered": 84,
+      "total": 94
+    },
+    "functions": {
+      "covered": 15,
+      "total": 15
+    },
+    "branches": {
+      "covered": 48,
+      "total": 71
+    }
+  }
+}

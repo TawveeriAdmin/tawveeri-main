@@ -23,7 +23,8 @@ import { createServerClient } from '../../../src/lib/database';
 import type { ProductCategory } from '../../../src/lib/database/types';
 import { startRun, finishRun, hasActiveRun, reapStaleRuns } from '../../../src/lib/scraping/services/run-logger';
 import { effectiveScraperStores } from '../lib/store-sets';
-import { runGuarded } from '../lib/proc-guard';
+import { runGuarded, type JobOutcome } from '../lib/proc-guard';
+import { aggregateJobOutcomes, jobExitCode, PARTIAL_JOB_EXIT_CODE } from '../lib/job-outcome';
 import { recentlyCompleted, closeOrphanedBrowserSession } from '../lib/store-freshness';
 import path from 'path';
 
@@ -75,6 +76,7 @@ async function main() {
 
   console.log(`[worker:discovery] starting — stores=[${stores.join(',')}] perUnitTimeoutMs=${perUnitTimeoutMs}`);
   const summary: string[] = [];
+  const outcomes: JobOutcome[] = [];
 
   outer:
   for (const slug of stores) {
@@ -113,6 +115,7 @@ async function main() {
       if (!runId) {
         console.error(`[worker:discovery] ${slug}/${cat}: could not create scraping_runs row — skipping`);
         summary.push(`${slug}/${cat}=no_run_row`);
+        outcomes.push('failed');
         await sleep(staggerMs);
         continue;
       }
@@ -122,10 +125,11 @@ async function main() {
         [TSX_BIN, STORE_CATEGORY_JOB, slug, cat, String(runId), String(maxPages)],
         // WORKER_CURRENT_JOB_TYPE: read by base-scraper.ts's session tracking
         // (worker_browser_sessions.job_type) — see migration 034.
-        { timeoutMs: perUnitTimeoutMs, jobName: `discovery:${slug}/${cat}`, env: { ...process.env, WORKER_CURRENT_JOB_TYPE: 'discovery' } },
+        { timeoutMs: perUnitTimeoutMs, graceMs: 10000, partialExitCode: PARTIAL_JOB_EXIT_CODE, jobName: `discovery:${slug}/${cat}`, env: { ...process.env, WORKER_CURRENT_JOB_TYPE: 'discovery' } },
       );
       activeCancel = guarded.cancel;
       const result = await guarded.result;
+      outcomes.push(result.outcome);
       activeCancel = null;
 
       if (result.outcome === 'timeout' || result.outcome === 'cancelled' || result.outcome === 'spawn_error') {
@@ -155,10 +159,11 @@ async function main() {
   }
 
   console.log(`[worker:discovery] done — ${summary.join(' ')}`);
+  return jobExitCode(aggregateJobOutcomes(outcomes));
 }
 
 main()
-  .then(() => process.exit(0))
+  .then(code => process.exit(code ?? 0))
   .catch((err) => {
     console.error('[worker:discovery] fatal:', err instanceof Error ? err.message : err);
     process.exit(1);

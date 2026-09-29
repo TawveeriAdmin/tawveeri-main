@@ -30,7 +30,8 @@
 import { createServerClient } from '../../../src/lib/database';
 import { startRun, finishRun } from '../../../src/lib/scraping/services/run-logger';
 import { effectiveScraperStores } from '../lib/store-sets';
-import { runGuarded } from '../lib/proc-guard';
+import { runGuarded, type JobOutcome } from '../lib/proc-guard';
+import { aggregateJobOutcomes, jobExitCode, PARTIAL_JOB_EXIT_CODE } from '../lib/job-outcome';
 import { recentlyCompleted, closeOrphanedBrowserSession } from '../lib/store-freshness';
 import path from 'path';
 
@@ -124,6 +125,7 @@ async function main() {
 
   console.log(`[worker:price-update] starting — stores=[${stores.join(',')}] perStoreTimeoutMs=${perStoreTimeoutMs} probeStores=[${probeStores.join(',')}] probeMax=${probeMax} excludedStores=[${excludedStores.join(',')}]`);
   const summary: string[] = [];
+  const outcomes: JobOutcome[] = [];
 
   for (const slug of stores) {
     if (excludedStores.includes(slug)) {
@@ -154,6 +156,7 @@ async function main() {
     if (!runId) {
       console.error(`[worker:price-update] ${slug}: could not create scraping_runs row — skipping`);
       summary.push(`${slug}=no_run_row`);
+      outcomes.push('failed');
       await sleep(staggerMs);
       continue;
     }
@@ -163,10 +166,11 @@ async function main() {
       [TSX_BIN, STORE_JOB, slug, String(runId), String(maxProducts), String(olderThanHours)],
       // WORKER_CURRENT_JOB_TYPE: read by base-scraper.ts's session tracking
       // (worker_browser_sessions.job_type) — see migration 034.
-      { timeoutMs: perStoreTimeoutMs, jobName: `price-update:${slug}`, env: { ...process.env, WORKER_CURRENT_JOB_TYPE: 'price_update' } },
+      { timeoutMs: perStoreTimeoutMs, graceMs: 10000, jobName: `price-update:${slug}`, partialExitCode: PARTIAL_JOB_EXIT_CODE, env: { ...process.env, WORKER_CURRENT_JOB_TYPE: 'price_update' } },
     );
     activeCancel = guarded.cancel;
     const result = await guarded.result;
+    outcomes.push(result.outcome);
     activeCancel = null;
 
     if (result.outcome === 'timeout' || result.outcome === 'cancelled' || result.outcome === 'spawn_error') {
@@ -208,17 +212,18 @@ async function main() {
     // child above — do not start another store, this process is exiting.
     if (result.outcome === 'cancelled') {
       console.log(`[worker:price-update] stopping after cascade — ${summary.join(' ')}`);
-      process.exit(0);
+      return 1;
     }
 
     await sleep(staggerMs);
   }
 
   console.log(`[worker:price-update] done — ${summary.join(' ')}`);
+  return jobExitCode(aggregateJobOutcomes(outcomes));
 }
 
 main()
-  .then(() => process.exit(0))
+  .then(code => process.exit(code))
   .catch((err) => {
     console.error('[worker:price-update] fatal:', err instanceof Error ? err.message : err);
     process.exit(1);

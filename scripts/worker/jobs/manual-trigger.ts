@@ -17,6 +17,9 @@ import { createServerClient } from '../../../src/lib/database';
 import { ScrapingOrchestrator } from '../../../src/lib/scraping/services/scraping-orchestrator';
 import { finishRun, failRun } from '../../../src/lib/scraping/services/run-logger';
 import type { PriceUpdateOptions, DiscoveryOptions } from '../../../src/lib/scraping/base/types';
+import type { JobOutcome } from '../lib/proc-guard';
+import { aggregateJobOutcomes, jobExitCode } from '../lib/job-outcome';
+import { priceUpdateOutcome } from '../../../src/lib/scraping/services/price-update-outcome';
 
 const BATCH_SIZE = parseInt(process.env.WORKER_MANUAL_TRIGGER_BATCH || '5', 10);
 
@@ -56,6 +59,7 @@ async function main() {
 
   console.log(`[worker:manual-trigger] found ${rows.length} pending manual request(s)`);
   const orchestrator = new ScrapingOrchestrator();
+  const outcomes: JobOutcome[] = [];
 
   for (const row of rows as PendingRow[]) {
     if (!(await claim(supabase, row.id))) {
@@ -67,37 +71,45 @@ async function main() {
         const opts = row.metadata?.options || {};
         const options: DiscoveryOptions = { store_slug: row.store_name, ...opts };
         const result = await orchestrator.runDiscoveryJob(options, row.id);
-        await finishRun({
+        const outcome = result.success ? (result.errors > 0 ? 'partial' : 'success') : 'failed';
+        const recorded = await finishRun({
           run_id: row.id,
-          status: result.success ? (result.errors > 0 ? 'partial' : 'success') : 'failed',
+          status: outcome,
           products_discovered: result.products_discovered,
+          products_new: result.products_created,
           products_updated: result.products_linked,
           errors_count: result.errors,
           error_summary: result.error_messages?.length ? result.error_messages : undefined,
         });
+        outcomes.push(recorded ? outcome : 'failed');
         console.log(`[worker:manual-trigger] ${row.id} (${row.store_name}/discovery): discovered=${result.products_discovered} linked=${result.products_linked}`);
       } else {
         const opts = row.metadata?.options || {};
         const options: PriceUpdateOptions = { store_slug: row.store_name, max_products: 100, older_than_hours: 24, ...opts };
         const result = await orchestrator.runPriceUpdateJob(options);
-        await finishRun({
+        const outcome = result.outcome ?? priceUpdateOutcome(result);
+        const recorded = await finishRun({
           run_id: row.id,
-          status: result.success ? (result.errors > 0 ? 'partial' : 'success') : 'failed',
+          status: outcome,
           products_updated: result.products_updated,
           price_changes_detected: result.price_changes,
           errors_count: result.errors,
+          error_summary: { outcome, stages: result.stages },
         });
+        outcomes.push(recorded ? outcome : 'failed');
         console.log(`[worker:manual-trigger] ${row.id} (${row.store_name}/price_update): updated=${result.products_updated} changes=${result.price_changes}`);
       }
     } catch (err) {
+      outcomes.push('failed');
       console.error(`[worker:manual-trigger] ${row.id} threw:`, err instanceof Error ? err.message : err);
       await failRun(row.id, err);
     }
   }
+  return jobExitCode(aggregateJobOutcomes(outcomes));
 }
 
 main()
-  .then(() => process.exit(0))
+  .then(code => process.exit(code ?? 0))
   .catch((err) => {
     console.error('[worker:manual-trigger] fatal:', err instanceof Error ? err.message : err);
     process.exit(1);

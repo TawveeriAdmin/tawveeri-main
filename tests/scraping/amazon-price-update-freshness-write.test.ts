@@ -78,7 +78,7 @@ describe("updateProductPrice sets product_stores.updated_at only on a credible c
   it('sets updated_at even when the price is confirmed UNCHANGED (not just on a price change)', async () => {
     currentMock = makeMockClient({ id: 'ps-1', current_price: 1000, price_pending_value: null });
     const svc = new ProductService();
-    await svc.updateProductPrice('product-1', 'store-1', 1000, 'in_stock');
+    expect(await svc.updateProductPrice('product-1', 'store-1', 1000, 'in_stock')).toEqual({ accepted: true });
 
     const write = currentMock.updates.find((u) => u.table === 'product_stores' && u.filters.id === 'ps-1');
     expect(write).toBeDefined();
@@ -89,7 +89,7 @@ describe("updateProductPrice sets product_stores.updated_at only on a credible c
     // >4x jump vs. the trusted prior price — SANITY_MAX_RATIO rejects this as incredible.
     currentMock = makeMockClient({ id: 'ps-1', current_price: 1000, price_pending_value: null });
     const svc = new ProductService();
-    await svc.updateProductPrice('product-1', 'store-1', 9000, 'in_stock');
+    expect(await svc.updateProductPrice('product-1', 'store-1', 9000, 'in_stock')).toEqual({ accepted: false });
 
     const write = currentMock.updates.find((u) => u.table === 'product_stores' && u.filters.id === 'ps-1');
     expect(write).toBeDefined();

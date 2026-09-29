@@ -24,6 +24,7 @@ import type { ProductCategory } from '../../../src/lib/database/types';
 import { finishRun, failRun } from '../../../src/lib/scraping/services/run-logger';
 import { BrowserlessQuotaError } from '../../../src/lib/scraping/base/base-scraper';
 import { closeOrphanedBrowserSession } from '../lib/store-freshness';
+import { jobExitCode } from '../lib/job-outcome';
 
 async function main() {
   const [, , slug, category, runIdArg, maxPagesArg] = process.argv;
@@ -42,16 +43,21 @@ async function main() {
   try {
     const orchestrator = new ScrapingOrchestrator();
     const result = await orchestrator.runDiscoveryJob(options, runId);
-    await finishRun({
+    const outcome = result.success ? (result.errors > 0 ? 'partial' : 'success') : 'failed';
+    exitCode = jobExitCode(outcome);
+    const recorded = await finishRun({
       run_id: runId,
-      status: result.success ? (result.errors > 0 ? 'partial' : 'success') : 'failed',
+      status: outcome,
       products_discovered: result.products_discovered,
+      products_new: result.products_created,
       products_updated: result.products_linked,
       errors_count: result.errors,
       error_summary: result.error_messages?.length ? result.error_messages : undefined,
     });
+    if (!recorded) exitCode = 1;
     console.log(`[worker:discovery] ${slug}/${category}: discovered=${result.products_discovered} created=${result.products_created} linked=${result.products_linked}`);
   } catch (err) {
+    exitCode = 1;
     // Browserless cost incident, 2026-09-19: a quota/rate-limit signal is not
     // a scraping defect — log and record it distinctly so it reads as
     // "deferred: browserless quota" rather than a generic discovery failure.
