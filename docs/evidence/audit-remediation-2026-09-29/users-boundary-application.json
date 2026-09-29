@@ -1,0 +1,23 @@
+{
+  "at": "2026-09-29T07:01:19.671Z",
+  "migrationSha256": "002d294325f0b23c74a1220ca4bb4ce26d194a4f5206180f9b2f5d3cc10ac54f",
+  "isolatedChecks": 16,
+  "committed": true,
+  "preflight": "live catalog matches isolated-test snapshot",
+  "policy": [
+    {
+      "policyname": "users_insert_customer_boundary",
+      "permissive": "RESTRICTIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "with_check": "((id = ( SELECT auth.uid() AS uid)) AND ((role)::text = 'customer'::text))"
+    }
+  ],
+  "trigger": [
+    {
+      "tgname": "trg_users_insert_role_boundary",
+      "tgenabled": "O",
+      "definition": "CREATE TRIGGER trg_users_insert_role_boundary BEFORE INSERT ON public.users FOR EACH ROW EXECUTE FUNCTION enforce_user_role_on_insert()"
+    }
+  ]
+}

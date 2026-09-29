@@ -130,7 +130,8 @@ export async function getUserProfile() {
             : typeof user.user_metadata?.name === 'string'
               ? user.user_metadata.name
               : null,
-        role: fallbackRole,
+        // This write uses the user's JWT. Bootstrap privileges stay runtime-only.
+        role: 'customer',
         auth_provider: user.phone ? 'phone' : 'email',
         email_verified: Boolean(user.email_confirmed_at),
         phone_verified: Boolean(user.phone_confirmed_at),
@@ -149,7 +150,7 @@ export async function getUserProfile() {
       email: created?.email ?? user.email,
       full_name: created?.full_name ?? user.user_metadata?.full_name ?? user.user_metadata?.name ?? null,
       phone: created?.phone ?? user.phone,
-      role: (created?.role as UserRole | undefined) ?? fallbackRole,
+      role: isBootstrapAdmin ? 'admin' : ((created?.role as UserRole | undefined) ?? 'customer'),
     };
   }
 
