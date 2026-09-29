@@ -1,11 +1,12 @@
 import { getBaseUrl } from './metadata';
+import { serializeJsonLd } from './serialize-json-ld';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function JsonLd({ data }: { data: Record<string, any> }) {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+      dangerouslySetInnerHTML={{ __html: serializeJsonLd(data) }}
     />
   );
 }
