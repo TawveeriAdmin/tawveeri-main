@@ -20,6 +20,7 @@ import { SharafDgScraper } from '../stores/sharafdg-scraper';
 import { ProductService } from './product-service';
 import { priceUpdateOutcome } from './price-update-outcome';
 import { IngestionService } from './ingestion-service';
+import { selectAmazonLaneRows, emptyLaneCounters, type AmazonLane, type AmazonSelection } from './amazon-lane-selector';
 import { DataValidator } from '../validation/data-validator';
 import { createServerClient } from '@/lib/database';
 import { BrowserlessQuotaError } from '../base/base-scraper';
@@ -419,26 +420,46 @@ export class ScrapingOrchestrator {
       const requestedMax = options.max_products || 500;
       const isAmazonDedupe = options.store_slug === 'amazon';
 
-      let query = supabase
-        .from('product_stores')
-        .select('id, product_id, store_id, product_url, current_price, availability, stores!inner(slug, name_ar, name_en)')
-        .or(`last_checked_at.is.null,last_checked_at.lt.${cutoffTime.toISOString()}`)
-        .order('last_checked_at', { ascending: true, nullsFirst: true })
-        .limit(isAmazonDedupe ? Math.min(requestedMax * 3, 900) : requestedMax);
-
-      if (options.store_slug) {
-        query = query.eq('stores.slug', options.store_slug);
+      // F-004 phase 3 (2026-09-30, founder-approved fence): amazon is selected in ASIN space with
+      // lanes (see amazon-lane-selector.ts for the measured why). Fail-safe by construction:
+      // any planning error, or WORKER_AMAZON_LANES_ENABLED=0, falls back to the previous
+      // stalest-first selection below UNCHANGED — and every other store never enters this branch.
+      let lanePlan: AmazonSelection | null = null;
+      if (isAmazonDedupe && process.env.WORKER_AMAZON_LANES_ENABLED !== '0') {
+        try {
+          lanePlan = await selectAmazonLaneRows(supabase, { maxProducts: requestedMax, cutoffMs: cutoffTime.getTime() });
+          console.log(`[amazon-lanes] ${JSON.stringify(lanePlan.summary)}`);
+        } catch (err) {
+          console.error('[amazon-lanes] planning failed — falling back to the previous stalest-first selection:', err instanceof Error ? err.message : err);
+          lanePlan = null;
+        }
       }
 
-      const { data: productStores, error } = await query;
+      let rows: PriceUpdateStoreRow[];
+      if (lanePlan) {
+        rows = lanePlan.loopRows as unknown as PriceUpdateStoreRow[];
+      } else {
+        let query = supabase
+          .from('product_stores')
+          .select('id, product_id, store_id, product_url, current_price, availability, stores!inner(slug, name_ar, name_en)')
+          .or(`last_checked_at.is.null,last_checked_at.lt.${cutoffTime.toISOString()}`)
+          .order('last_checked_at', { ascending: true, nullsFirst: true })
+          .limit(isAmazonDedupe ? Math.min(requestedMax * 3, 900) : requestedMax);
 
-      if (error || !productStores) {
-        throw new Error(`Failed to fetch products: ${error?.message || 'Unknown error'}`);
-      }
+        if (options.store_slug) {
+          query = query.eq('stores.slug', options.store_slug);
+        }
 
-      let rows = productStores as unknown as PriceUpdateStoreRow[];
-      if (isAmazonDedupe) {
-        rows = dedupeStalestPerProductId(rows, requestedMax);
+        const { data: productStores, error } = await query;
+
+        if (error || !productStores) {
+          throw new Error(`Failed to fetch products: ${error?.message || 'Unknown error'}`);
+        }
+
+        rows = productStores as unknown as PriceUpdateStoreRow[];
+        if (isAmazonDedupe) {
+          rows = dedupeStalestPerProductId(rows, requestedMax);
+        }
       }
       const byStore: Record<string, PriceUpdateStoreRow[]> = {};
       for (const ps of rows) {
@@ -455,7 +476,22 @@ export class ScrapingOrchestrator {
       // real per-product failure — kept separate from `errors` so a quota
       // pause doesn't read as a wave of scrape failures for that store.
       const deferredQuotaStores: string[] = [];
-      const stages = { selected: rows.length, attempted: 0, extracted: 0, accepted: 0, written: 0, observations_ingested: 0, product_only: 0, rejected: 0, deferred: 0 };
+      const stages: NonNullable<PriceUpdateResult['stages']> = { selected: rows.length, attempted: 0, extracted: 0, accepted: 0, written: 0, observations_ingested: 0, product_only: 0, rejected: 0, deferred: 0 };
+      // Per-lane accounting (amazon lanes only). Lives inside `stages` — no migration, and the
+      // existing numeric keys are untouched. The income lane also logs each attempt as it happens
+      // so "up to 3 documented attempts" for a priority ASIN is auditable from the run logs.
+      const laneOfRow = lanePlan?.laneByRowId;
+      if (lanePlan) {
+        stages.lanes = emptyLaneCounters();
+        for (const { lane } of lanePlan.laneByRowId.values()) stages.lanes[lane].selected++;
+        stages.lane_meta = lanePlan.summary;
+      }
+      const bumpLane = (rowId: string, key: 'attempted' | 'written' | 'failed'): void => {
+        const info = laneOfRow?.get(rowId);
+        if (!info || !stages.lanes) return;
+        stages.lanes[info.lane as AmazonLane][key]++;
+        if (info.lane === 'l1') console.log(`[amazon-lane-attempt] ${JSON.stringify({ lane: 'l1', asin: info.asin, offer_id: rowId, event: key })}`);
+      };
 
       for (const [storeSlug, products] of Object.entries(byStore)) {
         const acceptedBeforeStore = productsUpdated;
@@ -523,11 +559,13 @@ export class ScrapingOrchestrator {
               if (!write.accepted) {
                 stages.rejected++;
                 errors++;
+                bumpLane(productStoreId, 'failed');
                 await this.stampChecked(productStoreId, false);
                 return;
               }
               stages.accepted++;
               stages.written++;
+              bumpLane(productStoreId, 'written');
               productsUpdated++;
               if (oldPrice !== newPrice) priceChanges++;
 
@@ -578,6 +616,7 @@ export class ScrapingOrchestrator {
               await this.recordFailure(productStoreId, 'scraper returned null');
               await this.stampChecked(productStoreId, false);
               errors++;
+              bumpLane(productStoreId, 'failed');
             }
           };
 
@@ -644,6 +683,7 @@ export class ScrapingOrchestrator {
 
             try {
               stages.attempted++;
+              bumpLane(productStoreId, 'attempted');
               // Providers own retry/backoff. Replaying the entire scraper here
               // multiplied BaseScraper's six-request budget by three, even on 4xx.
               const scrapedProduct = await scraper.updateProductPrice(productUrl);
@@ -673,6 +713,7 @@ export class ScrapingOrchestrator {
               await this.recordFailure(productStoreId, msg);
               await this.stampChecked(productStoreId, false);
               errors++;
+              bumpLane(productStoreId, 'failed');
             }
 
             const delay = minDelayMs + Math.floor(Math.random() * Math.max(0, maxDelayMs - minDelayMs));

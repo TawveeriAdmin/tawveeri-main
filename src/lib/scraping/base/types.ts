@@ -246,6 +246,9 @@ export interface PriceUpdateResult {
     product_only: number;
     rejected: number;
     deferred: number;
+    /** F-004 phase 3 (amazon only): per-lane attempt accounting; absent for every other store. */
+    lanes?: Record<'l1' | 'l2' | 'l3' | 'tail' | 'probe', { selected: number; attempted: number; written: number; failed: number }>;
+    lane_meta?: Record<string, unknown>;
   };
   stores_updated: number;
   products_updated: number;
