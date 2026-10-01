@@ -59,3 +59,22 @@ describe('GET /go/[offerId] — arbitrary GET / render token alone never creates
     expect(source).toMatch(/const interactionId =\s*\n?\s*provenanceEnabled && rawInteractionId/);
   });
 });
+
+// ADR-398 (point أ): the affiliate tag is attached only on human-evidenced exits; the redirect
+// itself stays fail-open for everyone.
+describe('ADR-398 affiliate-attribution gate', () => {
+  const fs = require('node:fs') as typeof import('node:fs');
+  const path = require('node:path') as typeof import('node:path');
+  const src = fs.readFileSync(path.join(process.cwd(), 'src/app/go/[offerId]/route.ts'), 'utf8');
+
+  it('gates the tag on interaction id, or a valid render token together with our session cookie, and never for test/bot', () => {
+    expect(src).toMatch(/const affiliateEligible = !isTest && \(Boolean\(interactionId\) \|\| \(\(goTokenValid \?\? true\) && Boolean\(sessionId\)\)\);/);
+    expect(src).toMatch(/affiliateEligible\s*\n?\s*\? buildOfferExitLink\(/);
+    expect(src).toMatch(/network: "direct", program: "direct", tag: null, subId: null/);
+  });
+
+  it('still redirects (302) on the ineligible path — navigation is never blocked', () => {
+    expect(src).toMatch(/return NextResponse\.redirect\(link\.url, 302\);/);
+    expect(src).not.toMatch(/affiliateEligible[^\n]*return home\(\)/);
+  });
+});

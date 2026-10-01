@@ -7,6 +7,7 @@ import { fetchRadarSurface, OPPORTUNITY_STATUS_LABEL_AR, MENTION_CLASS_LABEL_AR 
 import { RadarOpportunityActions, MentionActions } from '@/components/admin/radar-opportunity-actions';
 import { categoryNameAr } from '@/lib/growth/demand-radar/saudi-lexicon';
 import { radarStatusAr } from '@/lib/admin/service-status';
+import { fetchAmazonWinList } from '@/lib/admin/amazon-win-list';
 
 // Founder Growth surface (ADR-244 Gates D/E/F). The smallest useful review
 // experience: trustworthy measurement, the distribution diagnosis, the content
@@ -34,10 +35,11 @@ function relAgo(iso: string | null): string {
 }
 
 export default async function GrowthPage() {
-  const [data, content, radar] = await Promise.all([
+  const [data, content, radar, amazonWins] = await Promise.all([
     getCommandCenterData('7d'),
     fetchGrowthContent().catch(() => []),
     fetchRadarSurface().catch(() => null),
+    fetchAmazonWinList(12),
   ]);
   const f = data.real;
   const readyCount = content.filter((c) => c.status === 'ready_for_review').length;
@@ -84,6 +86,39 @@ export default async function GrowthPage() {
           معرّفات جلسات مرتبطة بإشارة خروج: <b>{data.commercial.qualifiedVisitsReferred}</b> · أعلى طلب غير مُجاب:{' '}
           {data.unmetDemand.slice(0, 3).map((u) => `«${u.query}»`).join('، ') || '—'}
         </p>
+      </Card>
+
+      {/* 1b — أمازون يربح الآن (ADR-398 point ج): publishable, measured, no guessing */}
+      <Card title="أمازون يربح الآن — مواد جاهزة للنشر">
+        <p className="mb-3 text-xs leading-6 text-gray-500">
+          منتجات سعرُ أمازون فيها مؤكَّد من صفحة المنتج خلال 48 ساعة، ومقابلٌ بعرض صالح لإكسترا أو المنيع، وأرخص من كل عرض آخر صالح. الترتيب بنسبة التوفير فقط.
+          {amazonWins.reason ? ` · تعذر الحساب: ${amazonWins.reason}` : ` · مفاتيح مقارنة مفحوصة: ${amazonWins.keysCompared} · فجوات غير معقولة (>2.5×) استُبعدت للمراجعة: ${amazonWins.implausibleExcluded}`}
+        </p>
+        {amazonWins.wins.length === 0 ? (
+          <p className="text-sm text-gray-500">لا منتج يحقق الشروط الثلاثة الآن — هذا قياس لا صفر افتراضي.</p>
+        ) : (
+          <>
+            <div className="mb-3 flex flex-wrap gap-2 text-xs">
+              {amazonWins.byCategory.slice(0, 8).map((c) => (
+                <span key={c.category} className="rounded-full bg-gray-100 px-3 py-1 font-bold text-gray-700 dark:bg-white/10 dark:text-gray-200">{categoryNameAr(c.category)} · {c.wins}</span>
+              ))}
+            </div>
+            <ul className="divide-y divide-gray-100 dark:divide-white/10">
+              {amazonWins.wins.map((w) => (
+                <li key={w.identityKey} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate font-bold">{w.nameAr ?? w.identityKey}</div>
+                    <div className="text-xs text-gray-500">{categoryNameAr(w.category)} · أمازون {w.amazonPrice} ر.س مقابل {w.bestOtherStore} {w.bestOtherPrice} ر.س · رُصد {relAgo(w.amazonObservedAt)} · {w.otherStoresCount} متاجر أخرى</div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-black text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">وفّر {w.savingSar} ر.س ({w.savingPct}%)</span>
+                    {w.compareUrl && <Link className="text-xs underline" href={w.compareUrl}>صفحة المقارنة</Link>}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
       </Card>
 
       {/* 2 — مرصد الطلب (ADR-247): live purchase-intent opportunities */}

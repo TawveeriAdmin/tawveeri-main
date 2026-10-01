@@ -5,6 +5,7 @@ import { loadStoreConfig } from '../config/scraper-config';
 import { normalizeUrl } from '../utils/url-utils';
 import { determineCategory } from '../utils/category-utils';
 import { canonicalAmazonUrl } from '../utils/amazon-asin';
+import { isCreatorsApiConfigured, refreshPricesViaCreatorsApi } from '@/lib/providers/sourcing/amazon-creators-api';
 
 /** iOS Safari — the client Amazon serves the server-rendered mobile detail page to (ADR-397). */
 const AMAZON_MOBILE_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1';
@@ -20,6 +21,15 @@ const BASE_URL = 'https://www.amazon.sa';
 export class AmazonScraper extends BaseScraper {
   constructor() {
     super(loadStoreConfig('amazon'));
+    if (isCreatorsApiConfigured()) {
+      this.updateProductPricesBatch = async (productUrls: string[]) => {
+        const viaApi = await refreshPricesViaCreatorsApi(productUrls);
+        if (!viaApi) return new Map(productUrls.map((u) => [u, null]));
+        // Anything the API did not answer falls back to the detail page, one by one.
+        for (const [url, product] of viaApi) if (!product) viaApi.set(url, await this.updateProductPrice(url));
+        return viaApi;
+      };
+    }
   }
 
   /**
@@ -138,6 +148,15 @@ export class AmazonScraper extends BaseScraper {
 
     return products;
   }
+
+  /**
+   * ADR-398 (point د): when the Creators API credentials exist (>= 10 qualifying sales / 30 d
+   * on amazon.sa), price refresh goes through the official API in batches of 10 — the one
+   * source the Associates Operating Agreement names for displaying prices. The orchestrator
+   * calls this ONLY when it is a function, so an unconfigured deployment keeps the per-page
+   * path byte-for-byte. Defined as a property so `typeof === 'function'` is false until then.
+   */
+  updateProductPricesBatch?: (productUrls: string[]) => Promise<Map<string, ScrapedProduct | null>>;
 
   async updateProductPrice(productUrl: string): Promise<ScrapedProduct | null> {
     try {

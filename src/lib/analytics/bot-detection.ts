@@ -11,7 +11,9 @@
 // never blocks or alters the actual redirect, so real customers are never at risk from this
 // list growing or from a UA it doesn't recognize.
 const KNOWN_BOT_UA_PATTERN =
-  /bot|crawl|spider|slurp|headless|puppeteer|playwright|lighthouse|python-requests|python-urllib|scrapy|phantom|curl|wget|builtwith|ahrefs|semrush|mj12bot|dotbot|seokicks|uptime|pingdom|monitor|okhttp|go-http-client|libwww-perl|axios\/|node-fetch/i;
+  /bot|crawl|spider|slurp|headless|puppeteer|playwright|lighthouse|python-requests|python-urllib|scrapy|phantom|curl|wget|builtwith|ahrefs|semrush|mj12bot|dotbot|seokicks|uptime|pingdom|monitor|okhttp|go-http-client|libwww-perl|axios\/|node-fetch|opera\/9\.80|presto\//i;
+// ADR-398: `Opera/9.80 … Presto/2.5.27 Version/10.60` (a 2010-era engine no human runs today) was
+// the user agent on 3,175 of September 2026's 3,292 amazon /go rows — all sessionless.
 
 export function isKnownBotUserAgent(userAgent: string | null | undefined): boolean {
   if (!userAgent) return false;

@@ -5,6 +5,7 @@ import { METRICS } from '@/lib/founder/registry';
 import { GOAL_STATUS_AR } from '@/lib/founder/goals';
 import { FCard, MetricCard, SectionTitle, KV, Sar, Tag, WindowPicker, qs, EmptyNote } from '@/components/founder/ui';
 import { formatRiyadh } from '@/lib/founder/windows';
+import { fetchAmazonEligibility, CREATORS_API_THRESHOLD } from '@/lib/founder/amazon-eligibility';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,6 +16,7 @@ export default async function FounderOverviewPage({ params, searchParams }: { pa
   const sp = await searchParams;
   const w = windowFromSearchParams(sp);
   const o = await buildOverview(w);
+  const amz = await fetchAmazonEligibility(o.window);
   const base = `/${locale}/admin/founder`;
   const q = qs(sp);
   const m = o.money;
@@ -50,6 +52,21 @@ export default async function FounderOverviewPage({ params, searchParams }: { pa
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {o.cards.map((c, i) => <MetricCard key={c.id} metric={c} previous={o.prevCards[i]} />)}
         </div>
+      </section>
+
+      {/* Amazon — the road to the official API (ADR-398) */}
+      <section>
+        <SectionTitle sub={`عتبة Creators API: ${CREATORS_API_THRESHOLD} مبيعات مشحونة في آخر 30 يومًا لسوق amazon.sa. الأرقام من سجل /go وتقارير Associates المستوردة فقط.`}
+          action={<Link href={`${base}/reports${q}`} className="text-xs font-black text-[#1f6f59] underline decoration-dotted">استيراد تقرير أمازون ←</Link>}>أمازون — الطريق إلى الواجهة الرسمية</SectionTitle>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {amz.cards.map((c) => <MetricCard key={c.id} metric={c} />)}
+        </div>
+        <p className="mt-2 text-xs text-gray-500">
+          {amz.trailing30.reportCovers
+            ? `التقدم: ${amz.trailing30.shippedItems} من ${CREATORS_API_THRESHOLD} (${Math.round((amz.trailing30.progress ?? 0) * 100)}%) · خروج بشري مؤكَّد ${amz.humanExits.qualified} · بوسم ${amz.humanExits.tagged} · بلا وسم ${amz.humanExits.untagged} من ${amz.humanExits.rawRows} صف خام.`
+            : `التقدم غير معلوم: لا تقرير Associates مستورد يغطي آخر 30 يومًا — ارفعه من صفحة التقارير. خروج بشري مؤكَّد ${amz.humanExits.qualified} · بوسم ${amz.humanExits.tagged} · بلا وسم ${amz.humanExits.untagged} من ${amz.humanExits.rawRows} صف خام.`}
+          {amz.reason ? ` · تعذر القياس: ${amz.reason}` : ''}
+        </p>
       </section>
 
       {/* Money strip */}

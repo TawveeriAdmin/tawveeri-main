@@ -17,6 +17,8 @@ import { buildOfferExitLink, getProviderByStoreId } from "@/lib/providers";
 import { normalizeExitUrl, isNonProductionExitUrl } from "@/lib/retailers/exit-url";
 import { getBaseUrl } from "@/lib/seo/metadata";
 import { isKnownBotUserAgent } from "@/lib/analytics/bot-detection";
+import { normalizeStoreUrl } from "@/lib/catalog/normalizeStoreUrl";
+import type { AffiliateLinkResult } from "@/lib/providers/types";
 import { verifyGoToken } from "@/lib/analytics/go-token";
 
 // A measured exit is per-request and must never be cached (each hit records an
@@ -187,12 +189,6 @@ export async function GET(req: NextRequest, props: { params: Promise<{ offerId: 
     return home();
   }
 
-  const provider = getProviderByStoreId(resolved.storeId);
-  const link = buildOfferExitLink(provider, exitUrl, String(resolved.storeId ?? ""), { clickId: subId, source });
-
-  // Never 302 to a non-absolute destination (legacy relative URL) — that would 500.
-  if (!/^https?:\/\//i.test(link.url)) return home();
-
   // Real vs test exit (Part 6): a tester carries the `tw_test` cookie (?test=1); bots by UA;
   // `tw_admin` (ADR-216) marks an authenticated admin's own browsing, set only inside the
   // already-role-gated /admin layout — never fabricated from a self-reported flag.
@@ -210,6 +206,25 @@ export async function GET(req: NextRequest, props: { params: Promise<{ offerId: 
   // Session + campaign identity (ADR-244) — the ledger itself now answers
   // "which session and which piece of content produced this exit."
   const { sessionId, campaign } = readAttribution(req);
+
+  // ADR-398 (point أ) — AFFILIATE ATTRIBUTION ONLY ON HUMAN-EVIDENCED EXITS. Measured for
+  // September 2026: 3,292 amazon /go rows, of which 2,975 were `raw_request` with no
+  // session (10 session ids across 2,913 IPs — a crawler following the rendered href) and
+  // only 48 carried an onClick-proven interaction. Every one of those rows was redirected
+  // WITH the Associates tag, so Amazon's own dashboard counted 3,507 "clicks" against 3
+  // orders (0.09%) — a conversion rate that is an account-health signal for them and is
+  // simply false for us. The redirect itself stays fail-open for everyone (navigation is
+  // never blocked); what changes is that the tag/sub-id are attached only when the request
+  // shows human evidence: an onClick interaction id, or a server-minted token on a request
+  // that also carries our session cookie. Known bots/test/admin never carry the tag.
+  const affiliateEligible = !isTest && (Boolean(interactionId) || ((goTokenValid ?? true) && Boolean(sessionId)));
+  const provider = getProviderByStoreId(resolved.storeId);
+  const link: AffiliateLinkResult = affiliateEligible
+    ? buildOfferExitLink(provider, exitUrl, String(resolved.storeId ?? ""), { clickId: subId, source })
+    : { url: normalizeStoreUrl(String(resolved.storeId ?? ""), exitUrl) ?? exitUrl, network: "direct", program: "direct", tag: null, subId: null };
+
+  // Never 302 to a non-absolute destination (legacy relative URL) — that would 500.
+  if (!/^https?:\/\//i.test(link.url)) return home();
 
   // ADR-282: IP capture only (migration 43) — a pure additive data point for investigating
   // traffic patterns like the 2026-08-31/09-01 no-session redirect anomalies

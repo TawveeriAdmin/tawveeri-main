@@ -24,6 +24,7 @@ describe("isKnownBotUserAgent", () => {
     "curl/8.4.0",
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) HeadlessChrome/120.0.0.0 Safari/537.36",
     "Pingdom.com_bot_version_1.4",
+    "Opera/9.80 (X11; Linux i686; U; en) Presto/2.5.27 Version/10.60",
   ])("flags known bot UA: %s", (ua) => {
     expect(isKnownBotUserAgent(ua)).toBe(true);
   });

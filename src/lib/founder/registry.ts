@@ -108,6 +108,18 @@ export const METRICS: Record<string, MetricDefinition> = {
     definitionAr: 'S08P (مقبوض) − F01 (مصروف نقدًا) داخل النافذة.', provesAr: 'حركة النقد.', notProvesAr: 'ربحية.', confidence: 'high', source: 'derived' }),
   F08: M({ id: 'F08', nameAr: 'عمولات مستحقة غير مقبوضة', shortAr: 'مستحق القبض', unit: 'sar',
     definitionAr: 'عمولات معتمدة بلا تاريخ دفع.', provesAr: 'مبالغ منتظرة.', notProvesAr: 'ضمان قبضها.', confidence: 'high', source: 'founder_revenue_entries' }),
+  // ── Amazon: the road to the official API (A) — ADR-398 ──────────────────
+  A01: M({ id: 'A01', nameAr: 'خروج أمازون بشري مؤكَّد', shortAr: 'أمازون مؤكَّد', unit: 'interactions',
+    definitionAr: 'صفوف /go إلى أمازون غير اختبارية يحمل كل منها معرّف تفاعل مسجَّل في first_party_interactions (ضغطة فعلية في واجهتنا).',
+    provesAr: 'ضغطة بشرية أعقبها تحويل إلى أمازون.', notProvesAr: 'وصول صفحة أمازون أو شراء.', confidence: 'high', source: 'outbound_clicks ⋈ first_party_interactions' }),
+  A02: M({ id: 'A02', nameAr: 'خروج أمازون بوسم الشريك', shortAr: 'بوسم', unit: 'rows',
+    definitionAr: 'صفوف /go إلى أمازون غير اختبارية أُرفق بها وسم الأفلييت (منذ ADR-398: لا يُرفق إلا مع دليل بشري).',
+    provesAr: 'ما يمكن أن يحتسبه أمازون نقرة لنا.', notProvesAr: 'أن أمازون احتسبها فعلًا.', confidence: 'medium', source: 'outbound_clicks' }),
+  A03: M({ id: 'A03', nameAr: 'بنود أمازون المطلوبة (تقرير الشريك)', shortAr: 'بنود مطلوبة', unit: 'items',
+    definitionAr: 'بنود الطلب في تقرير Associates المستورد بتاريخ طلب داخل النافذة.', provesAr: 'ما أبلغ عنه أمازون.', notProvesAr: 'أي شيء عن فترة بلا تقرير؛ غياب التقرير ≠ صفر.', confidence: 'high', source: 'affiliate_conversions' }),
+  A04: M({ id: 'A04', nameAr: 'مبيعات مؤهِّلة لواجهة أمازون (آخر 30 يومًا)', shortAr: 'نحو الواجهة', unit: 'items',
+    definitionAr: 'بنود مشحونة غير مرتجعة بتاريخ طلب في آخر 30 يومًا من تقرير Associates؛ عتبة Creators API = 10 لكل سوق.',
+    provesAr: 'المسافة إلى تأهل الواجهة الرسمية.', notProvesAr: 'قرار أمازون النهائي بالتأهيل.', confidence: 'high', source: 'affiliate_conversions' }),
   // ── Coverage/quality (C) ────────────────────────────────────────────────
   C01: M({ id: 'C01', nameAr: 'تغطية تقارير الشركاء', shortAr: 'تغطية', unit: 'ratio',
     definitionAr: 'عدد مصادر الشريك (أمازون، نون) التي يوجد لها تقرير مستورد أو إدخال موثق يغطي النافذة، من 2.', provesAr: 'إمكان الحكم المالي.', notProvesAr: 'اكتمال كل أيام النافذة داخل التقرير.', confidence: 'high', source: 'affiliate_reports + founder_revenue_entries' }),
