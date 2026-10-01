@@ -72,6 +72,17 @@ export async function GET(req: NextRequest, props: { params: Promise<{ offerId: 
   // req.url, which is only correct when the process is addressed directly.
   const home = () => NextResponse.redirect(new URL("/", getBaseUrl()), 302);
 
+  /** ADR-398: normalizeStoreUrl itself injects `tag=` on every amazon URL, and stored amazon
+   *  rows may carry one too — the untagged exit must not inherit either. Verified live after
+   *  the first deploy: a cookieless /go still 302'd to `?tag=tawveeri0f-21`. */
+  const stripAffiliateParams = (u: string): string => {
+    try {
+      const x = new URL(u);
+      if (/(^|.)amazon./i.test(x.hostname)) { x.searchParams.delete("tag"); x.searchParams.delete("ascsubtag"); x.searchParams.delete("linkCode"); }
+      return x.toString();
+    } catch { return u; }
+  };
+
   const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
 
   // ADR-244 — STOREFRONT exits: /go/ps_<product_store_id>. Before this, the storefront
@@ -221,7 +232,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ offerId: 
   const provider = getProviderByStoreId(resolved.storeId);
   const link: AffiliateLinkResult = affiliateEligible
     ? buildOfferExitLink(provider, exitUrl, String(resolved.storeId ?? ""), { clickId: subId, source })
-    : { url: normalizeStoreUrl(String(resolved.storeId ?? ""), exitUrl) ?? exitUrl, network: "direct", program: "direct", tag: null, subId: null };
+    : { url: stripAffiliateParams(normalizeStoreUrl(String(resolved.storeId ?? ""), exitUrl) ?? exitUrl), network: "direct", program: "direct", tag: null, subId: null };
 
   // Never 302 to a non-absolute destination (legacy relative URL) — that would 500.
   if (!/^https?:\/\//i.test(link.url)) return home();

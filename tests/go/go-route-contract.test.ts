@@ -71,6 +71,9 @@ describe('ADR-398 affiliate-attribution gate', () => {
     expect(src).toMatch(/const affiliateEligible = !isTest && \(Boolean\(interactionId\) \|\| \(\(goTokenValid \?\? true\) && Boolean\(sessionId\)\)\);/);
     expect(src).toMatch(/affiliateEligible\s*\n?\s*\? buildOfferExitLink\(/);
     expect(src).toMatch(/network: "direct", program: "direct", tag: null, subId: null/);
+    // the untagged exit must strip what normalizeStoreUrl / the stored row inject
+    expect(src).toMatch(/stripAffiliateParams(normalizeStoreUrl(/);
+    expect(src).toMatch(/searchParams.delete("tag"); x.searchParams.delete("ascsubtag")/);
   });
 
   it('still redirects (302) on the ineligible path — navigation is never blocked', () => {
