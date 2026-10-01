@@ -12,6 +12,8 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 **Not changed / rejected.** Blocking non-human requests at `/go` (navigation stays fail-open); IP/ASN filtering (heavier, not needed — session + interaction evidence already separates the crawler); writing partner numbers from our own clicks (only imported reports count); any marketing automation (publishing stays a founder act, ADR-244).
 
+**Live verification (2026-10-01 16:4xZ, production, browser UA):** no cookie/no iid → `302 https://www.amazon.sa/dp/B0DJ8T85K6` (untagged); `?iid=…` → tagged with `ascsubtag`; `tw_sid` cookie without a token → untagged; `tw_sid` + valid render token → tagged; valid token without the cookie → untagged; curl's own UA → untagged (known bot). First deploy leaked the tag through `normalizeStoreUrl`'s own injection — fixed the same hour (`stripAffiliateParams`).
+
 **Acceptance.** Within 7 days: A02 (tagged) ≈ A01 (human) ± the token-but-no-iid tail (Sept: 37 rows / 11 sessions), raw rows unchanged; Amazon's dashboard click count for October falls toward the human count while orders do not fall; founder imports the September Associates CSV so A03/A04 read a number; the win-list card renders with ≥ 1 category. Rollback: revert; the gate is one boolean expression.
 
 ### ADR-397 — Amazon closure, part 2: reversible de-duplication (trial), the mobile "unqualified offer" price source, and the Associates price disclaimer · Accepted (2026-10-01; de-dup trial applied, full pass after one lane cycle)
