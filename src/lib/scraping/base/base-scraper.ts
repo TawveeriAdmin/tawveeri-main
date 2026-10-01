@@ -281,7 +281,12 @@ export abstract class BaseScraper {
   /**
    * Fetch page HTML (for static pages)
    */
-  async fetchPage(url: string): Promise<string> {
+  /**
+   * @param headersOverride merged over the rotated browser headers — used by a scraper that
+   *   needs a specific client identity for one request (ADR-397: amazon's mobile detail page
+   *   is the only server-rendered source of an "unqualified" offer's price).
+   */
+  async fetchPage(url: string, headersOverride?: Record<string, string>): Promise<string> {
     if (!isValidUrl(url)) {
       throw new Error(`Invalid URL: ${url}`);
     }
@@ -321,7 +326,7 @@ export abstract class BaseScraper {
         let refererOrigin: string | undefined;
         try { refererOrigin = new URL(url).origin; } catch { /* invalid URL handled above */ }
         const response = await fetch(url, {
-          headers: getBrowserHeaders(refererOrigin),
+          headers: { ...getBrowserHeaders(refererOrigin), ...(headersOverride ?? {}) },
           signal: controller.signal,
         });
         if (!response.ok) {

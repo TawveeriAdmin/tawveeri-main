@@ -5,6 +5,9 @@ import { loadStoreConfig } from '../config/scraper-config';
 import { normalizeUrl } from '../utils/url-utils';
 import { determineCategory } from '../utils/category-utils';
 import { canonicalAmazonUrl } from '../utils/amazon-asin';
+
+/** iOS Safari — the client Amazon serves the server-rendered mobile detail page to (ADR-397). */
+const AMAZON_MOBILE_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1';
 import { isTechProduct } from '../product-filter';
 
 const BASE_URL = 'https://www.amazon.sa';
@@ -308,7 +311,17 @@ export class AmazonScraper extends BaseScraper {
         if (price) break;
       }
     }
-    if (!price) return null;
+    if (!price) {
+      // ADR-397 — the third page variant, visited live 2026-10-01: HTTP 200, title present, no
+      // #outOfStock, no buy box, no add-to-cart; the desktop page defers the offer to the
+      // All-Offers-Display JS panel (its AJAX endpoint answers 404 on amazon.sa), while the
+      // MOBILE page renders the same offer server-side inside #unqualifiedBuyBox (an offer
+      // Amazon lists but does not "feature"). One extra request, only on this variant, scoped
+      // to that box — the sponsored/lpo carousels on the mobile page are decoys too.
+      const mobilePrice = await this.fetchUnqualifiedOfferPrice(productUrl);
+      if (mobilePrice === null) return null;
+      price = mobilePrice;
+    }
 
     // Original price — same scoping rule: a strike-through price from a carousel is a
     // different product's "was". Buybox column only.
@@ -353,6 +366,22 @@ export class AmazonScraper extends BaseScraper {
       merchant_review_count: extras.merchant_review_count,
       price_source: 'product_page',
     };
+  }
+
+  /** ADR-397: mobile-rendered "unqualified" offer price, or null when the mobile page has no such box. */
+  async fetchUnqualifiedOfferPrice(productUrl: string): Promise<number | null> {
+    try {
+      const html = await this.fetchPage(productUrl, { 'User-Agent': AMAZON_MOBILE_UA });
+      const $ = this.getCheerio(html);
+      if ($('#outOfStock').length > 0) return null;
+      const text = this.extractText($, '#unqualifiedBuyBox .a-price .a-offscreen')
+        || this.extractText($, '#unqualified_feature_div .a-price .a-offscreen');
+      const parsed = text ? this.parsePrice(text) : null;
+      return parsed && parsed > 0 ? parsed : null;
+    } catch (err) {
+      console.warn(`  [amazon] mobile unqualified-offer read failed: ${err instanceof Error ? err.message : err}`);
+      return null;
+    }
   }
 
   /** Buy-box-scoped, like the price selectors (ADR-204): the carousel never decides. */

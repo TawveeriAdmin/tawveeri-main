@@ -89,6 +89,46 @@ describe('detail page: «Currently unavailable» is a state, not an extraction f
   });
 });
 
+const UNQUALIFIED_DESKTOP = `
+<html><body id="a-page"><div id="dp"><div id="dp-container">
+  <div id="centerCol"><span id="productTitle"> LG 14 Place Setting Dishwasher </span></div>
+  <div id="rightCol"><div id="desktop_buybox"><div id="buybox"><script>P.when("A","load").execute("aod-assets-loaded")</script></div></div></div>
+  <div id="desktop-dp-lpo_feature_div_0"><span class="a-price"><span class="a-offscreen">SAR2,427.00</span></span></div>
+  <div id="sims-simsContainer_feature_div_0"><span class="a-price"><span class="a-offscreen">SAR 3,829.50</span></span></div>
+</div></div></body></html>`;
+const UNQUALIFIED_MOBILE = `
+<html><body><div id="unqualified_feature_div"><div id="unqualifiedBuyBox">
+  <span class="a-price"><span class="a-offscreen">SAR2,374.00</span></span></div></div>
+  <div id="mobile-dp-lpo_feature_div_0"><span class="a-price"><span class="a-offscreen">SAR2,099.00</span></span></div>
+</body></html>`;
+
+describe('ADR-397: no buy box on desktop => the mobile "unqualified" offer, never a carousel price', () => {
+  it('reads the unqualified-offer price from the mobile page (second request, mobile UA)', async () => {
+    const calls: Array<Record<string, string> | undefined> = [];
+    priv.fetchPage = async (_u: string, h?: Record<string, string>) => { calls.push(h); return h?.['User-Agent']?.includes('iPhone') ? UNQUALIFIED_MOBILE : UNQUALIFIED_DESKTOP; };
+    const p = await priv.scrapeProductPage('https://www.amazon.sa/dp/B0F55J9F1V') as ScrapedProduct | null;
+    expect(p).not.toBeNull();
+    expect(p!.current_price).toBe(2374);
+    expect(p!.price_source).toBe('product_page');
+    expect(calls).toHaveLength(2);
+    expect(calls[1]?.['User-Agent']).toMatch(/iPhone/);
+  });
+
+  it('still yields null when the mobile page has no unqualified box either (unknown beats incorrect)', async () => {
+    priv.fetchPage = async (_u: string, h?: Record<string, string>) => (h?.['User-Agent']?.includes('iPhone') ? '<html><body><div id="mobile-dp-lpo_feature_div_0"><span class="a-price"><span class="a-offscreen">SAR2,099.00</span></span></div></body></html>' : UNQUALIFIED_DESKTOP);
+    const p = await priv.scrapeProductPage('https://www.amazon.sa/dp/B0F55J9F1V');
+    expect(p).toBeNull();
+  });
+
+  it('a normal buy-box page never triggers the mobile request', async () => {
+    let calls = 0;
+    priv.fetchPage = async () => { calls++; return BUYBOX_PAGE; };
+    const p = await priv.scrapeProductPage('https://www.amazon.sa/dp/B0GS29FHVB') as ScrapedProduct | null;
+    expect(p!.current_price).toBe(1699.17);
+    expect(calls).toBe(1);
+  });
+});
+
 describe('search tile: canonical URL, tagged as a tile', () => {
   it('persists /dp/ASIN (no title slug, no ref=) and marks price_source search_tile', () => {
     const out = priv.parseListingResults(TILE_PAGE, 'tv') as ScrapedProduct[];

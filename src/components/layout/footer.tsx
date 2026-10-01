@@ -189,13 +189,16 @@ export function Footer() {
                 <Link href={`/${locale}/faq#affiliate`} className="underline hover:text-white">
                   التفاصيل في الأسئلة الشائعة
                 </Link>
-                .
+                . أسعار منتجات أمازون وتوافرها دقيقة حتى وقت الرصد المبيّن بجانب كل عرض وقابلة
+                للتغيير؛ السعر والتوافر المعروضان على Amazon.sa وقت الشراء هما ما ينطبق على شرائك.
               </>
             ) : (
               <>
                 Tawveeri is an independent comparison platform. We may earn a commission from
                 some stores when you buy through our links — this never affects prices or
-                ranking.{' '}
+                ranking. Amazon product prices and availability are accurate as of the observation
+                time shown next to each offer and are subject to change; the price and availability
+                displayed on Amazon.sa at the time of purchase will apply to your purchase.{' '}
                 <Link href={`/${locale}/faq#affiliate`} className="underline hover:text-white">
                   Details in our FAQ
                 </Link>
