@@ -33,6 +33,12 @@ const TSX_BIN = require.resolve('tsx/cli');
 const STORE_CATEGORY_JOB = path.join(__dirname, 'discovery-store-category.ts');
 
 const INGEST_CATEGORIES: Record<string, ProductCategory[]> = {
+  // ADR-396 (2026-10-01): amazon had no entry, so it fell to the ['tv'] default below — a
+  // 12-hourly tile crawl that created 9 products in 30 days, repriced 4,509 rows from search
+  // tiles, and (because adapter-created rows carried no external_id) manufactured the TV
+  // duplicate rows (132 of the 137 heaviest ASINs are TVs). Amazon discovery now runs only
+  // through the adapter route's vertical queries. Empty list = no units; reversible here.
+  amazon: [] as ProductCategory[],
   shaker: ['tv', 'appliance', 'kitchen'] as ProductCategory[],
   samsung_ksa: ['smartphone', 'tablet', 'tv', 'monitor', 'audio', 'appliance', 'wearable', 'vacuum', 'accessories'] as ProductCategory[],
   swsg: ['tv', 'appliance', 'kitchen', 'smartphone'] as ProductCategory[],

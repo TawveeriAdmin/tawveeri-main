@@ -4,6 +4,7 @@ import { BaseScraper } from '../base/base-scraper';
 import { loadStoreConfig } from '../config/scraper-config';
 import { normalizeUrl } from '../utils/url-utils';
 import { determineCategory } from '../utils/category-utils';
+import { canonicalAmazonUrl } from '../utils/amazon-asin';
 import { isTechProduct } from '../product-filter';
 
 const BASE_URL = 'https://www.amazon.sa';
@@ -186,9 +187,11 @@ export class AmazonScraper extends BaseScraper {
     if (!title || title.length < 3) return null;
 
     // URL
+    // ADR-396: the tile carries the ASIN; persist the canonical detail URL, never the
+    // title-slug + `ref=sr_…` search-result form (one row per ASIN, see amazon-asin.ts).
     const linkEl = el.find('h2 a, a.a-link-normal.s-no-outline').first();
     const href = linkEl.attr('href');
-    const productUrl = href ? normalizeUrl(href, BASE_URL) : '';
+    const productUrl = href ? canonicalAmazonUrl(asin) : '';
     if (!productUrl) return null;
 
     // Price
@@ -244,6 +247,7 @@ export class AmazonScraper extends BaseScraper {
       description_en: null,
       is_deal: hasDiscount,
       is_free_delivery: isPrime,
+      price_source: 'search_tile',
     };
   }
 
@@ -260,6 +264,25 @@ export class AmazonScraper extends BaseScraper {
 
     const title = this.extractText($, '#productTitle') || '';
     if (!title) return null;
+
+    // ADR-396 — «Currently unavailable» is a STATE, not an extraction failure. Visited live
+    // (2026-10-01): 4 of 6 "failing" K pages were HTTP 200, no captcha, title present, buy box
+    // replaced by #outOfStock, and the only prices on the page were the similar-items
+    // carousel. Returning null here recorded a parser failure, kept the stale price as
+    // in_stock, and burned ~40% of every price_update cycle re-reading them. Return the
+    // product with no offer (ADR-356's product-only shape) and availability out_of_stock.
+    if (this.isUnavailablePage($)) {
+      const asinUnavailable = this.extractAttr($, 'input[name="ASIN"]', 'value') ||
+        productUrl.match(/\/dp\/([A-Z0-9]+)/i)?.[1] || null;
+      const { brand: b, model: m } = this.extractBrandAndModel(title);
+      return {
+        name_ar: title, name_en: title, brand: b, model: m, sku: asinUnavailable,
+        current_price: null, original_price: null, availability: 'out_of_stock',
+        product_url: productUrl, image_urls: [], specifications: {},
+        category: determineCategory(title), description_ar: null, description_en: null,
+        price_source: 'product_page',
+      };
+    }
 
     // Price selectors — BUYBOX-SCOPED ONLY (ADR-204). The old list ended with a
     // page-GLOBAL `.a-price .a-offscreen`, and measured on a live PDP variant with no
@@ -328,7 +351,17 @@ export class AmazonScraper extends BaseScraper {
       description_en: extras.description_en,
       merchant_rating: extras.merchant_rating,
       merchant_review_count: extras.merchant_review_count,
+      price_source: 'product_page',
     };
+  }
+
+  /** Buy-box-scoped, like the price selectors (ADR-204): the carousel never decides. */
+  isUnavailablePage($: ReturnType<typeof this.getCheerio>): boolean {
+    if ($('#outOfStock').length > 0) return true;
+    const buybox = ($('#desktop_buybox, #buybox').first().text() || '').replace(/s+/g, ' ');
+    if (/currently unavailable|غير متوفر حالي/i.test(buybox)) return true;
+    const availability = ($('#availability').text() || '').replace(/s+/g, ' ');
+    return /currently unavailable|غير متوفر حالي/i.test(availability) && $('#add-to-cart-button').length === 0;
   }
 
   /**

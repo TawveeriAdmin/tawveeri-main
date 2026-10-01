@@ -21,6 +21,7 @@ import { ProductService } from './product-service';
 import { priceUpdateOutcome } from './price-update-outcome';
 import { IngestionService } from './ingestion-service';
 import { selectAmazonLaneRows, emptyLaneCounters, type AmazonLane, type AmazonSelection } from './amazon-lane-selector';
+import { asinFromUrl } from '../utils/amazon-asin';
 import { DataValidator } from '../validation/data-validator';
 import { createServerClient } from '@/lib/database';
 import { BrowserlessQuotaError } from '../base/base-scraper';
@@ -162,10 +163,22 @@ export class ScrapingOrchestrator {
 
       const scrapeCategory = async (category: ProductCategory) => {
         try {
-          const scrapedProducts = await scraper.discoverProducts(
+          let scrapedProducts = await scraper.discoverProducts(
             category,
             options.max_pages || 10
           );
+          // ADR-396: an amazon search tile may CREATE a listing we do not know, never REPRICE
+          // one we do — the tile price can be the strike-through list price, and this path's
+          // link step would stamp it as a credible fresh write and zero the row's failure
+          // counter. Tiles whose ASIN already has a storefront row are dropped here, before
+          // ingestion and before linking. (Measured 2026-10-01: 4,993 amazon rows had no
+          // external_id, so the identity lookup never matched them and every re-sighting
+          // created a duplicate product — 388 ASINs under 2+ products.)
+          if (storeSlug === 'amazon' && !options.dry_run) {
+            const before = scrapedProducts.length;
+            scrapedProducts = await this.dropKnownAmazonAsins(scrapedProducts, storeId);
+            if (before !== scrapedProducts.length) console.log(`    [amazon/${category}] ${before - scrapedProducts.length} of ${before} tiles are known ASINs — discovery only, not repriced`);
+          }
           if (!options.dry_run) {
             // storeId resolved once upstream; scrapingRunId owned by the caller.
             // Both written into raw_observations at insert time.
@@ -534,6 +547,22 @@ export class ScrapingOrchestrator {
               if (saved !== 1) throw new Error('Product-only observation was not persisted');
               stages.observations_ingested += saved;
               stages.product_only++;
+              if (scrapedProduct.availability === 'out_of_stock') {
+                // ADR-396: the page says «Currently unavailable» — the offer is gone, the product
+                // is not. The storefront row stops claiming in_stock at its last price (the
+                // comparison surfaces already exclude out_of_stock offers), the attempt counts
+                // toward the dead-letter rotation (an unavailable listing must not be re-read
+                // every cycle at the head of its lane), and the run reports it as UNAVAILABLE.
+                stages.unavailable = (stages.unavailable ?? 0) + 1;
+                this.logPriceAttempt({
+                  retailer: storeSlug, offer_id: productStoreId, url: productUrl,
+                  result: 'UNAVAILABLE', reason: 'detail page has no buy box (currently unavailable)',
+                  price_before: productStore.current_price, price_after: null,
+                  next_action: 'none — re-sighted by discovery or the graveyard probe',
+                });
+                await this.stampUnavailable(productStoreId);
+                return;
+              }
               // Identity evidence without a price must not refresh a successful price timestamp.
               await this.stampChecked(productStoreId, null);
               return;
@@ -819,6 +848,46 @@ export class ScrapingOrchestrator {
    * `consecutive_failures`. Production has `consecutive_misses` and `scrape_status`
    * (migration 17), which is what this writes.
    */
+  /** ADR-396 — see runDiscoveryJob. Known = a storefront row carrying this ASIN as external_id.
+   *  On a lookup error the tiles are kept (each still passes linkProductToStore's own identity
+   *  lookup) and the error is logged — dropping them all would lose genuinely new listings. */
+  private async dropKnownAmazonAsins<T extends { product_url: string; sku: string | null }>(products: T[], storeId: string): Promise<T[]> {
+    const asinOf = (p: { product_url: string; sku: string | null }) =>
+      asinFromUrl(p.product_url) ?? (p.sku && /^[A-Z0-9]{10}$/i.test(p.sku) ? p.sku.toUpperCase() : null);
+    const asins = [...new Set(products.map(asinOf).filter((a): a is string => !!a))];
+    if (!asins.length) return products;
+    const known = new Set<string>();
+    try {
+      const supabase = createServerClient();
+      for (let i = 0; i < asins.length; i += 100) {
+        const slice = asins.slice(i, i + 100);
+        const { data, error } = await supabase.from('product_stores').select('external_id, product_url').eq('store_id', storeId).in('external_id', slice);
+        if (error) throw new Error(error.message);
+        for (const r of (data ?? []) as { external_id: string | null; product_url: string }[]) {
+          const a = (r.external_id && /^[A-Z0-9]{10}$/i.test(r.external_id) ? r.external_id.toUpperCase() : null) ?? asinFromUrl(r.product_url);
+          if (a) known.add(a);
+        }
+      }
+    } catch (err) {
+      console.error('[amazon] known-ASIN lookup failed — tiles kept, identity falls back to linkProductToStore:', err instanceof Error ? err.message : err);
+      return products;
+    }
+    return products.filter((p) => { const a = asinOf(p); return !a || !known.has(a); });
+  }
+
+  /** ADR-396: «Currently unavailable» — attempt counted, offer withdrawn, the scrape itself fine. */
+  private async stampUnavailable(productStoreId: string): Promise<void> {
+    try {
+      const supabase = createServerClient();
+      const now = new Date().toISOString();
+      const { data } = await (supabase as any).from('product_stores').select('consecutive_misses').eq('id', productStoreId).maybeSingle();
+      const misses = Number(data?.consecutive_misses ?? 0) + 1;
+      await (supabase as any).from('product_stores').update({ last_checked_at: now, availability: 'out_of_stock', consecutive_misses: misses, scrape_status: 'ok' }).eq('id', productStoreId);
+    } catch (err) {
+      console.error('[price] stampUnavailable failed:', err instanceof Error ? err.message : err);
+    }
+  }
+
   private async stampChecked(productStoreId: string, ok: boolean | null): Promise<void> {
     try {
       const supabase = createServerClient();

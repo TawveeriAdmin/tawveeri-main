@@ -29,6 +29,13 @@ export interface ScrapedProduct {
    */
   current_price: number | null;
   original_price: number | null;
+  /**
+   * Where the price was read (ADR-396). A search-result tile is a DISCOVERY signal: on
+   * amazon.sa it can carry the strike-through list price instead of the buy-box price
+   * (measured: tile writes ran +27% over the same row's detail-page price). Only a
+   * 'product_page' reading may refresh an existing offer. Absent = legacy/unknown.
+   */
+  price_source?: 'search_tile' | 'product_page';
   availability: 'in_stock' | 'out_of_stock' | 'limited_stock' | 'pre_order';
   product_url: string;
   image_urls: string[];
@@ -246,6 +253,9 @@ export interface PriceUpdateResult {
     product_only: number;
     rejected: number;
     deferred: number;
+    /** ADR-396: detail pages that rendered «Currently unavailable» (no buy box) — the product is
+     *  confirmed, the offer is not; counted here, never as an extraction failure. */
+    unavailable?: number;
     /** F-004 phase 3 (amazon only): per-lane attempt accounting; absent for every other store. */
     lanes?: Record<'l1' | 'l2' | 'l3' | 'tail' | 'probe', { selected: number; attempted: number; written: number; failed: number }>;
     lane_meta?: Record<string, unknown>;

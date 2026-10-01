@@ -6,6 +6,55 @@ import { startRun, finishRun, hasActiveRun } from '@/lib/scraping/services/run-l
 import { resolveStoreId } from '@/lib/scraping/store-identity';
 import { slugCandidates } from '@/lib/scraping/services/slugify';
 import { classifyFromTitle } from '@/lib/scraping/utils/category-utils';
+import { ProductService } from '@/lib/scraping/services/product-service';
+import { AmazonScraper } from '@/lib/scraping/stores/amazon-scraper';
+import { loadKnownAmazonRows, partitionAmazonOffers, verifyAmazonOffers, asinOfOffer } from '@/lib/scraping/services/amazon-discovery-gate';
+import { asinFromUrl } from '@/lib/scraping/utils/amazon-asin';
+
+// ADR-396 — amazon tiles are discovery signals, not prices. Detail pages read per run,
+// bounded so the web service (this route runs under pg_cron, not the worker) stays cheap:
+// ~2.5 s per page => <= ~100 s per 6-hourly run. Reversible by env.
+const AMAZON_PDP_VERIFY_MAX = parseInt(process.env.AMAZON_DISCOVERY_PDP_VERIFY_MAX || '40', 10);
+const isUnverifiedTile = (p: NormalizedOffer) => (p._raw as { _price_source?: string } | null)?._price_source === 'search_tile_unverified';
+
+interface AmazonGateSummary { tiles: number; noAsin: number; knownLive: number; fresh: number; freshVerified: number; freshUnavailable: number; freshUnverified: number; resurrect: number; resurrected: number; resurrectUnavailable: number }
+
+/**
+ * Known ASIN => never repriced from a tile; out_of_stock / dead-lettered rows get a detail-page
+ * read and, with a buy box, go back through ProductService.updateProductPrice (price-truth
+ * gate, last_scraped_at, misses reset). New ASIN => detail page read; verified price or an
+ * unverified tile price that is persisted with updated_at = null and no observation.
+ */
+async function gateAmazonOffers(offers: NormalizedOffer[], storeId: number): Promise<{ offers: NormalizedOffer[]; summary: AmazonGateSummary }> {
+  const sb = createServerClient();
+  const asins = offers.map(asinOfOffer).filter((a): a is string => !!a);
+  const known = await loadKnownAmazonRows(sb as any, storeId, asins);
+  const part = partitionAmazonOffers(offers, known);
+  const scraper = new AmazonScraper();
+  const read = (url: string) => scraper.updateProductPrice(url);
+  const summary: AmazonGateSummary = { tiles: offers.length, noAsin: part.noAsin, knownLive: part.knownLive, fresh: part.fresh.length, freshVerified: 0, freshUnavailable: 0, freshUnverified: 0, resurrect: part.resurrect.length, resurrected: 0, resurrectUnavailable: 0 };
+  try {
+    const fresh = await verifyAmazonOffers(part.fresh, read, AMAZON_PDP_VERIFY_MAX);
+    for (const v of fresh) { if (v.verified) summary.freshVerified++; else if (v.unavailable) summary.freshUnavailable++; else summary.freshUnverified++; }
+    const budgetLeft = Math.max(0, AMAZON_PDP_VERIFY_MAX - Math.min(part.fresh.length, AMAZON_PDP_VERIFY_MAX));
+    if (budgetLeft > 0 && part.resurrect.length) {
+      const svc = new ProductService();
+      const checked = await verifyAmazonOffers(part.resurrect.map((r) => r.offer), read, budgetLeft);
+      for (let i = 0; i < checked.length && i < budgetLeft; i++) {
+        const v = checked[i]; const row = part.resurrect[i].row;
+        if (v.verified && v.page?.current_price != null) {
+          try {
+            const w = await svc.updateProductPrice(row.product_id, String(storeId), v.page.current_price, v.page.availability, v.offer.product_url, row.id);
+            if (w.accepted) summary.resurrected++;
+          } catch (e: any) { console.error('[amazon-gate:resurrect]', String(e?.message || e)); }
+        } else if (v.unavailable) summary.resurrectUnavailable++;
+      }
+    }
+    return { offers: fresh.map((v) => v.offer), summary };
+  } finally {
+    await scraper.cleanup().catch(() => {});
+  }
+}
 
 /**
  * Category for a newly-discovered product. PROVEN DEFECT (ADR-306 flagged it 2026-09-08;
@@ -161,11 +210,21 @@ async function saveProducts(offers: NormalizedOffer[], storeName: string, storeI
   // discovered months later by counting NULLs.
   let provenanceLinked = 0;
   const errors: any[] = [];
+  const isAmazon = storeId !== null && rows.some((p) => (p._source || '') === 'amazon-search');
   for (const p of rows) {
     try {
       const nameAr = p.name_ar.trim();
       const { data: existing } = await sb.from('products').select('id').eq('name_ar', nameAr).maybeSingle();
       let productId = existing?.id;
+      const asin = isAmazon ? asinOfOffer(p) : null;
+      if (productId && asin) {
+        // ADR-396: a name match is not an ASIN match. If this product already has an amazon row
+        // under ANOTHER ASIN, this tile is a different listing (variant/size/colour) — give it
+        // its own product rather than silently rewriting the existing row's URL and price.
+        const { data: sameProductRow } = await sb.from('product_stores').select('external_id, product_url').eq('product_id', productId).eq('store_id', storeId as unknown as string).maybeSingle();
+        const otherAsin = sameProductRow ? ((sameProductRow as { external_id: string | null; product_url: string }).external_id ?? asinFromUrl((sameProductRow as { product_url: string }).product_url)) : null;
+        if (otherAsin && otherAsin.toUpperCase() !== asin) productId = undefined;
+      }
       if (!productId) {
         // PROVEN DEFECT (2026-09-07, product-creation architecture audit): products.slug
         // is NOT NULL with no DB default — this insert never set it, so EVERY scheduled
@@ -190,13 +249,22 @@ async function saveProducts(offers: NormalizedOffer[], storeName: string, storeI
         if (!inserted) { failed++; errors.push({ step: 'insert_product', error: insertErr }); continue; }
         productId = inserted.id; savedProducts++;
       }
+      const unverified = isAmazon && isUnverifiedTile(p);
       const { error: storeErr } = await sb.from('product_stores').upsert({
         product_id: productId, store_id: storeId, store_name: storeName, current_price: p.current_price,
         original_price: p.original_price || null, product_url: p.product_url,
-        availability: p.availability || 'in_stock', updated_at: new Date().toISOString(),
+        availability: p.availability || 'in_stock',
+        // ADR-396: `updated_at` is the storefront's "last credible price write". A tile price
+        // that no detail page confirmed must not look fresh — null keeps the listing visible
+        // but never "best price"; price_update's first confirmed read sets it. Amazon rows also
+        // carry their ASIN so every later identity lookup (worker discovery, lanes) finds them.
+        updated_at: unverified ? null : new Date().toISOString(),
+        ...(isAmazon && asin ? { external_id: asin } : {}),
+        ...(unverified ? { last_checked_at: null } : {}),
       }, { onConflict: 'product_id,store_name' });
       if (storeErr) { failed++; errors.push({ step: 'upsert_store', error: storeErr }); continue; }
       savedStores++;
+      if (unverified) continue; // no observation, no price snapshot for an unconfirmed tile price
       try {
         const canonicalId = await ensureCanonicalProduct(nameAr, p);
         // Carry the observation id from the raw write in this same request.
@@ -258,9 +326,19 @@ async function runAdapterSync(adapter: StoreAdapter, triggeredBy: 'schedule' | '
 
   try {
     const result = await adapter.fetchBatch(start, BATCH_SIZE);
-    const raw = await writeRawObservations(result.offers, storeName, storeId, runId);
+    let offers = result.offers;
+    let amazonGate: AmazonGateSummary | null = null;
+    if (adapter.slug === 'amazon') {
+      const gated = await gateAmazonOffers(result.offers, storeId);
+      offers = gated.offers; amazonGate = gated.summary;
+      console.log(`[amazon-gate] ${JSON.stringify(amazonGate)}`);
+    }
+    // An unverified tile price is not an observation: it reaches neither raw_observations
+    // nor price_history (ADR-396).
+    const raw = await writeRawObservations(offers.filter((o) => !isUnverifiedTile(o)), storeName, storeId, runId);
     const rawWritten = raw.written;
-    const saveResult = await saveProducts(result.offers, storeName, storeId, runId, raw.idByUrl);
+    const saveResult = await saveProducts(offers, storeName, storeId, runId, raw.idByUrl);
+    if (amazonGate) saveResult.amazonGate = amazonGate;
     await updateSyncState(storeName, storeId, {
       status: result.done ? 'completed' : 'syncing', next_page: result.done ? 0 : result.nextState,
       last_finished_at: new Date().toISOString(),
