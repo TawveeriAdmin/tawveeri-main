@@ -12,6 +12,8 @@ Status legend: **Accepted** · **Superseded** · **Proposed**.
 
 **Alternatives rejected.** Rewriting `price_history.product_store_id` to merge histories (append-only); hard-deleting referenced rows; AOD/Browserless for the unqualified variant (404 / cost — ADR-376); removing amazon prices from the UI until API access (kills the comparison the affiliate exists for). **Not an engineering fix:** API eligibility is a sales outcome (Point 3, separate decision).
 
+**Live result (2026-10-01 14:17Z, first gated adapter run, triggered manually after a redeploy orphaned the 12:06Z run):** 180 tiles → 42 fresh ASINs, all persisted with `external_id` + canonical URL; 37 page-verified (37 `price_history` rows, every one tagged `product_page`), 5 unverified (`updated_at = null`, no observation); **0** known rows repriced from a tile; 3 same-name variants hit `products.name_ar` UNIQUE (23505) and are now a visible `skippedVariant`, not a failure. Comparison-layer freshness: amazon ≤48 h **67%** of 266 K keys (36% the day before; extra 57%).
+
 **Acceptance.** Next two cycles: `FAILED|scraper returned null` for amazon ≤ 2/cycle, UNAVAILABLE reported separately, written ≥ 55; lanes `rows_total` ≈ 10.3k now and ≈ 7.1k after the full pass; no 404 on any active product page sampled; footer disclaimer live in both locales. Rollback: re-insert rows from the backup JSON / flip `is_active`; revert the commit.
 
 ### ADR-396 — Amazon as a comparison participant: one ASIN identity, detail-page price truth, tiles as discovery/resurrection signals, «unavailable» as a state · Accepted (2026-10-01; founder mandate "close it completely", results pending the next adapter run + two price_update cycles)

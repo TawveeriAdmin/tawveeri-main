@@ -198,6 +198,8 @@ async function saveProducts(offers: NormalizedOffer[], storeName: string, storeI
   const sb = createServerClient();
   const unique = new Map<string, NormalizedOffer>();
   let skippedNoName = 0;
+  // amazon: same name_ar as an existing product that already carries ANOTHER ASIN (ADR-397)
+  let skippedVariant = 0;
   for (const p of offers) {
     const nameAr = p.name_ar?.trim();
     if (!nameAr) { skippedNoName++; continue; }
@@ -223,7 +225,14 @@ async function saveProducts(offers: NormalizedOffer[], storeName: string, storeI
         // its own product rather than silently rewriting the existing row's URL and price.
         const { data: sameProductRow } = await sb.from('product_stores').select('external_id, product_url').eq('product_id', productId).eq('store_id', storeId as unknown as string).maybeSingle();
         const otherAsin = sameProductRow ? ((sameProductRow as { external_id: string | null; product_url: string }).external_id ?? asinFromUrl((sameProductRow as { product_url: string }).product_url)) : null;
-        if (otherAsin && otherAsin.toUpperCase() !== asin) productId = undefined;
+        if (otherAsin && otherAsin.toUpperCase() !== asin) {
+          // products.name_ar is UNIQUE, so a second product with this exact name cannot be
+          // created (live 2026-10-01: 3 of 42 fresh ASINs hit 23505 here). Which ASIN a
+          // same-name variant belongs to is an identity decision (ADR-397), not something
+          // to resolve by overwriting the existing row's listing — skip it, visibly.
+          skippedVariant++;
+          continue;
+        }
       }
       if (!productId) {
         // PROVEN DEFECT (2026-09-07, product-creation architecture audit): products.slug
@@ -279,6 +288,7 @@ async function saveProducts(offers: NormalizedOffer[], storeName: string, storeI
     skipped: skippedNoName + skippedDuplicate,
     skippedNoName,
     skippedDuplicate,
+    skippedVariant,
     inserted: savedProducts,
     updated: savedStores,
     persisted: savedProducts + savedStores,
