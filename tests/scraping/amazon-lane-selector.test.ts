@@ -131,7 +131,7 @@ describe('lane assignment', () => {
 });
 
 describe('quotas under the existing ceiling', () => {
-  it('the first 80 follow 6/40/20/13/1 exactly, with one row per ASIN and the 300 cap honoured', () => {
+  it('the first 80 follow 6/50/10/13/1 exactly, with one row per ASIN and the 300 cap honoured', () => {
     const rows: AmazonStoreRow[] = [];
     const tps: ReturnType<typeof offer>[] = [];
     const others = new Set<string>();
@@ -146,7 +146,7 @@ describe('quotas under the existing ceiling', () => {
 
     const counts = { l1: 0, l2: 0, l3: 0, tail: 0, probe: 0 } as Record<string, number>;
     p.rows.slice(0, 80).forEach((r) => { counts[laneOf(p, r)!]++; });
-    expect(counts).toEqual({ l1: 6, l2: 40, l3: 20, tail: 13, probe: 1 });
+    expect(counts).toEqual({ l1: 6, l2: 50, l3: 10, tail: 13, probe: 1 });
     expect(p.rows.length).toBeLessThanOrEqual(300);
     expect(new Set(p.rows.map((r) => asinOf(r.product_url))).size).toBe(p.rows.length);
   });
@@ -219,6 +219,83 @@ describe('rotation cursor and cooldown', () => {
   });
 });
 
+describe('F-005 — comparison-first ordering, health, back-off', () => {
+  it('quotas still sum to the measured per-cycle throughput (80) — the ceiling is not touched', () => {
+    expect(Object.values(AMAZON_LANE_QUOTAS).reduce((a, b) => a + b, 0)).toBe(80);
+    expect(AMAZON_LANE_QUOTAS).toEqual({ l1: 6, l2: 50, l3: 10, tail: 13, probe: 1 });
+  });
+
+  it('L2: an ASIN paired with extra/almanea comes before an unpaired one even when it is FRESHER', () => {
+    const paired = asinN(3000), unpaired = asinN(3001);
+    const rP = row(paired), rU = row(unpaired);
+    const p = plan(inputs({
+      rows: [rU, rP],
+      tpsAmazon: [offer(paired, 'kp', 1), offer(unpaired, 'ku', 30)], // paired is fresher
+      otherStoreIdentityKeys: new Set(['kp', 'ku']),
+      anchorIdentityKeys: new Set(['kp']),
+    }));
+    const l2 = p.rows.filter((r) => laneOf(p, r) === 'l2').map((r) => r.id);
+    expect(l2).toEqual([rP.id, rU.id]);
+    expect(p.summary.l2_anchored_members).toBe(1);
+  });
+
+  it('without an anchor set every L2 ASIN is in one tier (backward compatible)', () => {
+    const a = asinN(3010), b = asinN(3011);
+    const p = plan(inputs({ rows: [row(a), row(b)], tpsAmazon: [offer(a, 'ka', 1), offer(b, 'kb', 30)], otherStoreIdentityKeys: new Set(['ka', 'kb']) }));
+    expect(p.rows.filter((r) => laneOf(p, r) === 'l2').map((r) => asinOf(r.product_url))).toEqual([b, a]); // staler first
+  });
+
+  it('health is consecutive failures only: a never-failed ASIN goes before a staler one that failed', () => {
+    const healthy = asinN(3020), failing = asinN(3021);
+    const rH = row(healthy, { consecutive_misses: 0 });
+    const rF = row(failing, { consecutive_misses: 1, scrape_status: 'failed', last_checked_at: new Date(NOW - 30 * 3600_000).toISOString() });
+    const p = plan(inputs({
+      rows: [rF, rH],
+      tpsAmazon: [offer(healthy, 'kh', 2), offer(failing, 'kf', 40)], // failing is far staler
+      otherStoreIdentityKeys: new Set(['kh', 'kf']),
+    }));
+    expect(p.rows.filter((r) => laneOf(p, r) === 'l2').map((r) => r.id)).toEqual([rH.id, rF.id]);
+  });
+
+  it('a recent credible write is NOT a preference (it would put the freshest ASINs first)', () => {
+    const fresh = asinN(3030), stale = asinN(3031);
+    const rFresh = row(fresh, { updated_at: daysAgo(1) });
+    const rStale = row(stale, { updated_at: daysAgo(20) });
+    const p = plan(inputs({ rows: [rFresh, rStale], tpsAmazon: [offer(fresh, 'kf2', 20), offer(stale, 'ks2', 480)], otherStoreIdentityKeys: new Set(['kf2', 'ks2']) }));
+    expect(p.rows.filter((r) => laneOf(p, r) === 'l2').map((r) => r.id)).toEqual([rStale.id, rFresh.id]);
+  });
+
+  it('back-off: cooldown doubles per consecutive failure (12h, 24h, 48h, 96h, 192h cap)', () => {
+    const at = (misses: number, hoursAgo: number) => {
+      const a = asinN(3040 + misses * 10 + hoursAgo);
+      const r = row(a, { id: `bo-${misses}-${hoursAgo}`, consecutive_misses: misses, scrape_status: misses ? 'failed' : 'ok', last_checked_at: new Date(NOW - hoursAgo * 3600_000).toISOString(), updated_at: daysAgo(2) });
+      return plan(inputs({ rows: [r] })).rows.length === 1;
+    };
+    expect(at(0, 11)).toBe(false);  // inside the base 12h
+    expect(at(0, 13)).toBe(true);   // base cooldown unchanged for a never-failed ASIN
+    expect(at(1, 20)).toBe(false);  // needs 24h
+    expect(at(1, 25)).toBe(true);
+    expect(at(2, 40)).toBe(false);  // needs 48h
+    expect(at(2, 50)).toBe(true);
+    expect(at(4, 150)).toBe(false); // 12h x 2^4 = 192h
+    expect(at(4, 200)).toBe(true);
+    expect(at(6, 150)).toBe(false); // exponent capped at 4, not 6
+    expect(at(6, 200)).toBe(true);
+  });
+
+  it('records how many ASINs the back-off deferred, so the effect is measurable', () => {
+    const r = row(asinN(3100), { consecutive_misses: 2, scrape_status: 'failed', last_checked_at: new Date(NOW - 20 * 3600_000).toISOString() });
+    const p = plan(inputs({ rows: [r] }));
+    expect(p.rows).toHaveLength(0);
+    expect(p.summary.backoff_deferred).toBe(1);
+  });
+
+  it('planning time is logged in the [amazon-lanes] summary (measurement, not inference)', () => {
+    const sel = fs.readFileSync(path.join(process.cwd(), 'src/lib/scraping/services/amazon-lane-selector.ts'), 'utf8');
+    expect(sel).toContain('plan.summary.plan_ms = Date.now() - t0;');
+  });
+});
+
 describe('loader — paginated, deterministic reads (ADR-172/285)', () => {
   // Emulates PostgREST with db-max-rows=1000: a response never carries more than 1000 rows,
   // whatever range was requested. Filters are recorded only to pick the fixture (eq/neq store_id).
@@ -230,6 +307,7 @@ describe('loader — paginated, deterministic reads (ADR-172/285)', () => {
         let mode = '';
         const b: any = {
           select: () => b, or: () => b, not: () => b, gte: () => b,
+          in: () => Promise.resolve({ data: tables.stores ?? [], error: null }),
           eq: (col: string) => { if (col === 'store_id') mode = ':eq'; return b; },
           neq: (col: string) => { if (col === 'store_id') mode = ':neq'; return b; },
           order: (col: string) => { orders.push(col); return b; },
@@ -249,11 +327,12 @@ describe('loader — paginated, deterministic reads (ADR-172/285)', () => {
   it('returns ALL rows past the 1000-row PostgREST cap, ordered deterministically on every paged read', async () => {
     const rows = Array.from({ length: 2300 }, (_, i) => row(asinN(2000 + i), { id: `row-${String(i).padStart(5, '0')}` }));
     const tpsAmazon = Array.from({ length: 1249 }, (_, i) => ({ category: 'tv', identity_key: `k${i}`, store_id: 2, url: `https://www.amazon.sa/dp/${asinN(2000 + i)}`, observed_at: daysAgo(1) }));
-    const others = Array.from({ length: 1500 }, (_, i) => ({ category: 'tv', identity_key: `k${i}`, store_id: 3 }));
+    const others = Array.from({ length: 1500 }, (_, i) => ({ category: 'tv', identity_key: `k${i}`, store_id: i < 40 ? 4 : 3 })); // 40 keys also at extra (store 4)
     const { client, calls } = mockClient({
       product_stores: rows,
       'tps_current_offers:eq': tpsAmazon,
       'tps_current_offers:neq': others,
+      stores: [{ id: 4, slug: 'extra' }, { id: 5, slug: 'almanea' }],
       first_party_interactions: [{ interaction_id: 'i1' }],
       outbound_clicks: [
         { id: 'c1', interaction_id: 'i1', destination_url: 'https://www.amazon.sa/dp/B0GNJSXNC8?tag=t', store_name: '2' },
@@ -266,6 +345,7 @@ describe('loader — paginated, deterministic reads (ADR-172/285)', () => {
     expect(out.rows).toHaveLength(2300);
     expect(out.tpsAmazon).toHaveLength(1249);
     expect(out.otherStoreIdentityKeys.size).toBe(1500);
+    expect(out.anchorIdentityKeys?.size).toBe(40); // only keys with a valid extra/almanea offer
     expect([...out.l1Asins]).toEqual(['B0GNJSXNC8']); // qualified + amazon only
     for (const key of ['product_stores', 'tps_current_offers:eq', 'tps_current_offers:neq', 'first_party_interactions', 'outbound_clicks']) {
       const paged = calls.filter((c) => c.key === key);

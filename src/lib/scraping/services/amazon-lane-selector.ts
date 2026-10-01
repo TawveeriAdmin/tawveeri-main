@@ -31,9 +31,15 @@ import { fetchAllPaginated } from '@/lib/database/paginated-fetch';
 export type AmazonLane = 'l1' | 'l2' | 'l3' | 'tail' | 'probe';
 const LANES: AmazonLane[] = ['l1', 'l2', 'l3', 'tail', 'probe'];
 
-/** Per-cycle attempt quotas. Sum = 80, the measured per-cycle throughput (77-84) — the ceiling
- *  itself is untouched; these only decide WHO gets the attempts the ceiling already allows. */
-export const AMAZON_LANE_QUOTAS: Record<AmazonLane, number> = { l1: 6, l2: 40, l3: 20, tail: 13, probe: 1 };
+/** Per-cycle attempt quotas. Sum = 80, the measured per-cycle throughput (73-84) — the ceiling
+ *  itself is untouched; these only decide WHO gets the attempts the ceiling already allows.
+ *  F-005 (2026-10-01): L3 20->10 and L2 40->50. Measured: L3 attempts without a price history
+ *  succeed 34% (K/L2: 66-73%), and the comparison layer (amazon vs extra/almanea) is the surface
+ *  the user compares on. */
+export const AMAZON_LANE_QUOTAS: Record<AmazonLane, number> = { l1: 6, l2: 50, l3: 10, tail: 13, probe: 1 };
+/** Failure back-off (F-005): an ASIN whose best live row has failed `m` times in a row is not
+ *  retried before base-cooldown × 2^min(m, BACKOFF_MAX_EXP) — 12h, 24h, 48h, 96h, 192h. */
+export const BACKOFF_MAX_EXP = 4;
 /** Dead-letter: consecutive failures AND no credible price write for this long. */
 export const DEAD_MISSES = 7;
 export const DEAD_WRITE_AGE_DAYS = 30;
@@ -71,6 +77,9 @@ export interface AmazonLaneInputs {
   tpsAmazon: AmazonTpsOffer[];
   /** identity_keys that ALSO have a `valid` offer at another store (=> comparison-visible). */
   otherStoreIdentityKeys: Set<string>;
+  /** identity_keys with a `valid` offer at extra or almanea — the "anchor" comparison the founder
+   *  measures amazon's freshness against. Optional: absent => no anchored tier. */
+  anchorIdentityKeys?: Set<string>;
   /** ASINs with a qualified (first-party, non-test) outbound click in the click window. */
   l1Asins: Set<string>;
 }
@@ -142,6 +151,10 @@ interface Group {
   lastAttemptMs: number | null;
   /** last honest price observation: TPS observed_at, else latest credible write; null = never */
   staleMs: number | null;
+  /** consecutive failures of the best live row (drives health order and back-off) */
+  bestMisses: number;
+  /** has an amazon offer paired with a valid extra/almanea offer */
+  anchored: boolean;
   lane: AmazonLane | 'graveyard' | null;
 }
 
@@ -155,6 +168,8 @@ export function planAmazonLanes(input: AmazonLaneInputs, opts: AmazonLaneOptions
   const tpsObserved = new Map<string, number>();
   const tpsAsins = new Set<string>();
   const visibleAsins = new Set<string>();
+  const anchoredAsins = new Set<string>();
+  const anchorKeys = input.anchorIdentityKeys ?? new Set<string>();
   for (const o of input.tpsAmazon) {
     const a = asinOf(o.url);
     if (!a) continue;
@@ -162,6 +177,7 @@ export function planAmazonLanes(input: AmazonLaneInputs, opts: AmazonLaneOptions
     const t = ms(o.observed_at);
     if (t !== null) tpsObserved.set(a, Math.max(tpsObserved.get(a) ?? -Infinity, t));
     if (input.otherStoreIdentityKeys.has(o.identity_key)) visibleAsins.add(a);
+    if (anchorKeys.has(o.identity_key)) anchoredAsins.add(a);
   }
 
   // ── one group per ASIN (rows without a parsable ASIN stand alone) ──────────
@@ -182,11 +198,14 @@ export function planAmazonLanes(input: AmazonLaneInputs, opts: AmazonLaneOptions
     const attempts = rows.map((r) => ms(r.last_checked_at)).filter((x): x is number => x !== null);
     const writes = rows.map((r) => ms(r.updated_at)).filter((x): x is number => x !== null);
     const staleFromTps = asin ? tpsObserved.get(asin) ?? null : null;
+    const best = [...(live.length ? live : rows)].sort(compareHealth)[0] ?? null;
     groups.push({
       key, asin, rows, live,
-      best: [...(live.length ? live : rows)].sort(compareHealth)[0] ?? null,
+      best,
       lastAttemptMs: attempts.length ? Math.max(...attempts) : null,
       staleMs: staleFromTps ?? (writes.length ? Math.max(...writes) : null),
+      bestMisses: best ? misses(best) : 0,
+      anchored: !!asin && anchoredAsins.has(asin),
       lane: null,
     });
   }
@@ -205,7 +224,19 @@ export function planAmazonLanes(input: AmazonLaneInputs, opts: AmazonLaneOptions
       : 'tail';
   }
 
-  const eligible = (g: Group) => g.lastAttemptMs === null || g.lastAttemptMs < cutoffMs;
+  // Back-off (F-005): the base cooldown (12h) doubles per consecutive failure of the best live
+  // row, so a failing ASIN stops re-entering the head of its lane every 12h. The graveyard probe
+  // keeps the base cooldown — it exists to notice a recovery, not to be spaced out.
+  const baseMs = nowMs - cutoffMs;
+  let backoffDeferred = 0;
+  const eligible = (g: Group): boolean => {
+    if (g.lastAttemptMs === null) return true;
+    if (g.lastAttemptMs >= cutoffMs) return false;
+    if (g.lane === 'graveyard') return true;
+    const ok = g.lastAttemptMs < nowMs - baseMs * 2 ** Math.min(g.bestMisses, BACKOFF_MAX_EXP);
+    if (!ok) backoffDeferred++;
+    return ok;
+  };
   const pick = (g: Group): AmazonStoreRow => (g.live.length ? [...g.live].sort(compareHealth)[0] : g.best) as AmazonStoreRow;
 
   // ── per-lane ordering ──────────────────────────────────────────────────────
@@ -219,9 +250,15 @@ export function planAmazonLanes(input: AmazonLaneInputs, opts: AmazonLaneOptions
   const byStaleness = (a: Group, b: Group) => nullsFirst(a.staleMs, b.staleMs) || nullsFirst(a.lastAttemptMs, b.lastAttemptMs) || tieKey(a, b);
   const byCursor = (a: Group, b: Group) => nullsFirst(a.lastAttemptMs, b.lastAttemptMs) || tieKey(a, b);
   const priority = (g: Group) => { const i = g.asin ? L1_PRIORITY_ASINS.indexOf(g.asin) : -1; return i < 0 ? 1e9 : i; };
-  byLane.l1.sort((a, b) => priority(a) - priority(b) || byStaleness(a, b));
-  byLane.l2.sort(byStaleness);
-  byLane.l3.sort(byStaleness);
+  // Health = consecutive failures only. "Has a recent write" is deliberately NOT a preference:
+  // it would put the freshest ASINs first, the opposite of what a freshness lane is for.
+  const healthRank = (g: Group) => (g.bestMisses === 0 ? 0 : g.bestMisses <= 2 ? 1 : 2);
+  const byHealthThenStaleness = (a: Group, b: Group) => healthRank(a) - healthRank(b) || byStaleness(a, b);
+  byLane.l1.sort((a, b) => priority(a) - priority(b) || byHealthThenStaleness(a, b));
+  // Comparison lane: ASINs paired with a valid extra/almanea offer first (the comparison the
+  // user actually makes against the freshest merchants), then the rest.
+  byLane.l2.sort((a, b) => (a.anchored ? 0 : 1) - (b.anchored ? 0 : 1) || byHealthThenStaleness(a, b));
+  byLane.l3.sort(byHealthThenStaleness);
   byLane.tail.sort(byCursor);
   byLane.probe.sort(byCursor);
 
@@ -285,6 +322,9 @@ export function planAmazonLanes(input: AmazonLaneInputs, opts: AmazonLaneOptions
       l1_retired: l1Retired,
       l1_priority_present: L1_PRIORITY_ASINS.filter((a) => byLane.l1.some((g) => g.asin === a)),
       lane_members: { l1: members('l1'), l2: members('l2'), l3: members('l3'), tail: members('tail') },
+      l2_anchored_members: groups.filter((g) => g.lane === 'l2' && g.anchored).length,
+      l2_anchored_selected: capped.filter((o) => o.lane === 'l2' && o.g.anchored).length,
+      backoff_deferred: backoffDeferred,
       lane_eligible: { l1: byLane.l1.length, l2: byLane.l2.length, l3: byLane.l3.length, tail: byLane.tail.length, probe: byLane.probe.length },
       quota_block_taken: takes,
       selected: rows.length,
@@ -323,6 +363,10 @@ export async function loadAmazonLaneInputs(
       .order('identity_key', { ascending: true })
       .order('store_id', { ascending: true })
       .range(from, to) as unknown as PromiseLike<{ data: (AmazonTpsOffer & { category: string; store_id: number })[] | null; error: { message: string } | null }>);
+
+  const { data: anchorStores, error: anchorErr } = await supabase.from('stores').select('id, slug').in('slug', ['extra', 'almanea']);
+  if (anchorErr || !anchorStores) throw new Error(`anchor store lookup failed: ${anchorErr?.message ?? 'not found'}`);
+  const anchorIds = new Set((anchorStores as { id: number }[]).map((s) => Number(s.id)));
 
   const others = await fetchAllPaginated<{ category: string; identity_key: string; store_id: number }>((from, to) =>
     supabase
@@ -364,7 +408,13 @@ export async function loadAmazonLaneInputs(
     if (asin) l1Asins.add(asin);
   }
 
-  return { rows, tpsAmazon, otherStoreIdentityKeys: new Set(others.map((o) => o.identity_key)), l1Asins };
+  return {
+    rows,
+    tpsAmazon,
+    otherStoreIdentityKeys: new Set(others.map((o) => o.identity_key)),
+    anchorIdentityKeys: new Set(others.filter((o) => anchorIds.has(Number(o.store_id))).map((o) => o.identity_key)),
+    l1Asins,
+  };
 }
 
 export interface AmazonSelection extends AmazonLanePlan {
@@ -377,6 +427,7 @@ export async function selectAmazonLaneRows(
   opts: { maxProducts: number; cutoffMs: number; nowMs?: number },
 ): Promise<AmazonSelection> {
   const nowMs = opts.nowMs ?? Date.now();
+  const t0 = Date.now();
   const { data: store, error } = await supabase
     .from('stores')
     .select('id, slug, name_ar, name_en')
@@ -387,6 +438,9 @@ export async function selectAmazonLaneRows(
   if (inputs.rows.length === 0) throw new Error('amazon product_stores returned zero rows — refusing to plan lanes on empty input');
   const plan = planAmazonLanes(inputs, { nowMs, cutoffMs: opts.cutoffMs, maxProducts: opts.maxProducts });
   const s = store as { slug: string; name_ar: string; name_en: string };
+  // Planning runs inside the same 435s soft deadline as the attempts (measured ~17s in F-004
+  // phase 4, inferred from stamps) — logged so the cost is a measurement, not an inference.
+  plan.summary.plan_ms = Date.now() - t0;
   return {
     ...plan,
     loopRows: plan.rows.map((r) => ({ ...r, stores: { slug: s.slug, name_ar: s.name_ar, name_en: s.name_en }, consecutive_failures: null })),
