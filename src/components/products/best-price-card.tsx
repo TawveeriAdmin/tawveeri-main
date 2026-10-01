@@ -7,6 +7,7 @@ import { StoreLogo } from '@/components/ui/store-logo';
 import { useLocale } from '@/lib/simple-intl-provider';
 import { bestPrice as bestPriceCopy } from '@/lib/copy';
 import type { AvailabilityStatus } from '@/lib/database/types';
+import { AmazonPriceNote, AmazonAssociatesDisclosure, isAmazonStore } from '@/components/compare/amazon-price-note';
 
 interface StoreSummary {
   id: string;
@@ -128,6 +129,13 @@ export function BestPriceCard({
                     ? (isRTL ? ' · متوفر بحسب آخر رصد' : ' · in stock at last observation')
                     : (isRTL ? ' · متوفر' : ' · in stock')}
               </span>
+            )}
+            {/* ADR-399 — Associates policy: observation time (+03) + "subject to change" + disclosure, Amazon only. */}
+            {isAmazonStore(store.slug ?? store.name_en) && (
+              <>
+                <AmazonPriceNote observedAt={observedAt} isAr={isRTL} className="mt-1" />
+                <AmazonAssociatesDisclosure isAr={isRTL} className="mt-1" />
+              </>
             )}
           </div>
         </div>

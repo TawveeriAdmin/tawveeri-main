@@ -19,6 +19,7 @@ import Image from 'next/image';
 import { ExternalLink, ShieldCheck, Trophy, ArrowRight, Gift, AlertTriangle, History, ChevronDown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Price } from '@/components/ui/price';
+import { AmazonPriceNote, AmazonAssociatesDisclosure, isAmazonStore } from '@/components/compare/amazon-price-note';
 import { StoreLogo } from '@/components/ui/store-logo';
 import { getComparison, isComparisonError, partitionOffersByEligibility, type CompareOffer, type ComparisonResult } from '@/lib/compare/get-comparison';
 import { categoryLabel } from '@/lib/agent/advisor-api';
@@ -250,6 +251,8 @@ function OfferRow({ offer, isAr, attribution, canonicalId, isLowest, excluded }:
           {isLowest && !excluded && (
             <p className="text-[10px] font-semibold text-[var(--brand-green-dark)]">{isAr ? 'الأقل' : 'Lowest'}</p>
           )}
+          {/* ADR-399 — Associates policy: observation time + "subject to change" beside an Amazon price only. */}
+          {isAmazonStore(offer.store_slug) && <AmazonPriceNote observedAt={offer.observed_at} isAr={isAr} className="mt-0.5" />}
         </div>
         {/* availability / reason */}
         <div className="min-w-0 basis-full sm:basis-auto sm:flex-1">
@@ -466,6 +469,7 @@ export default async function TpsComparePage({
             </div>
             <div className="shrink-0 text-start sm:text-end">
               <Price amount={featured.price} className="text-3xl font-extrabold tabular-nums text-[var(--brand-green-dark)] md:text-4xl" symbolClassName="w-6 h-6 md:w-7 md:h-7" />
+              {isAmazonStore(featured.store_slug) && <AmazonPriceNote observedAt={featured.observed_at} isAr={isAr} className="mt-1" />}
               {summary.highest_price != null && summary.saving != null && summary.saving > 0 && featuredIsEligible && (
                 <p className="mt-0.5 text-xs text-on-surface-variant">
                   {isAr ? 'أعلى سعر مؤهل' : 'Highest eligible'} <Price amount={summary.highest_price} className="text-xs font-semibold text-on-surface" symbolClassName="w-3 h-3" />
@@ -490,6 +494,8 @@ export default async function TpsComparePage({
             </p>
           )}
         </section>
+        {/* ADR-399 — the Associates disclosure lives on the surface that shows the Amazon price, not only in the footer. */}
+        {offers.some((o) => isAmazonStore(o.store_slug)) && <AmazonAssociatesDisclosure isAr={isAr} className="px-1" />}
 
         {/* ── 3. All eligible offers, scannable ── */}
         {eligibleOffers.length > 1 && (

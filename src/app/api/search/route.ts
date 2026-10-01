@@ -1886,6 +1886,33 @@ function buildDecisionLayer(
   return { decisionCard, topMatches };
 }
 
+/**
+ * ADR-399 (F-007): a product retired after the last index rebuild (`products.is_active=false`,
+ * e.g. the ADR-397 amazon de-duplication) is still an Algolia object, and a hit maps straight to
+ * `/products/<id>` — a 404 for the shopper. Drop those hits at read time; the index is cleaned
+ * separately (scripts/tps-analysis/algolia-remove-retired.ts). One cheap id lookup per search;
+ * on a lookup error the hits are kept (search availability over tidiness).
+ */
+async function dropRetiredProducts(products: GroupedSearchProduct[]): Promise<GroupedSearchProduct[]> {
+  const ids = [...new Set(products.map((p) => p.product_id).filter((id): id is string => typeof id === 'string' && /^[0-9a-f-]{36}$/i.test(id)))];
+  if (!ids.length) return products;
+  try {
+    const supabase = createServerClient();
+    const retired = new Set<string>();
+    for (let i = 0; i < ids.length; i += 200) {
+      const { data, error } = await supabase.from('products').select('id').in('id', ids.slice(i, i + 200)).eq('is_active', false);
+      if (error) throw new Error(error.message);
+      for (const r of (data ?? []) as { id: string }[]) retired.add(r.id);
+    }
+    if (!retired.size) return products;
+    console.log(`[search] dropped ${retired.size} retired product(s) from Algolia hits`);
+    return products.filter((p) => !(typeof p.product_id === 'string' && retired.has(p.product_id)));
+  } catch (e) {
+    console.error('[search] retired-product filter failed — hits kept:', e instanceof Error ? e.message : e);
+    return products;
+  }
+}
+
 function algoliaHitToGrouped(hit: AlgoliaHit): GroupedSearchProduct | null {
   // Approved-27 scope gate: only surface offers from approved retailers (Founder Directive 2026-07-27).
   // isDisplayableRetailer, not isApprovedStore: LuLu/Sharaf DG are approved to INGEST but must
@@ -2559,9 +2586,9 @@ export async function POST(request: NextRequest) {
       });
       console.log('[Algolia] hits count:', algoliaRes?.hits?.length ?? 'null');
       if (algoliaRes?.hits?.length) {
-        const mapped = algoliaRes.hits
+        const mapped = await dropRetiredProducts(algoliaRes.hits
           .map(algoliaHitToGrouped)
-          .filter((p): p is GroupedSearchProduct => p !== null);
+          .filter((p): p is GroupedSearchProduct => p !== null));
         if (mapped.length > 0) {
           algoliaProducts = mapped;
           console.log('[Algolia] using Algolia results:', mapped.length);
@@ -3043,9 +3070,9 @@ export async function POST(request: NextRequest) {
   if (total === 0 && rawQuery && effectiveMaxPrice != null && isAlgoliaConfigured()) {
     try {
       const fallbackRes = await searchAlgolia({ query: rawQuery, hitsPerPage: 50 });
-      const mapped = (fallbackRes?.hits ?? [])
+      const mapped = await dropRetiredProducts((fallbackRes?.hits ?? [])
         .map(algoliaHitToGrouped)
-        .filter((p): p is GroupedSearchProduct => p !== null);
+        .filter((p): p is GroupedSearchProduct => p !== null));
       closestOptions = selectClosestOptions(mapped, effectiveMaxPrice, relevanceGroups);
     } catch (e) {
       console.error('[closest-options] fallback query failed:', e);

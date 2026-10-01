@@ -8,6 +8,7 @@ import { hoursSince, observedAgoLabel, pickCardDisclosure, type TrustFactor } fr
 import { track } from '@/lib/analytics/track';
 import { recordFirstPartyInteraction } from '@/lib/analytics/interaction';
 import { hasSeenDecisionCard, markDecisionCardSeen } from '@/lib/agent/return-to-decision';
+import { AmazonPriceNote, AmazonAssociatesDisclosure, isAmazonStore } from '@/components/compare/amazon-price-note';
 
 /**
  * SmartPickCard — surfaces Tawveeri's decision layer ("Smart Pick") at the top
@@ -188,6 +189,12 @@ export function SmartPickCard({ pick, locale }: { pick: SmartPick; locale: strin
               <Clock className="h-3 w-3" aria-hidden />
               <span>{observedAgoLabel(observedAge, isRTL ? 'ar' : 'en')}</span>
             </div>
+          )}
+          {isAmazonStore(pick.store_name) && (
+            <>
+              <AmazonPriceNote observedAt={pick.last_observed_at} isAr={isRTL} className="mt-0.5" />
+              <AmazonAssociatesDisclosure isAr={isRTL} className="mt-0.5" />
+            </>
           )}
         </div>
       </div>
