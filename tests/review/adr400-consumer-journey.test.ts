@@ -12,6 +12,7 @@ import { observedSavingPct } from '@/lib/intelligence/observed-saving';
 import { brandDisplayName } from '@/lib/compare/brand-display';
 import { routeQuery } from '@/lib/agent/route-query';
 import { distinctStoreCount } from '@/lib/compare/offer-eligibility';
+import { looksLikeHomePlan } from '@/lib/agent/home-plan-intent';
 
 describe('identity basis — a specification tuple is never sold as a model-number match', () => {
   it('detects unknown-spec sentinels in a raw key and in an encoded compare URL', () => {
@@ -55,6 +56,16 @@ describe('English need-sentences reach the decision engine like their Arabic twi
     expect(r.task?.budget_total).toBe(4000);
     expect(routeQuery('AC for 30 m2 room under 4000').mode).toBe('advisory');
     expect(routeQuery('iphone 15 pro').mode).toBe('retrieval');
+  });
+});
+
+describe('looksLikeHomePlan — an unclassifiable sentence about a whole home is handed to «جهّز بيتك» (ADR-401)', () => {
+  it('recognises the wedding/flat/budget sentence and not a kitchen gadget sentence', () => {
+    expect(looksLikeHomePlan('أتزوج وأحتاج خطة أجهزة لشقة غرفتين بميزانية 12000 ريال')).toBe(true);
+    expect(looksLikeHomePlan('تزوجت قريبًا وأجهز شقة. مكيفين وثلاجة وغسالة. ميزانيتي 12 ألف')).toBe(true);
+    expect(looksLikeHomePlan('شيء للمطبخ موثق السعر أرخص من جرير ونون')).toBe(false);
+    expect(looksLikeHomePlan('لابتوب تحت 5000')).toBe(false);
+    expect(looksLikeHomePlan('')).toBe(false);
   });
 });
 

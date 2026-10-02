@@ -387,6 +387,14 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
   const t = useMemo(() => T(locale), [locale]);
   const isAr = locale === "ar";
   const [text, setText] = useState("");
+  // ADR-401 — a sentence handed over from search (`?text=`) pre-fills the composer so the
+  // shopper does not retype what they already said. Only when nothing is typed yet.
+  useEffect(() => {
+    try {
+      const handed = new URLSearchParams(window.location.search).get("text");
+      if (handed && handed.trim()) setText((cur) => (cur ? cur : handed.trim()));
+    } catch { /* noop */ }
+  }, []);
   const [draft, setDraft] = useState<Mission | null>(null); // mission card stage (pre-plan)
   const [refineDraft, setRefineDraft] = useState<Mission | null>(null); // refine-sheet edits (applied on one CTA)
   const [plan, setPlan] = useState<PlanResponse | null>(null);

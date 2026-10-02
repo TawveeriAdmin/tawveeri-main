@@ -38,6 +38,7 @@ import { ActiveFilterChips } from '@/components/search/active-filter-chips';
 import { SortSelector } from '@/components/search/sort-selector';
 import { ResultsSkeleton } from '@/components/search/results-skeleton';
 import { ResultsMeta } from '@/components/search/results-meta';
+import { looksLikeHomePlan } from '@/lib/agent/home-plan-intent';
 import { MobileFilterSheet } from '@/components/search/mobile-filter-sheet';
 import { EmptyState } from '@/components/ui/empty-state';
 import { getStoreDisplayName } from '@/lib/logos';
@@ -310,6 +311,8 @@ export default function SearchClient() {
   // reasoning engine's answer when it does. Fetched ALONGSIDE the results, never before
   // them — the results must not wait on reasoning.
   const [advisorResult, setAdvisorResult] = useState<AdvisorResponse | null>(null);
+  // ADR-401 — the engine answered with an error (no category) for this exact text.
+  const [advisorError, setAdvisorError] = useState<{ text: string; homePlan: boolean } | null>(null);
   // MEASURED DEFECT (2026-08-09, Golden Query «مكيف لغرفة 30 متر هادي تحت 4000»): the advisor
   // is fetched async and un-awaited (by design, see below), but the "No Results" empty state
   // only checked `products.length === 0` — never `advisorResult` or an in-flight request. A
@@ -952,8 +955,13 @@ export default function SearchClient() {
               query_text: query.trim(), source: 'search',
               meta: { surface: 'advisor', advisor_state: res.error ? 'unavailable' : 'rejected' },
             });
+            // ADR-401 — silent beside real results, but NEVER silent on an empty grid: the
+            // empty-state block below says «لم أفهم الطلب» (or hands a home-plan sentence to
+            // «جهّز بيتك») instead of leaving «٠ نتيجة» as the whole answer.
+            if (res.error) setAdvisorError({ text: query.trim(), homePlan: looksLikeHomePlan(query.trim()) });
             return;
           }
+          setAdvisorError(null);
           setAdvisorResult(res);
           saveJourneyTask(res.parsed, query.trim()); // ONE TAWVEERI BRAIN: carries to a product-page Waffar question
           track('advisor_result', {
@@ -1985,6 +1993,22 @@ export default function SearchClient() {
                     is a false claim (measured defect, Golden Query, 2026-08-09). */}
                 {!loading && !error && products.length === 0 && !advisorPending && !advisorResult && (debouncedQuery || (selectedCategory && selectedCategory !== 'all')) && (
                   <div className="space-y-6">
+                    {/* ADR-401 — the engine could not name a category: say so, with the way out. */}
+                    {advisorError && advisorError.text === debouncedQuery.trim() && (
+                      <div data-testid="advisor-not-understood" className="rounded-2xl border border-warning-200 bg-warning-50 p-4 text-start dark:border-warning-900/50 dark:bg-warning-950/30">
+                        <p className="text-base font-semibold text-on-surface">{t('agent.errorTitle')}</p>
+                        <p className="mt-1 text-sm text-on-surface-variant">
+                          {advisorError.homePlan
+                            ? (locale === 'ar' ? 'يبدو أنك تجهّز بيتًا كاملًا بميزانية واحدة — هذا عمل «جهّز بيتك»: يوزّع الميزانية على الأجهزة ويختار كل جهاز بسعر مرصود.' : 'This reads like furnishing a whole home on one budget — that is what «Set up your home» does: it splits the budget across appliances and picks each at an observed price.')
+                            : t('agent.errorBody')}
+                        </p>
+                        {advisorError.homePlan && (
+                          <Link href={`/${locale}/home-mission?source=search_handoff&text=${encodeURIComponent(advisorError.text)}`} className="mt-3 inline-flex h-11 items-center rounded-xl bg-primary-600 px-4 text-sm font-bold text-on-primary">
+                            {locale === 'ar' ? 'ابدأ خطة بيتك بهذه الجملة' : 'Start your home plan with this sentence'}
+                          </Link>
+                        )}
+                      </div>
+                    )}
                     <EmptyState
                       variant="search"
                       description={

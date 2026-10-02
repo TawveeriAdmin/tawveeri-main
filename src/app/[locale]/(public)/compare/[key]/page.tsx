@@ -550,7 +550,7 @@ export default async function TpsComparePage({
             </div>
             <ul className="divide-y divide-[color:var(--color-outline-variant)]/50">
               {eligibleOffers.map((offer, idx) => (
-                <OfferRow key={`${offer.store_slug}-${idx}`} offer={offer} isAr={isAr} attribution={attribution} canonicalId={canonical.id} isLowest={offer.price === summary.lowest_price} excluded={false} />
+                <OfferRow key={`${offer.store_slug}-${idx}`} offer={offer} isAr={isAr} attribution={attribution} canonicalId={canonical.id} isLowest={basis === 'model_code' && offer.price === summary.lowest_price} excluded={false} />
               ))}
             </ul>
           </section>

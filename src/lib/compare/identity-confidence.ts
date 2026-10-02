@@ -48,7 +48,8 @@ export function identityBasisLine(basis: IdentityBasis, isAr: boolean): { text: 
     case "model_code":
       return { tone: "ok", text: isAr ? "نفس رقم الموديل — عروض النسخة نفسها" : "Same model number — offers for the same version" };
     case "specs":
-      return { tone: "warn", text: isAr ? "مقارنة على المواصفات المعلنة لا على رقم الموديل — تحقق من رقم الموديل عند المتجر" : "Compared on declared specifications, not a model number — confirm the model number at the store" };
+      // ADR-401 wording (consultant contract 1): the blank is said as a blank.
+      return { tone: "warn", text: isAr ? "مقارنة مواصفات — بلا رقم موديل. تحقق من رقم الموديل عند المتجر." : "Spec comparison — no model number. Confirm the model number at the store." };
     case "specs_incomplete":
     default:
       return { tone: "warn", text: isAr ? "هذه مقارنة مواصفات لا رقم موديل. فرق السعر قد يكون جهازًا آخر." : "This compares specifications, not a model number. The price gap may be a different device." };

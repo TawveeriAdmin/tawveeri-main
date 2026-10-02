@@ -48,7 +48,10 @@ describe('deriveProductOfferFacts — ArtCool five-row shape', () => {
     expect(f.spread).toBe(400);
   });
   it('selectBestPriceStore agrees with the facts', () => {
-    expect(selectBestPriceStore(ARTCOOL)?.stores?.id).toBe('alnakheel');
+    // ADR-401: `selectBestPriceStore` reads the real clock; the fixture is dated 2026-09-26, so
+    // from 2026-10-02 every row was «stale» and the crown drifted — pin the clock to NOW.
+    jest.useFakeTimers().setSystemTime(NOW);
+    try { expect(selectBestPriceStore(ARTCOOL)?.stores?.id).toBe('alnakheel'); } finally { jest.useRealTimers(); }
   });
 });
 

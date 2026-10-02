@@ -658,7 +658,9 @@ export default function ProductDetailClient({ listingIdentity = null }: { listin
 
  const handleSaveToWishlist = async (productId: string) => {
  if (!user) {
- router.push(`/${locale}/auth/login`);
+ // ADR-401: a guest who taps the alert/wishlist must come BACK to this product after
+ // logging in — live-verified 2026-10-02 that the login page was reached with no return path.
+ router.push(`/${locale}/auth/login?redirect=${encodeURIComponent(window.location.pathname.replace(/^\/(ar|en)(?=\/|$)/, '') || '/')}`);
  return;
  }
 
@@ -692,7 +694,9 @@ export default function ProductDetailClient({ listingIdentity = null }: { listin
 
  const handleSetPriceAlert = () => {
  if (!user) {
- router.push(`/${locale}/auth/login`);
+ // ADR-401: a guest who taps the alert/wishlist must come BACK to this product after
+ // logging in — live-verified 2026-10-02 that the login page was reached with no return path.
+ router.push(`/${locale}/auth/login?redirect=${encodeURIComponent(window.location.pathname.replace(/^\/(ar|en)(?=\/|$)/, '') || '/')}`);
  return;
  }
  setPriceAlertOpen(true);

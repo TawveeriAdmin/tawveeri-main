@@ -2,7 +2,8 @@ import type { Mission } from './home-mission-view';
 
 export const HOME_PLAN_KEY = 'tw_home_mission_v3';
 export const HOME_DRAFT_KEY = 'tw_home_mission_draft_v1';
-export const HOME_SOURCES = ['homepage_card', 'navigation', 'ac_results', 'fridge_results', 'washer_results', 'example', 'shared_link', 'direct'] as const;
+// ADR-401: `search_handoff` = an unclassifiable home-plan sentence handed over from /search.
+export const HOME_SOURCES = ['homepage_card', 'navigation', 'ac_results', 'fridge_results', 'washer_results', 'example', 'shared_link', 'search_handoff', 'direct'] as const;
 export type HomeSource = typeof HOME_SOURCES[number];
 export function homeSource(value: string | null): HomeSource {
   return HOME_SOURCES.includes(value as HomeSource) ? value as HomeSource : 'direct';

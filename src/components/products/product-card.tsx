@@ -24,6 +24,7 @@ import { isFreshObservation, hoursSince, observedAgoLabel } from '@/lib/intellig
 import { brandDisplayName } from '@/lib/compare/brand-display';
 import { ReferencePrice } from '@/components/ui/reference-price';
 import { partitionEligible, distinctStoreCount } from '@/lib/compare/offer-eligibility';
+import { compareUrlHasSentinel } from '@/lib/compare/identity-confidence';
 
 interface ProductStore {
   id: string;
@@ -353,7 +354,9 @@ export function ProductCard({
   // ADR-389: «أفضل سعر» needs ≥2 ELIGIBLE stores (in stock, within the window) — not merely
   // ≥2 known offers; and the pill states eligible vs total instead of a bare total.
   const storeCounts = cardStoreCounts(product.product_stores);
-  const isWinner = isMultiStore && bestPrice && storeCounts.eligible > 1;
+  // ADR-401 (consultant contract 2): «🏆 أفضل سعر» is an absolute claim; a comparison whose
+  // identity key carries an unknown-spec sentinel is a spec grouping and never earns it.
+  const isWinner = isMultiStore && bestPrice && storeCounts.eligible > 1 && !compareUrlHasSentinel(product.tps_compare_url);
 
   // The store whose price the card actually shows. A multi-store card used to render only
   // two-letter avatar stubs ("اك" "أم" "جر"), so "من 840" named no store at all.
