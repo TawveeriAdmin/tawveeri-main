@@ -9,7 +9,7 @@ import { track } from '@/lib/analytics/track';
 import { recordFirstPartyInteraction } from '@/lib/analytics/interaction';
 import { hasSeenDecisionCard, markDecisionCardSeen } from '@/lib/agent/return-to-decision';
 import { AmazonPriceNote, AmazonAssociatesDisclosure, isAmazonStore } from '@/components/compare/amazon-price-note';
-import { compareUrlHasSentinel } from '@/lib/compare/identity-confidence';
+import { compareUrlIsSpecOnly } from '@/lib/compare/identity-confidence';
 
 /**
  * SmartPickCard — surfaces Tawveeri's decision layer ("Smart Pick") at the top
@@ -109,7 +109,7 @@ export function SmartPickCard({ pick, locale }: { pick: SmartPick; locale: strin
   // ADR-400 — a comparison whose identity key carries an unknown-spec sentinel (NO_SERIES …)
   // is a specification grouping, not a model-number match: «أفضل سعر» is withheld and the
   // claim says what it is. The compare page states the same basis in full.
-  const specOnly = claimsComparison && compareUrlHasSentinel(compareUrl);
+  const specOnly = claimsComparison && compareUrlIsSpecOnly(compareUrl);
   // ADR-193 / Master Book §31.5 — the observation time renders at the point of the price
   // claim. No timestamp is invented (T2): when there is no stored observation (live-scraped
   // pick), the line does not render.

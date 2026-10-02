@@ -29,6 +29,19 @@ export function compareUrlHasSentinel(url: string | null | undefined): boolean {
   return m ? identityKeyHasSentinel(m[1]) : false;
 }
 
+/**
+ * ADR-401 — a compare URL whose key carries no `MODEL:` segment (the knowledge layer's own
+ * marker for a model-coded identity, e.g. `bosch|MODEL:SMV26DX00T`) is a specification
+ * grouping, sentinel or not (`ariston|built_in|14` still earned «🏆 أفضل سعر» live after
+ * ADR-400). The absolute crown needs a model code; everything else is «الأقل بنفس المواصفات».
+ */
+export function compareUrlIsSpecOnly(url: string | null | undefined): boolean {
+  if (!url) return false;
+  const m = url.match(/\/compare\/([^/?#]+)/);
+  if (!m) return false;
+  return !/(^|\|)MODEL:/i.test(decodeURIComponentSafe(m[1]));
+}
+
 export type IdentityBasis = "model_code" | "specs" | "specs_incomplete";
 
 /**

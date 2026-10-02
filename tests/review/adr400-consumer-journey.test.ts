@@ -3,7 +3,7 @@
 // NO_SERIES key, a merchant-claimed discount under «لا خصومات مزعومة», an unmeasured
 // priority ranked by proxy, and an implausible "verified drop" headlining a trust surface.
 import {
-  identityKeyHasSentinel, compareUrlHasSentinel, identityBasis, identityBasisLine, lowestOfferBadge,
+  identityKeyHasSentinel, compareUrlHasSentinel, compareUrlIsSpecOnly, identityBasis, identityBasisLine, lowestOfferBadge,
 } from '@/lib/compare/identity-confidence';
 import { effectivePrice, comparisonBadge, type AdvisorRecommendation } from '@/lib/agent/advisor-api';
 import { unmeasuredPriorityNote } from '@/lib/agent/unmeasured-priority';
@@ -21,6 +21,10 @@ describe('identity basis — a specification tuple is never sold as a model-numb
     expect(compareUrlHasSentinel('/ar/compare/lg%7Csplit%7CNO_SERIES%7C18000%7CInverter%7Ccool_only')).toBe(true);
     expect(compareUrlHasSentinel('/ar/compare/samsung%7Cfront_load%7C25%7Cwasher')).toBe(false);
     expect(compareUrlHasSentinel(null)).toBe(false);
+    // ADR-401: the absolute crown needs a MODEL: segment — a complete spec tuple is still spec-only.
+    expect(compareUrlIsSpecOnly('/ar/compare/ariston%7Cbuilt_in%7C14')).toBe(true);
+    expect(compareUrlIsSpecOnly('/ar/compare/bosch%7CMODEL%3ASMV26DX00T')).toBe(false);
+    expect(compareUrlIsSpecOnly(null)).toBe(false);
   });
 
   it('a held model code earns «أقل سعر مرصود»; a sentinel key earns the reviewer\'s accepted sentence', () => {
