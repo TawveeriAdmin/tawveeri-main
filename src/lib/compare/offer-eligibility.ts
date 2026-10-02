@@ -88,11 +88,14 @@ export function summarizeEligiblePrices(prices: readonly number[]): {
 }
 
 /** Distinct retailers among the given offers — a store must never be counted twice (ADR-132). */
-export function distinctStoreCount<T>(items: readonly T[], storeKey: (item: T) => string | null | undefined): number {
+export function distinctStoreCount<T>(items: readonly T[], storeKey: (item: T) => string | number | null | undefined): number {
   const keys = new Set<string>();
   for (const item of items) {
     const k = storeKey(item);
-    if (k) keys.add(k.trim().toLowerCase());
+    // ADR-400 — live-reproduced 2026-10-02 (the search page's «حدث خطأ» on every load of
+    // Q5/Q7 and on header-bar searches): a store with no slug fell back to its NUMERIC id and
+    // `.trim()` threw inside every product card. A key is a key whatever its type.
+    if (k != null && k !== '') keys.add(String(k).trim().toLowerCase());
   }
   return keys.size;
 }

@@ -11,6 +11,7 @@ import { rankVerifiedDropRows, VERIFIED_DROP_MAX_RATIO, type VerifiedDropRow } f
 import { observedSavingPct } from '@/lib/intelligence/observed-saving';
 import { brandDisplayName } from '@/lib/compare/brand-display';
 import { routeQuery } from '@/lib/agent/route-query';
+import { distinctStoreCount } from '@/lib/compare/offer-eligibility';
 
 describe('identity basis — a specification tuple is never sold as a model-number match', () => {
   it('detects unknown-spec sentinels in a raw key and in an encoded compare URL', () => {
@@ -54,6 +55,13 @@ describe('English need-sentences reach the decision engine like their Arabic twi
     expect(r.task?.budget_total).toBe(4000);
     expect(routeQuery('AC for 30 m2 room under 4000').mode).toBe('advisory');
     expect(routeQuery('iphone 15 pro').mode).toBe('retrieval');
+  });
+});
+
+describe('distinctStoreCount — a numeric store id never takes the search page down (evidence #9, live root cause)', () => {
+  it('counts string and numeric keys alike', () => {
+    const items = [{ k: 'extra' }, { k: 4 }, { k: 4 }, { k: 'Extra ' }, { k: null }, { k: '' }];
+    expect(distinctStoreCount(items, (i) => i.k as string | number | null)).toBe(2);
   });
 });
 
