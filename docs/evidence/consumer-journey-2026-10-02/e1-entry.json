@@ -1,0 +1,652 @@
+{
+  "generatedAt": "2026-10-02T06:10:35.247Z",
+  "rawFetch": {
+    "ar-SA-mobile": [
+      {
+        "url": "https://tawveeri.com/",
+        "status": 307,
+        "location": "/ar",
+        "setCookie": null,
+        "vary": null,
+        "contentLanguage": null
+      },
+      {
+        "url": "https://tawveeri.com/ar",
+        "status": 200,
+        "location": null,
+        "setCookie": null,
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding",
+        "contentLanguage": null
+      }
+    ],
+    "none-mobile": [
+      {
+        "url": "https://tawveeri.com/",
+        "status": 307,
+        "location": "/ar",
+        "setCookie": "NEXT_LOCALE=ar; Path=/; SameSite=lax",
+        "vary": null,
+        "contentLanguage": null
+      },
+      {
+        "url": "https://tawveeri.com/ar",
+        "status": 200,
+        "location": null,
+        "setCookie": "NEXT_LOCALE=ar; Path=/; SameSite=lax",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding",
+        "contentLanguage": null
+      }
+    ],
+    "en-US-mobile": [
+      {
+        "url": "https://tawveeri.com/",
+        "status": 307,
+        "location": "/en",
+        "setCookie": null,
+        "vary": null,
+        "contentLanguage": null
+      },
+      {
+        "url": "https://tawveeri.com/en",
+        "status": 200,
+        "location": null,
+        "setCookie": null,
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding",
+        "contentLanguage": null
+      }
+    ],
+    "ar-SA-desktop": [
+      {
+        "url": "https://tawveeri.com/",
+        "status": 307,
+        "location": "/ar",
+        "setCookie": null,
+        "vary": null,
+        "contentLanguage": null
+      },
+      {
+        "url": "https://tawveeri.com/ar",
+        "status": 200,
+        "location": null,
+        "setCookie": null,
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding",
+        "contentLanguage": null
+      }
+    ],
+    "en-US-desktop": [
+      {
+        "url": "https://tawveeri.com/",
+        "status": 307,
+        "location": "/en",
+        "setCookie": null,
+        "vary": null,
+        "contentLanguage": null
+      },
+      {
+        "url": "https://tawveeri.com/en",
+        "status": 200,
+        "location": null,
+        "setCookie": null,
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding",
+        "contentLanguage": null
+      }
+    ]
+  },
+  "puppeteer": {
+    "ar-SA-mobile": {
+      "navErr": null,
+      "finalUrl": "https://tawveeri.com/ar",
+      "html": {
+        "lang": "ar",
+        "dir": "rtl",
+        "title": "توفيري | مساعد قرار الشراء ومقارنة أسعار السعودية | توفيري Tawveeri"
+      },
+      "documentChain": [
+        {
+          "url": "https://tawveeri.com/",
+          "status": 307,
+          "location": "/ar"
+        },
+        {
+          "url": "https://tawveeri.com/ar",
+          "status": 200,
+          "location": null
+        }
+      ],
+      "firstUseful": {
+        "seconds": 2.85,
+        "kind": "extra",
+        "text": "قارن"
+      },
+      "screenshot": "e1-ar-SA-mobile-home.png",
+      "errors": {
+        "console": [
+          {
+            "type": "error",
+            "text": "The Content Security Policy directive 'upgrade-insecure-requests' is ignored when delivered in a report-only policy.",
+            "url": "https://tawveeri.com/ar"
+          },
+          {
+            "type": "error",
+            "text": "[Report Only] Refused to load the script 'https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495' because it violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline' 'unsafe-eval'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback.\n",
+            "url": "https://tawveeri.com/ar"
+          },
+          {
+            "type": "error",
+            "text": "The Content Security Policy directive 'upgrade-insecure-requests' is ignored when delivered in a report-only policy.",
+            "url": "https://tawveeri.com/ar"
+          },
+          {
+            "type": "error",
+            "text": "The Content Security Policy directive 'upgrade-insecure-requests' is ignored when delivered in a report-only policy.",
+            "url": "https://tawveeri.com/ar"
+          },
+          {
+            "type": "error",
+            "text": "The Content Security Policy directive 'upgrade-insecure-requests' is ignored when delivered in a report-only policy.",
+            "url": "https://tawveeri.com/ar"
+          },
+          {
+            "type": "error",
+            "text": "The Content Security Policy directive 'upgrade-insecure-requests' is ignored when delivered in a report-only policy.",
+            "url": "https://tawveeri.com/ar"
+          }
+        ],
+        "failedResponses": [],
+        "requestFailures": [
+          {
+            "url": "https://tawveeri.com/ar/deals?_rsc=uHqCsj4SQR6vibxi",
+            "err": "net::ERR_ABORTED",
+            "page": "https://tawveeri.com/ar"
+          },
+          {
+            "url": "https://tawveeri.com/ar/stores?_rsc=uHqCsj4SQR6vibxi",
+            "err": "net::ERR_ABORTED",
+            "page": "https://tawveeri.com/ar"
+          },
+          {
+            "url": "https://tawveeri.com/api/events",
+            "err": "net::ERR_ABORTED",
+            "page": "https://tawveeri.com/ar"
+          },
+          {
+            "url": "https://tawveeri.com/api/events",
+            "err": "net::ERR_ABORTED",
+            "page": "https://tawveeri.com/ar"
+          },
+          {
+            "url": "https://tawveeri.com/api/events",
+            "err": "net::ERR_ABORTED",
+            "page": "https://tawveeri.com/ar"
+          },
+          {
+            "url": "https://tawveeri.com/api/events",
+            "err": "net::ERR_ABORTED",
+            "page": "https://tawveeri.com/ar"
+          },
+          {
+            "url": "https://tawveeri.com/api/events",
+            "err": "net::ERR_ABORTED",
+            "page": "https://tawveeri.com/ar"
+          },
+          {
+            "url": "https://tawveeri.com/ar/deals?_rsc=rjfXosO2O1VK5qPm",
+            "err": "net::ERR_ABORTED",
+            "page": "https://tawveeri.com/ar"
+          },
+          {
+            "url": "https://tawveeri.com/ar/auth/login?redirect=%2F&_rsc=SDmtiWM5AYQMkhhI",
+            "err": "net::ERR_ABORTED",
+            "page": "https://tawveeri.com/ar"
+          },
+          {
+            "url": "https://tawveeri.com/ar/stores?_rsc=n2It56oP_IL_ouM1",
+            "err": "net::ERR_ABORTED",
+            "page": "https://tawveeri.com/ar"
+          },
+          {
+            "url": "https://tawveeri.com/ar/deals?_rsc=SDmtiWM5AYQMkhhI",
+            "err": "net::ERR_ABORTED",
+            "page": "https://tawveeri.com/ar"
+          },
+          {
+            "url": "https://tawveeri.com/ar/auth/signup?redirect=%2F&_rsc=SDmtiWM5AYQMkhhI",
+            "err": "net::ERR_ABORTED",
+            "page": "https://tawveeri.com/ar"
+          }
+        ]
+      },
+      "textHead": "قارن أسعار الإلكترونيات عبر متاجر السعودية — بالأدلة، لا أرقام مسوّقة.\n🔍\nبحث\nأو صِف ما تحتاجه:\nمكيف لغرفة 30 متر هادئ تحت 4000\nلابتوب للألعاب تحت 5000\nغسالة صحون كبيرة للعائلة\nجهّز بيتك بذكاء\nبتتزوج أو تنتقل لبيت جديد؟ جهّز أجهزتك بميزانيتك\n\nحدّد غرفك ومساحاتها والأجهزة اللي تحتاجها، وخلّ توفيري تقترح لك الخيارات وتوزّع ميزانيتك عليها من متاجر السعودية.\n\nمكيفات الغرف\nثلاجة المطبخ\nغسالة الملابس\n\nمعاينة توضيحية لخطة أجهزة\n\n1. احتياجاتك\n2. ميزانيتك\n3. خطة أجهزتك\nابدأ خطة بيتك\nشوف مثال لخطة جاهزة\n\nشارك خطتك مع أهلك وخذ رأيهم قبل الشراء.\n\nالفئات الرئيسية\nشوف الكل ←\n📱\nجوالات\n📺\nتلفزيونات\n❄️\nمكيفات"
+    },
+    "none-mobile": {
+      "navErr": null,
+      "finalUrl": "https://tawveeri.com/ar",
+      "html": {
+        "lang": "ar",
+        "dir": "rtl",
+        "title": "توفيري | مساعد قرار الشراء ومقارنة أسعار السعودية | توفيري Tawveeri"
+      },
+      "documentChain": [
+        {
+          "url": "https://tawveeri.com/",
+          "status": 307,
+          "location": "/ar"
+        },
+        {
+          "url": "https://tawveeri.com/ar",
+          "status": 200,
+          "location": null
+        }
+      ],
+      "firstUseful": {
+        "seconds": 2.98,
+        "kind": "extra",
+        "text": "قارن"
+      },
+      "screenshot": "e1-none-mobile-home.png",
+      "errors": {
+        "console": [
+          {
+            "type": "error",
+            "text": "The Content Security Policy directive 'upgrade-insecure-requests' is ignored when delivered in a report-only policy.",
+            "url": "https://tawveeri.com/ar"
+          },
+          {
+            "type": "error",
+            "text": "The Content Security Policy directive 'upgrade-insecure-requests' is ignored when delivered in a report-only policy.",
+            "url": "https://tawveeri.com/ar"
+          },
+          {
+            "type": "error",
+            "text": "The Content Security Policy directive 'upgrade-insecure-requests' is ignored when delivered in a report-only policy.",
+            "url": "https://tawveeri.com/ar"
+          },
+          {
+            "type": "error",
+            "text": "[Report Only] Refused to load the script 'https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495' because it violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline' 'unsafe-eval'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback.\n",
+            "url": "https://tawveeri.com/ar"
+          },
+          {
+            "type": "error",
+            "text": "The Content Security Policy directive 'upgrade-insecure-requests' is ignored when delivered in a report-only policy.",
+            "url": "https://tawveeri.com/ar"
+          },
+          {
+            "type": "error",
+            "text": "The Content Security Policy directive 'upgrade-insecure-requests' is ignored when delivered in a report-only policy.",
+            "url": "https://tawveeri.com/ar"
+          }
+        ],
+        "failedResponses": [],
+        "requestFailures": [
+          {
+            "url": "https://tawveeri.com/api/events",
+            "err": "net::ERR_ABORTED",
+            "page": "https://tawveeri.com/ar"
+          },
+          {
+            "url": "https://tawveeri.com/api/events",
+            "err": "net::ERR_ABORTED",
+            "page": "https://tawveeri.com/ar"
+          },
+          {
+            "url": "https://tawveeri.com/api/events",
+            "err": "net::ERR_ABORTED",
+            "page": "https://tawveeri.com/ar"
+          },
+          {
+            "url": "https://tawveeri.com/api/events",
+            "err": "net::ERR_ABORTED",
+            "page": "https://tawveeri.com/ar"
+          },
+          {
+            "url": "https://tawveeri.com/api/events",
+            "err": "net::ERR_ABORTED",
+            "page": "https://tawveeri.com/ar"
+          },
+          {
+            "url": "https://tawveeri.com/ar/deals?_rsc=uHqCsj4SQR6vibxi",
+            "err": "net::ERR_ABORTED",
+            "page": "https://tawveeri.com/ar"
+          },
+          {
+            "url": "https://tawveeri.com/ar/stores?_rsc=uHqCsj4SQR6vibxi",
+            "err": "net::ERR_ABORTED",
+            "page": "https://tawveeri.com/ar"
+          }
+        ]
+      },
+      "textHead": "قارن أسعار الإلكترونيات عبر متاجر السعودية — بالأدلة، لا أرقام مسوّقة.\n🔍\nبحث\nأو صِف ما تحتاجه:\nمكيف لغرفة 30 متر هادئ تحت 4000\nلابتوب للألعاب تحت 5000\nغسالة صحون كبيرة للعائلة\nجهّز بيتك بذكاء\nبتتزوج أو تنتقل لبيت جديد؟ جهّز أجهزتك بميزانيتك\n\nحدّد غرفك ومساحاتها والأجهزة اللي تحتاجها، وخلّ توفيري تقترح لك الخيارات وتوزّع ميزانيتك عليها من متاجر السعودية.\n\nمكيفات الغرف\nثلاجة المطبخ\nغسالة الملابس\n\nمعاينة توضيحية لخطة أجهزة\n\n1. احتياجاتك\n2. ميزانيتك\n3. خطة أجهزتك\nابدأ خطة بيتك\nشوف مثال لخطة جاهزة\n\nشارك خطتك مع أهلك وخذ رأيهم قبل الشراء.\n\nالفئات الرئيسية\nشوف الكل ←\n📱\nجوالات\n📺\nتلفزيونات\n❄️\nمكيفات"
+    },
+    "en-US-mobile": {
+      "navErr": null,
+      "finalUrl": "https://tawveeri.com/en",
+      "html": {
+        "lang": "en",
+        "dir": "ltr",
+        "title": "Tawveeri | Saudi shopping decision helper — compare observed prices | توفيري Tawveeri"
+      },
+      "documentChain": [
+        {
+          "url": "https://tawveeri.com/",
+          "status": 307,
+          "location": "/en"
+        },
+        {
+          "url": "https://tawveeri.com/en",
+          "status": 200,
+          "location": null
+        }
+      ],
+      "firstUseful": {
+        "seconds": 2.36,
+        "kind": "extra",
+        "text": "Compare"
+      },
+      "screenshot": "e1-en-US-mobile-home.png",
+      "errors": {
+        "console": [
+          {
+            "type": "error",
+            "text": "The Content Security Policy directive 'upgrade-insecure-requests' is ignored when delivered in a report-only policy.",
+            "url": "https://tawveeri.com/en"
+          },
+          {
+            "type": "error",
+            "text": "The Content Security Policy directive 'upgrade-insecure-requests' is ignored when delivered in a report-only policy.",
+            "url": "https://tawveeri.com/en"
+          },
+          {
+            "type": "error",
+            "text": "The Content Security Policy directive 'upgrade-insecure-requests' is ignored when delivered in a report-only policy.",
+            "url": "https://tawveeri.com/en"
+          },
+          {
+            "type": "error",
+            "text": "[Report Only] Refused to load the script 'https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495' because it violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline' 'unsafe-eval'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback.\n",
+            "url": "https://tawveeri.com/en"
+          },
+          {
+            "type": "error",
+            "text": "The Content Security Policy directive 'upgrade-insecure-requests' is ignored when delivered in a report-only policy.",
+            "url": "https://tawveeri.com/en"
+          },
+          {
+            "type": "error",
+            "text": "The Content Security Policy directive 'upgrade-insecure-requests' is ignored when delivered in a report-only policy.",
+            "url": "https://tawveeri.com/en"
+          }
+        ],
+        "failedResponses": [],
+        "requestFailures": [
+          {
+            "url": "https://tawveeri.com/api/events",
+            "err": "net::ERR_ABORTED",
+            "page": "https://tawveeri.com/en"
+          },
+          {
+            "url": "https://tawveeri.com/api/events",
+            "err": "net::ERR_ABORTED",
+            "page": "https://tawveeri.com/en"
+          },
+          {
+            "url": "https://tawveeri.com/en/auth/login?redirect=%2F&_rsc=ry-B8umWgNEV4JR9",
+            "err": "net::ERR_ABORTED",
+            "page": "https://tawveeri.com/en"
+          },
+          {
+            "url": "https://tawveeri.com/api/events",
+            "err": "net::ERR_ABORTED",
+            "page": "https://tawveeri.com/en"
+          },
+          {
+            "url": "https://tawveeri.com/api/events",
+            "err": "net::ERR_ABORTED",
+            "page": "https://tawveeri.com/en"
+          },
+          {
+            "url": "https://tawveeri.com/api/events",
+            "err": "net::ERR_ABORTED",
+            "page": "https://tawveeri.com/en"
+          },
+          {
+            "url": "https://tawveeri.com/en/auth/signup?redirect=%2F&_rsc=1vwYfVB7_E9t4fEj",
+            "err": "net::ERR_ABORTED",
+            "page": "https://tawveeri.com/en"
+          },
+          {
+            "url": "https://tawveeri.com/en/stores?_rsc=IJ0gaNXz9lbVgZ24",
+            "err": "net::ERR_ABORTED",
+            "page": "https://tawveeri.com/en"
+          },
+          {
+            "url": "https://tawveeri.com/en/auth/login?_rsc=ry-B8umWgNEV4JR9",
+            "err": "net::ERR_ABORTED",
+            "page": "https://tawveeri.com/en"
+          }
+        ]
+      },
+      "textHead": "Compare electronics prices across Saudi stores — with evidence, not marketing numbers.\n🔍\nSearch\nOr describe what you need:\na quiet AC for a 30 m² room under 4000\na gaming laptop under 5000\na large family dishwasher\nEquip your home intelligently\nGetting married or moving? Plan your home appliances within your budget\n\nTell us your rooms, sizes and appliance needs. Tawveeri suggests options and allocates your budget across Saudi stores.\n\nRoom ACs\nKitchen fridge\nWashing machine\n\nIllustrative appliance plan preview\n\n1. Your needs\n2. Your budget\n3. Your appliance plan\nStart your home plan\nExplore a"
+    },
+    "ar-SA-desktop": {
+      "navErr": null,
+      "finalUrl": "https://tawveeri.com/ar",
+      "html": {
+        "lang": "ar",
+        "dir": "rtl",
+        "title": "توفيري | مساعد قرار الشراء ومقارنة أسعار السعودية | توفيري Tawveeri"
+      },
+      "documentChain": [
+        {
+          "url": "https://tawveeri.com/",
+          "status": 307,
+          "location": "/ar"
+        },
+        {
+          "url": "https://tawveeri.com/ar",
+          "status": 200,
+          "location": null
+        }
+      ],
+      "firstUseful": {
+        "seconds": 2.79,
+        "kind": "extra",
+        "text": "قارن"
+      },
+      "screenshot": "e1-ar-SA-desktop-home.png",
+      "errors": {
+        "console": [
+          {
+            "type": "error",
+            "text": "The Content Security Policy directive 'upgrade-insecure-requests' is ignored when delivered in a report-only policy.",
+            "url": "https://tawveeri.com/ar"
+          },
+          {
+            "type": "error",
+            "text": "[Report Only] Refused to load the script 'https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495' because it violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline' 'unsafe-eval'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback.\n",
+            "url": "https://tawveeri.com/ar"
+          },
+          {
+            "type": "error",
+            "text": "The Content Security Policy directive 'upgrade-insecure-requests' is ignored when delivered in a report-only policy.",
+            "url": "https://tawveeri.com/ar"
+          },
+          {
+            "type": "error",
+            "text": "The Content Security Policy directive 'upgrade-insecure-requests' is ignored when delivered in a report-only policy.",
+            "url": "https://tawveeri.com/ar"
+          },
+          {
+            "type": "error",
+            "text": "The Content Security Policy directive 'upgrade-insecure-requests' is ignored when delivered in a report-only policy.",
+            "url": "https://tawveeri.com/ar"
+          },
+          {
+            "type": "error",
+            "text": "The Content Security Policy directive 'upgrade-insecure-requests' is ignored when delivered in a report-only policy.",
+            "url": "https://tawveeri.com/ar"
+          }
+        ],
+        "failedResponses": [],
+        "requestFailures": [
+          {
+            "url": "https://tawveeri.com/ar/deals?_rsc=uHqCsj4SQR6vibxi",
+            "err": "net::ERR_ABORTED",
+            "page": "https://tawveeri.com/ar"
+          },
+          {
+            "url": "https://tawveeri.com/ar/categories?_rsc=uHqCsj4SQR6vibxi",
+            "err": "net::ERR_ABORTED",
+            "page": "https://tawveeri.com/ar"
+          },
+          {
+            "url": "https://tawveeri.com/ar/stores?_rsc=uHqCsj4SQR6vibxi",
+            "err": "net::ERR_ABORTED",
+            "page": "https://tawveeri.com/ar"
+          },
+          {
+            "url": "https://tawveeri.com/api/events",
+            "err": "net::ERR_ABORTED",
+            "page": "https://tawveeri.com/ar"
+          },
+          {
+            "url": "https://tawveeri.com/api/events",
+            "err": "net::ERR_ABORTED",
+            "page": "https://tawveeri.com/ar"
+          },
+          {
+            "url": "https://tawveeri.com/api/events",
+            "err": "net::ERR_ABORTED",
+            "page": "https://tawveeri.com/ar"
+          },
+          {
+            "url": "https://tawveeri.com/api/events",
+            "err": "net::ERR_ABORTED",
+            "page": "https://tawveeri.com/ar"
+          },
+          {
+            "url": "https://tawveeri.com/api/events",
+            "err": "net::ERR_ABORTED",
+            "page": "https://tawveeri.com/ar"
+          },
+          {
+            "url": "https://tawveeri.com/ar/stores?_rsc=n2It56oP_IL_ouM1",
+            "err": "net::ERR_ABORTED",
+            "page": "https://tawveeri.com/ar"
+          },
+          {
+            "url": "https://tawveeri.com/ar/auth/login?redirect=%2F&_rsc=SDmtiWM5AYQMkhhI",
+            "err": "net::ERR_ABORTED",
+            "page": "https://tawveeri.com/ar"
+          },
+          {
+            "url": "https://tawveeri.com/ar/categories?_rsc=SDmtiWM5AYQMkhhI",
+            "err": "net::ERR_ABORTED",
+            "page": "https://tawveeri.com/ar"
+          }
+        ]
+      },
+      "textHead": "قارن أسعار الإلكترونيات عبر متاجر السعودية — بالأدلة، لا أرقام مسوّقة.\n🔍\nبحث\nأو صِف ما تحتاجه:\nمكيف لغرفة 30 متر هادئ تحت 4000\nلابتوب للألعاب تحت 5000\nغسالة صحون كبيرة للعائلة\nجهّز بيتك بذكاء\nبتتزوج أو تنتقل لبيت جديد؟ جهّز أجهزتك بميزانيتك\n\nحدّد غرفك ومساحاتها والأجهزة اللي تحتاجها، وخلّ توفيري تقترح لك الخيارات وتوزّع ميزانيتك عليها من متاجر السعودية.\n\nمكيفات الغرف\nثلاجة المطبخ\nغسالة الملابس\n\nمعاينة توضيحية لخطة أجهزة\n\n1. احتياجاتك\n2. ميزانيتك\n3. خطة أجهزتك\nابدأ خطة بيتك\nشوف مثال لخطة جاهزة\n\nشارك خطتك مع أهلك وخذ رأيهم قبل الشراء.\n\nالفئات الرئيسية\nشوف الكل ←\n📱\nجوالات\n📺\nتلفزيونات\n❄️\nمكيفات"
+    },
+    "en-US-desktop": {
+      "navErr": null,
+      "finalUrl": "https://tawveeri.com/en",
+      "html": {
+        "lang": "en",
+        "dir": "ltr",
+        "title": "Tawveeri | Saudi shopping decision helper — compare observed prices | توفيري Tawveeri"
+      },
+      "documentChain": [
+        {
+          "url": "https://tawveeri.com/",
+          "status": 307,
+          "location": "/en"
+        },
+        {
+          "url": "https://tawveeri.com/en",
+          "status": 200,
+          "location": null
+        }
+      ],
+      "firstUseful": {
+        "seconds": 2.83,
+        "kind": "extra",
+        "text": "Compare"
+      },
+      "screenshot": "e1-en-US-desktop-home.png",
+      "errors": {
+        "console": [
+          {
+            "type": "error",
+            "text": "The Content Security Policy directive 'upgrade-insecure-requests' is ignored when delivered in a report-only policy.",
+            "url": "https://tawveeri.com/en"
+          },
+          {
+            "type": "error",
+            "text": "The Content Security Policy directive 'upgrade-insecure-requests' is ignored when delivered in a report-only policy.",
+            "url": "https://tawveeri.com/en"
+          },
+          {
+            "type": "error",
+            "text": "The Content Security Policy directive 'upgrade-insecure-requests' is ignored when delivered in a report-only policy.",
+            "url": "https://tawveeri.com/en"
+          },
+          {
+            "type": "error",
+            "text": "[Report Only] Refused to load the script 'https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495' because it violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline' 'unsafe-eval'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback.\n",
+            "url": "https://tawveeri.com/en"
+          },
+          {
+            "type": "error",
+            "text": "The Content Security Policy directive 'upgrade-insecure-requests' is ignored when delivered in a report-only policy.",
+            "url": "https://tawveeri.com/en"
+          },
+          {
+            "type": "error",
+            "text": "The Content Security Policy directive 'upgrade-insecure-requests' is ignored when delivered in a report-only policy.",
+            "url": "https://tawveeri.com/en"
+          }
+        ],
+        "failedResponses": [],
+        "requestFailures": [
+          {
+            "url": "https://tawveeri.com/api/events",
+            "err": "net::ERR_ABORTED",
+            "page": "https://tawveeri.com/en"
+          },
+          {
+            "url": "https://tawveeri.com/api/events",
+            "err": "net::ERR_ABORTED",
+            "page": "https://tawveeri.com/en"
+          },
+          {
+            "url": "https://tawveeri.com/api/events",
+            "err": "net::ERR_ABORTED",
+            "page": "https://tawveeri.com/en"
+          },
+          {
+            "url": "https://tawveeri.com/api/events",
+            "err": "net::ERR_ABORTED",
+            "page": "https://tawveeri.com/en"
+          },
+          {
+            "url": "https://tawveeri.com/api/events",
+            "err": "net::ERR_ABORTED",
+            "page": "https://tawveeri.com/en"
+          },
+          {
+            "url": "https://tawveeri.com/en/auth/signup?redirect=%2F&_rsc=ry-B8umWgNEV4JR9",
+            "err": "net::ERR_ABORTED",
+            "page": "https://tawveeri.com/en"
+          },
+          {
+            "url": "https://tawveeri.com/en/stores?_rsc=IJ0gaNXz9lbVgZ24",
+            "err": "net::ERR_ABORTED",
+            "page": "https://tawveeri.com/en"
+          }
+        ]
+      },
+      "textHead": "Compare electronics prices across Saudi stores — with evidence, not marketing numbers.\n🔍\nSearch\nOr describe what you need:\na quiet AC for a 30 m² room under 4000\na gaming laptop under 5000\na large family dishwasher\nEquip your home intelligently\nGetting married or moving? Plan your home appliances within your budget\n\nTell us your rooms, sizes and appliance needs. Tawveeri suggests options and allocates your budget across Saudi stores.\n\nRoom ACs\nKitchen fridge\nWashing machine\n\nIllustrative appliance plan preview\n\n1. Your needs\n2. Your budget\n3. Your appliance plan\nStart your home plan\nExplore a"
+    }
+  }
+}

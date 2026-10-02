@@ -35,6 +35,7 @@ import { readCategoryAttribution, type CategoryAttribution } from '@/lib/catalog
 import { CategoryExitLink } from '@/components/catalog/category-exit-link';
 import { ExitLink } from '@/components/catalog/exit-link';
 import { brandDisplayName } from '@/lib/compare/brand-display';
+import { identityBasis, identityBasisLine, lowestOfferBadge } from '@/lib/compare/identity-confidence';
 
 type CompareResult = ComparisonResult;
 
@@ -199,6 +200,31 @@ function StaleEvidenceNote({ offer, isAr }: { offer: CompareOffer; isAr: boolean
           : "This price is based on our last observation and may not reflect the retailer's current price — verify before buying."}
       </p>
     </div>
+  );
+}
+
+/**
+ * ADR-400 — WHAT THE SHOPPER WILL MEET AT THE STORE THAT WE DID NOT OBSERVE, said BEFORE the
+ * button, at the button's size. Reviewer evidence #4: the /go landing (extra.com) carried
+ * «Last Piece Deal», a coupon code and 1–3 ton capacity options; the card showed none of
+ * them. We cannot show what we did not observe, but we can say exactly which conditions
+ * are unobserved so the price is read as "device price, conditions at the store" — the
+ * same rule Google Shopping's parity policy and Kakaku's per-offer condition columns
+ * enforce (research brief §5/§2). Observed conditions (availability, campaign eligibility)
+ * are rendered by their own notes above; only the genuinely unknown ones are listed here.
+ */
+function PreExitUnknowns({ offer, isAr }: { offer: CompareOffer; isAr: boolean }) {
+  const unknown: string[] = [];
+  if (!offer.campaign_eligibility) unknown.push(isAr ? 'كود خصم أو عرض مشروط' : 'coupon code or conditional offer');
+  if (offer.availability !== 'limited_stock') unknown.push(isAr ? '«آخر قطعة»' : '“last piece”');
+  unknown.push(isAr ? 'خيارات السعة/اللون' : 'capacity/colour options');
+  unknown.push(isAr ? 'رسوم التوصيل والتركيب' : 'delivery and installation fees');
+  return (
+    <p data-testid="pre-exit-unknowns" className="mt-2 rounded-lg border border-[color:var(--color-outline-variant)]/60 bg-[color:var(--color-surface-container)] px-2.5 py-1.5 text-[11px] leading-snug text-on-surface-variant">
+      {isAr
+        ? `لم نرصد في هذا العرض: ${unknown.join('، ')} — السعر أعلاه سعر الجهاز كما رصدناه؛ تحقق من الشروط في صفحة المتجر قبل الدفع.`
+        : `Not observed for this offer: ${unknown.join(', ')} — the price above is the device price as we observed it; confirm the conditions on the store page before paying.`}
+    </p>
   );
 }
 
@@ -381,6 +407,11 @@ export default async function TpsComparePage({
   };
 
   const featuredAvail = availabilityLabel(featured, isAr);
+  // ADR-400 — on what basis these offers are "the same product". A model code held by the
+  // knowledge layer earns «أقل سعر مرصود»; a specification tuple (with or without unknown
+  // segments) earns only «الأقل بين عروض بنفس المواصفات» and says so above the price.
+  const basis = identityBasis(canonical.tps_identity_key, codes);
+  const basisLine = identityBasisLine(basis, isAr);
 
   return (
     <>
@@ -417,11 +448,15 @@ export default async function TpsComparePage({
               {/* `identity_confidence` is an INTERNAL score, never rendered as measured accuracy
                   (ADR-386). What IS true: these offers were grouped on the model's declared
                   specifications; the shopper can confirm the model code at the store. */}
-              <p className="mt-1.5 inline-flex items-center gap-1 text-xs text-on-surface-variant">
-                <ShieldCheck className="h-3.5 w-3.5 text-[var(--brand-green)]" />
-                {isAr
-                  ? 'عروض النسخة نفسها — جُمعت على مواصفات الموديل المعلنة'
-                  : 'Same-version offers — grouped on the model’s declared specifications'}
+              <p
+                data-testid="identity-basis"
+                data-identity-basis={basis}
+                className={`mt-1.5 inline-flex items-start gap-1 text-xs ${basisLine.tone === 'warn' ? 'font-medium text-amber-800 dark:text-amber-300' : 'text-on-surface-variant'}`}
+              >
+                {basisLine.tone === 'warn'
+                  ? <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" />
+                  : <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--brand-green)]" />}
+                <span>{basisLine.text}</span>
               </p>
             </div>
           </div>
@@ -436,7 +471,7 @@ export default async function TpsComparePage({
             <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide ${featuredIsEligible ? 'bg-[var(--brand-green)] text-white' : 'bg-[color:var(--color-surface-container-high)] text-on-surface-variant'}`}>
               <Trophy className="h-3 w-3" />
               {featuredIsEligible
-                ? (eligibleOffers.length > 1 ? (isAr ? 'أقل سعر مرصود' : 'Lowest observed price') : (isAr ? 'العرض المرصود' : 'Observed offer'))
+                ? (eligibleOffers.length > 1 ? lowestOfferBadge(basis, isAr) : (isAr ? 'العرض المرصود' : 'Observed offer'))
                 : (isAr ? 'آخر سعر رصدناه' : 'Last observed price')}
             </span>
             {eligibleOffers.length > 1 && (
@@ -475,6 +510,8 @@ export default async function TpsComparePage({
                   {isAr ? 'أعلى سعر مؤهل' : 'Highest eligible'} <Price amount={summary.highest_price} className="text-xs font-semibold text-on-surface" symbolClassName="w-3 h-3" />
                   {' · '}
                   <span className="font-semibold text-amber-700 dark:text-amber-400">{isAr ? 'الفرق' : 'spread'} <Price amount={summary.saving} className="text-xs font-semibold" symbolClassName="w-3 h-3" /></span>
+                  {/* ADR-400 — on a spec-only grouping the spread is not a saving claim. */}
+                  {basis !== 'model_code' && <span className="block text-[10px] text-on-surface-variant">{isAr ? 'قد يكون الفرق بين نسختين مختلفتين — تحقق من الموديل' : 'The gap may be between two different versions — check the model'}</span>}
                 </p>
               )}
             </div>
@@ -482,6 +519,7 @@ export default async function TpsComparePage({
 
           <CampaignEligibilityNote offer={featured} isAr={isAr} />
           <StaleEvidenceNote offer={featured} isAr={isAr} />
+          <PreExitUnknowns offer={featured} isAr={isAr} />
           <div className="mt-3">
             <GoButton offer={featured} isAr={isAr} attribution={attribution} canonicalId={canonical.id} surface="compare_featured" primary />
           </div>
@@ -549,9 +587,7 @@ export default async function TpsComparePage({
           </p>
           <p className="inline-flex items-center justify-center gap-1.5">
             <ShieldCheck className="h-3.5 w-3.5 text-[var(--brand-green)]" />
-            {isAr
-              ? 'جُمعت هذه العروض على مواصفات الموديل المعلنة؛ تحقق من رقم الموديل لدى المتجر • مدعوم بـ TPS'
-              : 'These offers were grouped on the model’s declared specifications; confirm the model number with the retailer • Powered by TPS'}
+            {basisLine.text}{isAr ? ' • مدعوم بـ TPS' : ' • Powered by TPS'}
           </p>
         </footer>
       </div>

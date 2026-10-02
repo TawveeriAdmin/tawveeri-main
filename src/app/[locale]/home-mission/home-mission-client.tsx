@@ -233,6 +233,11 @@ function MissionCard({ m, onChange, onSubmit, submitLabel, t, isAr, loading }: {
   const needsHousehold = qty("refrigerator") > 0 || qty("washing_machine") > 0 || qty("dishwasher") > 0;
   const acQty = qty("air_conditioner");
   const [applyAllArea, setApplyAllArea] = useState("");
+  // ADR-400 — per-space typed draft. The free-text m² field committed every keystroke straight
+  // into `area_m2` and dropped anything below 5, so a shopper typing «22» saw the first «2»
+  // vanish and the field stay empty («35» became «5») — live-reproduced 2026-10-02 (reviewer
+  // E7). The draft keeps what was typed; the value commits once it is a valid 5–200 area.
+  const [areaDrafts, setAreaDrafts] = useState<Record<string, string>>({});
   const mentionsCooker = m.unsupported_mentions.some((u) => /فرن|بوتاجاز/.test(u));
 
   const qtyRow = (cat: string) => (
@@ -316,13 +321,22 @@ function MissionCard({ m, onChange, onSubmit, submitLabel, t, isAr, loading }: {
                     </button>
                   ))}
                   <input type="text" inputMode="numeric" dir="ltr" aria-label={t.area}
-                    value={s.area_m2 != null && !AREA_CHIPS.includes(s.area_m2) ? s.area_m2 : ""}
+                    value={areaDrafts[s.key] ?? (s.area_m2 != null && !AREA_CHIPS.includes(s.area_m2) ? String(s.area_m2) : "")}
                     placeholder="م²"
+                    data-testid="space-area-input"
                     onChange={(e) => {
-                      const v = e.target.value.replace(/[^0-9]/g, "");
+                      const v = e.target.value.replace(/[^0-9]/g, "").slice(0, 3);
+                      setAreaDrafts((d) => ({ ...d, [s.key]: v }));
                       const a = v ? Number(v) : null;
-                      onChange({ ...m, spaces: m.spaces.map((x, j) => (j === i ? { ...x, area_m2: a != null && a >= 5 && a <= 200 ? a : a != null && a > 0 && a < 5 ? x.area_m2 : null } : x)) });
+                      // Commit only a valid area; an in-progress («2» of «22») or empty draft
+                      // leaves the stored value untouched instead of erasing the keystroke.
+                      if (a != null && a >= 5 && a <= 200) {
+                        onChange({ ...m, spaces: m.spaces.map((x, j) => (j === i ? { ...x, area_m2: a } : x)) });
+                      } else if (!v) {
+                        onChange({ ...m, spaces: m.spaces.map((x, j) => (j === i ? { ...x, area_m2: null } : x)) });
+                      }
                     }}
+                    onBlur={() => setAreaDrafts((d) => { const { [s.key]: _drop, ...rest } = d; void _drop; return rest; })}
                     className="h-9 w-12 rounded-lg border border-outline-variant bg-white text-center text-[11px] tabular-nums dark:bg-gray-900" />
                 </div>
               </div>
@@ -1126,12 +1140,23 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
         {/* ── PLAN OVERVIEW — the whole plan in seconds ── */}
         {!purchaseMode && plan && plan.state !== "need_categories" && plan.allocation && (
           <section className="mt-1 rounded-2xl border border-outline-variant bg-white p-3 dark:bg-gray-900">
-            <p className="mb-2 text-sm font-bold">{plan.state === 'ok' && okLegs.length === plan.legs?.length
-              ? (isAr ? 'خطة مكتملة' : 'Complete plan')
+            {/* ADR-400 — «خطة مكتملة» beside an amber/red bar read as a contradiction (reviewer
+                evidence #7: 11,827 of 12,000 with 173 left, shipping/installation uncounted).
+                The label now says what is complete — the DEVICE picks — and the bar's own state
+                is spelled out in words, never left to colour alone. */}
+            <p className="mb-2 text-sm font-bold" data-testid="plan-state-label">{plan.state === 'ok' && okLegs.length === plan.legs?.length
+              ? (isAr ? 'اختيار الأجهزة مكتمل — بسعر الأجهزة فقط' : 'Device picks complete — device prices only')
               : (isAr ? 'خطة جزئية — راجع الأجهزة التي تحتاج استكمالًا' : 'Partial plan — review the remaining appliances')}</p>
             <p className="mb-3 text-xs leading-6 text-on-surface-variant">{isAr
               ? 'المتبقي من ميزانيتك ليس توفيرًا مثبتًا. الشحن والتركيب غير محسوبين، ولا يلزم إنفاق كامل الميزانية.'
               : 'Remaining budget is not verified savings. Shipping and installation are excluded; you do not need to spend the full budget.'}</p>
+            {bar && bar.tone !== 'ok' && plan.allocation.budget_total != null && plan.allocation.total_allocated != null && (
+              <p className={`mb-2 text-xs font-semibold ${bar.tone === 'over' ? 'text-error-700 dark:text-error-300' : 'text-warning-800 dark:text-warning-300'}`} data-testid="budget-bar-state">
+                {bar.tone === 'over'
+                  ? (isAr ? `الأجهزة وحدها تتجاوز ميزانيتك بـ ${fmt(Math.round(plan.allocation.total_allocated - plan.allocation.budget_total))} ${t.sar}` : `Devices alone exceed your budget by ${fmt(Math.round(plan.allocation.total_allocated - plan.allocation.budget_total))} ${t.sar}`)
+                  : (isAr ? `متبقٍ ${fmt(Math.round(plan.allocation.budget_total - plan.allocation.total_allocated))} ${t.sar} فقط — لا يغطي الشحن والتركيب` : `Only ${fmt(Math.round(plan.allocation.budget_total - plan.allocation.total_allocated))} ${t.sar} left — it does not cover delivery or installation`)}
+              </p>
+            )}
             <div className="flex items-baseline justify-between gap-2">
               <p className="text-[13px] font-bold">
                 {groups.map((g) => `${isAr ? g.label_ar : g.label_en}${g.legs.length > 1 ? ` ×${g.legs.length}` : ""}`).join(" · ")}
@@ -1263,6 +1288,17 @@ export function HomeMissionClient({ locale }: { locale: Locale }) {
                       );
                     })}
                   </div>
+                  {/* ADR-400 — a model-unconfirmed pick next to «أكمل الشراء» needs a warning
+                      at the button's size, before the button (reviewer evidence #7: GREE AC
+                      «بدون تأكيد الموديل — 2 متاجر» beside «ابدأ الشراء»). */}
+                  {g.legs.some((leg) => leg.picked?.claim_kind === "availability") && !prog.complete && (
+                    <p data-testid="model-unconfirmed-warning" className="mt-2 flex min-h-[44px] items-center gap-2 rounded-xl border border-warning-300 bg-warning-50 px-3 py-2 text-[12px] font-semibold leading-5 text-warning-900 dark:border-warning-800 dark:bg-warning-950 dark:text-warning-200">
+                      <span aria-hidden>⚠</span>
+                      <span>{isAr
+                        ? `الموديل غير مؤكد في أحد الأجهزة — تحقق من رقم الموديل في صفحة ${g.store} قبل الدفع`
+                        : `One item's model is unconfirmed — check the model number on ${g.store}'s page before paying`}</span>
+                    </p>
+                  )}
                   {next?.picked?.go_url && (
                     <a href={next.picked.go_url} rel="noopener nofollow"
                       onClick={(e) => onGoExit(e, next, next.picked!, "home_mission_retailer_cta")}

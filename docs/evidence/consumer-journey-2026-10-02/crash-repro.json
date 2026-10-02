@@ -1,0 +1,148 @@
+[
+  {
+    "mode": "mobile",
+    "path": "direct",
+    "url": "https://tawveeri.com/ar/search?q=%D8%AB%D9%84%D8%A7%D8%AC%D8%A9+%D8%A8%D8%A7%D8%A8%D9%8A%D9%86+%D8%AA%D8%AD%D8%AA+2500+%D8%B1%D9%8A%D8%A7%D9%84+%D8%AA%D9%88%D8%B5%D9%8A%D9%84+%D8%A7%D9%84%D8%B1%D9%8A%D8%A7%D8%B6",
+    "ttfu": 4.647,
+    "crashed": false,
+    "hasPick": true,
+    "errors": [],
+    "inputInfo": null
+  },
+  {
+    "mode": "mobile",
+    "path": "page-form",
+    "url": "https://tawveeri.com/ar/search?q=%D8%AB%D9%84%D8%A7%D8%AC%D8%A9+%D8%A8%D8%A7%D8%A8%D9%8A%D9%86+%D8%AA%D8%AD%D8%AA+2500+%D8%B1%D9%8A%D8%A7%D9%84+%D8%AA%D9%88%D8%B5%D9%8A%D9%84+%D8%A7%D9%84%D8%B1%D9%8A%D8%A7%D8%B6",
+    "ttfu": 2.383,
+    "crashed": false,
+    "hasPick": true,
+    "errors": [],
+    "inputInfo": {
+      "inputs": [
+        {
+          "placeholder": "ابحث عن المنتجات...",
+          "type": "text",
+          "inForm": true,
+          "inHeader": true
+        },
+        {
+          "placeholder": "ابحث عن المنتجات...",
+          "type": "text",
+          "inForm": true,
+          "inHeader": false
+        }
+      ],
+      "picked": {
+        "placeholder": "ابحث عن المنتجات...",
+        "inForm": true,
+        "inHeader": false
+      },
+      "valueMatches": true
+    }
+  },
+  {
+    "mode": "mobile",
+    "path": "header-bar",
+    "url": "https://tawveeri.com/ar/search?q=%D8%AB%D9%84%D8%A7%D8%AC%D8%A9%20%D8%A8%D8%A7%D8%A8%D9%8A%D9%86%20%D8%AA%D8%AD%D8%AA%202500%20%D8%B1%D9%8A%D8%A7%D9%84%20%D8%AA%D9%88%D8%B5%D9%8A%D9%84%20%D8%A7%D9%84%D8%B1%D9%8A%D8%A7%D8%B6",
+    "ttfu": 0.612,
+    "crashed": true,
+    "hasPick": false,
+    "errors": [
+      "TypeError: e.trim is not a function     at push.e.s.search.title (https://tawveeri.com/_next/static/chunks/066hsuze_hx-b.js:1:34484)"
+    ],
+    "inputInfo": {
+      "inputs": [
+        {
+          "placeholder": "ابحث عن المنتجات...",
+          "type": "text",
+          "inForm": true,
+          "inHeader": true
+        },
+        {
+          "placeholder": "ابحث عن المنتجات...",
+          "type": "text",
+          "inForm": true,
+          "inHeader": false
+        }
+      ],
+      "picked": {
+        "placeholder": "ابحث عن المنتجات...",
+        "inForm": true,
+        "inHeader": true
+      },
+      "valueMatches": true
+    }
+  },
+  {
+    "mode": "desktop",
+    "path": "direct",
+    "url": "https://tawveeri.com/ar/search?q=%D8%AB%D9%84%D8%A7%D8%AC%D8%A9+%D8%A8%D8%A7%D8%A8%D9%8A%D9%86+%D8%AA%D8%AD%D8%AA+2500+%D8%B1%D9%8A%D8%A7%D9%84+%D8%AA%D9%88%D8%B5%D9%8A%D9%84+%D8%A7%D9%84%D8%B1%D9%8A%D8%A7%D8%B6",
+    "ttfu": 3.512,
+    "crashed": false,
+    "hasPick": true,
+    "errors": [],
+    "inputInfo": null
+  },
+  {
+    "mode": "desktop",
+    "path": "page-form",
+    "url": "https://tawveeri.com/ar/search?q=%D8%AB%D9%84%D8%A7%D8%AC%D8%A9+%D8%A8%D8%A7%D8%A8%D9%8A%D9%86+%D8%AA%D8%AD%D8%AA+2500+%D8%B1%D9%8A%D8%A7%D9%84+%D8%AA%D9%88%D8%B5%D9%8A%D9%84+%D8%A7%D9%84%D8%B1%D9%8A%D8%A7%D8%B6",
+    "ttfu": 2.389,
+    "crashed": false,
+    "hasPick": true,
+    "errors": [],
+    "inputInfo": {
+      "inputs": [
+        {
+          "placeholder": "ابحث عن منتج، موديل، أو علامة تجارية...",
+          "type": "search",
+          "inForm": true,
+          "inHeader": true
+        },
+        {
+          "placeholder": "ابحث عن المنتجات...",
+          "type": "text",
+          "inForm": true,
+          "inHeader": false
+        }
+      ],
+      "picked": {
+        "placeholder": "ابحث عن المنتجات...",
+        "inForm": true,
+        "inHeader": false
+      },
+      "valueMatches": true
+    }
+  },
+  {
+    "mode": "desktop",
+    "path": "header-bar",
+    "url": "https://tawveeri.com/ar/search?q=%D8%AB%D9%84%D8%A7%D8%AC%D8%A9+%D8%A8%D8%A7%D8%A8%D9%8A%D9%86+%D8%AA%D8%AD%D8%AA+2500+%D8%B1%D9%8A%D8%A7%D9%84+%D8%AA%D9%88%D8%B5%D9%8A%D9%84+%D8%A7%D9%84%D8%B1%D9%8A%D8%A7%D8%B6",
+    "ttfu": 2.676,
+    "crashed": false,
+    "hasPick": true,
+    "errors": [],
+    "inputInfo": {
+      "inputs": [
+        {
+          "placeholder": "ابحث عن منتج، موديل، أو علامة تجارية...",
+          "type": "search",
+          "inForm": true,
+          "inHeader": true
+        },
+        {
+          "placeholder": "ابحث عن المنتجات...",
+          "type": "text",
+          "inForm": true,
+          "inHeader": false
+        }
+      ],
+      "picked": {
+        "placeholder": "ابحث عن منتج، موديل، أو علامة تجارية...",
+        "inForm": true,
+        "inHeader": true
+      },
+      "valueMatches": true
+    }
+  }
+]

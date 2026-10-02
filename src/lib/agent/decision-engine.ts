@@ -859,7 +859,9 @@ export function decideWashingMachine(task: ShoppingTask, rows: CanonicalRow[]): 
     }
     if (kg != null && wantLarge) { if (kg >= 10) { score += 0.1; reasons.fit(`سعة ${kg} كجم — مناسبة للعائلات`); } else reasons.caution(`سعة ${kg} كجم — متوسطة`); }
     if (type === "front_load") { score += 0.06; reasons.spec("تحميل أمامي — غسيل أعمق وأوفر ماءً"); }
-    if (inverter) { score += (wantLowElec || wantQuiet) ? 0.12 : 0.05; if (wantLowElec || wantQuiet) reasons.fit("محرك إنفرتر — أهدأ وأوفر (أولويتك)"); else reasons.spec("محرك إنفرتر — كفاءة أعلى"); }
+    // ADR-400: «أهدأ» was asserted with no noise figure in the data (reviewer evidence #5).
+    // Inverter is stated as the technology it is; the quiet claim is bounded to what we hold.
+    if (inverter) { score += (wantLowElec || wantQuiet) ? 0.12 : 0.05; if (wantLowElec || wantQuiet) reasons.fit("محرك إنفرتر — أوفر في الكهرباء عادةً (أولويتك)؛ لا نملك قياس ضجيج بالديسيبل"); else reasons.spec("محرك إنفرتر — كفاءة أعلى"); }
     else if (wantLowElec) { score -= 0.06; reasons.caution("عادي (غير إنفرتر) — استهلاك أعلى"); }
     if (combo) { score += wantDryer ? 0.1 : 0.03; if (wantDryer) reasons.fit("غسالة ونشافة — تغسل وتجفف (أولويتك)"); else reasons.spec("غسالة ونشافة مدمجة"); }
     else if (wantDryer) { score -= 0.08; reasons.caution("غسالة فقط — بدون نشافة"); }
@@ -883,7 +885,8 @@ interface ApplianceMeta {
   featureWants?: Record<string, string>;                   // priority keyword → attribute flag it satisfies
 }
 export const APPLIANCE_META: Record<string, ApplianceMeta> = {
-  dishwasher: { nounAr: "غسالة صحون", metricAr: "مكان", largeAt: 14, features: { inverter: "محرك إنفرتر — أهدأ وأوفر", third_rack: "رف ثالث", aquastop: "أمان تسرب الماء" }, featureWants: { quiet: "inverter", low_electricity: "inverter" } },
+  // ADR-400: the inverter phrase no longer asserts «أهدأ» — no noise measurement exists in the data.
+  dishwasher: { nounAr: "غسالة صحون", metricAr: "مكان", largeAt: 14, features: { inverter: "محرك إنفرتر (بلا قياس ضجيج لدينا)", third_rack: "رف ثالث", aquastop: "أمان تسرب الماء" }, featureWants: { quiet: "inverter", low_electricity: "inverter" } },
   microwave: { nounAr: "مايكرويف", metricAr: "لتر", largeAt: 30, features: { convection: "حراري — يشوي ويخبز", grill: "جريل", inverter: "إنفرتر" }, featureWants: { cooking: "convection" } },
   vacuum: { nounAr: "مكنسة", metricAr: "واط", features: { cordless: "لاسلكية", mop: "تمسح وتشفط", wifi: "تحكم بالتطبيق/المساعد", hepa: "فلتر HEPA", bagless: "بدون كيس" }, featureWants: {} },
   air_purifier: { nounAr: "منقي هواء", metricAr: "م²", largeAt: 40, features: { hepa: "فلتر HEPA", ionizer: "مؤيّن", uv: "أشعة UV", wifi: "تحكم ذكي" }, featureWants: {} },
@@ -929,7 +932,7 @@ export function decideAppliance(task: ShoppingTask, rows: CanonicalRow[]): Recom
       if (wantLarge) { if (cap >= meta.largeAt) { score += 0.1; reasons.fit(`سعة ${cap} ${unit} — مناسبة للعائلات`); } else reasons.caution(`سعة ${cap} ${unit} — متوسطة`); }
     }
     // efficiency (inverter) — matters most where the appliance runs long/often
-    if (a.inverter === true) { score += (wantLowElec || wantQuiet) ? 0.12 : 0.05; if (wantLowElec || wantQuiet) reasons.fit("إنفرتر — أهدأ وأوفر (أولويتك)"); else reasons.spec("إنفرتر — كفاءة أعلى"); }
+    if (a.inverter === true) { score += (wantLowElec || wantQuiet) ? 0.12 : 0.05; if (wantLowElec || wantQuiet) reasons.fit("إنفرتر — أوفر في الكهرباء عادةً (أولويتك)؛ لا نملك قياس ضجيج بالديسيبل"); else reasons.spec("إنفرتر — كفاءة أعلى"); }
     else if (wantLowElec && "inverter" in a && a.inverter === false) { score -= 0.05; reasons.caution("عادي (غير إنفرتر)"); }
     // requested features
     for (const [flag, want] of Object.entries(meta.featureWants ?? {})) {

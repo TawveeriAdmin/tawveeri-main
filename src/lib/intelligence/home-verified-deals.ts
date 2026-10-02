@@ -31,6 +31,8 @@ export interface HomeVerifiedDeal {
   observedMax: number;
   savingPct: number;
   trackedDays: number;
+  /** When the drop was last observed (ISO). Null only for legacy rows without a timestamp. */
+  lastSeen?: string | null;
   /**
    * WHERE THE CARD SENDS THE SHOPPER (ADR-170).
    *
@@ -65,7 +67,20 @@ export interface VerifiedDropRow {
 export interface RankedVerifiedDrop {
   name: string; url: string; storeName: string | null;
   price: number; observedMax: number; savingPct: number; trackedDays: number;
+  /** ISO timestamp of the last observation behind this drop — rendered as the date the
+   *  drop was last seen (ADR-400: a verified saving carries its two dates). */
+  lastSeen: string | null;
 }
+
+/**
+ * ADR-400 — the price-truth sanity bound applied at READ time. Measured on production
+ * 2026-10-02: the top `verified_drop` rows by saving were an 89 SAR USB hub with
+ * `observed_max` 2,300,000 and a 2,499 SAR dishwasher with `observed_max` 230,000 — unit
+ * errors in old observations, not drops. ADR-200's write-time bound (a price more than 4×
+ * the last trusted one is rejected) never covered rows written before it existed, so the
+ * same ratio gates the read: a "drop" from more than 4× the current price is not evidence.
+ */
+export const VERIFIED_DROP_MAX_RATIO = 4;
 
 const isAccessoryCategory = (c: string | null) => String(c ?? '').toLowerCase().includes('accessor');
 
@@ -147,6 +162,7 @@ export function rankVerifiedDropRows(data: VerifiedDropRow[], merchantSlug: stri
         observedMax: Math.round(observedMax),
         savingPct: Math.round(Number(r.real_saving_pct) || 0),
         trackedDays: Number.isFinite(trackedDays) ? trackedDays : 0,
+        lastSeen: r.last_seen ?? null,
         _acc: isAccessoryCategory(r.category) && !isMiscategorizedPrimaryProduct(name, r.category),
         // Freshness (mission §1/§3): the pool-starvation fix removes the (accidental,
         // undocumented) recency-sort side effect that used to keep a merchant-scoped
@@ -167,6 +183,9 @@ export function rankVerifiedDropRows(data: VerifiedDropRow[], merchantSlug: stri
       d._fresh &&
       Number.isFinite(d.price) && d.price > 0 &&
       Number.isFinite(d.observedMax) && d.observedMax > d.price &&
+      // ADR-400 — see VERIFIED_DROP_MAX_RATIO: an implausible observed maximum is a data
+      // defect, not a deal, and must never headline a trust surface.
+      d.observedMax <= d.price * VERIFIED_DROP_MAX_RATIO &&
       // A drop we watched for a single day is not evidence of anything.
       d.trackedDays >= 2 &&
       // Accessories are excluded from trust surfaces ENTIRELY, not merely ranked last.
@@ -419,6 +438,7 @@ export async function getCuratedVerifiedDeals(urls: string[], locale = 'ar'): Pr
           observedMax: Number(d.observed_max),
           savingPct: Number(d.real_saving_pct),
           trackedDays: Number(d.distinct_days),
+          lastSeen: d.last_seen ?? null,
           href,
           internal,
         };

@@ -154,7 +154,11 @@ const NAMED_SERIES = /iphone|galaxy|macbook|ipad|pixel|redmi|poco|vivobook|think
 // (decide() answers it directly with count 4; the client never called it). This list is
 // inherently open-ended across appliance categories (capacity, weight, power, battery,
 // resolution, …), so it is kept broad rather than re-patched one missed unit at a time.
-const SPEC_UNIT_TOKEN = /^\d+(?:gb|tb|mb|mah|wh|kwh|hz|ghz|mhz|w|kw|v|a|kg|g|lb|lbs|oz|l|ml|mm|cm|inch|in|ft|mp|nit|nits|k|btu|rpm|db|fps)$/i;
+// ADR-400 (2026-10-02): «30m2» (room area, reviewer Q6 "quiet AC for 30m2 under 4000") was read
+// as a MODEL token — the English sentence was routed to plain retrieval and the decision engine
+// was never asked, while the Arabic phrasing of the same need was advised. Area units join the
+// spec-unit list.
+const SPEC_UNIT_TOKEN = /^\d+(?:gb|tb|mb|mah|wh|kwh|hz|ghz|mhz|w|kw|v|a|kg|g|lb|lbs|oz|l|ml|mm|cm|inch|in|ft|mp|nit|nits|k|btu|rpm|db|fps|m2|m²|sqm|sqft)$/i;
 
 export function namesASpecificModel(text: string): boolean {
   const t = (text || '').trim();

@@ -9,7 +9,7 @@ import {
 import { useTranslations } from '@/lib/simple-intl-provider';
 import { Price } from '@/components/ui/price';
 import {
-  comparisonBadge, secondaryCostLines, exitHref, recTitle,
+  comparisonBadge, secondaryCostLines, exitHref, recTitle, effectivePrice,
   verdictTone, verdictText, choiceReasons, discountLine, alternativeLabel, evidenceGroups,
   alternativePriceLine, sizeMismatchCopy,
   type AdvisorRecommendation, type AdvisorResponse, type Locale,
@@ -353,10 +353,20 @@ function TrustBadge({ rec, loc }: { rec: AdvisorRecommendation; loc: Locale }) {
  */
 function CostBlock({ rec, loc, t }: { rec: AdvisorRecommendation; loc: Locale; t: TFn }) {
   const secondary = secondaryCostLines(rec, loc);
+  // ADR-400 — `unit_price ?? 0` rendered «سعر الجهاز ٠» beside prose quoting the real price
+  // (reviewer evidence #2/#5). Unknown is shown as unknown; the listing facts' own observed
+  // price fills the gap when the projection's lowest price is unpopulated.
+  const price = effectivePrice(rec);
   return (
     <div className="text-end">
       <div className="text-[11px] text-on-surface-variant">{t('agent.unitPrice')}</div>
-      <Price amount={rec.unit_price ?? 0} className="text-xl font-bold text-primary-700 dark:text-primary-300" />
+      {price != null ? (
+        <Price amount={price} className="text-xl font-bold text-primary-700 dark:text-primary-300" />
+      ) : (
+        <div data-testid="unit-price-unknown" className="text-sm font-semibold text-on-surface-variant">
+          {loc === 'ar' ? 'السعر غير متاح حاليًا — تحقق عند المتجر' : 'Price not available right now — check at the store'}
+        </div>
+      )}
       {secondary.length > 0 && (
         <ul className="mt-1 space-y-0.5 text-[11px] text-on-surface-variant">
           {secondary.map((l, i) => (
@@ -495,7 +505,7 @@ function ShareDecisionButton({ rec, loc, t, source }: { rec: AdvisorRecommendati
   const [copied, setCopied] = useState(false);
   const handleShare = async () => {
     const title = recTitle(rec, loc);
-    const price = rec.unit_price;
+    const price = effectivePrice(rec);
     const badge = comparisonBadge(rec, loc);
     // Referral-loop follow-up (2026-08-25) — the code is a derived slice of this browser's
     // own already-existing anonymous session id, never a new stored value (see
@@ -660,7 +670,7 @@ function SmartPick({ rec, loc, t, Arrow, source, budgetTotal }: { rec: AdvisorRe
   // separate `budget_note` block below whenever `mismatch` is present, so there is exactly
   // one red banner, never two saying the same thing in two verbs.
   const mismatchCopy = mismatch
-    ? sizeMismatchCopy(mismatch, loc, { stated: budgetTotal != null, total: budgetTotal, pickPrice: rec.unit_price })
+    ? sizeMismatchCopy(mismatch, loc, { stated: budgetTotal != null, total: budgetTotal, pickPrice: effectivePrice(rec) })
     : null;
   const hasAlternative = !!rec.chosen_over;
 
@@ -916,6 +926,14 @@ export function AdvisorAnswer({
         <div className="mb-4 flex items-start gap-2 rounded-xl border border-warning-200 bg-warning-50 p-3 text-sm leading-relaxed text-on-surface dark:border-warning-900/50 dark:bg-warning-950/30" data-testid="advisor-capacity-note">
           <CircleAlert className="mt-0.5 h-4 w-4 shrink-0 text-warning-600" aria-hidden />
           <span>{loc === 'ar' ? result.capacity_note.ar : result.capacity_note.en}</span>
+        </div>
+      )}
+      {/* ADR-400 — a stated priority we hold no measurement for («هادئ» with no dB data) is
+          said once, here, before the pick — never scored by proxy and never silently dropped. */}
+      {result.priority_note && (
+        <div className="mb-4 flex items-start gap-2 rounded-xl border border-[color:var(--color-outline-variant)] bg-surface-container-low p-3 text-sm leading-relaxed text-on-surface" data-testid="advisor-priority-note">
+          <Info className="mt-0.5 h-4 w-4 shrink-0 text-on-surface-variant" aria-hidden />
+          <span>{loc === 'ar' ? result.priority_note.ar : result.priority_note.en}</span>
         </div>
       )}
 

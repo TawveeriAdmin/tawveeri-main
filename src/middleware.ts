@@ -244,6 +244,26 @@ export async function middleware(request: NextRequest) {
     return redirect;
   }
 
+  // ARABIC FIRST FOR AN UNPREFIXED ENTRY (ADR-400). next-intl's default detection sends an
+  // unprefixed request (`tawveeri.com/`) to whichever locale the browser's Accept-Language
+  // ranks first — on a Saudi phone with an English OS that is `/en`, and the reviewer's first
+  // evidence item (2026-10-02) was exactly that: «tawveeri.com حوّل إلى /en قبل العربية». The
+  // product is Arabic-first by Constitution; the browser's UI language is not the shopper's
+  // reading preference. Rule: an unprefixed page path lands on the locale the visitor CHOSE
+  // (the `NEXT_LOCALE` cookie next-intl writes when they switch) and otherwise on Arabic —
+  // never on Accept-Language. Prefixed paths (`/en/...`) are untouched, so English stays one
+  // tap away and a shared `/en` link still opens in English.
+  const firstSegment = pathname.split('/')[1] ?? '';
+  if (!locales.includes(firstSegment as (typeof locales)[number])) {
+    const chosen = request.cookies.get('NEXT_LOCALE')?.value;
+    const target = locales.includes(chosen as (typeof locales)[number]) ? (chosen as string) : defaultLocale;
+    const url = request.nextUrl.clone();
+    url.pathname = `/${target}${pathname === '/' ? '' : pathname}`;
+    const redirect = markHost(NextResponse.redirect(url, 307));
+    redirect.headers.set('x-locale', target);
+    return redirect;
+  }
+
   // First, let next-intl handle the routing
   const response = markHost(handleI18nRouting(request));
 

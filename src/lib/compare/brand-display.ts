@@ -62,9 +62,29 @@ const BRANDS: Record<string, [string, string]> = {
 
 const ARABIC = /[؀-ۿ]/;
 
+/**
+ * ADR-400 — the input is whatever a product row carries, not always a string. Live-reproduced
+ * 2026-10-02 (reviewer evidence #9): a search submitted from the HEADER bar on /search rendered
+ * the page-level «حدث خطأ. يرجى المحاولة مرة أخرى» with `TypeError: e.trim is not a function`
+ * raised here from product-card.tsx — one result's `brand` was not a string. A display helper
+ * must never take a page down; a non-string brand is coerced (array → first entry, object → its
+ * name fields) or shown as nothing.
+ */
+function coerceBrand(brand: unknown): string {
+  if (typeof brand === 'string') return brand;
+  if (brand == null || typeof brand === 'boolean') return '';
+  if (typeof brand === 'number') return String(brand);
+  if (Array.isArray(brand)) return coerceBrand(brand[0]);
+  if (typeof brand === 'object') {
+    const o = brand as Record<string, unknown>;
+    return coerceBrand(o.name_ar ?? o.name_en ?? o.name ?? o.value ?? '');
+  }
+  return '';
+}
+
 /** Display name for a stored brand token. Already-Arabic input is returned as-is. */
-export function brandDisplayName(brand: string | null | undefined, locale: 'ar' | 'en'): string {
-  const raw = (brand ?? '').trim();
+export function brandDisplayName(brand: unknown, locale: 'ar' | 'en'): string {
+  const raw = coerceBrand(brand).trim();
   if (!raw) return '';
   if (ARABIC.test(raw)) return raw;
   const pair = BRANDS[raw.toLowerCase()];

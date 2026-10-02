@@ -9,6 +9,7 @@ import { track } from '@/lib/analytics/track';
 import { recordFirstPartyInteraction } from '@/lib/analytics/interaction';
 import { hasSeenDecisionCard, markDecisionCardSeen } from '@/lib/agent/return-to-decision';
 import { AmazonPriceNote, AmazonAssociatesDisclosure, isAmazonStore } from '@/components/compare/amazon-price-note';
+import { compareUrlHasSentinel } from '@/lib/compare/identity-confidence';
 
 /**
  * SmartPickCard — surfaces Tawveeri's decision layer ("Smart Pick") at the top
@@ -105,6 +106,10 @@ export function SmartPickCard({ pick, locale }: { pick: SmartPick; locale: strin
   const compareUrl = pick.compare_url || null;
   // The claim and the surface that backs it are one decision, made here once.
   const claimsComparison = pick.store_count >= 2 && !!compareUrl;
+  // ADR-400 — a comparison whose identity key carries an unknown-spec sentinel (NO_SERIES …)
+  // is a specification grouping, not a model-number match: «أفضل سعر» is withheld and the
+  // claim says what it is. The compare page states the same basis in full.
+  const specOnly = claimsComparison && compareUrlHasSentinel(compareUrl);
   // ADR-193 / Master Book §31.5 — the observation time renders at the point of the price
   // claim. No timestamp is invented (T2): when there is no stored observation (live-scraped
   // pick), the line does not render.
@@ -177,12 +182,20 @@ export function SmartPickCard({ pick, locale }: { pick: SmartPick; locale: strin
             {/* ADR-389: «أفضل سعر» is a comparison claim — only with a real multi-store comparison.
                 A single-store pick states the observed price at the store, nothing more. */}
             <span>{claimsComparison
-              ? (isRTL ? `أفضل سعر مرصود عند ${pick.store_name}` : `Best observed price at ${pick.store_name}`)
+              ? (specOnly
+                  ? (isRTL ? `الأقل بين عروض بنفس المواصفات عند ${pick.store_name}` : `Lowest among same-spec offers at ${pick.store_name}`)
+                  : (isRTL ? `أفضل سعر مرصود عند ${pick.store_name}` : `Best observed price at ${pick.store_name}`))
               : (isRTL ? `السعر المرصود لدى ${pick.store_name}` : `Observed price at ${pick.store_name}`)}</span>
           </p>
+          {specOnly && (
+            <p className="mt-0.5 flex items-center gap-1 text-xs font-medium text-amber-800 dark:text-amber-300" data-testid="spec-only-identity-line">
+              <CircleAlert className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              {isRTL ? 'مقارنة مواصفات لا رقم موديل — فرق السعر قد يكون جهازًا آخر' : 'Spec comparison, not a model number — the price gap may be a different device'}
+            </p>
+          )}
         </div>
         <div className="shrink-0 text-end">
-          <div className="text-xs text-on-surface-variant">{claimsComparison ? (isRTL ? 'أفضل سعر مرصود' : 'Best observed price') : (isRTL ? 'السعر المرصود' : 'Observed price')}</div>
+          <div className="text-xs text-on-surface-variant">{claimsComparison ? (specOnly ? (isRTL ? 'الأقل بنفس المواصفات' : 'Lowest, same specs') : (isRTL ? 'أفضل سعر مرصود' : 'Best observed price')) : (isRTL ? 'السعر المرصود' : 'Observed price')}</div>
           <Price amount={pick.best_price} className="text-xl font-bold text-primary-700 dark:text-primary-300 tabular-nums" />
           {observedAge != null && (
             <div data-testid="smart-pick-observed" className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-on-surface-variant">

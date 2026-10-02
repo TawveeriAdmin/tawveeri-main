@@ -1401,9 +1401,18 @@ function possessiveSuffixCandidates(w: string): string[] {
   return out;
 }
 
+// ADR-400 (2026-10-02, reviewer Q6 «quiet AC for 30m2 under 4000» → 0 results on /en AND /ar
+// while the Arabic phrasing returned 214): `parseRoomSize` already reads "30 m2"/"30m2" as a
+// room size (so the NUMBER joins constraintNumbers), but the unit token itself — «m2», «m²»,
+// or the fused «30m2» — was never a wrapper word, so it became a required relevance group no
+// title contains and the gate zeroed. Live-isolated before the fix: «AC m2» → 0, «AC 30 m2» → 0,
+// «quiet AC under 4000» → 214. Same "constraint language is not product language" rule.
+const AREA_UNIT_TOKEN = /^\d{0,3}(?:m2|m²|sqm)$/i;
+
 function isWrapperWord(rawWord: string): boolean {
   const w = rawWord.toLowerCase();
   if (STOPWORDS.has(w)) return true;
+  if (AREA_UNIT_TOKEN.test(w)) return true;
   const isKnownWrapper = (s: string) => BUDGET_WRAPPER.has(s) || PREFERENCE_WRAPPER.has(s);
   const candidates = new Set<string>();
   const bases = [w];

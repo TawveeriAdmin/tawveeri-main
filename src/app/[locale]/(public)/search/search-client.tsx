@@ -1552,7 +1552,13 @@ export default function SearchClient() {
             </div>
 
             {/* Hero search bar */}
+            {/* ADR-400 — `action`/`method`/`name="q"`: a submit BEFORE hydration (slow phone, fast
+                typist — reproduced live 2026-10-02: Enter ~0.7 s after DOMContentLoaded navigated to
+                /ar/search with no `q`, the query silently lost) now degrades to a plain GET that
+                still carries the query. After hydration `onSubmit` takes over unchanged. */}
             <form
+              action={`/${locale}/search`}
+              method="get"
               onSubmit={(e) => {
                 e.preventDefault();
                 const q = searchQuery.trim();
@@ -1563,6 +1569,7 @@ export default function SearchClient() {
               <div className="relative min-w-[200px] flex-1">
                 <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                 <input
+                  name="q"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder={t('search.searchPlaceholder')}
@@ -1723,6 +1730,8 @@ export default function SearchClient() {
 
               <div className="rounded-[1.35rem] border border-[color:var(--color-primary)]/30 bg-white p-3 ring-1 ring-[color:var(--color-primary)]/10 dark:bg-[color:var(--color-card)]">
                 <form
+                  action={`/${locale}/search`}
+                  method="get"
                   onSubmit={(event) => {
                     event.preventDefault();
                     handleSearch(searchQuery.trim(), selectedCategory);
@@ -1732,6 +1741,7 @@ export default function SearchClient() {
                   <div className="relative flex-1 rounded-2xl border-2 border-[color:var(--color-primary)]/35 bg-[color:var(--color-primary-container)]/35 transition focus-within:border-[color:var(--color-primary)] focus-within:bg-white focus-within:ring-4 focus-within:ring-[color:var(--color-primary)]/15 dark:bg-[color:var(--color-background)]">
                     <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[color:var(--color-primary)]" />
                     <input
+                      name="q"
                       value={searchQuery}
                       onChange={(event) => setSearchQuery(event.target.value)}
                       placeholder={t('search.searchPlaceholder')}
@@ -1835,7 +1845,7 @@ export default function SearchClient() {
                   <div className="flex items-center justify-between gap-4 lg:hidden">
                     {loading
                       ? <p className="t-small text-on-surface-variant animate-pulse">{scrapingProgress}</p>
-                      : <ResultsMeta count={totalCount} latencyMs={searchLatencyMs ?? undefined} />
+                      : <ResultsMeta count={totalCount} latencyMs={searchLatencyMs ?? undefined} advisorCount={advisorResult?.count ?? null} advisorPending={advisorPending && !advisorResult} />
                     }
                     <div className="flex items-center gap-2">
                       {/* ADR-206: the text label renders at EVERY width. Production evidence
@@ -1880,7 +1890,7 @@ export default function SearchClient() {
                     <div className="flex items-center gap-3 flex-wrap">
                       {loading
                         ? <p className="t-small text-on-surface-variant animate-pulse">{scrapingProgress}</p>
-                        : <ResultsMeta count={totalCount} latencyMs={searchLatencyMs ?? undefined} />
+                        : <ResultsMeta count={totalCount} latencyMs={searchLatencyMs ?? undefined} advisorCount={advisorResult?.count ?? null} advisorPending={advisorPending && !advisorResult} />
                       }
                     </div>
                     <div className="flex items-center gap-2">

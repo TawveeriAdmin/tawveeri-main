@@ -24,6 +24,10 @@ const customJestConfig = {
     '<rootDir>/node_modules/',
     '<rootDir>/.next/',
     '<rootDir>/mobile/',
+    // ADR-400: agent worktrees/artifacts under .claude/ carry stale copies of this tree's
+    // tests that resolve `@/` against the LIVE src — they fail on every intentional change
+    // and are not this repository's tests.
+    '<rootDir>/.claude/',
     // Integration suites excluded from the deterministic gate (ADR-054): they hit
     // the live DB and require seeded user/notification/audit rows, so they are not
     // reproducible in a fast gate. Run explicitly with `npm run test:integration`.
@@ -40,6 +44,7 @@ const customJestConfig = {
   modulePathIgnorePatterns: [
     '<rootDir>/.next/',
     '<rootDir>/mobile/',
+    '<rootDir>/.claude/',
   ].map(portablePath),
   coveragePathIgnorePatterns: [
     '<rootDir>/.next/',

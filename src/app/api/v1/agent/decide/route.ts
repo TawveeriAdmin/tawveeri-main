@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/database";
 import { decide, explainChoice, requiredBtuForRoom, AC_BTU_FIT_TOLERANCE, type ShoppingTask, type CanonicalRow, type Recommendation } from "@/lib/agent/decision-engine";
+import { unmeasuredPriorityNote } from "@/lib/agent/unmeasured-priority";
 import { buildGoUrl } from "@/lib/analytics/build-go-url";
 import { buildPublishedEvidence } from "@/lib/agent/published-evidence";
 import { guardAdvisorPayload } from "@/lib/agent/answer-guard";
@@ -68,15 +69,22 @@ const CAT_TTL_MS = 5 * 60_000;
  *
  * A pure function (no I/O) so it is unit-testable without mocking the route's Supabase reads.
  */
-export function filterOverBudgetTvAlternatives<T extends { unit_price: number | null }>(
+export function filterOverBudgetAlternatives<T extends { unit_price: number | null }>(
   category: string,
   budgetTotal: number | null,
   recommendations: T[],
   priceOf: (r: T) => number | null = (r) => r.unit_price,
 ): T[] {
-  if (category !== "tv" || !budgetTotal || budgetTotal <= 0) return recommendations;
+  // ADR-400 (consumer-journey review, 2026-10-02): the TV-only scope above was the
+  // reviewer's exact rejection on a LAPTOP query — «لابتوب قيمنق … تحت 5000» listed a Legion
+  // at ~6,204 SAR among the suggestions. A stated ceiling is a hard constraint in every
+  // category; `category` is kept in the signature for call-site readability only.
+  void category;
+  if (!budgetTotal || budgetTotal <= 0) return recommendations;
   return recommendations.filter((r, i) => i === 0 || priceOf(r) == null || priceOf(r)! <= budgetTotal);
 }
+/** @deprecated ADR-400 — the ceiling applies to every category; kept for older imports. */
+export const filterOverBudgetTvAlternatives = filterOverBudgetAlternatives;
 
 /**
  * POST /api/v1/agent/decide  — E15.5 Stage-1 Decision Agent (deterministic).
@@ -199,7 +207,7 @@ export async function POST(req: NextRequest) {
     });
 
   const { supported, recommendations, anyWithinBudget } = decide(engineTask, rows);
-  const scopedRecommendations = filterOverBudgetTvAlternatives(engineTask.category, engineTask.budget_total ?? null, recommendations);
+  const scopedRecommendations = filterOverBudgetAlternatives(engineTask.category, engineTask.budget_total ?? null, recommendations);
 
   // P2-8 · "Ambiguous requests may ask ONE clarification question" — and the Constitution's
   // condition on it: *every clarification question must change the recommendation; questions
@@ -420,10 +428,12 @@ export async function POST(req: NextRequest) {
   // `discount_intel.current_price`, the real observed price its own text already discloses).
   // No-op for every non-TV category (same guard clause) and a no-op when neither price source
   // exceeds budget, so this is safe to thread through every downstream use of `out` below.
-  const outFiltered = filterOverBudgetTvAlternatives(
+  const outFiltered = filterOverBudgetAlternatives(
     engineTask.category, engineTask.budget_total ?? null, out,
     (r) => r.unit_price ?? r.discount_intel?.current_price ?? null,
   );
+  // ADR-400 — the one answer-level line for a priority we cannot measure (see its doc).
+  const priorityNote = unmeasuredPriorityNote(engineTask.priorities, rows);
   // Never silently relax a hard budget (brief §10/§24): when the gate found NO in-budget
   // candidate, say so explicitly and name the closest (cheapest) option instead of quietly
   // presenting a suitability-sorted over-budget item as if it satisfied the request. Uses
@@ -549,6 +559,8 @@ export async function POST(req: NextRequest) {
     // AC-only, present ONLY when the Smart Pick itself under/over-sizes beyond the same
     // tolerance its own reason text uses — never silent about a partial capacity match.
     capacity_note: capacityNote,
+    // ADR-400 — present ONLY when a stated priority has no measurement in the candidate set.
+    priority_note: priorityNote,
     // Present ONLY when the engine proved the answer would change it.  still
     // carries its reason so the decision is auditable rather than inferred from silence.
     clarify: clarify.ask ? { question: clarify.question, reason: clarify.reason } : null,

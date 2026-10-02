@@ -1009,11 +1009,16 @@ export default function ProductDetailClient({ listingIdentity = null }: { listin
  </span>
  <div>
  <p className="text-xs text-on-surface-variant">{locale === 'ar' ? 'أقل سعر' : 'Lowest'}</p>
+ {/* ADR-400 — never render «٠» for an unknown price; unknown is said as unknown. */}
+ {bestPriceStore?.current_price != null && bestPriceStore.current_price > 0 ? (
  <Price
- amount={bestPriceStore?.current_price ?? 0}
+ amount={bestPriceStore.current_price}
  className="text-lg font-black text-[var(--brand-green-dark)]"
  symbolClassName="h-4 w-4"
  />
+ ) : (
+ <p className="text-sm font-semibold text-on-surface-variant">{locale === 'ar' ? 'غير متاح' : 'Not available'}</p>
+ )}
  </div>
  </div>
  <div className="flex items-center gap-3 p-4">

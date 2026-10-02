@@ -72,8 +72,9 @@ describe('ADR-398 affiliate-attribution gate', () => {
     expect(src).toMatch(/affiliateEligible\s*\n?\s*\? buildOfferExitLink\(/);
     expect(src).toMatch(/network: "direct", program: "direct", tag: null, subId: null/);
     // the untagged exit must strip what normalizeStoreUrl / the stored row inject
-    expect(src).toMatch(/stripAffiliateParams(normalizeStoreUrl(/);
-    expect(src).toMatch(/searchParams.delete("tag"); x.searchParams.delete("ascsubtag")/);
+    // ADR-400: the unescaped parentheses made this an invalid regex and the whole suite failed to parse.
+    expect(src).toMatch(/stripAffiliateParams\(normalizeStoreUrl\(/);
+    expect(src).toMatch(/searchParams\.delete\("tag"\); x\.searchParams\.delete\("ascsubtag"\)/);
   });
 
   it('still redirects (302) on the ineligible path — navigation is never blocked', () => {

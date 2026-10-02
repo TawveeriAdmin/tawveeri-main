@@ -5,6 +5,8 @@
 // parsed-task summary). No fabrication: helpers only reformat what the engine
 // returned; they never invent prices, stores, or reasons.
 
+import { identityKeyHasSentinel } from "@/lib/compare/identity-confidence";
+
 /** What kind of statement a reason is (ADR-187). Mirrors `decision-engine.ts`'s own union. */
 export type ReasonKind = "identity" | "fit" | "spec" | "evidence" | "estimate" | "caution";
 
@@ -159,6 +161,9 @@ export interface DiscountIntel {
   real_saving_pct: number | null;
   advertised_saving_pct: number | null;
   text: { ar: string; en: string };
+  /** The listing facts' own observed current price — `effectivePrice()`'s fallback when the
+   *  projection's `unit_price` is unpopulated (ADR-400). */
+  current_price?: number | null;
 }
 
 /** Localized honest-discount line + tone; null when nothing worth showing. */
@@ -345,6 +350,9 @@ export interface AdvisorResponse {
   /** AC-only. Present when the Smart Pick itself doesn't reach the room-appropriate
    *  capacity within the same tolerance its own reason text uses. */
   capacity_note?: { ar: string; en: string } | null;
+  /** ADR-400 — a stated priority the catalogue holds no measurement for (e.g. «هادئ» with
+   *  no dB data). Disclosed once at answer level; never scored by proxy. */
+  priority_note?: { ar: string; en: string } | null;
   /**
    * P2-8. Present ONLY when the engine proved a different answer would change the
    * recommendation (see `clarify.ts` → `shouldAsk`). Absent means "do not ask" — either the
@@ -406,6 +414,11 @@ export function recTitle(rec: AdvisorRecommendation, locale: Locale): string {
 export function comparisonBadge(rec: AdvisorRecommendation, locale: Locale): { text: string; verified: boolean } {
   const n = rec.store_count ?? 0;
   if (rec.comparison_available && n >= 2) {
+    // ADR-400 — an identity key with an unknown-spec sentinel is a spec grouping, not a
+    // verified same-model comparison; the badge says which (never «موثّقة» on NO_SERIES).
+    if (identityKeyHasSentinel(rec.tps_identity_key)) {
+      return { text: locale === "ar" ? `${n} متاجر بنفس المواصفات — الموديل غير مؤكد` : `${n} stores, same specs — model unconfirmed`, verified: false };
+    }
     return { text: locale === "ar" ? `مقارنة موثّقة في ${n} متاجر` : `Verified across ${n} stores`, verified: true };
   }
   return { text: locale === "ar" ? "متجر واحد — المقارنة غير متاحة" : "Single store — no comparison", verified: false };
@@ -451,6 +464,22 @@ export function costLines(rec: AdvisorRecommendation, locale: Locale): { label: 
  * an AC recommendation rendered «التكلفة الإجمالية التقديرية 3,819 ريال» as the PRIMARY price
  * for a 1,749 SAR device, which a shopper could reasonably read as the amount to pay today.
  */
+/**
+ * ADR-400 — THE PRICE A CARD MAY SHOW. `unit_price` (the projection's verified lowest price)
+ * is unpopulated for a share of live rows while `discount_intel.current_price` (the listing
+ * facts' own observed price) is present — the same split `filterOverBudgetAlternatives`
+ * already budget-checks against. The card used to render `unit_price ?? 0`, which put
+ * «سعر الجهاز ٠» beside prose quoting 3,699 (reviewer evidence #2/#5). Null means «unknown»,
+ * and unknown is rendered as unknown — never as zero.
+ */
+export function effectivePrice(rec: Pick<AdvisorRecommendation, "unit_price" | "discount_intel">): number | null {
+  const u = rec.unit_price;
+  if (typeof u === "number" && Number.isFinite(u) && u > 0) return u;
+  const c = rec.discount_intel?.current_price;
+  if (typeof c === "number" && Number.isFinite(c) && c > 0) return c;
+  return null;
+}
+
 export function secondaryCostLines(rec: AdvisorRecommendation, locale: Locale): { label: string; amount: number }[] {
   const b = rec.cost_breakdown ?? { unit: null, installation: null, annual_electricity: null };
   return costBreakdownLines(b, locale);
@@ -531,5 +560,21 @@ export async function askAdvisor(
     signal: opts?.signal,
   });
   const json = (await res.json()) as AdvisorResponse;
+  // ADR-400 — a non-2xx body (e.g. 400 «category required» for «شيء للمطبخ موثق السعر أرخص من
+  // جرير ونون») is NOT an answer shape: it has no `count`/`recommendations`, and rendering it
+  // as one took the whole search page to the error boundary (reviewer evidence #9, Q5/Q7,
+  // 12/12 loads). Normalise it into the honest-error shape the answer surface already renders
+  // («لم أفهم طلبك» + the constraints we DID understand), never into a crash.
+  if (!res.ok) {
+    return {
+      ...json,
+      version: json.version ?? "v1",
+      error: json.error || `advisor_http_${res.status}`,
+      count: 0,
+      recommendations: [],
+      smart_pick: null,
+      supported: false,
+    } as AdvisorResponse;
+  }
   return json;
 }

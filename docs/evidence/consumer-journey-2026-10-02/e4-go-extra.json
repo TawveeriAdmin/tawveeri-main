@@ -1,0 +1,59 @@
+{
+  "goUrl": "https://tawveeri.com/go/21cb5722-f308-4407-b868-c483a27391fc?gt=1790921454535.7dd3cb86d34ffc84a455252f433ef7b15f293b15c064c4f4c6d73fdc13b1c6d0",
+  "chain": [
+    {
+      "url": "https://tawveeri.com/go/21cb5722-f308-4407-b868-c483a27391fc?gt=1790921454535.7dd3cb86d34ffc84a455252f433ef7b15f293b15c064c4f4c6d73fdc13b1c6d0",
+      "status": 302,
+      "location": "https://www.extra.com/en-sa/large-appliances-/air-conditioner/split-air-conditioner/lg-spilt-ac-18-000-btu-cool-win-dual-inverter-compressor/p/100363940",
+      "contentType": null
+    },
+    {
+      "url": "https://www.extra.com/en-sa/large-appliances-/air-conditioner/split-air-conditioner/lg-spilt-ac-18-000-btu-cool-win-dual-inverter-compressor/p/100363940",
+      "status": 200,
+      "location": null,
+      "contentType": "text/html;charset=UTF-8"
+    }
+  ],
+  "finalUrl": "https://www.extra.com/en-sa/large-appliances-/air-conditioner/split-air-conditioner/lg-spilt-ac-18-000-btu-cool-win-dual-inverter-compressor/p/100363940",
+  "merchant": {
+    "navErr": null,
+    "ttfu_seconds": 0.19,
+    "loadMs": 9961,
+    "url": "https://www.extra.com/en-sa/large-appliances-/air-conditioner/split-air-conditioner/lg-spilt-ac-18-000-btu-cool-win-dual-inverter-compressor/p/100363940",
+    "title": "LG Spilt AC, 18,000 BTU, Cool, Win, Dual Inverter Compressor - eXtra",
+    "h1": [
+      "LG Spilt AC, 18,000 BTU, Cool, Win, Dual Inverter Compressor - eXtra"
+    ],
+    "prices": [],
+    "lastPiece": [
+      "Last Piece Deal"
+    ],
+    "coupon": [
+      "Use code nd96"
+    ],
+    "capacity": [
+      "LG Spilt AC, 18,000 BTU, Cool, Win, Dual Inverter Compressor",
+      "18,000 BTU",
+      "1 Ton",
+      "1.5 Ton",
+      "2 Ton",
+      "2.5 Ton",
+      "3 Ton",
+      "LG Spilt AC, 18,000 BTU, Cool, Win, Dual Inverter Compressor"
+    ],
+    "availability": [
+      "OUT OF STOCK",
+      "Unavailable",
+      "Notify me when it’s available"
+    ],
+    "delivery": [
+      "Split Air Conditioner Installation Service",
+      "Keep track of your order’s process, whether delivery or pickup."
+    ],
+    "model": [],
+    "jsonLd": [
+      "\n\t\t{\n\t\t\t\"@context\": \"http://schema.org\",\n\t\t\t\"@type\": \"BreadcrumbList\", \n\t\t\t\"itemListElement\": [\n\t\t\t\n\t\t\t{\n\t\t\t\"@type\": \"ListItem\",\n\t\t\t\"position\": 1,\n\t\t\t\"name\": \"Large Appliances \",\n\t\t\t\"item\": \"https://www.extra.com/en-sa/large-appliances-/c/4\"\n\t\t\t},\n\t\t\t{\n\t\t\t\"@type\": \"ListItem\",\n\t\t\t\"position\": 2,\n\t\t\t\"name\": \"Air Conditioner\",\n\t\t\t\"item\": \"https://www.extra.com/en-sa/large-appliances-/air-conditioner/c/4-402\"\n\t\t\t},\n\t\t\t{\n\t\t\t\"@type\": \"ListItem\",\n\t\t\t\"position\": 3,\n\t\t\t\"name\": \"Split Air Conditioner\",\n\t\t\t\"item\": \"https://www.extra.com/en-sa/large-appliances-/air-conditioner/split-air-conditioner/c/4-402-2\"\n\t\t\t},\n\t\t\t{\n\t\t\t\"@type\": \"ListItem\",\n\t\t\t\"position\": 4,\n\t\t\t\"name\": \"LG Spilt AC, 18,000 BTU, Cool, Win, Dual Inverter Compressor\",\n\t\t\t\"item\": \"https://www.extra.com/en-sa/large-appliances-/air-conditioner/split-air-conditioner/lg-spilt-ac-18-000-btu-cool-win-dual-inverter-compressor/p/100363940\"\n\t\t\t}\n\t\t\t]\n\t\t}\n\t\t",
+      "\n\t\t\t{\n\t\t\t\"@id\"\t  : \"#product\", \n\t\t\t\"@context\": \"https://schema.org\", \n\t\t\t\"@type\": \"Product\",\n\t\t\t \"brand\": { \n          \"@type\": \"Brand\",\n          \"name\": \"LG\"           \n\t\t\t },\n\t\t\t \"sku\": \"100363940\",  \n\t\t\t \"mpn\": \"NW182C0 NK0\",\n\t\t\t \"url\": \"https://www.extra.com/en-sa/large-appliances-/air-conditioner/split-air-conditioner/lg-spilt-ac-18-000-btu-cool-win-dual-inverter-compressor/p/100363940\",\n\t\t\t \"name\": \"LG Spilt AC, 18,000 BTU, Cool, Win, Dual Inverter Compressor\",\n\t\t\t \"image\":\"https://media.extra.com/s/aurora/100363940_800/LG-Spilt-AC%2C-18%2C000-BTU%2C-Cool%2C-Win%2C-Dual-Inverter-Compressor?locale=en-GB,en-*,*&$Listing-Product-2x$\",\n\t\t\t \"description\": \"\",\n\t\t\t \"offers\": {\n          \"@type\": \"Offer\",\n          \"priceCurrency\": \"SAR\", \n          \"price\": \"1335\", \n          \"itemCondition\": \"https://schema.org/NewCondition\",\n          \"availability\": \"https://schema.org/InStock\", \n          \"url\": \"https://www.extra.com/en-sa/large-appliances-/air-conditioner/split-air-conditioner/lg-spilt-ac-18-000-btu-cool-win-dual-inverter-compressor/p/100363940\",\n          \"seller\":  { \n              \"@type\": \"Organization\", \n              \"name\": \"Extra Stores\" \n          },\n          \"shippingDetails\": [{\n              \"@type\": \"OfferShippingDetails\",\n              \"shippingRate\": {\n                  \"@type\": \"MonetaryAmount\",\n                  \"value\": \"0\",\n                  \"currency\": \"SAR\"\n              },\n              \"shippingDestination\": {\n                  \"@type\": \"DefinedR"
+    ]
+  }
+}

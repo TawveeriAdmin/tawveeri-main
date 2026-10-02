@@ -46,10 +46,15 @@ describe('filterOverBudgetTvAlternatives', () => {
     expect(out.map((r) => r.canonical_id)).toEqual(['best-fit-over', 'cheap-in-budget']);
   });
 
-  it('never touches non-tv categories (scope is TV-only, founder direction 2026-08-20)', () => {
-    const recs = [rec('ac-1', 900), rec('ac-2', 6000), rec('ac-3', 5000)];
-    const out = filterOverBudgetTvAlternatives('air_conditioner', 100, recs);
-    expect(out).toEqual(recs);
+  // ADR-400 (2026-10-02): the TV-only scope was the reviewer's exact rejection on a laptop
+  // query («لابتوب قيمنق … تحت 5000» listing a Legion at ~6,204). The ceiling now applies to
+  // every category; the top pick is still kept (budget_note names it honestly).
+  it('applies the stated ceiling in every category — a laptop over the cap never lists as an alternative (ADR-400)', () => {
+    const recs = [rec('msi-3699', 3699), rec('legion-6204', 6204), rec('acer-4599', 4599)];
+    const out = filterOverBudgetTvAlternatives('laptop', 5000, recs);
+    expect(out.map((r) => r.canonical_id)).toEqual(['msi-3699', 'acer-4599']);
+    const ac = filterOverBudgetTvAlternatives('air_conditioner', 100, [rec('ac-1', 900), rec('ac-2', 6000), rec('ac-3', 5000)]);
+    expect(ac.map((r) => r.canonical_id)).toEqual(['ac-1']);
   });
 
   it('is a no-op when no budget was stated', () => {
