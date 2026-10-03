@@ -1,0 +1,350 @@
+{
+ "captured_at": "2026-10-03T14:36:17.949Z",
+ "results": {
+  "b_rows": [
+   {
+    "identity_key": "apple|ipad air|m4|128|wifi|11",
+    "store_id": 1,
+    "status": "valid",
+    "price": "3499",
+    "observed_at": "2026-08-17T18:23:33.483Z",
+    "raw_obs_id": "1843411",
+    "confidence": 100,
+    "meta_keys": "_image",
+    "superseded": null,
+    "avail": null,
+    "url": "https://www.jarir.com/sa-en/apple-ipad-air-11-m4-tablet-pc-678797.html"
+   },
+   {
+    "identity_key": "apple|ipad air|m4|128|wifi|11",
+    "store_id": 2,
+    "status": "valid",
+    "price": "3499",
+    "observed_at": "2026-10-02T20:10:51.707Z",
+    "raw_obs_id": "3206939",
+    "confidence": 100,
+    "meta_keys": "_image,_availability",
+    "superseded": null,
+    "avail": "out_of_stock",
+    "url": "https://www.amazon.sa/dp/B0GQVC1VFT?tag=tawveeri-21"
+   },
+   {
+    "identity_key": "apple|ipad air|m4|128|wifi|11",
+    "store_id": 4,
+    "status": "valid",
+    "price": "3099",
+    "observed_at": "2026-10-02T04:13:05.038Z",
+    "raw_obs_id": "3187893",
+    "confidence": 100,
+    "meta_keys": "_image,_availability",
+    "superseded": null,
+    "avail": "in_stock",
+    "url": "https://www.extra.com/en-sa/mobiles-tablets/tablets/ipad/apple-ipad-ai"
+   },
+   {
+    "identity_key": "apple|iPhone|13|Pro Max|256",
+    "store_id": 2,
+    "status": "valid",
+    "price": null,
+    "observed_at": "2026-10-02T04:16:44.408Z",
+    "raw_obs_id": "3187919",
+    "confidence": 100,
+    "meta_keys": "_availability",
+    "superseded": null,
+    "avail": "out_of_stock",
+    "url": "https://www.amazon.sa/dp/B0CT3QFTYP?tag=tawveeri-21"
+   },
+   {
+    "identity_key": "apple|iPhone|13|Pro Max|256",
+    "store_id": 4,
+    "status": "valid",
+    "price": "1710",
+    "observed_at": "2026-09-03T00:04:23.191Z",
+    "raw_obs_id": "2313070",
+    "confidence": 100,
+    "meta_keys": null,
+    "superseded": null,
+    "avail": null,
+    "url": "https://www.extra.com/en-sa/mobiles-tablets/mobiles/smartphone/apple-i"
+   },
+   {
+    "identity_key": "apple|iPhone|15|Standard|128",
+    "store_id": 2,
+    "status": "valid",
+    "price": "2548.95",
+    "observed_at": "2026-10-03T08:13:04.417Z",
+    "raw_obs_id": "3224275",
+    "confidence": 100,
+    "meta_keys": "_image,_availability,_original_price",
+    "superseded": null,
+    "avail": "out_of_stock",
+    "url": "https://www.amazon.sa/dp/B0CHXS73N7?tag=tawveeri-21"
+   },
+   {
+    "identity_key": "apple|iPhone|15|Standard|128",
+    "store_id": 4,
+    "status": "valid",
+    "price": "2279",
+    "observed_at": "2026-10-03T00:04:09.677Z",
+    "raw_obs_id": "3215054",
+    "confidence": 100,
+    "meta_keys": null,
+    "superseded": null,
+    "avail": null,
+    "url": "https://www.extra.com/en-sa/mobiles-tablets/mobiles/smartphone/apple-i"
+   },
+   {
+    "identity_key": "apple|iPhone|15|Standard|128",
+    "store_id": 5,
+    "status": "valid",
+    "price": "3799",
+    "observed_at": "2026-10-02T06:00:07.460Z",
+    "raw_obs_id": "3188576",
+    "confidence": 100,
+    "meta_keys": null,
+    "superseded": null,
+    "avail": null,
+    "url": "https://m.dev-almanea.com/apple-iphone-15-128gb-6gb-ram-5g-black-p-170"
+   },
+   {
+    "identity_key": "apple|iPhone|15|Standard|128",
+    "store_id": 23,
+    "status": "valid",
+    "price": "2799",
+    "observed_at": "2026-10-03T08:27:58.659Z",
+    "raw_obs_id": "3224377",
+    "confidence": 100,
+    "meta_keys": "_image,_availability",
+    "superseded": null,
+    "avail": "in_stock",
+    "url": "https://gcc.luluhypermarket.com/en-sa/apple-iphone-15-5g-smartphone-12"
+   },
+   {
+    "identity_key": "beko|MODEL:DVN05420W",
+    "store_id": 2,
+    "status": "valid",
+    "price": "1125",
+    "observed_at": "2026-09-27T00:08:06.364Z",
+    "raw_obs_id": "3025253",
+    "confidence": 100,
+    "meta_keys": "_image,_availability",
+    "superseded": null,
+    "avail": "in_stock",
+    "url": "https://www.amazon.sa/-/en/Beko-Dishwasher-Program-Setting-DVN05420W/d"
+   },
+   {
+    "identity_key": "beko|MODEL:DVN05420W",
+    "store_id": 4,
+    "status": "valid",
+    "price": "1249",
+    "observed_at": "2026-10-02T00:04:11.474Z",
+    "raw_obs_id": "3179778",
+    "confidence": 100,
+    "meta_keys": null,
+    "superseded": null,
+    "avail": null,
+    "url": "https://www.extra.com/en-sa/large-appliances-/dishwashers/free-standin"
+   },
+   {
+    "identity_key": "lenovo|idea tab|NO_GEN|256|wifi|11",
+    "store_id": 2,
+    "status": "valid",
+    "price": "1049",
+    "observed_at": "2026-09-06T09:16:16.607Z",
+    "raw_obs_id": "2405706",
+    "confidence": 100,
+    "meta_keys": "_image",
+    "superseded": null,
+    "avail": null,
+    "url": "https://www.amazon.sa/dp/B0FRNB54XY?tag=tawveeri-21"
+   },
+   {
+    "identity_key": "lenovo|idea tab|NO_GEN|256|wifi|11",
+    "store_id": 4,
+    "status": "valid",
+    "price": "1099",
+    "observed_at": "2026-09-17T02:00:00.134Z",
+    "raw_obs_id": "2731071",
+    "confidence": 100,
+    "meta_keys": "_image,_availability",
+    "superseded": null,
+    "avail": "in_stock",
+    "url": "https://www.extra.com/en-sa/mobiles-tablets/tablets/android/lenovo-ide"
+   }
+  ],
+  "b_npo": [
+   {
+    "identity_key": "apple|iPhone|15|Standard|128",
+    "store_id": "2",
+    "canonical_product_id": "4ccd4652-146f-4f3c-98e0-3ebb5e941526",
+    "identity_key_status": "valid",
+    "observed_at": "2026-10-03T08:13:04.417Z",
+    "source_record_id": "39f437a7-9746-4656-aa35-4b4b27ab594c"
+   },
+   {
+    "identity_key": "apple|ipad air|m4|128|wifi|11",
+    "store_id": "2",
+    "canonical_product_id": "06cf3ee1-0253-4fcf-978c-3775f205a2da",
+    "identity_key_status": "valid",
+    "observed_at": "2026-10-02T20:10:51.707Z",
+    "source_record_id": "fc1c3033-23c7-4cef-b6bd-d44154e63e94"
+   },
+   {
+    "identity_key": "apple|iPhone|15|Standard|128",
+    "store_id": "2",
+    "canonical_product_id": "4ccd4652-146f-4f3c-98e0-3ebb5e941526",
+    "identity_key_status": "valid",
+    "observed_at": "2026-10-02T13:42:09.030Z",
+    "source_record_id": "c710a8e7-4d00-4923-81d5-4864023b9426"
+   },
+   {
+    "identity_key": "apple|ipad air|m4|128|wifi|11",
+    "store_id": "2",
+    "canonical_product_id": "06cf3ee1-0253-4fcf-978c-3775f205a2da",
+    "identity_key_status": "valid",
+    "observed_at": "2026-10-02T04:16:56.891Z",
+    "source_record_id": "3ee00d70-8530-4935-896a-5db9be49f689"
+   },
+   {
+    "identity_key": "apple|iPhone|13|Pro Max|256",
+    "store_id": "2",
+    "canonical_product_id": "077d7770-7008-4f06-978b-a6c406c4fcc8",
+    "identity_key_status": "valid",
+    "observed_at": "2026-10-02T04:16:44.408Z",
+    "source_record_id": "0621a5ba-a2bb-4806-80c2-3dc1d641dc0c"
+   },
+   {
+    "identity_key": "apple|iPhone|15|Standard|128",
+    "store_id": "2",
+    "canonical_product_id": "4ccd4652-146f-4f3c-98e0-3ebb5e941526",
+    "identity_key_status": "valid",
+    "observed_at": "2026-10-02T00:52:27.149Z",
+    "source_record_id": "c81df072-a712-4360-9966-9fb9c7443bd0"
+   },
+   {
+    "identity_key": "apple|ipad air|m4|128|wifi|11",
+    "store_id": "2",
+    "canonical_product_id": "06cf3ee1-0253-4fcf-978c-3775f205a2da",
+    "identity_key_status": "valid",
+    "observed_at": "2026-10-01T09:53:35.474Z",
+    "source_record_id": "1b6caa23-6aad-4d4a-94d9-53a5aaf31d40"
+   },
+   {
+    "identity_key": "apple|iPhone|13|Pro Max|256",
+    "store_id": "2",
+    "canonical_product_id": "077d7770-7008-4f06-978b-a6c406c4fcc8",
+    "identity_key_status": "valid",
+    "observed_at": "2026-10-01T09:53:24.105Z",
+    "source_record_id": "6aa38a4d-726c-4c42-afb5-226d6a7dd4da"
+   },
+   {
+    "identity_key": "apple|iPhone|15|Standard|128",
+    "store_id": "2",
+    "canonical_product_id": "4ccd4652-146f-4f3c-98e0-3ebb5e941526",
+    "identity_key_status": "valid",
+    "observed_at": "2026-09-29T12:40:08.271Z",
+    "source_record_id": "a7a579a3-e482-444b-ae55-5110818ea276"
+   },
+   {
+    "identity_key": "apple|iPhone|15|Standard|128",
+    "store_id": "2",
+    "canonical_product_id": "4ccd4652-146f-4f3c-98e0-3ebb5e941526",
+    "identity_key_status": "valid",
+    "observed_at": "2026-09-28T00:08:14.249Z",
+    "source_record_id": "943f416b-ff16-4b44-9247-6554c488d76a"
+   },
+   {
+    "identity_key": "apple|iPhone|15|Standard|128",
+    "store_id": "2",
+    "canonical_product_id": "4ccd4652-146f-4f3c-98e0-3ebb5e941526",
+    "identity_key_status": "valid",
+    "observed_at": "2026-09-27T12:01:05.153Z",
+    "source_record_id": "1af26de0-731d-4e9a-af39-b3e1b8fd15ca"
+   },
+   {
+    "identity_key": "apple|ipad air|m4|128|wifi|11",
+    "store_id": "2",
+    "canonical_product_id": "06cf3ee1-0253-4fcf-978c-3775f205a2da",
+    "identity_key_status": "valid",
+    "observed_at": "2026-09-27T11:59:33.709Z",
+    "source_record_id": "ee426b7a-337a-4b7f-8a97-8261a3a7290f"
+   }
+  ],
+  "b_canonicals": [
+   {
+    "tps_identity_key": "apple|ipad air|m4|128|wifi|11",
+    "id": "06cf3ee1-0253-4fcf-978c-3775f205a2da",
+    "is_active": true,
+    "name_ar": "تابلت ابل Ipad Air M4 11\" 128GB Wi-Fi",
+    "model_number": null
+   },
+   {
+    "tps_identity_key": "apple|iPhone|13|Pro Max|256",
+    "id": "077d7770-7008-4f06-978b-a6c406c4fcc8",
+    "is_active": true,
+    "name_ar": "جوال آبل iPhone 13 Pro Max 256 جيجابايت",
+    "model_number": "MLJ83AH/A"
+   },
+   {
+    "tps_identity_key": "apple|iPhone|15|Standard|128",
+    "id": "4ccd4652-146f-4f3c-98e0-3ebb5e941526",
+    "is_active": true,
+    "name_ar": "جوال آبل iPhone 15 128 جيجابايت",
+    "model_number": "MTMH3AH/A"
+   },
+   {
+    "tps_identity_key": "lenovo|idea tab|NO_GEN|256|wifi|11",
+    "id": "89c5787f-b290-451e-842f-179dd36026b4",
+    "is_active": true,
+    "name_ar": "تابلت لينوفو Idea Tab 11\" 256GB Wi-Fi",
+    "model_number": null
+   }
+  ],
+  "b_delist": [],
+  "b_price_history_amz": [
+   {
+    "tps_identity_key": "apple|ipad air|m4|128|wifi|11",
+    "n": "15",
+    "last": "2026-10-01T09:53:35.474Z"
+   },
+   {
+    "tps_identity_key": "apple|iPhone|13|Pro Max|256",
+    "n": "3",
+    "last": "2026-09-27T06:02:45.982Z"
+   },
+   {
+    "tps_identity_key": "apple|iPhone|15|Standard|128",
+    "n": "18",
+    "last": "2026-09-27T12:01:05.153Z"
+   },
+   {
+    "tps_identity_key": "lenovo|idea tab|NO_GEN|256|wifi|11",
+    "n": "1",
+    "last": "2026-07-22T00:36:18.147Z"
+   }
+  ],
+  "shared_keys_without_canonical": [
+   {
+    "shared_keys": "275",
+    "no_canonical": "2",
+    "no_projection": "2",
+    "canonical_inactive": "0"
+   }
+  ],
+  "amz_valid_null_price": [
+   {
+    "amz_valid_null_price": "0",
+    "with_eligible_rival": "0",
+    "marked_oos": "0"
+   }
+  ],
+  "amz_current_vs_canonical_mismatch": [
+   {
+    "amz_elig_with_elig_rival": "164",
+    "key_has_no_canonical": "2",
+    "amz_obs_linked_to_other_canonical": "0",
+    "amz_obs_not_normalized": "164"
+   }
+  ]
+ }
+}

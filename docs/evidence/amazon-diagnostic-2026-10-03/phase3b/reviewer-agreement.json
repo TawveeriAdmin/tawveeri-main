@@ -1,0 +1,81 @@
+{
+ "n": 84,
+ "exact_agreement": 71,
+ "collapsed_agreement": 71,
+ "confusion": {
+  "SAME→SAME": 18,
+  "DIFF→DIFF": 36,
+  "DIFF→ABSTAIN": 2,
+  "ABSTAIN→DIFF": 1,
+  "ABSTAIN→ABSTAIN": 17,
+  "SAME→ABSTAIN": 10
+ },
+ "by_category": {
+  "mobile": {
+   "n": 50,
+   "exact": 41,
+   "coll": 41
+  },
+  "tv": {
+   "n": 8,
+   "exact": 6,
+   "coll": 6
+  },
+  "laptop": {
+   "n": 4,
+   "exact": 4,
+   "coll": 4
+  },
+  "tablet": {
+   "n": 6,
+   "exact": 6,
+   "coll": 6
+  },
+  "refrigerator": {
+   "n": 5,
+   "exact": 4,
+   "coll": 4
+  },
+  "washing_machine": {
+   "n": 4,
+   "exact": 4,
+   "coll": 4
+  },
+  "vacuum": {
+   "n": 3,
+   "exact": 2,
+   "coll": 2
+  },
+  "microwave": {
+   "n": 2,
+   "exact": 2,
+   "coll": 2
+  },
+  "dishwasher": {
+   "n": 2,
+   "exact": 2,
+   "coll": 2
+  }
+ },
+ "F_on_slice_vs_r2": {
+  "asserted": 22,
+  "tp": 17,
+  "fp": 0,
+  "abstain_labeled": 5
+ },
+ "disagreements": [
+  "P340 r1=DIFFERENT_PR r2=INSUFFICIENT | Hisense 75 Inch 4K Miniled, Smart TV Bla ↔ Hisense, 75 Inch MiniLed 4K Smart TV,8 Y",
+  "P342 r1=DIFFERENT_PR r2=INSUFFICIENT | Hisense 55 inch QLED 4K Smart TV 55E7Q,H ↔ Hisense, 55 inch,QLED 4K Smart TV,144Hz ",
+  "P401 r1=INSUFFICIENT r2=DIFFERENT_PR | Samsung 387 Liter Single Door Upright Tw ↔ Samsung One Door Refrigerator, 13.6 Cu.f",
+  "P420 r1=SAME_EXACT_V r2=INSUFFICIENT | BLACK+DECKER Barrel/Drum Vacuum Cleaner, ↔ BLACK+DECKER,Drum Vacuum Cleaner,20L,200",
+  "P155 r1=SAME_EXACT_V r2=AMBIGUOUS | Samsung Galaxy A26 Dual-SIM 128GB ROM +  ↔ SAMSUNG Galaxy A26, 5G, 6+128 GB, White",
+  "P202 r1=SAME_EXACT_V r2=AMBIGUOUS | SAMSUNG Galaxy S25 Ultra Cell Phone, 256 ↔ SAMSUNG Galaxy S25 Ultra, 5G, 256 GB, Ti",
+  "P203 r1=SAME_EXACT_V r2=AMBIGUOUS | SAMSUNG Galaxy S25 Ultra Cell Phone, 256 ↔ SAMSUNG Galaxy S25 Ultra, 5G, 256 GB, Ti",
+  "P204 r1=SAME_EXACT_V r2=AMBIGUOUS | SAMSUNG Galaxy S25 Ultra Cell Phone, 256 ↔ SAMSUNG Galaxy S25 Ultra, 5G, 256 GB, Ti",
+  "P213 r1=SAME_EXACT_V r2=AMBIGUOUS | Honor X5c Plus Dual-SIM 128GB ROM + 4GB  ↔ Honor X5c Plus, 4G, 128 GB, Midnight Bla",
+  "P214 r1=SAME_EXACT_V r2=AMBIGUOUS | Honor X5c Plus Dual-SIM 128GB ROM + 4GB  ↔ Honor X5c Plus, 128GB, 4GB, 4G, Dual SIM",
+  "P215 r1=SAME_EXACT_V r2=AMBIGUOUS | Honor X5c Plus Dual-SIM 128GB ROM + 4GB  ↔ هونر X5c بلص، 128 جيجابايت، 4 جيجابايت ر",
+  "P242 r1=SAME_EXACT_V r2=AMBIGUOUS | Samsung Galaxy S26 Ultra, Unlocked Andro ↔ SAMSUNG Galaxy S26 Ultra, 5G, 256 GB, Sk",
+  "P243 r1=SAME_EXACT_V r2=AMBIGUOUS | Samsung Galaxy S26 Ultra, Unlocked Andro ↔ Samsung Galaxy S26 Ultra, 256GB, 12GB RA"
+ ]
+}

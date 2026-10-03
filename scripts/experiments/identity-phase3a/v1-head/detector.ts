@@ -14,8 +14,7 @@
 // listing is a phone only if it survives both rejections AND shows positive
 // phone evidence. Unknown beats incorrect.
 // ─────────────────────────────────────────────────────────────────────────────
-import { normalizeArabic } from "./text";
-import { identityV2Enabled } from "../../tps-core/identity-flags";
+import { normalizeArabic } from "../../../tps-plugins/mobile/text";
 
 /** Any of these ⇒ an accessory FOR a phone, never a phone. */
 const ACCESSORY_SIGNALS = [
@@ -116,30 +115,7 @@ const PHONE_SIGNALS = [
   "pixel", "بكسل", "بيكسل", "nothing phone", "tecno", "تكنو", "infinix", "انفينكس", "spark", "camon",
 ];
 
-const hitV1 = (text: string, list: string[]) => list.some((s) => text.includes(normalizeArabic(s)));
-
-// ── IDENTITY V2 (Phase 3B, 2026-10-03; flag `TPS_IDENTITY_V2`, default OFF) ──────────
-// Measured on 286 real Amazon phone titles: 146 were rejected by the substring rules above
-// because a phone's FEATURE vocabulary matched a foreign-category word — "camera" (50 MP
-// camera), "oled" inside "AMOLED", "speaker", "stand" inside "standby". 0 of 84 titles that
-// matched a control store contained "camera"; 107 of 202 unmatched did. V2 keeps the same
-// lists but (1) matches Latin signals on token boundaries (plural tolerant) so "oled" no
-// longer hits "amoled" and "stand" no longer hits "standby", and (2) removes feature words
-// a phone legitimately states from the foreign list — a standalone camera or speaker still
-// fails the POSITIVE phone-signal test below. Accessory rejection is otherwise unchanged.
-const PHONE_FEATURE_VOCAB_V2 = new Set(["camera", "كاميرا", "speaker", "مكبر صوت"]);
-const LATIN_V2 = /^[a-z0-9 +.-]+$/i;
-const boundaryHitV2 = (text: string, s: string): boolean => {
-  const n = normalizeArabic(s);
-  if (!LATIN_V2.test(n)) return text.includes(n);
-  const esc = n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  // A generation digit glued to the token is still the token: "Watch8", "Fit3", "SmartTag2",
-  // "Buds3" (Phase-3B shadow: 22 samsung_ksa wearables/trackers were claimed as phones when the
-  // boundary also refused trailing digits). Leading alphanumerics still protect "AMOLED".
-  return new RegExp(`(?<![a-z0-9])${esc}(?:s|es)?(?![a-z])`, "i").test(text);
-};
-const hitV2 = (text: string, list: string[]) => list.some((s) => !PHONE_FEATURE_VOCAB_V2.has(s) && boundaryHitV2(text, s));
-const hit = (text: string, list: string[]) => (identityV2Enabled("mobile") ? hitV2 : hitV1)(text, list);
+const hit = (text: string, list: string[]) => list.some((s) => text.includes(normalizeArabic(s)));
 
 // Samsung's own S Pen accessory listings are NOT caught by the bare "stylus"/
 // "قلم" tokens in ACCESSORY_SIGNALS above — Samsung writes the English word

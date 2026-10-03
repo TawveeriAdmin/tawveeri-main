@@ -16,8 +16,6 @@
 // did for monitors. A second, independent bug compounded the Oraimo case: the size
 // regex read the "93" in "1.93 بوصة" (a 1.93-inch watch screen) as a 93-inch TV size —
 // fixed below by rejecting a digit pair immediately preceded by a decimal point.
-import { identityV2Enabled } from "../../tps-core/identity-flags";
-
 const TV_SIGNALS = ["تلفزيون", "television", "smart tv", "led tv", "قوقل تي في", "google tv", "شاشة تلفزيون", "تليفزيون"];
 const WEAK_TV_SIGNALS = ["tv", "شاشة", "شاشه"]; // ambiguous alone — require a size + a TV/panel cue too
 const ACCESSORY_SIGNALS = [
@@ -55,14 +53,11 @@ export function detect(nameAr: string, nameEn: string): boolean {
   // otherwise "1.93 بوصة" (a watch's 1.93-inch screen) reads its "93" as a 93-inch TV.
   if (WEAK_TV_SIGNALS.some((s) => text.includes(s))) {
     const hasSize = /(?<![.\d])(3[2-9]|[4-9][0-9]|1[0-9]{2})\s*(?:inch|"|”|بوصة|انش|إنش)/.test(text);
-    // IDENTITY V2 (Phase 3B, flag `TPS_IDENTITY_V2`, default OFF): a 32"+ "TV" that says
-    // FHD/HD/HDR or names a TV platform is a TV. Measured: "Samsung 43 Inch FHD TV, F6000F"
-    // and "32 Inch HD TV, H5000F" were rejected because only 4K-class and panel words
-    // counted, so their fresh price observations never reached the knowledge layer while
-    // an older observation kept the stale price. Monitors are already rejected above.
-    const hasTvCue = identityV2Enabled("tv")
-      ? /(4k|uhd|8k|qled|oled|nanocell|qned|neo qled|smart|led|fhd|full hd|hd ready|(?<![a-z])hd(?![a-z])|hdr|crystal|android tv|google tv|webos|tizen|vidaa|roku|fire tv|frameless)/.test(text)
-      : /(4k|uhd|8k|qled|oled|nanocell|qned|neo qled|smart|led)/.test(text);
+    // PHASE 3A CANDIDATE: a 32"+ "TV" that says FHD/HD/HDR or names a TV platform is a TV.
+    // Phase 2 measured "Samsung 43 Inch FHD TV, F6000F" / "32 Inch HD TV, H5000F" rejected
+    // because only 4K-class and panel words counted as cues. Monitors are already rejected
+    // above by MONITOR_SIGNALS, so the widened cue cannot admit a computer screen.
+    const hasTvCue = /(4k|uhd|8k|qled|oled|nanocell|qned|neo qled|smart|led|fhd|full hd|hd ready|(?<![a-z])hd(?![a-z])|hdr|crystal|android tv|google tv|webos|tizen|vidaa|roku|fire tv|frameless)/.test(text);
     return hasSize && hasTvCue;
   }
   return false;

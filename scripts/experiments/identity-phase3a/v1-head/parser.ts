@@ -19,10 +19,9 @@
 // long-tail brands (Xiaomi, Honor, Huawei, Oppo, realme, vivo, OnePlus, Google,
 // Nothing, Tecno, Infinix) are entries in one table.
 // ─────────────────────────────────────────────────────────────────────────────
-import type { NormalizeResult } from "../../tps-core/types";
-import { canonicalizeBrand } from "../../tps-core/brand-map";
-import { normalizeArabic, STORAGE_TIERS, RAM_TIERS, bounded, LB, RB } from "./text";
-import { identityV2Enabled } from "../../tps-core/identity-flags";
+import type { NormalizeResult } from "../../../tps-core/types";
+import { canonicalizeBrand } from "../../../tps-core/brand-map";
+import { normalizeArabic, STORAGE_TIERS, RAM_TIERS, bounded, LB, RB } from "../../../tps-plugins/mobile/text";
 
 // ── Variant vocabulary (bilingual) ───────────────────────────────────────────
 // Order matters: longer forms first so "pro max" wins over "pro".
@@ -202,86 +201,26 @@ const COLORS: [RegExp, string][] = [
   [bounded("red|احمر"), "red"],
 ];
 
-// ─────────────────────────────────────────────────────────────────────────────
-// IDENTITY V2 (Phase 3B, 2026-10-03; flag `TPS_IDENTITY_V2`, default OFF — see
-// scripts/tps-core/identity-flags.ts). Measured on 754 real phone titles (Amazon,
-// eXtra, Almanea; docs/evidence/amazon-diagnostic-2026-10-03/phase3a/):
-//   • every `gen` rule above except Apple captures `\d{1,2}` and so DROPS a trailing
-//     letter and a third digit — HONOR X7c and X7e, Redmi 15 and 15C, Spark 30 and 30C,
-//     vivo Y19 and Y19s collapsed into one identity, and "HONOR 600 Lite" read as 60
-//     (the real HONOR 60 Lite). 63 titles change identity, 7 production keys split.
-//   • a plus SIGN glued to the model ("S26+", "A17+") was never read as Plus.
-//   • Almanea spells Plus "بلص".
-//   • "128GB Expandable to 2TB" read 2048 GB because the terabyte rule wins.
-//   • `canonicalizeBrand(null)` returns the truthy "unknown", so `inferBrand` was dead
-//     code; reviving it as written keyed a knock-off "invens ULTRA S25" as a Galaxy S25
-//     Ultra — inference must see the brand's own token, never a bare family pattern.
-// All of it is DATA transformation of the same rules, applied only when the flag is on.
-const GEN_V2 = new Map<FamilyRule, RegExp>();
-for (const [b, rules] of Object.entries(BRAND_FAMILIES)) {
-  for (const r of rules) {
-    if (b === "apple") { GEN_V2.set(r, r.gen); continue; }
-    const src = r.gen.source
-      .replace(/\(\\d\{1,2\}\)/g, "(\\d{1,3}[a-z]?)")
-      .replace(/\(\\d\{1,3\}\)/g, "(\\d{1,3}[a-z]?)")
-      .replace(/\(\[a-z\]\?\\d\{1,2\}\)/g, "([a-z]?\\d{1,3}[a-z]?)")
-      .replace(/\(\\d\{2\}\)/g, "(\\d{2}[a-z]?)");
-    GEN_V2.set(r, new RegExp(src + "(?![a-z0-9])", r.gen.flags));
-  }
-}
-/** Suffix letter lower-case, digits as written, a leading line letter upper-case ("7e", "A17", "15c"). */
-const formatGenerationV2 = (raw: string): string => raw.replace(/^([a-z]?)(\d+)([a-z]?)$/i, (_m, p, d, s) => `${p.toUpperCase()}${d}${s.toLowerCase()}`) || raw.toUpperCase();
-const PLUS_AR_V2 = bounded("بلص");
-const EXPANSION_PHRASE_V2 = /(?:expandable|expand(?:able)?\s*(?:up\s*)?to|up\s*to|micro\s?sd(?:\s*card)?|sd\s*card|memory\s*card)\s*(?:to\s*)?\d+\s*(?:tb|gb|تيرا(?:بايت)?|جيجا(?:بايت)?)/g;
-const BRAND_TOKENS_V2: Record<string, RegExp> = {
-  apple: /(?<![a-z])(apple|iphone|ايفون|ابل)(?![a-z])/,
-  samsung: /(?<![a-z])(samsung|galaxy|سامسونج|جالاكسي|جالكسي|جلاكسي)(?![a-z])/,
-  xiaomi: /(?<![a-z])(xiaomi|redmi|poco|شاومي|ريدمي|بوكو)(?![a-z])/,
-  honor: /(?<![a-z])(honor|هونر)(?![a-z])/,
-  huawei: /(?<![a-z])(huawei|هواوي)(?![a-z])/,
-  oppo: /(?<![a-z])(oppo|اوبو)(?![a-z])/,
-  realme: /(?<![a-z])(realme|ريلمي)(?![a-z])/,
-  vivo: /(?<![a-z])(vivo|فيفو)(?![a-z])/,
-  oneplus: /(?<![a-z])(oneplus|ون بلس)(?![a-z])/,
-  google: /(?<![a-z])(google pixel|pixel|بكسل|بيكسل)(?![a-z])/,
-  tecno: /(?<![a-z])(tecno|تكنو)(?![a-z])/,
-  infinix: /(?<![a-z])(infinix|انفينكس)(?![a-z])/,
-};
-function inferBrandV2(text: string): string {
-  for (const [key, re] of Object.entries(BRAND_TOKENS_V2)) if (re.test(text) && BRAND_FAMILIES[key]) return key;
-  return "unknown";
-}
-
 export function normalize(
   nameAr: string, nameEn: string, rawBrand: string | null, rawPayload?: Record<string, unknown>
 ): NormalizeResult {
   const payload = rawPayload ?? {};
-  const v2 = identityV2Enabled("mobile");
   const text = normalizeArabic(`${nameAr} ${nameEn}`);
-  const canon = canonicalizeBrand(rawBrand);
-  const brand = v2 ? (canon && canon !== "unknown" ? canon : inferBrandV2(text)) : (canon || inferBrand(text));
+  const brand = canonicalizeBrand(rawBrand) || inferBrand(text);
 
   let family: string | null = null, generation: string | null = null;
   // A NAMED model fixes its own variant: "iPhone Air" is generation Air, variant
   // Standard — the word "Air" must not also be read as a variant, or the same
   // phone splits into `iPhone|Air|Air` and `iPhone|Air|Standard`.
   let namedVariant: string | null = null;
-  let plusGlued = false;
   const rules = BRAND_FAMILIES[brand] ?? [];
   for (const rule of rules) {
     for (const n of rule.named ?? []) {
       if (n.re.test(text)) { family = rule.family; generation = n.generation; namedVariant = n.variant ?? "Standard"; break; }
     }
     if (generation) break;
-    const m = (v2 ? GEN_V2.get(rule) ?? rule.gen : rule.gen).exec(text);
-    if (m) {
-      family = rule.family;
-      generation = v2 && brand !== "apple" ? formatGenerationV2(m[1]) : m[1].toUpperCase();
-      // V2: a plus SIGN directly after the model token ("S26+") is the Plus variant; "8+256GB"
-      // never reaches here because no generation rule matches a RAM figure.
-      if (v2) plusGlued = /^\+/.test(text.slice((m.index ?? 0) + m[0].length));
-      break;
-    }
+    const m = rule.gen.exec(text);
+    if (m) { family = rule.family; generation = m[1].toUpperCase(); break; }
   }
 
   // iPhone's own "e" line (16e, 17e, ...) is real Apple branding with a lowercase "e"
@@ -302,11 +241,11 @@ export function normalize(
     generation = /fold|فولد/.test(text) ? `Z Fold ${generation}` : `Z Flip ${generation}`;
   }
 
-  const variant = family ? (namedVariant ?? readVariant(text) ?? (v2 && (plusGlued || PLUS_AR_V2.test(text)) ? "Plus" : null) ?? "Standard") : null;
+  const variant = family ? (namedVariant ?? readVariant(text) ?? "Standard") : null;
 
   // Structured store fields beat text when present (Almanea publishes them).
   const payloadStorage = Number(payload.storage ?? payload.storage_gb ?? NaN);
-  const fromText = readStorageAndRam(v2 ? text.replace(EXPANSION_PHRASE_V2, " ") : text);
+  const fromText = readStorageAndRam(text);
   const storage_gb = STORAGE_TIERS.has(payloadStorage) ? payloadStorage : fromText.storage_gb;
 
   let color: string | null = null;

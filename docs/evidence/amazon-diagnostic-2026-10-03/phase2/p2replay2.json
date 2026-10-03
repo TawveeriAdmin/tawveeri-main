@@ -1,0 +1,3577 @@
+{
+ "phones": {
+  "control_mobile_keys": 381,
+  "control_mobile_MODEL_keys": 152,
+  "P1": {
+   "label": "P1 as-is (storefront brand)",
+   "classes": {
+    "DETECT_REJECT": 146,
+    "VALID": 91,
+    "INVALID": 49
+   },
+   "distinct_valid_keys": 56,
+   "shared_with_control": 38,
+   "shared_keys": [
+    {
+     "key": "apple|iPhone|16|Plus|128",
+     "amazon": "Apple iPhone 16 Plus (128 GB) - Ultramarine",
+     "control": {
+      "store": 5,
+      "name": "iPhone 16 Plus 128GB 5G Pink"
+     }
+    },
+    {
+     "key": "samsung|Galaxy A|A56|Standard|256",
+     "amazon": "Samsung Galaxy A56 5G, Android Smartphone, 256GB Storage, 12GB RAM, Awesome Grap",
+     "control": {
+      "store": 4,
+      "name": "SAMSUNG Galaxy A56, 5G, 256 GB, 12GB RAM, Awesome LightGray"
+     }
+    },
+    {
+     "key": "apple|iPhone|16e|Standard|256",
+     "amazon": "Apple iPhone 16e (256 GB) - Black",
+     "control": {
+      "store": 4,
+      "name": "Apple iPhone 16E , 5G , 6.1 , 256GB , White"
+     }
+    },
+    {
+     "key": "samsung|Galaxy A|A36|Standard|128",
+     "amazon": "Samsung Galaxy A36 Enterprise Edition DUAL-SIM 128GB ROM + 6GB RAM (GSM only | N",
+     "control": {
+      "store": 4,
+      "name": "SAMSUNG Galaxy A36, 5G, 128 GB, Awesome Lavender"
+     }
+    },
+    {
+     "key": "infinix|Infinix Hot|70|Standard|256",
+     "amazon": "Infinix Hot 70 Smartphone, 6GB RAM, 256GB, Night Pulse",
+     "control": {
+      "store": 4,
+      "name": "INFINIX HOT 70, 256 GB, Green Texture"
+     }
+    },
+    {
+     "key": "apple|iPhone|14|Standard|128",
+     "amazon": "Apple (Refurbished) iPhone 14 5G 128GB Phone - Midnight",
+     "control": {
+      "store": 4,
+      "name": "Apple iPhone 14, 5G, 128GB, Blue"
+     }
+    },
+    {
+     "key": "xiaomi|Redmi Note|15|Pro Plus|512",
+     "amazon": "Redmi Note 15 Pro+ 5G Dual SIM+eSIM Glacier Blue 12GB RAM 512GB 5G - Global Vers",
+     "control": {
+      "store": 4,
+      "name": "XIAOMI Redmi Note 15 Pro Plus, 5G, 512 GB, Mocha Brown"
+     }
+    },
+    {
+     "key": "apple|iPhone|12|Standard|128",
+     "amazon": "Apple (Refurbished) iPhone 12 (128GB) - Black",
+     "control": {
+      "store": 4,
+      "name": "Apple iPhone 12, 5G, 128GB, Purple"
+     }
+    },
+    {
+     "key": "xiaomi|Redmi Note|15|Standard|256",
+     "amazon": "Xiaomi Redmi Note 15 5G Unlocked Smartphone, Dual SIM, 8GB RAM, 256GB Storage, B",
+     "control": {
+      "store": 5,
+      "name": "Xiaomi Redmi Note 15, 256GB, 12GB, 5G, Dual SIM - Glacier Blue"
+     }
+    },
+    {
+     "key": "apple|iPhone|18|Pro|256",
+     "amazon": "Apple iPhone 18 Pro 256 GB: – Glacier",
+     "control": {
+      "store": 5,
+      "name": "Apple iPhone 18 Pro, 256GB, 12GB RAM, 5G - Glacier"
+     }
+    },
+    {
+     "key": "xiaomi|Redmi Note|15|Pro|256",
+     "amazon": "Redmi Note 15 Pro 5G Dual SIM+eSIM Titanium Gold 12GB RAM 256GB 5G - Global Vers",
+     "control": {
+      "store": 4,
+      "name": "XIAOMI Redmi Note 15 Pro, 5G, 8+256 GB, Titanium"
+     }
+    },
+    {
+     "key": "xiaomi|Xiaomi|17|Standard|512",
+     "amazon": "Xiaomi 17 Smartphone 12+512GB,Venture Green,6330mAh Battery",
+     "control": {
+      "store": 4,
+      "name": "Xiaomi 17, 5G, 512 GB, Venture Green"
+     }
+    },
+    {
+     "key": "xiaomi|Redmi Note|14|Pro Plus|512",
+     "amazon": "Redmi Note 14 Pro+ 5G Midnight Black 12GB RAM 512GB",
+     "control": {
+      "store": 4,
+      "name": "XIAOMI Redmi Note 14 Pro Plus, 5G, 512 GB, Midnight Black"
+     }
+    },
+    {
+     "key": "samsung|Galaxy A|A07|Standard|64",
+     "amazon": "Samsung Galaxy A07 LTE, Android Smartphone, 64GB Storage, 4GB RAM, Green, 6x OS ",
+     "control": {
+      "store": 4,
+      "name": "Samsung Galaxy A07, 4G, 64 GB, Light Violet, With Travel Adaptor"
+     }
+    },
+    {
+     "key": "samsung|Galaxy A|A06|Standard|128",
+     "amazon": "Samsung Galaxy A06 5G, Dual SIM, 4GB RaM, 128GB Storage, Black (KSA Version)",
+     "control": {
+      "store": 4,
+      "name": "Samsung Galaxy A06, 4G, 128GB, 4GB RAM, Black"
+     }
+    },
+    {
+     "key": "apple|iPhone|13|Pro Max|256",
+     "amazon": "Apple (Refurbished) iPhone 13 Pro Max (256GB) - Sierra Blue",
+     "control": {
+      "store": 4,
+      "name": "Apple iPhone 13 Pro Max , 5G,  256GB, Graphite"
+     }
+    },
+    {
+     "key": "samsung|Galaxy A|A06|Standard|64",
+     "amazon": "Samsung Galaxy A06 LTE, Android Smartphone, Dual SIM Mobile Phone, 4GB RAM, 64GB",
+     "control": {
+      "store": 4,
+      "name": "Samsung Galaxy A06, 4G, 64GB, 4GB RAM, Light Blue"
+     }
+    },
+    {
+     "key": "apple|iPhone|16|Standard|128",
+     "amazon": "Apple iPhone 16 (128 GB) - Pink",
+     "control": {
+      "store": 5,
+      "name": "ايفون 16، 128 جيجا، 5 جي، اخضر"
+     }
+    },
+    {
+     "key": "samsung|Galaxy A|A55|Standard|128",
+     "amazon": "Samsung Galaxy A55 5G, 128GB Storage, 8GB RAM, Android Smartphone, Awesome Icebl",
+     "control": {
+      "store": 4,
+      "name": "Samsung Galaxy A55, 5G, 128 GB, Awesome Ice Blue"
+     }
+    },
+    {
+     "key": "apple|iPhone|14|Pro Max|256",
+     "amazon": "Apple (Refurbished) iPhone 14 Pro Max 5G 256GB - Deep Purple",
+     "control": {
+      "store": 4,
+      "name": "Apple iPhone 14 Pro Max, 5G, 256GB, Space Black"
+     }
+    },
+    {
+     "key": "samsung|Galaxy A|A07|Standard|128",
+     "amazon": "Samsung Galaxy A07 LTE, Android Smartphone, 128GB Storage, 4GB RAM, Black, 6x OS",
+     "control": {
+      "store": 4,
+      "name": "Samsung Galaxy A07, 4G, 128 GB, Green, With Travel Adaptor"
+     }
+    },
+    {
+     "key": "apple|iPhone|13|Standard|256",
+     "amazon": "Apple (Refurbished) iPhone 13 (256GB) - Midnight",
+     "control": {
+      "store": 4,
+      "name": "Apple iPhone 13 , 5G, 256GB, Pink"
+     }
+    },
+    {
+     "key": "apple|iPhone|15|Standard|128",
+     "amazon": "Apple iPhone 15 (128 GB) - Blue",
+     "control": {
+      "store": 5,
+      "name": "ابل ايفون 15، 128 جيجا، 6 جيجا، 5 جي، اسود"
+     }
+    },
+    {
+     "key": "apple|iPhone|13|Standard|128",
+     "amazon": "Apple (Refurbished) iPhone 13 (128GB) - Midnight",
+     "control": {
+      "store": 4,
+      "name": "Apple iPhone 13 , 5G, 128GB, Pink"
+     }
+    },
+    {
+     "key": "samsung|Galaxy A|A26|Standard|128",
+     "amazon": "Samsung Galaxy A26 Dual-SIM 128GB ROM + 6GB RAM (GSM Only | No CDMA) Factory Unl",
+     "control": {
+      "store": 4,
+      "name": "SAMSUNG Galaxy A26, 5G, 6+128 GB, White"
+     }
+    },
+    {
+     "key": "samsung|Galaxy S|S25|FE|256",
+     "amazon": "Samsung Galaxy S25 FE, 5G, Smartphone, Android, 8GB RAM, Octa Core, 1.3GHz, 6.7-",
+     "control": {
+      "store": 4,
+      "name": "Samsung Galaxy S25 FE, 5G, 256 GB, Navy"
+     }
+    },
+    {
+     "key": "honor|Honor X|5|Standard|64",
+     "amazon": "HONOR X5c Smartphone 4 GB RAM, 64 GB Dual SIM 4G - Midnight black - Middle East ",
+     "control": {
+      "store": 4,
+      "name": "Honor X5c, 4G, 64GB, Tidal Blue"
+     }
+    },
+    {
+     "key": "samsung|Galaxy A|A36|Standard|256",
+     "amazon": "Samsung Galaxy A36 5G, Android Smartphone, 256GB Storage, 8GB RAM, Awesome White",
+     "control": {
+      "store": 4,
+      "name": "SAMSUNG Galaxy A36, 5G, 256 GB, Awesome Lavender"
+     }
+    },
+    {
+     "key": "honor|Honor X|5|Plus|128",
+     "amazon": "Honor X5c Plus Dual-SIM 128GB ROM + 4GB RAM (GSM Only | No CDMA) Factory Unlocke",
+     "control": {
+      "store": 4,
+      "name": "Honor X5c Plus, 4G, 128 GB, Midnight Black"
+     }
+    },
+    {
+     "key": "apple|iPhone|12|Standard|64",
+     "amazon": "Apple (Refurbished) iPhone 12 (64GB) - Blue",
+     "control": {
+      "store": 4,
+      "name": "Apple iPhone 12, 5G, 64GB, White"
+     }
+    },
+    {
+     "key": "samsung|Galaxy S|S25|Ultra|256",
+     "amazon": "Samsung Galaxy S25 Ultra, 256GB (International Version)",
+     "control": {
+      "store": 4,
+      "name": "SAMSUNG Galaxy S25 Ultra, 5G, 256 GB, Titanium Silverblue"
+     }
+    },
+    {
+     "key": "apple|iPhone|15|Pro Max|256",
+     "amazon": "Apple (Refurbished) iPhone 15 Pro Max (256 GB) - White Titanium",
+     "control": {
+      "store": 4,
+      "name": "Apple iPhone 15 Pro Max, 5G, 6.7 inch, 256GB, Blue Titanium"
+     }
+    },
+    {
+     "key": "xiaomi|Redmi|15|Standard|256",
+     "amazon": "Xiaomi Redmi 15C Smartphone 8+256GB,Twilight Orange,6000mAh Battery",
+     "control": {
+      "store": 4,
+      "name": "Xiaomi Redmi 15C, 4G, 256 GB, Mint Green"
+     }
+    },
+    {
+     "key": "apple|iPhone|18|Pro|2048",
+     "amazon": "Apple iPhone 18 Pro 2 TB: – Black",
+     "control": {
+      "store": 5,
+      "name": "Apple iPhone 18 Pro, 2TB, 12GB RAM, 5G - Glacier"
+     }
+    },
+    {
+     "key": "samsung|Galaxy A|A16|Standard|128",
+     "amazon": "Samsung Galaxy A16, Android Smartphone, Dual SIM Mobile Phone, 4GB RAM, 128GB St",
+     "control": {
+      "store": 4,
+      "name": "Samsung Galaxy A16, 5G, 4+128 GB, Light Gray"
+     }
+    },
+    {
+     "key": "xiaomi|Redmi Note|17|Pro|256",
+     "amazon": "Redmi Note 17 Pro 5G Dual SIM – 12GB RAM, 256GB Storage, Sky Blue - Global Versi",
+     "control": {
+      "store": 4,
+      "name": "XIAOMI, REDMI Note 17 Pro, 5G, 12G RAM ,256G ,Black"
+     }
+    },
+    {
+     "key": "samsung|Galaxy S|S23|Ultra|256",
+     "amazon": "Samsung Galaxy S23 Ultra, 256GB, Green, 5G Mobile Phone, Dual SIM, Android Smart",
+     "control": {
+      "store": 4,
+      "name": "Samsung Galaxy S23 Ultra, 5G, 256GB, Beige"
+     }
+    },
+    {
+     "key": "apple|iPhone|18|Pro|512",
+     "amazon": "Apple iPhone 18 Pro 512 GB: – Glacier",
+     "control": {
+      "store": 5,
+      "name": "Apple iPhone 18 Pro, 512GB, 12GB RAM, 5G - Black"
+     }
+    }
+   ],
+   "invalid_reasons": {
+    "Unknown :: null in critical: family, generation, variant": 37,
+    "Motorola :: null in critical: family, generation, variant": 10,
+    "Samsung :: null in critical: family, generation, variant": 1,
+    "Google :: null in critical: family, generation, variant": 1
+   }
+  },
+  "P2": {
+   "label": "P2 + brand from title when Unknown",
+   "classes": {
+    "DETECT_REJECT": 146,
+    "VALID": 100,
+    "INVALID": 40
+   },
+   "distinct_valid_keys": 59,
+   "shared_with_control": 40,
+   "shared_keys": [
+    {
+     "key": "apple|iPhone|16|Plus|128",
+     "amazon": "Apple iPhone 16 Plus (128 GB) - Ultramarine",
+     "control": {
+      "store": 5,
+      "name": "iPhone 16 Plus 128GB 5G Pink"
+     }
+    },
+    {
+     "key": "samsung|Galaxy A|A56|Standard|256",
+     "amazon": "Samsung Galaxy A56 5G, Android Smartphone, 256GB Storage, 12GB RAM, Awesome Grap",
+     "control": {
+      "store": 4,
+      "name": "SAMSUNG Galaxy A56, 5G, 256 GB, 12GB RAM, Awesome LightGray"
+     }
+    },
+    {
+     "key": "apple|iPhone|16e|Standard|256",
+     "amazon": "Apple iPhone 16e (256 GB) - Black",
+     "control": {
+      "store": 4,
+      "name": "Apple iPhone 16E , 5G , 6.1 , 256GB , White"
+     }
+    },
+    {
+     "key": "samsung|Galaxy A|A36|Standard|128",
+     "amazon": "Samsung Galaxy A36 Enterprise Edition DUAL-SIM 128GB ROM + 6GB RAM (GSM only | N",
+     "control": {
+      "store": 4,
+      "name": "SAMSUNG Galaxy A36, 5G, 128 GB, Awesome Lavender"
+     }
+    },
+    {
+     "key": "infinix|Infinix Hot|70|Standard|256",
+     "amazon": "Infinix Hot 70 Smartphone, 6GB RAM, 256GB, Night Pulse",
+     "control": {
+      "store": 4,
+      "name": "INFINIX HOT 70, 256 GB, Green Texture"
+     }
+    },
+    {
+     "key": "apple|iPhone|14|Standard|128",
+     "amazon": "Apple (Refurbished) iPhone 14 5G 128GB Phone - Midnight",
+     "control": {
+      "store": 4,
+      "name": "Apple iPhone 14, 5G, 128GB, Blue"
+     }
+    },
+    {
+     "key": "xiaomi|Redmi Note|15|Pro Plus|512",
+     "amazon": "Redmi Note 15 Pro+ 5G Dual SIM+eSIM Glacier Blue 12GB RAM 512GB 5G - Global Vers",
+     "control": {
+      "store": 4,
+      "name": "XIAOMI Redmi Note 15 Pro Plus, 5G, 512 GB, Mocha Brown"
+     }
+    },
+    {
+     "key": "apple|iPhone|12|Standard|128",
+     "amazon": "Apple (Refurbished) iPhone 12 (128GB) - Black",
+     "control": {
+      "store": 4,
+      "name": "Apple iPhone 12, 5G, 128GB, Purple"
+     }
+    },
+    {
+     "key": "xiaomi|Redmi Note|15|Standard|256",
+     "amazon": "Xiaomi Redmi Note 15 5G Unlocked Smartphone, Dual SIM, 8GB RAM, 256GB Storage, B",
+     "control": {
+      "store": 5,
+      "name": "Xiaomi Redmi Note 15, 256GB, 12GB, 5G, Dual SIM - Glacier Blue"
+     }
+    },
+    {
+     "key": "xiaomi|Redmi|15|Standard|256",
+     "amazon": "Redmi 15C Midnight Black 8GB RAM 256GB 4G - Global Version",
+     "control": {
+      "store": 4,
+      "name": "Xiaomi Redmi 15C, 4G, 256 GB, Mint Green"
+     }
+    },
+    {
+     "key": "apple|iPhone|18|Pro|256",
+     "amazon": "Apple iPhone 18 Pro 256 GB: – Glacier",
+     "control": {
+      "store": 5,
+      "name": "Apple iPhone 18 Pro, 256GB, 12GB RAM, 5G - Glacier"
+     }
+    },
+    {
+     "key": "xiaomi|Redmi Note|15|Pro|256",
+     "amazon": "Redmi Note 15 Pro 5G Dual SIM+eSIM Titanium Gold 12GB RAM 256GB 5G - Global Vers",
+     "control": {
+      "store": 4,
+      "name": "XIAOMI Redmi Note 15 Pro, 5G, 8+256 GB, Titanium"
+     }
+    },
+    {
+     "key": "xiaomi|Xiaomi|17|Standard|512",
+     "amazon": "Xiaomi 17 Smartphone 12+512GB,Venture Green,6330mAh Battery",
+     "control": {
+      "store": 4,
+      "name": "Xiaomi 17, 5G, 512 GB, Venture Green"
+     }
+    },
+    {
+     "key": "xiaomi|Redmi Note|14|Pro Plus|512",
+     "amazon": "Redmi Note 14 Pro+ 5G Midnight Black 12GB RAM 512GB",
+     "control": {
+      "store": 4,
+      "name": "XIAOMI Redmi Note 14 Pro Plus, 5G, 512 GB, Midnight Black"
+     }
+    },
+    {
+     "key": "samsung|Galaxy A|A07|Standard|64",
+     "amazon": "Samsung Galaxy A07 LTE, Android Smartphone, 64GB Storage, 4GB RAM, Green, 6x OS ",
+     "control": {
+      "store": 4,
+      "name": "Samsung Galaxy A07, 4G, 64 GB, Light Violet, With Travel Adaptor"
+     }
+    },
+    {
+     "key": "samsung|Galaxy A|A06|Standard|128",
+     "amazon": "Samsung Galaxy A06 5G, Dual SIM, 4GB RaM, 128GB Storage, Black (KSA Version)",
+     "control": {
+      "store": 4,
+      "name": "Samsung Galaxy A06, 4G, 128GB, 4GB RAM, Black"
+     }
+    },
+    {
+     "key": "apple|iPhone|13|Pro Max|256",
+     "amazon": "Apple (Refurbished) iPhone 13 Pro Max (256GB) - Sierra Blue",
+     "control": {
+      "store": 4,
+      "name": "Apple iPhone 13 Pro Max , 5G,  256GB, Graphite"
+     }
+    },
+    {
+     "key": "samsung|Galaxy A|A06|Standard|64",
+     "amazon": "Samsung Galaxy A06 LTE, Android Smartphone, Dual SIM Mobile Phone, 4GB RAM, 64GB",
+     "control": {
+      "store": 4,
+      "name": "Samsung Galaxy A06, 4G, 64GB, 4GB RAM, Light Blue"
+     }
+    },
+    {
+     "key": "apple|iPhone|16|Standard|128",
+     "amazon": "Apple iPhone 16 (128 GB) - Pink",
+     "control": {
+      "store": 5,
+      "name": "ايفون 16، 128 جيجا، 5 جي، اخضر"
+     }
+    },
+    {
+     "key": "samsung|Galaxy A|A55|Standard|128",
+     "amazon": "Samsung Galaxy A55 5G, 128GB Storage, 8GB RAM, Android Smartphone, Awesome Icebl",
+     "control": {
+      "store": 4,
+      "name": "Samsung Galaxy A55, 5G, 128 GB, Awesome Ice Blue"
+     }
+    },
+    {
+     "key": "apple|iPhone|14|Pro Max|256",
+     "amazon": "Apple (Refurbished) iPhone 14 Pro Max 5G 256GB - Deep Purple",
+     "control": {
+      "store": 4,
+      "name": "Apple iPhone 14 Pro Max, 5G, 256GB, Space Black"
+     }
+    },
+    {
+     "key": "samsung|Galaxy A|A07|Standard|128",
+     "amazon": "Samsung Galaxy A07 LTE, Android Smartphone, 128GB Storage, 4GB RAM, Black, 6x OS",
+     "control": {
+      "store": 4,
+      "name": "Samsung Galaxy A07, 4G, 128 GB, Green, With Travel Adaptor"
+     }
+    },
+    {
+     "key": "apple|iPhone|13|Standard|256",
+     "amazon": "Apple (Refurbished) iPhone 13 (256GB) - Midnight",
+     "control": {
+      "store": 4,
+      "name": "Apple iPhone 13 , 5G, 256GB, Pink"
+     }
+    },
+    {
+     "key": "apple|iPhone|15|Standard|128",
+     "amazon": "Apple iPhone 15 (128 GB) - Blue",
+     "control": {
+      "store": 5,
+      "name": "ابل ايفون 15، 128 جيجا، 6 جيجا، 5 جي، اسود"
+     }
+    },
+    {
+     "key": "apple|iPhone|13|Standard|128",
+     "amazon": "Apple (Refurbished) iPhone 13 (128GB) - Midnight",
+     "control": {
+      "store": 4,
+      "name": "Apple iPhone 13 , 5G, 128GB, Pink"
+     }
+    },
+    {
+     "key": "honor|Honor X|5|Plus|128",
+     "amazon": "HONOR X5c PLUS 4G 128GB Midnight black",
+     "control": {
+      "store": 4,
+      "name": "Honor X5c Plus, 4G, 128 GB, Midnight Black"
+     }
+    },
+    {
+     "key": "samsung|Galaxy A|A26|Standard|128",
+     "amazon": "Samsung Galaxy A26 Dual-SIM 128GB ROM + 6GB RAM (GSM Only | No CDMA) Factory Unl",
+     "control": {
+      "store": 4,
+      "name": "SAMSUNG Galaxy A26, 5G, 6+128 GB, White"
+     }
+    },
+    {
+     "key": "samsung|Galaxy S|S25|FE|256",
+     "amazon": "Samsung Galaxy S25 FE, 5G, Smartphone, Android, 8GB RAM, Octa Core, 1.3GHz, 6.7-",
+     "control": {
+      "store": 4,
+      "name": "Samsung Galaxy S25 FE, 5G, 256 GB, Navy"
+     }
+    },
+    {
+     "key": "honor|Honor X|5|Standard|64",
+     "amazon": "HONOR X5c Smartphone 4 GB RAM, 64 GB Dual SIM 4G - Midnight black - Middle East ",
+     "control": {
+      "store": 4,
+      "name": "Honor X5c, 4G, 64GB, Tidal Blue"
+     }
+    },
+    {
+     "key": "samsung|Galaxy A|A36|Standard|256",
+     "amazon": "Samsung Galaxy A36 5G, Android Smartphone, 256GB Storage, 8GB RAM, Awesome White",
+     "control": {
+      "store": 4,
+      "name": "SAMSUNG Galaxy A36, 5G, 256 GB, Awesome Lavender"
+     }
+    },
+    {
+     "key": "infinix|Infinix Hot|60|Standard|256",
+     "amazon": "Infinix Hot 60i Dual SIM Shadow Blue 8GB RAM 256GB 5G - Middle East Version",
+     "control": {
+      "store": 4,
+      "name": "INFINIX Hot 60i, 5G, 256 GB, Sleek Black"
+     }
+    },
+    {
+     "key": "apple|iPhone|12|Standard|64",
+     "amazon": "Apple (Refurbished) iPhone 12 (64GB) - Blue",
+     "control": {
+      "store": 4,
+      "name": "Apple iPhone 12, 5G, 64GB, White"
+     }
+    },
+    {
+     "key": "honor|Honor X|6|Standard|256",
+     "amazon": "HONOR X6c 256GB 4G Midnight Black",
+     "control": {
+      "store": 4,
+      "name": "Honor X6c, 4G, 256 GB, Moonlight White"
+     }
+    },
+    {
+     "key": "samsung|Galaxy S|S25|Ultra|256",
+     "amazon": "Samsung Galaxy S25 Ultra, 256GB (International Version)",
+     "control": {
+      "store": 4,
+      "name": "SAMSUNG Galaxy S25 Ultra, 5G, 256 GB, Titanium Silverblue"
+     }
+    },
+    {
+     "key": "apple|iPhone|15|Pro Max|256",
+     "amazon": "Apple (Refurbished) iPhone 15 Pro Max (256 GB) - White Titanium",
+     "control": {
+      "store": 4,
+      "name": "Apple iPhone 15 Pro Max, 5G, 6.7 inch, 256GB, Blue Titanium"
+     }
+    },
+    {
+     "key": "apple|iPhone|18|Pro|2048",
+     "amazon": "Apple iPhone 18 Pro 2 TB: – Black",
+     "control": {
+      "store": 5,
+      "name": "Apple iPhone 18 Pro, 2TB, 12GB RAM, 5G - Glacier"
+     }
+    },
+    {
+     "key": "samsung|Galaxy A|A16|Standard|128",
+     "amazon": "Samsung Galaxy A16, Android Smartphone, Dual SIM Mobile Phone, 4GB RAM, 128GB St",
+     "control": {
+      "store": 4,
+      "name": "Samsung Galaxy A16, 5G, 4+128 GB, Light Gray"
+     }
+    },
+    {
+     "key": "xiaomi|Redmi Note|17|Pro|256",
+     "amazon": "Redmi Note 17 Pro 5G Dual SIM – 12GB RAM, 256GB Storage, Sky Blue - Global Versi",
+     "control": {
+      "store": 4,
+      "name": "XIAOMI, REDMI Note 17 Pro, 5G, 12G RAM ,256G ,Black"
+     }
+    },
+    {
+     "key": "samsung|Galaxy S|S23|Ultra|256",
+     "amazon": "Samsung Galaxy S23 Ultra, 256GB, Green, 5G Mobile Phone, Dual SIM, Android Smart",
+     "control": {
+      "store": 4,
+      "name": "Samsung Galaxy S23 Ultra, 5G, 256GB, Beige"
+     }
+    },
+    {
+     "key": "apple|iPhone|18|Pro|512",
+     "amazon": "Apple iPhone 18 Pro 512 GB: – Glacier",
+     "control": {
+      "store": 5,
+      "name": "Apple iPhone 18 Pro, 512GB, 12GB RAM, 5G - Black"
+     }
+    }
+   ],
+   "invalid_reasons": {
+    "Unknown :: null in critical: family, generation, variant": 28,
+    "Motorola :: null in critical: family, generation, variant": 10,
+    "Samsung :: null in critical: family, generation, variant": 1,
+    "Google :: null in critical: family, generation, variant": 1
+   }
+  },
+  "P3": {
+   "label": "P3 + phone-vocabulary guard on foreign signals (camera/AMOLED/speaker/standby)",
+   "classes": {
+    "VALID": 185,
+    "INVALID": 68,
+    "DETECT_REJECT": 33
+   },
+   "distinct_valid_keys": 90,
+   "shared_with_control": 67,
+   "shared_keys": [
+    {
+     "key": "honor|Honor X|7|Standard|128",
+     "amazon": "HONOR X7e Smartphone, Silicon-Carbon Battery, 45W HONOR SuperCharge, 120Hz Displ",
+     "control": {
+      "store": 5,
+      "name": "Honor X7e, 128GB, 6GB, 4G, Dual SIM - Sunrise Orange"
+     }
+    },
+    {
+     "key": "apple|iPhone|16|Plus|128",
+     "amazon": "Apple iPhone 16 Plus (128 GB) - Ultramarine",
+     "control": {
+      "store": 5,
+      "name": "iPhone 16 Plus 128GB 5G Pink"
+     }
+    },
+    {
+     "key": "samsung|Galaxy A|A56|Standard|256",
+     "amazon": "Samsung Galaxy A56 5G, Android Smartphone, 256GB Storage, 12GB RAM, Awesome Grap",
+     "control": {
+      "store": 4,
+      "name": "SAMSUNG Galaxy A56, 5G, 256 GB, 12GB RAM, Awesome LightGray"
+     }
+    },
+    {
+     "key": "apple|iPhone|16e|Standard|256",
+     "amazon": "Apple iPhone 16e (256 GB) - Black",
+     "control": {
+      "store": 4,
+      "name": "Apple iPhone 16E , 5G , 6.1 , 256GB , White"
+     }
+    },
+    {
+     "key": "samsung|Galaxy A|A36|Standard|128",
+     "amazon": "Samsung Galaxy A36 Enterprise Edition DUAL-SIM 128GB ROM + 6GB RAM (GSM only | N",
+     "control": {
+      "store": 4,
+      "name": "SAMSUNG Galaxy A36, 5G, 128 GB, Awesome Lavender"
+     }
+    },
+    {
+     "key": "apple|iPhone|17|Pro|512",
+     "amazon": "Apple iPhone 17 Pro 512 GB: 6.3-inch Display with ProMotion up to 120Hz, A19 Pro",
+     "control": {
+      "store": 5,
+      "name": "آيفون 17 برو، سعة 512 جيجابايت، اللون الأزرق الداكن"
+     }
+    },
+    {
+     "key": "samsung|Galaxy S|S25|Ultra|512",
+     "amazon": "Samsung Galaxy S25 Ultra AI Phone, 512GB Storage, 12GB RAM, Titanium Black, Andr",
+     "control": {
+      "store": 4,
+      "name": "SAMSUNG Galaxy S25 Ultra, 5G, 512 GB, Titanium Black"
+     }
+    },
+    {
+     "key": "infinix|Infinix Hot|70|Standard|256",
+     "amazon": "Infinix Hot 70 Smartphone, 6GB RAM, 256GB, Night Pulse",
+     "control": {
+      "store": 4,
+      "name": "INFINIX HOT 70, 256 GB, Green Texture"
+     }
+    },
+    {
+     "key": "apple|iPhone|14|Standard|128",
+     "amazon": "Apple (Refurbished) iPhone 14 5G 128GB Phone - Midnight",
+     "control": {
+      "store": 4,
+      "name": "Apple iPhone 14, 5G, 128GB, Blue"
+     }
+    },
+    {
+     "key": "xiaomi|Redmi Note|15|Pro Plus|512",
+     "amazon": "Redmi Note 15 Pro+ 5G Dual SIM+eSIM Glacier Blue 12GB RAM 512GB 5G - Global Vers",
+     "control": {
+      "store": 4,
+      "name": "XIAOMI Redmi Note 15 Pro Plus, 5G, 512 GB, Mocha Brown"
+     }
+    },
+    {
+     "key": "honor|Honor X|7|Standard|256",
+     "amazon": "HONOR X7e Smartphone, Silicon-Carbon Battery, 45W HONOR SuperCharge, 120Hz Displ",
+     "control": {
+      "store": 4,
+      "name": "Honor X7c, 5G, 4GB + 256 GB, Forest Green"
+     }
+    },
+    {
+     "key": "apple|iPhone|12|Standard|128",
+     "amazon": "Apple (Refurbished) iPhone 12 (128GB) - Black",
+     "control": {
+      "store": 4,
+      "name": "Apple iPhone 12, 5G, 128GB, Purple"
+     }
+    },
+    {
+     "key": "xiaomi|Redmi Note|15|Standard|256",
+     "amazon": "Xiaomi Redmi Note 15 5G Unlocked Smartphone, Dual SIM, 8GB RAM, 256GB Storage, B",
+     "control": {
+      "store": 5,
+      "name": "Xiaomi Redmi Note 15, 256GB, 12GB, 5G, Dual SIM - Glacier Blue"
+     }
+    },
+    {
+     "key": "apple|iPhone|Air|Standard|256",
+     "amazon": "Apple iPhone Air 256 GB: Thinnest iPhone Ever, 6.5-inch Display with ProMotion u",
+     "control": {
+      "store": 4,
+      "name": "Apple iPhone Air, 5G, 6.5 inch 256GB, Cloud White"
+     }
+    },
+    {
+     "key": "xiaomi|Redmi|15|Standard|256",
+     "amazon": "Redmi 15C Midnight Black 8GB RAM 256GB 4G - Global Version",
+     "control": {
+      "store": 4,
+      "name": "Xiaomi Redmi 15C, 4G, 256 GB, Mint Green"
+     }
+    },
+    {
+     "key": "apple|iPhone|18|Pro|256",
+     "amazon": "Apple iPhone 18 Pro 256 GB: – Glacier",
+     "control": {
+      "store": 5,
+      "name": "Apple iPhone 18 Pro, 256GB, 12GB RAM, 5G - Glacier"
+     }
+    },
+    {
+     "key": "xiaomi|Redmi Note|15|Pro|256",
+     "amazon": "Redmi Note 15 Pro 5G Dual SIM+eSIM Titanium Gold 12GB RAM 256GB 5G - Global Vers",
+     "control": {
+      "store": 4,
+      "name": "XIAOMI Redmi Note 15 Pro, 5G, 8+256 GB, Titanium"
+     }
+    },
+    {
+     "key": "xiaomi|Xiaomi|17|Standard|512",
+     "amazon": "Xiaomi 17 Smartphone 12+512GB,Venture Green,6330mAh Battery",
+     "control": {
+      "store": 4,
+      "name": "Xiaomi 17, 5G, 512 GB, Venture Green"
+     }
+    },
+    {
+     "key": "apple|iPhone|17|Pro Max|256",
+     "amazon": "Apple iPhone 17 Pro Max 256 GB: 6.9-inch Display with ProMotion, A19 Pro Chip, B",
+     "control": {
+      "store": 5,
+      "name": "ابل ايفون 17 برو ماكس، 256 جيجا، 5G – أزرق داكن"
+     }
+    },
+    {
+     "key": "xiaomi|Redmi Note|14|Pro Plus|512",
+     "amazon": "Redmi Note 14 Pro+ 5G Midnight Black 12GB RAM 512GB",
+     "control": {
+      "store": 4,
+      "name": "XIAOMI Redmi Note 14 Pro Plus, 5G, 512 GB, Midnight Black"
+     }
+    },
+    {
+     "key": "samsung|Galaxy A|A07|Standard|64",
+     "amazon": "Samsung Galaxy A07 LTE, Android Smartphone, 64GB Storage, 4GB RAM, Green, 6x OS ",
+     "control": {
+      "store": 4,
+      "name": "Samsung Galaxy A07, 4G, 64 GB, Light Violet, With Travel Adaptor"
+     }
+    },
+    {
+     "key": "samsung|Galaxy S|S26|Ultra|256",
+     "amazon": "Samsung Galaxy S26 Ultra Sky Blue, 256GB Storage, AI Phone, 12GB RAM, Customized",
+     "control": {
+      "store": 4,
+      "name": "SAMSUNG Galaxy S26 Ultra, 5G, 256 GB, Sky Blue"
+     }
+    },
+    {
+     "key": "samsung|Galaxy A|A06|Standard|128",
+     "amazon": "Samsung Galaxy A06 5G, Dual SIM, 4GB RaM, 128GB Storage, Black (KSA Version)",
+     "control": {
+      "store": 4,
+      "name": "Samsung Galaxy A06, 4G, 128GB, 4GB RAM, Black"
+     }
+    },
+    {
+     "key": "samsung|Galaxy S|S26|Ultra|512",
+     "amazon": "Samsung Galaxy S26 Ultra Black, 512GB, AI Phone, 12GB RAM, Customized AP, Built-",
+     "control": {
+      "store": 4,
+      "name": "SAMSUNG Galaxy S26 Ultra, 5G, 512 GB, Silver Shadow"
+     }
+    },
+    {
+     "key": "apple|iPhone|13|Pro Max|256",
+     "amazon": "Apple (Refurbished) iPhone 13 Pro Max (256GB) - Sierra Blue",
+     "control": {
+      "store": 4,
+      "name": "Apple iPhone 13 Pro Max , 5G,  256GB, Graphite"
+     }
+    },
+    {
+     "key": "samsung|Galaxy S|S25|Standard|256",
+     "amazon": "Samsung Galaxy S25 AI Phone, 256GB Storage, 12GB RAM, Silver Shadow, Android Sma",
+     "control": {
+      "store": 4,
+      "name": "SAMSUNG Galaxy S25, 5G, 256 GB, Icyblue"
+     }
+    },
+    {
+     "key": "samsung|Galaxy S|S25|FE|256",
+     "amazon": "Samsung Galaxy S25 FE AI Phone, Jetblack, 8GB RAM, 256GB Storage, 50MP Camera, 6",
+     "control": {
+      "store": 4,
+      "name": "Samsung Galaxy S25 FE, 5G, 256 GB, Navy"
+     }
+    },
+    {
+     "key": "honor|Honor|60|Lite|128",
+     "amazon": "HONOR 600 Lite 5G Smartphone, 8GB RAM + 128GB Storage, 3180mAh Durable Battery, ",
+     "control": {
+      "store": 5,
+      "name": "Honor 600 Lite, 128GB, 8GB RAM, 5G, Dual SIM - Desert Gold"
+     }
+    },
+    {
+     "key": "samsung|Galaxy A|A06|Standard|64",
+     "amazon": "Samsung Galaxy A06 LTE, Android Smartphone, Dual SIM Mobile Phone, 4GB RAM, 64GB",
+     "control": {
+      "store": 4,
+      "name": "Samsung Galaxy A06, 4G, 64GB, 4GB RAM, Light Blue"
+     }
+    },
+    {
+     "key": "apple|iPhone|16|Standard|128",
+     "amazon": "Apple iPhone 16 (128 GB) - Pink",
+     "control": {
+      "store": 5,
+      "name": "ايفون 16، 128 جيجا، 5 جي، اخضر"
+     }
+    },
+    {
+     "key": "apple|iPhone|17|Standard|256",
+     "amazon": "Apple iPhone 17 256 GB: 6.3-inch Display with ProMotion, A19 Chip, Center Stage ",
+     "control": {
+      "store": 5,
+      "name": "آيفون 17، سعة 256 جيجابايت، اللون الأخضر"
+     }
+    },
+    {
+     "key": "samsung|Galaxy A|A55|Standard|128",
+     "amazon": "Samsung Galaxy A55 5G, 128GB Storage, 8GB RAM, Android Smartphone, Awesome Icebl",
+     "control": {
+      "store": 4,
+      "name": "Samsung Galaxy A55, 5G, 128 GB, Awesome Ice Blue"
+     }
+    },
+    {
+     "key": "apple|iPhone|14|Pro Max|256",
+     "amazon": "Apple (Refurbished) iPhone 14 Pro Max 5G 256GB - Deep Purple",
+     "control": {
+      "store": 4,
+      "name": "Apple iPhone 14 Pro Max, 5G, 256GB, Space Black"
+     }
+    },
+    {
+     "key": "honor|Honor X|9|Standard|256",
+     "amazon": "HONOR X9d 5G Smartphone, 12GB RAM + 256GB Storage, Silicon-Carbon Battery, 108MP",
+     "control": {
+      "store": 4,
+      "name": "HONOR X9c, 5G, 256GB, Sunrise Orange"
+     }
+    },
+    {
+     "key": "samsung|Galaxy A|A07|Standard|128",
+     "amazon": "Samsung Galaxy A07 LTE, Android Smartphone, 128GB Storage, 4GB RAM, Black, 6x OS",
+     "control": {
+      "store": 4,
+      "name": "Samsung Galaxy A07, 4G, 128 GB, Green, With Travel Adaptor"
+     }
+    },
+    {
+     "key": "samsung|Galaxy A|A26|Standard|128",
+     "amazon": "Samsung Galaxy A26 5G, Android Smartphone, 128GB Storage, 6GB RAM, Black, 50MP C",
+     "control": {
+      "store": 4,
+      "name": "SAMSUNG Galaxy A26, 5G, 6+128 GB, White"
+     }
+    },
+    {
+     "key": "samsung|Galaxy A|A57|Standard|128",
+     "amazon": "Samsung Galaxy A57 5G Android Smartphone, 128GB Storage, 8GB RAM, Awesome Navy, ",
+     "control": {
+      "store": 4,
+      "name": "SAMSUNG Galaxy A57, 5G, 128 GB, Awesome Navy"
+     }
+    },
+    {
+     "key": "apple|iPhone|13|Standard|256",
+     "amazon": "Apple (Refurbished) iPhone 13 (256GB) - Midnight",
+     "control": {
+      "store": 4,
+      "name": "Apple iPhone 13 , 5G, 256GB, Pink"
+     }
+    },
+    {
+     "key": "samsung|Galaxy A|A17|Standard|256",
+     "amazon": "Samsung Galaxy A17 5G Smartphone | 6.7\" Super AMOLED 90Hz Display | 50MP OIS Tri",
+     "control": {
+      "store": 5,
+      "name": "Samsung Galaxy A17, 256GB, 8GB, 5G, Dual SIM – Black"
+     }
+    },
+    {
+     "key": "apple|iPhone|15|Standard|128",
+     "amazon": "Apple iPhone 15 (128 GB) - Blue",
+     "control": {
+      "store": 5,
+      "name": "ابل ايفون 15، 128 جيجا، 6 جيجا، 5 جي، اسود"
+     }
+    },
+    {
+     "key": "apple|iPhone|17|Pro|256",
+     "amazon": "Apple iPhone 17 Pro 256 GB: 6.3-inch Display with ProMotion up to 120Hz, A19 Pro",
+     "control": {
+      "store": 5,
+      "name": "ابل ايفون 17 برو، 256 جيجابايت، 5G – أزرق داكن"
+     }
+    },
+    {
+     "key": "samsung|Galaxy A|A37|Standard|256",
+     "amazon": "Samsung Galaxy A37 5G Android Smartphone, 256GB Storage, 8GB RAM, Awesome White,",
+     "control": {
+      "store": 4,
+      "name": "SAMSUNG Galaxy A37, 5G, 256 GB, Awesome Lavender"
+     }
+    },
+    {
+     "key": "samsung|Galaxy A|A26|Standard|256",
+     "amazon": "Samsung Galaxy A26 5G, Android Smartphone, 256GB Storage, 8GB RAM, Black, 50MP C",
+     "control": {
+      "store": 4,
+      "name": "SAMSUNG Galaxy A26, 5G, 256 GB, Black"
+     }
+    },
+    {
+     "key": "apple|iPhone|13|Standard|128",
+     "amazon": "Apple (Refurbished) iPhone 13 (128GB) - Midnight",
+     "control": {
+      "store": 4,
+      "name": "Apple iPhone 13 , 5G, 128GB, Pink"
+     }
+    },
+    {
+     "key": "apple|iPhone|17e|Standard|256",
+     "amazon": "Apple iPhone 17e 256GB: 6.1-inch Super Retina XDR Display, A19 Chip, All-Day Bat",
+     "control": {
+      "store": 4,
+      "name": "Apple iPhone 17E , 5G , 6.1 , 256GB , White"
+     }
+    },
+    {
+     "key": "apple|iPhone|17|Pro Max|2048",
+     "amazon": "Apple iPhone 17 Pro Max 2 TB: 6.9-inch Display with ProMotion, A19 Pro Chip, Bes",
+     "control": {
+      "store": 4,
+      "name": "Apple iPhone 17 Pro Max, 5G, 6.9 inch 2 TB, Cosmic Orange"
+     }
+    },
+    {
+     "key": "honor|Honor X|5|Plus|128",
+     "amazon": "HONOR X5c PLUS 4G 128GB Midnight black",
+     "control": {
+      "store": 4,
+      "name": "Honor X5c Plus, 4G, 128 GB, Midnight Black"
+     }
+    },
+    {
+     "key": "samsung|Galaxy A|A17|Standard|128",
+     "amazon": "Samsung Galaxy A17 5G, Android Smartphone, 128GB Storage, 4GB RAM, Black, 6x OS ",
+     "control": {
+      "store": 4,
+      "name": "Samsung Galaxy A17, 5G, 4+128 GB, Blue"
+     }
+    },
+    {
+     "key": "honor|Honor X|5|Standard|64",
+     "amazon": "HONOR X5c Smartphone 4 GB RAM, 64 GB Dual SIM 4G - Midnight black - Middle East ",
+     "control": {
+      "store": 4,
+      "name": "Honor X5c, 4G, 64GB, Tidal Blue"
+     }
+    },
+    {
+     "key": "samsung|Galaxy A|A36|Standard|256",
+     "amazon": "Samsung Galaxy A36 5G, Android Smartphone, 256GB Storage, 8GB RAM, Awesome White",
+     "control": {
+      "store": 4,
+      "name": "SAMSUNG Galaxy A36, 5G, 256 GB, Awesome Lavender"
+     }
+    },
+    {
+     "key": "honor|Honor|20|Lite|256",
+     "amazon": "HONOR 200 Lite, Unlocked Mobile Phones, 5G Smartphone, 8GB+256GB, 6,7” Anti-Drop",
+     "control": {
+      "store": 4,
+      "name": "Honor 200 Lite, 5G, 256GB, Midnight Black"
+     }
+    },
+    {
+     "key": "samsung|Galaxy S|S25|Ultra|256",
+     "amazon": "Samsung Galaxy S25 Ultra AI Phone, 256GB Storage, 12GB RAM, Titanium Gray, Andro",
+     "control": {
+      "store": 4,
+      "name": "SAMSUNG Galaxy S25 Ultra, 5G, 256 GB, Titanium Silverblue"
+     }
+    },
+    {
+     "key": "infinix|Infinix Hot|60|Standard|256",
+     "amazon": "Infinix Hot 60i Dual SIM Shadow Blue 8GB RAM 256GB 5G - Middle East Version",
+     "control": {
+      "store": 4,
+      "name": "INFINIX Hot 60i, 5G, 256 GB, Sleek Black"
+     }
+    },
+    {
+     "key": "apple|iPhone|12|Standard|64",
+     "amazon": "Apple (Refurbished) iPhone 12 (64GB) - Blue",
+     "control": {
+      "store": 4,
+      "name": "Apple iPhone 12, 5G, 64GB, White"
+     }
+    },
+    {
+     "key": "samsung|Galaxy A|A37|Standard|128",
+     "amazon": "Samsung Galaxy A37 5G Android Smartphone, 128GB Storage, 8GB RAM, Awesome Lavend",
+     "control": {
+      "store": 4,
+      "name": "SAMSUNG Galaxy A37, 5G, 8+128 GB, Awesome Lavender"
+     }
+    },
+    {
+     "key": "samsung|Galaxy A|A57|Standard|256",
+     "amazon": "Samsung Galaxy A57 5G Android Smartphone, 256GB Storage, 8GB RAM, Awesome Icyblu",
+     "control": {
+      "store": 4,
+      "name": "SAMSUNG Galaxy A57, 5G, 8+256 GB, Awesome Lilac"
+     }
+    },
+    {
+     "key": "honor|Honor X|6|Standard|256",
+     "amazon": "HONOR X6c 256GB 4G Midnight Black",
+     "control": {
+      "store": 4,
+      "name": "Honor X6c, 4G, 256 GB, Moonlight White"
+     }
+    },
+    {
+     "key": "apple|iPhone|15|Pro Max|256",
+     "amazon": "Apple (Refurbished) iPhone 15 Pro Max (256 GB) - White Titanium",
+     "control": {
+      "store": 4,
+      "name": "Apple iPhone 15 Pro Max, 5G, 6.7 inch, 256GB, Blue Titanium"
+     }
+    },
+    {
+     "key": "apple|iPhone|18|Pro|2048",
+     "amazon": "Apple iPhone 18 Pro 2 TB: – Black",
+     "control": {
+      "store": 5,
+      "name": "Apple iPhone 18 Pro, 2TB, 12GB RAM, 5G - Glacier"
+     }
+    },
+    {
+     "key": "samsung|Galaxy S|S26|Plus|256",
+     "amazon": "Samsung Galaxy S26+ Plus Black, 256GB Storage, AI Phone, 12GB RAM, Customized AP",
+     "control": {
+      "store": 4,
+      "name": "SAMSUNG Galaxy S26 Plus, 5G, 256 GB, Sky Blue"
+     }
+    },
+    {
+     "key": "samsung|Galaxy A|A16|Standard|128",
+     "amazon": "Samsung Galaxy A16, Android Smartphone, Dual SIM Mobile Phone, 4GB RAM, 128GB St",
+     "control": {
+      "store": 4,
+      "name": "Samsung Galaxy A16, 5G, 4+128 GB, Light Gray"
+     }
+    },
+    {
+     "key": "honor|Honor|60|Lite|256",
+     "amazon": "HONOR 600 Lite 5G Smartphone, 8GB RAM + 256GB Storage, 3180mAh Durable Battery, ",
+     "control": {
+      "store": 5,
+      "name": "Honor 600 Lite, 256GB, 8GB RAM, 5G, Dual SIM - Velvet Black"
+     }
+    },
+    {
+     "key": "xiaomi|Redmi Note|17|Pro|256",
+     "amazon": "Redmi Note 17 Pro 5G Dual SIM – 12GB RAM, 256GB Storage, Sky Blue - Global Versi",
+     "control": {
+      "store": 4,
+      "name": "XIAOMI, REDMI Note 17 Pro, 5G, 12G RAM ,256G ,Black"
+     }
+    },
+    {
+     "key": "honor|Honor X|7|Plus|256",
+     "amazon": "HONOR X7e Plus 5G Smartphone, 8GB RAM + 256GB Storage, Snapdragon 4 Gen 4, 6.87\"",
+     "control": {
+      "store": 5,
+      "name": "Honor X7e Plus, 256GB, 8GB RAM, 5G, Dual SIM - Desert Gold"
+     }
+    },
+    {
+     "key": "samsung|Galaxy S|S26|Standard|256",
+     "amazon": "Samsung Galaxy S26 Cobalt Violet, 256GB Storage, AI Phone, 12GB RAM, Customized ",
+     "control": {
+      "store": 4,
+      "name": "SAMSUNG Galaxy S26, 5G, 256 GB, White"
+     }
+    },
+    {
+     "key": "samsung|Galaxy S|S23|Ultra|256",
+     "amazon": "Samsung Galaxy S23 Ultra, 256GB, Green, 5G Mobile Phone, Dual SIM, Android Smart",
+     "control": {
+      "store": 4,
+      "name": "Samsung Galaxy S23 Ultra, 5G, 256GB, Beige"
+     }
+    },
+    {
+     "key": "apple|iPhone|18|Pro|512",
+     "amazon": "Apple iPhone 18 Pro 512 GB: – Glacier",
+     "control": {
+      "store": 5,
+      "name": "Apple iPhone 18 Pro, 512GB, 12GB RAM, 5G - Black"
+     }
+    }
+   ],
+   "invalid_reasons": {
+    "Unknown :: null in critical: family, generation, variant": 46,
+    "Motorola :: null in critical: family, generation, variant": 10,
+    "realme :: null in critical: family, generation, variant": 8,
+    "Samsung :: null in critical: family, generation, variant": 1,
+    "HMD :: null in critical: family, generation, variant": 1,
+    "HONOR :: null in critical: family, generation, variant": 1,
+    "Google :: null in critical: family, generation, variant": 1
+   }
+  },
+  "P3_rows": [
+   {
+    "asin": "B0FNCZCHW5",
+    "cls": "VALID",
+    "key": "samsung|Galaxy A|A17|Standard|2048",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy A17 LTE, Dual SIM, 128GB Expandable to 2TB, Smartphone, Android 14, 4GB RAM"
+   },
+   {
+    "asin": "B0H612FV7C",
+    "cls": "VALID",
+    "key": "honor|Honor X|7|Standard|128",
+    "reason": null,
+    "brand": "HONOR",
+    "name": "HONOR X7e Smartphone, Silicon-Carbon Battery, 45W HONOR SuperCharge, 120Hz Display, 50MP A"
+   },
+   {
+    "asin": "B0DGJHWT5V",
+    "cls": "VALID",
+    "key": "apple|iPhone|16|Plus|128",
+    "reason": null,
+    "brand": "Apple",
+    "name": "Apple iPhone 16 Plus (128 GB) - Ultramarine"
+   },
+   {
+    "asin": "B0DZHLSJ3T",
+    "cls": "VALID",
+    "key": "samsung|Galaxy A|A56|Standard|256",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy A56 5G, Android Smartphone, 256GB Storage, 12GB RAM, Awesome Graphite, 6x O"
+   },
+   {
+    "asin": "B0F21MJGNJ",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Unknown",
+    "name": "AGM M9 4G Rugged Mobile Phone, Basic Feature Cellphone, Large Button, IP68/IP69K Waterproo"
+   },
+   {
+    "asin": "B0DXR1WNKD",
+    "cls": "VALID",
+    "key": "apple|iPhone|16e|Standard|256",
+    "reason": null,
+    "brand": "Apple",
+    "name": "Apple iPhone 16e (256 GB) - Black"
+   },
+   {
+    "asin": "B0F2H1Y4D5",
+    "cls": "VALID",
+    "key": "samsung|Galaxy A|A36|Standard|128",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy A36 Enterprise Edition DUAL-SIM 128GB ROM + 6GB RAM (GSM only | No CDMA) Fa"
+   },
+   {
+    "asin": "B0FQFGFJPY",
+    "cls": "VALID",
+    "key": "apple|iPhone|17|Pro|512",
+    "reason": null,
+    "brand": "Apple",
+    "name": "Apple iPhone 17 Pro 512 GB: 6.3-inch Display with ProMotion up to 120Hz, A19 Pro Chip, Bre"
+   },
+   {
+    "asin": "B0F5X5141S",
+    "cls": "VALID",
+    "key": "samsung|Galaxy S|S25|Ultra|512",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy S25 Ultra AI Phone, 512GB Storage, 12GB RAM, Titanium Black, Android Smartp"
+   },
+   {
+    "asin": "B0HD17NYHD",
+    "cls": "VALID",
+    "key": "infinix|Infinix Hot|70|Standard|256",
+    "reason": null,
+    "brand": "Infinix",
+    "name": "Infinix Hot 70 Smartphone, 6GB RAM, 256GB, Night Pulse"
+   },
+   {
+    "asin": "B0CQ2RM6TX",
+    "cls": "VALID",
+    "key": "apple|iPhone|11|Standard|64",
+    "reason": null,
+    "brand": "Apple",
+    "name": "Apple (Refurbished) iPhone 11 (64GB) - Black"
+   },
+   {
+    "asin": "B0CQ2NSR9Q",
+    "cls": "VALID",
+    "key": "apple|iPhone|14|Standard|128",
+    "reason": null,
+    "brand": "Apple",
+    "name": "Apple (Refurbished) iPhone 14 5G 128GB Phone - Midnight"
+   },
+   {
+    "asin": "B0H5QSTG81",
+    "cls": "DETECT_REJECT",
+    "key": null,
+    "reason": null,
+    "brand": "Unknown",
+    "name": "TORRAS OrigArmor for iPhone 18 Pro Screen Protector, 6.3\", 1 Pack"
+   },
+   {
+    "asin": "B0FC28KCBT",
+    "cls": "DETECT_REJECT",
+    "key": null,
+    "reason": null,
+    "brand": "Unknown",
+    "name": "ESR 3 Pack for iPhone 18 Pro Max/17 Pro Max Screen Protector, Armorite"
+   },
+   {
+    "asin": "B0G6V2J7TL",
+    "cls": "VALID",
+    "key": "xiaomi|Redmi Note|15|Standard|NO_STORAGE",
+    "reason": null,
+    "brand": "REDMI",
+    "name": "REDMI Note 15 Black 8G RAM 256G ROM + Bud 6 Play - Global Version"
+   },
+   {
+    "asin": "B08SBNKRH4",
+    "cls": "VALID",
+    "key": "apple|iPhone|12|Pro|128",
+    "reason": null,
+    "brand": "Apple",
+    "name": "Apple (Refurbished) iPhone 12 Pro (128GB) - Graphite"
+   },
+   {
+    "asin": "B0F2GY56XZ",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Motorola",
+    "name": "Motorola Moto G35 DUAL-SIM 256GB ROM + 8GB RAM (GSM Only|No CDMA) Factory Unlocked 5G Smar"
+   },
+   {
+    "asin": "B0FXXW7PK9",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Unknown",
+    "name": "Nothing Phone (3a) Lite 5G / 8 GB/ 128 GB/ 6.77\"AMOLED flexible LTPS/ 50 MP Camera/5000mAh"
+   },
+   {
+    "asin": "B0F7RTHZPZ",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Motorola",
+    "name": "Motorola Moto G86 Dual SIM 256GB ROM + 8GB RAM (GSM Only | No CDMA) Factory Unlocked 5G Sm"
+   },
+   {
+    "asin": "B0G5ZD2YG4",
+    "cls": "VALID",
+    "key": "xiaomi|Redmi Note|15|Pro Plus|512",
+    "reason": null,
+    "brand": "Redmi",
+    "name": "Redmi Note 15 Pro+ 5G Dual SIM+eSIM Glacier Blue 12GB RAM 512GB 5G - Global Version"
+   },
+   {
+    "asin": "B0H63BTTRZ",
+    "cls": "VALID",
+    "key": "honor|Honor X|7|Standard|256",
+    "reason": null,
+    "brand": "HONOR",
+    "name": "HONOR X7e Smartphone, Silicon-Carbon Battery, 45W HONOR SuperCharge, 120Hz Display, 50MP A"
+   },
+   {
+    "asin": "B0GV437Z28",
+    "cls": "VALID",
+    "key": "realme|realme|15|Ultra|256",
+    "reason": null,
+    "brand": "realme",
+    "name": "realme 15 5G Smartphone 12GB+256GB Black | 6325mAh Battery, 45W Ultra Charge, 6.77-inch 14"
+   },
+   {
+    "asin": "B0CQ2NFQ5Q",
+    "cls": "VALID",
+    "key": "apple|iPhone|12|Standard|128",
+    "reason": null,
+    "brand": "Apple",
+    "name": "Apple (Refurbished) iPhone 12 (128GB) - Black"
+   },
+   {
+    "asin": "B0H4VQL6RG",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "realme",
+    "name": "realme P4 Power 5G Smartphone Dual SIM, Mobile Phone 8GB RAM, 256GB Storage, 50MP Camera, "
+   },
+   {
+    "asin": "B0G5ZP8Y75",
+    "cls": "VALID",
+    "key": "xiaomi|Redmi Note|15|Standard|256",
+    "reason": null,
+    "brand": "Xiaomi",
+    "name": "Xiaomi Redmi Note 15 5G Unlocked Smartphone, Dual SIM, 8GB RAM, 256GB Storage, Black, Glob"
+   },
+   {
+    "asin": "B0FQFNQ6KH",
+    "cls": "VALID",
+    "key": "apple|iPhone|Air|Standard|256",
+    "reason": null,
+    "brand": "Apple",
+    "name": "Apple iPhone Air 256 GB: Thinnest iPhone Ever, 6.5-inch Display with ProMotion up to 120Hz"
+   },
+   {
+    "asin": "B0DQKXXJ16",
+    "cls": "VALID",
+    "key": "xiaomi|Redmi|15|Standard|256",
+    "reason": null,
+    "brand": "Unknown",
+    "name": "Redmi 15C Midnight Black 8GB RAM 256GB 4G - Global Version"
+   },
+   {
+    "asin": "B0GVT2S9J6",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Unknown",
+    "name": "TV Smart Projector, 1080P FHD Home Theater, Portable Mini Projector Compatible with Games "
+   },
+   {
+    "asin": "B0HJB3BTTC",
+    "cls": "VALID",
+    "key": "apple|iPhone|18|Pro|256",
+    "reason": null,
+    "brand": "Apple",
+    "name": "Apple iPhone 18 Pro 256 GB: – Glacier"
+   },
+   {
+    "asin": "B0FND1K6SM",
+    "cls": "VALID",
+    "key": "samsung|Galaxy A|A17|Standard|2048",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy A17 LTE, Dual SIM, 128GB Expandable to 2TB, Smartphone, Android 14, 4GB RAM"
+   },
+   {
+    "asin": "B0CX94P97Q",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Samsung",
+    "name": "Samsung Galaxy A356E 5G,Android Smartphone, Dual SIM Mobile Phone, 6GB RAM, 128GB Storage,"
+   },
+   {
+    "asin": "B0F48H546B",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Motorola",
+    "name": "Motorola Edge 60 Fusion Dual-SIM 256GB ROM + 8GB RAM (GSM Only | No CDMA) Factory Unlocked"
+   },
+   {
+    "asin": "B0G5ZJYGQ4",
+    "cls": "VALID",
+    "key": "xiaomi|Redmi Note|15|Pro|256",
+    "reason": null,
+    "brand": "Redmi",
+    "name": "Redmi Note 15 Pro 5G Dual SIM+eSIM Titanium Gold 12GB RAM 256GB 5G - Global Version"
+   },
+   {
+    "asin": "B0H94WQL9V",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "realme",
+    "name": "realme P4x 4G Smartphone Dual SIM, Mobile Phone 6GB RAM, 128GB Storage, 50MP Camera, Andro"
+   },
+   {
+    "asin": "B0GYHY57RJ",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Unknown",
+    "name": "AGM H Max 4G Rugged Smartphone Unlocked,Android 14, 4GB+128GB,10000mAh"
+   },
+   {
+    "asin": "B0GKQHY8GV",
+    "cls": "VALID",
+    "key": "xiaomi|Xiaomi|17|Standard|512",
+    "reason": null,
+    "brand": "Xiaomi",
+    "name": "Xiaomi 17 Smartphone 12+512GB,Venture Green,6330mAh Battery"
+   },
+   {
+    "asin": "B0F3CV3RMQ",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Unknown",
+    "name": "Hollyland Lark A1 Wireless Microphone for iPhone & Android, 48kHz/24-bit Studio Audio, 3-L"
+   },
+   {
+    "asin": "B0H2BNG8W7",
+    "cls": "DETECT_REJECT",
+    "key": null,
+    "reason": null,
+    "brand": "Unknown",
+    "name": "A100Cs Natural Black 2+4GB RAM 64GB 4G - Middle East Version"
+   },
+   {
+    "asin": "B0FQFLYVYH",
+    "cls": "VALID",
+    "key": "apple|iPhone|17|Pro Max|256",
+    "reason": null,
+    "brand": "Apple",
+    "name": "Apple iPhone 17 Pro Max 256 GB: 6.9-inch Display with ProMotion, A19 Pro Chip, Best Batter"
+   },
+   {
+    "asin": "B0CJXQX3MB",
+    "cls": "VALID",
+    "key": "samsung|Galaxy S|S23|FE|128",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy S23 FE 5G Dual SIM Android Smartphone, 8GB RAM, 128GB Storage, Graphite (KS"
+   },
+   {
+    "asin": "B0FH1PQKCR",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Unknown",
+    "name": "LICAEVEY Cell Phone for Seniors, 2.6in HD Display Unlocked Phones with SOS Button & Flashl"
+   },
+   {
+    "asin": "B0H63BTTRZ",
+    "cls": "VALID",
+    "key": "honor|Honor X|7|Standard|256",
+    "reason": null,
+    "brand": "HONOR",
+    "name": "HONOR X7e Smartphone, Silicon-Carbon Battery, 45W HONOR SuperCharge, 120Hz Display, 50MP A"
+   },
+   {
+    "asin": "B0DQYL8J15",
+    "cls": "VALID",
+    "key": "xiaomi|Redmi Note|14|Pro Plus|512",
+    "reason": null,
+    "brand": "Redmi",
+    "name": "Redmi Note 14 Pro+ 5G Midnight Black 12GB RAM 512GB"
+   },
+   {
+    "asin": "B0FLDHTQY4",
+    "cls": "VALID",
+    "key": "samsung|Galaxy A|A07|Standard|64",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy A07 LTE, Android Smartphone, 64GB Storage, 4GB RAM, Green, 6x OS Upgrades, "
+   },
+   {
+    "asin": "B0CBJZMX5H",
+    "cls": "DETECT_REJECT",
+    "key": null,
+    "reason": null,
+    "brand": "Unknown",
+    "name": "UGREEN 2 Pack for iPhone 15 Pro Max Screen Protector Tempered Glass Clear | Military Grade"
+   },
+   {
+    "asin": "B0GNKG397T",
+    "cls": "VALID",
+    "key": "samsung|Galaxy S|S26|Ultra|256",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy S26 Ultra Sky Blue, 256GB Storage, AI Phone, 12GB RAM, Customized AP, Built"
+   },
+   {
+    "asin": "B0GSDZSTD2",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Unknown",
+    "name": "Redmi A7 Pro Black 4G RAM 128G ROM"
+   },
+   {
+    "asin": "B0F4RD9G72",
+    "cls": "VALID",
+    "key": "samsung|Galaxy A|A06|Standard|128",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy A06 5G, Dual SIM, 4GB RaM, 128GB Storage, Black (KSA Version)"
+   },
+   {
+    "asin": "B0GNK19RLH",
+    "cls": "VALID",
+    "key": "samsung|Galaxy S|S26|Ultra|512",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy S26 Ultra Black, 512GB, AI Phone, 12GB RAM, Customized AP, Built-in Privacy"
+   },
+   {
+    "asin": "B0BQRQ4L9F",
+    "cls": "VALID",
+    "key": "samsung|Galaxy S|S23|Standard|256",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy S23+, 8GB RAM 256GB Green, International Version, 5G Mobile Phone, Dual SIM"
+   },
+   {
+    "asin": "B0CQ2RC5GT",
+    "cls": "VALID",
+    "key": "apple|iPhone|11|Standard|64",
+    "reason": null,
+    "brand": "Apple",
+    "name": "Apple (Refurbished) iPhone 11 (64GB) - White"
+   },
+   {
+    "asin": "B0CT3QFTYP",
+    "cls": "VALID",
+    "key": "apple|iPhone|13|Pro Max|256",
+    "reason": null,
+    "brand": "Apple",
+    "name": "Apple (Refurbished) iPhone 13 Pro Max (256GB) - Sierra Blue"
+   },
+   {
+    "asin": "B0F5X68JNV",
+    "cls": "VALID",
+    "key": "samsung|Galaxy S|S25|Standard|256",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy S25 AI Phone, 256GB Storage, 12GB RAM, Silver Shadow, Android Smartphone, 5"
+   },
+   {
+    "asin": "B0FPG3GFP8",
+    "cls": "VALID",
+    "key": "samsung|Galaxy S|S25|FE|256",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy S25 FE AI Phone, Jetblack, 8GB RAM, 256GB Storage, 50MP Camera, 6.7’’ Displ"
+   },
+   {
+    "asin": "B0DHCXKS1K",
+    "cls": "VALID",
+    "key": "apple|iPhone|13|Pro|512",
+    "reason": null,
+    "brand": "Apple",
+    "name": "Apple (Refurbished) iPhone 13 Pro (512GB) - Sierra Blue"
+   },
+   {
+    "asin": "B0GSZGYBR3",
+    "cls": "VALID",
+    "key": "honor|Honor|60|Lite|128",
+    "reason": null,
+    "brand": "HONOR",
+    "name": "HONOR 600 Lite 5G Smartphone, 8GB RAM + 128GB Storage, 3180mAh Durable Battery, 6.6” 120Hz"
+   },
+   {
+    "asin": "B0DDKLRFVV",
+    "cls": "VALID",
+    "key": "samsung|Galaxy A|A06|Standard|64",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy A06 LTE, Android Smartphone, Dual SIM Mobile Phone, 4GB RAM, 64GB Storage, "
+   },
+   {
+    "asin": "B0CJXPYJC3",
+    "cls": "VALID",
+    "key": "samsung|Galaxy S|S23|FE|128",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy S23 FE 5G Dual SIM Android Smartphone, 8GB RAM, 128GB Storage, Mint (KSA Ve"
+   },
+   {
+    "asin": "B0GQBNZCFM",
+    "cls": "VALID",
+    "key": "samsung|Galaxy S|S26|Ultra|256",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy S26 Ultra Black, 256GB Storage, AI Phone, 12GB RAM, Customized AP, Built-in"
+   },
+   {
+    "asin": "B0B4NH51FP",
+    "cls": "DETECT_REJECT",
+    "key": null,
+    "reason": null,
+    "brand": "Unknown",
+    "name": "UGREEN 2 Pack for iPhone 14 Pro Max Screen Protector Tempered Glass Clear | Military Grade"
+   },
+   {
+    "asin": "B0FNCYB5N1",
+    "cls": "VALID",
+    "key": "samsung|Galaxy A|A17|Standard|2048",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy A17 LTE, Dual SIM, 128GB Expandable to 2TB, Smartphone, Android 14, 4GB RAM"
+   },
+   {
+    "asin": "B0H86YGGXM",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Unknown",
+    "name": "AGM Note N2 4G Smartphone Android 16 Go,Mini Smartphone 4.96\",WhatsApp"
+   },
+   {
+    "asin": "B0DZHP3Q8M",
+    "cls": "VALID",
+    "key": "samsung|Galaxy A|A56|Standard|256",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy A56 5G, Android Smartphone, 256GB Storage, 8GB RAM, Awesome Graphite, 6x OS"
+   },
+   {
+    "asin": "B0DGJM5KW6",
+    "cls": "VALID",
+    "key": "apple|iPhone|16|Standard|128",
+    "reason": null,
+    "brand": "Apple",
+    "name": "Apple iPhone 16 (128 GB) - Pink"
+   },
+   {
+    "asin": "B0GSZGYBR3",
+    "cls": "VALID",
+    "key": "honor|Honor|60|Lite|128",
+    "reason": null,
+    "brand": "HONOR",
+    "name": "HONOR 600 Lite 5G Smartphone, 8GB RAM + 128GB Storage, 3180mAh Durable Battery, 6.6” 120Hz"
+   },
+   {
+    "asin": "B0FPG8T352",
+    "cls": "VALID",
+    "key": "samsung|Galaxy A|A06|Standard|64",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy A06 5G, 64GB Storage, 4GB RAM, 6.7\" PLS LCD Display, 90Hz, HD+ (720x1600), "
+   },
+   {
+    "asin": "B0GZHY8DB5",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "realme",
+    "name": "realme C100i 4G Smartphone Dual SIM, Mobile Phone 4GB RAM, 128GB Storage AI Camera Fast Pe"
+   },
+   {
+    "asin": "B0FQFGZPQY",
+    "cls": "VALID",
+    "key": "apple|iPhone|17|Standard|256",
+    "reason": null,
+    "brand": "Apple",
+    "name": "Apple iPhone 17 256 GB: 6.3-inch Display with ProMotion, A19 Chip, Center Stage Front Came"
+   },
+   {
+    "asin": "B0CX96X456",
+    "cls": "VALID",
+    "key": "samsung|Galaxy A|A55|Standard|128",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy A55 5G, 128GB Storage, 8GB RAM, Android Smartphone, Awesome Iceblue (KSA Ve"
+   },
+   {
+    "asin": "B0GXRS9VNQ",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Unknown",
+    "name": "VR Glasses, 3D Virtual Reality, Virtual Reality for 3D Movies and Games, for Smartphones 4"
+   },
+   {
+    "asin": "B0DYCXGDQF",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Unknown",
+    "name": "Nothing Phone (3a) 128 GB - mobile phone with 32 MP front camera, 30x ultra zoom, 50W fast"
+   },
+   {
+    "asin": "B0GGZCHMQS",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Unknown",
+    "name": "ITEL A100c, Dual SIM, 64GB Storage, 4G Smartphone, Titanium Gold, Android 14, 3GB RAM, Uni"
+   },
+   {
+    "asin": "B0DGJHWT5V",
+    "cls": "VALID",
+    "key": "apple|iPhone|16|Standard|128",
+    "reason": null,
+    "brand": "Apple",
+    "name": "Apple iPhone 16 (128 GB) - Ultramarine"
+   },
+   {
+    "asin": "B0CQ2S717L",
+    "cls": "VALID",
+    "key": "apple|iPhone|14|Pro Max|256",
+    "reason": null,
+    "brand": "Apple",
+    "name": "Apple (Refurbished) iPhone 14 Pro Max 5G 256GB - Deep Purple"
+   },
+   {
+    "asin": "B0FY6X1FRG",
+    "cls": "VALID",
+    "key": "honor|Honor X|9|Standard|256",
+    "reason": null,
+    "brand": "HONOR",
+    "name": "HONOR X9d 5G Smartphone, 12GB RAM + 256GB Storage, Silicon-Carbon Battery, 108MP OIS Camer"
+   },
+   {
+    "asin": "B0DF2WVMK9",
+    "cls": "VALID",
+    "key": "xiaomi|Redmi|14|Standard|128",
+    "reason": null,
+    "brand": "Xiaomi",
+    "name": "Xiaomi Redmi 14C Midnight Black 4GB RAM 128GB ROM"
+   },
+   {
+    "asin": "B0FLDK4MMS",
+    "cls": "VALID",
+    "key": "samsung|Galaxy A|A07|Standard|128",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy A07 LTE, Android Smartphone, 128GB Storage, 4GB RAM, Black, 6x OS Upgrades,"
+   },
+   {
+    "asin": "B0G4WZFPZK",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Motorola",
+    "name": "Motorola Moto G06 Dual-SIM 64GB ROM + 4GB RAM (GSM Only | No CDMA) Factory Unlocked 4G/LTE"
+   },
+   {
+    "asin": "B0DNZ5F8T1",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "HMD",
+    "name": "HMD Fusion 5G Android 14 Smartphone, 24GB RAM (12GB+12GB), 256GB Storage, Ultra-Slim Trans"
+   },
+   {
+    "asin": "B0DZHPR6CS",
+    "cls": "VALID",
+    "key": "samsung|Galaxy A|A26|Standard|128",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy A26 5G, Android Smartphone, 128GB Storage, 6GB RAM, Black, 50MP Camera, Lar"
+   },
+   {
+    "asin": "B0GSVSN4QC",
+    "cls": "VALID",
+    "key": "samsung|Galaxy A|A57|Standard|128",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy A57 5G Android Smartphone, 128GB Storage, 8GB RAM, Awesome Navy, 6x OS Upgr"
+   },
+   {
+    "asin": "B0DDQ9FWXG",
+    "cls": "VALID",
+    "key": "xiaomi|Redmi|14|Standard|256",
+    "reason": null,
+    "brand": "Xiaomi",
+    "name": "Xiaomi Redmi 14C Dual SIM Midnight Black 8GB RAM 256GB 4G - Global Version"
+   },
+   {
+    "asin": "B0H9572Y63",
+    "cls": "VALID",
+    "key": "samsung|Galaxy Z|Z Fold 8|Standard|256",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy Z Fold8 Cream, 256GB, All-new Shape, Customized Processor, 4800 mAh Battery"
+   },
+   {
+    "asin": "B0CV479PHD",
+    "cls": "VALID",
+    "key": "apple|iPhone|13|Standard|256",
+    "reason": null,
+    "brand": "Apple",
+    "name": "Apple (Refurbished) iPhone 13 (256GB) - Midnight"
+   },
+   {
+    "asin": "B0FJS8J4FX",
+    "cls": "VALID",
+    "key": "samsung|Galaxy A|A17|Standard|256",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy A17 5G Smartphone | 6.7\" Super AMOLED 90Hz Display | 50MP OIS Triple Camera"
+   },
+   {
+    "asin": "B0DJD9NB1Y",
+    "cls": "DETECT_REJECT",
+    "key": null,
+    "reason": null,
+    "brand": "Unknown",
+    "name": "MOTOROLA G35 5G, 8+12GB RAM,pSIM + eSIM,128 GB ROM, UNISOC T760, 6.7\" FHD+ Display 120Hz, "
+   },
+   {
+    "asin": "B0F5X712LS",
+    "cls": "VALID",
+    "key": "samsung|Galaxy S|S25|Standard|256",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy S25 AI Phone, 256GB Storage, 12GB RAM, Icyblue, Android Smartphone, 50MP Ca"
+   },
+   {
+    "asin": "B0CHXS73N7",
+    "cls": "VALID",
+    "key": "apple|iPhone|15|Standard|128",
+    "reason": null,
+    "brand": "Apple",
+    "name": "Apple iPhone 15 (128 GB) - Blue"
+   },
+   {
+    "asin": "B0FMY6MXR3",
+    "cls": "VALID",
+    "key": "xiaomi|Redmi|15|Standard|256",
+    "reason": null,
+    "brand": "Xiaomi",
+    "name": "Xiaomi Redmi 15C Smartphone 8+256GB,Twilight Orange,6000mAh Battery | 120Hz 6.9\" Display, "
+   },
+   {
+    "asin": "B0FHHV47KD",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Unknown",
+    "name": "LICAEVEY Rugged Triple SIM 2G Senior Cell Phone - 2.6\" Ultra Thin, 4800mAh Large Battery, "
+   },
+   {
+    "asin": "B0FDKJDFGZ",
+    "cls": "DETECT_REJECT",
+    "key": null,
+    "reason": null,
+    "brand": "Unknown",
+    "name": "TOCOL 2 Pack for iPhone 17 Pro Max / 16 Pro Max Screen Protector 6.9 Inch, Easy Installati"
+   },
+   {
+    "asin": "B0FQFT8RC6",
+    "cls": "VALID",
+    "key": "apple|iPhone|17|Pro|256",
+    "reason": null,
+    "brand": "Apple",
+    "name": "Apple iPhone 17 Pro 256 GB: 6.3-inch Display with ProMotion up to 120Hz, A19 Pro Chip, Bre"
+   },
+   {
+    "asin": "B0GV437Z28",
+    "cls": "VALID",
+    "key": "realme|realme|15|Standard|256",
+    "reason": null,
+    "brand": "realme",
+    "name": "realme 15 5G Smartphone 12GB+256GB Black"
+   },
+   {
+    "asin": "B0GYDW1JR1",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Unknown",
+    "name": "AGM Note N2 4G Smartphone Android 16 Go,Mini Smartphone 4.96\",WhatsApp | 3GB RAM + 32GB RO"
+   },
+   {
+    "asin": "B0GSVZSWDB",
+    "cls": "VALID",
+    "key": "samsung|Galaxy A|A37|Standard|256",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy A37 5G Android Smartphone, 256GB Storage, 8GB RAM, Awesome White, 6x OS Upg"
+   },
+   {
+    "asin": "B0H2J52WD9",
+    "cls": "DETECT_REJECT",
+    "key": null,
+    "reason": null,
+    "brand": "Unknown",
+    "name": "A7 Non Camera and Non GPS 12GB RAM (4GB + 8GB Expandable) 128GB ROM, 6.67\"HD+ Display, Dua"
+   },
+   {
+    "asin": "B0F7RTGCKM",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Motorola",
+    "name": "Motorola Moto G86 Dual SIM 256GB ROM + 8GB RAM (GSM Only | No CDMA) Factory Unlocked 5G Sm"
+   },
+   {
+    "asin": "B0DZHNGR82",
+    "cls": "VALID",
+    "key": "samsung|Galaxy A|A26|Standard|256",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy A26 5G, Android Smartphone, 256GB Storage, 8GB RAM, Black, 50MP Camera, Lar"
+   },
+   {
+    "asin": "B0DTHXSM8S",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Unknown",
+    "name": "SOYES XS24-Pro 3G Mini Smartphone 3.0 inch 2GB RAM 16GB ROM 900mAh Android 9 Dual SIM Face"
+   },
+   {
+    "asin": "B0CV48TJB5",
+    "cls": "VALID",
+    "key": "apple|iPhone|13|Standard|128",
+    "reason": null,
+    "brand": "Apple",
+    "name": "Apple (Refurbished) iPhone 13 (128GB) - Midnight"
+   },
+   {
+    "asin": "B08YKJRQ7W",
+    "cls": "VALID",
+    "key": "apple|iPhone|12|Standard|128",
+    "reason": null,
+    "brand": "Apple",
+    "name": "Apple (Refurbished) iPhone 12 (128GB) - White"
+   },
+   {
+    "asin": "B0DDKM5FH6",
+    "cls": "VALID",
+    "key": "samsung|Galaxy A|A06|Standard|64",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy A06 LTE, Android Smartphone, Dual SIM Mobile Phone, 4GB RAM, 64GB Storage, "
+   },
+   {
+    "asin": "B0GQVF9R1G",
+    "cls": "VALID",
+    "key": "apple|iPhone|17e|Standard|256",
+    "reason": null,
+    "brand": "Apple",
+    "name": "Apple iPhone 17e 256GB: 6.1-inch Super Retina XDR Display, A19 Chip, All-Day Battery Life,"
+   },
+   {
+    "asin": "B0CND3G3PC",
+    "cls": "VALID",
+    "key": "samsung|Galaxy S|S22|Ultra|256",
+    "reason": null,
+    "brand": "SAMSUNG",
+    "name": "SAMSUNG Galaxy S22 Ultra Dual SIM Burgundy 12GB RAM 256GB 5G - International Version"
+   },
+   {
+    "asin": "B0CHXQNNJ7",
+    "cls": "VALID",
+    "key": "apple|iPhone|15|Standard|256",
+    "reason": null,
+    "brand": "Apple",
+    "name": "Apple iPhone 15 (256 GB) - Black"
+   },
+   {
+    "asin": "B0FQFFG9GP",
+    "cls": "VALID",
+    "key": "apple|iPhone|17|Pro Max|2048",
+    "reason": null,
+    "brand": "Apple",
+    "name": "Apple iPhone 17 Pro Max 2 TB: 6.9-inch Display with ProMotion, A19 Pro Chip, Best Battery "
+   },
+   {
+    "asin": "B0FY6X1FRG",
+    "cls": "VALID",
+    "key": "honor|Honor X|9|Standard|256",
+    "reason": null,
+    "brand": "HONOR",
+    "name": "HONOR X9d 5G Smartphone, 12GB RAM + 256GB Storage, Silicon-Carbon Battery, 108MP OIS Camer"
+   },
+   {
+    "asin": "B0D83GHDW2",
+    "cls": "DETECT_REJECT",
+    "key": null,
+    "reason": null,
+    "brand": "Unknown",
+    "name": "UGREEN 2 Pack for iPhone 16 Pro Max Screen Protector Privacy Drop Defense"
+   },
+   {
+    "asin": "B0CQ2QVPMF",
+    "cls": "VALID",
+    "key": "apple|iPhone|14|Standard|128",
+    "reason": null,
+    "brand": "Apple",
+    "name": "Apple (Refurbished) iPhone 14 5G 128GB Phone - Purple"
+   },
+   {
+    "asin": "B0FLDK4MMS",
+    "cls": "VALID",
+    "key": "samsung|Galaxy A|A07|Standard|128",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy A07 LTE, Android Smartphone, 128GB Storage, 4GB RAM, Black, 6x OS Upgrades,"
+   },
+   {
+    "asin": "B0GSZPLWVW",
+    "cls": "VALID",
+    "key": "honor|Honor|60|Lite|128",
+    "reason": null,
+    "brand": "HONOR",
+    "name": "HONOR 600 Lite 5G Smartphone, 8GB RAM + 128GB Storage, 3180mAh Durable Battery, 6.6” 120Hz"
+   },
+   {
+    "asin": "B0FS82558C",
+    "cls": "VALID",
+    "key": "honor|Honor X|5|Plus|128",
+    "reason": null,
+    "brand": "Unknown",
+    "name": "HONOR X5c PLUS 4G 128GB Midnight black"
+   },
+   {
+    "asin": "B0FC28KCBT",
+    "cls": "DETECT_REJECT",
+    "key": null,
+    "reason": null,
+    "brand": "Unknown",
+    "name": "ESR 3 Pack for iPhone 17 Pro Max Screen Protector, Armorite"
+   },
+   {
+    "asin": "B0G5Z5NSVD",
+    "cls": "VALID",
+    "key": "xiaomi|Redmi Note|15|Pro Plus|512",
+    "reason": null,
+    "brand": "Unknown",
+    "name": "Redmi Note 15 Pro+ 5G Dual SIM+eSIM Black 12GB RAM 512GB 5G - Global Version"
+   },
+   {
+    "asin": "B0GN334952",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Unknown",
+    "name": "ITEL A100c, 4G Smartphone, 64GB Storage, 3GB RAM (Blaze Blue)"
+   },
+   {
+    "asin": "B0DKVMVMMD",
+    "cls": "VALID",
+    "key": "apple|iPhone|12|Pro Max|256",
+    "reason": null,
+    "brand": "Apple",
+    "name": "Apple (Refurbished) iPhone 12 Pro Max (256GB) - Pacific Blue"
+   },
+   {
+    "asin": "B0FH48HCPY",
+    "cls": "DETECT_REJECT",
+    "key": null,
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Pack of 2 Screen Protectors, 9H Tempered Glass Screen Protector for Samsung Galaxy A07"
+   },
+   {
+    "asin": "B0GWR279VD",
+    "cls": "DETECT_REJECT",
+    "key": null,
+    "reason": null,
+    "brand": "Unknown",
+    "name": "Mini Projector, 4K Smart Projector, Official App with Full HD 1080p, 1000 Lumens, Auto Foc"
+   },
+   {
+    "asin": "B0H61GY9MB",
+    "cls": "VALID",
+    "key": "honor|Honor X|7|Standard|128",
+    "reason": null,
+    "brand": "HONOR",
+    "name": "HONOR X7e Smartphone, Silicon-Carbon Battery, 45W HONOR SuperCharge, 120Hz Display, 50MP A"
+   },
+   {
+    "asin": "B0GSVV759C",
+    "cls": "VALID",
+    "key": "samsung|Galaxy A|A37|Standard|256",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy A37 5G Android Smartphone, 256GB Storage, 8GB RAM, Awesome Charcoal, 6x OS "
+   },
+   {
+    "asin": "B0DYD8XWH8",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Unknown",
+    "name": "Nothing Phone (3a) 128 GB - mobile phone with 32 MP front camera, 30x ultra zoom, 50W fast"
+   },
+   {
+    "asin": "B0CHXS73N7",
+    "cls": "VALID",
+    "key": "apple|iPhone|15|Standard|128",
+    "reason": null,
+    "brand": "Apple",
+    "name": "Apple iPhone 15 (128 GB) - Blue"
+   },
+   {
+    "asin": "B082F13J55",
+    "cls": "DETECT_REJECT",
+    "key": null,
+    "reason": null,
+    "brand": "Unknown",
+    "name": "TMY 1080P Full HD Portable Mini Projector, Upgraded Bluetooth Movie Projector with Screen,"
+   },
+   {
+    "asin": "B0F13SQDRZ",
+    "cls": "VALID",
+    "key": "samsung|Galaxy A|A26|Standard|128",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy A26 Dual-SIM 128GB ROM + 6GB RAM (GSM Only | No CDMA) Factory Unlocked 5G S"
+   },
+   {
+    "asin": "B0GGT5KYL9",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Unknown",
+    "name": "XUMIUZIY Unlocked Slider Phone, 2.0 Inch HD Screen GSM Mobile Phone with Loud Speaker, MP3"
+   },
+   {
+    "asin": "B0FLDHS345",
+    "cls": "VALID",
+    "key": "samsung|Galaxy A|A17|Standard|128",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy A17 5G, Android Smartphone, 128GB Storage, 4GB RAM, Black, 6x OS Upgrades, "
+   },
+   {
+    "asin": "B0FH5V3TZR",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Unknown",
+    "name": "LICAEVEY Flip Cell Phone for Seniors, 1.3MP Dual Screen Flip Phone with Dual SIM, Unlocked"
+   },
+   {
+    "asin": "B0H953WPG6",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "realme",
+    "name": "realme P4x 4G Smartphone Dual SIM, Mobile Phone 4GB RAM, 128GB Storage, 50MP Camera, Andro"
+   },
+   {
+    "asin": "B0FPM1RTFS",
+    "cls": "VALID",
+    "key": "samsung|Galaxy S|S25|FE|256",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy S25 FE, 5G, Smartphone, Android, 8GB RAM, Octa Core, 1.3GHz, 6.7-inch, Full"
+   },
+   {
+    "asin": "B0FK5VV5XK",
+    "cls": "VALID",
+    "key": "xiaomi|POCO|M7|Standard|128",
+    "reason": null,
+    "brand": "Unknown",
+    "name": "POCO M7 Blue 6GB RAM 128GB ROM EN Version"
+   },
+   {
+    "asin": "B0GNK1B8NV",
+    "cls": "VALID",
+    "key": "samsung|Galaxy S|S26|Ultra|256",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy S26 Ultra Cobalt Violet, 256GB Storage, AI Phone, 12GB RAM, Customized AP, "
+   },
+   {
+    "asin": "B08TBCPS9N",
+    "cls": "VALID",
+    "key": "apple|iPhone|13|Standard|128",
+    "reason": null,
+    "brand": "Apple",
+    "name": "Apple (Refurbished) iPhone 13 (128GB) - Blue"
+   },
+   {
+    "asin": "B0GWZJJ6WQ",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Unknown",
+    "name": "REDMAGIC 11S Pro 144Hz Gaming Phone, 5G Android Smartphone, 12GB RAM+256GB ROM, Snapdragon"
+   },
+   {
+    "asin": "B0FS8275R5",
+    "cls": "VALID",
+    "key": "honor|Honor X|5|Standard|64",
+    "reason": null,
+    "brand": "HONOR",
+    "name": "HONOR X5c Smartphone 4 GB RAM, 64 GB Dual SIM 4G - Midnight black - Middle East Version"
+   },
+   {
+    "asin": "B0G1KRT7BP",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Unknown",
+    "name": "ITEL A100c, Dual SIM, 64GB Storage, 4G Mobile Phone, Titanium Gold, Android 14, 2GB RAM, U"
+   },
+   {
+    "asin": "B0FMP9FXRS",
+    "cls": "VALID",
+    "key": "xiaomi|Redmi|15|Standard|256",
+    "reason": null,
+    "brand": "Xiaomi",
+    "name": "Xiaomi Redmi 15C Unlocked Smartphone, 8GB RAM, 256GB Storage, Midnight Black, 6000mAh Batt"
+   },
+   {
+    "asin": "B0CZ6LXSDD",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Unknown",
+    "name": "AMAV SOYES XS15 3G Mini Smartphone, Dual SIM Dual Standby WiFi 3 inch Phone, 2GB RAM 16GB "
+   },
+   {
+    "asin": "B0FNCY8VKD",
+    "cls": "VALID",
+    "key": "samsung|Galaxy A|A17|Standard|128",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy A17 LTE, Android Smartphone, 128GB Storage, 6GB RAM, Grey, 6x OS Upgrades, "
+   },
+   {
+    "asin": "B0H61LYPXV",
+    "cls": "VALID",
+    "key": "honor|Honor X|7|Standard|256",
+    "reason": null,
+    "brand": "HONOR",
+    "name": "HONOR X7e Smartphone, Silicon-Carbon Battery, 45W HONOR SuperCharge, 120Hz Display, 50MP A"
+   },
+   {
+    "asin": "B0FNCYB5N1",
+    "cls": "VALID",
+    "key": "samsung|Galaxy A|A17|Standard|2048",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy A17 LTE, Dual SIM, 128GB Expandable to 2TB, Smartphone, Android 14, 4GB RAM"
+   },
+   {
+    "asin": "B0DZHMWTP7",
+    "cls": "VALID",
+    "key": "samsung|Galaxy A|A36|Standard|256",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy A36 5G, Android Smartphone, 256GB Storage, 8GB RAM, Awesome White, 6x OS Up"
+   },
+   {
+    "asin": "B0GMRS7Z98",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Unknown",
+    "name": "Nothing Phone (4a) - 50 MP Triple Camera with Up To 70X ultra Zoom, Transparent Design Sma"
+   },
+   {
+    "asin": "B0H5NSP83S",
+    "cls": "DETECT_REJECT",
+    "key": null,
+    "reason": null,
+    "brand": "Unknown",
+    "name": "TOCOL 2 Pack for iPhone 18 Pro Max Screen Protector, Easy Installation"
+   },
+   {
+    "asin": "B0BN11N1H1",
+    "cls": "DETECT_REJECT",
+    "key": null,
+    "reason": null,
+    "brand": "Samsung",
+    "name": "UGREEN 2 Pack Samsung Galaxy S22/S23 Ultra 3D Curved Screen Protector, Flexible TPU Film, "
+   },
+   {
+    "asin": "B0FLDHTQY4",
+    "cls": "VALID",
+    "key": "samsung|Galaxy A|A07|Standard|64",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy A07 LTE, Android Smartphone, 64GB Storage, 4GB RAM, Green, 6x OS Upgrades, "
+   },
+   {
+    "asin": "B0FY6T8GPM",
+    "cls": "VALID",
+    "key": "honor|Honor X|9|Standard|256",
+    "reason": null,
+    "brand": "HONOR",
+    "name": "HONOR X9d 5G Smartphone, 12GB RAM + 256GB Storage, Silicon-Carbon Battery, 108MP OIS Camer"
+   },
+   {
+    "asin": "B0DXQQCYKY",
+    "cls": "VALID",
+    "key": "apple|iPhone|16e|Standard|256",
+    "reason": null,
+    "brand": "Apple",
+    "name": "Apple iPhone 16e (256 GB) - White"
+   },
+   {
+    "asin": "B0GSVXYFQB",
+    "cls": "VALID",
+    "key": "samsung|Galaxy A|A57|Standard|128",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy A57 5G Android Smartphone, 128GB Storage, 8GB RAM, Awesome Gray, 6x OS Upgr"
+   },
+   {
+    "asin": "B08N5QW653",
+    "cls": "VALID",
+    "key": "xiaomi|POCO|C85|Standard|128",
+    "reason": null,
+    "brand": "Unknown",
+    "name": "POCO C85 Dual SIM Green 6GB RAM 128GB 4G - Global Version"
+   },
+   {
+    "asin": "B0FMPD8CWK",
+    "cls": "VALID",
+    "key": "xiaomi|Redmi|15|Standard|256",
+    "reason": null,
+    "brand": "Xiaomi",
+    "name": "Xiaomi Redmi 15C Smartphone 8,256GB,mint green,6000mAh Battery | 120Hz 6.9\" Display, Styli"
+   },
+   {
+    "asin": "B0FHHSXJ2X",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Unknown",
+    "name": "LICAEVEY Rugged Triple SIM 2G Senior Cell Phone - 2.6\" Ultra Thin, 4800mAh Large Battery, "
+   },
+   {
+    "asin": "B0D35XK8X3",
+    "cls": "VALID",
+    "key": "honor|Honor|20|Lite|256",
+    "reason": null,
+    "brand": "HONOR",
+    "name": "HONOR 200 Lite, Unlocked Mobile Phones, 5G Smartphone, 8GB+256GB, 6,7” Anti-Drop AMOLED Di"
+   },
+   {
+    "asin": "B0GVNCB3SH",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "realme",
+    "name": "realme P4 Power 5G,Andriod Smartphone, Dual SIM, 12GB RAM, 256GB Storage, 50MP Camera, And"
+   },
+   {
+    "asin": "B0H61LYPXV",
+    "cls": "VALID",
+    "key": "honor|Honor X|7|Standard|256",
+    "reason": null,
+    "brand": "HONOR",
+    "name": "HONOR X7e Smartphone, Silicon-Carbon Battery, 45W HONOR SuperCharge, 120Hz Display, 50MP A"
+   },
+   {
+    "asin": "B0FS816PD7",
+    "cls": "VALID",
+    "key": "honor|Honor X|5|Standard|64",
+    "reason": null,
+    "brand": "HONOR",
+    "name": "HONOR X5c Smartphone 4 GB RAM, 64 GB Dual SIM 4G - Tidal Blue - Middle East Version"
+   },
+   {
+    "asin": "B08NDG3TWL",
+    "cls": "VALID",
+    "key": "xiaomi|Redmi Note|15|Standard|256",
+    "reason": null,
+    "brand": "Xiaomi",
+    "name": "Xiaomi Redmi Note 15C 5G Smartphone 8+256GB,Dusk Purple,6000mAh Battery"
+   },
+   {
+    "asin": "B0DSLTQQL3",
+    "cls": "VALID",
+    "key": "samsung|Galaxy S|S25|Ultra|256",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy S25 Ultra AI Phone, 256GB Storage, 12GB RAM, Titanium Gray, Android Smartph"
+   },
+   {
+    "asin": "B0D17J32JR",
+    "cls": "DETECT_REJECT",
+    "key": null,
+    "reason": null,
+    "brand": "Unknown",
+    "name": "TOCOL 2 Pack for iPhone 15 Pro Max Screen Protector Privacy 6.7 Inch, 25° Anti-Spy Full Co"
+   },
+   {
+    "asin": "B0GVNDMQD5",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "realme",
+    "name": "realme C85 5G, Andriod Smartphone, Dual SIM, 8GB RAM, 256GB Storage, 50MP Camera, Android "
+   },
+   {
+    "asin": "B0FQJQQ6MY",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Motorola",
+    "name": "Motorola Moto G06 Dual-SIM 256GB ROM + 4GB RAM (GSM Only | No CDMA) Factory Unlocked 4G/LT"
+   },
+   {
+    "asin": "B0DZHP3Q8M",
+    "cls": "VALID",
+    "key": "samsung|Galaxy A|A56|Standard|256",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy A56 5G, Android Smartphone, 256GB Storage, 8GB RAM, Awesome Graphite, 6x OS"
+   },
+   {
+    "asin": "B0G2BJX1GN",
+    "cls": "VALID",
+    "key": "realme|realme|15|Pro|512",
+    "reason": null,
+    "brand": "Unknown",
+    "name": "realme 15 Pro 5G Smartphone (12GB RAM, 512GB Storage) | 6.8\" 144Hz OLED Display | Snapdrag"
+   },
+   {
+    "asin": "B0FQFHZF6L",
+    "cls": "VALID",
+    "key": "apple|iPhone|17|Pro Max|256",
+    "reason": null,
+    "brand": "Apple",
+    "name": "Apple iPhone 17 Pro Max 256 GB: 6.9-inch Display with ProMotion, A19 Pro Chip, Best Batter"
+   },
+   {
+    "asin": "B0FFGPCWL2",
+    "cls": "DETECT_REJECT",
+    "key": null,
+    "reason": null,
+    "brand": "Unknown",
+    "name": "TOCOL 2 Pack for iPhone 17 Pro Max / 16 Pro Max Privacy Screen Protector 6.9 Inch, 25° Ant"
+   },
+   {
+    "asin": "B0HG1L6Y1F",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Unknown",
+    "name": "1080P 4K Supported Mini Smart Projector, WiFi 6 & Bluetooth 5.4, 12000 ANSI Auto Focus & O"
+   },
+   {
+    "asin": "B0FLDJKZ9J",
+    "cls": "VALID",
+    "key": "samsung|Galaxy A|A17|Standard|256",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy A17 5G, Android Smartphone, 256GB Storage, 8GB RAM, Black, 6x OS Upgrades, "
+   },
+   {
+    "asin": "B0GSVSN4QC",
+    "cls": "VALID",
+    "key": "samsung|Galaxy A|A57|Standard|128",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy A57 5G Android Smartphone, 128GB Storage, 8GB RAM, Awesome Navy, 6x OS Upgr"
+   },
+   {
+    "asin": "B0DP3CP2SY",
+    "cls": "VALID",
+    "key": "samsung|Galaxy S|S25|Ultra|256",
+    "reason": null,
+    "brand": "SAMSUNG",
+    "name": "SAMSUNG Galaxy S25 Ultra Cell Phone, 256GB, AI Smartphone, Unlocked Android, AI Camera, Fa"
+   },
+   {
+    "asin": "B0FV3987B8",
+    "cls": "VALID",
+    "key": "infinix|Infinix Hot|60|Standard|256",
+    "reason": null,
+    "brand": "Unknown",
+    "name": "Infinix Hot 60i Dual SIM Shadow Blue 8GB RAM 256GB 5G - Middle East Version"
+   },
+   {
+    "asin": "B0GMRLYTQT",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Unknown",
+    "name": "Nothing Phone (4a) - 50 MP Triple Camera with Up To 70X ultra Zoom, Transparent Design Sma"
+   },
+   {
+    "asin": "B0FQG24QM8",
+    "cls": "VALID",
+    "key": "apple|iPhone|17|Pro Max|256",
+    "reason": null,
+    "brand": "Apple",
+    "name": "Apple iPhone 17 Pro Max 256 GB: 6.9-inch Display with ProMotion, A19 Pro Chip, Best Batter"
+   },
+   {
+    "asin": "B0FQFLYVYH",
+    "cls": "VALID",
+    "key": "apple|iPhone|17|Pro Max|256",
+    "reason": null,
+    "brand": "Apple",
+    "name": "Apple iPhone 17 Pro Max 256 GB: 6.9-inch Display with ProMotion, A19 Pro Chip, Best Batter"
+   },
+   {
+    "asin": "B0FND1GG2X",
+    "cls": "VALID",
+    "key": "samsung|Galaxy A|A17|Standard|128",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy A17 LTE Android Smartphone, 128GB Storage, 6GB RAM, Black, 6x OS Upgrades, "
+   },
+   {
+    "asin": "B0FBVKN4X6",
+    "cls": "DETECT_REJECT",
+    "key": null,
+    "reason": null,
+    "brand": "Samsung",
+    "name": "0.45X Super Wide Angle & 15X Macro Lens Kit for iPhone, Samsung, Google Pixel - Aluminum C"
+   },
+   {
+    "asin": "B0GS24TZCN",
+    "cls": "VALID",
+    "key": "xiaomi|POCO|X8|Pro|512",
+    "reason": null,
+    "brand": "POCO",
+    "name": "POCO X8 Pro Dual SIM Black 8GB RAM 512GB 5G- Global Version"
+   },
+   {
+    "asin": "B0D48Z3SJ7",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Unknown",
+    "name": "Cheap Mobile Phones, 5.0 Inch, Android 9.0, Dual SIM Dual Camera, Quad Core, 16GB ROM【Expa"
+   },
+   {
+    "asin": "B0HF8SV9CD",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "HONOR",
+    "name": "HONOR CHOICE T10 4G Smartphone, 6.75\" HD Display, 5000mAh Battery, AI Simultaneous Interpr"
+   },
+   {
+    "asin": "B0FRSPH88Z",
+    "cls": "VALID",
+    "key": "honor|Honor X|5|Plus|128",
+    "reason": null,
+    "brand": "Honor",
+    "name": "Honor X5c Plus Dual-SIM 128GB ROM + 4GB RAM (GSM Only | No CDMA) Factory Unlocked 4G/LTE S"
+   },
+   {
+    "asin": "B0GSZPLWVW",
+    "cls": "VALID",
+    "key": "honor|Honor|60|Lite|128",
+    "reason": null,
+    "brand": "HONOR",
+    "name": "HONOR 600 Lite 5G Smartphone, 8GB RAM + 128GB Storage, 3180mAh Durable Battery, 6.6” 120Hz"
+   },
+   {
+    "asin": "B0DLBDMG2Q",
+    "cls": "VALID",
+    "key": "apple|iPhone|12|Standard|64",
+    "reason": null,
+    "brand": "Apple",
+    "name": "Apple (Refurbished) iPhone 12 (64GB) - Blue"
+   },
+   {
+    "asin": "B0FC2CGXKG",
+    "cls": "DETECT_REJECT",
+    "key": null,
+    "reason": null,
+    "brand": "Unknown",
+    "name": "ESR 3 Pack for iPhone 18 Pro/17 Pro Screen Protector, Classic"
+   },
+   {
+    "asin": "B0FH479DZX",
+    "cls": "DETECT_REJECT",
+    "key": null,
+    "reason": null,
+    "brand": "Unknown",
+    "name": "Pack of 2 Screen Protectors, 9H Tempered Glass Screen Protector for iPhone 17 Pro Max"
+   },
+   {
+    "asin": "B0GS1WYFKX",
+    "cls": "VALID",
+    "key": "xiaomi|POCO|X8|Pro|512",
+    "reason": null,
+    "brand": "POCO",
+    "name": "POCO X8 Pro Dual SIM White 8GB RAM 512GB 5G- Global Version"
+   },
+   {
+    "asin": "B0FY6T8GPM",
+    "cls": "VALID",
+    "key": "honor|Honor X|9|Standard|256",
+    "reason": null,
+    "brand": "HONOR",
+    "name": "HONOR X9d 5G Smartphone, 12GB RAM + 256GB Storage, Silicon-Carbon Battery, 108MP OIS Camer"
+   },
+   {
+    "asin": "B0DZHNGR82",
+    "cls": "VALID",
+    "key": "samsung|Galaxy A|A26|Standard|256",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy A26 5G, Android Smartphone, 256GB Storage, 8GB RAM, Black, 50MP Camera, Lar"
+   },
+   {
+    "asin": "B0FNCZCHW5",
+    "cls": "VALID",
+    "key": "samsung|Galaxy A|A17|Standard|2048",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy A17 LTE, Dual SIM, 128GB Expandable to 2TB, Smartphone, Android 14, 4GB RAM"
+   },
+   {
+    "asin": "B0GTT3N363",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Google",
+    "name": "Alwtniet Projector 4K with Google TV, Native Full HD 1080p Mini Projector Home Cinema Blue"
+   },
+   {
+    "asin": "B0GSVQPWZD",
+    "cls": "VALID",
+    "key": "samsung|Galaxy A|A37|Standard|128",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy A37 5G Android Smartphone, 128GB Storage, 8GB RAM, Awesome Lavender, 6x OS "
+   },
+   {
+    "asin": "B0GMRMJJCQ",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Unknown",
+    "name": "Nothing Phone (4a) - 50 MP Triple Camera with Up To 70X ultra Zoom, Transparent Design Sma"
+   },
+   {
+    "asin": "B08N5QW653",
+    "cls": "VALID",
+    "key": "xiaomi|POCO|C85|Standard|128",
+    "reason": null,
+    "brand": "Xiaomi",
+    "name": "POCO C85 Dual SIM Black 6GB RAM 128GB 4G - Global Version"
+   },
+   {
+    "asin": "B0GVNCF34L",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "realme",
+    "name": "realme C85 5G, Andriod Smartphone, Dual SIM, 8GB RAM, 256GB Storage, 50MP Camera, Android "
+   },
+   {
+    "asin": "B0GSW36PDX",
+    "cls": "VALID",
+    "key": "samsung|Galaxy A|A57|Standard|256",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy A57 5G Android Smartphone, 256GB Storage, 8GB RAM, Awesome Icyblue, 6x OS U"
+   },
+   {
+    "asin": "B0FGWKKFL5",
+    "cls": "VALID",
+    "key": "honor|Honor X|6|Standard|256",
+    "reason": null,
+    "brand": "Unknown",
+    "name": "HONOR X6c 256GB 4G Midnight Black"
+   },
+   {
+    "asin": "B0G5YW5K4D",
+    "cls": "VALID",
+    "key": "xiaomi|Redmi Note|15|Standard|256",
+    "reason": null,
+    "brand": "Xiaomi",
+    "name": "Xiaomi Redmi Note 15 5G Unlocked Smartphone, Dual SIM, 8GB RAM, 256GB Storage, Glacier Blu"
+   },
+   {
+    "asin": "B0H8YPRHKC",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Unknown",
+    "name": "invens ULTRA S25 Android 16 Unlocked Smartphone, 4GB+64GB/1TB, 6.79\" Display, 8MP+16MP Cam"
+   },
+   {
+    "asin": "B0DP3GQ4QY",
+    "cls": "VALID",
+    "key": "samsung|Galaxy S|S25|Ultra|256",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy S25 Ultra, 256GB (International Version)"
+   },
+   {
+    "asin": "B0FQG1XQ31",
+    "cls": "VALID",
+    "key": "apple|iPhone|17|Standard|256",
+    "reason": null,
+    "brand": "Apple",
+    "name": "Apple iPhone 17 256 GB: 6.3-inch Display with ProMotion, A19 Chip, Center Stage Front Came"
+   },
+   {
+    "asin": "B0DWLQHZP4",
+    "cls": "VALID",
+    "key": "apple|iPhone|15|Pro Max|256",
+    "reason": null,
+    "brand": "Apple",
+    "name": "Apple (Refurbished) iPhone 15 Pro Max (256 GB) - White Titanium"
+   },
+   {
+    "asin": "B09YHBYWWD",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Unknown",
+    "name": "Datazone Keyboard Metal Panel Colorful Led Backlit Wired Desktop Keyboards Water Resistant"
+   },
+   {
+    "asin": "B0DWLSS87T",
+    "cls": "VALID",
+    "key": "apple|iPhone|15|Pro Max|256",
+    "reason": null,
+    "brand": "Apple",
+    "name": "Apple (Refurbished) iPhone 15 Pro Max (256 GB) - Natural Titanium"
+   },
+   {
+    "asin": "B0DX2H1LF4",
+    "cls": "VALID",
+    "key": "apple|iPhone|13|Pro|512",
+    "reason": null,
+    "brand": "Apple",
+    "name": "Apple (Refurbished) iPhone 13 Pro (512GB) - Silver"
+   },
+   {
+    "asin": "B0FMY6MXR3",
+    "cls": "VALID",
+    "key": "xiaomi|Redmi|15|Standard|256",
+    "reason": null,
+    "brand": "Xiaomi",
+    "name": "Xiaomi Redmi 15C Smartphone 8+256GB,Twilight Orange,6000mAh Battery"
+   },
+   {
+    "asin": "B0G1KS6PNH",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Unknown",
+    "name": "ITEL A100c, 4G Smartphone, 64GB Storage, Pure Black, Android 14, 2GB RAM, Unisoc T7100, 6."
+   },
+   {
+    "asin": "B0CQ31Z35R",
+    "cls": "VALID",
+    "key": "apple|iPhone|15|Standard|128",
+    "reason": null,
+    "brand": "Apple",
+    "name": "Apple iPhone 15 (128 GB) - Black (Renewed)"
+   },
+   {
+    "asin": "B0G4SWDH8P",
+    "cls": "VALID",
+    "key": "samsung|Galaxy S|S26|Ultra|256",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy S26 Ultra, Unlocked Android Smartphone, 256GB, Privacy Display, Galaxy AI, "
+   },
+   {
+    "asin": "B0GSVQJ1XX",
+    "cls": "VALID",
+    "key": "samsung|Galaxy A|A57|Standard|256",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy A57 5G Android Smartphone, 256GB Storage, 8GB RAM, Awesome Navy, 6x OS Upgr"
+   },
+   {
+    "asin": "B0FLDK4HHB",
+    "cls": "VALID",
+    "key": "samsung|Galaxy A|A07|Standard|64",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy A07 LTE, Android Smartphone, 64GB Storage, 4GB RAM, Black, 6x OS Upgrades, "
+   },
+   {
+    "asin": "B0H98GHV2X",
+    "cls": "DETECT_REJECT",
+    "key": null,
+    "reason": null,
+    "brand": "Anker",
+    "name": "Anker Zolo 4-Port 70W Compact USB-C Charger for iPhone （cable included）"
+   },
+   {
+    "asin": "B0FM8GV1H9",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Motorola",
+    "name": "Motorola Moto G86 Power Dual-SIM 512GB ROM + 8GB RAM (GSM Only | No CDMA) Factory Unlocked"
+   },
+   {
+    "asin": "B0GZHRKDFD",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "realme",
+    "name": "realme C100i 4G Smartphone Dual SIM, Mobile Phone 4GB RAM, 128GB Storage AI Camera Fast Pe"
+   },
+   {
+    "asin": "B0H6127H6D",
+    "cls": "VALID",
+    "key": "honor|Honor X|7|Standard|256",
+    "reason": null,
+    "brand": "HONOR",
+    "name": "HONOR X7e Smartphone, Silicon-Carbon Battery, 45W HONOR SuperCharge, 120Hz Display, 50MP A"
+   },
+   {
+    "asin": "B0FMSDGVTB",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Unknown",
+    "name": "SENECESLI 2G Ageual Mobile Phone, 2.6 -inch HD Screen, Sim Dual Dual Standby, Boat Crystal"
+   },
+   {
+    "asin": "B0HJB7FKV9",
+    "cls": "VALID",
+    "key": "apple|iPhone|18|Pro|2048",
+    "reason": null,
+    "brand": "Apple",
+    "name": "Apple iPhone 18 Pro 2 TB: – Black"
+   },
+   {
+    "asin": "B0FLDJKGVP",
+    "cls": "VALID",
+    "key": "samsung|Galaxy A|A07|Standard|128",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy A07 LTE, Android Smartphone, 128GB Storage, 4GB RAM, Green, 6x OS Upgrades,"
+   },
+   {
+    "asin": "B0F5X3381W",
+    "cls": "VALID",
+    "key": "samsung|Galaxy S|S25|Ultra|256",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy S25 Ultra AI Phone, 256GB Storage, 12GB RAM, Titanium Black, Android Smartp"
+   },
+   {
+    "asin": null,
+    "cls": "VALID",
+    "key": "samsung|Galaxy S|S26|Plus|256",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy S26+ Plus Black, 256GB Storage, AI Phone, 12GB RAM, Customized AP, Photo As"
+   },
+   {
+    "asin": "B0H1G3HBJ4",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Unknown",
+    "name": "AGM 4G Unlocked Mini Smartphone, 4.96\" one-hand compact screen with Android 16 Go. IP54 du"
+   },
+   {
+    "asin": "B0H8BRTLHJ",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Unknown",
+    "name": "AGM M9 Rugged Basic Mobile Phone, Large Button,Large Fonts，1200mAh"
+   },
+   {
+    "asin": "B0FFM6W16R",
+    "cls": "DETECT_REJECT",
+    "key": null,
+    "reason": null,
+    "brand": "Unknown",
+    "name": "UGREEN for iPhone 18 Pro Max/17 Pro Max Screen Protector Auto-align 2 Pack"
+   },
+   {
+    "asin": "B0H61H6Z9G",
+    "cls": "VALID",
+    "key": "honor|Honor X|7|Standard|128",
+    "reason": null,
+    "brand": "HONOR",
+    "name": "HONOR X7e Smartphone, Silicon-Carbon Battery, 45W HONOR SuperCharge, 120Hz Display, 50MP A"
+   },
+   {
+    "asin": "B0FQJQCJZ7",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Motorola",
+    "name": "Motorola Moto G06 Dual-SIM 256GB ROM + 4GB RAM (GSM Only | No CDMA) Factory Unlocked 4G/LT"
+   },
+   {
+    "asin": "B0G5YW5K4D",
+    "cls": "VALID",
+    "key": "xiaomi|Redmi Note|15|Standard|256",
+    "reason": null,
+    "brand": "Unknown",
+    "name": "Redmi Note 15 5G Dual SIM Glacier Blue 8GB RAM 256GB 5G - Global Version"
+   },
+   {
+    "asin": "B0GSVY584Z",
+    "cls": "VALID",
+    "key": "samsung|Galaxy A|A57|Standard|256",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy A57 5G Android Smartphone, 256GB Storage, 12GB RAM, Awesome Gray, 6x OS Upg"
+   },
+   {
+    "asin": "B0GS24TZCN",
+    "cls": "VALID",
+    "key": "xiaomi|POCO|X8|Pro|512",
+    "reason": null,
+    "brand": "Unknown",
+    "name": "POCO X8 Pro Dual SIM Black 8GB RAM 512GB 5G- Global Version"
+   },
+   {
+    "asin": "B0DM1S54MZ",
+    "cls": "VALID",
+    "key": "samsung|Galaxy A|A16|Standard|128",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy A16, Android Smartphone, Dual SIM Mobile Phone, 4GB RAM, 128GB Storage, Bla"
+   },
+   {
+    "asin": "B0GRVRFQN1",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Unknown",
+    "name": "Smart Mini Projector with Built-in Apps WiFi 6 & Bluetooth 5.2 Portable Home Theater with "
+   },
+   {
+    "asin": "B0GS2KWCQM",
+    "cls": "VALID",
+    "key": "honor|Honor|60|Lite|256",
+    "reason": null,
+    "brand": "HONOR",
+    "name": "HONOR 600 Lite 5G Smartphone, 8GB RAM + 256GB Storage, 3180mAh Durable Battery, 6.6” 120Hz"
+   },
+   {
+    "asin": "B0GS2QD9LG",
+    "cls": "VALID",
+    "key": "honor|Honor|60|Lite|256",
+    "reason": null,
+    "brand": "HONOR",
+    "name": "HONOR 600 Lite 5G Smartphone, 8GB RAM + 256GB Storage, 3180mAh Durable Battery, 6.6” 120Hz"
+   },
+   {
+    "asin": "B0B3DWBM5Y",
+    "cls": "VALID",
+    "key": "samsung|Galaxy M|M13|Standard|64",
+    "reason": null,
+    "brand": "SAMSUNG",
+    "name": "SAMSUNG Galaxy M13 LTE Android Smartphone, 64 GB, 4 GB RAM, Dual Sim Mobile Phone, Light B"
+   },
+   {
+    "asin": "B0FQFGZPQY",
+    "cls": "VALID",
+    "key": "apple|iPhone|17|Standard|256",
+    "reason": null,
+    "brand": "Apple",
+    "name": "Apple iPhone 17 256 GB: 6.3-inch Display with ProMotion, A19 Chip, Center Stage Front Came"
+   },
+   {
+    "asin": "B0FF3MPB6R",
+    "cls": "DETECT_REJECT",
+    "key": null,
+    "reason": null,
+    "brand": "Unknown",
+    "name": "MOTOROLA MOTO G56 5G, 12+12GB RAM Boost, 256 GB ROM, MTK Dimensity 7060, 6.7\" FHD+ Display"
+   },
+   {
+    "asin": "B0GMRKBR9C",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Unknown",
+    "name": "Nothing Phone (4a) - 50 MP Triple Camera with Up To 70X ultra Zoom, Transparent Design Sma"
+   },
+   {
+    "asin": "B0FPLYJFSZ",
+    "cls": "VALID",
+    "key": "samsung|Galaxy S|S25|FE|256",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy S25 FE, 5G, Smartphone, Android, 8GB RAM, Octa Core, 1.3GHz, 6.7-inch, Full"
+   },
+   {
+    "asin": "B0DWLQHZP4",
+    "cls": "VALID",
+    "key": "apple|iPhone|15|Pro Max|256",
+    "reason": null,
+    "brand": "Apple",
+    "name": "Apple (Refurbished) iPhone 15 Pro Max (256 GB) - White Titanium"
+   },
+   {
+    "asin": "B0GSVQMB9P",
+    "cls": "VALID",
+    "key": "samsung|Galaxy A|A57|Standard|256",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy A57 5G Android Smartphone, 256GB Storage, 8GB RAM, Awesome Gray, 6x OS Upgr"
+   },
+   {
+    "asin": "B0DCJMMGNF",
+    "cls": "VALID",
+    "key": "samsung|Galaxy A|A06|Standard|64",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy A06 4G Smartphone | 6.7\" HD+ Display | 50MP Dual Camera | Helio G85 Process"
+   },
+   {
+    "asin": "B0DM1R9X2P",
+    "cls": "VALID",
+    "key": "samsung|Galaxy A|A16|Standard|128",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy A16, Android Smartphone, Dual SIM Mobile Phone, 4GB RAM, 128GB Storage, Gra"
+   },
+   {
+    "asin": null,
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Unknown",
+    "name": "Blackview FORT 1 Android 16 Outdoor Smartphone, 10000 mAh Outdoor Mobile Phone Without Con"
+   },
+   {
+    "asin": "B08X1RMTR3",
+    "cls": "VALID",
+    "key": "apple|iPhone|12|Mini|64",
+    "reason": null,
+    "brand": "Apple",
+    "name": "Apple (Refurbished) iPhone 12 mini (64GB) - Black"
+   },
+   {
+    "asin": "B0HGNP8LCV",
+    "cls": "VALID",
+    "key": "xiaomi|Redmi Note|17|Pro|256",
+    "reason": null,
+    "brand": "Redmi",
+    "name": "Redmi Note 17 Pro 5G Dual SIM – 12GB RAM, 256GB Storage, Sky Blue - Global Version"
+   },
+   {
+    "asin": "B0GSF8YBFF",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Unknown",
+    "name": "Redmi A7 Pro Palm Green 4G RAM 64G ROM"
+   },
+   {
+    "asin": "B0GZZK7MGR",
+    "cls": "DETECT_REJECT",
+    "key": null,
+    "reason": null,
+    "brand": "Unknown",
+    "name": "Micro Card MicroXC Memory Card 512GB 4K Full HD Video, UHS-I, C10, U3, A1, V30, for Camera"
+   },
+   {
+    "asin": "B0DZHMTBR2",
+    "cls": "VALID",
+    "key": "samsung|Galaxy A|A26|Standard|128",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy A26 5G, Android Smartphone, 128GB Storage, 6GB RAM, White, 50MP Camera, Lar"
+   },
+   {
+    "asin": "B0CQ2TCW6T",
+    "cls": "VALID",
+    "key": "apple|iPhone|11|Standard|256",
+    "reason": null,
+    "brand": "Apple",
+    "name": "Apple (Refurbished) iPhone 11 (256GB) - Purple"
+   },
+   {
+    "asin": "B0F48G2SJN",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Motorola",
+    "name": "Motorola Edge 60 Fusion Dual-SIM 256GB ROM + 8GB RAM (GSM Only | No CDMA) Factory Unlocked"
+   },
+   {
+    "asin": "B0CP7P4RRQ",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Unknown",
+    "name": "Hollyland Lark M2 Wireless Lavalier Microphone for iPhone16/17&Android, USB C Mini Lapel M"
+   },
+   {
+    "asin": "B0FQFJ1JK4",
+    "cls": "VALID",
+    "key": "apple|iPhone|17|Standard|256",
+    "reason": null,
+    "brand": "Apple",
+    "name": "Apple iPhone 17 256 GB: 6.3-inch Display with ProMotion, A19 Chip, Center Stage Front Came"
+   },
+   {
+    "asin": "B0CQ2TT6ZF",
+    "cls": "VALID",
+    "key": "apple|iPhone|14|Pro Max|128",
+    "reason": null,
+    "brand": "Apple",
+    "name": "Apple (Refurbished) iPhone 14 Pro Max 5G 128GB - Deep Purple"
+   },
+   {
+    "asin": "B0DMWF3WLM",
+    "cls": "DETECT_REJECT",
+    "key": null,
+    "reason": null,
+    "brand": "Unknown",
+    "name": "Phone Camera Lens, 2 in 1 Professional Phone Camera Lens, Universal Cell Phone Clip-on Len"
+   },
+   {
+    "asin": "B0953S773Z",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Unknown",
+    "name": "EFAITHFIX for iPhone X Screen Replacement LCD"
+   },
+   {
+    "asin": "B0FPG8T352",
+    "cls": "VALID",
+    "key": "samsung|Galaxy A|A06|Standard|64",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy A06 5G, 64GB Storage, 4GB RAM, 6.7\" PLS LCD Display, 90Hz, HD+ (720x1600), "
+   },
+   {
+    "asin": "B0H61H6Z9G",
+    "cls": "VALID",
+    "key": "honor|Honor X|7|Standard|128",
+    "reason": null,
+    "brand": "HONOR",
+    "name": "HONOR X7e Smartphone, Silicon-Carbon Battery, 45W HONOR SuperCharge, 120Hz Display, 50MP A"
+   },
+   {
+    "asin": "B0CBJZFBHM",
+    "cls": "DETECT_REJECT",
+    "key": null,
+    "reason": null,
+    "brand": "Unknown",
+    "name": "UGREEN 2 Pack for iPhone 15 Pro Max Screen Protector Privacy Drop Defense | 100% Privacy P"
+   },
+   {
+    "asin": "B0G2BKMGS4",
+    "cls": "VALID",
+    "key": "realme|realme|15|Standard|256",
+    "reason": null,
+    "brand": "Realme",
+    "name": "Realme 15 5G Smartphone (12GB RAM, 256GB Storage) | 6.8\" 144Hz OLED Display | 50MP OIS Cam"
+   },
+   {
+    "asin": "B0FN167451",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Unknown",
+    "name": "SENECESLI BigButton Cell Phone for Seniors, 2G Mobile Phones with Triple Card Triple Stand"
+   },
+   {
+    "asin": "B0HC49GGFS",
+    "cls": "VALID",
+    "key": "honor|Honor X|7|Plus|256",
+    "reason": null,
+    "brand": "HONOR",
+    "name": "HONOR X7e Plus 5G Smartphone, 8GB RAM + 256GB Storage, Snapdragon 4 Gen 4, 6.87\" 120Hz Dis"
+   },
+   {
+    "asin": "B0FDGDXKRG",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Unknown",
+    "name": "Mini Phone Unlocked World's Smallest 3.0\" HD Touch Screen Mini Smartphone Android Compact "
+   },
+   {
+    "asin": "B0G2BKMGS4",
+    "cls": "VALID",
+    "key": "realme|realme|15|Standard|256",
+    "reason": null,
+    "brand": "Realme",
+    "name": "Realme 15 5G Smartphone (12GB RAM, 256GB Storage) | 6.8\" 144Hz OLED Display | 50MP OIS Cam"
+   },
+   {
+    "asin": "B0GNJSXNC8",
+    "cls": "VALID",
+    "key": "samsung|Galaxy S|S26|Standard|256",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy S26 Cobalt Violet, 256GB Storage, AI Phone, 12GB RAM, Customized AP, Photo "
+   },
+   {
+    "asin": "B0FQF4TX9K",
+    "cls": "VALID",
+    "key": "apple|iPhone|17|Pro|256",
+    "reason": null,
+    "brand": "Apple",
+    "name": "Apple iPhone 17 Pro 256 GB: 6.3-inch Display with ProMotion up to 120Hz, A19 Pro Chip, Bre"
+   },
+   {
+    "asin": "B0GN2PHT8Q",
+    "cls": "VALID",
+    "key": "samsung|Galaxy A|A07|Standard|128",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy A07 5G, Android Smartphone, 128GB Storage, 4GB RAM, Black, 6x OS Upgrades, "
+   },
+   {
+    "asin": "B0HJ9ZYZQR",
+    "cls": "VALID",
+    "key": "apple|iPhone|18|Pro|256",
+    "reason": null,
+    "brand": "Apple",
+    "name": "Apple iPhone 18 Pro 256 GB: – Burgundy"
+   },
+   {
+    "asin": "B09YGJPGLY",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Unknown",
+    "name": "Datazone keyboard metal panel colorful led backlit wired desktop keyboards water resistant"
+   },
+   {
+    "asin": "B0FQC84QLJ",
+    "cls": "DETECT_REJECT",
+    "key": null,
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Phone Camera Lens, 3 in 1 Cell Phone Camera Lens Kit -198° Fisheye Lens + Macro Lens + 120"
+   },
+   {
+    "asin": "B0FDK8M1BG",
+    "cls": "DETECT_REJECT",
+    "key": null,
+    "reason": null,
+    "brand": "Unknown",
+    "name": "UGREEN 2 Pack for iPhone 17 Pro Max Screen Protector Privacy Drop Defense | 100% Privacy P"
+   },
+   {
+    "asin": "B0CQ2NSR9Q",
+    "cls": "VALID",
+    "key": "apple|iPhone|14|Standard|128",
+    "reason": null,
+    "brand": "Apple",
+    "name": "Apple (Refurbished) iPhone 14 5G 128GB Phone - Midnight"
+   },
+   {
+    "asin": "B0DM1R9X2P",
+    "cls": "VALID",
+    "key": "samsung|Galaxy A|A16|Standard|128",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy A16, Android Smartphone, Dual SIM Mobile Phone, 4GB RAM, 128GB Storage, Gra"
+   },
+   {
+    "asin": "B0BSLF1ZN4",
+    "cls": "VALID",
+    "key": "samsung|Galaxy S|S23|Ultra|256",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy S23 Ultra, 256GB, Green, 5G Mobile Phone, Dual SIM, Android Smartphone (KSA"
+   },
+   {
+    "asin": "B09925JLFX",
+    "cls": "DETECT_REJECT",
+    "key": null,
+    "reason": null,
+    "brand": "Unknown",
+    "name": "UGREEN 2 Pack for iPhone 14 Plus/13 Pro Max Screen Protector Privacy | 100% Privacy Protec"
+   },
+   {
+    "asin": "B0G1KS6PNH",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Unknown",
+    "name": "ITEL A100c, 4G Smartphone, 64GB Storage, Pure Black, Android 14, 2GB RAM, Unisoc T7100, 6."
+   },
+   {
+    "asin": "B0FLDM2M8M",
+    "cls": "VALID",
+    "key": "samsung|Galaxy A|A07|Standard|64",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy A07 LTE, Android Smartphone, 64GB Storage, 4GB RAM, Light Violet, 6x OS Upg"
+   },
+   {
+    "asin": "B0HJ9WLQ29",
+    "cls": "VALID",
+    "key": "apple|iPhone|18|Pro|512",
+    "reason": null,
+    "brand": "Apple",
+    "name": "Apple iPhone 18 Pro 512 GB: – Glacier"
+   },
+   {
+    "asin": "B0GRB4M5G1",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Unknown",
+    "name": "Smart Plug Set of 3 Smart Plug WiFi Remote Control Schedule Schedule for Home Appliances v"
+   },
+   {
+    "asin": "B0FLDK4HHB",
+    "cls": "VALID",
+    "key": "samsung|Galaxy A|A07|Standard|64",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy A07 LTE, Android Smartphone, 64GB Storage, 4GB RAM, Black, 6x OS Upgrades, "
+   },
+   {
+    "asin": "B0GS1X9WB1",
+    "cls": "VALID",
+    "key": "xiaomi|POCO|X8|Pro|512",
+    "reason": null,
+    "brand": "POCO",
+    "name": "POCO X8 Pro Dual SIM Mint Green 8GB RAM 512GB 5G- Global Version"
+   },
+   {
+    "asin": "B0DPRP1K72",
+    "cls": "DETECT_REJECT",
+    "key": null,
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Pack of 2 Screen Protectors, 9H Tempered Glass Screen Protector for Samsung Galaxy A26 5G"
+   },
+   {
+    "asin": "B0FMS4Z37M",
+    "cls": "DETECT_REJECT",
+    "key": null,
+    "reason": null,
+    "brand": "Unknown",
+    "name": "X spring Phone Camera Lens, 37mm 0.45X 49UV Super Wide-Angle + Macro Dual-Function Mobile "
+   },
+   {
+    "asin": "B0G43FF84L",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Unknown",
+    "name": "Salange Mini Projector 2026.8K Supports Smart Projector Android, Portable with WiFi 6 and "
+   },
+   {
+    "asin": "B0FLDGV2LK",
+    "cls": "VALID",
+    "key": "samsung|Galaxy A|A17|Standard|128",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy A17 5G, Android Smartphone, 128GB Storage, 4GB RAM, Blue, 6x OS Upgrades, L"
+   },
+   {
+    "asin": "B0H1W7RMWF",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Unknown",
+    "name": "Blackview Fort 2 Unlocked Smartphone, 10.7mm Ultra-Thin Rugged Phone, 24GB RAM Boost, 128G"
+   },
+   {
+    "asin": "B0FWKDJFM4",
+    "cls": "INVALID",
+    "key": null,
+    "reason": "null in critical: family, generation, variant",
+    "brand": "Motorola",
+    "name": "Motorola Edge 60 Neo Dual-SIM 256GB ROM + 8GB RAM (GSM Oly | No CDMA) Factory Unlocked 5G "
+   },
+   {
+    "asin": "B0H951K84D",
+    "cls": "DETECT_REJECT",
+    "key": null,
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy Z Fold8 Ultra Graphite, 512GB, Customized Processor,5000 mAh Battery,Side-b"
+   },
+   {
+    "asin": "B0DZHMVV91",
+    "cls": "VALID",
+    "key": "samsung|Galaxy A|A56|Standard|256",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy A56 5G, Android Smartphone, 256GB Storage, 12GB RAM, Awesome Lightgray, 6x "
+   },
+   {
+    "asin": "B0DZHM5979",
+    "cls": "VALID",
+    "key": "samsung|Galaxy A|A26|Standard|256",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy A26 5G, Android Smartphone, 256GB Storage, 8GB RAM, White, 50MP Camera, Lar"
+   },
+   {
+    "asin": "B0DFP36KBP",
+    "cls": "DETECT_REJECT",
+    "key": null,
+    "reason": null,
+    "brand": "Unknown",
+    "name": "Pack of 2 Screen Protectors, 9H Tempered Glass Screen Protector for iPhone 16 Plus"
+   },
+   {
+    "asin": "B0GQC47HKT",
+    "cls": "VALID",
+    "key": "samsung|Galaxy S|S26|Ultra|256",
+    "reason": null,
+    "brand": "Samsung",
+    "name": "Samsung Galaxy S26 Ultra Violet, 256GB Storage, AI Phone, 12GB RAM, Customized AP, Built-i"
+   }
+  ]
+ },
+ "detector_probe": [
+  {
+   "cat": "tv",
+   "title": "Samsung 43 Inch FHD TV, F6000F, Free contents by Samsung TV Plus, Secured by Knox, HDR, OTS Lite, UA43F6000FUXZN",
+   "detected": false
+  },
+  {
+   "cat": "tv",
+   "title": "Samsung 43 Inch FHD TV, F6000F, HDR, OTS Lite, UA43F6000FUXZN",
+   "detected": false
+  },
+  {
+   "cat": "tv",
+   "title": "Samsung 43 Inch FHD TV, F6000F, Free contents by Samsung TV Plus, HDR, OTS Lite, UA43F6000FUXZN",
+   "detected": false
+  },
+  {
+   "cat": "tv",
+   "title": "Samsung 43 Inch FHD TV, F6000F, Secured by Knox, HDR, OTS Lite, UA43F6000FUXZN",
+   "detected": false
+  },
+  {
+   "cat": "tv",
+   "title": "Samsung 32 Inch HD TV, H5000F, Free contents by Samsung TV Plus, Secured by Knox, HDR, OTS Lite, UA32H5000FUXZN",
+   "detected": false
+  },
+  {
+   "cat": "tv",
+   "title": "Samsung 32 Inch HD TV, H5000F, HDR, UA32H5000FUXZN",
+   "detected": false
+  },
+  {
+   "cat": "washing_machine",
+   "title": "Samsung WA80F13B6LYL 13KG top load washing machine,inverter motor with 10Years warranty,easy closing lid",
+   "detected": true,
+   "key": "samsung|top_load|13|washer",
+   "status": "valid",
+   "reason": "brand+type+kg+dryer"
+  },
+  {
+   "cat": "washing_machine",
+   "title": "Samsung WA80F13B6LYL 13KG top load washing machine",
+   "detected": true,
+   "key": "samsung|top_load|13|washer",
+   "status": "valid",
+   "reason": "brand+type+kg+dryer"
+  },
+  {
+   "cat": "washing_machine",
+   "title": "Samsung 13KG top load washing machine, inverter motor",
+   "detected": true,
+   "key": "samsung|top_load|13|washer",
+   "status": "valid",
+   "reason": "brand+type+kg+dryer"
+  },
+  {
+   "cat": "washing_machine",
+   "title": "Samsung WA80F13B6LYL 13 KG top load washing machine",
+   "detected": true,
+   "key": "samsung|top_load|13|washer",
+   "status": "valid",
+   "reason": "brand+type+kg+dryer"
+  }
+ ]
+}

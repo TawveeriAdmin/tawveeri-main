@@ -1,0 +1,1070 @@
+{
+ "captured_at": "2026-10-03T14:24:57.720Z",
+ "results": {
+  "tile_vs_page_price": [
+   {
+    "tile_sourced_valid": "782",
+    "with_page_price_col": "782",
+    "tps_differs_from_page": "0",
+    "tps_above_page": "0",
+    "tps_below_page": "0",
+    "avg_pct_diff": "0.0",
+    "eligible_and_differs": "0"
+   }
+  ],
+  "tile_vs_page_examples": [],
+  "amz_offer_url_forms": [
+   {
+    "form": "dp_with_ref_tracking",
+    "n": "1151",
+    "asin_parseable": "1151",
+    "eligible": "713"
+   },
+   {
+    "form": "dp_canonical_or_query",
+    "n": "148",
+    "asin_parseable": "148",
+    "eligible": "100"
+   },
+   {
+    "form": "sponsored_redirect",
+    "n": "13",
+    "asin_parseable": "0",
+    "eligible": "7"
+   }
+  ],
+  "key_overlap_by_category": [
+   {
+    "category": "air_conditioner",
+    "amz_keys": "2",
+    "amz_multi": "2",
+    "amz_with_ext_alm": "2",
+    "amz_rival_elig": "2",
+    "amz_both_elig": "1",
+    "ext_keys": "23",
+    "ext_multi": "18",
+    "alm_keys": "12",
+    "alm_multi": "9"
+   },
+   {
+    "category": "laptop",
+    "amz_keys": "248",
+    "amz_multi": "19",
+    "amz_with_ext_alm": "3",
+    "amz_rival_elig": "2",
+    "amz_both_elig": "0",
+    "ext_keys": "163",
+    "ext_multi": "53",
+    "alm_keys": "73",
+    "alm_multi": "31"
+   },
+   {
+    "category": "mobile",
+    "amz_keys": "68",
+    "amz_multi": "49",
+    "amz_with_ext_alm": "45",
+    "amz_rival_elig": "35",
+    "amz_both_elig": "26",
+    "ext_keys": "346",
+    "ext_multi": "219",
+    "alm_keys": "122",
+    "alm_multi": "115"
+   },
+   {
+    "category": "refrigerator",
+    "amz_keys": "79",
+    "amz_multi": "25",
+    "amz_with_ext_alm": "13",
+    "amz_rival_elig": "22",
+    "amz_both_elig": "17",
+    "ext_keys": "111",
+    "ext_multi": "36",
+    "alm_keys": "121",
+    "alm_multi": "40"
+   },
+   {
+    "category": "tablet",
+    "amz_keys": "114",
+    "amz_multi": "36",
+    "amz_with_ext_alm": "28",
+    "amz_rival_elig": "24",
+    "amz_both_elig": "18",
+    "ext_keys": "373",
+    "ext_multi": "107",
+    "alm_keys": "65",
+    "alm_multi": "42"
+   },
+   {
+    "category": "tv",
+    "amz_keys": "203",
+    "amz_multi": "73",
+    "amz_with_ext_alm": "53",
+    "amz_rival_elig": "54",
+    "amz_both_elig": "36",
+    "ext_keys": "386",
+    "ext_multi": "145",
+    "alm_keys": "126",
+    "alm_multi": "55"
+   },
+   {
+    "category": "washing_machine",
+    "amz_keys": "66",
+    "amz_multi": "42",
+    "amz_with_ext_alm": "41",
+    "amz_rival_elig": "40",
+    "amz_both_elig": "32",
+    "ext_keys": "192",
+    "ext_multi": "108",
+    "alm_keys": "132",
+    "alm_multi": "82"
+   }
+  ],
+  "amz_single_store_sample": [
+   {
+    "category": "tablet",
+    "identity_key": "apple|ipad air|m4|256|wifi|11",
+    "name": "Apple iPad Air 11-inch (M4): Liquid Retina Display, 256GB, 12MP Front/Back Camera, Wi-Fi 7 with Apple N1, Touc"
+   },
+   {
+    "category": "laptop",
+    "identity_key": "dell|latitude|i5|16|512|14|igpu",
+    "name": "Dell Latitude 5410 14\" Notebook - Full HD - 1920 x 1080 - Core i5 i5-10310U 10th Gen 1.7GHz Hexa-core (6 Core)"
+   },
+   {
+    "category": "refrigerator",
+    "identity_key": "nikai|top_mount|410|inverter",
+    "name": "Nikai 14.6 Cubic Feet 413 Liter Frost Free Refrigerator,Double Door, Inverter Compressor, Large Storage Capaci"
+   },
+   {
+    "category": "tablet",
+    "identity_key": "apple|ipad pro|m5|256|wifi|11",
+    "name": "Apple iPad Pro 11-inch (M5) 256GB: Ultra Retina XDR display, Landscape 12MP Front Camera/12MP Back Camera, LiD"
+   },
+   {
+    "category": "tablet",
+    "identity_key": "apple|ipad pro|gen4|128|wifi|NO_SIZE",
+    "name": "Apple 2022 11-inch iPad Pro (Wi-Fi, 128GB) - Space Gray (4th generation) (Renewed)"
+   },
+   {
+    "category": "tv",
+    "identity_key": "skyworth|MODEL:111X8X64.7CM",
+    "name": "Skyworth 50-inch QLED+ Google TV, 120Hz Refresh Rate, Model 50Q6800H, 2025, Smart TV with Dolby Vision & Atmos"
+   },
+   {
+    "category": "tv",
+    "identity_key": "lg|MODEL:OS50PW4KM",
+    "name": "OSCAR 50 Inch UHD 4K Smart TV | LG webOS | Frameless Design | HDR10 | Voice Control | WiFi & Bluetooth | Ultra"
+   },
+   {
+    "category": "laptop",
+    "identity_key": "lenovo|thinkpad|i5-10|16|512|15.6|igpu",
+    "name": "Lenovo ThinkPad T15 Gen 1 Laptop Touch | 15.6\" 1920x1080 FHD | Core i5-10210U - 512GB SSD Hard Drive - 16GB RA"
+   },
+   {
+    "category": "laptop",
+    "identity_key": "apple|macbook pro|m5max|48|2048|16.2|igpu",
+    "name": "Apple 2026 MacBook Pro Laptop with M5 Max chip with 18 CPU and 40 GPU: Built for AI, 16.2-inch Liquid Retina X"
+   },
+   {
+    "category": "tv",
+    "identity_key": "dansat|32|hd|led|120",
+    "name": "Dansat 32 Inch TV LED Multimedia Black"
+   },
+   {
+    "category": "laptop",
+    "identity_key": "lenovo|ideapad 1|ryzen5-7|16|512|15.6|igpu",
+    "name": "Lenovo IdeaPad 1 15AMN7 AMD Ryzen 5 7520U Notebook 39.6 cm (15.6\") Full HD 16 GB LPDDR5-SDRAM 512 GB SSD Wi-Fi"
+   },
+   {
+    "category": "mobile",
+    "identity_key": "samsung|Galaxy S|S23|Standard|256",
+    "name": "Samsung Galaxy S23+, 8GB RAM 256GB Green, International Version, 5G Mobile Phone, Dual SIM, Android Smartphone"
+   },
+   {
+    "category": "tablet",
+    "identity_key": "apple|ipad air|m3|256|5g|13",
+    "name": "Apple iPad Air 13-inch with M3 chip Built for Apple Intelligence, Liquid Retina Display, 256GB, 12MP Front/Bac"
+   },
+   {
+    "category": "laptop",
+    "identity_key": "apple|macbook air|m4|24|512|15|igpu",
+    "name": "Apple 2025 MacBook Air (15-inch, Apple M4 chip with 10-core CPU and 10-core GPU, 24GB Unified Memory, 512GB) -"
+   },
+   {
+    "category": "tv",
+    "identity_key": "samsung|MODEL:UA75M80HAUXZN",
+    "name": "Samsung 75 Inch Mini LED TV, M80H, 4K, HDR 10+, Motion Xcelerator 144Hz, Adpative Sound+, AI Football Mode, NQ"
+   },
+   {
+    "category": "tv",
+    "identity_key": "dansat|55|4k|qled|120",
+    "name": "Dansat QLED Smart TV, 55-inch, 4K Ultra HD, 120Hz Refresh Rate, WebOS DTD55QLED120HZ"
+   },
+   {
+    "category": "tablet",
+    "identity_key": "apple|ipad|gen9|256|wifi|NO_SIZE",
+    "name": "Apple 2021 iPad (10.2-inch, Wi-Fi, 256GB) - Space Grey (9th Generation) (Renewed)"
+   },
+   {
+    "category": "washing_machine",
+    "identity_key": "nikai|front_load|8|washer",
+    "name": "Nikai 8KG Front Load Washing Machine | Signature Series with Big Chrome Door, Digital Display, Quick Wash, Fuz"
+   },
+   {
+    "category": "laptop",
+    "identity_key": "acer|nitro|i9-13|32|1024|15.6|rtx4060",
+    "name": "Acer Nitro V Gaming Laptop | Intel Core i9-13900H Processor | NVIDIA GeForce RTX 4060 Laptop GPU | 15.6\" FHD I"
+   },
+   {
+    "category": "laptop",
+    "identity_key": "lenovo|thinkpad|i5-8|8|256|14|igpu",
+    "name": "Lenovo ThinkPad T480 Notebook Computer, Intel Core i5-8350U, 14 Inch, 8 GB RAM, 256 GB SSD, Black, Intel UHD G"
+   },
+   {
+    "category": "laptop",
+    "identity_key": "lenovo|thinkpad|i5-6|8|256|14|igpu",
+    "name": "Lenovo ThinkPad T460s Laptop | 14\" 1366x768 HD | Core i5-6200U - 256GB SSD Hard Drive - 8GB RAM | 2 cores @ 2."
+   },
+   {
+    "category": "laptop",
+    "identity_key": "hp|probook|i5-12|8|256|14.1|igpu",
+    "name": "HP ProBook 440 G9 (Renewed) Business Laptop PC | intel Deca-Core i5-1235U CPU | 14.1 inch FHD Non-Touch Displa"
+   },
+   {
+    "category": "tablet",
+    "identity_key": "apple|ipad pro|gen3|256|cellular|NO_SIZE",
+    "name": "Apple 2021 iPad Pro (11-inch, Wi-Fi + Cellular, 256GB) - Space Grey (3rd Generation) (Renewed)"
+   },
+   {
+    "category": "tv",
+    "identity_key": "panasonic|86|4k|led|120",
+    "name": "Panasonic 86\" 4K LED Smart TV with Native 120Hz Refresh Rate, Full Array LED with Quantum Dot sheet, Google TV"
+   },
+   {
+    "category": "refrigerator",
+    "identity_key": "lg|top_mount|470|inverter",
+    "name": "LG 471L Top Mount Refrigerator, Smart Inverter Compressor, LINEARCooling™, DoorCooling+™, Multi Air Flow Cooli"
+   },
+   {
+    "category": "laptop",
+    "identity_key": "lenovo|legion|ryzen7|32|1024|15.3|rtx5060",
+    "name": "Lenovo Legion 5a - 2026 - Gaming Laptop - NVIDIA GeForce RTX 5060-15.3\" OLED WQXGA Display - 165Hz Refresh Rat"
+   },
+   {
+    "category": "tv",
+    "identity_key": "lg|MODEL:TI55G2025",
+    "name": "TIT 55-inch 4K UHD Smart TV | Google TV (Android 14) A+ Pannel | Dolby Vision + HDR10/HLG | HSR 60Hz Game Mode"
+   },
+   {
+    "category": "laptop",
+    "identity_key": "asus|rog|i5-13|16|1024|16|rtx5050",
+    "name": "ASUS (Upgraded) ROG Strix G16 (2025) Gaming Laptop, 16” FHD+ 16:10 165Hz/3ms, NVIDIA GeForce RTX 5050, Intel C"
+   },
+   {
+    "category": "laptop",
+    "identity_key": "msi|cyborg|core7|16|1024|17.3|rtx5060",
+    "name": "MSI Cyborg 17 17.3\" FHD 144Hz Gaming Laptop: Intel Core 7-240H, NVIDIA Geforce RTX 5060, 16GB DDR5, 1TB NVMe S"
+   },
+   {
+    "category": "refrigerator",
+    "identity_key": "supergeneral|top_mount|330|standard",
+    "name": "Super General 333 Litres Double Door Compact Inox Frost-Free Child-Lock Refrigerator | Model No KSGR410I"
+   },
+   {
+    "category": "laptop",
+    "identity_key": "dell|MODEL:DC15250",
+    "name": "Dell 15 DC15250 15.6\" FHD Laptop - Intel core i5-1334U, 8GB RAM, 512GB SSD, Windows 11, Newest Model (with Mic"
+   },
+   {
+    "category": "tablet",
+    "identity_key": "honor|honor pad x8b|NO_GEN|2048|4g|NO_SIZE",
+    "name": "HONOR Pad X8b LTE Tablet, 11-Inch 90Hz FHD Display, 10100mAh Battery, 4GB RAM + 128GB Expandable (Up to 2TB), "
+   },
+   {
+    "category": "laptop",
+    "identity_key": "vivobook|MODEL:LY034W",
+    "name": "Vivobook 14 Laptop X1407QA-LY034W, 14\" WUXGA (1920 x 1200) Display 60Hz,Qualcomm Snapdragon X1 SE Processor /1"
+   },
+   {
+    "category": "laptop",
+    "identity_key": "hp|pavilion|i7-13|16|1024|15.6|igpu",
+    "name": "HP Pavilion 15.6\" FHD Touchscreen Laptop | Intel 13th i7-1355U(Beats i9-10880H)| 16GB RAM | 1TB SSD | Iris Xe "
+   },
+   {
+    "category": "laptop",
+    "identity_key": "dell|vostro|i7-13|16|1024|15.6|igpu",
+    "name": "Dell Vostro 3530 Laptop (2023) | 15.6\" 1920x1080 FHD | Core i7-1355U - 1TB SSD Hard Drive - 16GB RAM | 10 core"
+   },
+   {
+    "category": "laptop",
+    "identity_key": "asus|rog|i7|16|1024|16|igpu",
+    "name": "ASUS ROG Strix G16 (2025) Gaming Laptop, 16” FHD+ 16:10 165Hz/3ms Display, NVIDIA® GeForce RTX™ 5060 Laptop GP"
+   },
+   {
+    "category": "laptop",
+    "identity_key": "microsoft|surface laptop|i7|16|256|15|igpu",
+    "name": "Microsoft Surface Laptop 3 15” FHD Intel Core i7-1065G7 1.3GHz Quad Core, 16GB RAM, 256GB SSD, Windows 11 Pro "
+   },
+   {
+    "category": "tv",
+    "identity_key": "hisense|55|4k|qled|60",
+    "name": "Hisense 55 Inch QLED 4K Smart TV, 60 Hz, Dolby Atmos $ Vision, AI Smooth Mothion & 4K Upscaler, Vidaa, Voice C"
+   },
+   {
+    "category": "tv",
+    "identity_key": "lg|MODEL:RESOLUTION-3840",
+    "name": "55'' INCH,QLED 4K Google TV(5.0),120HZ DLG, RAM-2GB STOREAGE -16GBDOLBY VISION & ATMOS, RESOLUTION-3840 * 2160"
+   },
+   {
+    "category": "washing_machine",
+    "identity_key": "samsung|top_load|11|washer",
+    "name": "Samsung WA11CG5786BYYL Top Load Washing Machine 11Kg, Eco Bubble, Dual Storm™, Hygiene Steam, Power Tub Clean,"
+   },
+   {
+    "category": "refrigerator",
+    "identity_key": "hitachi|top_mount|700|inverter",
+    "name": "Hitachi 700 Liter Double Door Refrigerator with Inverter Control| Model No R-V905PS1KV TWH with 2 Years Warran"
+   },
+   {
+    "category": "refrigerator",
+    "identity_key": "nikai|single_door|140|standard",
+    "name": "Nikai 138L Compact Refrigerator with Freezer | (4.9 Cu. Ft.) Defrost Function, Lock & Key, Anti-Scratch Cabine"
+   }
+  ],
+  "ext_single_store_sample": [
+   {
+    "category": "tablet",
+    "identity_key": "apple|MODEL:ME8F4AB/A",
+    "name": "Apple IPAD PRO 2025, 1 TB, 16GB , 13 INCH, 5G M5, SILVER"
+   },
+   {
+    "category": "tv",
+    "identity_key": "hisense|MODEL:85U7SPRO",
+    "name": "Hisense, 85 Inch, MiniLed 4K Smart TV,165Hz"
+   },
+   {
+    "category": "tablet",
+    "identity_key": "apple|MODEL:MDWR4AB/A",
+    "name": "Apple IPAD PRO 2025, 1 TB, 16GB, 11 INCH, WI-FI M5, SPACE BLACK"
+   },
+   {
+    "category": "refrigerator",
+    "identity_key": "panasonic|side_by_side|330|inverter",
+    "name": "Panasonic Side by Side Refrigerator 11.8Cu.ft, Freezer 6.2Cu.ft, INVERTER, Stainless Steel"
+   },
+   {
+    "category": "refrigerator",
+    "identity_key": "haier|side_by_side|340|inverter",
+    "name": "Haier Side by Side Refrigerator, 11.9Cu.ft, Freezer 5.9Cu.ft, Twin Inverter, Humidity Control,Grey"
+   },
+   {
+    "category": "tablet",
+    "identity_key": "apple|ipad pro|NO_GEN|1024|5g|11",
+    "name": "APPLE IPAD PRO 2024, 5G, 11 INCH, 1 TB, SPACE BLACK"
+   },
+   {
+    "category": "tablet",
+    "identity_key": "huawei|MODEL:DEBUSSY2-L09CK",
+    "name": "Huawei MatePad Air inbox keyboard,WiFi/ 4G , 11.5 Inch, 256GB, Graphite Black"
+   },
+   {
+    "category": "tablet",
+    "identity_key": "apple|MODEL:MD4Y4AB/A",
+    "name": "Apple iPad 11th Gen, Wi-Fi, 11 inch, 512GB, Blue"
+   },
+   {
+    "category": "tablet",
+    "identity_key": "samsung|galaxy tab s11|NO_GEN|256|wifi|NO_SIZE",
+    "name": "SAMSUNG Galaxy Tab S11, Wi-Fi, 256 GB, Gray"
+   },
+   {
+    "category": "tablet",
+    "identity_key": "huawei|MODEL:AGASSI5-W09BE",
+    "name": "Huawei MatePad Kids Edition, Wi-Fi, 10.4-inch, 32GB, Graphite Black"
+   },
+   {
+    "category": "laptop",
+    "identity_key": "hp|MODEL:D80WREA",
+    "name": "HP Laptop, Core 7-150U,16GB, 512GB,15.6 FHD 250 nits, W11H6, Natural Silver"
+   },
+   {
+    "category": "mobile",
+    "identity_key": "apple|iPhone|12|Standard|256",
+    "name": "Apple iPhone 12, 5G, 256GB, Red"
+   },
+   {
+    "category": "mobile",
+    "identity_key": "samsung|Galaxy Z|Z Flip 7|Standard|512",
+    "name": "SAMSUNG Galaxy Z Flip 7, 5G, 512 GB, Blue Shadow"
+   },
+   {
+    "category": "tablet",
+    "identity_key": "apple|MODEL:MCFW4AB/A",
+    "name": "APPLE IPAD AIR M3 GEN 2025, Wi-Fi+ Cellular, 11 INCH, 128GB, Blue"
+   },
+   {
+    "category": "tablet",
+    "identity_key": "apple|MODEL:MH5X4AB/A",
+    "name": "Apple iPad Air 13 M4, WiFi, 256GB, Purple"
+   },
+   {
+    "category": "tv",
+    "identity_key": "lg|MODEL:OLED83G56LA",
+    "name": "LG, 83 inch , OLED evo , 4K Smart TV, AI G5, 165 Hz"
+   },
+   {
+    "category": "refrigerator",
+    "identity_key": "sharp|top_mount|540|inverter",
+    "name": "Sharp top mount no frost refrigerator 538l – inverter – black – sj-gv69g-bk"
+   },
+   {
+    "category": "laptop",
+    "identity_key": "apple|MODEL:MDVA4AB/A",
+    "name": "APPLE MacBook Air, M5, 16GB, 1TB SSD, 15 Inch IPS, 10 Core GPU, Silver"
+   },
+   {
+    "category": "tablet",
+    "identity_key": "honor|MODEL:HENDRY2-W09D",
+    "name": "Honor Pad 9, Wi-Fi, 256GB, 12.1 inch, inbox keyboard, Space Gray."
+   },
+   {
+    "category": "tv",
+    "identity_key": "gama|MODEL:500-IN-1",
+    "name": "G5 500-in-1 retro handheld game console, 3.0 inch screen, av tv output"
+   },
+   {
+    "category": "laptop",
+    "identity_key": "hp|MODEL:D93J1EA",
+    "name": "HP Laptop Gaming  AMD Ryzen 9, 16GB, 1TB, RTX 5070 8GB, 15.3 WQXGA, Shadow Black"
+   }
+  ],
+  "amz_lowconf_sample": [
+   {
+    "category": "air_conditioner",
+    "identity_key": "supergeneral|split|NO_SERIES|12000|Inverter|cool_only",
+    "confidence": 95,
+    "name": "Super General 1 Ton Split Air Conditioner 12000 BTU With Inverter(Power Saving Technology), Auto Clean, Gold F"
+   },
+   {
+    "category": "air_conditioner",
+    "identity_key": "haier|window|NO_SERIES|18000|NO_TECH|cool_only",
+    "confidence": 75,
+    "name": "Haier Window AC 18000 BTU Cool Only | HW-18LME13/R2(T3N) | 100% Copper | 24 Hours Timer | Easy Clean Filters |"
+   },
+   {
+    "category": "air_conditioner",
+    "identity_key": "lg|split|NO_SERIES|22800|NO_TECH|NO_MODE",
+    "confidence": 60,
+    "name": "LG LH242C0UK0-I Jet Cool 22800 BTU 1.9 Ton Split Air Conditioner, White"
+   },
+   {
+    "category": "air_conditioner",
+    "identity_key": "enviro|split|NO_SERIES|22500|Inverter|cool_only",
+    "confidence": 95,
+    "name": "Enviro 2.0 Ton DC Inverter Split Air Conditioner 22500 BTU | Power Saving Tech with T3 Compressor & R32 Refrig"
+   },
+   {
+    "category": "laptop",
+    "identity_key": "dell|precision|i7-8|16|512|NO_SCREEN|igpu",
+    "confidence": 80,
+    "name": "Dell Precision 5530 15.6in LCD Mobile Workstation Laptop (Renewed, Intel Core i7-8850H 2.6 GHz,16GB RAM,512GB "
+   },
+   {
+    "category": "air_conditioner",
+    "identity_key": "unknown|split|NO_SERIES|18000|Inverter|hot_cold",
+    "confidence": 95,
+    "name": "Aston Split Air Conditioner, 18000 BTU, 1.5Ton, Hot & Cold, Inverter, Wi-Fi, with Copper - ASAC18AX8V3-I"
+   },
+   {
+    "category": "air_conditioner",
+    "identity_key": "unknown|split|NO_SERIES|22800|NO_TECH|cool_only",
+    "confidence": 75,
+    "name": "Mando Mando Split Air Conditioner - Cooling Only - 22800 BTU -F23TP-24CT"
+   },
+   {
+    "category": "laptop",
+    "identity_key": "acer|aspire|i5-13|8|512|NO_SCREEN|igpu",
+    "confidence": 80,
+    "name": "Acer Aspire Lite AL16 Laptop Intel Core i5-1334U Processor, 8GB Ram, 512GB SSD M.2, Intel UHD Graphics, 16-Inc"
+   },
+   {
+    "category": "air_conditioner",
+    "identity_key": "unknown|split|NO_SERIES|11600|NO_TECH|cool_only",
+    "confidence": 75,
+    "name": "Falcon Split Air Conditioner 11600 Units Cooling Capacity Model FGS12C With Self Cleaning Function 2 Year Warr"
+   },
+   {
+    "category": "laptop",
+    "identity_key": "apple|macbook air|m5|24|1024|NO_SCREEN|igpu",
+    "confidence": 80,
+    "name": "Apple 2026 MacBook Air 13-inch Laptop with M5 chip: AI and Apple Intelligence, 13.6-inch Liquid Retina Display"
+   },
+   {
+    "category": "air_conditioner",
+    "identity_key": "unknown|portable|NO_SERIES|12000|NO_TECH|cool_only",
+    "confidence": 75,
+    "name": "TCL 12000 BTU R410A 4 Ways Swing Cooling Only Portable Air Conditioner, White"
+   },
+   {
+    "category": "air_conditioner",
+    "identity_key": "unknown|split|NO_SERIES|18000|NO_TECH|NO_MODE",
+    "confidence": 55,
+    "name": "Midea MSTE18HRN-I 18000 BTU Split Air Conditioner, 1.5 Ton Capacity, White"
+   },
+   {
+    "category": "air_conditioner",
+    "identity_key": "unknown|split|NO_SERIES|23000|NO_TECH|NO_MODE",
+    "confidence": 55,
+    "name": "Hisense 23000 BTU Cold & Hot Split Air Conditioner, WiFi, Energy Saving, Self Auto Clean, 7 Years Compressor W"
+   },
+   {
+    "category": "air_conditioner",
+    "identity_key": "nikai|split|NO_SERIES|21000|NO_TECH|hot_cold",
+    "confidence": 75,
+    "name": "Nikai 21000 BTU R410A Split Air Conditioner with Heating and Cooling Function| Model No NSAC24136HC23 with 2 Y"
+   },
+   {
+    "category": "air_conditioner",
+    "identity_key": "unknown|split|NO_SERIES|28800|NO_TECH|cool_only",
+    "confidence": 75,
+    "name": "28800BTU Fast Cooling and Heating Split Air Conditioner, White"
+   },
+   {
+    "category": "laptop",
+    "identity_key": "acer|aspire|i9-13|32|1024|NO_SCREEN|igpu",
+    "confidence": 80,
+    "name": "Acer Aspire Go 16in Laptop i9-13900H 32GB RAM 1TB SSD Touch"
+   },
+   {
+    "category": "air_conditioner",
+    "identity_key": "tcl|split|NO_SERIES|28200|Inverter|cool_only",
+    "confidence": 95,
+    "name": "TCL SaveIN NEO T4 Split AC 28200 BTU cooling only, with WiFi and Inverter - TAC-30CSU/ZIM"
+   },
+   {
+    "category": "air_conditioner",
+    "identity_key": "unknown|split|NO_SERIES|11900|Standard|NO_MODE",
+    "confidence": 75,
+    "name": "MIDEA Wall Split Air Conditioner M/MSTN12HRNAG16 Hot Cold Infiniti 11900 Units Hot Cold Black, Rotary Compress"
+   },
+   {
+    "category": "air_conditioner",
+    "identity_key": "unknown|window|NO_SERIES|18000|NO_TECH|hot_cold",
+    "confidence": 75,
+    "name": "Super General Window Air Conditioner, Heat & Cool, 18000 BTU Capacity | Model No KSGA19GER1 With Two Years War"
+   },
+   {
+    "category": "air_conditioner",
+    "identity_key": "unknown|split|NO_SERIES|12000|Inverter|NO_MODE",
+    "confidence": 75,
+    "name": "ATWH12A2DI-BSA: Aux Split Air Conditioner, 12,000 BTU, Heat& Cool, CA Ultra Cool, Inverter, Soft Mode, Wifi"
+   },
+   {
+    "category": "air_conditioner",
+    "identity_key": "ugine|window|NO_SERIES|18000|NO_TECH|NO_MODE",
+    "confidence": 55,
+    "name": "Air Conditioner UGINE GOLD SPLIT WINDOW 18000 UNIT COOL"
+   },
+   {
+    "category": "air_conditioner",
+    "identity_key": "haier|split|NO_SERIES|18000|NO_TECH|hot_cold",
+    "confidence": 75,
+    "name": "Haier 18000 BTU Hot and Cold Split Air Conditioner with Wi-Fi Control, White"
+   },
+   {
+    "category": "air_conditioner",
+    "identity_key": "supergeneral|split|NO_SERIES|18200|Inverter|NO_MODE",
+    "confidence": 75,
+    "name": "Super General 1.5 Ton Split Air Conditioner 18200 BTU With Inverter(Power Saving Technology), Auto Clean, Gold"
+   },
+   {
+    "category": "air_conditioner",
+    "identity_key": "unknown|split|NO_SERIES|12100|Standard|cool_only",
+    "confidence": 95,
+    "name": "OSCAR 1 Ton Split Air Conditioner | 12,100 BTU/h Cooling Only | Rotary Compressor | Low Noise 42 dB | R410A Re"
+   },
+   {
+    "category": "air_conditioner",
+    "identity_key": "tcl|split|NO_SERIES|18000|NO_TECH|cool_only",
+    "confidence": 75,
+    "name": "TCL مكيف تي سي ال هواء سبليت ريش ذهبية، 18000 بارد فقط ، تبريد قوي عند 60 درجة، خمس سرعات، تبريد سريع، 220 فول"
+   },
+   {
+    "category": "air_conditioner",
+    "identity_key": "unknown|window|NO_SERIES|21600|NO_TECH|cool_only",
+    "confidence": 75,
+    "name": "Hisense Window Air Conditioner, 21600 BTU, 2 Ton, Heating & Cooling, 4 Way Swing, Energy Saving, 7 Years Compr"
+   },
+   {
+    "category": "air_conditioner",
+    "identity_key": "unknown|split|NO_SERIES|11800|NO_TECH|NO_MODE",
+    "confidence": 55,
+    "name": "Aston ASAC12AX6V3-I 11800 BTU Split Air Conditioner, 1 Ton Capacity, White"
+   },
+   {
+    "category": "air_conditioner",
+    "identity_key": "unknown|window|NO_SERIES|24200|NO_TECH|cool_only",
+    "confidence": 75,
+    "name": "Ugine Window Air Conditioner 24,200 BTU, Cold, Gold- UAW24C"
+   },
+   {
+    "category": "air_conditioner",
+    "identity_key": "hisense|split|NO_SERIES|27000|NO_TECH|cool_only",
+    "confidence": 75,
+    "name": "Hisense 27000 BTU 2.5 Ton Split Air Conditioner, Cooling, Smart WiFi, Energy Saving"
+   },
+   {
+    "category": "laptop",
+    "identity_key": "lenovo|NO_FAMILY|i3-12|8|256|15.6|igpu",
+    "confidence": 80,
+    "name": "Lenovo, Laptop PC, Full HD 15.6 inches, Intel i3-1215U, 8GB RAM DDR4, 256GB SSD NVMe, Windows 11 Pro"
+   }
+  ],
+  "amz_lowconf_by_cat": [
+   {
+    "store_id": 2,
+    "category": "air_conditioner",
+    "n": "275"
+   },
+   {
+    "store_id": 2,
+    "category": "laptop",
+    "n": "66"
+   },
+   {
+    "store_id": 4,
+    "category": "air_conditioner",
+    "n": "348"
+   },
+   {
+    "store_id": 4,
+    "category": "laptop",
+    "n": "33"
+   },
+   {
+    "store_id": 5,
+    "category": "air_conditioner",
+    "n": "202"
+   }
+  ],
+  "controls_provenance": [
+   {
+    "elig": false,
+    "source_method": "amazon-search",
+    "category": "tv",
+    "n": "11",
+    "avg_age_h": "672",
+    "asin_parseable": "11",
+    "sponsored_url": "0"
+   },
+   {
+    "elig": false,
+    "source_method": "amazon-search",
+    "category": "washing_machine",
+    "n": "7",
+    "avg_age_h": "801",
+    "asin_parseable": "6",
+    "sponsored_url": "1"
+   },
+   {
+    "elig": false,
+    "source_method": "amazon-search",
+    "category": "mobile",
+    "n": "4",
+    "avg_age_h": "451",
+    "asin_parseable": "4",
+    "sponsored_url": "0"
+   },
+   {
+    "elig": false,
+    "source_method": "amazon-search",
+    "category": "refrigerator",
+    "n": "3",
+    "avg_age_h": "390",
+    "asin_parseable": "3",
+    "sponsored_url": "0"
+   },
+   {
+    "elig": false,
+    "source_method": "amazon-search",
+    "category": "tablet",
+    "n": "2",
+    "avg_age_h": "551",
+    "asin_parseable": "2",
+    "sponsored_url": "0"
+   },
+   {
+    "elig": false,
+    "source_method": "amazon-search",
+    "category": "audio",
+    "n": "1",
+    "avg_age_h": "380",
+    "asin_parseable": "1",
+    "sponsored_url": "0"
+   },
+   {
+    "elig": false,
+    "source_method": "amazon-search",
+    "category": "air_conditioner",
+    "n": "1",
+    "avg_age_h": "623",
+    "asin_parseable": "1",
+    "sponsored_url": "0"
+   },
+   {
+    "elig": false,
+    "source_method": "amazon-search",
+    "category": "smartwatch",
+    "n": "1",
+    "avg_age_h": "212",
+    "asin_parseable": "1",
+    "sponsored_url": "0"
+   },
+   {
+    "elig": false,
+    "source_method": "amazon-search",
+    "category": "monitor",
+    "n": "1",
+    "avg_age_h": "1058",
+    "asin_parseable": "1",
+    "sponsored_url": "0"
+   },
+   {
+    "elig": false,
+    "source_method": "amazon-search",
+    "category": "vacuum",
+    "n": "1",
+    "avg_age_h": "308",
+    "asin_parseable": "1",
+    "sponsored_url": "0"
+   },
+   {
+    "elig": false,
+    "source_method": "scraper",
+    "category": "mobile",
+    "n": "5",
+    "avg_age_h": "94",
+    "asin_parseable": "5",
+    "sponsored_url": "0"
+   },
+   {
+    "elig": false,
+    "source_method": "scraper",
+    "category": "tv",
+    "n": "4",
+    "avg_age_h": "501",
+    "asin_parseable": "4",
+    "sponsored_url": "0"
+   },
+   {
+    "elig": false,
+    "source_method": "scraper",
+    "category": "audio",
+    "n": "4",
+    "avg_age_h": "465",
+    "asin_parseable": "4",
+    "sponsored_url": "0"
+   },
+   {
+    "elig": false,
+    "source_method": "scraper",
+    "category": "monitor",
+    "n": "2",
+    "avg_age_h": "330",
+    "asin_parseable": "2",
+    "sponsored_url": "0"
+   },
+   {
+    "elig": false,
+    "source_method": "scraper",
+    "category": "smartwatch",
+    "n": "2",
+    "avg_age_h": "142",
+    "asin_parseable": "2",
+    "sponsored_url": "0"
+   },
+   {
+    "elig": false,
+    "source_method": "scraper",
+    "category": "tablet",
+    "n": "2",
+    "avg_age_h": "18",
+    "asin_parseable": "2",
+    "sponsored_url": "0"
+   },
+   {
+    "elig": false,
+    "source_method": "scraper",
+    "category": "washing_machine",
+    "n": "1",
+    "avg_age_h": "34",
+    "asin_parseable": "1",
+    "sponsored_url": "0"
+   },
+   {
+    "elig": false,
+    "source_method": "scraper",
+    "category": "printer",
+    "n": "1",
+    "avg_age_h": "852",
+    "asin_parseable": "1",
+    "sponsored_url": "0"
+   },
+   {
+    "elig": true,
+    "source_method": "amazon-search",
+    "category": "mobile",
+    "n": "7",
+    "avg_age_h": "125",
+    "asin_parseable": "7",
+    "sponsored_url": "0"
+   },
+   {
+    "elig": true,
+    "source_method": "amazon-search",
+    "category": "dishwasher",
+    "n": "6",
+    "avg_age_h": "90",
+    "asin_parseable": "6",
+    "sponsored_url": "0"
+   },
+   {
+    "elig": true,
+    "source_method": "amazon-search",
+    "category": "vacuum",
+    "n": "5",
+    "avg_age_h": "46",
+    "asin_parseable": "5",
+    "sponsored_url": "0"
+   },
+   {
+    "elig": true,
+    "source_method": "amazon-search",
+    "category": "washing_machine",
+    "n": "2",
+    "avg_age_h": "92",
+    "asin_parseable": "2",
+    "sponsored_url": "0"
+   },
+   {
+    "elig": true,
+    "source_method": "amazon-search",
+    "category": "microwave",
+    "n": "2",
+    "avg_age_h": "92",
+    "asin_parseable": "2",
+    "sponsored_url": "0"
+   },
+   {
+    "elig": true,
+    "source_method": "amazon-search",
+    "category": "tablet",
+    "n": "2",
+    "avg_age_h": "77",
+    "asin_parseable": "1",
+    "sponsored_url": "1"
+   },
+   {
+    "elig": true,
+    "source_method": "amazon-search",
+    "category": "refrigerator",
+    "n": "1",
+    "avg_age_h": "140",
+    "asin_parseable": "1",
+    "sponsored_url": "0"
+   },
+   {
+    "elig": true,
+    "source_method": "amazon-search",
+    "category": "audio",
+    "n": "1",
+    "avg_age_h": "98",
+    "asin_parseable": "1",
+    "sponsored_url": "0"
+   },
+   {
+    "elig": true,
+    "source_method": "amazon-search",
+    "category": "cooker",
+    "n": "1",
+    "avg_age_h": "80",
+    "asin_parseable": "1",
+    "sponsored_url": "0"
+   },
+   {
+    "elig": true,
+    "source_method": "scraper",
+    "category": "tv",
+    "n": "30",
+    "avg_age_h": "24",
+    "asin_parseable": "30",
+    "sponsored_url": "0"
+   },
+   {
+    "elig": true,
+    "source_method": "scraper",
+    "category": "washing_machine",
+    "n": "29",
+    "avg_age_h": "29",
+    "asin_parseable": "29",
+    "sponsored_url": "0"
+   },
+   {
+    "elig": true,
+    "source_method": "scraper",
+    "category": "mobile",
+    "n": "19",
+    "avg_age_h": "23",
+    "asin_parseable": "19",
+    "sponsored_url": "0"
+   },
+   {
+    "elig": true,
+    "source_method": "scraper",
+    "category": "tablet",
+    "n": "15",
+    "avg_age_h": "26",
+    "asin_parseable": "15",
+    "sponsored_url": "0"
+   },
+   {
+    "elig": true,
+    "source_method": "scraper",
+    "category": "smartwatch",
+    "n": "13",
+    "avg_age_h": "25",
+    "asin_parseable": "13",
+    "sponsored_url": "0"
+   },
+   {
+    "elig": true,
+    "source_method": "scraper",
+    "category": "audio",
+    "n": "13",
+    "avg_age_h": "35",
+    "asin_parseable": "13",
+    "sponsored_url": "0"
+   },
+   {
+    "elig": true,
+    "source_method": "scraper",
+    "category": "refrigerator",
+    "n": "9",
+    "avg_age_h": "22",
+    "asin_parseable": "9",
+    "sponsored_url": "0"
+   },
+   {
+    "elig": true,
+    "source_method": "scraper",
+    "category": "vacuum",
+    "n": "3",
+    "avg_age_h": "10",
+    "asin_parseable": "3",
+    "sponsored_url": "0"
+   },
+   {
+    "elig": true,
+    "source_method": "scraper",
+    "category": "monitor",
+    "n": "2",
+    "avg_age_h": "32",
+    "asin_parseable": "2",
+    "sponsored_url": "0"
+   },
+   {
+    "elig": true,
+    "source_method": "scraper",
+    "category": "dishwasher",
+    "n": "2",
+    "avg_age_h": "31",
+    "asin_parseable": "2",
+    "sponsored_url": "0"
+   },
+   {
+    "elig": true,
+    "source_method": "scraper",
+    "category": "air_conditioner",
+    "n": "1",
+    "avg_age_h": "53",
+    "asin_parseable": "1",
+    "sponsored_url": "0"
+   },
+   {
+    "elig": true,
+    "source_method": "scraper",
+    "category": "printer",
+    "n": "1",
+    "avg_age_h": "12",
+    "asin_parseable": "1",
+    "sponsored_url": "0"
+   }
+  ],
+  "controls_provenance_total": [
+   {
+    "elig": false,
+    "source_method": "amazon-search",
+    "n": "32",
+    "median_age_h": 635,
+    "sf_misses_ge1": "13",
+    "sf_failed": "13",
+    "no_storefront_row": "12",
+    "sf_fresh": "10"
+   },
+   {
+    "elig": false,
+    "source_method": "scraper",
+    "n": "21",
+    "median_age_h": 260,
+    "sf_misses_ge1": "12",
+    "sf_failed": "6",
+    "no_storefront_row": "3",
+    "sf_fresh": "10"
+   },
+   {
+    "elig": true,
+    "source_method": "amazon-search",
+    "n": "27",
+    "median_age_h": 80,
+    "sf_misses_ge1": "14",
+    "sf_failed": "13",
+    "no_storefront_row": "1",
+    "sf_fresh": "26"
+   },
+   {
+    "elig": true,
+    "source_method": "scraper",
+    "n": "137",
+    "median_age_h": 18,
+    "sf_misses_ge1": "47",
+    "sf_failed": "47",
+    "no_storefront_row": "0",
+    "sf_fresh": "137"
+   }
+  ],
+  "delist_signals": [
+   {
+    "store_slug": "extra",
+    "n": "13",
+    "n30": "10"
+   }
+  ],
+  "quarantined": [
+   {
+    "store_id": 2,
+    "quarantined": "11",
+    "pending": "6"
+   },
+   {
+    "store_id": 4,
+    "quarantined": "2",
+    "pending": "2"
+   },
+   {
+    "store_id": 5,
+    "quarantined": "2",
+    "pending": "2"
+   }
+  ]
+ }
+}

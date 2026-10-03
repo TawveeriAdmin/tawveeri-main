@@ -1,0 +1,416 @@
+{
+ "captured_from": "p2a.json",
+ "facts": {
+  "amazon_offers": 1653,
+  "amazon_valid": 1312,
+  "amazon_with_pdp_evidence": 765,
+  "amazon_with_spec_table": 633,
+  "amazon_with_item_model": 62,
+  "amazon_with_model_name": 64,
+  "amazon_with_any_usable_model": 112,
+  "amazon_with_spec_brand": 606,
+  "amazon_brand_trust_differs": 58,
+  "control_valid_offers": 3820,
+  "control_distinct_keys": 3458,
+  "control_model_index_size": 2225,
+  "control_offers_with_any_model_field": 1930
+ },
+ "scenarios": {
+  "A": {
+   "label": "A current",
+   "amazon_valid": 1312,
+   "shared_keys": 275,
+   "new_shared_vs_A": 0,
+   "shared_with_extra": 220,
+   "shared_with_almanea": 116,
+   "model_matches": 0,
+   "model_ambiguous": 0,
+   "cross_category_matches": 0,
+   "collisions_amazon_keys_merged": 0,
+   "matched_pairs": [],
+   "overlap_pct": "21.0%"
+  },
+  "B": {
+   "label": "B brand cleanup (PDP spec Brand, platform tokens replaced)",
+   "amazon_valid": 1312,
+   "shared_keys": 280,
+   "new_shared_vs_A": 2,
+   "shared_with_extra": 226,
+   "shared_with_almanea": 115,
+   "model_matches": 0,
+   "model_ambiguous": 0,
+   "cross_category_matches": 0,
+   "collisions_amazon_keys_merged": 1,
+   "matched_pairs": [],
+   "overlap_pct": "21.3%"
+  },
+  "C": {
+   "label": "C model enrichment (PDP Item model number / Model number; brand-guarded)",
+   "amazon_valid": 1312,
+   "shared_keys": 279,
+   "new_shared_vs_A": 4,
+   "shared_with_extra": 220,
+   "shared_with_almanea": 120,
+   "model_matches": 4,
+   "model_ambiguous": 0,
+   "cross_category_matches": 0,
+   "collisions_amazon_keys_merged": 0,
+   "matched_pairs": [
+    {
+     "asin": "B09X4B5MC6",
+     "category": "refrigerator",
+     "amazon_key": "lg|top_mount|200|inverter",
+     "new_key": "lg|top_mount|200|inverter",
+     "via": "model:LTT7CBBSI",
+     "amazon_name": "Lg Ltt7Cbbsi Top Freezer Refrigerator With Inverter Compressor, 198 Liter Capacity, Platin",
+     "control": [
+      "5:lg|single_door|200|inverter :: LG 6.9 Cu.Ft, Single Door Refrigerator, Silver, Smart Diagnosis, Inverter Compressor, LTT7"
+     ]
+    },
+    {
+     "asin": "B0D8JRCM2Y",
+     "category": "refrigerator",
+     "amazon_key": "hitachi|top_mount|450|inverter",
+     "new_key": "hitachi|top_mount|450|inverter",
+     "via": "model:HRTN7489DFBSLSA",
+     "amazon_name": "HITACHI Top Freezer Refrigerator 450L – 2-Door, Inverter Dual Fan Cooling, Big Vegetable C",
+     "control": [
+      "5:hitachi|top_mount|450|standard :: Hitachi Refrigerator Top Freezer, 15.9 Cu. Ft, Silver – HRTN7489DFBSLSA"
+     ]
+    },
+    {
+     "asin": "B0FH2Q9TWH",
+     "category": "refrigerator",
+     "amazon_key": "lg|side_by_side|660|inverter",
+     "new_key": "lg|side_by_side|660|inverter",
+     "via": "model:LS25CBBDIK",
+     "amazon_name": "LG LS25CBBDIK Side by Side Refrigerator | 23.2 Cu.Ft (658L) | Smart Inverter Compressor | ",
+     "control": [
+      "5:lg|side_by_side|660|standard :: LG 23.2 cu.ft Side by Side Refrigerator Silver, LS25CBBDIK"
+     ]
+    },
+    {
+     "asin": "B0FH5H8P9Y",
+     "category": "refrigerator",
+     "amazon_key": "haam|top_mount|180|standard",
+     "new_key": "haam|top_mount|180|standard",
+     "via": "model:HM250WRFO23DF",
+     "amazon_name": "ثلاجة هام بابين أبيض 6.4 قدم HM250WRF-O23DF",
+     "control": [
+      "5:haam|top_mount|180|inverter :: Haam 2 Doors Refrigerator, 6.4 Cu. Ft, Non Inverter, White - HM250WRF-O23DF"
+     ]
+    }
+   ],
+   "overlap_pct": "21.3%"
+  },
+  "D": {
+   "label": "D brand + model",
+   "amazon_valid": 1312,
+   "shared_keys": 284,
+   "new_shared_vs_A": 6,
+   "shared_with_extra": 226,
+   "shared_with_almanea": 119,
+   "model_matches": 4,
+   "model_ambiguous": 0,
+   "cross_category_matches": 0,
+   "collisions_amazon_keys_merged": 1,
+   "matched_pairs": [
+    {
+     "asin": "B09X4B5MC6",
+     "category": "refrigerator",
+     "amazon_key": "lg|top_mount|200|inverter",
+     "new_key": "lg|top_mount|200|inverter",
+     "via": "model:LTT7CBBSI",
+     "amazon_name": "Lg Ltt7Cbbsi Top Freezer Refrigerator With Inverter Compressor, 198 Liter Capacity, Platin",
+     "control": [
+      "5:lg|single_door|200|inverter :: LG 6.9 Cu.Ft, Single Door Refrigerator, Silver, Smart Diagnosis, Inverter Compressor, LTT7"
+     ]
+    },
+    {
+     "asin": "B0D8JRCM2Y",
+     "category": "refrigerator",
+     "amazon_key": "hitachi|top_mount|450|inverter",
+     "new_key": "hitachi|top_mount|450|inverter",
+     "via": "model:HRTN7489DFBSLSA",
+     "amazon_name": "HITACHI Top Freezer Refrigerator 450L – 2-Door, Inverter Dual Fan Cooling, Big Vegetable C",
+     "control": [
+      "5:hitachi|top_mount|450|standard :: Hitachi Refrigerator Top Freezer, 15.9 Cu. Ft, Silver – HRTN7489DFBSLSA"
+     ]
+    },
+    {
+     "asin": "B0FH2Q9TWH",
+     "category": "refrigerator",
+     "amazon_key": "lg|side_by_side|660|inverter",
+     "new_key": "lg|side_by_side|660|inverter",
+     "via": "model:LS25CBBDIK",
+     "amazon_name": "LG LS25CBBDIK Side by Side Refrigerator | 23.2 Cu.Ft (658L) | Smart Inverter Compressor | ",
+     "control": [
+      "5:lg|side_by_side|660|standard :: LG 23.2 cu.ft Side by Side Refrigerator Silver, LS25CBBDIK"
+     ]
+    },
+    {
+     "asin": "B0FH5H8P9Y",
+     "category": "refrigerator",
+     "amazon_key": "haam|top_mount|180|standard",
+     "new_key": "haam|top_mount|180|standard",
+     "via": "model:HM250WRFO23DF",
+     "amazon_name": "ثلاجة هام بابين أبيض 6.4 قدم HM250WRF-O23DF",
+     "control": [
+      "5:haam|top_mount|180|inverter :: Haam 2 Doors Refrigerator, 6.4 Cu. Ft, Non Inverter, White - HM250WRF-O23DF"
+     ]
+    }
+   ],
+   "overlap_pct": "21.6%"
+  },
+  "E": {
+   "label": "E brand + model, brand guard relaxed (same model, any brand token)",
+   "amazon_valid": 1312,
+   "shared_keys": 285,
+   "new_shared_vs_A": 6,
+   "shared_with_extra": 227,
+   "shared_with_almanea": 119,
+   "model_matches": 5,
+   "model_ambiguous": 1,
+   "cross_category_matches": 0,
+   "collisions_amazon_keys_merged": 1,
+   "matched_pairs": [
+    {
+     "asin": "B09X4B5MC6",
+     "category": "refrigerator",
+     "amazon_key": "lg|top_mount|200|inverter",
+     "new_key": "lg|top_mount|200|inverter",
+     "via": "model:LTT7CBBSI",
+     "amazon_name": "Lg Ltt7Cbbsi Top Freezer Refrigerator With Inverter Compressor, 198 Liter Capacity, Platin",
+     "control": [
+      "5:lg|single_door|200|inverter :: LG 6.9 Cu.Ft, Single Door Refrigerator, Silver, Smart Diagnosis, Inverter Compressor, LTT7"
+     ]
+    },
+    {
+     "asin": "B0DVRT1DCB",
+     "category": "dishwasher",
+     "amazon_key": "midea|NA|14",
+     "new_key": "generic|NA|14",
+     "via": "model:WQP14W5233CSKSA",
+     "amazon_name": "غسالة صحون ميديا 14 مكان تخزين 10برامج (واي فاي) سلفر WQP14-W5233C(S)-KSA",
+     "control": [
+      "4:midea|MODEL:WQP14W5233CS-KSA :: Midea, Dishwasher 14 Places, 10 Programs, Silver."
+     ]
+    },
+    {
+     "asin": "B0FFZTM38R",
+     "category": "refrigerator",
+     "amazon_key": "hitachi|top_mount|600|inverter",
+     "new_key": "hitachi|top_mount|600|inverter",
+     "via": "model:RV805PS1KV1BSL",
+     "amazon_name": "HITACHI – 600L Frost Free Double Door Refrigerator (R-V805PS1KV-1BSL) – Inverter × Dual Fa",
+     "control": [
+      "5:هيتاشى|top_mount|600|standard :: Hitachi Refrigerator, Top Freezer, 21.2 Cu.ft, Silver - R-V805PS1KV-1BSL"
+     ]
+    },
+    {
+     "asin": "B0FH2Q9TWH",
+     "category": "refrigerator",
+     "amazon_key": "lg|side_by_side|660|inverter",
+     "new_key": "lg|side_by_side|660|inverter",
+     "via": "model:LS25CBBDIK",
+     "amazon_name": "LG LS25CBBDIK Side by Side Refrigerator | 23.2 Cu.Ft (658L) | Smart Inverter Compressor | ",
+     "control": [
+      "5:lg|side_by_side|660|standard :: LG 23.2 cu.ft Side by Side Refrigerator Silver, LS25CBBDIK"
+     ]
+    },
+    {
+     "asin": "B0FH5H8P9Y",
+     "category": "refrigerator",
+     "amazon_key": "haam|top_mount|180|standard",
+     "new_key": "haam|top_mount|180|standard",
+     "via": "model:HM250WRFO23DF",
+     "amazon_name": "ثلاجة هام بابين أبيض 6.4 قدم HM250WRF-O23DF",
+     "control": [
+      "5:haam|top_mount|180|inverter :: Haam 2 Doors Refrigerator, 6.4 Cu. Ft, Non Inverter, White - HM250WRF-O23DF"
+     ]
+    }
+   ],
+   "overlap_pct": "21.7%"
+  },
+  "F": {
+   "label": "F deterministic GTIN/EAN/UPC",
+   "amazon_with_gtin": 0,
+   "note": "Amazon pages/payloads carry no GTIN (0 of 1,653 offers; 0 products.specifications identifier keys); eXtra feed carries barCode for 1,200/1,200 daily rows but it is not read by the engine; Almanea feed gtin field is empty (0 of 15,245). Scenario F = 0 additional Amazon matches today (UNKNOWN until an identifier source exists)."
+  }
+ },
+ "per_category_D": {
+  "microwave": {
+   "valid": 44,
+   "shared_A": 5,
+   "usable_model": 2
+  },
+  "coffee_maker": {
+   "valid": 46,
+   "shared_A": 1,
+   "usable_model": 0
+  },
+  "audio": {
+   "valid": 51,
+   "shared_A": 19,
+   "usable_model": 15
+  },
+  "refrigerator": {
+   "valid": 79,
+   "shared_A": 13,
+   "usable_model": 27,
+   "new_D": 4
+  },
+  "washing_machine": {
+   "valid": 66,
+   "shared_A": 41,
+   "usable_model": 22
+  },
+  "camera": {
+   "valid": 14,
+   "shared_A": 0,
+   "usable_model": 1
+  },
+  "laptop": {
+   "valid": 248,
+   "shared_A": 3,
+   "usable_model": 9
+  },
+  "kettle": {
+   "valid": 6,
+   "shared_A": 1,
+   "usable_model": 1
+  },
+  "printer": {
+   "valid": 26,
+   "shared_A": 3,
+   "usable_model": 13
+  },
+  "tv": {
+   "valid": 203,
+   "shared_A": 53,
+   "usable_model": 6
+  },
+  "vacuum": {
+   "valid": 35,
+   "shared_A": 14,
+   "usable_model": 0
+  },
+  "air_fryer": {
+   "valid": 76,
+   "shared_A": 6,
+   "usable_model": 1
+  },
+  "blender": {
+   "valid": 1,
+   "shared_A": 0,
+   "usable_model": 0
+  },
+  "cooker": {
+   "valid": 22,
+   "shared_A": 1,
+   "usable_model": 0
+  },
+  "oven": {
+   "valid": 12,
+   "shared_A": 0,
+   "usable_model": 2
+  },
+  "tablet": {
+   "valid": 114,
+   "shared_A": 28,
+   "usable_model": 0
+  },
+  "monitor": {
+   "valid": 117,
+   "shared_A": 8,
+   "usable_model": 1
+  },
+  "toaster": {
+   "valid": 1,
+   "shared_A": 0,
+   "usable_model": 1
+  },
+  "mobile": {
+   "valid": 68,
+   "shared_A": 45,
+   "usable_model": 0
+  },
+  "dishwasher": {
+   "valid": 37,
+   "shared_A": 13,
+   "usable_model": 6
+  },
+  "smartwatch": {
+   "valid": 44,
+   "shared_A": 19,
+   "usable_model": 4
+  },
+  "air_conditioner": {
+   "valid": 2,
+   "shared_A": 2,
+   "usable_model": 1
+  }
+ },
+ "review_sample": [
+  {
+   "asin": "B09X4B5MC6",
+   "category": "refrigerator",
+   "amazon_key": "lg|top_mount|200|inverter",
+   "new_key": "lg|top_mount|200|inverter",
+   "via": "model:LTT7CBBSI",
+   "amazon_name": "Lg Ltt7Cbbsi Top Freezer Refrigerator With Inverter Compressor, 198 Liter Capacity, Platin",
+   "control": [
+    "5:lg|single_door|200|inverter :: LG 6.9 Cu.Ft, Single Door Refrigerator, Silver, Smart Diagnosis, Inverter Compressor, LTT7"
+   ],
+   "reviewer_label": ""
+  },
+  {
+   "asin": "B0FFZTM38R",
+   "category": "refrigerator",
+   "amazon_key": "hitachi|top_mount|600|inverter",
+   "new_key": "hitachi|top_mount|600|inverter",
+   "via": "model:RV805PS1KV1BSL",
+   "amazon_name": "HITACHI – 600L Frost Free Double Door Refrigerator (R-V805PS1KV-1BSL) – Inverter × Dual Fa",
+   "control": [
+    "5:هيتاشى|top_mount|600|standard :: Hitachi Refrigerator, Top Freezer, 21.2 Cu.ft, Silver - R-V805PS1KV-1BSL"
+   ],
+   "reviewer_label": ""
+  },
+  {
+   "asin": "B0FH2Q9TWH",
+   "category": "refrigerator",
+   "amazon_key": "lg|side_by_side|660|inverter",
+   "new_key": "lg|side_by_side|660|inverter",
+   "via": "model:LS25CBBDIK",
+   "amazon_name": "LG LS25CBBDIK Side by Side Refrigerator | 23.2 Cu.Ft (658L) | Smart Inverter Compressor | ",
+   "control": [
+    "5:lg|side_by_side|660|standard :: LG 23.2 cu.ft Side by Side Refrigerator Silver, LS25CBBDIK"
+   ],
+   "reviewer_label": ""
+  },
+  {
+   "asin": "B0FH5H8P9Y",
+   "category": "refrigerator",
+   "amazon_key": "haam|top_mount|180|standard",
+   "new_key": "haam|top_mount|180|standard",
+   "via": "model:HM250WRFO23DF",
+   "amazon_name": "ثلاجة هام بابين أبيض 6.4 قدم HM250WRF-O23DF",
+   "control": [
+    "5:haam|top_mount|180|inverter :: Haam 2 Doors Refrigerator, 6.4 Cu. Ft, Non Inverter, White - HM250WRF-O23DF"
+   ],
+   "reviewer_label": ""
+  },
+  {
+   "asin": "B0DVRT1DCB",
+   "category": "dishwasher",
+   "amazon_key": "midea|NA|14",
+   "new_key": "generic|NA|14",
+   "via": "model:WQP14W5233CSKSA",
+   "amazon_name": "غسالة صحون ميديا 14 مكان تخزين 10برامج (واي فاي) سلفر WQP14-W5233C(S)-KSA",
+   "control": [
+    "4:midea|MODEL:WQP14W5233CS-KSA :: Midea, Dishwasher 14 Places, 10 Programs, Silver."
+   ],
+   "reviewer_label": ""
+  }
+ ]
+}

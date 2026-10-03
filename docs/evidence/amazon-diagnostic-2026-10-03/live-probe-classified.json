@@ -1,0 +1,910 @@
+{
+ "captured_at": "2026-10-03T14:37:30.543Z",
+ "rule": "eligible = price>0 AND availability<>out_of_stock AND observed_at within 168h (PICK_FRESHNESS_MAX_HOURS)",
+ "classes": {
+  "C_stale_gt168h": 12,
+  "A_eligible_and_shown_with_rival": 34,
+  "G_rightly_excluded_unavailable": 3,
+  "A2_eligible_rival_stale": 9,
+  "NO_CANONICAL (404)": 1,
+  "B_present_in_db_absent_on_page": 1
+ },
+ "rows": [
+  {
+   "key": "aoc|27|fhd|120|ips",
+   "category": "monitor",
+   "cls": "C_stale_gt168h",
+   "amz_price": 459,
+   "amz_observed": "2026-09-04T12:05:52.679954+00:00",
+   "rivals": [
+    "extra:569:2026-09-26"
+   ],
+   "cheapest": null,
+   "eligible_store_count": 0,
+   "search_retrieved": false,
+   "search_count": 0,
+   "search_q": "شاشة aoc 27 بوصة FHD 120Hz IPS"
+  },
+  {
+   "key": "honor|honor pad 20|NO_GEN|256|5g|NO_SIZE",
+   "category": "tablet",
+   "cls": "A_eligible_and_shown_with_rival",
+   "amz_price": 1999,
+   "amz_observed": "2026-10-02T20:14:22.391+00:00",
+   "rivals": [
+    "extra:1999:2026-10-02"
+   ],
+   "cheapest": "أمازون السعودية",
+   "eligible_store_count": 2,
+   "search_retrieved": true,
+   "search_count": 1,
+   "search_q": "تابلت هونر Honor Pad 20 256GB 5G"
+  },
+  {
+   "key": "hisense|top_load|18|washer",
+   "category": "washing_machine",
+   "cls": "A_eligible_and_shown_with_rival",
+   "amz_price": 2130,
+   "amz_observed": "2026-10-02T07:32:43.445+00:00",
+   "rivals": [
+    "extra:2559:2026-10-02"
+   ],
+   "cheapest": "متجر النخيل",
+   "eligible_store_count": 4,
+   "search_retrieved": true,
+   "search_count": 1,
+   "search_q": "غسالة hisense top load 18 كجم"
+  },
+  {
+   "key": "samsung|MODEL:QA65S90HAEXSA",
+   "category": "tv",
+   "cls": "A_eligible_and_shown_with_rival",
+   "amz_price": 8098,
+   "amz_observed": "2026-10-03T08:11:31.149+00:00",
+   "rivals": [
+    "extra:7999:2026-10-03"
+   ],
+   "cheapest": "إكسترا",
+   "eligible_store_count": 2,
+   "search_retrieved": false,
+   "search_count": 19,
+   "search_q": "65\" OLED S90H 4K Samsung Vision AI Smart TV (2026) 65\" (QA65S90HAEXSA)"
+  },
+  {
+   "key": "apple|iPhone|13|Pro Max|256",
+   "category": "mobile",
+   "cls": "G_rightly_excluded_unavailable",
+   "rivals": [
+    "extra:1710:2026-09-03"
+   ],
+   "cheapest": null,
+   "eligible_store_count": 0,
+   "search_retrieved": true,
+   "search_count": 1,
+   "search_q": "جوال آبل iPhone 13 Pro Max 256 جيجابايت"
+  },
+  {
+   "key": "apple|Apple Watch|Ultra|Ultra|49|cellular",
+   "category": "smartwatch",
+   "cls": "A_eligible_and_shown_with_rival",
+   "amz_price": 3599,
+   "amz_observed": "2026-10-03T02:11:06.786+00:00",
+   "rivals": [
+    "extra:1080:2026-10-01",
+    "almanea:3999:2026-10-02"
+   ],
+   "cheapest": "إكسترا",
+   "eligible_store_count": 3,
+   "search_retrieved": true,
+   "search_count": 1,
+   "search_q": "ساعة ذكية آبل Watch Ultra 49 ملم خلوي"
+  },
+  {
+   "key": "toshiba|NA|2200",
+   "category": "vacuum",
+   "cls": "A_eligible_and_shown_with_rival",
+   "amz_price": 499,
+   "amz_observed": "2026-10-03T08:12:20.843+00:00",
+   "rivals": [
+    "extra:210:2026-09-27"
+   ],
+   "cheapest": "إكسترا",
+   "eligible_store_count": 2,
+   "search_retrieved": false,
+   "search_count": 16,
+   "search_q": "مكنسة toshiba 2200 واط"
+  },
+  {
+   "key": "hitachi|NA|1600",
+   "category": "vacuum",
+   "cls": "A_eligible_and_shown_with_rival",
+   "amz_price": 440,
+   "amz_observed": "2026-10-03T08:10:08.091+00:00",
+   "rivals": [
+    "extra:519:2026-09-26"
+   ],
+   "cheapest": "أمازون السعودية",
+   "eligible_store_count": 3,
+   "search_retrieved": true,
+   "search_count": 2,
+   "search_q": "مكنسة hitachi 1600 واط"
+  },
+  {
+   "key": "gameon|27|qhd|240|oled",
+   "category": "monitor",
+   "cls": "A2_eligible_rival_stale",
+   "amz_price": 1899,
+   "amz_observed": "2026-10-01T12:36:18.252+00:00",
+   "rivals": [
+    "extra:2499:2026-09-26"
+   ],
+   "cheapest": "أمازون السعودية",
+   "eligible_store_count": 1,
+   "search_retrieved": true,
+   "search_count": 1,
+   "search_q": "شاشة gameon 27 بوصة QHD 240Hz OLED"
+  },
+  {
+   "key": "koolen|NA|1600",
+   "category": "vacuum",
+   "cls": "A_eligible_and_shown_with_rival",
+   "amz_price": 194.98,
+   "amz_observed": "2026-10-01T06:04:18.504998+00:00",
+   "rivals": [
+    "extra:258:2026-09-27"
+   ],
+   "cheapest": "أمازون السعودية",
+   "eligible_store_count": 2,
+   "search_retrieved": false,
+   "search_count": 2,
+   "search_q": "مكنسة koolen 1600 واط"
+  },
+  {
+   "key": "hisense|front_load|8|washer",
+   "category": "washing_machine",
+   "cls": "A_eligible_and_shown_with_rival",
+   "amz_price": 1710,
+   "amz_observed": "2026-10-03T08:07:59.129+00:00",
+   "rivals": [
+    "almanea:1721:2026-10-02",
+    "extra:1729:2026-10-02"
+   ],
+   "cheapest": "أمازون السعودية",
+   "eligible_store_count": 3,
+   "search_retrieved": true,
+   "search_count": 1,
+   "search_q": "غسالة hisense front load 8 كجم"
+  },
+  {
+   "key": "samsung|galaxy tab a11|NO_GEN|64|wifi|8.7",
+   "category": "tablet",
+   "cls": "A_eligible_and_shown_with_rival",
+   "amz_price": 449,
+   "amz_observed": "2026-10-01T12:32:55.984+00:00",
+   "rivals": [
+    "extra:449:2026-10-01"
+   ],
+   "cheapest": "أمازون السعودية",
+   "eligible_store_count": 2,
+   "search_retrieved": true,
+   "search_count": 3,
+   "search_q": "تابلت سامسونج Galaxy Tab A11 8.7\" 64GB Wi-Fi"
+  },
+  {
+   "key": "beko|MODEL:DVN05420W",
+   "category": "dishwasher",
+   "cls": "NO_CANONICAL (404)",
+   "rivals": [],
+   "search_retrieved": false,
+   "search_count": 15,
+   "search_q": "Beko Dishwasher With 5 Program And 14 Place Setting 11 L DVN05420W White"
+  },
+  {
+   "key": "tcl|65|4k|mini_led|144",
+   "category": "tv",
+   "cls": "C_stale_gt168h",
+   "amz_price": 2928,
+   "amz_observed": "2026-09-04T12:05:52.679954+00:00",
+   "rivals": [
+    "extra:5699:2026-10-03"
+   ],
+   "cheapest": "إكسترا",
+   "eligible_store_count": 1,
+   "search_retrieved": true,
+   "search_count": 1,
+   "search_q": "تلفزيون تي سي إل 65 بوصة 4K UHD Mini LED 144Hz ذكي"
+  },
+  {
+   "key": "honor|Honor X|5|Standard|64",
+   "category": "mobile",
+   "cls": "A_eligible_and_shown_with_rival",
+   "amz_price": 448,
+   "amz_observed": "2026-09-27T18:08:14.258538+00:00",
+   "rivals": [
+    "extra:449:2026-10-02"
+   ],
+   "cheapest": "أمازون السعودية",
+   "eligible_store_count": 2,
+   "search_retrieved": true,
+   "search_count": 1,
+   "search_q": "جوال هونر X 5 64 جيجابايت"
+  },
+  {
+   "key": "black+decker|NA|2000",
+   "category": "vacuum",
+   "cls": "A2_eligible_rival_stale",
+   "amz_price": 335,
+   "amz_observed": "2026-10-03T08:13:09.933+00:00",
+   "rivals": [
+    "extra:350:2026-09-18"
+   ],
+   "cheapest": "أمازون السعودية",
+   "eligible_store_count": 2,
+   "search_retrieved": true,
+   "search_count": 1,
+   "search_q": "مكنسة black+decker 2000 واط"
+  },
+  {
+   "key": "midea|front_load|12|washer",
+   "category": "washing_machine",
+   "cls": "A_eligible_and_shown_with_rival",
+   "amz_price": 2348,
+   "amz_observed": "2026-10-03T02:14:22.499+00:00",
+   "rivals": [
+    "extra:2299:2026-10-02"
+   ],
+   "cheapest": "إكسترا",
+   "eligible_store_count": 4,
+   "search_retrieved": true,
+   "search_count": 2,
+   "search_q": "غسالة midea front load 12 كجم"
+  },
+  {
+   "key": "samsung|Galaxy Watch|7|Standard|44|gps",
+   "category": "smartwatch",
+   "cls": "C_stale_gt168h",
+   "amz_price": 697,
+   "amz_observed": "2026-09-24T18:08:55.216054+00:00",
+   "rivals": [
+    "extra:699:2026-09-30"
+   ],
+   "cheapest": "إكسترا",
+   "eligible_store_count": 1,
+   "search_retrieved": true,
+   "search_count": 1,
+   "search_q": "ساعة ذكية سامسونج Galaxy Watch 7 44 ملم"
+  },
+  {
+   "key": "apple|airpods 5",
+   "category": "audio",
+   "cls": "A_eligible_and_shown_with_rival",
+   "amz_price": 599,
+   "amz_observed": "2026-10-02T20:11:32.777+00:00",
+   "rivals": [
+    "almanea:599:2026-10-02"
+   ],
+   "cheapest": "أمازون السعودية",
+   "eligible_store_count": 2,
+   "search_retrieved": false,
+   "search_count": 16,
+   "search_q": "ابل Airpods 5 سماعات أذن"
+  },
+  {
+   "key": "apple|Apple Watch|SE|Standard|40|gps",
+   "category": "smartwatch",
+   "cls": "A_eligible_and_shown_with_rival",
+   "amz_price": 1099,
+   "amz_observed": "2026-10-01T12:34:23.985+00:00",
+   "rivals": [
+    "extra:390:2026-10-01"
+   ],
+   "cheapest": "إكسترا",
+   "eligible_store_count": 2,
+   "search_retrieved": true,
+   "search_count": 1,
+   "search_q": "ساعة ذكية آبل Watch SE 40 ملم"
+  },
+  {
+   "key": "midea|MODEL:WQP125201CW",
+   "category": "dishwasher",
+   "cls": "A2_eligible_rival_stale",
+   "amz_price": 999,
+   "amz_observed": "2026-10-01T06:04:18.504998+00:00",
+   "rivals": [
+    "extra:479:2026-09-24"
+   ],
+   "cheapest": "أمازون السعودية",
+   "eligible_store_count": 1,
+   "search_retrieved": true,
+   "search_count": 2,
+   "search_q": "غسالة صحون midea WQP125201CW"
+  },
+  {
+   "key": "skyworth|MODEL:55Q7700G",
+   "category": "tv",
+   "cls": "C_stale_gt168h",
+   "amz_price": 1899,
+   "amz_observed": "2026-08-18T12:07:12.160462+00:00",
+   "rivals": [
+    "extra:1650:2026-08-25"
+   ],
+   "cheapest": null,
+   "eligible_store_count": 0,
+   "search_retrieved": false,
+   "search_count": 0,
+   "search_q": "تلفزيون سكاي ورث 55Q7700G"
+  },
+  {
+   "key": "asus|vivobook|core7|16|512|15.6|igpu",
+   "category": "laptop",
+   "cls": "A2_eligible_rival_stale",
+   "amz_price": 3299,
+   "amz_observed": "2026-10-03T08:12:52.335+00:00",
+   "rivals": [
+    "extra:2996:2026-09-25"
+   ],
+   "cheapest": "أمازون السعودية",
+   "eligible_store_count": 1,
+   "search_retrieved": true,
+   "search_count": 1,
+   "search_q": "لابتوب أسوس vivobook، core7، 16GB رام، 512GB، 15.6\""
+  },
+  {
+   "key": "dahua|27|qhd|200|ips",
+   "category": "monitor",
+   "cls": "C_stale_gt168h",
+   "amz_price": 569,
+   "amz_observed": "2026-08-20T12:07:07.738638+00:00",
+   "rivals": [
+    "extra:699:2026-10-01"
+   ],
+   "cheapest": "إكسترا",
+   "eligible_store_count": 1,
+   "search_retrieved": true,
+   "search_count": 1,
+   "search_q": "شاشة dahua 27 بوصة QHD 200Hz IPS"
+  },
+  {
+   "key": "infinix|Infinix Hot|70|Standard|256",
+   "category": "mobile",
+   "cls": "C_stale_gt168h",
+   "amz_price": 849,
+   "amz_observed": "2026-09-21T12:08:12.421732+00:00",
+   "rivals": [
+    "extra:919:2026-10-02"
+   ],
+   "cheapest": "إكسترا",
+   "eligible_store_count": 1,
+   "search_retrieved": true,
+   "search_count": 1,
+   "search_q": "جوال إنفينيكس Hot 70 256 جيجابايت"
+  },
+  {
+   "key": "xiaomi|Redmi Note|15|Standard|256",
+   "category": "mobile",
+   "cls": "A_eligible_and_shown_with_rival",
+   "amz_price": 999,
+   "amz_observed": "2026-10-03T02:08:57.97+00:00",
+   "rivals": [
+    "extra:999:2026-07-03",
+    "almanea:1299.01:2026-10-02"
+   ],
+   "cheapest": "نون",
+   "eligible_store_count": 3,
+   "search_retrieved": true,
+   "search_count": 2,
+   "search_q": "جوال شاومي Redmi Note 15 256 جيجابايت"
+  },
+  {
+   "key": "hoover|NA|1700",
+   "category": "vacuum",
+   "cls": "A2_eligible_rival_stale",
+   "amz_price": 182.97,
+   "amz_observed": "2026-10-01T06:04:18.504998+00:00",
+   "rivals": [
+    "extra:229:2026-09-22"
+   ],
+   "cheapest": "أمازون السعودية",
+   "eligible_store_count": 1,
+   "search_retrieved": true,
+   "search_count": 1,
+   "search_q": "مكنسة hoover 1700 واط"
+  },
+  {
+   "key": "samsung|Galaxy A|A56|Standard|256",
+   "category": "mobile",
+   "cls": "A_eligible_and_shown_with_rival",
+   "amz_price": 1479,
+   "amz_observed": "2026-10-02T13:41:44.916+00:00",
+   "rivals": [
+    "extra:1549:2026-10-02"
+   ],
+   "cheapest": "أمازون السعودية",
+   "eligible_store_count": 2,
+   "search_retrieved": true,
+   "search_count": 1,
+   "search_q": "جوال سامسونج Galaxy A56 256 جيجابايت"
+  },
+  {
+   "key": "lg|MODEL:75QNED93A6A",
+   "category": "tv",
+   "cls": "A_eligible_and_shown_with_rival",
+   "amz_price": 4999,
+   "amz_observed": "2026-10-02T20:09:57.108+00:00",
+   "rivals": [
+    "extra:4999:2026-10-03"
+   ],
+   "cheapest": "أمازون السعودية",
+   "eligible_store_count": 2,
+   "search_retrieved": true,
+   "search_count": 6,
+   "search_q": "تلفزيون إل جي 75QNED93A6A"
+  },
+  {
+   "key": "toshiba|top_load|10|washer",
+   "category": "washing_machine",
+   "cls": "A_eligible_and_shown_with_rival",
+   "amz_price": 1516,
+   "amz_observed": "2026-10-01T09:55:42.093+00:00",
+   "rivals": [
+    "extra:990:2026-10-02",
+    "almanea:1899:2026-10-02"
+   ],
+   "cheapest": "إكسترا",
+   "eligible_store_count": 3,
+   "search_retrieved": true,
+   "search_count": 1,
+   "search_q": "غسالة toshiba top load 10 كجم"
+  },
+  {
+   "key": "lg|MODEL:MS2535GIS",
+   "category": "microwave",
+   "cls": "A_eligible_and_shown_with_rival",
+   "amz_price": 529,
+   "amz_observed": "2026-09-29T18:08:43.393427+00:00",
+   "rivals": [
+    "almanea:529:2026-10-02"
+   ],
+   "cheapest": "المنيع",
+   "eligible_store_count": 2,
+   "search_retrieved": true,
+   "search_count": 1,
+   "search_q": "مايكرويف lg MS2535GIS"
+  },
+  {
+   "key": "honor|honor pad x8a|NO_GEN|128|4g|11",
+   "category": "tablet",
+   "cls": "C_stale_gt168h",
+   "amz_price": 740.06,
+   "amz_observed": "2026-09-25T06:08:20.51693+00:00",
+   "rivals": [
+    "extra:699:2026-09-18"
+   ],
+   "cheapest": null,
+   "eligible_store_count": 0,
+   "search_retrieved": false,
+   "search_count": 0,
+   "search_q": "تابلت هونر Honor Pad X8a 11\" 128GB 4G/LTE"
+  },
+  {
+   "key": "panasonic|front_load|12|washer",
+   "category": "washing_machine",
+   "cls": "C_stale_gt168h",
+   "amz_price": 2599,
+   "amz_observed": "2026-09-04T06:07:40.521041+00:00",
+   "rivals": [
+    "extra:2699:2026-10-02"
+   ],
+   "cheapest": "إكسترا",
+   "eligible_store_count": 1,
+   "search_retrieved": true,
+   "search_count": 1,
+   "search_q": "غسالة panasonic front load 12 كجم"
+  },
+  {
+   "key": "samsung|top_mount|460|standard",
+   "category": "refrigerator",
+   "cls": "A_eligible_and_shown_with_rival",
+   "amz_price": 2669,
+   "amz_observed": "2026-10-02T20:12:58.138+00:00",
+   "rivals": [
+    "almanea:3099:2026-10-02"
+   ],
+   "cheapest": "أمازون السعودية",
+   "eligible_store_count": 2,
+   "search_retrieved": true,
+   "search_count": 1,
+   "search_q": "ثلاجة samsung top mount 460 لتر"
+  },
+  {
+   "key": "haam|top_load|8|washer",
+   "category": "washing_machine",
+   "cls": "A_eligible_and_shown_with_rival",
+   "amz_price": 589,
+   "amz_observed": "2026-09-27T18:08:14.258538+00:00",
+   "rivals": [
+    "almanea:1149:2026-10-02"
+   ],
+   "cheapest": "أمازون السعودية",
+   "eligible_store_count": 2,
+   "search_retrieved": true,
+   "search_count": 1,
+   "search_q": "غسالة haam top load 8 كجم"
+  },
+  {
+   "key": "xiaomi|Redmi Note|15|Pro|256",
+   "category": "mobile",
+   "cls": "C_stale_gt168h",
+   "amz_price": 1369,
+   "amz_observed": "2026-09-10T06:09:55.999888+00:00",
+   "rivals": [
+    "extra:1329:2026-10-02"
+   ],
+   "cheapest": "إكسترا",
+   "eligible_store_count": 1,
+   "search_retrieved": true,
+   "search_count": 1,
+   "search_q": "جوال شاومي Redmi Note 15 Pro 256 جيجابايت"
+  },
+  {
+   "key": "lenovo|idea tab|NO_GEN|256|wifi|11",
+   "category": "tablet",
+   "cls": "B_present_in_db_absent_on_page",
+   "rivals": [
+    "extra:1099:2026-09-17"
+   ],
+   "cheapest": null,
+   "eligible_store_count": 0,
+   "search_retrieved": false,
+   "search_count": 0,
+   "search_q": "تابلت لينوفو Idea Tab 11\" 256GB Wi-Fi"
+  },
+  {
+   "key": "lg|side_by_side|510|inverter",
+   "category": "refrigerator",
+   "cls": "A_eligible_and_shown_with_rival",
+   "amz_price": 3199.2,
+   "amz_observed": "2026-10-02T13:44:26.995+00:00",
+   "rivals": [
+    "almanea:3999:2026-10-02",
+    "extra:19999:2026-10-03"
+   ],
+   "cheapest": "أمازون السعودية",
+   "eligible_store_count": 5,
+   "search_retrieved": true,
+   "search_count": 1,
+   "search_q": "ثلاجة lg side by side 510 لتر انفرتر"
+  },
+  {
+   "key": "lg|NA|42",
+   "category": "microwave",
+   "cls": "C_stale_gt168h",
+   "amz_price": 699,
+   "amz_observed": "2026-08-18T12:07:12.160462+00:00",
+   "rivals": [
+    "almanea:799:2026-08-21"
+   ],
+   "cheapest": "متجر النخيل",
+   "eligible_store_count": 1,
+   "search_retrieved": true,
+   "search_count": 2,
+   "search_q": "مايكرويف lg 42 لتر"
+  },
+  {
+   "key": "lg|27|fhd|100|NO_PANEL",
+   "category": "monitor",
+   "cls": "A_eligible_and_shown_with_rival",
+   "amz_price": 575.6,
+   "amz_observed": "2026-10-01T09:59:14.262+00:00",
+   "rivals": [
+    "extra:419:2026-07-05",
+    "almanea:555:2026-10-02"
+   ],
+   "cheapest": "المنيع",
+   "eligible_store_count": 2,
+   "search_retrieved": true,
+   "search_count": 5,
+   "search_q": "شاشة lg 27 بوصة FHD 100Hz"
+  },
+  {
+   "key": "samsung|galaxy tab s10 fe|NO_GEN|128|wifi|NO_SIZE",
+   "category": "tablet",
+   "cls": "A_eligible_and_shown_with_rival",
+   "amz_price": 1895.32,
+   "amz_observed": "2026-10-02T13:38:05.596+00:00",
+   "rivals": [
+    "extra:2549:2026-10-02"
+   ],
+   "cheapest": "أمازون السعودية",
+   "eligible_store_count": 2,
+   "search_retrieved": true,
+   "search_count": 6,
+   "search_q": "تابلت سامسونج Galaxy Tab S10 Fe 128GB Wi-Fi"
+  },
+  {
+   "key": "lg|75|4k|mini_led|144",
+   "category": "tv",
+   "cls": "A2_eligible_rival_stale",
+   "amz_price": 4999,
+   "amz_observed": "2026-10-03T08:08:55.491+00:00",
+   "rivals": [
+    "extra:6599:2026-09-26"
+   ],
+   "cheapest": "أمازون السعودية",
+   "eligible_store_count": 1,
+   "search_retrieved": true,
+   "search_count": 1,
+   "search_q": "تلفزيون إل جي 75 بوصة 4K UHD Mini LED 144Hz ذكي"
+  },
+  {
+   "key": "apple|iPhone|15|Standard|128",
+   "category": "mobile",
+   "cls": "G_rightly_excluded_unavailable",
+   "rivals": [
+    "extra:2279:2026-10-03",
+    "almanea:3799:2026-10-02"
+   ],
+   "cheapest": "إكسترا",
+   "eligible_store_count": 2,
+   "search_retrieved": true,
+   "search_count": 1,
+   "search_q": "جوال آبل iPhone 15 128 جيجابايت"
+  },
+  {
+   "key": "apple|ipad air|m4|128|wifi|11",
+   "category": "tablet",
+   "cls": "G_rightly_excluded_unavailable",
+   "rivals": [
+    "extra:3099:2026-10-02"
+   ],
+   "cheapest": "إكسترا",
+   "eligible_store_count": 1,
+   "search_retrieved": true,
+   "search_count": 1,
+   "search_q": "تابلت ابل Ipad Air M4 11\" 128GB Wi-Fi"
+  },
+  {
+   "key": "philips|NA|1.7",
+   "category": "kettle",
+   "cls": "A2_eligible_rival_stale",
+   "amz_price": 215,
+   "amz_observed": "2026-10-02T13:43:21.332+00:00",
+   "rivals": [
+    "almanea:209:2026-08-21"
+   ],
+   "cheapest": "نجم الأجهزة",
+   "eligible_store_count": 3,
+   "search_retrieved": true,
+   "search_count": 3,
+   "search_q": "غلاية philips 1.7 لتر"
+  },
+  {
+   "key": "samsung|Galaxy Watch|8|Classic|46|gps",
+   "category": "smartwatch",
+   "cls": "A_eligible_and_shown_with_rival",
+   "amz_price": 1297.02,
+   "amz_observed": "2026-10-01T15:41:52.727+00:00",
+   "rivals": [
+    "extra:1329:2026-09-30"
+   ],
+   "cheapest": "أمازون السعودية",
+   "eligible_store_count": 2,
+   "search_retrieved": true,
+   "search_count": 1,
+   "search_q": "ساعة ذكية سامسونج Galaxy Watch 8 Classic 46 ملم"
+  },
+  {
+   "key": "tecno|Tecno Spark|3|Standard|64",
+   "category": "mobile",
+   "cls": "A_eligible_and_shown_with_rival",
+   "amz_price": 479,
+   "amz_observed": "2026-09-28T00:08:14.24923+00:00",
+   "rivals": [
+    "extra:479:2026-10-02"
+   ],
+   "cheapest": "إكسترا",
+   "eligible_store_count": 2,
+   "search_retrieved": true,
+   "search_count": 1,
+   "search_q": "جوال تكنو Spark 3 64 جيجابايت"
+  },
+  {
+   "key": "tcl|98|4k|mini_led|144",
+   "category": "tv",
+   "cls": "C_stale_gt168h",
+   "amz_price": 6888,
+   "amz_observed": "2026-09-04T12:05:52.679954+00:00",
+   "rivals": [
+    "extra:19999:2026-10-03"
+   ],
+   "cheapest": "إكسترا",
+   "eligible_store_count": 1,
+   "search_retrieved": false,
+   "search_count": 0,
+   "search_q": "تلفزيون تي سي إل 98 بوصة 4K UHD Mini LED 144Hz ذكي"
+  },
+  {
+   "key": "hisense|55|4k|qled|144",
+   "category": "tv",
+   "cls": "A_eligible_and_shown_with_rival",
+   "amz_price": 1699,
+   "amz_observed": "2026-10-03T02:11:26.393+00:00",
+   "rivals": [
+    "extra:1999:2026-10-01"
+   ],
+   "cheapest": "أمازون السعودية",
+   "eligible_store_count": 3,
+   "search_retrieved": true,
+   "search_count": 2,
+   "search_q": "تلفزيون هايسنس 55 بوصة 4K UHD QLED 144Hz ذكي"
+  },
+  {
+   "key": "panasonic|front_load|9|washer",
+   "category": "washing_machine",
+   "cls": "A_eligible_and_shown_with_rival",
+   "amz_price": 1529,
+   "amz_observed": "2026-10-02T20:11:14.301+00:00",
+   "rivals": [
+    "extra:1749:2026-10-02"
+   ],
+   "cheapest": "أمازون السعودية",
+   "eligible_store_count": 2,
+   "search_retrieved": true,
+   "search_count": 1,
+   "search_q": "غسالة panasonic front load 9 كجم"
+  },
+  {
+   "key": "samsung|MODEL:UA98U9000HUXSA",
+   "category": "tv",
+   "cls": "A_eligible_and_shown_with_rival",
+   "amz_price": 6837.01,
+   "amz_observed": "2026-10-02T13:43:47.154+00:00",
+   "rivals": [
+    "extra:5796:2026-10-03",
+    "almanea:6999:2026-10-02"
+   ],
+   "cheapest": "إكسترا",
+   "eligible_store_count": 4,
+   "search_retrieved": true,
+   "search_count": 18,
+   "search_q": "98\" Crystal UHD U9000H 4K Samsung Vision AI Smart TV (2026) 98\" (UA98U9000HUXSA)"
+  },
+  {
+   "key": "tefal|NA|900",
+   "category": "vacuum",
+   "cls": "A_eligible_and_shown_with_rival",
+   "amz_price": 309,
+   "amz_observed": "2026-10-01T06:04:18.504998+00:00",
+   "rivals": [
+    "extra:357:2026-09-28"
+   ],
+   "cheapest": "أمازون السعودية",
+   "eligible_store_count": 2,
+   "search_retrieved": true,
+   "search_count": 1,
+   "search_q": "مكنسة tefal 900 واط"
+  },
+  {
+   "key": "hisense|65|4k|mini_led|144",
+   "category": "tv",
+   "cls": "A_eligible_and_shown_with_rival",
+   "amz_price": 2499,
+   "amz_observed": "2026-10-02T20:11:19.669+00:00",
+   "rivals": [
+    "extra:3219:2026-10-03"
+   ],
+   "cheapest": "أمازون السعودية",
+   "eligible_store_count": 2,
+   "search_retrieved": true,
+   "search_count": 1,
+   "search_q": "تلفزيون هايسنس 65 بوصة 4K UHD Mini LED 144Hz ذكي"
+  },
+  {
+   "key": "hisense|top_load|12|washer",
+   "category": "washing_machine",
+   "cls": "A_eligible_and_shown_with_rival",
+   "amz_price": 1510,
+   "amz_observed": "2026-10-03T02:13:48.445+00:00",
+   "rivals": [
+    "almanea:1599:2026-08-03",
+    "extra:1669:2026-10-02"
+   ],
+   "cheapest": "متجر النخيل",
+   "eligible_store_count": 3,
+   "search_retrieved": true,
+   "search_count": 1,
+   "search_q": "غسالة hisense top load 12 كجم"
+  },
+  {
+   "key": "samsung|MODEL:UA65U8000HUXSA",
+   "category": "tv",
+   "cls": "A_eligible_and_shown_with_rival",
+   "amz_price": 1899,
+   "amz_observed": "2026-10-03T02:14:59.818+00:00",
+   "rivals": [
+    "extra:2196:2026-10-03",
+    "almanea:2196.01:2026-10-02"
+   ],
+   "cheapest": "أمازون السعودية",
+   "eligible_store_count": 3,
+   "search_retrieved": true,
+   "search_count": 17,
+   "search_q": "65\" Crystal UHD U8000H 4K Samsung Vision AI Smart TV (2026) 65\" (UA65U8000HUXSA)"
+  },
+  {
+   "key": "samsung|MODEL:QA75Q8FAAUXZN",
+   "category": "tv",
+   "cls": "A2_eligible_rival_stale",
+   "amz_price": 2599,
+   "amz_observed": "2026-10-03T08:10:24.437+00:00",
+   "rivals": [
+    "extra:3249:2026-08-16"
+   ],
+   "cheapest": "أمازون السعودية",
+   "eligible_store_count": 1,
+   "search_retrieved": true,
+   "search_count": 2,
+   "search_q": "تلفزيون سامسونج QA75Q8FAAUXZN"
+  },
+  {
+   "key": "samsung|top_mount|390|standard",
+   "category": "refrigerator",
+   "cls": "A_eligible_and_shown_with_rival",
+   "amz_price": 2699,
+   "amz_observed": "2026-10-02T13:40:54.233+00:00",
+   "rivals": [
+    "almanea:2699:2026-10-02"
+   ],
+   "cheapest": "نجم الأجهزة",
+   "eligible_store_count": 3,
+   "search_retrieved": true,
+   "search_count": 1,
+   "search_q": "ثلاجة samsung top mount 390 لتر"
+  },
+  {
+   "key": "apple|earpods",
+   "category": "audio",
+   "cls": "C_stale_gt168h",
+   "amz_price": 69,
+   "amz_observed": "2026-09-21T18:44:44.624+00:00",
+   "rivals": [
+    "almanea:78.99:2026-10-02"
+   ],
+   "cheapest": "المنيع",
+   "eligible_store_count": 1,
+   "search_retrieved": true,
+   "search_count": 2,
+   "search_q": "ابل Earpods سماعات أذن"
+  },
+  {
+   "key": "hoover|cylinder|2400",
+   "category": "vacuum",
+   "cls": "A2_eligible_rival_stale",
+   "amz_price": 459,
+   "amz_observed": "2026-10-01T06:04:18.504998+00:00",
+   "rivals": [
+    "extra:459:2026-09-22"
+   ],
+   "cheapest": "أمازون السعودية",
+   "eligible_store_count": 1,
+   "search_retrieved": true,
+   "search_count": 1,
+   "search_q": "مكنسة hoover cylinder 2400 واط"
+  },
+  {
+   "key": "samsung|Galaxy Watch|8|Standard|40|gps",
+   "category": "smartwatch",
+   "cls": "A_eligible_and_shown_with_rival",
+   "amz_price": 735,
+   "amz_observed": "2026-10-02T20:14:40.3+00:00",
+   "rivals": [
+    "extra:995:2026-09-30"
+   ],
+   "cheapest": "أمازون السعودية",
+   "eligible_store_count": 2,
+   "search_retrieved": true,
+   "search_count": 1,
+   "search_q": "ساعة ذكية سامسونج Galaxy Watch 8 40 ملم"
+  }
+ ]
+}

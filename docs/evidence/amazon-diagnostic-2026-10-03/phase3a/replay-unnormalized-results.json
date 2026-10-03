@@ -1,0 +1,418 @@
+{
+ "n": 2009,
+ "v1": {
+  "detected": 1021,
+  "valid": 60,
+  "byCat": {
+   "coffee_maker": {
+    "detected_not_valid": 8,
+    "valid": 1
+   },
+   "none": {
+    "rejected": 988
+   },
+   "air_fryer": {
+    "detected_not_valid": 12,
+    "valid": 1
+   },
+   "air_conditioner": {
+    "detected_not_valid": 20
+   },
+   "refrigerator": {
+    "detected_not_valid": 30
+   },
+   "smartwatch": {
+    "valid": 7
+   },
+   "audio": {
+    "valid": 5,
+    "detected_not_valid": 29
+   },
+   "vacuum": {
+    "detected_not_valid": 27
+   },
+   "dishwasher": {
+    "detected_not_valid": 12
+   },
+   "washing_machine": {
+    "detected_not_valid": 20
+   },
+   "laptop": {
+    "detected_not_valid": 14
+   },
+   "mobile": {
+    "detected_not_valid": 50,
+    "valid": 14
+   },
+   "tablet": {
+    "detected_not_valid": 30,
+    "valid": 2
+   },
+   "microwave": {
+    "detected_not_valid": 12
+   },
+   "monitor": {
+    "detected_not_valid": 113
+   },
+   "camera": {
+    "valid": 2,
+    "detected_not_valid": 16
+   },
+   "tv": {
+    "valid": 28,
+    "detected_not_valid": 567
+   },
+   "printer": {
+    "detected_not_valid": 1
+   }
+  }
+ },
+ "v2": {
+  "detected": 1088,
+  "valid": 247,
+  "byCat": {
+   "coffee_maker": {
+    "detected_not_valid": 8,
+    "valid": 1
+   },
+   "mobile": {
+    "valid": 91,
+    "detected_not_valid": 6
+   },
+   "air_fryer": {
+    "detected_not_valid": 5,
+    "valid": 8
+   },
+   "air_conditioner": {
+    "detected_not_valid": 20
+   },
+   "refrigerator": {
+    "valid": 24,
+    "detected_not_valid": 6
+   },
+   "smartwatch": {
+    "valid": 7
+   },
+   "audio": {
+    "valid": 5,
+    "detected_not_valid": 29
+   },
+   "none": {
+    "rejected": 921
+   },
+   "vacuum": {
+    "valid": 25,
+    "detected_not_valid": 2
+   },
+   "dishwasher": {
+    "detected_not_valid": 12
+   },
+   "washing_machine": {
+    "detected_not_valid": 7,
+    "valid": 13
+   },
+   "tv": {
+    "valid": 62,
+    "detected_not_valid": 567
+   },
+   "laptop": {
+    "detected_not_valid": 14
+   },
+   "tablet": {
+    "detected_not_valid": 30,
+    "valid": 2
+   },
+   "microwave": {
+    "valid": 7,
+    "detected_not_valid": 5
+   },
+   "monitor": {
+    "detected_not_valid": 113
+   },
+   "camera": {
+    "valid": 2,
+    "detected_not_valid": 16
+   },
+   "printer": {
+    "detected_not_valid": 1
+   }
+  },
+  "reasons": {
+   "coffee_maker:low_confidence_candidate:capacity missing — brand+type too c": 8,
+   "air_fryer:low_confidence_candidate:capacity missing — brand+type too c": 4,
+   "air_conditioner:invalid:ac_type unknown": 6,
+   "air_conditioner:invalid:null in critical: brand, capacity_btu": 5,
+   "dishwasher:invalid:no discriminator (type/capacity)": 12,
+   "washing_machine:invalid:type missing": 6,
+   "laptop:invalid:null in critical: cpu": 2,
+   "tablet:invalid:storage missing": 4,
+   "air_conditioner:invalid:null in critical: brand": 5,
+   "air_conditioner:invalid:null in critical: capacity_btu": 4,
+   "tablet:invalid:brand missing": 16,
+   "audio:invalid:brand missing": 16,
+   "vacuum:invalid:no discriminator (type/capacity)": 1,
+   "microwave:invalid:brand missing": 5,
+   "tablet:low_confidence_candidate:fallback: connectivity missing": 8,
+   "audio:invalid:model missing (bare brand is not identity)": 13,
+   "laptop:invalid:brand missing": 11,
+   "monitor:invalid:brand missing": 21,
+   "mobile:invalid": 6,
+   "tv:low_confidence_candidate:fallback: refresh or panel missing": 355,
+   "monitor:low_confidence_candidate:fallback: resolution or refresh mis": 16,
+   "camera:invalid:brand missing": 12,
+   "air_fryer:invalid:brand missing": 1,
+   "laptop:invalid:null in critical: ram": 1,
+   "camera:invalid:model missing": 4,
+   "tv:invalid:brand missing": 101,
+   "tv:invalid:screen_size missing": 111,
+   "monitor:invalid:screen_size missing": 76,
+   "printer:invalid:model missing (bare brand is not identity)": 1,
+   "tablet:invalid:line missing": 2,
+   "washing_machine:invalid:brand missing": 1,
+   "refrigerator:invalid:brand missing": 6,
+   "vacuum:low_confidence_candidate:capacity missing — brand+type too c": 1
+  }
+ },
+ "examples": [
+  {
+   "cat": "mobile",
+   "key": "samsung|Galaxy S|S26|Ultra|256",
+   "name": "Samsung Galaxy S26 Ultra Black, 256GB Storage, AI Phone, 12GB RAM, Customized AP, Built-in",
+   "price": "3690"
+  },
+  {
+   "cat": "refrigerator",
+   "key": "tcl|top_mount|470|inverter",
+   "name": "TCL Double Door Refrigerator 16.5 Cu.Ft (465 Liters), Inverter Technology, Adjustable Shel",
+   "price": "2299"
+  },
+  {
+   "cat": "smartwatch",
+   "key": "xiaomi|Xiaomi Band|10|Standard|NO_SIZE|gps",
+   "name": "Xiaomi Mi Smart Band 10 (2025) - 1.72\" AMOLED Display | 21 Days Battery Life | Touchscreen",
+   "price": "305.03"
+  },
+  {
+   "cat": "refrigerator",
+   "key": "hitachi|side_by_side|550|standard",
+   "name": "Hitachi 550 Liter Four Door Side by Side Refrigerator with Automatic Defrost| Model No R-W",
+   "price": "4513.88"
+  },
+  {
+   "cat": "audio",
+   "key": "jbl|tune 720",
+   "name": "JBL T720BTBLK Tune 720BT Over The Ear Headphones - Black",
+   "price": "331"
+  },
+  {
+   "cat": "vacuum",
+   "key": "koolen|NA|1600",
+   "name": "Koolen Barrel Vacuum Cleaner, 1600W, 21L Capacity, Black",
+   "price": "194.98"
+  },
+  {
+   "cat": "tv",
+   "key": "samsung|MODEL:UA32H5000FUXSA",
+   "name": "Samsung 32 Inch HD TV, H5000F, Free contents by Samsung TV Plus, Secured by Knox, HDR, OTS",
+   "price": "719"
+  },
+  {
+   "cat": "mobile",
+   "key": "tecno|Tecno Spark|3|Standard|NO_STORAGE",
+   "name": "Tecno spark go3 4+4GB RAM 128 Battery 5000mAH 4G Color Titanium Grey",
+   "price": "549"
+  },
+  {
+   "cat": "mobile",
+   "key": "samsung|Galaxy A|A06|Standard|128",
+   "name": "Samsung Galaxy A06 5G, Dual SIM, 4GB RaM, 128GB Storage, Black (KSA Version)",
+   "price": "580"
+  },
+  {
+   "cat": "microwave",
+   "key": "kenwood|grill|30",
+   "name": "Kenwood Microwave, 30L, 700W, 1000W Grill, Defrost Function, 11 Power Levels, Digital Disp",
+   "price": "849"
+  },
+  {
+   "cat": "smartwatch",
+   "key": "apple|Apple Watch|Ultra|Ultra|49|cellular",
+   "name": "Apple Watch Ultra 4 49mm GPS + Cellular Smartwatch",
+   "price": "3599"
+  },
+  {
+   "cat": "refrigerator",
+   "key": "hitachi|top_mount|370|inverter",
+   "name": "HITACHI Top Freezer Refrigerator 374L – 2-Door, Dual Sense Surround Cooling, Selectable Zo",
+   "price": "2438.27"
+  },
+  {
+   "cat": "vacuum",
+   "key": "hoover|cylinder|2400",
+   "name": "Hoover Power 7 Cyclonic Canister Vacuum Cleaner, 2400W, HEPA Filtration, Strong Suction Pe",
+   "price": "413.09"
+  },
+  {
+   "cat": "vacuum",
+   "key": "koolen|handheld|600",
+   "name": "Koolen Handheld Vacuum Cleaner, 600W, Purple",
+   "price": "115"
+  },
+  {
+   "cat": "vacuum",
+   "key": "hoover|NA|1700",
+   "name": "Hoover Power Swift Drum Vacuum Cleaner, 15L, 1700W, Strong Suction with Blower Function, f",
+   "price": "182.95"
+  },
+  {
+   "cat": "vacuum",
+   "key": "hoover|NA|2300",
+   "name": "Hoover Power Pro Drum Vacuum Cleaner, 22L, 2300W, High Suction with Blower Function, Large",
+   "price": "358.99"
+  },
+  {
+   "cat": "vacuum",
+   "key": "koolen|NA|2000",
+   "name": "Koolen Drum Vacuum cleaner 21L 2000W",
+   "price": "218.98"
+  },
+  {
+   "cat": "mobile",
+   "key": "xiaomi|Redmi|17|Standard|128",
+   "name": "Redmi 17 5G Dual SIM – 4GB RAM, 128GB Storage, Black - Global Version",
+   "price": "715"
+  },
+  {
+   "cat": "washing_machine",
+   "key": "tcl|front_load|8|combo",
+   "name": "TCL 8/5 kg Automatic Front Load Washing Machine with Dryer Inverter | Model No TWD-C805W w",
+   "price": "1499"
+  },
+  {
+   "cat": "mobile",
+   "key": "honor|Honor X|5c|Standard|64",
+   "name": "HONOR X5c Smartphone 4 GB RAM, 64 GB Dual SIM 4G - Midnight black - Middle East Version",
+   "price": "448.55"
+  },
+  {
+   "cat": "washing_machine",
+   "key": "haam|top_load|8|washer",
+   "name": "Haam Important Top Load Twin Tub Washing Machine, 8 Kg Capacity, White",
+   "price": "589"
+  },
+  {
+   "cat": "mobile",
+   "key": "xiaomi|Redmi Note|14|Pro Plus|512",
+   "name": "Redmi Note 14 Pro+ 5G Midnight Black 12GB RAM 512GB",
+   "price": "1599"
+  },
+  {
+   "cat": "refrigerator",
+   "key": "hitachi|top_mount|450|inverter",
+   "name": "HITACHI Top Freezer Refrigerator 450L – 2-Door, Inverter Dual Fan Cooling, Big Vegetable C",
+   "price": "3093.11"
+  },
+  {
+   "cat": "air_fryer",
+   "key": "panasonic|NA|6",
+   "name": "Panasonic Air Fryer NF-CC600, 1450W, 6 liters, Gentle steam, Viewing window, Top & Bottom ",
+   "price": "299"
+  },
+  {
+   "cat": "mobile",
+   "key": "xiaomi|Redmi|17|Standard|256",
+   "name": "Redmi 17 5G Dual SIM – 6GB RAM, 256GB Storage, Black - Global Version",
+   "price": "895"
+  },
+  {
+   "cat": "tv",
+   "key": "samsung|MODEL:UA43F6000FUXSA",
+   "name": "Samsung 43 Inch FHD TV, F6000F, Free contents by Samsung TV Plus, Secured by Knox, HDR, OT",
+   "price": "999"
+  },
+  {
+   "cat": "mobile",
+   "key": "samsung|Galaxy S|S26|Ultra|256",
+   "name": "Samsung Galaxy S26 Ultra Black, 256GB Storage, AI Phone, 12GB RAM, Customized AP, Built-in",
+   "price": "3690"
+  },
+  {
+   "cat": "refrigerator",
+   "key": "tcl|top_mount|470|inverter",
+   "name": "TCL Double Door Refrigerator 16.5 Cu.Ft (465 Liters), Inverter Technology, Adjustable Shel",
+   "price": "2299"
+  },
+  {
+   "cat": "refrigerator",
+   "key": "hitachi|side_by_side|550|standard",
+   "name": "Hitachi 550 Liter Four Door Side by Side Refrigerator with Automatic Defrost| Model No R-W",
+   "price": "4499"
+  },
+  {
+   "cat": "vacuum",
+   "key": "koolen|NA|1600",
+   "name": "Koolen Barrel Vacuum Cleaner, 1600W, 21L Capacity, Black",
+   "price": "194.98"
+  },
+  {
+   "cat": "tv",
+   "key": "samsung|MODEL:UA32H5000FUXSA",
+   "name": "Samsung 32 Inch HD TV, H5000F, Free contents by Samsung TV Plus, Secured by Knox, HDR, OTS",
+   "price": "719"
+  },
+  {
+   "cat": "smartwatch",
+   "key": "xiaomi|Xiaomi Band|10|Standard|NO_SIZE|gps",
+   "name": "Xiaomi Mi Smart Band 10 (2025) - 1.72\" AMOLED Display | 21 Days Battery Life | Touchscreen",
+   "price": "305.03"
+  },
+  {
+   "cat": "audio",
+   "key": "jbl|tune 720",
+   "name": "JBL T720BTBLK Tune 720BT Over The Ear Headphones - Black",
+   "price": "331"
+  },
+  {
+   "cat": "mobile",
+   "key": "samsung|Galaxy S|S23|Ultra|256",
+   "name": "Samsung Galaxy S23 Ultra, 256GB, Green, 5G Mobile Phone, Dual SIM, Android Smartphone (KSA",
+   "price": "2799"
+  },
+  {
+   "cat": "mobile",
+   "key": "tecno|Tecno Spark|3|Standard|NO_STORAGE",
+   "name": "Tecno spark go3 4+4GB RAM 128 Battery 5000mAH 4G Color Titanium Grey",
+   "price": "549"
+  },
+  {
+   "cat": "microwave",
+   "key": "kenwood|grill|30",
+   "name": "Kenwood Microwave, 30L, 700W, 1000W Grill, Defrost Function, 11 Power Levels, Digital Disp",
+   "price": "849"
+  },
+  {
+   "cat": "mobile",
+   "key": "xiaomi|Redmi Note|17|Pro|256",
+   "name": "Redmi Note 17 Pro 5G Dual SIM – 12GB RAM, 256GB Storage, Sky Blue - Global Version",
+   "price": "1499"
+  },
+  {
+   "cat": "refrigerator",
+   "key": "hitachi|top_mount|370|inverter",
+   "name": "HITACHI Top Freezer Refrigerator 374L – 2-Door, Dual Sense Surround Cooling, Selectable Zo",
+   "price": "2438.27"
+  },
+  {
+   "cat": "vacuum",
+   "key": "hoover|cylinder|2400",
+   "name": "Hoover Power 7 Cyclonic Canister Vacuum Cleaner, 2400W, HEPA Filtration, Strong Suction Pe",
+   "price": "413.09"
+  },
+  {
+   "cat": "vacuum",
+   "key": "koolen|handheld|600",
+   "name": "Koolen Handheld Vacuum Cleaner, 600W, Purple",
+   "price": "115"
+  }
+ ]
+}

@@ -1,0 +1,590 @@
+[
+ {
+  "id": "P100",
+  "category": "mobile",
+  "amazon": "Samsung Galaxy Z Fold8 Cream, 256GB, All-new Shape, Customized Processor, 4800 mAh Battery, 12GB RAM,Dual 50MP Camera,Now Nudge,Photo Assist, 1 Year Extended Warranty (KSA Version)(Amazon Exclusive)",
+  "control": "Samsung Galaxy Z Fold-8, 256GB, 12GB, 5G - Lavender",
+  "control_store": "Almanea"
+ },
+ {
+  "id": "P200",
+  "category": "mobile",
+  "amazon": "Samsung Galaxy A17 5G, Android Smartphone, 256GB Storage, 8GB RAM, Black, 6x OS Upgrades, Large Display, 50MP OIS Camera (KSA Version)",
+  "control": "Samsung Galaxy A17, 5G, 8+256 GB, Blue",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P300",
+  "category": "mobile",
+  "amazon": "Apple iPhone 17 Pro 256 GB: 6.3-inch Display with ProMotion up to 120Hz, A19 Pro Chip, Breakthrough Battery Life, Pro Fusion Camera System with Center Stage Front Camera; Cosmic Orange",
+  "control": "Apple iPhone 17 Pro, 5G, 6.3 inch 256GB, Cosmic Orange",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P010",
+  "category": "mobile",
+  "amazon": "Apple iPhone 16e (256 GB) - Black",
+  "control": "iPhone 16 Plus 128GB 5G Pink",
+  "control_store": "Almanea"
+ },
+ {
+  "id": "P110",
+  "category": "mobile",
+  "amazon": "Samsung Galaxy S25 AI Phone, 256GB Storage, 12GB RAM, Icyblue, Android Smartphone, 50MP Camera, 6 Month Extended Manufacturer Warranty (KSA Version)",
+  "control": "SAMSUNG Galaxy S25, 5G, 256 GB, Navy",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P210",
+  "category": "mobile",
+  "amazon": "Samsung Galaxy A17 LTE Android Smartphone, 128GB Storage, 6GB RAM, Black, 6x OS Upgrades, Big Screen, 50MP OIS Camera (BAE Version)",
+  "control": "Samsung Galaxy A17, 5G, 4+128 GB, Black",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P310",
+  "category": "mobile",
+  "amazon": "Samsung Galaxy A07 LTE, Android Smartphone, 64GB Storage, 4GB RAM, Light Violet, 6x OS Upgrades, Large Display, 6nm Processor (KSA Version)",
+  "control": "Samsung Galaxy A07 LTE 4GB 64GB Green",
+  "control_store": "Almanea"
+ },
+ {
+  "id": "P020",
+  "category": "mobile",
+  "amazon": "Apple (Refurbished) iPhone 14 5G 128GB Phone - Midnight",
+  "control": "Apple iPhone 14, 5G, 128GB, Blue",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P120",
+  "category": "mobile",
+  "amazon": "Samsung Galaxy A37 5G Android Smartphone, 256GB Storage, 8GB RAM, Awesome White, 6x OS Upgrades, Large Display, 50MP Camera, Long Battery Life (KSA Version)",
+  "control": "SAMSUNG Galaxy A37, 5G, 256 GB, Awesome White",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P220",
+  "category": "mobile",
+  "amazon": "Samsung Galaxy A37 5G Android Smartphone, 128GB Storage, 8GB RAM, Awesome Lavender, 6x OS Upgrades, Large Display, 50MP Camera, Long Battery Life (KSA Version)",
+  "control": "SAMSUNG Galaxy A37, 5G, 8+128 GB, Awesome Lavender",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P320",
+  "category": "mobile",
+  "amazon": "Samsung Galaxy A26 5G, Android Smartphone, 256GB Storage, 8GB RAM, White, 50MP Camera, Large Display, Long Battery Life (KSA Version)",
+  "control": "SAMSUNG Galaxy A26, 5G, 6+128 GB, White",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P030",
+  "category": "mobile",
+  "amazon": "Apple (Refurbished) iPhone 12 (128GB) - Black",
+  "control": "Apple iPhone 12, 5G, 256GB, Red",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P130",
+  "category": "mobile",
+  "amazon": "Samsung Galaxy A06 LTE, Android Smartphone, Dual SIM Mobile Phone, 4GB RAM, 64GB Storage, Light Blue (KSA Version)",
+  "control": "Samsung Galaxy A06, 4G, 128GB, 4GB RAM, Black",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P040",
+  "category": "mobile",
+  "amazon": "Apple iPhone 18 Pro 256 GB: – Glacier",
+  "control": "Apple iPhone 18 Pro, 512GB, 12GB RAM, 5G - Black",
+  "control_store": "Almanea"
+ },
+ {
+  "id": "P140",
+  "category": "mobile",
+  "amazon": "HONOR 600 Lite 5G Smartphone, 8GB RAM + 128GB Storage, 3180mAh Durable Battery, 6.6” 120Hz AMOLED Display, 108MP AI Camera with Camera Button, IP66 Water Resistant, Velvet Black - Middle East Version",
+  "control": "Honor 600 Lite, 128GB, 8GB RAM, 5G, Dual SIM - Desert Gold",
+  "control_store": "Almanea"
+ },
+ {
+  "id": "P240",
+  "category": "mobile",
+  "amazon": "Apple iPhone 15 (128 GB) - Black (Renewed)",
+  "control": "Apple iPhone 15, 5G, 6.1 inch, 128GB, Yellow",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P050",
+  "category": "mobile",
+  "amazon": "Redmi Note 14 Pro+ 5G Midnight Black 12GB RAM 512GB",
+  "control": "XIAOMI Redmi Note 14 Pro Plus, 5G, 512 GB, Midnight Black",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P150",
+  "category": "mobile",
+  "amazon": "HONOR X7e Smartphone, Silicon-Carbon Battery, 45W HONOR SuperCharge, 120Hz Display, 50MP AI Camera, IP64 Water & Dust Resistance, 6GB RAM+ 128GB Storage, Dual SIM, Midnight Black - Middle East Version",
+  "control": "Honor X7e, 128GB, 6GB, 4G, Dual SIM - Sunrise Orange",
+  "control_store": "Almanea"
+ },
+ {
+  "id": "P250",
+  "category": "mobile",
+  "amazon": "HONOR X7e Smartphone, Silicon-Carbon Battery, 45W HONOR SuperCharge, 120Hz Display, 50MP AI Camera, IP64 Water & Dust Resistance, 6GB RAM+ 256GB Storage, Dual SIM, Light Blue - Middle East Version",
+  "control": "Honor X7e, 256GB, 6GB, 4G, Dual SIM - Sunrise Orange",
+  "control_store": "Almanea"
+ },
+ {
+  "id": "P060",
+  "category": "mobile",
+  "amazon": "Samsung Galaxy S23+, 8GB RAM 256GB Green, International Version, 5G Mobile Phone, Dual SIM, Android Smartphone",
+  "control": "Samsung Galaxy S23 FE, 5G, 256GB, Mint",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P160",
+  "category": "mobile",
+  "amazon": "Samsung Galaxy S25 FE, 5G, Smartphone, Android, 8GB RAM, Octa Core, 1.3GHz, 6.7-inch, Full HD, 120Hz (Navy, 256GB)",
+  "control": "Samsung Galaxy S25 FE, 5G, 256 GB, Navy",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P260",
+  "category": "mobile",
+  "amazon": "Samsung Galaxy S26+ Plus Black, 256GB Storage, AI Phone, 12GB RAM, Customized AP, Photo Assist, 50MP Camera, 4900mAh Battery (KSA version)",
+  "control": "SAMSUNG Galaxy S26 Plus, 5G, 256 GB, Cobalt Violet",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P070",
+  "category": "mobile",
+  "amazon": "HONOR 600 Lite 5G Smartphone, 8GB RAM + 128GB Storage, 3180mAh Durable Battery, 6.6” 120Hz AMOLED Display, 108MP AI Camera with Camera Button, IP66 Water Resistant, Sunrise Gold - Middle East Version",
+  "control": "Honor 600 Lite, 128GB, 8GB RAM, 5G, Dual SIM - Desert Gold",
+  "control_store": "Almanea"
+ },
+ {
+  "id": "P170",
+  "category": "mobile",
+  "amazon": "Xiaomi Redmi 15C Unlocked Smartphone, 8GB RAM, 256GB Storage, Midnight Black, 6000mAh Battery, 6.9-Inch 120Hz Display, 50MP Dual Camera, UAE Type Approved",
+  "control": "Xiaomi Redmi 15C, 4G, 128 GB, Mint Green",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P270",
+  "category": "mobile",
+  "amazon": "HONOR 600 Lite 5G Smartphone, 8GB RAM + 256GB Storage, 3180mAh Durable Battery, 6.6” 120Hz AMOLED Display, 108MP AI Camera with Camera Button, IP66 Water Resistant, Velvet Black - Middle East Version",
+  "control": "Honor 600 Lite, 256GB, 8GB RAM, 5G, Dual SIM - Velvet Black",
+  "control_store": "Almanea"
+ },
+ {
+  "id": "P080",
+  "category": "mobile",
+  "amazon": "Samsung Galaxy A56 5G, Android Smartphone, 256GB Storage, 8GB RAM, Awesome Graphite, 6x OS Upgrades, Large Display, Long Battery Life (KSA Version)",
+  "control": "SAMSUNG Galaxy A56, 5G, 128 GB, Awesome Olive",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P330",
+  "category": "tv",
+  "amazon": "Samsung 98 Inch UHD TV, DU9000, 4K, Supersize Picture Enhancer, Motion Xcelerator 120Hz, Q-Symphony, Secured by Knox, Tizen Smart TV, UA98DU9000UXSA (2024 - KSA Version)",
+  "control": "Samsung QLED TV, 75 Inch, 4K AI Upscaling, 120Hz, Air Slim Design, Secured by Knox",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P340",
+  "category": "tv",
+  "amazon": "Hisense 75 Inch 4K Miniled, Smart TV Black, Full local dimming zones, 2*HDMI type 4K@60Hz with HDCP version 2.2, eARc* HDMI*1, Smart TV, HDR10+, Dolby Vision,Dolby Vision ATMOS,",
+  "control": "Hisense, 75 Inch MiniLed 4K Smart TV,8 Years OS Update, 144Hz",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P331",
+  "category": "tv",
+  "amazon": "Samsung 75 Inch UHD Smart TV, DU7000, PurColor, 4K Upscaling, Endless Free Content, Q-Symphony, Secured by Knox, Tizen OS, UA75DU7000UXSA (2024 - KSA Version)",
+  "control": "Samsung QLED TV, 75 Inch, 4K AI Upscaling, 120Hz, Air Slim Design, Secured by Knox",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P341",
+  "category": "tv",
+  "amazon": "LG 48-Inch Class OLED evo AI 4K C5 Series Smart TV w/Dolby Atmos, Dolby Vision, HDR10, AI Super Upscaling 4K, Filmmaker Mode, Wow Orchestra, Alexa Built-in (OLED48C5PUA, 2025)",
+  "control": "LG Top Loading Washing Machine, 17 kg, White, WTV17HHW",
+  "control_store": "Almanea"
+ },
+ {
+  "id": "P332",
+  "category": "tv",
+  "amazon": "Samsung 65 Inch OLED TV, S95D, 4K, Glare Free, 4K AI Upscaling, 144Hz, Infinity One Design, Secured by Knox, Tizen Smart TV, QA65S95DAUXSA (2024 - KSA Version)",
+  "control": "Samsung QLED TV, 75 Inch, 4K AI Upscaling, 120Hz, Air Slim Design, Secured by Knox",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P342",
+  "category": "tv",
+  "amazon": "Hisense 55 inch QLED 4K Smart TV 55E7Q,HSR 120Hz Quantum Dot Colour,Dolby Vision.Atmos,Game Mode Plus,Voice control,AI Light Sensor,350 nits Typical brightness,8 Years OS Update",
+  "control": "Hisense, 55 inch,QLED 4K Smart TV,144Hz ,8 Years OS update AI",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P323",
+  "category": "tv",
+  "amazon": "Samsung 65 Inch Neo QLED TV, QN95B, 4K, Mini LED, Quantum Matrix Technology, Infinity One Design, Dolby Atmos, Tizen Smart TV, QA65QN95BAUXSA (2022 - KSA Version)",
+  "control": "Samsung QLED TV, 75 Inch, 4K AI Upscaling, 120Hz, Air Slim Design, Secured by Knox",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P333",
+  "category": "tv",
+  "amazon": "Samsung 55 Inch UHD TV, DU8000, 4K, Dynamic Crystal Color, AirSlim Design, Samsung TV Plus, Secured by Knox, Tizen OS, UA55DU8000UXSA (2024 - KSA Version)",
+  "control": "Samsung QLED TV, 75 Inch, 4K AI Upscaling, 120Hz, Air Slim Design, Secured by Knox",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P350",
+  "category": "laptop",
+  "amazon": "ASUS Chromebook CM1402 Laptop, 14 Inch FHD (1920 x 1080) LED Display, MediaTek Kompanio 520, 8-Core, 4GB RAM, 64GB eMMC, Chrome OS, Gravity Gray, TWE 64GB Micro SD Card",
+  "control": "ASUS VivoBook 14 Laptop, X1404VA-EB1602W, Intel Core 7 150U, 512GB SSD, 16GB DDR5, 14 Inch FHD IPS 60Hz, Intel Graphics, Windows 11 – Silver",
+  "control_store": "Almanea"
+ },
+ {
+  "id": "P360",
+  "category": "laptop",
+  "amazon": "Dell Latitude 5410 14\" Notebook - Full HD - 1920 x 1080 - Core i5 i5-10310U 10th Gen 1.7GHz Hexa-core (6 Core) - 16GB RAM - 512GB SSD (Renewed)",
+  "control": "Latitude 3450 laptop with 14 inch full hd (1920x1080) display, core ultra 7-155u processor/16gb ram ddr5/512gb ssd/dos(without windows)/ english/arabic black",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P351",
+  "category": "laptop",
+  "amazon": "Lenovo Chromebook S330 Laptop, 14-Inch HD (1366 x 768) Display, MediaTek MT8173C Processor, 4GB OnBoard LPDDR3, 32GB eMMC SSD, Chrome OS, 81JW0001US, Black",
+  "control": "Lenovo IdeaPad Slim 3 15IPH11 83UR007EAD, Intel Core Ultra 5 322, 512GB SSD, 16GB, 15.3 Inch WUXGA 60Hz, Windows 11 - Luna Grey",
+  "control_store": "Almanea"
+ },
+ {
+  "id": "P361",
+  "category": "laptop",
+  "amazon": "Dell Latitude 5430 Laptop - 14\" FHD AG IPS Display - 4.4 GHz Intel Core i5-1250U 12-Core (12th Gen) - 256GB SSD - 16GB RAM - Windows 11 pro (Renewed)",
+  "control": "Latitude 3450 laptop with 14 inch full hd (1920x1080) display, core ultra 7-155u processor/16gb ram ddr5/512gb ssd/dos(without windows)/ english/arabic black",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P370",
+  "category": "tablet",
+  "amazon": "Apple iPad Air 11-inch (M4): Liquid Retina Display, 512GB, 12MP Front/Back Camera, Wi-Fi 7 with Apple N1, Touch ID, All-Day Battery Life — Space Grey",
+  "control": "Apple iPad Air 11 M4, WiFi, 128GB , Stralight",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P380",
+  "category": "tablet",
+  "amazon": "Apple (Refurbished) 2021 iPad Pro (11-inch, Wi-Fi, 256GB) - Space Grey (3rd Generation)",
+  "control": "APPLE IPAD PRO 2024 13, Wi-Fi, 13 INCH, 256 GB, SPACE BLACK",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P371",
+  "category": "tablet",
+  "amazon": "Redmi Pad 2 9.7 Graphite Gray 4GB RAM 64GB WiFi Inbox Cover - Global Version",
+  "control": "Redmi Pad 2 Pro, WiFi, 256GB, 8GB RAM with Arabic Keyboard, Silver",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P381",
+  "category": "tablet",
+  "amazon": "Apple 2022 12.9-inch iPad Pro (Wi-Fi, 256GB) - Silver (6th generation) (Renewed)",
+  "control": "APPLE IPAD PRO 2024 13, Wi-Fi, 13 INCH, 256 GB, SPACE BLACK",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P372",
+  "category": "tablet",
+  "amazon": "Samsung Galaxy Tab Active Pro 10.1\" 64GB/4GB, 4G/LTE, Black - SM-T545",
+  "control": "Samsung Galaxy Tab A11, 4G, 8.7 Inch, 64GB, Gray",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P382",
+  "category": "tablet",
+  "amazon": "Apple 2021 iPad Pro (12.9-inch, Wi-Fi, 1TB) - Space Grey (5th Generation) (Renewed)",
+  "control": "Apple IPAD PRO 2025, 1 TB, 16GB, 13 INCH, WI-FI M5, SPACE BLACK",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P400",
+  "category": "refrigerator",
+  "amazon": "LG 645 Liter Side by Side Refrigerator with Multi Air Flow Technology| Model No LS25CBBSIV",
+  "control": "LG Side by Side Refrigerator, 28.1 Cu.ft, Platinum Silver , LS32HJBVLV",
+  "control_store": "Almanea"
+ },
+ {
+  "id": "P390",
+  "category": "refrigerator",
+  "amazon": "Midea Top Freezer Refrigerator 12 Cubic Feet -Silver",
+  "control": "Midea refrigerator and freezer,two doors,17.3 cu.ft fridge,5.7 cu.ft freezer,silver,mdrt866fgf46",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P401",
+  "category": "refrigerator",
+  "amazon": "Samsung 387 Liter Single Door Upright Twin Cooling Refrigerator with Digital Inverter Technology | Model No RR39M71407F/ZA with 2 Years Warranty",
+  "control": "Samsung One Door Refrigerator, 13.6 Cu.ft, 385 L, Digital Inverter, Silver - RR40H39G1T",
+  "control_store": "Almanea"
+ },
+ {
+  "id": "P391",
+  "category": "refrigerator",
+  "amazon": "Samsung 585 Liter Double Door Refrigerator with Automatic Defrost| Model No RT58K7050SLB with 2 Years Warranty",
+  "control": "Samsung 12.2 cu. ft., Refrigerator ,White, RT35CG5420WWH",
+  "control_store": "Almanea"
+ },
+ {
+  "id": "P402",
+  "category": "refrigerator",
+  "amazon": "LG LS19GBBDI Side by Side Refrigerator | 17.9 Cu.Ft (509L) | Silver Colour | Smart Inverter Compressor | Multi Air Flow | Door Cooling System | 10 Years Compressor Warranty | Energy Efficient",
+  "control": "LG Side by Side Refrigerato Inverter Linear Compressor, Mega Capacity, Smart Diagnosis, LS19GBBDI",
+  "control_store": "Almanea"
+ },
+ {
+  "id": "P410",
+  "category": "washing_machine",
+  "amazon": "Samsung WF21T6500GV/YL Frontload Washer 21kg,1100 RPM, Eco Bubble,Hygiene Steam, WIFI,AI Control VIETNAM",
+  "control": "Samsung Front Load Washer 21KG, Hygiene Steam, WIFI, 1100 rpm, Black",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P411",
+  "category": "washing_machine",
+  "amazon": "Samsung WA21A8376GV/YL Top Load Washing Machine 21kg, Heavy Duty +, Hygiene Steam, BubbleStorm, THAILAND",
+  "control": "Samsung Top load Washing Machine 21 kg, Hygiene Steam, Black, WA21A8376GV",
+  "control_store": "Almanea"
+ },
+ {
+  "id": "P412",
+  "category": "washing_machine",
+  "amazon": "Samsung WD80T634DBE/YL Front Load Washer Dryer Combo 8Kg Wash/6Kg Dry,1400 RPM,Eco Bubble,Hygiene Steam,WIFI,AI Control",
+  "control": "Samsung Front Load Washer/Dryer, 8/6kg, White",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P403",
+  "category": "washing_machine",
+  "amazon": "Samsung WA12CG5786BYYL Top Load Washing Machine 12 kg, Eco Bubble, Dual Storm™, Hygiene Steam, Power Tub Clean,THAILAND",
+  "control": "Samsung 13 kg, Top Load, Washing Machine, GRAY ,WA80F13B6L",
+  "control_store": "Almanea"
+ },
+ {
+  "id": "P420",
+  "category": "vacuum",
+  "amazon": "BLACK+DECKER Barrel/Drum Vacuum Cleaner, 2000W, 20L Large Capacity, Blower Function, Multiple Accessories, Durable, Reliable, Compact, Easy Storage, Multi Color - BV2000-B5",
+  "control": "BLACK+DECKER,Drum Vacuum Cleaner,20L,2000W,Black",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P421",
+  "category": "vacuum",
+  "amazon": "BLACK+DECKER Barrel/Drum Vacuum Cleaner, 2000W, 20L Large Capacity, Blower Function, Multiple Accessories, Durable, Reliable, Compact, Easy Storage, Multi Color - BV2000-B5",
+  "control": "Black+Decker Cordless Hand Vacuum Cleaner, 0.5L, 10.8V , Grey/Cherry Red",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P422",
+  "category": "vacuum",
+  "amazon": "Hoover Power 7 Cyclonic Canister Vacuum Cleaner, 2400W, HEPA Filtration, Strong Suction Performance, for Home Cleaning, Blue/Silver (HC84-P7A-ME)",
+  "control": "Hoover Vacuum Cleaner, Canister, 2400W, 4 L Bin Capacity",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P430",
+  "category": "microwave",
+  "amazon": "LG 25 Liter Microwave with Touch Button| Model No MS2535GIS",
+  "control": "Microwave LG Black 25 Litre without Grill MS2535GIS",
+  "control_store": "Almanea"
+ },
+ {
+  "id": "P425",
+  "category": "microwave",
+  "amazon": "LG Electronics MH 6535 gih microwave with grill/1000 W/25 l/digital display/White",
+  "control": "LG Neochef Microwave 25L Grill Black MH6595DIS",
+  "control_store": "Almanea"
+ },
+ {
+  "id": "P431",
+  "category": "dishwasher",
+  "amazon": "Midea 12 Place Setting Dishwasher with 7 Program| Model No WQP125201CW with 2 Years Warranty",
+  "control": "Midea, Dishwasher, 12 Place Setting, 6 Programs, White.",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P432",
+  "category": "dishwasher",
+  "amazon": "Midea 12 Place Setting Free Standing Dishwasher with 7 Programs| Model No WQP125201CS with 2 Years Warranty",
+  "control": "Midea, Dishwasher, 12 Place Setting, 6 Programs, White.",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P011",
+  "category": "mobile",
+  "amazon": "Samsung Galaxy A36 Enterprise Edition DUAL-SIM 128GB ROM + 6GB RAM (GSM only | No CDMA) Factory Unlocked 5G SmartPhone (Awesome Black) - International Version",
+  "control": "SAMSUNG Galaxy A36, 5G, 128 GB, Awesome Lavender",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P024",
+  "category": "mobile",
+  "amazon": "Redmi Note 15 Pro+ 5G Dual SIM+eSIM Glacier Blue 12GB RAM 512GB 5G - Global Version",
+  "control": "XIAOMI Redmi Note 15 Pro Plus, 5G, 512 GB, Mocha Brown",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P025",
+  "category": "mobile",
+  "amazon": "Redmi Note 15 Pro+ 5G Dual SIM+eSIM Glacier Blue 12GB RAM 512GB 5G - Global Version",
+  "control": "Xiaomi Redmi Note 15 Pro+, 512GB, 12GB, 5G, Dual SIM - Glacier Blue",
+  "control_store": "Almanea"
+ },
+ {
+  "id": "P031",
+  "category": "mobile",
+  "amazon": "Xiaomi Redmi Note 15 5G Unlocked Smartphone, Dual SIM, 8GB RAM, 256GB Storage, Black, Global Version",
+  "control": "Xiaomi Redmi Note 15, 256GB, 12GB, 5G, Dual SIM - Glacier Blue",
+  "control_store": "Almanea"
+ },
+ {
+  "id": "P036",
+  "category": "mobile",
+  "amazon": "Redmi 15C Midnight Black 8GB RAM 256GB 4G - Global Version",
+  "control": "Xiaomi Redmi 15C, 4G, 256 GB, Mint Green",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P114",
+  "category": "mobile",
+  "amazon": "Xiaomi Redmi 15C Smartphone 8+256GB,Twilight Orange,6000mAh Battery | 120Hz 6.9\" Display, Stylish Design, 50MP AI Dual Camera, 33W Fast Charging - Global Version",
+  "control": "Xiaomi Redmi 15C, 4G, 256 GB, Mint Green",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P115",
+  "category": "mobile",
+  "amazon": "Xiaomi Redmi 15C Smartphone 8+256GB,Twilight Orange,6000mAh Battery | 120Hz 6.9\" Display, Stylish Design, 50MP AI Dual Camera, 33W Fast Charging - Global Version",
+  "control": "Xiaomi Redmi 15C, 256GB, 8GB, 5G, Dual SIM - Dusk Purple",
+  "control_store": "Almanea"
+ },
+ {
+  "id": "P146",
+  "category": "mobile",
+  "amazon": "Redmi Note 15 Pro+ 5G Dual SIM+eSIM Black 12GB RAM 512GB 5G - Global Version",
+  "control": "XIAOMI Redmi Note 15 Pro Plus, 5G, 512 GB, Mocha Brown",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P147",
+  "category": "mobile",
+  "amazon": "Redmi Note 15 Pro+ 5G Dual SIM+eSIM Black 12GB RAM 512GB 5G - Global Version",
+  "control": "Xiaomi Redmi Note 15 Pro+, 512GB, 12GB, 5G, Dual SIM - Glacier Blue",
+  "control_store": "Almanea"
+ },
+ {
+  "id": "P155",
+  "category": "mobile",
+  "amazon": "Samsung Galaxy A26 Dual-SIM 128GB ROM + 6GB RAM (GSM Only | No CDMA) Factory Unlocked 5G Smartphone (Mint) - International Version",
+  "control": "SAMSUNG Galaxy A26, 5G, 6+128 GB, White",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P184",
+  "category": "mobile",
+  "amazon": "Xiaomi Redmi 15C Smartphone 8,256GB,mint green,6000mAh Battery | 120Hz 6.9\" Display, Stylish Design, 50MP AI Dual Camera, 33W Fast Charging - Global Version",
+  "control": "Xiaomi Redmi 15C, 4G, 256 GB, Mint Green",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P185",
+  "category": "mobile",
+  "amazon": "Xiaomi Redmi 15C Smartphone 8,256GB,mint green,6000mAh Battery | 120Hz 6.9\" Display, Stylish Design, 50MP AI Dual Camera, 33W Fast Charging - Global Version",
+  "control": "Xiaomi Redmi 15C, 256GB, 8GB, 5G, Dual SIM - Dusk Purple",
+  "control_store": "Almanea"
+ },
+ {
+  "id": "P202",
+  "category": "mobile",
+  "amazon": "SAMSUNG Galaxy S25 Ultra Cell Phone, 256GB, AI Smartphone, Unlocked Android, AI Camera, Fast Processor, Long Battery Life, 2025, Titanium Silverblue (International Version)",
+  "control": "SAMSUNG Galaxy S25 Ultra, 5G, 256 GB, Titanium Silverblue",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P203",
+  "category": "mobile",
+  "amazon": "SAMSUNG Galaxy S25 Ultra Cell Phone, 256GB, AI Smartphone, Unlocked Android, AI Camera, Fast Processor, Long Battery Life, 2025, Titanium Silverblue (International Version)",
+  "control": "SAMSUNG Galaxy S25 Ultra, 5G, 256 GB, Titanium Whitesilver",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P204",
+  "category": "mobile",
+  "amazon": "SAMSUNG Galaxy S25 Ultra Cell Phone, 256GB, AI Smartphone, Unlocked Android, AI Camera, Fast Processor, Long Battery Life, 2025, Titanium Silverblue (International Version)",
+  "control": "SAMSUNG Galaxy S25 Ultra, 5G, 256 GB, Titanium Black",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P213",
+  "category": "mobile",
+  "amazon": "Honor X5c Plus Dual-SIM 128GB ROM + 4GB RAM (GSM Only | No CDMA) Factory Unlocked 4G/LTE Smartphone (Midnight Black) - International Version",
+  "control": "Honor X5c Plus, 4G, 128 GB, Midnight Black",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P214",
+  "category": "mobile",
+  "amazon": "Honor X5c Plus Dual-SIM 128GB ROM + 4GB RAM (GSM Only | No CDMA) Factory Unlocked 4G/LTE Smartphone (Midnight Black) - International Version",
+  "control": "Honor X5c Plus, 128GB, 4GB, 4G, Dual SIM – Ocean Cyan",
+  "control_store": "Almanea"
+ },
+ {
+  "id": "P215",
+  "category": "mobile",
+  "amazon": "Honor X5c Plus Dual-SIM 128GB ROM + 4GB RAM (GSM Only | No CDMA) Factory Unlocked 4G/LTE Smartphone (Midnight Black) - International Version",
+  "control": "هونر X5c بلص، 128 جيجابايت، 4 جيجابايت رام، 4G، شريحتين اتصال - ازرق محيطي",
+  "control_store": "Almanea"
+ },
+ {
+  "id": "P226",
+  "category": "mobile",
+  "amazon": "Xiaomi Redmi Note 15 5G Unlocked Smartphone, Dual SIM, 8GB RAM, 256GB Storage, Glacier Blue, Global Version",
+  "control": "Xiaomi Redmi Note 15, 256GB, 12GB, 5G, Dual SIM - Glacier Blue",
+  "control_store": "Almanea"
+ },
+ {
+  "id": "P229",
+  "category": "mobile",
+  "amazon": "Samsung Galaxy S25 Ultra, 256GB (International Version)",
+  "control": "SAMSUNG Galaxy S25 Ultra, 5G, 256 GB, Titanium Silverblue",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P230",
+  "category": "mobile",
+  "amazon": "Samsung Galaxy S25 Ultra, 256GB (International Version)",
+  "control": "SAMSUNG Galaxy S25 Ultra, 5G, 256 GB, Titanium Whitesilver",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P231",
+  "category": "mobile",
+  "amazon": "Samsung Galaxy S25 Ultra, 256GB (International Version)",
+  "control": "SAMSUNG Galaxy S25 Ultra, 5G, 256 GB, Titanium Black",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P242",
+  "category": "mobile",
+  "amazon": "Samsung Galaxy S26 Ultra, Unlocked Android Smartphone, 256GB, Privacy Display, Galaxy AI, AI Camera, Super Fast Charging 3.0, Durable Battery, 2026, International Version, Black",
+  "control": "SAMSUNG Galaxy S26 Ultra, 5G, 256 GB, Sky Blue",
+  "control_store": "eXtra"
+ },
+ {
+  "id": "P243",
+  "category": "mobile",
+  "amazon": "Samsung Galaxy S26 Ultra, Unlocked Android Smartphone, 256GB, Privacy Display, Galaxy AI, AI Camera, Super Fast Charging 3.0, Durable Battery, 2026, International Version, Black",
+  "control": "Samsung Galaxy S26 Ultra, 256GB, 12GB RAM, 5G - Cobalt Violet",
+  "control_store": "Almanea"
+ }
+]

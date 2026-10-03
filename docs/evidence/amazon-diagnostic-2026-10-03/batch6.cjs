@@ -1,0 +1,10 @@
+const pg = require('pg'); require('dotenv').config({ path: 'C:/Users/Hp/Downloads/Tawveeri-Official/.env.local', quiet: true });
+const { toPoolerDbUrl } = require('C:/Users/Hp/Downloads/Tawveeri-Official/scripts/tps-core/pooler-url');
+(async () => {
+  const c = new pg.Client({ connectionString: toPoolerDbUrl(process.env.SUPABASE_DB_URL), ssl: { rejectUnauthorized: false }, statement_timeout: 60000 });
+  await c.connect(); await c.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
+  const { rows } = await c.query(`with v as (select identity_key, store_id, price, observed_at, payload from tps_current_offers where status='valid'), riv as (select identity_key from v r where r.store_id in (4,5) and r.price>0 and r.observed_at>=now()-interval '168 hours' and coalesce(r.payload->>'_availability','')<>'out_of_stock' group by 1)
+    select count(*) filter (where store_id=2) amz_valid, count(*) filter (where store_id=2 and (price is null or price<=0)) amz_null_price, count(*) filter (where store_id=2 and coalesce(payload->>'_availability','')='out_of_stock') amz_marked_oos, count(*) filter (where store_id=2 and coalesce(payload->>'_availability','')='out_of_stock' and exists (select 1 from riv where riv.identity_key=v.identity_key)) amz_oos_with_elig_rival, count(*) filter (where store_id=2 and (price is null or price<=0) and exists (select 1 from riv where riv.identity_key=v.identity_key)) amz_null_with_elig_rival, count(*) filter (where store_id=4 and coalesce(payload->>'_availability','')='out_of_stock') ext_marked_oos, count(*) filter (where store_id=5 and coalesce(payload->>'_availability','')='out_of_stock') alm_marked_oos, count(*) filter (where store_id=2 and payload->>'_availability' is null) amz_avail_unstated, count(*) filter (where store_id=4 and payload->>'_availability' is null) ext_avail_unstated, count(*) filter (where store_id=5 and payload->>'_availability' is null) alm_avail_unstated from v`);
+  console.log(JSON.stringify(rows[0]));
+  await c.query('ROLLBACK'); await c.end();
+})().catch(e => { console.error('ERR', e.message); process.exit(1); });

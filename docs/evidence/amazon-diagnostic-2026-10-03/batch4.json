@@ -1,0 +1,549 @@
+{
+ "captured_at": "2026-10-03T14:26:56.283Z",
+ "results": {
+  "asin_key_fragmentation": [
+   {
+    "asins": "1489",
+    "asins_valid": "1220",
+    "asins_multi_key": "123",
+    "asins_multi_valid_key": "65",
+    "asins_multi_category": "8",
+    "keys_multi_asin": "0"
+   }
+  ],
+  "asin_multi_key_examples": [
+   {
+    "asin": "B0BHSVTHF1",
+    "keys": "tablet:google|honor pad 8|NO_GEN|128|wifi|12@09-17=729 || tablet:honor|honor pad 8|NO_GEN|128|wifi|12@09-07=729"
+   },
+   {
+    "asin": "B0GZKZ4J2D",
+    "keys": "tv:samsung|MODEL:MRA85R85HAUXSA@10-01=8500.25 || tv:samsung|MODEL:MRA85R@09-11=9499"
+   },
+   {
+    "asin": "B07MWLL7MS",
+    "keys": "vacuum:black+decker|NA|2000@10-03=335 || vacuum:black+decker|MODEL:BV2000@09-20=335"
+   },
+   {
+    "asin": "B0FJLHQRZ9",
+    "keys": "tv:google|MODEL:111X8X64.7CM@10-01=1579 || tv:skyworth|MODEL:111X8X64.7CM@09-29=1579"
+   },
+   {
+    "asin": "B0GWM1JFWJ",
+    "keys": "tv:lg|MODEL:OLED65CS6VA@09-28=5399 || tv:vision|MODEL:OLED65CS6VA@09-28=5399"
+   },
+   {
+    "asin": "B0DNYPZDXD",
+    "keys": "tv:apple|MODEL:NIK70MEU4QLED@09-30=1952.07 || tv:apple|MODEL:NIK70MEU@09-29=2099 || tv:nikai|MODEL:NIK70MEU@09-07=1952"
+   },
+   {
+    "asin": "B07MW6YZNZ",
+    "keys": "tv:dansat|32|hd|led|60@09-30=393.96 || tv:dansat|MODEL:DTE24BF@08-18=379"
+   },
+   {
+    "asin": "B0FGDMJJHK",
+    "keys": "tv:google|MODEL:55Q6800H@10-03=1497.52 || tv:skyworth|MODEL:55Q6800H@09-21=1498.98"
+   },
+   {
+    "asin": "B0981Y5DMB",
+    "keys": "dishwasher:midea|NA|12@10-03=999 || dishwasher:midea|MODEL:WQP125201CW@10-01=999"
+   },
+   {
+    "asin": "B0GS65PCTJ",
+    "keys": "tv:google|MODEL:55X6600H@10-03=1749 || tv:skyworth|MODEL:55X6600H@09-07=1899"
+   }
+  ],
+  "stale_with_fresh_sibling": [
+   {
+    "stale_with_rival": "53",
+    "has_fresh_sibling_other_key": "4",
+    "no_asin": "1"
+   }
+  ],
+  "stale_sibling_examples": [
+   {
+    "asin": "B0H1MCWLLK",
+    "category": "tv",
+    "stale_key": "tcl|98|4k|mini_led|144",
+    "stale_seen": "09-04",
+    "fresh_key": "google|98|4k|mini_led|144",
+    "fresh_seen": "10-01",
+    "fresh_price": "7999"
+   },
+   {
+    "asin": "B0FJLGM4L7",
+    "category": "tv",
+    "stale_key": "skyworth|MODEL:65Q6820H",
+    "stale_seen": "08-16",
+    "fresh_key": "google|MODEL:65Q6820H",
+    "fresh_seen": "10-02",
+    "fresh_price": "1970"
+   },
+   {
+    "asin": "B0FGDMJJHK",
+    "category": "tv",
+    "stale_key": "skyworth|MODEL:55Q6800H",
+    "stale_seen": "09-21",
+    "fresh_key": "google|MODEL:55Q6800H",
+    "fresh_seen": "10-03",
+    "fresh_price": "1497.52"
+   },
+   {
+    "asin": "B0GS65PCTJ",
+    "category": "tv",
+    "stale_key": "skyworth|MODEL:55X6600H",
+    "stale_seen": "09-07",
+    "fresh_key": "google|MODEL:55X6600H",
+    "fresh_seen": "10-03",
+    "fresh_price": "1749"
+   }
+  ],
+  "stale_rival_storefront": [
+   {
+    "n": "53",
+    "has_storefront_row": "38",
+    "sf_write_fresh": "20",
+    "sf_attempted_7d": "38",
+    "sf_failed": "19",
+    "sf_dead": "0",
+    "sf_oos": "12",
+    "median_sf_attempt_age_h": 46
+   }
+  ],
+  "daily_obs_by_source": [
+   {
+    "store_id": 2,
+    "source_method": "amazon-search",
+    "d": "2026-09-25T21:00:00.000Z",
+    "n": "115",
+    "distinct_listings": "115",
+    "priced": "115"
+   },
+   {
+    "store_id": 2,
+    "source_method": "amazon-search",
+    "d": "2026-09-26T21:00:00.000Z",
+    "n": "612",
+    "distinct_listings": "610",
+    "priced": "612"
+   },
+   {
+    "store_id": 2,
+    "source_method": "amazon-search",
+    "d": "2026-09-27T21:00:00.000Z",
+    "n": "72",
+    "distinct_listings": "72",
+    "priced": "72"
+   },
+   {
+    "store_id": 2,
+    "source_method": "amazon-search",
+    "d": "2026-09-28T21:00:00.000Z",
+    "n": "600",
+    "distinct_listings": "596",
+    "priced": "600"
+   },
+   {
+    "store_id": 2,
+    "source_method": "amazon-search",
+    "d": "2026-09-29T21:00:00.000Z",
+    "n": "900",
+    "distinct_listings": "893",
+    "priced": "900"
+   },
+   {
+    "store_id": 2,
+    "source_method": "amazon-search",
+    "d": "2026-09-30T21:00:00.000Z",
+    "n": "378",
+    "distinct_listings": "378",
+    "priced": "378"
+   },
+   {
+    "store_id": 2,
+    "source_method": "amazon-search",
+    "d": "2026-10-01T21:00:00.000Z",
+    "n": "136",
+    "distinct_listings": "136",
+    "priced": "136"
+   },
+   {
+    "store_id": 2,
+    "source_method": "amazon-search",
+    "d": "2026-10-02T21:00:00.000Z",
+    "n": "71",
+    "distinct_listings": "71",
+    "priced": "71"
+   },
+   {
+    "store_id": 2,
+    "source_method": "scraper",
+    "d": "2026-09-25T21:00:00.000Z",
+    "n": "280",
+    "distinct_listings": "180",
+    "priced": "280"
+   },
+   {
+    "store_id": 2,
+    "source_method": "scraper",
+    "d": "2026-09-26T21:00:00.000Z",
+    "n": "445",
+    "distinct_listings": "265",
+    "priced": "445"
+   },
+   {
+    "store_id": 2,
+    "source_method": "scraper",
+    "d": "2026-09-27T21:00:00.000Z",
+    "n": "376",
+    "distinct_listings": "223",
+    "priced": "376"
+   },
+   {
+    "store_id": 2,
+    "source_method": "scraper",
+    "d": "2026-09-28T21:00:00.000Z",
+    "n": "522",
+    "distinct_listings": "266",
+    "priced": "522"
+   },
+   {
+    "store_id": 2,
+    "source_method": "scraper",
+    "d": "2026-09-29T21:00:00.000Z",
+    "n": "607",
+    "distinct_listings": "334",
+    "priced": "607"
+   },
+   {
+    "store_id": 2,
+    "source_method": "scraper",
+    "d": "2026-09-30T21:00:00.000Z",
+    "n": "709",
+    "distinct_listings": "584",
+    "priced": "674"
+   },
+   {
+    "store_id": 2,
+    "source_method": "scraper",
+    "d": "2026-10-01T21:00:00.000Z",
+    "n": "362",
+    "distinct_listings": "262",
+    "priced": "348"
+   },
+   {
+    "store_id": 2,
+    "source_method": "scraper",
+    "d": "2026-10-02T21:00:00.000Z",
+    "n": "191",
+    "distinct_listings": "191",
+    "priced": "184"
+   },
+   {
+    "store_id": 4,
+    "source_method": "scraper",
+    "d": "2026-09-25T21:00:00.000Z",
+    "n": "78",
+    "distinct_listings": "71",
+    "priced": "78"
+   },
+   {
+    "store_id": 4,
+    "source_method": "scraper",
+    "d": "2026-09-26T21:00:00.000Z",
+    "n": "316",
+    "distinct_listings": "300",
+    "priced": "316"
+   },
+   {
+    "store_id": 4,
+    "source_method": "scraper",
+    "d": "2026-09-27T21:00:00.000Z",
+    "n": "236",
+    "distinct_listings": "211",
+    "priced": "236"
+   },
+   {
+    "store_id": 4,
+    "source_method": "scraper",
+    "d": "2026-09-28T21:00:00.000Z",
+    "n": "250",
+    "distinct_listings": "241",
+    "priced": "250"
+   },
+   {
+    "store_id": 4,
+    "source_method": "scraper",
+    "d": "2026-09-29T21:00:00.000Z",
+    "n": "301",
+    "distinct_listings": "294",
+    "priced": "301"
+   },
+   {
+    "store_id": 4,
+    "source_method": "scraper",
+    "d": "2026-09-30T21:00:00.000Z",
+    "n": "422",
+    "distinct_listings": "380",
+    "priced": "422"
+   },
+   {
+    "store_id": 4,
+    "source_method": "scraper",
+    "d": "2026-10-01T21:00:00.000Z",
+    "n": "334",
+    "distinct_listings": "303",
+    "priced": "334"
+   },
+   {
+    "store_id": 4,
+    "source_method": "scraper",
+    "d": "2026-10-02T21:00:00.000Z",
+    "n": "145",
+    "distinct_listings": "104",
+    "priced": "145"
+   },
+   {
+    "store_id": 4,
+    "source_method": "unbxd_extra",
+    "d": "2026-09-26T21:00:00.000Z",
+    "n": "1200",
+    "distinct_listings": "1144",
+    "priced": "1200"
+   },
+   {
+    "store_id": 4,
+    "source_method": "unbxd_extra",
+    "d": "2026-09-27T21:00:00.000Z",
+    "n": "977",
+    "distinct_listings": "940",
+    "priced": "977"
+   },
+   {
+    "store_id": 4,
+    "source_method": "unbxd_extra",
+    "d": "2026-09-28T21:00:00.000Z",
+    "n": "600",
+    "distinct_listings": "580",
+    "priced": "600"
+   },
+   {
+    "store_id": 4,
+    "source_method": "unbxd_extra",
+    "d": "2026-09-29T21:00:00.000Z",
+    "n": "1200",
+    "distinct_listings": "1143",
+    "priced": "1200"
+   },
+   {
+    "store_id": 4,
+    "source_method": "unbxd_extra",
+    "d": "2026-09-30T21:00:00.000Z",
+    "n": "1111",
+    "distinct_listings": "1008",
+    "priced": "1111"
+   },
+   {
+    "store_id": 4,
+    "source_method": "unbxd_extra",
+    "d": "2026-10-01T21:00:00.000Z",
+    "n": "1200",
+    "distinct_listings": "1156",
+    "priced": "1200"
+   },
+   {
+    "store_id": 4,
+    "source_method": "unbxd_extra",
+    "d": "2026-10-02T21:00:00.000Z",
+    "n": "900",
+    "distinct_listings": "826",
+    "priced": "900"
+   },
+   {
+    "store_id": 5,
+    "source_method": "algolia",
+    "d": "2026-09-25T21:00:00.000Z",
+    "n": "300",
+    "distinct_listings": "300",
+    "priced": "300"
+   },
+   {
+    "store_id": 5,
+    "source_method": "algolia",
+    "d": "2026-09-26T21:00:00.000Z",
+    "n": "1200",
+    "distinct_listings": "305",
+    "priced": "1200"
+   },
+   {
+    "store_id": 5,
+    "source_method": "algolia",
+    "d": "2026-09-27T21:00:00.000Z",
+    "n": "1200",
+    "distinct_listings": "301",
+    "priced": "1200"
+   },
+   {
+    "store_id": 5,
+    "source_method": "algolia",
+    "d": "2026-09-28T21:00:00.000Z",
+    "n": "600",
+    "distinct_listings": "303",
+    "priced": "600"
+   },
+   {
+    "store_id": 5,
+    "source_method": "algolia",
+    "d": "2026-09-29T21:00:00.000Z",
+    "n": "1200",
+    "distinct_listings": "302",
+    "priced": "1200"
+   },
+   {
+    "store_id": 5,
+    "source_method": "algolia",
+    "d": "2026-09-30T21:00:00.000Z",
+    "n": "1500",
+    "distinct_listings": "301",
+    "priced": "1500"
+   },
+   {
+    "store_id": 5,
+    "source_method": "algolia",
+    "d": "2026-10-01T21:00:00.000Z",
+    "n": "1200",
+    "distinct_listings": "302",
+    "priced": "1200"
+   },
+   {
+    "store_id": 5,
+    "source_method": "algolia",
+    "d": "2026-10-02T21:00:00.000Z",
+    "n": "900",
+    "distinct_listings": "302",
+    "priced": "900"
+   },
+   {
+    "store_id": 5,
+    "source_method": "scraper",
+    "d": "2026-09-25T21:00:00.000Z",
+    "n": "3515",
+    "distinct_listings": "3515",
+    "priced": "3515"
+   },
+   {
+    "store_id": 5,
+    "source_method": "scraper",
+    "d": "2026-09-26T21:00:00.000Z",
+    "n": "14132",
+    "distinct_listings": "3587",
+    "priced": "14132"
+   },
+   {
+    "store_id": 5,
+    "source_method": "scraper",
+    "d": "2026-09-27T21:00:00.000Z",
+    "n": "14248",
+    "distinct_listings": "3589",
+    "priced": "14248"
+   },
+   {
+    "store_id": 5,
+    "source_method": "scraper",
+    "d": "2026-09-28T21:00:00.000Z",
+    "n": "7132",
+    "distinct_listings": "3578",
+    "priced": "7132"
+   },
+   {
+    "store_id": 5,
+    "source_method": "scraper",
+    "d": "2026-09-29T21:00:00.000Z",
+    "n": "10688",
+    "distinct_listings": "3579",
+    "priced": "10688"
+   },
+   {
+    "store_id": 5,
+    "source_method": "scraper",
+    "d": "2026-09-30T21:00:00.000Z",
+    "n": "14217",
+    "distinct_listings": "3556",
+    "priced": "14217"
+   },
+   {
+    "store_id": 5,
+    "source_method": "scraper",
+    "d": "2026-10-01T21:00:00.000Z",
+    "n": "14102",
+    "distinct_listings": "3528",
+    "priced": "14102"
+   },
+   {
+    "store_id": 5,
+    "source_method": "scraper",
+    "d": "2026-10-02T21:00:00.000Z",
+    "n": "7015",
+    "distinct_listings": "3509",
+    "priced": "7015"
+   }
+  ],
+  "extra_feed_vs_pdp_freshness": [
+   {
+    "store_id": 2,
+    "source_method": "amazon-search",
+    "n": "782",
+    "eligible": "414",
+    "median_age_h": 158
+   },
+   {
+    "store_id": 2,
+    "source_method": "scraper",
+    "n": "530",
+    "eligible": "406",
+    "median_age_h": 47
+   },
+   {
+    "store_id": 4,
+    "source_method": "scraper",
+    "n": "402",
+    "eligible": "232",
+    "median_age_h": 129
+   },
+   {
+    "store_id": 4,
+    "source_method": "unbxd_extra",
+    "n": "1820",
+    "eligible": "1325",
+    "median_age_h": 50
+   },
+   {
+    "store_id": 5,
+    "source_method": "algolia",
+    "n": "41",
+    "eligible": "21",
+    "median_age_h": 152
+   },
+   {
+    "store_id": 5,
+    "source_method": "scraper",
+    "n": "1557",
+    "eligible": "1114",
+    "median_age_h": 37
+   }
+  ],
+  "amz_in_stock_but_stale_sf": [
+   {
+    "in_stock_claim_stale": "3373",
+    "in_stock_total": "6615"
+   }
+  ],
+  "canonical_split_amz": [
+   {
+    "amz_canonicals": "1012",
+    "shared_with_ext_alm": "130",
+    "shared_but_split_product_row": "130"
+   }
+  ]
+ }
+}

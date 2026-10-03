@@ -1,0 +1,3295 @@
+{
+ "captured_at": "2026-10-03T14:17:48.260Z",
+ "results": {
+  "ps_summary": [
+   {
+    "store_id": 2,
+    "rows": "7429",
+    "products": "7203",
+    "priced": "7417",
+    "in_stock": "6615",
+    "out_of_stock": "136",
+    "avail_null": "0",
+    "scrape_failed": "1109",
+    "misses7": "332",
+    "eligible_168h": "3471",
+    "upd_24h": "311",
+    "upd_7d": "3531",
+    "chk_24h": "350",
+    "chk_48h": "788"
+   },
+   {
+    "store_id": 4,
+    "rows": "5667",
+    "products": "5347",
+    "priced": "5667",
+    "in_stock": "5667",
+    "out_of_stock": "0",
+    "avail_null": "0",
+    "scrape_failed": "1168",
+    "misses7": "117",
+    "eligible_168h": "4373",
+    "upd_24h": "1312",
+    "upd_7d": "4373",
+    "chk_24h": "299",
+    "chk_48h": "931"
+   },
+   {
+    "store_id": 5,
+    "rows": "1468",
+    "products": "1468",
+    "priced": "1468",
+    "in_stock": "1389",
+    "out_of_stock": "79",
+    "avail_null": "0",
+    "scrape_failed": "418",
+    "misses7": "0",
+    "eligible_168h": "304",
+    "upd_24h": "301",
+    "upd_7d": "312",
+    "chk_24h": "0",
+    "chk_48h": "0"
+   }
+  ],
+  "ps_updated_age": [
+   {
+    "store_id": 2,
+    "bucket": "a_le24h",
+    "n": "311"
+   },
+   {
+    "store_id": 2,
+    "bucket": "b_24_72h",
+    "n": "1224"
+   },
+   {
+    "store_id": 2,
+    "bucket": "c_3_7d",
+    "n": "1996"
+   },
+   {
+    "store_id": 2,
+    "bucket": "d_7_14d",
+    "n": "1201"
+   },
+   {
+    "store_id": 2,
+    "bucket": "e_14_30d",
+    "n": "992"
+   },
+   {
+    "store_id": 2,
+    "bucket": "f_gt30d",
+    "n": "1693"
+   },
+   {
+    "store_id": 2,
+    "bucket": "never",
+    "n": "12"
+   },
+   {
+    "store_id": 4,
+    "bucket": "a_le24h",
+    "n": "1312"
+   },
+   {
+    "store_id": 4,
+    "bucket": "b_24_72h",
+    "n": "1928"
+   },
+   {
+    "store_id": 4,
+    "bucket": "c_3_7d",
+    "n": "1133"
+   },
+   {
+    "store_id": 4,
+    "bucket": "d_7_14d",
+    "n": "427"
+   },
+   {
+    "store_id": 4,
+    "bucket": "e_14_30d",
+    "n": "274"
+   },
+   {
+    "store_id": 4,
+    "bucket": "f_gt30d",
+    "n": "593"
+   },
+   {
+    "store_id": 5,
+    "bucket": "a_le24h",
+    "n": "301"
+   },
+   {
+    "store_id": 5,
+    "bucket": "b_24_72h",
+    "n": "5"
+   },
+   {
+    "store_id": 5,
+    "bucket": "c_3_7d",
+    "n": "6"
+   },
+   {
+    "store_id": 5,
+    "bucket": "d_7_14d",
+    "n": "18"
+   },
+   {
+    "store_id": 5,
+    "bucket": "e_14_30d",
+    "n": "189"
+   },
+   {
+    "store_id": 5,
+    "bucket": "f_gt30d",
+    "n": "949"
+   }
+  ],
+  "ps_updated_pct": [
+   {
+    "store_id": 2,
+    "median_h": 200,
+    "p75_h": 578,
+    "p90_h": 1637,
+    "p95_h": 1637
+   },
+   {
+    "store_id": 4,
+    "median_h": 48,
+    "p75_h": 158,
+    "p90_h": 1002,
+    "p95_h": 1580
+   },
+   {
+    "store_id": 5,
+    "median_h": 1640,
+    "p75_h": 1640,
+    "p90_h": 1640,
+    "p95_h": 1640
+   }
+  ],
+  "ps_checked_pct": [
+   {
+    "store_id": 2,
+    "median_h": 290,
+    "p75_h": 380,
+    "p90_h": 445,
+    "p95_h": 469
+   },
+   {
+    "store_id": 4,
+    "median_h": 186,
+    "p75_h": 314,
+    "p90_h": 356,
+    "p95_h": 374
+   },
+   {
+    "store_id": 5,
+    "median_h": 1487,
+    "p75_h": 2335,
+    "p90_h": 2335,
+    "p95_h": 2335
+   }
+  ],
+  "amazon_asin": [
+   {
+    "rows": "7429",
+    "with_asin": "7332",
+    "no_asin": "97",
+    "distinct_asin": "6743",
+    "distinct_products": "7203",
+    "asin_multi_rows": "421",
+    "asin_multi_products": "366",
+    "product_multi_asins": "12",
+    "surplus_rows": "589"
+   }
+  ],
+  "amazon_no_asin_sample": [
+   {
+    "product_url": "https://www.amazon.sa/-/en/sspa/click?ie=UTF8&spc=MTo1ODU3NDE0Nzg4OTM1MTY0OjE3ODg3OTU3OTM6c3BfYnRmOjMwMDE0MDg0NTU0NTIzMjo6MDo6&url=%2FConditioners-Timer-Quiet-Conditioning-Office%2Fdp%2FB0CRD86LHC%2Fref%3Dsr_1_58_sspa%3Fdib%3DeyJ2IjoiMSJ9.nouV-P7rjZbOXqqjiGk6oAUmsIrE-cLp7mhVU2GFO_Fy0JJM6j4z7BUq_VNWjgKEjKdSa4AlRnQfUPWFo8YqyIXKLZPEGn4xvaTP1ITKKOJO6HT84AdK6V_HV56PqyFvS2ZxR4JmA9IO0I_0uv__1fUC7ysGJD8wXyOeY92X-f_rjjHi4d1uIM51ZXwBv10iwp32qwp5yYlvp6e8UdsBR-JJjaTFhRP9QWQ1f25FmltSoEkZxIhL-O3R8eYKMVPAgEA6SwHNaxpc5JHAB8kLhp6ErQ7kNm4bIEZ47R4Iiws.Xdct_jZpnyH1EIqZEti9mYmt8MtUOxcBWUNNSlgBwxQ%26dib_tag%3Dse%26keywords%3Dair%2Bconditioner%2B24000%2Bbtu%26qid%3D1788795793%26sr%3D8-58-spons%26aref%3DZco9LAYPME%26sp_csd%3Dd2lkZ2V0TmFtZT1zcF9idGY%26psc%3D1&aref=Zco9LAYPME&sp_cr=ZAZ"
+   },
+   {
+    "product_url": "https://www.amazon.sa/-/en/sspa/click?ie=UTF8&spc=MTo1ODU3NDE0Nzg4OTM1MTY0OjE3ODg3OTU3OTM6c3BfbXRmOjMwMDc0NzU5ODY3MTgzMjo6MDo6&url=%2FPortable-Conditioner-Cooling-Rechargeable-Long-Lasting%2Fdp%2FB0D7M4PYTJ%2Fref%3Dsr_1_24_sspa%3Fdib%3DeyJ2IjoiMSJ9.nouV-P7rjZbOXqqjiGk6oAUmsIrE-cLp7mhVU2GFO_Fy0JJM6j4z7BUq_VNWjgKEjKdSa4AlRnQfUPWFo8YqyIXKLZPEGn4xvaTP1ITKKOJO6HT84AdK6V_HV56PqyFvS2ZxR4JmA9IO0I_0uv__1fUC7ysGJD8wXyOeY92X-f_rjjHi4d1uIM51ZXwBv10iwp32qwp5yYlvp6e8UdsBR-JJjaTFhRP9QWQ1f25FmltSoEkZxIhL-O3R8eYKMVPAgEA6SwHNaxpc5JHAB8kLhp6ErQ7kNm4bIEZ47R4Iiws.Xdct_jZpnyH1EIqZEti9mYmt8MtUOxcBWUNNSlgBwxQ%26dib_tag%3Dse%26keywords%3Dair%2Bconditioner%2B24000%2Bbtu%26qid%3D1788795793%26sr%3D8-24-spons%26aref%3DS4mC2hz6rs%26sp_csd%3Dd2lkZ2V0TmFtZT1zcF9tdGY%26psc%3D1&aref=S4mC2hz6rs&sp_cr=ZAZ"
+   },
+   {
+    "product_url": "https://www.amazon.sa/-/en/sspa/click?ie=UTF8&spc=MTo3NTQyMjg1ODEwMTEyMjcwOjE3ODg3OTU3ODI6c3BfYnRmOjMwMTAzNjk3NzM2MzczMjo6MDo6&url=%2FLabymos-Portable-Conditioner-Cool-Cooling%2Fdp%2FB0D78LXQTP%2Fref%3Dsr_1_107_sspa%3Fdib%3DeyJ2IjoiMSJ9.fcg-meAuc7myVEF5dovGfffBjTu2FqTZcuhhmhbBcb2DEn6JTBsztFsF3knd_TjTGWvzQ0-y2DUFZqnN078NTi9SB5j_A9gNoLHCW0srLQsEOO3KQCghiubb9ldDnWh_eBgh04tHCt-8j_070bn4VL-976BexwV0yBgzywKQG0gYkwu5K3EM8obP2Wp0JcQzwlobySo2En6z14dADdetqp0HgL82R1V1Us_SyAaQw3KDQ0mWaLyTLo_741u0vzZu_65Xsp4_UYwhatIiBQMNsEyPUvVl2g-AAW7k47EoKfI.jSb3QMLH-ljjBp5Dz_YMmjGQk8HJR0pzfPMsI5PNkT0%26dib_tag%3Dse%26keywords%3D%25D9%2585%25D9%2583%25D9%258A%25D9%2581%26qid%3D1788795782%26sr%3D8-107-spons%26aref%3DdPmNCkV2PI%26sp_csd%3Dd2lkZ2V0TmFtZT1zcF9idGY%26psc%3D1&aref=dPmNCkV2PI&sp_cr=ZAZ"
+   },
+   {
+    "product_url": "https://www.amazon.sa/-/en/sspa/click?ie=UTF8&spc=MTo3MDk5MDIwNDgyNTMyNzkwOjE3OTAxNDM3MDk6c3BfYXRmOjMwMTM0MzQ5MjM4NTYzMjo6MDo6&url=%2F14-Places-Dishwasher-Inverter-ThinQ%2Fdp%2FB0DMSTTRYR%2Fref%3Dsr_1_3_sspa%3Fdib%3DeyJ2IjoiMSJ9.NZWRTSKqHbwoysQZZ6BQhl5HCkaKW0SaRwbao3-MSH8qTYkX9z0hwWBS8W8IGlH4yBCUKm1Pb8xZSABAfHaUX3h3i-BAovGRkfZVqWvcz5aplV8XDDdhcV-BQMQ3fr-ytYDHZo7UI-HXPd4hiC7_xXKk7k8uUaX1RIt2xtd67c4N77Ctn2P-mTaC4lfEJunIKuyz1NgrLaeQCloDuqj3l8FsI_qoVwcH75F1J1WRBhJ7clbWNYj6ZHdVDR0cXFcoi2csjHS_Pk8QAcv5uUr_DZ9JozVYub5mhRM2I-6UuKs.dzLCovBtGMLLGjeHbjoEI40HWm-j8Ulw_01kOKKTNBI%26dib_tag%3Dse%26keywords%3Ddishwasher%26qid%3D1790143709%26sr%3D8-3-spons%26aref%3Dxzitgkrpi1%26sp_csd%3Dd2lkZ2V0TmFtZT1zcF9hdGY%26psc%3D1&aref=xzitgkrpi1&sp_cr=ZAZ"
+   },
+   {
+    "product_url": "https://www.amazon.sa/-/en/sspa/click?ie=UTF8&spc=MToxOTIwNTcwMDQwNjI5NDQ2OjE3ODk1ODIxMDI6c3BfbXRmOjMwMTI5MTM0NjU3OTgzMjo6MDo6&url=%2FStar-vision-Portable-Conditioner-Diagnostic%2Fdp%2FB0H2SLSCXZ%2Fref%3Dsr_1_21_sspa%3Fdib%3DeyJ2IjoiMSJ9.fOYvyMOasRnxmWh6g_X6zsICscWizZN_91peMN8uRT6rBvlgJ81S3KDdlwe3-ZWrVjuORtCXpICfm0Jw48u1tAQv9W9M54Uyw4kAfEpaOl5xsRn9ZYMOE52GfSxt_Sf5Qowm6MLDXlG6ihchkZdgtAeQ5hecbBSaeW-3Hu0HpYSBGEwD0I5NvYG5LBdqt3gnzAPCSM52-DAaX2-suUupgRlh7u58cDVQjDeogS0F4ZqjxWh7EqGWz80A4tWkuGxDFu3Z12Voj7Rjirbx060oss-QeH4_k9mC6Zi_5pOsq6M.oYlmNf0NwoEGjT1I6Q2nRUoVP18PJ0cIK_7Q3A5UBKA%26dib_tag%3Dse%26keywords%3D%25D9%2585%25D9%2583%25D9%258A%25D9%2581%26qid%3D1789582102%26sr%3D8-21-spons%26aref%3DOAq1KaQiW5%26sp_csd%3Dd2lkZ2V0TmFtZT1zcF9tdGY%26psc%3D1&aref=OAq1KaQiW5&sp_cr=ZAZ"
+   },
+   {
+    "product_url": "https://www.amazon.sa/-/en/sspa/click?ie=UTF8&spc=MToxOTIwNTcwMDQwNjI5NDQ2OjE3ODk1ODIxMDI6c3BfYnRmOjMwMDE0MjQzNTI1MjQzMjo6MDo6&url=%2FConditioner-Personal-Cooling-adjustable-Portable%2Fdp%2FB0CR6SCXCN%2Fref%3Dsr_1_58_sspa%3Fdib%3DeyJ2IjoiMSJ9.fOYvyMOasRnxmWh6g_X6zsICscWizZN_91peMN8uRT6rBvlgJ81S3KDdlwe3-ZWrVjuORtCXpICfm0Jw48u1tAQv9W9M54Uyw4kAfEpaOl5xsRn9ZYMOE52GfSxt_Sf5Qowm6MLDXlG6ihchkZdgtAeQ5hecbBSaeW-3Hu0HpYSBGEwD0I5NvYG5LBdqt3gnzAPCSM52-DAaX2-suUupgRlh7u58cDVQjDeogS0F4ZqjxWh7EqGWz80A4tWkuGxDFu3Z12Voj7Rjirbx060oss-QeH4_k9mC6Zi_5pOsq6M.oYlmNf0NwoEGjT1I6Q2nRUoVP18PJ0cIK_7Q3A5UBKA%26dib_tag%3Dse%26keywords%3D%25D9%2585%25D9%2583%25D9%258A%25D9%2581%26qid%3D1789582102%26sr%3D8-58-spons%26aref%3DRm2793yOH0%26sp_csd%3Dd2lkZ2V0TmFtZT1zcF9idGY%26psc%3D1&aref=Rm2793yOH0&sp_cr=ZAZ"
+   },
+   {
+    "product_url": "https://www.amazon.sa/-/en/sspa/click?ie=UTF8&spc=MToxOTIwNTcwMDQwNjI5NDQ2OjE3ODk1ODIxMDI6c3BfYnRmOjMwMTE5MjgyMzg2NTEzMjo6MDo6&url=%2FImpex-Cooling-Display-Compressor-IM24S3MCSA%2Fdp%2FB0F99WFK31%2Fref%3Dsr_1_59_sspa%3Fdib%3DeyJ2IjoiMSJ9.fOYvyMOasRnxmWh6g_X6zsICscWizZN_91peMN8uRT6rBvlgJ81S3KDdlwe3-ZWrVjuORtCXpICfm0Jw48u1tAQv9W9M54Uyw4kAfEpaOl5xsRn9ZYMOE52GfSxt_Sf5Qowm6MLDXlG6ihchkZdgtAeQ5hecbBSaeW-3Hu0HpYSBGEwD0I5NvYG5LBdqt3gnzAPCSM52-DAaX2-suUupgRlh7u58cDVQjDeogS0F4ZqjxWh7EqGWz80A4tWkuGxDFu3Z12Voj7Rjirbx060oss-QeH4_k9mC6Zi_5pOsq6M.oYlmNf0NwoEGjT1I6Q2nRUoVP18PJ0cIK_7Q3A5UBKA%26dib_tag%3Dse%26keywords%3D%25D9%2585%25D9%2583%25D9%258A%25D9%2581%26qid%3D1789582102%26sr%3D8-59-spons%26aref%3DzJEENLKnYy%26sp_csd%3Dd2lkZ2V0TmFtZT1zcF9idGY%26psc%3D1&aref=zJEENLKnYy&sp_cr=ZAZ"
+   },
+   {
+    "product_url": "https://www.amazon.sa/-/en/sspa/click?ie=UTF8&spc=MToxOTIwNTcwMDQwNjI5NDQ2OjE3ODk1ODIxMDI6c3BfYnRmOjMwMDE0MjQzNTI1MzQzMjo6MDo6&url=%2FPortable-Air-Conditioners-Conditioner-Room%2Fdp%2FB0CR6RRBD5%2Fref%3Dsr_1_60_sspa%3Fdib%3DeyJ2IjoiMSJ9.fOYvyMOasRnxmWh6g_X6zsICscWizZN_91peMN8uRT6rBvlgJ81S3KDdlwe3-ZWrVjuORtCXpICfm0Jw48u1tAQv9W9M54Uyw4kAfEpaOl5xsRn9ZYMOE52GfSxt_Sf5Qowm6MLDXlG6ihchkZdgtAeQ5hecbBSaeW-3Hu0HpYSBGEwD0I5NvYG5LBdqt3gnzAPCSM52-DAaX2-suUupgRlh7u58cDVQjDeogS0F4ZqjxWh7EqGWz80A4tWkuGxDFu3Z12Voj7Rjirbx060oss-QeH4_k9mC6Zi_5pOsq6M.oYlmNf0NwoEGjT1I6Q2nRUoVP18PJ0cIK_7Q3A5UBKA%26dib_tag%3Dse%26keywords%3D%25D9%2585%25D9%2583%25D9%258A%25D9%2581%26qid%3D1789582102%26sr%3D8-60-spons%26aref%3DzjnM8DxNHy%26sp_csd%3Dd2lkZ2V0TmFtZT1zcF9idGY%26psc%3D1&aref=zjnM8DxNHy&sp_cr=ZAZ"
+   }
+  ],
+  "products_fields": [
+   {
+    "store_id": 2,
+    "products": "7203",
+    "with_canonical": "1269",
+    "with_model": "2240",
+    "with_sku": "2240",
+    "with_brand": "3108",
+    "with_image": "1828",
+    "active": "6805"
+   },
+   {
+    "store_id": 4,
+    "products": "5347",
+    "with_canonical": "2147",
+    "with_model": "56",
+    "with_sku": "56",
+    "with_brand": "5347",
+    "with_image": "506",
+    "active": "5347"
+   },
+   {
+    "store_id": 5,
+    "products": "1468",
+    "with_canonical": "1270",
+    "with_model": "0",
+    "with_sku": "0",
+    "with_brand": "1468",
+    "with_image": "640",
+    "active": "1468"
+   }
+  ],
+  "products_category": [
+   {
+    "store_id": 2,
+    "category": "laptop",
+    "n": "1299"
+   },
+   {
+    "store_id": 2,
+    "category": "accessories",
+    "n": "1067"
+   },
+   {
+    "store_id": 2,
+    "category": "kitchen",
+    "n": "897"
+   },
+   {
+    "store_id": 2,
+    "category": "appliance",
+    "n": "750"
+   },
+   {
+    "store_id": 2,
+    "category": "tablet",
+    "n": "503"
+   },
+   {
+    "store_id": 2,
+    "category": "tv",
+    "n": "473"
+   },
+   {
+    "store_id": 2,
+    "category": "air_conditioner",
+    "n": "353"
+   },
+   {
+    "store_id": 2,
+    "category": "monitor",
+    "n": "306"
+   },
+   {
+    "store_id": 2,
+    "category": "audio",
+    "n": "302"
+   },
+   {
+    "store_id": 2,
+    "category": "smartphone",
+    "n": "286"
+   },
+   {
+    "store_id": 2,
+    "category": "smartwatch",
+    "n": "264"
+   },
+   {
+    "store_id": 2,
+    "category": "personal_care",
+    "n": "180"
+   },
+   {
+    "store_id": 2,
+    "category": "gaming",
+    "n": "129"
+   },
+   {
+    "store_id": 2,
+    "category": "camera",
+    "n": "122"
+   },
+   {
+    "store_id": 2,
+    "category": "networking",
+    "n": "109"
+   },
+   {
+    "store_id": 2,
+    "category": "printer",
+    "n": "85"
+   },
+   {
+    "store_id": 2,
+    "category": "smart_home",
+    "n": "68"
+   },
+   {
+    "store_id": 2,
+    "category": "wearable",
+    "n": "10"
+   },
+   {
+    "store_id": 4,
+    "category": "accessories",
+    "n": "2571"
+   },
+   {
+    "store_id": 4,
+    "category": "appliance",
+    "n": "885"
+   },
+   {
+    "store_id": 4,
+    "category": "air_conditioner",
+    "n": "621"
+   },
+   {
+    "store_id": 4,
+    "category": "smartphone",
+    "n": "294"
+   },
+   {
+    "store_id": 4,
+    "category": "laptop",
+    "n": "244"
+   },
+   {
+    "store_id": 4,
+    "category": "smartwatch",
+    "n": "169"
+   },
+   {
+    "store_id": 4,
+    "category": "tv",
+    "n": "150"
+   },
+   {
+    "store_id": 4,
+    "category": "monitor",
+    "n": "144"
+   },
+   {
+    "store_id": 4,
+    "category": "tablet",
+    "n": "143"
+   },
+   {
+    "store_id": 4,
+    "category": "kitchen",
+    "n": "102"
+   },
+   {
+    "store_id": 4,
+    "category": "audio",
+    "n": "17"
+   },
+   {
+    "store_id": 4,
+    "category": "gaming",
+    "n": "4"
+   },
+   {
+    "store_id": 4,
+    "category": "camera",
+    "n": "2"
+   },
+   {
+    "store_id": 4,
+    "category": "printer",
+    "n": "1"
+   },
+   {
+    "store_id": 5,
+    "category": "accessories",
+    "n": "801"
+   },
+   {
+    "store_id": 5,
+    "category": "audio",
+    "n": "230"
+   },
+   {
+    "store_id": 5,
+    "category": "air_conditioner",
+    "n": "164"
+   },
+   {
+    "store_id": 5,
+    "category": "smartphone",
+    "n": "134"
+   },
+   {
+    "store_id": 5,
+    "category": "smartwatch",
+    "n": "66"
+   },
+   {
+    "store_id": 5,
+    "category": "tv",
+    "n": "25"
+   },
+   {
+    "store_id": 5,
+    "category": "monitor",
+    "n": "17"
+   },
+   {
+    "store_id": 5,
+    "category": "laptop",
+    "n": "15"
+   },
+   {
+    "store_id": 5,
+    "category": "tablet",
+    "n": "15"
+   },
+   {
+    "store_id": 5,
+    "category": "camera",
+    "n": "1"
+   }
+  ],
+  "products_brand_top": [
+   {
+    "store_id": 2,
+    "brand": "Unknown",
+    "n": "4095"
+   },
+   {
+    "store_id": 2,
+    "brand": "Samsung",
+    "n": "374"
+   },
+   {
+    "store_id": 2,
+    "brand": "Apple",
+    "n": "262"
+   },
+   {
+    "store_id": 2,
+    "brand": "Lenovo",
+    "n": "210"
+   },
+   {
+    "store_id": 2,
+    "brand": "Google",
+    "n": "175"
+   },
+   {
+    "store_id": 2,
+    "brand": "HP",
+    "n": "163"
+   },
+   {
+    "store_id": 2,
+    "brand": "LG",
+    "n": "132"
+   },
+   {
+    "store_id": 2,
+    "brand": "ASUS",
+    "n": "108"
+   },
+   {
+    "store_id": 2,
+    "brand": "Dell",
+    "n": "97"
+   },
+   {
+    "store_id": 2,
+    "brand": "Xiaomi",
+    "n": "86"
+   },
+   {
+    "store_id": 2,
+    "brand": "Nikai",
+    "n": "76"
+   },
+   {
+    "store_id": 2,
+    "brand": "HONOR",
+    "n": "61"
+   },
+   {
+    "store_id": 4,
+    "brand": "سامسونج",
+    "n": "546"
+   },
+   {
+    "store_id": 4,
+    "brand": "أبل",
+    "n": "425"
+   },
+   {
+    "store_id": 4,
+    "brand": "ال جي",
+    "n": "292"
+   },
+   {
+    "store_id": 4,
+    "brand": "ميديا",
+    "n": "172"
+   },
+   {
+    "store_id": 4,
+    "brand": "كلاس برو",
+    "n": "165"
+   },
+   {
+    "store_id": 4,
+    "brand": "شاومي",
+    "n": "161"
+   },
+   {
+    "store_id": 4,
+    "brand": "هايسينس",
+    "n": "143"
+   },
+   {
+    "store_id": 4,
+    "brand": "هواوي",
+    "n": "141"
+   },
+   {
+    "store_id": 4,
+    "brand": "هاير",
+    "n": "127"
+   },
+   {
+    "store_id": 4,
+    "brand": "تي سي ال",
+    "n": "123"
+   },
+   {
+    "store_id": 4,
+    "brand": "هيتاشي",
+    "n": "118"
+   },
+   {
+    "store_id": 4,
+    "brand": "بانزر غلاس",
+    "n": "116"
+   },
+   {
+    "store_id": 5,
+    "brand": "سامسونج",
+    "n": "120"
+   },
+   {
+    "store_id": 5,
+    "brand": "ابل",
+    "n": "110"
+   },
+   {
+    "store_id": 5,
+    "brand": "أنكر",
+    "n": "74"
+   },
+   {
+    "store_id": 5,
+    "brand": "أوكي",
+    "n": "74"
+   },
+   {
+    "store_id": 5,
+    "brand": "زوندا",
+    "n": "73"
+   },
+   {
+    "store_id": 5,
+    "brand": "هونر",
+    "n": "61"
+   },
+   {
+    "store_id": 5,
+    "brand": "جي بي ال",
+    "n": "58"
+   },
+   {
+    "store_id": 5,
+    "brand": "ريتشي",
+    "n": "55"
+   },
+   {
+    "store_id": 5,
+    "brand": "إل جي",
+    "n": "46"
+   },
+   {
+    "store_id": 5,
+    "brand": "قوي",
+    "n": "43"
+   },
+   {
+    "store_id": 5,
+    "brand": "هواوي",
+    "n": "40"
+   },
+   {
+    "store_id": 5,
+    "brand": "شاومي",
+    "n": "39"
+   }
+  ],
+  "raw_obs": [
+   {
+    "store_id": 2,
+    "total": "81535",
+    "last7d": "6376",
+    "last30d": "33847",
+    "with_price": "52309",
+    "with_price_7d": "2884",
+    "distinct_ext_id": "0",
+    "distinct_ext_30d": "0",
+    "distinct_ext_7d": "0",
+    "first_seen": "2026-07-05T17:08:21.071Z",
+    "last_seen": "2026-10-03T14:10:37.308Z"
+   },
+   {
+    "store_id": 4,
+    "total": "159923",
+    "last7d": "9270",
+    "last30d": "48353",
+    "with_price": "120090",
+    "with_price_7d": "7188",
+    "distinct_ext_id": "0",
+    "distinct_ext_30d": "0",
+    "distinct_ext_7d": "0",
+    "first_seen": "2026-06-12T07:28:03.113Z",
+    "last_seen": "2026-10-03T14:02:53.900Z"
+   },
+   {
+    "store_id": 5,
+    "total": "1786070",
+    "last7d": "93149",
+    "last30d": "421252",
+    "with_price": "123080",
+    "with_price_7d": "8100",
+    "distinct_ext_id": "0",
+    "distinct_ext_30d": "0",
+    "distinct_ext_7d": "0",
+    "first_seen": "2026-06-11T12:01:55.019Z",
+    "last_seen": "2026-10-03T12:00:08.521Z"
+   }
+  ],
+  "raw_obs_status": [
+   {
+    "store_id": 2,
+    "processing_status": "pending",
+    "n": "81496"
+   },
+   {
+    "store_id": 2,
+    "processing_status": "done",
+    "n": "39"
+   },
+   {
+    "store_id": 4,
+    "processing_status": "pending",
+    "n": "159845"
+   },
+   {
+    "store_id": 4,
+    "processing_status": "done",
+    "n": "78"
+   },
+   {
+    "store_id": 5,
+    "processing_status": "pending",
+    "n": "1785992"
+   },
+   {
+    "store_id": 5,
+    "processing_status": "done",
+    "n": "78"
+   }
+  ],
+  "raw_obs_method": [
+   {
+    "store_id": 2,
+    "source_method": "amazon-search",
+    "n": "52309",
+    "n7d": "2884"
+   },
+   {
+    "store_id": 2,
+    "source_method": "scraper",
+    "n": "29226",
+    "n7d": "3492"
+   },
+   {
+    "store_id": 4,
+    "source_method": "unbxd_extra",
+    "n": "120090",
+    "n7d": "7188"
+   },
+   {
+    "store_id": 4,
+    "source_method": "scraper",
+    "n": "39833",
+    "n7d": "2082"
+   },
+   {
+    "store_id": 5,
+    "source_method": "scraper",
+    "n": "1662990",
+    "n7d": "85049"
+   },
+   {
+    "store_id": 5,
+    "source_method": "algolia",
+    "n": "123080",
+    "n7d": "8100"
+   }
+  ],
+  "tco_summary": [
+   {
+    "store_id": 2,
+    "offers": "1653",
+    "valid": "1312",
+    "valid_priced": "1285",
+    "valid_fresh168": "835",
+    "valid_fresh24": "146",
+    "valid_fresh7d": "861",
+    "with_model_key": "373",
+    "distinct_keys": "1647",
+    "valid_oos": "0"
+   },
+   {
+    "store_id": 4,
+    "offers": "2615",
+    "valid": "2222",
+    "valid_priced": "2222",
+    "valid_fresh168": "1557",
+    "valid_fresh24": "491",
+    "valid_fresh7d": "1557",
+    "with_model_key": "1151",
+    "distinct_keys": "2611",
+    "valid_oos": "0"
+   },
+   {
+    "store_id": 5,
+    "offers": "1852",
+    "valid": "1598",
+    "valid_priced": "1598",
+    "valid_fresh168": "1165",
+    "valid_fresh24": "0",
+    "valid_fresh7d": "1165",
+    "with_model_key": "798",
+    "distinct_keys": "1850",
+    "valid_oos": "0"
+   }
+  ],
+  "tco_status": [
+   {
+    "store_id": 2,
+    "status": "valid",
+    "n": "1312"
+   },
+   {
+    "store_id": 2,
+    "status": "low_confidence_candidate",
+    "n": "341"
+   },
+   {
+    "store_id": 4,
+    "status": "valid",
+    "n": "2222"
+   },
+   {
+    "store_id": 4,
+    "status": "low_confidence_candidate",
+    "n": "381"
+   },
+   {
+    "store_id": 4,
+    "status": "invalid",
+    "n": "12"
+   },
+   {
+    "store_id": 5,
+    "status": "valid",
+    "n": "1598"
+   },
+   {
+    "store_id": 5,
+    "status": "low_confidence_candidate",
+    "n": "202"
+   },
+   {
+    "store_id": 5,
+    "status": "invalid",
+    "n": "52"
+   }
+  ],
+  "tco_age": [
+   {
+    "store_id": 2,
+    "bucket": "a_le24h",
+    "n": "146"
+   },
+   {
+    "store_id": 2,
+    "bucket": "b_24_72h",
+    "n": "331"
+   },
+   {
+    "store_id": 2,
+    "bucket": "c_3_7d",
+    "n": "384"
+   },
+   {
+    "store_id": 2,
+    "bucket": "d_7_14d",
+    "n": "166"
+   },
+   {
+    "store_id": 2,
+    "bucket": "e_14_30d",
+    "n": "163"
+   },
+   {
+    "store_id": 2,
+    "bucket": "f_gt30d",
+    "n": "122"
+   },
+   {
+    "store_id": 4,
+    "bucket": "a_le24h",
+    "n": "491"
+   },
+   {
+    "store_id": 4,
+    "bucket": "b_24_72h",
+    "n": "595"
+   },
+   {
+    "store_id": 4,
+    "bucket": "c_3_7d",
+    "n": "471"
+   },
+   {
+    "store_id": 4,
+    "bucket": "d_7_14d",
+    "n": "186"
+   },
+   {
+    "store_id": 4,
+    "bucket": "e_14_30d",
+    "n": "147"
+   },
+   {
+    "store_id": 4,
+    "bucket": "f_gt30d",
+    "n": "332"
+   },
+   {
+    "store_id": 5,
+    "bucket": "b_24_72h",
+    "n": "1128"
+   },
+   {
+    "store_id": 5,
+    "bucket": "c_3_7d",
+    "n": "37"
+   },
+   {
+    "store_id": 5,
+    "bucket": "d_7_14d",
+    "n": "51"
+   },
+   {
+    "store_id": 5,
+    "bucket": "e_14_30d",
+    "n": "73"
+   },
+   {
+    "store_id": 5,
+    "bucket": "f_gt30d",
+    "n": "309"
+   }
+  ],
+  "tco_pct": [
+   {
+    "store_id": 2,
+    "median_h": 98,
+    "p75_h": 284,
+    "p90_h": 698,
+    "p95_h": 908
+   },
+   {
+    "store_id": 4,
+    "median_h": 92,
+    "p75_h": 194,
+    "p90_h": 788,
+    "p95_h": 932
+   },
+   {
+    "store_id": 5,
+    "median_h": 37,
+    "p75_h": 252,
+    "p90_h": 1035,
+    "p95_h": 1035
+   }
+  ],
+  "tco_confidence": [
+   {
+    "store_id": 2,
+    "confidence": 100,
+    "n": "1097"
+   },
+   {
+    "store_id": 2,
+    "confidence": 77,
+    "n": "43"
+   },
+   {
+    "store_id": 2,
+    "confidence": 55,
+    "n": "31"
+   },
+   {
+    "store_id": 2,
+    "confidence": 82,
+    "n": "30"
+   },
+   {
+    "store_id": 2,
+    "confidence": 95,
+    "n": "29"
+   },
+   {
+    "store_id": 2,
+    "confidence": 90,
+    "n": "19"
+   },
+   {
+    "store_id": 2,
+    "confidence": 54,
+    "n": "18"
+   },
+   {
+    "store_id": 2,
+    "confidence": 85,
+    "n": "15"
+   },
+   {
+    "store_id": 2,
+    "confidence": 51,
+    "n": "12"
+   },
+   {
+    "store_id": 2,
+    "confidence": 71,
+    "n": "9"
+   },
+   {
+    "store_id": 2,
+    "confidence": 33,
+    "n": "3"
+   },
+   {
+    "store_id": 2,
+    "confidence": 60,
+    "n": "2"
+   },
+   {
+    "store_id": 2,
+    "confidence": 87,
+    "n": "1"
+   },
+   {
+    "store_id": 2,
+    "confidence": 63,
+    "n": "1"
+   },
+   {
+    "store_id": 2,
+    "confidence": 17,
+    "n": "1"
+   },
+   {
+    "store_id": 2,
+    "confidence": 26,
+    "n": "1"
+   },
+   {
+    "store_id": 4,
+    "confidence": 100,
+    "n": "1517"
+   },
+   {
+    "store_id": 4,
+    "confidence": 95,
+    "n": "443"
+   },
+   {
+    "store_id": 4,
+    "confidence": 90,
+    "n": "84"
+   },
+   {
+    "store_id": 4,
+    "confidence": 77,
+    "n": "34"
+   },
+   {
+    "store_id": 4,
+    "confidence": 71,
+    "n": "34"
+   },
+   {
+    "store_id": 4,
+    "confidence": 55,
+    "n": "30"
+   },
+   {
+    "store_id": 4,
+    "confidence": 87,
+    "n": "22"
+   },
+   {
+    "store_id": 4,
+    "confidence": 82,
+    "n": "19"
+   },
+   {
+    "store_id": 4,
+    "confidence": 26,
+    "n": "11"
+   },
+   {
+    "store_id": 4,
+    "confidence": 85,
+    "n": "9"
+   },
+   {
+    "store_id": 4,
+    "confidence": 54,
+    "n": "7"
+   },
+   {
+    "store_id": 4,
+    "confidence": 51,
+    "n": "6"
+   },
+   {
+    "store_id": 4,
+    "confidence": 33,
+    "n": "2"
+   },
+   {
+    "store_id": 4,
+    "confidence": 17,
+    "n": "2"
+   },
+   {
+    "store_id": 4,
+    "confidence": 64,
+    "n": "2"
+   },
+   {
+    "store_id": 5,
+    "confidence": 100,
+    "n": "1247"
+   },
+   {
+    "store_id": 5,
+    "confidence": 95,
+    "n": "201"
+   },
+   {
+    "store_id": 5,
+    "confidence": 63,
+    "n": "40"
+   },
+   {
+    "store_id": 5,
+    "confidence": 55,
+    "n": "37"
+   },
+   {
+    "store_id": 5,
+    "confidence": 90,
+    "n": "23"
+   },
+   {
+    "store_id": 5,
+    "confidence": 54,
+    "n": "12"
+   },
+   {
+    "store_id": 5,
+    "confidence": 82,
+    "n": "11"
+   },
+   {
+    "store_id": 5,
+    "confidence": 87,
+    "n": "9"
+   },
+   {
+    "store_id": 5,
+    "confidence": 85,
+    "n": "5"
+   },
+   {
+    "store_id": 5,
+    "confidence": 26,
+    "n": "5"
+   },
+   {
+    "store_id": 5,
+    "confidence": 71,
+    "n": "2"
+   },
+   {
+    "store_id": 5,
+    "confidence": 64,
+    "n": "2"
+   },
+   {
+    "store_id": 5,
+    "confidence": 60,
+    "n": "2"
+   },
+   {
+    "store_id": 5,
+    "confidence": 41,
+    "n": "1"
+   },
+   {
+    "store_id": 5,
+    "confidence": 20,
+    "n": "1"
+   }
+  ],
+  "tco_payload_keys": [
+   {
+    "store_id": 2,
+    "k": "_image",
+    "n": "1286"
+   },
+   {
+    "store_id": 2,
+    "k": "brand",
+    "n": "1242"
+   },
+   {
+    "store_id": 2,
+    "k": "_availability",
+    "n": "1055"
+   },
+   {
+    "store_id": 2,
+    "k": "color",
+    "n": "815"
+   },
+   {
+    "store_id": 2,
+    "k": "screen_size",
+    "n": "434"
+   },
+   {
+    "store_id": 2,
+    "k": "_original_price",
+    "n": "396"
+   },
+   {
+    "store_id": 2,
+    "k": "ram",
+    "n": "362"
+   },
+   {
+    "store_id": 2,
+    "k": "storage",
+    "n": "362"
+   },
+   {
+    "store_id": 2,
+    "k": "family",
+    "n": "360"
+   },
+   {
+    "store_id": 2,
+    "k": "type",
+    "n": "331"
+   },
+   {
+    "store_id": 2,
+    "k": "panel",
+    "n": "320"
+   },
+   {
+    "store_id": 2,
+    "k": "refresh_rate",
+    "n": "320"
+   },
+   {
+    "store_id": 2,
+    "k": "resolution",
+    "n": "320"
+   },
+   {
+    "store_id": 2,
+    "k": "capacity",
+    "n": "280"
+   },
+   {
+    "store_id": 2,
+    "k": "os_edition",
+    "n": "248"
+   },
+   {
+    "store_id": 2,
+    "k": "gpu",
+    "n": "248"
+   },
+   {
+    "store_id": 2,
+    "k": "cpu",
+    "n": "248"
+   },
+   {
+    "store_id": 2,
+    "k": "gpu_discrete",
+    "n": "248"
+   },
+   {
+    "store_id": 2,
+    "k": "screen",
+    "n": "248"
+   },
+   {
+    "store_id": 2,
+    "k": "line",
+    "n": "231"
+   },
+   {
+    "store_id": 2,
+    "k": "inverter",
+    "n": "226"
+   },
+   {
+    "store_id": 2,
+    "k": "smart",
+    "n": "203"
+   },
+   {
+    "store_id": 2,
+    "k": "series",
+    "n": "203"
+   },
+   {
+    "store_id": 2,
+    "k": "connectivity",
+    "n": "158"
+   },
+   {
+    "store_id": 2,
+    "k": "curved",
+    "n": "117"
+   },
+   {
+    "store_id": 2,
+    "k": "ultrawide",
+    "n": "117"
+   },
+   {
+    "store_id": 2,
+    "k": "bundle",
+    "n": "114"
+   },
+   {
+    "store_id": 2,
+    "k": "gen",
+    "n": "114"
+   },
+   {
+    "store_id": 2,
+    "k": "year",
+    "n": "114"
+   },
+   {
+    "store_id": 2,
+    "k": "generation",
+    "n": "112"
+   },
+   {
+    "store_id": 2,
+    "k": "variant",
+    "n": "112"
+   },
+   {
+    "store_id": 2,
+    "k": "digital",
+    "n": "96"
+   },
+   {
+    "store_id": 2,
+    "k": "model",
+    "n": "91"
+   },
+   {
+    "store_id": 2,
+    "k": "capacity_liters",
+    "n": "79"
+   },
+   {
+    "store_id": 2,
+    "k": "fridge_type",
+    "n": "79"
+   },
+   {
+    "store_id": 2,
+    "k": "no_frost",
+    "n": "79"
+   },
+   {
+    "store_id": 2,
+    "k": "window",
+    "n": "76"
+   },
+   {
+    "store_id": 2,
+    "k": "dual_zone",
+    "n": "76"
+   },
+   {
+    "store_id": 2,
+    "k": "network",
+    "n": "68"
+   },
+   {
+    "store_id": 2,
+    "k": "storage_gb",
+    "n": "68"
+   },
+   {
+    "store_id": 2,
+    "k": "ram_gb",
+    "n": "68"
+   },
+   {
+    "store_id": 2,
+    "k": "washer_type",
+    "n": "66"
+   },
+   {
+    "store_id": 2,
+    "k": "has_dryer",
+    "n": "66"
+   },
+   {
+    "store_id": 2,
+    "k": "capacity_kg",
+    "n": "66"
+   },
+   {
+    "store_id": 2,
+    "k": "grill",
+    "n": "66"
+   },
+   {
+    "store_id": 2,
+    "k": "convection",
+    "n": "56"
+   },
+   {
+    "store_id": 2,
+    "k": "is_dryer_only",
+    "n": "55"
+   },
+   {
+    "store_id": 2,
+    "k": "touchscreen",
+    "n": "46"
+   },
+   {
+    "store_id": 2,
+    "k": "grinder",
+    "n": "46"
+   },
+   {
+    "store_id": 2,
+    "k": "milk_frother",
+    "n": "46"
+   },
+   {
+    "store_id": 2,
+    "k": "size_mm",
+    "n": "44"
+   },
+   {
+    "store_id": 2,
+    "k": "aquastop",
+    "n": "37"
+   },
+   {
+    "store_id": 2,
+    "k": "third_rack",
+    "n": "37"
+   },
+   {
+    "store_id": 2,
+    "k": "cordless",
+    "n": "36"
+   },
+   {
+    "store_id": 2,
+    "k": "hepa",
+    "n": "35"
+   },
+   {
+    "store_id": 2,
+    "k": "bagless",
+    "n": "35"
+   },
+   {
+    "store_id": 2,
+    "k": "wifi",
+    "n": "35"
+   },
+   {
+    "store_id": 2,
+    "k": "mop",
+    "n": "35"
+   },
+   {
+    "store_id": 2,
+    "k": "multifunction",
+    "n": "26"
+   },
+   {
+    "store_id": 2,
+    "k": "tech",
+    "n": "26"
+   },
+   {
+    "store_id": 2,
+    "k": "full_safety",
+    "n": "22"
+   },
+   {
+    "store_id": 2,
+    "k": "fan",
+    "n": "22"
+   },
+   {
+    "store_id": 2,
+    "k": "self_ignition",
+    "n": "22"
+   },
+   {
+    "store_id": 2,
+    "k": "ceramic",
+    "n": "22"
+   },
+   {
+    "store_id": 2,
+    "k": "air_fry",
+    "n": "22"
+   },
+   {
+    "store_id": 2,
+    "k": "config",
+    "n": "14"
+   },
+   {
+    "store_id": 2,
+    "k": "gas",
+    "n": "12"
+   },
+   {
+    "store_id": 2,
+    "k": "steam",
+    "n": "12"
+   },
+   {
+    "store_id": 2,
+    "k": "self_clean",
+    "n": "12"
+   },
+   {
+    "store_id": 2,
+    "k": "temperature_control",
+    "n": "6"
+   },
+   {
+    "store_id": 2,
+    "k": "glass",
+    "n": "6"
+   },
+   {
+    "store_id": 2,
+    "k": "keep_warm",
+    "n": "6"
+   },
+   {
+    "store_id": 2,
+    "k": "series_or_platform",
+    "n": "2"
+   },
+   {
+    "store_id": 2,
+    "k": "capacity_btu",
+    "n": "2"
+   },
+   {
+    "store_id": 2,
+    "k": "technology",
+    "n": "2"
+   },
+   {
+    "store_id": 2,
+    "k": "compressor_type",
+    "n": "2"
+   },
+   {
+    "store_id": 2,
+    "k": "ac_type",
+    "n": "2"
+   },
+   {
+    "store_id": 2,
+    "k": "cooling_mode",
+    "n": "2"
+   },
+   {
+    "store_id": 2,
+    "k": "defrost",
+    "n": "1"
+   },
+   {
+    "store_id": 2,
+    "k": "ice_crush",
+    "n": "1"
+   },
+   {
+    "store_id": 4,
+    "k": "brand",
+    "n": "1833"
+   },
+   {
+    "store_id": 4,
+    "k": "color",
+    "n": "1386"
+   },
+   {
+    "store_id": 4,
+    "k": "screen_size",
+    "n": "874"
+   },
+   {
+    "store_id": 4,
+    "k": "family",
+    "n": "607"
+   },
+   {
+    "store_id": 4,
+    "k": "ram",
+    "n": "536"
+   },
+   {
+    "store_id": 4,
+    "k": "storage",
+    "n": "536"
+   },
+   {
+    "store_id": 4,
+    "k": "panel",
+    "n": "501"
+   },
+   {
+    "store_id": 4,
+    "k": "refresh_rate",
+    "n": "501"
+   },
+   {
+    "store_id": 4,
+    "k": "resolution",
+    "n": "501"
+   },
+   {
+    "store_id": 4,
+    "k": "line",
+    "n": "488"
+   },
+   {
+    "store_id": 4,
+    "k": "connectivity",
+    "n": "471"
+   },
+   {
+    "store_id": 4,
+    "k": "generation",
+    "n": "444"
+   },
+   {
+    "store_id": 4,
+    "k": "variant",
+    "n": "444"
+   },
+   {
+    "store_id": 4,
+    "k": "_image",
+    "n": "402"
+   },
+   {
+    "store_id": 4,
+    "k": "inverter",
+    "n": "400"
+   },
+   {
+    "store_id": 4,
+    "k": "type",
+    "n": "395"
+   },
+   {
+    "store_id": 4,
+    "k": "capacity",
+    "n": "392"
+   },
+   {
+    "store_id": 4,
+    "k": "smart",
+    "n": "386"
+   },
+   {
+    "store_id": 4,
+    "k": "series",
+    "n": "386"
+   },
+   {
+    "store_id": 4,
+    "k": "_availability",
+    "n": "374"
+   },
+   {
+    "store_id": 4,
+    "k": "gen",
+    "n": "373"
+   },
+   {
+    "store_id": 4,
+    "k": "year",
+    "n": "373"
+   },
+   {
+    "store_id": 4,
+    "k": "bundle",
+    "n": "373"
+   },
+   {
+    "store_id": 4,
+    "k": "_source_name_en",
+    "n": "372"
+   },
+   {
+    "store_id": 4,
+    "k": "_source_name_ar",
+    "n": "372"
+   },
+   {
+    "store_id": 4,
+    "k": "_manufacturer_model",
+    "n": "372"
+   },
+   {
+    "store_id": 4,
+    "k": "network",
+    "n": "346"
+   },
+   {
+    "store_id": 4,
+    "k": "ram_gb",
+    "n": "346"
+   },
+   {
+    "store_id": 4,
+    "k": "storage_gb",
+    "n": "346"
+   },
+   {
+    "store_id": 4,
+    "k": "cordless",
+    "n": "264"
+   },
+   {
+    "store_id": 4,
+    "k": "hepa",
+    "n": "263"
+   },
+   {
+    "store_id": 4,
+    "k": "mop",
+    "n": "263"
+   },
+   {
+    "store_id": 4,
+    "k": "wifi",
+    "n": "263"
+   },
+   {
+    "store_id": 4,
+    "k": "bagless",
+    "n": "263"
+   },
+   {
+    "store_id": 4,
+    "k": "capacity_kg",
+    "n": "192"
+   },
+   {
+    "store_id": 4,
+    "k": "has_dryer",
+    "n": "192"
+   },
+   {
+    "store_id": 4,
+    "k": "washer_type",
+    "n": "192"
+   },
+   {
+    "store_id": 4,
+    "k": "is_dryer_only",
+    "n": "177"
+   },
+   {
+    "store_id": 4,
+    "k": "gpu_discrete",
+    "n": "163"
+   },
+   {
+    "store_id": 4,
+    "k": "os_edition",
+    "n": "163"
+   },
+   {
+    "store_id": 4,
+    "k": "gpu",
+    "n": "163"
+   },
+   {
+    "store_id": 4,
+    "k": "screen",
+    "n": "163"
+   },
+   {
+    "store_id": 4,
+    "k": "cpu",
+    "n": "163"
+   },
+   {
+    "store_id": 4,
+    "k": "curved",
+    "n": "115"
+   },
+   {
+    "store_id": 4,
+    "k": "ultrawide",
+    "n": "115"
+   },
+   {
+    "store_id": 4,
+    "k": "capacity_liters",
+    "n": "111"
+   },
+   {
+    "store_id": 4,
+    "k": "no_frost",
+    "n": "111"
+   },
+   {
+    "store_id": 4,
+    "k": "fridge_type",
+    "n": "111"
+   },
+   {
+    "store_id": 4,
+    "k": "size_mm",
+    "n": "98"
+   },
+   {
+    "store_id": 4,
+    "k": "aquastop",
+    "n": "94"
+   },
+   {
+    "store_id": 4,
+    "k": "third_rack",
+    "n": "94"
+   },
+   {
+    "store_id": 4,
+    "k": "digital",
+    "n": "24"
+   },
+   {
+    "store_id": 4,
+    "k": "compressor_type",
+    "n": "23"
+   },
+   {
+    "store_id": 4,
+    "k": "cooling_mode",
+    "n": "23"
+   },
+   {
+    "store_id": 4,
+    "k": "technology",
+    "n": "23"
+   },
+   {
+    "store_id": 4,
+    "k": "ac_type",
+    "n": "23"
+   },
+   {
+    "store_id": 4,
+    "k": "series_or_platform",
+    "n": "23"
+   },
+   {
+    "store_id": 4,
+    "k": "capacity_btu",
+    "n": "23"
+   },
+   {
+    "store_id": 4,
+    "k": "glass",
+    "n": "8"
+   },
+   {
+    "store_id": 4,
+    "k": "convection",
+    "n": "8"
+   },
+   {
+    "store_id": 4,
+    "k": "keep_warm",
+    "n": "8"
+   },
+   {
+    "store_id": 4,
+    "k": "milk_frother",
+    "n": "8"
+   },
+   {
+    "store_id": 4,
+    "k": "grinder",
+    "n": "8"
+   },
+   {
+    "store_id": 4,
+    "k": "temperature_control",
+    "n": "8"
+   },
+   {
+    "store_id": 4,
+    "k": "touchscreen",
+    "n": "8"
+   },
+   {
+    "store_id": 4,
+    "k": "_original_price",
+    "n": "7"
+   },
+   {
+    "store_id": 4,
+    "k": "window",
+    "n": "5"
+   },
+   {
+    "store_id": 4,
+    "k": "steam",
+    "n": "5"
+   },
+   {
+    "store_id": 4,
+    "k": "self_clean",
+    "n": "5"
+   },
+   {
+    "store_id": 4,
+    "k": "gas",
+    "n": "5"
+   },
+   {
+    "store_id": 4,
+    "k": "defrost",
+    "n": "5"
+   },
+   {
+    "store_id": 4,
+    "k": "dual_zone",
+    "n": "5"
+   },
+   {
+    "store_id": 4,
+    "k": "grill",
+    "n": "3"
+   },
+   {
+    "store_id": 4,
+    "k": "model",
+    "n": "3"
+   },
+   {
+    "store_id": 4,
+    "k": "ice_crush",
+    "n": "1"
+   },
+   {
+    "store_id": 5,
+    "k": "_image",
+    "n": "1557"
+   },
+   {
+    "store_id": 5,
+    "k": "brand",
+    "n": "1453"
+   },
+   {
+    "store_id": 5,
+    "k": "_availability",
+    "n": "1219"
+   },
+   {
+    "store_id": 5,
+    "k": "_original_price",
+    "n": "1100"
+   },
+   {
+    "store_id": 5,
+    "k": "type",
+    "n": "865"
+   },
+   {
+    "store_id": 5,
+    "k": "capacity",
+    "n": "653"
+   },
+   {
+    "store_id": 5,
+    "k": "color",
+    "n": "634"
+   },
+   {
+    "store_id": 5,
+    "k": "inverter",
+    "n": "340"
+   },
+   {
+    "store_id": 5,
+    "k": "digital",
+    "n": "317"
+   },
+   {
+    "store_id": 5,
+    "k": "cordless",
+    "n": "261"
+   },
+   {
+    "store_id": 5,
+    "k": "screen_size",
+    "n": "227"
+   },
+   {
+    "store_id": 5,
+    "k": "model",
+    "n": "222"
+   },
+   {
+    "store_id": 5,
+    "k": "family",
+    "n": "220"
+   },
+   {
+    "store_id": 5,
+    "k": "_source_name_en",
+    "n": "192"
+   },
+   {
+    "store_id": 5,
+    "k": "_source_name_ar",
+    "n": "192"
+   },
+   {
+    "store_id": 5,
+    "k": "_manufacturer_model",
+    "n": "192"
+   },
+   {
+    "store_id": 5,
+    "k": "panel",
+    "n": "162"
+   },
+   {
+    "store_id": 5,
+    "k": "refresh_rate",
+    "n": "162"
+   },
+   {
+    "store_id": 5,
+    "k": "resolution",
+    "n": "162"
+   },
+   {
+    "store_id": 5,
+    "k": "hepa",
+    "n": "151"
+   },
+   {
+    "store_id": 5,
+    "k": "wifi",
+    "n": "151"
+   },
+   {
+    "store_id": 5,
+    "k": "variant",
+    "n": "147"
+   },
+   {
+    "store_id": 5,
+    "k": "generation",
+    "n": "145"
+   },
+   {
+    "store_id": 5,
+    "k": "mop",
+    "n": "145"
+   },
+   {
+    "store_id": 5,
+    "k": "bagless",
+    "n": "145"
+   },
+   {
+    "store_id": 5,
+    "k": "storage",
+    "n": "138"
+   },
+   {
+    "store_id": 5,
+    "k": "ram",
+    "n": "138"
+   },
+   {
+    "store_id": 5,
+    "k": "has_dryer",
+    "n": "132"
+   },
+   {
+    "store_id": 5,
+    "k": "capacity_kg",
+    "n": "132"
+   },
+   {
+    "store_id": 5,
+    "k": "washer_type",
+    "n": "132"
+   },
+   {
+    "store_id": 5,
+    "k": "smart",
+    "n": "126"
+   },
+   {
+    "store_id": 5,
+    "k": "series",
+    "n": "126"
+   },
+   {
+    "store_id": 5,
+    "k": "storage_gb",
+    "n": "122"
+   },
+   {
+    "store_id": 5,
+    "k": "ram_gb",
+    "n": "122"
+   },
+   {
+    "store_id": 5,
+    "k": "network",
+    "n": "122"
+   },
+   {
+    "store_id": 5,
+    "k": "capacity_liters",
+    "n": "121"
+   },
+   {
+    "store_id": 5,
+    "k": "no_frost",
+    "n": "121"
+   },
+   {
+    "store_id": 5,
+    "k": "fridge_type",
+    "n": "121"
+   },
+   {
+    "store_id": 5,
+    "k": "is_dryer_only",
+    "n": "119"
+   },
+   {
+    "store_id": 5,
+    "k": "ice_crush",
+    "n": "116"
+   },
+   {
+    "store_id": 5,
+    "k": "line",
+    "n": "101"
+   },
+   {
+    "store_id": 5,
+    "k": "window",
+    "n": "89"
+   },
+   {
+    "store_id": 5,
+    "k": "dual_zone",
+    "n": "89"
+   },
+   {
+    "store_id": 5,
+    "k": "connectivity",
+    "n": "88"
+   },
+   {
+    "store_id": 5,
+    "k": "milk_frother",
+    "n": "81"
+   },
+   {
+    "store_id": 5,
+    "k": "grinder",
+    "n": "81"
+   },
+   {
+    "store_id": 5,
+    "k": "touchscreen",
+    "n": "81"
+   },
+   {
+    "store_id": 5,
+    "k": "convection",
+    "n": "80"
+   },
+   {
+    "store_id": 5,
+    "k": "cpu",
+    "n": "73"
+   },
+   {
+    "store_id": 5,
+    "k": "os_edition",
+    "n": "73"
+   },
+   {
+    "store_id": 5,
+    "k": "screen",
+    "n": "73"
+   },
+   {
+    "store_id": 5,
+    "k": "gpu_discrete",
+    "n": "73"
+   },
+   {
+    "store_id": 5,
+    "k": "gpu",
+    "n": "73"
+   },
+   {
+    "store_id": 5,
+    "k": "gen",
+    "n": "65"
+   },
+   {
+    "store_id": 5,
+    "k": "bundle",
+    "n": "65"
+   },
+   {
+    "store_id": 5,
+    "k": "year",
+    "n": "65"
+   },
+   {
+    "store_id": 5,
+    "k": "grill",
+    "n": "54"
+   },
+   {
+    "store_id": 5,
+    "k": "third_rack",
+    "n": "50"
+   },
+   {
+    "store_id": 5,
+    "k": "glass",
+    "n": "50"
+   },
+   {
+    "store_id": 5,
+    "k": "keep_warm",
+    "n": "50"
+   },
+   {
+    "store_id": 5,
+    "k": "temperature_control",
+    "n": "50"
+   },
+   {
+    "store_id": 5,
+    "k": "aquastop",
+    "n": "50"
+   },
+   {
+    "store_id": 5,
+    "k": "self_clean",
+    "n": "43"
+   },
+   {
+    "store_id": 5,
+    "k": "gas",
+    "n": "43"
+   },
+   {
+    "store_id": 5,
+    "k": "steam",
+    "n": "43"
+   },
+   {
+    "store_id": 5,
+    "k": "curved",
+    "n": "36"
+   },
+   {
+    "store_id": 5,
+    "k": "ultrawide",
+    "n": "36"
+   },
+   {
+    "store_id": 5,
+    "k": "size_mm",
+    "n": "23"
+   },
+   {
+    "store_id": 5,
+    "k": "defrost",
+    "n": "19"
+   },
+   {
+    "store_id": 5,
+    "k": "full_safety",
+    "n": "17"
+   },
+   {
+    "store_id": 5,
+    "k": "fan",
+    "n": "17"
+   },
+   {
+    "store_id": 5,
+    "k": "air_fry",
+    "n": "17"
+   },
+   {
+    "store_id": 5,
+    "k": "ceramic",
+    "n": "17"
+   },
+   {
+    "store_id": 5,
+    "k": "self_ignition",
+    "n": "17"
+   },
+   {
+    "store_id": 5,
+    "k": "capacity_btu",
+    "n": "12"
+   },
+   {
+    "store_id": 5,
+    "k": "ac_type",
+    "n": "12"
+   },
+   {
+    "store_id": 5,
+    "k": "technology",
+    "n": "12"
+   },
+   {
+    "store_id": 5,
+    "k": "cooling_mode",
+    "n": "12"
+   },
+   {
+    "store_id": 5,
+    "k": "series_or_platform",
+    "n": "12"
+   },
+   {
+    "store_id": 5,
+    "k": "compressor_type",
+    "n": "12"
+   },
+   {
+    "store_id": 5,
+    "k": "tech",
+    "n": "10"
+   },
+   {
+    "store_id": 5,
+    "k": "multifunction",
+    "n": "10"
+   },
+   {
+    "store_id": 5,
+    "k": "ionizer",
+    "n": "6"
+   },
+   {
+    "store_id": 5,
+    "k": "uv",
+    "n": "6"
+   },
+   {
+    "store_id": 5,
+    "k": "_superseded_by_identity",
+    "n": "1"
+   }
+  ],
+  "tco_category": [
+   {
+    "store_id": 2,
+    "category": "laptop",
+    "n": "314",
+    "valid": "248"
+   },
+   {
+    "store_id": 2,
+    "category": "air_conditioner",
+    "n": "277",
+    "valid": "2"
+   },
+   {
+    "store_id": 2,
+    "category": "tv",
+    "n": "203",
+    "valid": "203"
+   },
+   {
+    "store_id": 2,
+    "category": "monitor",
+    "n": "117",
+    "valid": "117"
+   },
+   {
+    "store_id": 2,
+    "category": "tablet",
+    "n": "114",
+    "valid": "114"
+   },
+   {
+    "store_id": 2,
+    "category": "refrigerator",
+    "n": "79",
+    "valid": "79"
+   },
+   {
+    "store_id": 2,
+    "category": "air_fryer",
+    "n": "76",
+    "valid": "76"
+   },
+   {
+    "store_id": 2,
+    "category": "mobile",
+    "n": "68",
+    "valid": "68"
+   },
+   {
+    "store_id": 2,
+    "category": "washing_machine",
+    "n": "66",
+    "valid": "66"
+   },
+   {
+    "store_id": 2,
+    "category": "audio",
+    "n": "51",
+    "valid": "51"
+   },
+   {
+    "store_id": 2,
+    "category": "coffee_maker",
+    "n": "46",
+    "valid": "46"
+   },
+   {
+    "store_id": 2,
+    "category": "microwave",
+    "n": "44",
+    "valid": "44"
+   },
+   {
+    "store_id": 2,
+    "category": "smartwatch",
+    "n": "44",
+    "valid": "44"
+   },
+   {
+    "store_id": 2,
+    "category": "dishwasher",
+    "n": "37",
+    "valid": "37"
+   },
+   {
+    "store_id": 2,
+    "category": "vacuum",
+    "n": "35",
+    "valid": "35"
+   },
+   {
+    "store_id": 2,
+    "category": "printer",
+    "n": "26",
+    "valid": "26"
+   },
+   {
+    "store_id": 2,
+    "category": "cooker",
+    "n": "22",
+    "valid": "22"
+   },
+   {
+    "store_id": 2,
+    "category": "camera",
+    "n": "14",
+    "valid": "14"
+   },
+   {
+    "store_id": 2,
+    "category": "oven",
+    "n": "12",
+    "valid": "12"
+   },
+   {
+    "store_id": 2,
+    "category": "kettle",
+    "n": "6",
+    "valid": "6"
+   },
+   {
+    "store_id": 2,
+    "category": "toaster",
+    "n": "1",
+    "valid": "1"
+   },
+   {
+    "store_id": 2,
+    "category": "blender",
+    "n": "1",
+    "valid": "1"
+   },
+   {
+    "store_id": 4,
+    "category": "tv",
+    "n": "390",
+    "valid": "386"
+   },
+   {
+    "store_id": 4,
+    "category": "tablet",
+    "n": "373",
+    "valid": "373"
+   },
+   {
+    "store_id": 4,
+    "category": "air_conditioner",
+    "n": "372",
+    "valid": "23"
+   },
+   {
+    "store_id": 4,
+    "category": "mobile",
+    "n": "350",
+    "valid": "346"
+   },
+   {
+    "store_id": 4,
+    "category": "vacuum",
+    "n": "263",
+    "valid": "263"
+   },
+   {
+    "store_id": 4,
+    "category": "laptop",
+    "n": "196",
+    "valid": "163"
+   },
+   {
+    "store_id": 4,
+    "category": "washing_machine",
+    "n": "193",
+    "valid": "192"
+   },
+   {
+    "store_id": 4,
+    "category": "monitor",
+    "n": "116",
+    "valid": "115"
+   },
+   {
+    "store_id": 4,
+    "category": "refrigerator",
+    "n": "112",
+    "valid": "111"
+   },
+   {
+    "store_id": 4,
+    "category": "smartwatch",
+    "n": "98",
+    "valid": "98"
+   },
+   {
+    "store_id": 4,
+    "category": "dishwasher",
+    "n": "94",
+    "valid": "94"
+   },
+   {
+    "store_id": 4,
+    "category": "accessories",
+    "n": "20",
+    "valid": "20"
+   },
+   {
+    "store_id": 4,
+    "category": "coffee_maker",
+    "n": "8",
+    "valid": "8"
+   },
+   {
+    "store_id": 4,
+    "category": "kettle",
+    "n": "8",
+    "valid": "8"
+   },
+   {
+    "store_id": 4,
+    "category": "oven",
+    "n": "5",
+    "valid": "5"
+   },
+   {
+    "store_id": 4,
+    "category": "air_fryer",
+    "n": "5",
+    "valid": "5"
+   },
+   {
+    "store_id": 4,
+    "category": "toaster",
+    "n": "5",
+    "valid": "5"
+   },
+   {
+    "store_id": 4,
+    "category": "audio",
+    "n": "3",
+    "valid": "3"
+   },
+   {
+    "store_id": 4,
+    "category": "microwave",
+    "n": "3",
+    "valid": "3"
+   },
+   {
+    "store_id": 4,
+    "category": "blender",
+    "n": "1",
+    "valid": "1"
+   },
+   {
+    "store_id": 5,
+    "category": "audio",
+    "n": "225",
+    "valid": "212"
+   },
+   {
+    "store_id": 5,
+    "category": "air_conditioner",
+    "n": "222",
+    "valid": "12"
+   },
+   {
+    "store_id": 5,
+    "category": "vacuum",
+    "n": "146",
+    "valid": "145"
+   },
+   {
+    "store_id": 5,
+    "category": "mobile",
+    "n": "145",
+    "valid": "122"
+   },
+   {
+    "store_id": 5,
+    "category": "washing_machine",
+    "n": "132",
+    "valid": "132"
+   },
+   {
+    "store_id": 5,
+    "category": "tv",
+    "n": "126",
+    "valid": "126"
+   },
+   {
+    "store_id": 5,
+    "category": "refrigerator",
+    "n": "121",
+    "valid": "121"
+   },
+   {
+    "store_id": 5,
+    "category": "blender",
+    "n": "116",
+    "valid": "116"
+   },
+   {
+    "store_id": 5,
+    "category": "air_fryer",
+    "n": "89",
+    "valid": "89"
+   },
+   {
+    "store_id": 5,
+    "category": "coffee_maker",
+    "n": "81",
+    "valid": "81"
+   },
+   {
+    "store_id": 5,
+    "category": "laptop",
+    "n": "73",
+    "valid": "73"
+   },
+   {
+    "store_id": 5,
+    "category": "tablet",
+    "n": "65",
+    "valid": "65"
+   },
+   {
+    "store_id": 5,
+    "category": "kettle",
+    "n": "50",
+    "valid": "50"
+   },
+   {
+    "store_id": 5,
+    "category": "dishwasher",
+    "n": "50",
+    "valid": "50"
+   },
+   {
+    "store_id": 5,
+    "category": "oven",
+    "n": "43",
+    "valid": "43"
+   },
+   {
+    "store_id": 5,
+    "category": "microwave",
+    "n": "37",
+    "valid": "37"
+   },
+   {
+    "store_id": 5,
+    "category": "monitor",
+    "n": "37",
+    "valid": "36"
+   },
+   {
+    "store_id": 5,
+    "category": "smartwatch",
+    "n": "27",
+    "valid": "23"
+   },
+   {
+    "store_id": 5,
+    "category": "toaster",
+    "n": "19",
+    "valid": "19"
+   },
+   {
+    "store_id": 5,
+    "category": "cooker",
+    "n": "17",
+    "valid": "17"
+   },
+   {
+    "store_id": 5,
+    "category": "accessories",
+    "n": "11",
+    "valid": "11"
+   },
+   {
+    "store_id": 5,
+    "category": "printer",
+    "n": "10",
+    "valid": "10"
+   },
+   {
+    "store_id": 5,
+    "category": "air_purifier",
+    "n": "6",
+    "valid": "6"
+   },
+   {
+    "store_id": 5,
+    "category": "tracker",
+    "n": "4",
+    "valid": "2"
+   }
+  ],
+  "comparison_layer": [
+   {
+    "multi_store_keys": "1389",
+    "amz_keys": "1312",
+    "amz_multi": "431",
+    "amz_with_ext_or_alm": "275",
+    "ext_keys": "2222",
+    "ext_multi": "931",
+    "alm_keys": "1598",
+    "alm_multi": "587",
+    "ext_alm_overlap": "360"
+   }
+  ],
+  "comparison_fresh": [
+   {
+    "amz_keys_with_eligible_rival": "289",
+    "amz_both_eligible": "222",
+    "amz_lost_to_ineligibility": "67",
+    "ext_keys_with_rival": "641",
+    "ext_both_eligible": "537",
+    "alm_keys_with_rival": "490",
+    "alm_both_eligible": "408"
+   }
+  ],
+  "ineligible_reasons": [
+   {
+    "store_id": 2,
+    "reason": "eligible",
+    "n": "233",
+    "median_age_h": 31
+   },
+   {
+    "store_id": 2,
+    "reason": "stale",
+    "n": "56",
+    "median_age_h": 627
+   },
+   {
+    "store_id": 4,
+    "reason": "eligible",
+    "n": "537",
+    "median_age_h": 32
+   },
+   {
+    "store_id": 4,
+    "reason": "stale",
+    "n": "104",
+    "median_age_h": 396
+   },
+   {
+    "store_id": 5,
+    "reason": "eligible",
+    "n": "408",
+    "median_age_h": 37
+   },
+   {
+    "store_id": 5,
+    "reason": "stale",
+    "n": "85",
+    "median_age_h": 890
+   }
+  ],
+  "projection": [
+   {
+    "total": "9405",
+    "with_comparison": "1725",
+    "cheapest_amazon": "679",
+    "cheapest_extra": "1552",
+    "cheapest_almanea": "944",
+    "affiliate_best_amazon": "0",
+    "fresh168": "4274",
+    "algolia_synced": "9376"
+   }
+  ],
+  "projection_cheapest": [
+   {
+    "cheapest_store": null,
+    "n": "4846",
+    "hc": "404"
+   },
+   {
+    "cheapest_store": "اكسترا",
+    "n": "1552",
+    "hc": "564"
+   },
+   {
+    "cheapest_store": "المنيع",
+    "n": "944",
+    "hc": "247"
+   },
+   {
+    "cheapest_store": "أمازون",
+    "n": "679",
+    "hc": "204"
+   },
+   {
+    "cheapest_store": "سامسونج السعودية",
+    "n": "400",
+    "hc": "42"
+   },
+   {
+    "cheapest_store": "نجم الأجهزة",
+    "n": "369",
+    "hc": "70"
+   },
+   {
+    "cheapest_store": "متجر النخيل",
+    "n": "335",
+    "hc": "53"
+   },
+   {
+    "cheapest_store": "نون",
+    "n": "117",
+    "hc": "63"
+   },
+   {
+    "cheapest_store": "شاكر",
+    "n": "83",
+    "hc": "42"
+   },
+   {
+    "cheapest_store": "لولو هايبر ماركت",
+    "n": "36",
+    "hc": "13"
+   },
+   {
+    "cheapest_store": "الصندوق الأسود",
+    "n": "28",
+    "hc": "18"
+   },
+   {
+    "cheapest_store": "جرير",
+    "n": "16",
+    "hc": "5"
+   }
+  ],
+  "clicks": [
+   {
+    "store_name": "اكسترا",
+    "total_30d": "56",
+    "with_interaction": "0",
+    "test": "0",
+    "tags": "0",
+    "dest_has_asin": "0",
+    "tag_ok": "0"
+   },
+   {
+    "store_name": "أمازون",
+    "total_30d": "54",
+    "with_interaction": "0",
+    "test": "0",
+    "tags": "1",
+    "dest_has_asin": "54",
+    "tag_ok": "54"
+   },
+   {
+    "store_name": "المنيع",
+    "total_30d": "8",
+    "with_interaction": "0",
+    "test": "0",
+    "tags": "0",
+    "dest_has_asin": "0",
+    "tag_ok": "0"
+   }
+  ],
+  "runs_30d": [
+   {
+    "store_name": "almanea",
+    "job_type": "price_update",
+    "status": "partial",
+    "n": "1",
+    "avg_s": "536",
+    "updated": "82",
+    "errors": "218"
+   },
+   {
+    "store_name": "amazon",
+    "job_type": "discovery",
+    "status": "failed",
+    "n": "5",
+    "avg_s": "361",
+    "updated": "0",
+    "errors": "5"
+   },
+   {
+    "store_name": "amazon",
+    "job_type": "discovery",
+    "status": "partial",
+    "n": "34",
+    "avg_s": "106",
+    "updated": "5253",
+    "errors": "79"
+   },
+   {
+    "store_name": "amazon",
+    "job_type": "discovery",
+    "status": "success",
+    "n": "16",
+    "avg_s": "80",
+    "updated": "1949",
+    "errors": "0"
+   },
+   {
+    "store_name": "amazon",
+    "job_type": "price_update",
+    "status": "failed",
+    "n": "52",
+    "avg_s": "1031",
+    "updated": "0",
+    "errors": "50"
+   },
+   {
+    "store_name": "amazon",
+    "job_type": "price_update",
+    "status": "partial",
+    "n": "64",
+    "avg_s": "1209",
+    "updated": "4522",
+    "errors": "9686"
+   },
+   {
+    "store_name": "extra",
+    "job_type": "discovery",
+    "status": "failed",
+    "n": "7",
+    "avg_s": "391",
+    "updated": "0",
+    "errors": "5"
+   },
+   {
+    "store_name": "extra",
+    "job_type": "discovery",
+    "status": "success",
+    "n": "59",
+    "avg_s": "168",
+    "updated": "867",
+    "errors": "0"
+   },
+   {
+    "store_name": "extra",
+    "job_type": "price_update",
+    "status": "failed",
+    "n": "53",
+    "avg_s": "1156",
+    "updated": "0",
+    "errors": "160"
+   },
+   {
+    "store_name": "extra",
+    "job_type": "price_update",
+    "status": "partial",
+    "n": "66",
+    "avg_s": "1386",
+    "updated": "12277",
+    "errors": "2157"
+   }
+  ],
+  "runs_7d_daily": [
+   {
+    "store_name": "amazon",
+    "job_type": "discovery",
+    "d": "2026-09-25T21:00:00.000Z",
+    "runs": "2",
+    "updated": "257",
+    "errors": "1"
+   },
+   {
+    "store_name": "amazon",
+    "job_type": "discovery",
+    "d": "2026-09-26T21:00:00.000Z",
+    "runs": "2",
+    "updated": "83",
+    "errors": "1"
+   },
+   {
+    "store_name": "amazon",
+    "job_type": "discovery",
+    "d": "2026-09-27T21:00:00.000Z",
+    "runs": "2",
+    "updated": "163",
+    "errors": "2"
+   },
+   {
+    "store_name": "amazon",
+    "job_type": "discovery",
+    "d": "2026-09-28T21:00:00.000Z",
+    "runs": "2",
+    "updated": "335",
+    "errors": "4"
+   },
+   {
+    "store_name": "amazon",
+    "job_type": "discovery",
+    "d": "2026-09-29T21:00:00.000Z",
+    "runs": "2",
+    "updated": "329",
+    "errors": "4"
+   },
+   {
+    "store_name": "amazon",
+    "job_type": "discovery",
+    "d": "2026-09-30T21:00:00.000Z",
+    "runs": "2",
+    "updated": "242",
+    "errors": "2"
+   },
+   {
+    "store_name": "amazon",
+    "job_type": "price_update",
+    "d": "2026-09-25T21:00:00.000Z",
+    "runs": "1",
+    "updated": "0",
+    "errors": "1"
+   },
+   {
+    "store_name": "amazon",
+    "job_type": "price_update",
+    "d": "2026-09-26T21:00:00.000Z",
+    "runs": "4",
+    "updated": "0",
+    "errors": "4"
+   },
+   {
+    "store_name": "amazon",
+    "job_type": "price_update",
+    "d": "2026-09-27T21:00:00.000Z",
+    "runs": "3",
+    "updated": "0",
+    "errors": "3"
+   },
+   {
+    "store_name": "amazon",
+    "job_type": "price_update",
+    "d": "2026-09-28T21:00:00.000Z",
+    "runs": "3",
+    "updated": "47",
+    "errors": "32"
+   },
+   {
+    "store_name": "amazon",
+    "job_type": "price_update",
+    "d": "2026-09-29T21:00:00.000Z",
+    "runs": "6",
+    "updated": "271",
+    "errors": "194"
+   },
+   {
+    "store_name": "amazon",
+    "job_type": "price_update",
+    "d": "2026-09-30T21:00:00.000Z",
+    "runs": "8",
+    "updated": "408",
+    "errors": "68"
+   },
+   {
+    "store_name": "amazon",
+    "job_type": "price_update",
+    "d": "2026-10-01T21:00:00.000Z",
+    "runs": "7",
+    "updated": "309",
+    "errors": "70"
+   },
+   {
+    "store_name": "amazon",
+    "job_type": "price_update",
+    "d": "2026-10-02T21:00:00.000Z",
+    "runs": "3",
+    "updated": "184",
+    "errors": "30"
+   },
+   {
+    "store_name": "extra",
+    "job_type": "discovery",
+    "d": "2026-09-25T21:00:00.000Z",
+    "runs": "2",
+    "updated": "14",
+    "errors": "0"
+   },
+   {
+    "store_name": "extra",
+    "job_type": "discovery",
+    "d": "2026-09-26T21:00:00.000Z",
+    "runs": "2",
+    "updated": "16",
+    "errors": "0"
+   },
+   {
+    "store_name": "extra",
+    "job_type": "discovery",
+    "d": "2026-09-27T21:00:00.000Z",
+    "runs": "2",
+    "updated": "14",
+    "errors": "0"
+   },
+   {
+    "store_name": "extra",
+    "job_type": "discovery",
+    "d": "2026-09-28T21:00:00.000Z",
+    "runs": "2",
+    "updated": "15",
+    "errors": "0"
+   },
+   {
+    "store_name": "extra",
+    "job_type": "discovery",
+    "d": "2026-09-29T21:00:00.000Z",
+    "runs": "2",
+    "updated": "14",
+    "errors": "0"
+   },
+   {
+    "store_name": "extra",
+    "job_type": "discovery",
+    "d": "2026-09-30T21:00:00.000Z",
+    "runs": "7",
+    "updated": "49",
+    "errors": "0"
+   },
+   {
+    "store_name": "extra",
+    "job_type": "discovery",
+    "d": "2026-10-01T21:00:00.000Z",
+    "runs": "3",
+    "updated": "22",
+    "errors": "0"
+   },
+   {
+    "store_name": "extra",
+    "job_type": "discovery",
+    "d": "2026-10-02T21:00:00.000Z",
+    "runs": "2",
+    "updated": "15",
+    "errors": "0"
+   },
+   {
+    "store_name": "extra",
+    "job_type": "price_update",
+    "d": "2026-09-25T21:00:00.000Z",
+    "runs": "1",
+    "updated": "0",
+    "errors": "1"
+   },
+   {
+    "store_name": "extra",
+    "job_type": "price_update",
+    "d": "2026-09-26T21:00:00.000Z",
+    "runs": "4",
+    "updated": "0",
+    "errors": "4"
+   },
+   {
+    "store_name": "extra",
+    "job_type": "price_update",
+    "d": "2026-09-27T21:00:00.000Z",
+    "runs": "3",
+    "updated": "0",
+    "errors": "3"
+   },
+   {
+    "store_name": "extra",
+    "job_type": "price_update",
+    "d": "2026-09-28T21:00:00.000Z",
+    "runs": "4",
+    "updated": "57",
+    "errors": "18"
+   },
+   {
+    "store_name": "extra",
+    "job_type": "price_update",
+    "d": "2026-09-29T21:00:00.000Z",
+    "runs": "6",
+    "updated": "287",
+    "errors": "111"
+   },
+   {
+    "store_name": "extra",
+    "job_type": "price_update",
+    "d": "2026-09-30T21:00:00.000Z",
+    "runs": "8",
+    "updated": "357",
+    "errors": "224"
+   },
+   {
+    "store_name": "extra",
+    "job_type": "price_update",
+    "d": "2026-10-01T21:00:00.000Z",
+    "runs": "6",
+    "updated": "312",
+    "errors": "105"
+   },
+   {
+    "store_name": "extra",
+    "job_type": "price_update",
+    "d": "2026-10-02T21:00:00.000Z",
+    "runs": "3",
+    "updated": "130",
+    "errors": "47"
+   }
+  ]
+ }
+}

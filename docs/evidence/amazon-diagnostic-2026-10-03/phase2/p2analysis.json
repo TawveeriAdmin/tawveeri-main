@@ -1,0 +1,6090 @@
+{
+ "brand_unknown": {
+  "n": 4095,
+  "classes": {
+   "A_tile_only_never_PDP (brand hard-coded Unknown on tile path)": 1721,
+   "E_PDP_seen_no_Brand_row_in_spec_table": 537,
+   "C_PDP_spec_table_has_Brand_but_scraper_brand_list_missed_it": 1806,
+   "B_PDP_brand_known_at_both_levels_but_storefront_row_never_updated": 27,
+   "D_PDP_payload_brand_known_storefront_not_updated": 4
+  },
+  "examples": {
+   "A_tile_only_never_PDP (brand hard-coded Unknown on tile path)": [
+    "Unknown <= How to Do Everything MacBook",
+    "Unknown <= How to Do Everything Macbook Air",
+    "Unknown <= The Little Mac Book",
+    "Unknown <= Beyond the Little Mac Book"
+   ],
+   "E_PDP_seen_no_Brand_row_in_spec_table": [
+    "Unknown <= Refrigeration & Air Conditioning Technology",
+    "Unknown <= Air Conditioning: A Practical Introduction",
+    "Unknown <= Modern Refrigeration and Air Conditioning",
+    "- <= Air Fryer 2"
+   ],
+   "C_PDP_spec_table_has_Brand_but_scraper_brand_list_missed_it": [
+    "Canon <= Canon EF 75-300mm f/4-5.6 III Telephoto Zoom Lens, Black, 6473A003",
+    "Canon <= Canon telephoto lens EF 75-300mm F4.0-5.6 III for EOS (58mm filter thr",
+    "GoodCook <= BRADSHAW INTERNATIONAL 21995 WD/STL Pastry Blender",
+    "TP-Link <= TP-Link 5 Port 10/100 Mbps Fast Ethernet Switch | Desktop Ethernet Spl"
+   ],
+   "B_PDP_brand_known_at_both_levels_but_storefront_row_never_updated": [
+    "UGREEN <= UGREEN Dual USB-C Car Charger PD 60W, Fast Charging Car Battery Charge",
+    "meross <= meross",
+    "LPXPLP <= Asus TUF F16\" Gaming FHD + 144Hz / FA607NUG-RL147W / AMD Ryzen 7-7445H",
+    "ASUS <= Vivobook Go 14 Flip TP1400KA-BZ056WS Quiet Blue Dual Core Intel Celero"
+   ],
+   "D_PDP_payload_brand_known_storefront_not_updated": [
+    "Google <= VISIO 43 INCH FULL HD SMART TV ANDROID 14 TV | FRAMELESS DESIGN | 3 HD",
+    "- <= CMF BY NOTHING",
+    "Unknown <= CMF by Nothing Watch Pro 2, 1.32\" AMOLED Display, Built-in multi-syste",
+    "SKYWORTH <= 50G6520G - 50\" UHD 4K 60Hz LED TV with Google TV, HDR10, Chameleon Ext"
+   ]
+  },
+  "first_token_known_brand": 1071,
+  "first_token_examples": [
+   "Canon EF 75-300mm f/4-5.6 III Telephoto Zoom Lens,",
+   "Canon telephoto lens EF 75-300mm F4.0-5.6 III for ",
+   "Braun Satin Hair 7, IONTEC Hair Straightener with ",
+   "Sandisk 8 GB Cruzer Blade USB Flash Drive - SDCZ50",
+   "Logitech K120 Ergonomic Desktop USB Wired Keyboard",
+   "Logitech K120 Ergonomic Desktop USB Wired Keyboard"
+  ],
+  "pdp_spec_brand_available": 1833,
+  "by_category": {
+   "laptop": 544,
+   "accessories": 621,
+   "tablet": 261,
+   "tv": 223,
+   "kitchen": 616,
+   "camera": 109,
+   "appliance": 409,
+   "networking": 94,
+   "audio": 175,
+   "personal_care": 180,
+   "gaming": 121,
+   "printer": 66,
+   "air_conditioner": 182,
+   "monitor": 217,
+   "smart_home": 42,
+   "smartphone": 82,
+   "smartwatch": 146,
+   "wearable": 7
+  }
+ },
+ "split_asins": {
+  "n": 123,
+  "taxonomy": {
+   "MODEL_vs_SPEC_keyspace(same ASIN, tile vs PDP or title variance)": 16,
+   "BRAND_unknown_vs_detected": 49,
+   "MODEL_token_variance(truncation/dimension string)": 10,
+   "CATEGORY_MISMATCH": 4,
+   "SPEC_FIELD_DIFF": 17,
+   "BRAND_TOKEN_platform(Google TV)": 17,
+   "BRAND_TOKEN_other": 10
+  },
+  "examples": {
+   "MODEL_vs_SPEC_keyspace(same ASIN, tile vs PDP or title variance)": [
+    "B007TVJRNE: sharp|MODEL:242INW || sharp|solo|20  [Sharp R-242INW Solo Microwave 20 Liter - Silver]",
+    "B076T8WSHX: nikai|65|4k|led|60 || nikai|MODEL:UHD65SLED  [Nikai 65-Inch UHD Smart 4K LED TV with Android OS | Ultra Sl]",
+    "B07MW6YZNZ: dansat|32|hd|led|60 || dansat|MODEL:DTE24BF  [Dansat 32 Inch TV LED Multimedia Black - DTD32BH]",
+    "B07MWLL7MS: black+decker|NA|2000 || black+decker|MODEL:BV2000  [BLACK+DECKER Barrel/Drum Vacuum Cleaner, 2000W, 20L Large Ca]",
+    "B0842J1SGL: nikai|NA|20 || nikai|MODEL:NMO515N  [Nikai 20 Liter 700W Microwave with Auto Menu Function| Model]"
+   ],
+   "BRAND_unknown_vs_detected": [
+    "B01DBGHI8G: unknown|split|NO_SERIES|27000|NO_TECH|cool_only || hisense|split|NO_SERIES|27000|NO_TECH|cool_only  [Hisense 27000 BTU 2.5 Ton Split Air Conditioner, Cooling, Sm]",
+    "B07XYLMT14: unknown|split|NO_SERIES|24000|Standard|cool_only || nikai|split|NO_SERIES|24000|Standard|cool_only  [Nikai Split Air Conditioner 2 Ton, Energy Efficient Cooling ]",
+    "B081VCBPNY: nikai|window|NO_SERIES|17800|NO_TECH|NO_MODE || unknown|window|NO_SERIES|17800|NO_TECH|NO_MODE  [Nikai 1.5 Ton Window Air Conditioner 17800 BTU | Model No NW]",
+    "B081VHVDVN: nikai|window|NO_SERIES|19300|NO_TECH|hot_cold || unknown|window|NO_SERIES|19300|NO_TECH|hot_cold  [Nikai 19300 BTU Window Air Condition with Heating and Coolin]",
+    "B08GQX8B2G: unknown|window|NO_SERIES|20000|NO_TECH|cool_only || supergeneral|window|NO_SERIES|20000|NO_TECH|cool_only  [Super General Window Air Conditoner 20000 BTU Cool Only | Mo]"
+   ],
+   "MODEL_token_variance(truncation/dimension string)": [
+    "B07M82BH88: nikai|MODEL:NTV4300LED3 || nikai|MODEL:NTV4300LED  [Nikai 43 Inch Full HD LED TV | 1920x1080 Resolution, 20W Aud]",
+    "B09965CFDB: nikai|MODEL:NIK50MEU4STN || nikai|MODEL:NIK50MEU  [Nikai 50 Inch 4K Ultra HD Smart LED TV | Built-in WiFi, Blue]",
+    "B0BK9CFSGP: acer|MODEL:CBOA314 || acer|MODEL:CBOA314-1H  [Acer Chromebook 314 CBOA314-1H Laptop - Intel Celeron N4500,]",
+    "B0BZSJQKT9: samsung|MODEL:QA85QN900CUXSA || samsung|MODEL:QN900C  [Samsung 85 Inch Neo QLED TV, QN900C, 8K, Mini LED, Quantum M]",
+    "B0DWXVC6DB: apple|MODEL:NIK50MEU || apple|MODEL:NIK50MEU4QLED1  [Nikai 50\" Inch QLED WebOS 4K Smart UHD TV, Hands-Free Voice ]"
+   ],
+   "CATEGORY_MISMATCH": [
+    "B07MJZ6HB9: nikai|MODEL:NTV3200SLED || nikai|NTV3200SLED  [Nikai 32 Inch Smart HD LED TV, 720p (1366x768) | Android TV ]",
+    "B08J7RMSS7: kenwood|NA|1.7 || kenwood|NA|2  [Kenwood Bundle Breakfast Set With 1.7L Electric Kettle And 2]",
+    "B08SKNFQBS: philips|MODEL:HD7432 || philips|drip|0.6  [Philips Drip Coffee Maker | 0.6L Glass Jar, Up to 7 Cups, Au]",
+    "B0FMPX9B58: nikai|MODEL:NCM3120AX || nikai|drip|1.3  [Nikai 1.3L Coffee Maker with Glass Carafe | 750ml Water Capa]"
+   ],
+   "SPEC_FIELD_DIFF": [
+    "B08X1RMTR3: apple|iPhone|12|Mini|64 || apple|iPhone|12|Mini|128  [Apple (Refurbished) iPhone 12 mini (64GB) - Black] {4:64/128}",
+    "B0CQ2W7HG1: apple|macbook pro|i9|16|1024|16|igpu || apple|macbook pro|i9|16|1024|NO_SCREEN|igpu  [Apple 2019 MacBook Pro (16-inch, Touch Bar, 2.3GHz 8-core In] {5:16/NO_SCREEN}",
+    "B0CQ2XD7JZ: apple|ipad|gen9|64|wifi|NO_SIZE || apple|ipad|gen9|256|wifi|NO_SIZE  [Apple 2021 iPad (10.2-inch, Wi-Fi, 64GB) - Silver (9th Gener] {3:64/256}",
+    "B0CQ2YDXHW: apple|macbook pro|i7|16|512|16|igpu || apple|macbook pro|i7|16|512|NO_SCREEN|igpu  [Apple 2019 MacBook Pro (16-inch, Touch Bar, 2.6GHz 6-core In] {5:16/NO_SCREEN}",
+    "B0D3J83VPF: apple|ipad air|m2|1024|5g|11 || apple|ipad air|m2|1024|wifi|11 || apple|ipad air|m2|256|wifi|11  [Apple iPad Air 11-inch (M2): Liquid Retina display, 1TB, Lan] {3:1024/256;4:5g/wifi}"
+   ],
+   "BRAND_TOKEN_platform(Google TV)": [
+    "B0BHSVTHF1: google|honor pad 8|NO_GEN|128|wifi|12 || honor|honor pad 8|NO_GEN|128|wifi|12  [HONOR Pad 8 6GB 128GB Tablet, Tablet PC with 12 Inch 2K Full]",
+    "B0CYXZH8B9: google|MODEL:H65S800UX || haier|MODEL:H65S800UX  [Haier 65 Inch QLED 4K UHD Smart Google TV | Dolby Vision & A]",
+    "B0D6RXS5G6: panasonic|65|4k|led|120 || google|65|4k|led|120  [Panasonic 65\" 4K LED Smart TV with Native 120Hz Refresh Rate]",
+    "B0FGDGZ5KD: google|MODEL:65Q6800H || skyworth|MODEL:65Q6800H  [Skyworth 65 in 4K QLED Smart TV, Model 65Q6800H, 2025, 144Hz]",
+    "B0FGDMJJHK: google|MODEL:55Q6800H || skyworth|MODEL:55Q6800H  [SKYWORTH 55Q6800H 55-Inch QLED+ 4K Google TV, 120Hz, Dolby V]"
+   ],
+   "BRAND_TOKEN_other": [
+    "B0CDKLYZPV: microsoft|MODEL:L410MA-AH02 || asus|MODEL:L410MA-AH02  [ASUS Vivobook Go 14 L410 Ultra Thin Laptop, 14â€ FHD Display]",
+    "B0DNYPZDXD: apple|MODEL:NIK70MEU4QLED || apple|MODEL:NIK70MEU || nikai|MODEL:NIK70MEU  [Nikai 70\" Inch QLED WebOS 4K Smart UHD TV, Hands-Free Voice ]",
+    "B0DWXXRBRP: apple|MODEL:NIK65MEU4QLED || apple|MODEL:NIK65MEU || nikai|MODEL:NIK65MEU  [Nikai 65\" Inch QLED WebOS 4K Smart UHD TV, Hands-Free Voice ]",
+    "B0F8JK45YM: lg|MODEL:65QNED86A6A || vision|MODEL:65QNED86A6A  [LG 65QNED86A6A 65 inch MiniLED QNED evo AI WebOS 25 VRR 144h]",
+    "B0F8JK8Q35: lg|MODEL:86QNED86A6A || vision|MODEL:86QNED86A6A  [LG 86QNED86A6A 86 inch MiniLED QNED evo AI WebOS 25 VRR 144h]"
+   ]
+  },
+  "rows": [
+   {
+    "asin": "B007TVJRNE",
+    "taxonomy": "MODEL_vs_SPEC_keyspace(same ASIN, tile vs PDP or title variance)",
+    "detail": "",
+    "keys": [
+     "sharp|MODEL:242INW",
+     "sharp|solo|20"
+    ],
+    "categories": [
+     "microwave"
+    ],
+    "name": "Sharp R-242INW Solo Microwave 20 Liter - Silver",
+    "sources": [
+     "amazon-search"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B01DBGHI8G",
+    "taxonomy": "BRAND_unknown_vs_detected",
+    "detail": "",
+    "keys": [
+     "unknown|split|NO_SERIES|27000|NO_TECH|cool_only",
+     "hisense|split|NO_SERIES|27000|NO_TECH|cool_only"
+    ],
+    "categories": [
+     "air_conditioner"
+    ],
+    "name": "Hisense 27000 BTU 2.5 Ton Split Air Conditioner, Cooling, Smart WiFi, Energy Saving",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B076T8WSHX",
+    "taxonomy": "MODEL_vs_SPEC_keyspace(same ASIN, tile vs PDP or title variance)",
+    "detail": "",
+    "keys": [
+     "nikai|65|4k|led|60",
+     "nikai|MODEL:UHD65SLED"
+    ],
+    "categories": [
+     "tv"
+    ],
+    "name": "Nikai 65-Inch UHD Smart 4K LED TV with Android OS | Ultra Slim Frame, Smart Apps (Netflix, YouTube), HDMI, USB, Wi-Fi | ",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B07M82BH88",
+    "taxonomy": "MODEL_token_variance(truncation/dimension string)",
+    "detail": "",
+    "keys": [
+     "nikai|MODEL:NTV4300LED3",
+     "nikai|MODEL:NTV4300LED"
+    ],
+    "categories": [
+     "tv"
+    ],
+    "name": "Nikai 43 Inch Full HD LED TV | 1920x1080 Resolution, 20W Audio, Quad-Core Processor, HDMI & USB Ports, PC Input, Child L",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B07MJZ6HB9",
+    "taxonomy": "CATEGORY_MISMATCH",
+    "detail": "",
+    "keys": [
+     "nikai|MODEL:NTV3200SLED",
+     "nikai|NTV3200SLED"
+    ],
+    "categories": [
+     "tv",
+     "audio"
+    ],
+    "name": "Nikai 32 Inch Smart HD LED TV, 720p (1366x768) | Android TV with WiFi & DLNA, Quad-Core Processor, Netflix, YouTube, Sha",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B07MW6YZNZ",
+    "taxonomy": "MODEL_vs_SPEC_keyspace(same ASIN, tile vs PDP or title variance)",
+    "detail": "",
+    "keys": [
+     "dansat|32|hd|led|60",
+     "dansat|MODEL:DTE24BF"
+    ],
+    "categories": [
+     "tv"
+    ],
+    "name": "Dansat 32 Inch TV LED Multimedia Black - DTD32BH",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B07MWLL7MS",
+    "taxonomy": "MODEL_vs_SPEC_keyspace(same ASIN, tile vs PDP or title variance)",
+    "detail": "",
+    "keys": [
+     "black+decker|NA|2000",
+     "black+decker|MODEL:BV2000"
+    ],
+    "categories": [
+     "vacuum"
+    ],
+    "name": "BLACK+DECKER Barrel/Drum Vacuum Cleaner, 2000W, 20L Large Capacity, Blower Function, Multiple Accessories, Durable, Reli",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B07XYLMT14",
+    "taxonomy": "BRAND_unknown_vs_detected",
+    "detail": "",
+    "keys": [
+     "unknown|split|NO_SERIES|24000|Standard|cool_only",
+     "nikai|split|NO_SERIES|24000|Standard|cool_only"
+    ],
+    "categories": [
+     "air_conditioner"
+    ],
+    "name": "Nikai Split Air Conditioner 2 Ton, Energy Efficient Cooling with T3 Tropical Rotary Compressor, Turbo Mode with 4 Way Sw",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B081VCBPNY",
+    "taxonomy": "BRAND_unknown_vs_detected",
+    "detail": "",
+    "keys": [
+     "nikai|window|NO_SERIES|17800|NO_TECH|NO_MODE",
+     "unknown|window|NO_SERIES|17800|NO_TECH|NO_MODE"
+    ],
+    "categories": [
+     "air_conditioner"
+    ],
+    "name": "Nikai 1.5 Ton Window Air Conditioner 17800 BTU | Model No NWAC18056C23/NWAC18056C25 2 Years Warranty",
+    "sources": [
+     "amazon-search",
+     "scraper"
+    ],
+    "statuses": [
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B081VHVDVN",
+    "taxonomy": "BRAND_unknown_vs_detected",
+    "detail": "",
+    "keys": [
+     "nikai|window|NO_SERIES|19300|NO_TECH|hot_cold",
+     "unknown|window|NO_SERIES|19300|NO_TECH|hot_cold"
+    ],
+    "categories": [
+     "air_conditioner"
+    ],
+    "name": "Nikai 19300 BTU Window Air Condition with Heating and Cooling Function | Model No NWAC24056HC23N/NWAC24056HC25 with 2 Ye",
+    "sources": [
+     "amazon-search",
+     "scraper"
+    ],
+    "statuses": [
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B0842J1SGL",
+    "taxonomy": "MODEL_vs_SPEC_keyspace(same ASIN, tile vs PDP or title variance)",
+    "detail": "",
+    "keys": [
+     "nikai|NA|20",
+     "nikai|MODEL:NMO515N"
+    ],
+    "categories": [
+     "microwave"
+    ],
+    "name": "Nikai 20 Liter 700W Microwave with Auto Menu Function| Model No NMO515N8NX with 2 Years Warranty",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B08GQX8B2G",
+    "taxonomy": "BRAND_unknown_vs_detected",
+    "detail": "",
+    "keys": [
+     "unknown|window|NO_SERIES|20000|NO_TECH|cool_only",
+     "supergeneral|window|NO_SERIES|20000|NO_TECH|cool_only"
+    ],
+    "categories": [
+     "air_conditioner"
+    ],
+    "name": "Super General Window Air Conditoner 20000 BTU Cool Only | Model No KSGA24GE With Two Years Warranty",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B08GZXDK7R",
+    "taxonomy": "BRAND_unknown_vs_detected",
+    "detail": "",
+    "keys": [
+     "unknown|split|NO_SERIES|22200|NO_TECH|hot_cold",
+     "nikai|split|NO_SERIES|22200|NO_TECH|hot_cold"
+    ],
+    "categories": [
+     "air_conditioner"
+    ],
+    "name": "Nikai 22200 BTU Hot and Cold Split Air Conditioner with 3D Swing Pattern| Model No NSAC24136HC22N with 2 Years Warranty",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B08J7RMSS7",
+    "taxonomy": "CATEGORY_MISMATCH",
+    "detail": "",
+    "keys": [
+     "kenwood|NA|1.7",
+     "kenwood|NA|2"
+    ],
+    "categories": [
+     "kettle",
+     "toaster"
+    ],
+    "name": "Kenwood Bundle Breakfast Set With 1.7L Electric Kettle And 2 Slice Bread Toaster Mpm02.000Bk Black/Silver,",
+    "sources": [
+     "scraper"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B08SKNFQBS",
+    "taxonomy": "CATEGORY_MISMATCH",
+    "detail": "",
+    "keys": [
+     "philips|MODEL:HD7432",
+     "philips|drip|0.6"
+    ],
+    "categories": [
+     "dishwasher",
+     "coffee_maker"
+    ],
+    "name": "Philips Drip Coffee Maker | 0.6L Glass Jar, Up to 7 Cups, Auto Off Function, Water Level Indicator, Dishwasher-Safe Part",
+    "sources": [
+     "amazon-search",
+     "scraper"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B08WMRDYBC",
+    "taxonomy": "MODEL_vs_SPEC_keyspace(same ASIN, tile vs PDP or title variance)",
+    "detail": "",
+    "keys": [
+     "lg|NA|25",
+     "lg|MODEL:MS2535GIS"
+    ],
+    "categories": [
+     "microwave"
+    ],
+    "name": "LG 25 Liter Microwave with Touch Button| Model No MS2535GIS",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B08X1RMTR3",
+    "taxonomy": "SPEC_FIELD_DIFF",
+    "detail": "4:64/128",
+    "keys": [
+     "apple|iPhone|12|Mini|64",
+     "apple|iPhone|12|Mini|128"
+    ],
+    "categories": [
+     "mobile"
+    ],
+    "name": "Apple (Refurbished) iPhone 12 mini (64GB) - Black",
+    "sources": [
+     "amazon-search",
+     "scraper"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B0981Y5DMB",
+    "taxonomy": "MODEL_vs_SPEC_keyspace(same ASIN, tile vs PDP or title variance)",
+    "detail": "",
+    "keys": [
+     "midea|NA|12",
+     "midea|MODEL:WQP125201CW"
+    ],
+    "categories": [
+     "dishwasher"
+    ],
+    "name": "Midea 12 Place Setting Dishwasher with 7 Program| Model No WQP125201CW with 2 Years Warranty",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B0981ZV89K",
+    "taxonomy": "MODEL_vs_SPEC_keyspace(same ASIN, tile vs PDP or title variance)",
+    "detail": "",
+    "keys": [
+     "midea|freestanding|12",
+     "midea|MODEL:WQP125201CS"
+    ],
+    "categories": [
+     "dishwasher"
+    ],
+    "name": "Midea 12 Place Setting Free Standing Dishwasher with 7 Programs| Model No WQP125201CS with 2 Years Warranty",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B098FBF5S7",
+    "taxonomy": "BRAND_unknown_vs_detected",
+    "detail": "",
+    "keys": [
+     "supergeneral|window|NO_SERIES|18000|NO_TECH|hot_cold",
+     "unknown|window|NO_SERIES|18000|NO_TECH|hot_cold"
+    ],
+    "categories": [
+     "air_conditioner"
+    ],
+    "name": "Super General Window Air Conditioner, Heat & Cool, 18000 BTU Capacity | Model No KSGA19GER1 With Two Years Warranty",
+    "sources": [
+     "amazon-search",
+     "scraper"
+    ],
+    "statuses": [
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B09965CFDB",
+    "taxonomy": "MODEL_token_variance(truncation/dimension string)",
+    "detail": "",
+    "keys": [
+     "nikai|MODEL:NIK50MEU4STN",
+     "nikai|MODEL:NIK50MEU"
+    ],
+    "categories": [
+     "tv"
+    ],
+    "name": "Nikai 50 Inch 4K Ultra HD Smart LED TV | Built-in WiFi, Bluetooth, Frameless Design, Multiple Ports, High Clarity Displa",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B09GG98LPM",
+    "taxonomy": "MODEL_vs_SPEC_keyspace(same ASIN, tile vs PDP or title variance)",
+    "detail": "",
+    "keys": [
+     "toshiba|NA|2200",
+     "toshiba|MODEL:DR220ABF"
+    ],
+    "categories": [
+     "vacuum"
+    ],
+    "name": "Toshiba 22 Liter 2200W Drum Vacuum Cleaner with Steel Tub| Model No VC-DR220ABF(G) with 2 Years Warranty",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B09R7MPD6L",
+    "taxonomy": "BRAND_unknown_vs_detected",
+    "detail": "",
+    "keys": [
+     "unknown|window|NO_SERIES|21400|NO_TECH|hot_cold",
+     "gree|window|NO_SERIES|21400|NO_TECH|hot_cold"
+    ],
+    "categories": [
+     "air_conditioner"
+    ],
+    "name": "Gree Window Air Conditioner Hot & Cold 21400 Btu - GJE24AE-D3NMTG1D",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B0BHSVTHF1",
+    "taxonomy": "BRAND_TOKEN_platform(Google TV)",
+    "detail": "",
+    "keys": [
+     "google|honor pad 8|NO_GEN|128|wifi|12",
+     "honor|honor pad 8|NO_GEN|128|wifi|12"
+    ],
+    "categories": [
+     "tablet"
+    ],
+    "name": "HONOR Pad 8 6GB 128GB Tablet, Tablet PC with 12 Inch 2K Full View Display, 8 Speakers, 7250 mAh 22.5 W Fast Charge Mini ",
+    "sources": [
+     "amazon-search"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B0BK9CFSGP",
+    "taxonomy": "MODEL_token_variance(truncation/dimension string)",
+    "detail": "",
+    "keys": [
+     "acer|MODEL:CBOA314",
+     "acer|MODEL:CBOA314-1H"
+    ],
+    "categories": [
+     "laptop"
+    ],
+    "name": "Acer Chromebook 314 CBOA314-1H Laptop - Intel Celeron N4500, 4GB, 64GB eMMC, Integrated Graphics, 14\" Full HD, Chrome OS",
+    "sources": [
+     "amazon-search",
+     "scraper"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B0BQ3QRYMW",
+    "taxonomy": "BRAND_unknown_vs_detected",
+    "detail": "",
+    "keys": [
+     "unknown|split|NO_SERIES|21000|NO_TECH|hot_cold",
+     "nikai|split|NO_SERIES|21000|NO_TECH|hot_cold"
+    ],
+    "categories": [
+     "air_conditioner"
+    ],
+    "name": "Nikai 21000 BTU R410A Split Air Conditioner with Heating and Cooling Function| Model No NSAC24136HC23 with 2 Years Warra",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B0BW8CLN2B",
+    "taxonomy": "MODEL_vs_SPEC_keyspace(same ASIN, tile vs PDP or title variance)",
+    "detail": "",
+    "keys": [
+     "asus|vivobook|core5|8|512|NO_SCREEN|igpu",
+     "asus|MODEL:BQ2890W"
+    ],
+    "categories": [
+     "laptop"
+    ],
+    "name": "ASUS Vivobook 15 X1504VA-BQ2890W Intel Core 5 120U Laptop Computer 39.6 cm [15.6] Full HD 8 GB DDR4-SDRAM 512 GB SSD Wi-",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "low_confidence_candidate",
+     "valid"
+    ]
+   },
+   {
+    "asin": "B0BWFMLWCH",
+    "taxonomy": "BRAND_unknown_vs_detected",
+    "detail": "",
+    "keys": [
+     "unknown|split|NO_SERIES|22800|NO_TECH|NO_MODE",
+     "tcl|split|NO_SERIES|22800|NO_TECH|NO_MODE"
+    ],
+    "categories": [
+     "air_conditioner"
+    ],
+    "name": "TCL 22800 BTU Split Air Conditioner with Intelligent Airflow Control | Model No TAC-24CSU/TPF31 with 2 Years Warranty",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B0BZSJQKT9",
+    "taxonomy": "MODEL_token_variance(truncation/dimension string)",
+    "detail": "",
+    "keys": [
+     "samsung|MODEL:QA85QN900CUXSA",
+     "samsung|MODEL:QN900C"
+    ],
+    "categories": [
+     "tv"
+    ],
+    "name": "Samsung 85 Inch Neo QLED TV, QN900C, 8K, Mini LED, Quantum Matrix Technology Pro, Infinity Screen, Dolby Atmos, Tizen Sm",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B0C4Q68C7B",
+    "taxonomy": "BRAND_unknown_vs_detected",
+    "detail": "",
+    "keys": [
+     "supergeneral|window|NO_SERIES|17800|Standard|NO_MODE",
+     "unknown|window|NO_SERIES|17800|Standard|NO_MODE"
+    ],
+    "categories": [
+     "air_conditioner"
+    ],
+    "name": "Super General 1.5 Ton 17800 BTU Heat and Cool Window Air Conditioner with Rotary Compressor| Model No KSGA18NER with 2 Y",
+    "sources": [
+     "amazon-search",
+     "scraper"
+    ],
+    "statuses": [
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B0CBSGDFQD",
+    "taxonomy": "BRAND_unknown_vs_detected",
+    "detail": "",
+    "keys": [
+     "hisense|window|NO_SERIES|21800|NO_TECH|cool_only",
+     "unknown|window|NO_SERIES|21800|NO_TECH|cool_only"
+    ],
+    "categories": [
+     "air_conditioner"
+    ],
+    "name": "Hisense Window Air Conditioner, 21800 BTU, 2 Ton, Cooling, 4 Way Swing, Energy Saving, 7 Years Compresser Warranty",
+    "sources": [
+     "amazon-search",
+     "scraper"
+    ],
+    "statuses": [
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B0CDKLYZPV",
+    "taxonomy": "BRAND_TOKEN_other",
+    "detail": "",
+    "keys": [
+     "microsoft|MODEL:L410MA-AH02",
+     "asus|MODEL:L410MA-AH02"
+    ],
+    "categories": [
+     "laptop"
+    ],
+    "name": "ASUS Vivobook Go 14 L410 Ultra Thin Laptop, 14â€ FHD Display, Intel Celeron N4020 Processor, 4GB RAM, 64GB eMMC, NumberP",
+    "sources": [
+     "amazon-search",
+     "scraper"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B0CHCWM71B",
+    "taxonomy": "MODEL_vs_SPEC_keyspace(same ASIN, tile vs PDP or title variance)",
+    "detail": "",
+    "keys": [
+     "black+decker|MODEL:ECM150",
+     "black+decker|espresso|1"
+    ],
+    "categories": [
+     "coffee_maker"
+    ],
+    "name": "BLACK+DECKER 15-Bar Espresso Coffee Machine, 1450W Power, 1.0L Tank, Milk Frother, Thermo Block Heating, Dual-Level Drip",
+    "sources": [
+     "amazon-search",
+     "scraper"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B0CND9JFB7",
+    "taxonomy": "BRAND_unknown_vs_detected",
+    "detail": "",
+    "keys": [
+     "mando|split|NO_SERIES|22800|NO_TECH|cool_only",
+     "unknown|split|NO_SERIES|22800|NO_TECH|cool_only"
+    ],
+    "categories": [
+     "air_conditioner"
+    ],
+    "name": "Mando Mando Split Air Conditioner - Cooling Only - 22800 BTU -F23TP-24CT",
+    "sources": [
+     "amazon-search",
+     "scraper"
+    ],
+    "statuses": [
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B0CP16H6MY",
+    "taxonomy": "BRAND_unknown_vs_detected",
+    "detail": "",
+    "keys": [
+     "unknown|split|NO_SERIES|18300|NO_TECH|cool_only",
+     "haam|split|NO_SERIES|18300|NO_TECH|cool_only"
+    ],
+    "categories": [
+     "air_conditioner"
+    ],
+    "name": "HAAM Split Air Conditioner - Golden - 18300 BTU - Cold - Golden Blades - HM18CSM23Go",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B0CQ2W7HG1",
+    "taxonomy": "SPEC_FIELD_DIFF",
+    "detail": "5:16/NO_SCREEN",
+    "keys": [
+     "apple|macbook pro|i9|16|1024|16|igpu",
+     "apple|macbook pro|i9|16|1024|NO_SCREEN|igpu"
+    ],
+    "categories": [
+     "laptop"
+    ],
+    "name": "Apple 2019 MacBook Pro (16-inch, Touch Bar, 2.3GHz 8-core Intel Core i9 processor, 16GB RAM, 1TB) - Space Grey; English ",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "valid",
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B0CQ2XD7JZ",
+    "taxonomy": "SPEC_FIELD_DIFF",
+    "detail": "3:64/256",
+    "keys": [
+     "apple|ipad|gen9|64|wifi|NO_SIZE",
+     "apple|ipad|gen9|256|wifi|NO_SIZE"
+    ],
+    "categories": [
+     "tablet"
+    ],
+    "name": "Apple 2021 iPad (10.2-inch, Wi-Fi, 64GB) - Silver (9th Generation) (Renewed)",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B0CQ2YDXHW",
+    "taxonomy": "SPEC_FIELD_DIFF",
+    "detail": "5:16/NO_SCREEN",
+    "keys": [
+     "apple|macbook pro|i7|16|512|16|igpu",
+     "apple|macbook pro|i7|16|512|NO_SCREEN|igpu"
+    ],
+    "categories": [
+     "laptop"
+    ],
+    "name": "Apple 2019 MacBook Pro (16-inch, Touch Bar, 2.6GHz 6-core Intel Core i7 processor, 16GB RAM, 512GB) - Silver; Arabic/Eng",
+    "sources": [
+     "amazon-search"
+    ],
+    "statuses": [
+     "valid",
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B0CSXBD7NN",
+    "taxonomy": "BRAND_unknown_vs_detected",
+    "detail": "",
+    "keys": [
+     "unknown|split|NO_SERIES|18500|NO_TECH|hot_cold",
+     "gree|split|NO_SERIES|18500|NO_TECH|hot_cold"
+    ],
+    "categories": [
+     "air_conditioner"
+    ],
+    "name": "GREE Split Air Conditioner Pular - GWH18AGDXF-D3NTA1G 18500 BTU Hot/Cold with wifi",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B0CSXBSMW2",
+    "taxonomy": "BRAND_unknown_vs_detected",
+    "detail": "",
+    "keys": [
+     "unknown|split|NO_SERIES|22100|NO_TECH|cool_only",
+     "gree|split|NO_SERIES|22100|NO_TECH|cool_only"
+    ],
+    "categories": [
+     "air_conditioner"
+    ],
+    "name": "GREE Split Air Conditioner - GWC24AGEXF-D3NTA1B - Pular 22100 BTU Cool Only With WIFI",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B0CT3HY9D2",
+    "taxonomy": "BRAND_unknown_vs_detected",
+    "detail": "",
+    "keys": [
+     "unknown|split|NO_SERIES|32200|NO_TECH|cool_only",
+     "gree|split|NO_SERIES|32200|NO_TECH|cool_only"
+    ],
+    "categories": [
+     "air_conditioner"
+    ],
+    "name": "GREE Split Air Conditioner - GWC36QFXH-D3NTB4B 32200 BTU Cold Only with WIFI",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B0CVMTTDMM",
+    "taxonomy": "BRAND_unknown_vs_detected",
+    "detail": "",
+    "keys": [
+     "supergeneral|window|NO_SERIES|18000|Standard|NO_MODE",
+     "unknown|window|NO_SERIES|18000|Standard|NO_MODE"
+    ],
+    "categories": [
+     "air_conditioner"
+    ],
+    "name": "Super General 1.5 Ton 18000 BTU Window Air Conditioner with Rotary Compressor| Model No KSGA18NE1 with 2 Years Warranty",
+    "sources": [
+     "amazon-search",
+     "scraper"
+    ],
+    "statuses": [
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B0CYXZH8B9",
+    "taxonomy": "BRAND_TOKEN_platform(Google TV)",
+    "detail": "",
+    "keys": [
+     "google|MODEL:H65S800UX",
+     "haier|MODEL:H65S800UX"
+    ],
+    "categories": [
+     "tv"
+    ],
+    "name": "Haier 65 Inch QLED 4K UHD Smart Google TV | Dolby Vision & Atmos | 120Hz Gaming Accelerator | MEMC Processor | HDR10 | V",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B0CZJS8SD2",
+    "taxonomy": "BRAND_unknown_vs_detected",
+    "detail": "",
+    "keys": [
+     "supergeneral|split|NO_SERIES|12100|Inverter|cool_only",
+     "unknown|split|NO_SERIES|12100|Inverter|cool_only"
+    ],
+    "categories": [
+     "air_conditioner"
+    ],
+    "name": "Super General 1 Ton Split Air Conditioner 12100 BTU With Inverter(Power Saving Technology), Auto Clean, Gold Fin With Co",
+    "sources": [
+     "amazon-search",
+     "scraper"
+    ],
+    "statuses": [
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B0D3J83VPF",
+    "taxonomy": "SPEC_FIELD_DIFF",
+    "detail": "3:1024/256;4:5g/wifi",
+    "keys": [
+     "apple|ipad air|m2|1024|5g|11",
+     "apple|ipad air|m2|1024|wifi|11",
+     "apple|ipad air|m2|256|wifi|11"
+    ],
+    "categories": [
+     "tablet"
+    ],
+    "name": "Apple iPad Air 11-inch (M2): Liquid Retina display, 1TB, Landscape 12MP Front Camera/12MP Back Camera, Wi-Fi 6E + 5G Cel",
+    "sources": [
+     "scraper"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B0D3LVH7PM",
+    "taxonomy": "SPEC_FIELD_DIFF",
+    "detail": "1:23.8/34;2:fhd/uwqhd;4:ips/va",
+    "keys": [
+     "aoc|23.8|fhd|180|ips",
+     "aoc|34|uwqhd|180|va"
+    ],
+    "categories": [
+     "monitor"
+    ],
+    "name": "AOC 24G4E 23.8-Inch Fast IPS Gaming Monitor, 1920 × 1080 (FHD), 180Hz, 0.5ms, HDR10, Adaptive Sync, Engineered for Peak ",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B0D6LKX54R",
+    "taxonomy": "BRAND_unknown_vs_detected",
+    "detail": "",
+    "keys": [
+     "unknown|window|NO_SERIES|18000|NO_TECH|NO_MODE",
+     "ugine|window|NO_SERIES|18000|NO_TECH|NO_MODE"
+    ],
+    "categories": [
+     "air_conditioner"
+    ],
+    "name": "Air Conditioner UGINE GOLD SPLIT WINDOW 18000 UNIT COOL",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B0D6RXS5G6",
+    "taxonomy": "BRAND_TOKEN_platform(Google TV)",
+    "detail": "",
+    "keys": [
+     "panasonic|65|4k|led|120",
+     "google|65|4k|led|120"
+    ],
+    "categories": [
+     "tv"
+    ],
+    "name": "Panasonic 65\" 4K LED Smart TV with Native 120Hz Refresh Rate, Full Array LED with Quantum Dot sheet, Google TV, Bezel Le",
+    "sources": [
+     "amazon-search",
+     "scraper"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B0DCW38T85",
+    "taxonomy": "BRAND_unknown_vs_detected",
+    "detail": "",
+    "keys": [
+     "gree|split|NO_SERIES|24000|Inverter|hot_cold",
+     "unknown|split|NO_SERIES|24000|Inverter|hot_cold"
+    ],
+    "categories": [
+     "air_conditioner"
+    ],
+    "name": "GREE - GWH24AVEXF-S6DTA1B Split Air Conditioner - AI Pro Inverter 24000 BTU Hot & Cold",
+    "sources": [
+     "amazon-search",
+     "scraper"
+    ],
+    "statuses": [
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B0DGT91NLH",
+    "taxonomy": "BRAND_unknown_vs_detected",
+    "detail": "",
+    "keys": [
+     "unknown|window|NO_SERIES|20600|Inverter|cool_only",
+     "ugine|window|NO_SERIES|20600|Inverter|cool_only"
+    ],
+    "categories": [
+     "air_conditioner"
+    ],
+    "name": "Ugine Gold Window Air Conditioner, 20,600 BTU, 2Ton, With Remote Control, Cold, Inverter - UAWT24C",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B0DGTHM98B",
+    "taxonomy": "MODEL_vs_SPEC_keyspace(same ASIN, tile vs PDP or title variance)",
+    "detail": "",
+    "keys": [
+     "panasonic|MODEL:ST22QBBPQ",
+     "panasonic|NA|20"
+    ],
+    "categories": [
+     "microwave"
+    ],
+    "name": "Panasonic NN-ST22QBBPQ 20 Litre Single Microwave with Glass Bowl, 800 W, Automatic Defrost, 8 Automatic Programs, LED Di",
+    "sources": [
+     "amazon-search"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B0DJ8XCLC3",
+    "taxonomy": "BRAND_unknown_vs_detected",
+    "detail": "",
+    "keys": [
+     "lg|split|FreshDV|18000|Inverter|NO_MODE",
+     "unknown|split|FreshDV|18000|Inverter|NO_MODE"
+    ],
+    "categories": [
+     "air_conditioner"
+    ],
+    "name": "Lg Split 18000 Btu Cool-Only Ac - Fresh Dv Inverter Series",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B0DJPSJ7MT",
+    "taxonomy": "BRAND_unknown_vs_detected",
+    "detail": "",
+    "keys": [
+     "unknown|split|NO_SERIES|12400|Inverter|cool_only",
+     "tcl|split|NO_SERIES|12400|Inverter|cool_only"
+    ],
+    "categories": [
+     "air_conditioner"
+    ],
+    "name": "TCL Inverter Split Air conditioner, 12400BTU, Cold/Hot, WiFi,Strong Cooling at 60°, Self-Cleaning, Fast Cooling, 220 V, ",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B0DLJF6B54",
+    "taxonomy": "SPEC_FIELD_DIFF",
+    "detail": "2:m4max/m4pro;3:48/36/24;4:1024/512",
+    "keys": [
+     "apple|macbook pro|m4max|48|1024|16|igpu",
+     "apple|macbook pro|m4pro|48|512|16|igpu",
+     "apple|macbook pro|m4max|36|1024|16|igpu",
+     "apple|macbook pro|m4pro|24|512|16|igpu"
+    ],
+    "categories": [
+     "laptop"
+    ],
+    "name": "Apple 2024 MacBook Pro (16-inch, Apple M4 Max chip with 16‑core CPU and 40‑core GPU, 48GB Unified Memory, 1TB) - Silver",
+    "sources": [
+     "scraper"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B0DNYPZDXD",
+    "taxonomy": "BRAND_TOKEN_other",
+    "detail": "",
+    "keys": [
+     "apple|MODEL:NIK70MEU4QLED",
+     "apple|MODEL:NIK70MEU",
+     "nikai|MODEL:NIK70MEU"
+    ],
+    "categories": [
+     "tv"
+    ],
+    "name": "Nikai 70\" Inch QLED WebOS 4K Smart UHD TV, Hands-Free Voice Control, Dolby Digital, Built-in Wi-Fi, Bluetooth, High Colo",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B0DPHJ92ZZ",
+    "taxonomy": "BRAND_unknown_vs_detected",
+    "detail": "",
+    "keys": [
+     "unknown|split|NO_SERIES|18200|Inverter|NO_MODE",
+     "supergeneral|split|NO_SERIES|18200|Inverter|NO_MODE"
+    ],
+    "categories": [
+     "air_conditioner"
+    ],
+    "name": "Super General 1.5 Ton Split Air Conditioner 18200 BTU With Inverter(Power Saving Technology), Auto Clean, Gold Fin With ",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B0DQFD2LZK",
+    "taxonomy": "BRAND_unknown_vs_detected",
+    "detail": "",
+    "keys": [
+     "gree|split|NO_SERIES|11900|NO_TECH|NO_MODE",
+     "unknown|split|NO_SERIES|11900|NO_TECH|NO_MODE"
+    ],
+    "categories": [
+     "air_conditioner"
+    ],
+    "name": "Gree Split Air Conditioner, Cool Wall Only,11900 Units, AIMAX,Wifi,Auto Sterilization & Cleaning,Timer,Air Distribution ",
+    "sources": [
+     "amazon-search",
+     "scraper"
+    ],
+    "statuses": [
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B0DTJ42G92",
+    "taxonomy": "MODEL_vs_SPEC_keyspace(same ASIN, tile vs PDP or title variance)",
+    "detail": "",
+    "keys": [
+     "bosch|built_in|60",
+     "bosch|MODEL:HBJ559EB"
+    ],
+    "categories": [
+     "oven"
+    ],
+    "name": "Bosch Series 6, Built-in Oven, 60 x 60 cm, Black, AutoPilot and 3D Hotair, Eco Clean Direct, German Engineering, HBJ559E",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B0DWXVC6DB",
+    "taxonomy": "MODEL_token_variance(truncation/dimension string)",
+    "detail": "",
+    "keys": [
+     "apple|MODEL:NIK50MEU",
+     "apple|MODEL:NIK50MEU4QLED1"
+    ],
+    "categories": [
+     "tv"
+    ],
+    "name": "Nikai 50\" Inch QLED WebOS 4K Smart UHD TV, Hands-Free Voice Control, Dolby Digital, Built-in Wi-Fi, Bluetooth, High Colo",
+    "sources": [
+     "amazon-search",
+     "scraper"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B0DWXXRBRP",
+    "taxonomy": "BRAND_TOKEN_other",
+    "detail": "",
+    "keys": [
+     "apple|MODEL:NIK65MEU4QLED",
+     "apple|MODEL:NIK65MEU",
+     "nikai|MODEL:NIK65MEU"
+    ],
+    "categories": [
+     "tv"
+    ],
+    "name": "Nikai 65\" Inch QLED WebOS 4K Smart UHD TV, Hands-Free Voice Control, Dolby Digital, Built-in Wi-Fi, Bluetooth, High Colo",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B0F4XCW54F",
+    "taxonomy": "BRAND_unknown_vs_detected",
+    "detail": "",
+    "keys": [
+     "unknown|split|NO_SERIES|22000|Inverter|hot_cold",
+     "gree|split|NO_SERIES|22000|Inverter|hot_cold"
+    ],
+    "categories": [
+     "air_conditioner"
+    ],
+    "name": "GREE - GWH24AGE-S3DTA1F Split Air Conditioner - Pular Pro Inverter 22000 BTU Hot/Cold with wifi",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B0F542W4VP",
+    "taxonomy": "BRAND_unknown_vs_detected",
+    "detail": "",
+    "keys": [
+     "unknown|split|NO_SERIES|18600|NO_TECH|cool_only",
+     "gree|split|NO_SERIES|18600|NO_TECH|cool_only"
+    ],
+    "categories": [
+     "air_conditioner"
+    ],
+    "name": "Gree Split Air Conditioner - AI Max- 18600 BTU- Cold Only - GWC18AVDXF-D3NTA1A",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B0F55C5M1R",
+    "taxonomy": "MODEL_vs_SPEC_keyspace(same ASIN, tile vs PDP or title variance)",
+    "detail": "",
+    "keys": [
+     "lg|NA|20",
+     "lg|MODEL:MS2032GAS"
+    ],
+    "categories": [
+     "microwave"
+    ],
+    "name": "LG Microwave, New Chef, 20 Liters, Black - MS2032GAS",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B0F8JK45YM",
+    "taxonomy": "BRAND_TOKEN_other",
+    "detail": "",
+    "keys": [
+     "lg|MODEL:65QNED86A6A",
+     "vision|MODEL:65QNED86A6A"
+    ],
+    "categories": [
+     "tv"
+    ],
+    "name": "LG 65QNED86A6A 65 inch MiniLED QNED evo AI WebOS 25 VRR 144hz 4K Smart TV alpha 8 AI Processor Gen2 AI Sound Pro with vi",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B0F8JK8Q35",
+    "taxonomy": "BRAND_TOKEN_other",
+    "detail": "",
+    "keys": [
+     "lg|MODEL:86QNED86A6A",
+     "vision|MODEL:86QNED86A6A"
+    ],
+    "categories": [
+     "tv"
+    ],
+    "name": "LG 86QNED86A6A 86 inch MiniLED QNED evo AI WebOS 25 VRR 144hz 4K Smart TV alpha 8 AI Processor Gen2 AI Sound Pro with vi",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B0F8KSNL6B",
+    "taxonomy": "BRAND_TOKEN_other",
+    "detail": "",
+    "keys": [
+     "vivo|vivobook|sdx|16|512|14|igpu",
+     "vivobook|MODEL:LY034W"
+    ],
+    "categories": [
+     "laptop"
+    ],
+    "name": "Vivobook 14 Laptop X1407QA-LY034W, 14\" WUXGA (1920 x 1200) Display 60Hz,Qualcomm Snapdragon X1 SE Processor /16GB RAM DD",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B0F8VXZKMC",
+    "taxonomy": "MODEL_token_variance(truncation/dimension string)",
+    "detail": "",
+    "keys": [
+     "samsung|MODEL:QA77S85FAEXSA",
+     "samsung|MODEL:QA55S85FAEXSA"
+    ],
+    "categories": [
+     "tv"
+    ],
+    "name": "Samsung 77 Inch OLED TV, S85F, 4K, Gaming TV, NQ4 AI Gen2 Processor, 4K AI Upscaling, 120Hz, Dolby Atmos, QA77S85FAEXSA ",
+    "sources": [
+     "scraper"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B0F9KSYSP2",
+    "taxonomy": "MODEL_token_variance(truncation/dimension string)",
+    "detail": "",
+    "keys": [
+     "samsung|MODEL:UA75U8000FUXSA",
+     "samsung|MODEL:UA43U8000FUXSA"
+    ],
+    "categories": [
+     "tv"
+    ],
+    "name": "Samsung 75 Inch Crystal UHD TV, U8000F, 4K, Crystal Processor, 4K Upscaling, Q-Symphony, Free contents by Samsung TV Plu",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B0F9KVBQLY",
+    "taxonomy": "MODEL_token_variance(truncation/dimension string)",
+    "detail": "",
+    "keys": [
+     "samsung|MODEL:QA50Q7FAAUXSA",
+     "samsung|MODEL:QA75Q7FAAUXSA"
+    ],
+    "categories": [
+     "tv"
+    ],
+    "name": "Samsung 50 Inch QLED TV, Q7F, 4K, Q4 AI Processor, 100% Color Volume with Quantum Dot, Secured by Knox, Endless Free Con",
+    "sources": [
+     "scraper"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B0FG8CP81X",
+    "taxonomy": "BRAND_unknown_vs_detected",
+    "detail": "",
+    "keys": [
+     "unknown|window|NO_SERIES|21600|NO_TECH|cool_only",
+     "hisense|window|NO_SERIES|21600|NO_TECH|cool_only"
+    ],
+    "categories": [
+     "air_conditioner"
+    ],
+    "name": "Hisense Window Air Conditioner, 21600 BTU, 2 Ton, Heating & Cooling, 4 Way Swing, Energy Saving, 7 Years Compresser Warr",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B0FG8FL1QG",
+    "taxonomy": "BRAND_unknown_vs_detected",
+    "detail": "",
+    "keys": [
+     "hisense|window|NO_SERIES|17800|NO_TECH|cool_only",
+     "unknown|window|NO_SERIES|17800|NO_TECH|cool_only"
+    ],
+    "categories": [
+     "air_conditioner"
+    ],
+    "name": "Hisense Window Air Conditioner, 17800 BTU, 1.5 Ton, Heating & Cooling, 4 Way Swing, Energy Saving, 7 Years Compresser Wa",
+    "sources": [
+     "amazon-search",
+     "scraper"
+    ],
+    "statuses": [
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B0FGDGZ5KD",
+    "taxonomy": "BRAND_TOKEN_platform(Google TV)",
+    "detail": "",
+    "keys": [
+     "google|MODEL:65Q6800H",
+     "skyworth|MODEL:65Q6800H"
+    ],
+    "categories": [
+     "tv"
+    ],
+    "name": "Skyworth 65 in 4K QLED Smart TV, Model 65Q6800H, 2025, 144Hz Refresh Rate, Google TV, HDR10+, Dolby Vision-Atmos, Game M",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B0FGDMJJHK",
+    "taxonomy": "BRAND_TOKEN_platform(Google TV)",
+    "detail": "",
+    "keys": [
+     "google|MODEL:55Q6800H",
+     "skyworth|MODEL:55Q6800H"
+    ],
+    "categories": [
+     "tv"
+    ],
+    "name": "SKYWORTH 55Q6800H 55-Inch QLED+ 4K Google TV, 120Hz, Dolby Vision & Atmos, HDMI 2.1, Gaming Mode, Slim Bezel Design",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B0FJLGM4L7",
+    "taxonomy": "BRAND_TOKEN_platform(Google TV)",
+    "detail": "",
+    "keys": [
+     "google|MODEL:65Q6820H",
+     "skyworth|MODEL:65Q6820H"
+    ],
+    "categories": [
+     "tv"
+    ],
+    "name": "Skyworth 65-Inch QLED+ Google TV, 120Hz Refresh Rate, Model 65Q6820H, 2025, Smart TV with Dolby Vision & Atmos, 3 HDMI, ",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B0FJLHQRZ9",
+    "taxonomy": "BRAND_TOKEN_platform(Google TV)",
+    "detail": "",
+    "keys": [
+     "google|MODEL:111X8X64.7CM",
+     "skyworth|MODEL:111X8X64.7CM"
+    ],
+    "categories": [
+     "tv"
+    ],
+    "name": "Skyworth 50-inch QLED+ Google TV, 120Hz Refresh Rate, Model 50Q6800H, 2025, Smart TV with Dolby Vision & Atmos, 3 HDMI P",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B0FKNFWMWL",
+    "taxonomy": "BRAND_TOKEN_platform(Google TV)",
+    "detail": "",
+    "keys": [
+     "google|MODEL:1.07BILLION",
+     "apple|MODEL:1.07BILLION"
+    ],
+    "categories": [
+     "tv"
+    ],
+    "name": "CHIQ 75 inch QLED 4K Smart TV, Dolby Vision & Atmos, Google Cast, Apple AirPlay,Voice Control, YT, Netflix, EMEC,DLG-120",
+    "sources": [
+     "amazon-search",
+     "scraper"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B0FLVW2J3G",
+    "taxonomy": "MODEL_vs_SPEC_keyspace(same ASIN, tile vs PDP or title variance)",
+    "detail": "",
+    "keys": [
+     "lenovo|MODEL:TB336ZU",
+     "lenovo|idea tab|NO_GEN|256|5g|11"
+    ],
+    "categories": [
+     "tablet"
+    ],
+    "name": "Lenovo Idea Tab, 11 INCH, 2.5K, 2560x1600, LUNA GREY, MediaTek® Dimensity 6300 OC, 8GB Ram, 256GB Storage, with Call Fea",
+    "sources": [
+     "amazon-search",
+     "scraper"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B0FMPX9B58",
+    "taxonomy": "CATEGORY_MISMATCH",
+    "detail": "",
+    "keys": [
+     "nikai|MODEL:NCM3120AX",
+     "nikai|drip|1.3"
+    ],
+    "categories": [
+     "dishwasher",
+     "coffee_maker"
+    ],
+    "name": "Nikai 1.3L Coffee Maker with Glass Carafe | 750ml Water Capacity, 30-Second Anti-Drip Function, Boil Dry Protection, Dis",
+    "sources": [
+     "amazon-search",
+     "scraper"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B0FNWRW874",
+    "taxonomy": "BRAND_unknown_vs_detected",
+    "detail": "",
+    "keys": [
+     "supergeneral|split|NO_SERIES|23000|Inverter|cool_only",
+     "unknown|split|NO_SERIES|23000|Inverter|cool_only"
+    ],
+    "categories": [
+     "air_conditioner"
+    ],
+    "name": "Super General 2 Ton Split Air Conditioner 23000 BTU With Inverter(Power Saving Technology), Auto Clean, Gold Fin With Co",
+    "sources": [
+     "amazon-search",
+     "scraper"
+    ],
+    "statuses": [
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B0FPXQ3HWM",
+    "taxonomy": "BRAND_unknown_vs_detected",
+    "detail": "",
+    "keys": [
+     "unknown|split|NO_SERIES|23000|NO_TECH|NO_MODE",
+     "hisense|split|NO_SERIES|23000|NO_TECH|NO_MODE"
+    ],
+    "categories": [
+     "air_conditioner"
+    ],
+    "name": "Hisense 23000 BTU Cold & Hot Split Air Conditioner, WiFi, Energy Saving, Self Auto Clean, 7 Years Compressor Warranty.",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B0FQ58VSGJ",
+    "taxonomy": "BRAND_TOKEN_platform(Google TV)",
+    "detail": "",
+    "keys": [
+     "google|MODEL:134.54X8.81X78.48CM",
+     "skyworth|MODEL:134.54X8.81X78.48CM"
+    ],
+    "categories": [
+     "tv"
+    ],
+    "name": "Skyworth 60-Inch QLED+ Google TV, Model 60Q6800H, 120Hz Refresh Rate, 2025 Model, 134.54x8.81x78.48cm, Smart TV with Dol",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B0FQCJP2Z6",
+    "taxonomy": "BRAND_unknown_vs_detected",
+    "detail": "",
+    "keys": [
+     "midea|window|NO_SERIES|17600|Inverter|NO_MODE",
+     "unknown|window|NO_SERIES|17600|Inverter|NO_MODE"
+    ],
+    "categories": [
+     "air_conditioner"
+    ],
+    "name": "MIDEA Window Air Conditioner Rotary Hot Cold 17600 Units (Deluxe Inverter WG)",
+    "sources": [
+     "amazon-search"
+    ],
+    "statuses": [
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B0FQCKKL5R",
+    "taxonomy": "BRAND_unknown_vs_detected",
+    "detail": "",
+    "keys": [
+     "unknown|split|NO_SERIES|22000|Standard|cool_only",
+     "midea|split|NO_SERIES|22000|Standard|cool_only"
+    ],
+    "categories": [
+     "air_conditioner"
+    ],
+    "name": "MIDEA Wall Split Air Conditioner M/MSTN24CRNAG16 Cool Only Infinity, 22000 Units Cool Black, Rotary Compressor, Even Dis",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B0FQCMF7B5",
+    "taxonomy": "BRAND_unknown_vs_detected",
+    "detail": "",
+    "keys": [
+     "unknown|split|NO_SERIES|18100|NO_TECH|NO_MODE",
+     "midea|split|NO_SERIES|18100|NO_TECH|NO_MODE"
+    ],
+    "categories": [
+     "air_conditioner"
+    ],
+    "name": "MIDEA Split Air Conditioner Wall Hot Cold 18100 Units (MISSION XTREME - Wi-Fi - Energy Saving)",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B0FQCMJ2H6",
+    "taxonomy": "BRAND_unknown_vs_detected",
+    "detail": "",
+    "keys": [
+     "midea|split|NO_SERIES|11900|Standard|NO_MODE",
+     "unknown|split|NO_SERIES|11900|Standard|NO_MODE"
+    ],
+    "categories": [
+     "air_conditioner"
+    ],
+    "name": "MIDEA Wall Split Air Conditioner M/MSTN12HRNAG16 Hot Cold Infiniti 11900 Units Hot Cold Black, Rotary Compressor, Even D",
+    "sources": [
+     "amazon-search"
+    ],
+    "statuses": [
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B0FQD25Y4T",
+    "taxonomy": "BRAND_TOKEN_other",
+    "detail": "",
+    "keys": [
+     "lg|front_load|12|washer",
+     "tcl|front_load|12|washer"
+    ],
+    "categories": [
+     "washing_machine"
+    ],
+    "name": "TCL Front Load Automatic Washing Machine 12 Kg, 1400 RPM, Partial Drying, LED Display, 75L Drum, Energy Efficient, Silve",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B0FQV76N5T",
+    "taxonomy": "SPEC_FIELD_DIFF",
+    "detail": "5:13.3/NO_SCREEN",
+    "keys": [
+     "lenovo|thinkpad|i5-10|16|512|13.3|igpu",
+     "lenovo|thinkpad|i5-10|16|512|NO_SCREEN|igpu"
+    ],
+    "categories": [
+     "laptop"
+    ],
+    "name": "Lenovo ThinkPad X13 Gen 1 13.3-Inch Laptop, 10th Gen Quad-Core i5-10310U up to 4.4GHz, 16GB RAM, 512GB SSD, HDMI, Window",
+    "sources": [
+     "amazon-search"
+    ],
+    "statuses": [
+     "valid",
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B0FRXM29SV",
+    "taxonomy": "SPEC_FIELD_DIFF",
+    "detail": "2:qhd/uwqhd;4:NO_PANEL/va",
+    "keys": [
+     "koorui|34|qhd|180|NO_PANEL",
+     "koorui|34|uwqhd|180|va"
+    ],
+    "categories": [
+     "monitor"
+    ],
+    "name": "KOORUI 34 Inch UltraWide Curved Gaming Monitor, WQHD 180Hz, HDR400",
+    "sources": [
+     "amazon-search"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B0FVGK6NHW",
+    "taxonomy": "BRAND_TOKEN_platform(Google TV)",
+    "detail": "",
+    "keys": [
+     "lg|MODEL:RESOLUTION-3840",
+     "google|MODEL:RESOLUTION-3840"
+    ],
+    "categories": [
+     "tv"
+    ],
+    "name": "55'' INCH,QLED 4K Google TV(5.0),120HZ DLG, RAM-2GB STOREAGE -16GBDOLBY VISION & ATMOS, RESOLUTION-3840 * 2160 WITH Pre-",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B0FWD6T5TW",
+    "taxonomy": "SPEC_FIELD_DIFF",
+    "detail": "3:24/16",
+    "keys": [
+     "apple|macbook pro|m5|24|1024|14.2|igpu",
+     "apple|macbook pro|m5|16|1024|14.2|igpu"
+    ],
+    "categories": [
+     "laptop"
+    ],
+    "name": "Apple 2025 MacBook Pro 14.2-inch Laptop with M5 chip with 10 core CPU and 10 core GPU: Built for Apple Intelligence, Liq",
+    "sources": [
+     "scraper"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B0FWJWN37R",
+    "taxonomy": "MODEL_vs_SPEC_keyspace(same ASIN, tile vs PDP or title variance)",
+    "detail": "",
+    "keys": [
+     "asus|vivobook|i7-13|16|512|15.6|igpu",
+     "asus|MODEL:BQ715W"
+    ],
+    "categories": [
+     "laptop"
+    ],
+    "name": "Asus Vivobook 15 Slim Laptop | Intel Core i7-1355U, Intel Iris X Graphics, 16GB RAM, 512GB SSD, 15.6\"FHD Display, Win11 ",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B0FXX34PF6",
+    "taxonomy": "BRAND_unknown_vs_detected",
+    "detail": "",
+    "keys": [
+     "unknown|window|NO_SERIES|24200|NO_TECH|cool_only",
+     "ugine|window|NO_SERIES|24200|NO_TECH|cool_only"
+    ],
+    "categories": [
+     "air_conditioner"
+    ],
+    "name": "Ugine Window Air Conditioner 24,200 BTU, Cold, Gold- UAW24C",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B0GD6TYL2C",
+    "taxonomy": "BRAND_TOKEN_platform(Google TV)",
+    "detail": "",
+    "keys": [
+     "lg|MODEL:TI43G2025",
+     "google|MODEL:TI43G2025",
+     "vision|MODEL:TI43G2025"
+    ],
+    "categories": [
+     "tv"
+    ],
+    "name": "TIT Premium 43″ 2K FHD Google TV TI43G2025 with Dolby Vision & Atmos, HDR10/HLG, Game Mode, Android 14, A+ Panel, Google",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B0GDY5Q6Z5",
+    "taxonomy": "BRAND_TOKEN_platform(Google TV)",
+    "detail": "",
+    "keys": [
+     "google|MODEL:43Q5600H",
+     "skyworth|MODEL:43Q5600H"
+    ],
+    "categories": [
+     "tv"
+    ],
+    "name": "SKYWORTH 43Q5600H 43-Inch 2K QLED Smart TV with Google TV, 60Hz, Built-in Wi-Fi & Bluetooth, HDMI & USB",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B0GGZZ5MDY",
+    "taxonomy": "BRAND_TOKEN_platform(Google TV)",
+    "detail": "",
+    "keys": [
+     "lg|MODEL:TI55QG2025",
+     "google|MODEL:TI55QG2025",
+     "vision|MODEL:TI55QG2025"
+    ],
+    "categories": [
+     "tv"
+    ],
+    "name": "TIT 55-Inch 4K QLED Smart TV | Google TV (Android 14) | Dolby Vision + HDR10/HLG | HSR 60Hz Game Mode | Dolby Audio | 3×",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B0GH128BK1",
+    "taxonomy": "BRAND_TOKEN_other",
+    "detail": "",
+    "keys": [
+     "lg|MODEL:TI55G2025",
+     "vision|MODEL:TI55G2025"
+    ],
+    "categories": [
+     "tv"
+    ],
+    "name": "TIT 55-inch 4K UHD Smart TV | Google TV (Android 14) A+ Pannel | Dolby Vision + HDR10/HLG | HSR 60Hz Game Mode | Dolby A",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B0GMX1Q2D1",
+    "taxonomy": "SPEC_FIELD_DIFF",
+    "detail": "4:60/144",
+    "keys": [
+     "google|55|4k|qled|60",
+     "google|55|4k|qled|144"
+    ],
+    "categories": [
+     "tv"
+    ],
+    "name": "TCL 55T61D Television 55 Inch Smart TV 4K Premium QLED Colorful Quantum Crystal HDR 10+ Gaming Google TV, Dolby Vision A",
+    "sources": [
+     "scraper"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B0GR1FH8Y1",
+    "taxonomy": "SPEC_FIELD_DIFF",
+    "detail": "5:16.2/NO_SCREEN",
+    "keys": [
+     "apple|macbook pro|m5max|48|2048|16.2|igpu",
+     "apple|macbook pro|m5max|48|2048|NO_SCREEN|igpu"
+    ],
+    "categories": [
+     "laptop"
+    ],
+    "name": "Apple 2026 MacBook Pro Laptop with M5 Max chip with 18 CPU and 40 GPU: Built for AI, 16.2-inch Liquid Retina XDR Display",
+    "sources": [
+     "amazon-search"
+    ],
+    "statuses": [
+     "valid",
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B0GR1KFNWC",
+    "taxonomy": "SPEC_FIELD_DIFF",
+    "detail": "5:13/NO_SCREEN",
+    "keys": [
+     "apple|macbook air|m5|24|1024|13|igpu",
+     "apple|macbook air|m5|24|1024|NO_SCREEN|igpu"
+    ],
+    "categories": [
+     "laptop"
+    ],
+    "name": "Apple 2026 MacBook Air 13-inch Laptop with M5 chip: AI and Apple Intelligence, 13.6-inch Liquid Retina Display, 24GB Uni",
+    "sources": [
+     "scraper"
+    ],
+    "statuses": [
+     "valid",
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B0GS65PCTJ",
+    "taxonomy": "BRAND_TOKEN_platform(Google TV)",
+    "detail": "",
+    "keys": [
+     "google|MODEL:55X6600H",
+     "skyworth|MODEL:55X6600H"
+    ],
+    "categories": [
+     "tv"
+    ],
+    "name": "Skyworth Smart TV 4K Mini LED Google TV, 55 Inch, Eye Care 5.0 Display, Dolby Vision & Dolby Atmos, HDR10+, Local Dimmin",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B0GV986B9V",
+    "taxonomy": "SPEC_FIELD_DIFF",
+    "detail": "5:hot_cold/cool_only",
+    "keys": [
+     "unknown|split|NO_SERIES|21000|Standard|hot_cold",
+     "unknown|split|NO_SERIES|21000|Standard|cool_only"
+    ],
+    "categories": [
+     "air_conditioner"
+    ],
+    "name": "OSCAR 2 Ton Split Air Conditioner | 21000 BTU | Hot and Cool AC | Rotary Compressor | Low Noise 49dB | High Performance ",
+    "sources": [
+     "amazon-search"
+    ],
+    "statuses": [
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B0GWDCYL3R",
+    "taxonomy": "BRAND_unknown_vs_detected",
+    "detail": "",
+    "keys": [
+     "aston|split|NO_SERIES|18000|Inverter|hot_cold",
+     "unknown|split|NO_SERIES|18000|Inverter|hot_cold"
+    ],
+    "categories": [
+     "air_conditioner"
+    ],
+    "name": "Aston Split Air Conditioner, 18000 BTU, 1.5Ton, Hot & Cold, Inverter, Wi-Fi, with Copper - ASAC18AX8V3-I",
+    "sources": [
+     "amazon-search",
+     "scraper"
+    ],
+    "statuses": [
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B0GWDL5D7C",
+    "taxonomy": "BRAND_unknown_vs_detected",
+    "detail": "",
+    "keys": [
+     "aston|split|NO_SERIES|11800|NO_TECH|NO_MODE",
+     "unknown|split|NO_SERIES|11800|NO_TECH|NO_MODE"
+    ],
+    "categories": [
+     "air_conditioner"
+    ],
+    "name": "Aston ASAC12AX6V3-I 11800 BTU Split Air Conditioner, 1 Ton Capacity, White",
+    "sources": [
+     "amazon-search",
+     "scraper"
+    ],
+    "statuses": [
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B0GWM1JFWJ",
+    "taxonomy": "BRAND_TOKEN_other",
+    "detail": "",
+    "keys": [
+     "lg|MODEL:OLED65CS6VA",
+     "vision|MODEL:OLED65CS6VA"
+    ],
+    "categories": [
+     "tv"
+    ],
+    "name": "LG 65-Inch CS6 Series 4K OLED evo Smart TV (OLED65CS6VA) - 2026 Model 144Hz VRR Refresh Rate AI Processor Gen8 Dolby Vis",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B0GWM2BTWZ",
+    "taxonomy": "BRAND_unknown_vs_detected",
+    "detail": "",
+    "keys": [
+     "tcl|split|NO_SERIES|19100|Inverter|NO_MODE",
+     "unknown|split|NO_SERIES|19100|Inverter|NO_MODE"
+    ],
+    "categories": [
+     "air_conditioner"
+    ],
+    "name": "TCL SaveIN NEO T4 Split AC 19100 BTU H&C, with WiFi and Inverter - TAC-12HSU/ZIM",
+    "sources": [
+     "amazon-search",
+     "scraper"
+    ],
+    "statuses": [
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B0GWM48NB3",
+    "taxonomy": "BRAND_unknown_vs_detected",
+    "detail": "",
+    "keys": [
+     "unknown|split|NO_SERIES|28200|Inverter|cool_only",
+     "tcl|split|NO_SERIES|28200|Inverter|cool_only"
+    ],
+    "categories": [
+     "air_conditioner"
+    ],
+    "name": "TCL SaveIN NEO T4 Split AC 28200 BTU cooling only, with WiFi and Inverter - TAC-30CSU/ZIM",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B0GXW6BYTB",
+    "taxonomy": "BRAND_unknown_vs_detected",
+    "detail": "",
+    "keys": [
+     "unknown|split|NO_SERIES|22000|Inverter|NO_MODE",
+     "supergeneral|split|NO_SERIES|22000|Inverter|NO_MODE"
+    ],
+    "categories": [
+     "air_conditioner"
+    ],
+    "name": "Super General 2 Ton Split Air Conditioner 22000 BTU With Inverter(Power Saving Technology), Auto Clean, Gold Fin With He",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B0GXWPZGST",
+    "taxonomy": "BRAND_unknown_vs_detected",
+    "detail": "",
+    "keys": [
+     "unknown|split|NO_SERIES|22000|Inverter|cool_only",
+     "supergeneral|split|NO_SERIES|22000|Inverter|cool_only"
+    ],
+    "categories": [
+     "air_conditioner"
+    ],
+    "name": "Super General 2 Ton Split Air Conditioner 22000 BTU With Inverter(Power Saving Technology), Auto Clean, Gold Fin With Co",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B0GZKYJRTS",
+    "taxonomy": "MODEL_token_variance(truncation/dimension string)",
+    "detail": "",
+    "keys": [
+     "samsung|MODEL:QA85LS03HEUXSA",
+     "samsung|MODEL:LS03HE"
+    ],
+    "categories": [
+     "tv"
+    ],
+    "name": "Samsung 85 Inch The Frame TV, LS03HE, 4K, 240Hz DLG, QLED Glare Free, HDR 10+, Motion Xcelerator 144Hz, Art Mode, Modern",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B0GZKZ4J2D",
+    "taxonomy": "MODEL_token_variance(truncation/dimension string)",
+    "detail": "",
+    "keys": [
+     "samsung|MODEL:MRA85R85HAUXSA",
+     "samsung|MODEL:MRA85R"
+    ],
+    "categories": [
+     "tv"
+    ],
+    "name": "Samsung 85 Inch Micro RGB Smart TV, R85H, 4K, HDR 10+, Motion Xcelerator 144Hz, Dolby Atmos, Micro RGB AI Engine, MRA85R",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B0GZPXH9C5",
+    "taxonomy": "BRAND_unknown_vs_detected",
+    "detail": "",
+    "keys": [
+     "aston|split|NO_SERIES|12000|Inverter|hot_cold",
+     "unknown|split|NO_SERIES|12000|Inverter|hot_cold"
+    ],
+    "categories": [
+     "air_conditioner"
+    ],
+    "name": "Aston Split Air Conditioner, 12000 BTU, 1 Ton, Hot & Cold, Wi-Fi, Inverter, with Copper - ASSAC12TL8V3-I",
+    "sources": [
+     "amazon-search",
+     "scraper"
+    ],
+    "statuses": [
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B0GZZS9QZR",
+    "taxonomy": "BRAND_unknown_vs_detected",
+    "detail": "",
+    "keys": [
+     "enviro|split|NO_SERIES|18000|Inverter|cool_only",
+     "unknown|split|NO_SERIES|18000|Inverter|cool_only"
+    ],
+    "categories": [
+     "air_conditioner"
+    ],
+    "name": "Enviro 1.5 Ton DC Inverter Split Air Conditioner 18000 BTU | Power Saving Tech with T3 Compressor & R32 Refrigerant |4D ",
+    "sources": [
+     "amazon-search",
+     "scraper"
+    ],
+    "statuses": [
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B0H1151D26",
+    "taxonomy": "BRAND_unknown_vs_detected",
+    "detail": "",
+    "keys": [
+     "enviro|split|NO_SERIES|22500|Inverter|cool_only",
+     "unknown|split|NO_SERIES|22500|Inverter|cool_only"
+    ],
+    "categories": [
+     "air_conditioner"
+    ],
+    "name": "Enviro 2.0 Ton DC Inverter Split Air Conditioner 22500 BTU | Power Saving Tech with T3 Compressor & R32 Refrigerant |4D ",
+    "sources": [
+     "amazon-search"
+    ],
+    "statuses": [
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B0H1MCWLLK",
+    "taxonomy": "BRAND_TOKEN_platform(Google TV)",
+    "detail": "",
+    "keys": [
+     "google|98|4k|mini_led|144",
+     "tcl|98|4k|mini_led|144"
+    ],
+    "categories": [
+     "tv"
+    ],
+    "name": "TCL 98Q6C Television 98 Inch Smart TV 4K QD-Mini LED Colorful Quantum Crystal HDR 10+ Gaming Google TV, 144Hz Native Ref",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B0H1MJ88Y3",
+    "taxonomy": "BRAND_TOKEN_platform(Google TV)",
+    "detail": "",
+    "keys": [
+     "google|65|4k|mini_led|144",
+     "tcl|65|4k|mini_led|144"
+    ],
+    "categories": [
+     "tv"
+    ],
+    "name": "TCL 65T8D Television 65 Inch Smart TV 4K QD-Mini LED Dimming Colorful Quantum Crystal HDR 10+ Gaming Google TV, 144Hz Na",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B0H4HDC5JK",
+    "taxonomy": "BRAND_TOKEN_platform(Google TV)",
+    "detail": "",
+    "keys": [
+     "lg|MODEL:TI502025",
+     "google|MODEL:TI502025",
+     "vision|MODEL:TI502025"
+    ],
+    "categories": [
+     "tv"
+    ],
+    "name": "TIT Premium 50 inch 4K FHD Google TV with Dolby Vision & Atmos, HDR10/HLG, Game Mode, Android 14, A+ Panel, Google Assis",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B0H6G5P17R",
+    "taxonomy": "BRAND_TOKEN_other",
+    "detail": "",
+    "keys": [
+     "lg|MODEL:40Q5600H",
+     "skyworth|MODEL:40Q5600H"
+    ],
+    "categories": [
+     "tv"
+    ],
+    "name": "SKYWORTH 40Q5600H 40-Inch 2K QLED Smart TV, Google TV, HDR10 & HLG, Dolby Audio, Frameless Design, Black",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B0H8KMJV1N",
+    "taxonomy": "BRAND_unknown_vs_detected",
+    "detail": "",
+    "keys": [
+     "unknown|split|NO_SERIES|18000|NO_TECH|NO_MODE",
+     "midea|split|NO_SERIES|18000|NO_TECH|NO_MODE"
+    ],
+    "categories": [
+     "air_conditioner"
+    ],
+    "name": "Midea MSTE18HRN-I 18000 BTU Split Air Conditioner, 1.5 Ton Capacity, White",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B0H8MJR68L",
+    "taxonomy": "BRAND_unknown_vs_detected",
+    "detail": "",
+    "keys": [
+     "unknown|window|NO_SERIES|24000|NO_TECH|hot_cold",
+     "crafft|window|NO_SERIES|24000|NO_TECH|hot_cold"
+    ],
+    "categories": [
+     "air_conditioner"
+    ],
+    "name": "كرافت مكيف شباك 24000 وحدة – 2 طن (حار بارد) أبيض CWACH24H",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B0HBQ7QM7J",
+    "taxonomy": "SPEC_FIELD_DIFF",
+    "detail": "3:24200/25249;5:NO_MODE/cool_only",
+    "keys": [
+     "unknown|window|NO_SERIES|24200|Inverter|NO_MODE",
+     "unknown|window|NO_SERIES|25249|Inverter|cool_only"
+    ],
+    "categories": [
+     "air_conditioner"
+    ],
+    "name": "YORK Taurus 24,200 BTU (Maximum 25,249 BTU) Window Inverter Air Conditioner Cool & Heat with Wi-Fi Control",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B0HCVLD7MH",
+    "taxonomy": "SPEC_FIELD_DIFF",
+    "detail": "2:4k/fhd;4:120/60",
+    "keys": [
+     "google|50|4k|qled|120",
+     "google|50|fhd|qled|60"
+    ],
+    "categories": [
+     "tv"
+    ],
+    "name": "IMPEX 50 Inch Google QLED Smart TV Ultra HD 3840 x 2160, HDR10, Dolby Audio, Google Cast, Wi-Fi, HDMI ARC, DVB T2/S2, 17",
+    "sources": [
+     "scraper"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   },
+   {
+    "asin": "B0HHJHJYPB",
+    "taxonomy": "BRAND_unknown_vs_detected",
+    "detail": "",
+    "keys": [
+     "unknown|split|NO_SERIES|22500|NO_TECH|cool_only",
+     "enviro|split|NO_SERIES|22500|NO_TECH|cool_only"
+    ],
+    "categories": [
+     "air_conditioner"
+    ],
+    "name": "Enviro Split Air Conditioner, 22,500 BTU, Cooling Only - EAC-24GST3",
+    "sources": [
+     "scraper",
+     "amazon-search"
+    ],
+    "statuses": [
+     "low_confidence_candidate"
+    ]
+   },
+   {
+    "asin": "B0HJ9ZYZQR",
+    "taxonomy": "SPEC_FIELD_DIFF",
+    "detail": "4:256/1024",
+    "keys": [
+     "apple|iPhone|18|Pro|256",
+     "apple|iPhone|18|Pro|1024"
+    ],
+    "categories": [
+     "mobile"
+    ],
+    "name": "Apple iPhone 18 Pro 256 GB: – Burgundy",
+    "sources": [
+     "scraper"
+    ],
+    "statuses": [
+     "valid"
+    ]
+   }
+  ]
+ },
+ "phones": {
+  "storefront_products": 286,
+  "storefront_brands": {
+   "Samsung": 81,
+   "HONOR": 24,
+   "Apple": 50,
+   "Unknown": 82,
+   "Infinix": 1,
+   "REDMI": 1,
+   "Motorola": 10,
+   "Redmi": 4,
+   "realme": 10,
+   "Xiaomi": 11,
+   "HMD": 1,
+   "SAMSUNG": 3,
+   "POCO": 3,
+   "Honor": 1,
+   "Google": 1,
+   "Anker": 1,
+   "Realme": 2
+  },
+  "names_with_npo_row": 84,
+  "npo_rows": 134,
+  "npo_distinct_keys": 82,
+  "npo_valid_keys": 82,
+  "npo_lowconf_rows": 0,
+  "detected_categories": {
+   "mobile": 113,
+   "smartwatch": 21
+  },
+  "current_offer_keys": 68,
+  "renewed_in_offer_names": 15,
+  "unmatched": 202,
+  "unmatched_brand_unknown": 80,
+  "unmatched_by_brand": {
+   "HONOR": 22,
+   "Unknown": 80,
+   "Apple": 18,
+   "Samsung": 52,
+   "Motorola": 10,
+   "realme": 9,
+   "Xiaomi": 5,
+   "HMD": 1,
+   "SAMSUNG": 1,
+   "Google": 1,
+   "Anker": 1,
+   "Realme": 2
+  },
+  "unmatched_patterns": {
+   "renewed": 3,
+   "accessory": 22,
+   "non_phone": 0,
+   "intl_or_ksa_version": 67,
+   "feature_phone": 1
+  },
+  "detect_reject_simulation": {
+   "accessory_signal": 19,
+   "foreign_signal": 107,
+   "foreign_signal_only_amoled_or_camera": 107,
+   "none": 76
+  },
+  "detect_reject_examples": {
+   "accessory_signal": [
+    "case <= UGREEN 2 Pack for iPhone 15 Pro Max Screen Protector Tempered Glass Cl",
+    "case <= UGREEN 2 Pack for iPhone 14 Pro Max Screen Protector Tempered Glass Cl",
+    "case/cover <= TOCOL 2 Pack for iPhone 17 Pro Max / 16 Pro Max Screen Protector 6.9 I",
+    "stand <= AMAV SOYES XS15 3G Mini Smartphone, Dual SIM Dual Standby WiFi 3 inch ",
+    "cover/film <= UGREEN 2 Pack Samsung Galaxy S22/S23 Ultra 3D Curved Screen Protector,"
+   ],
+   "foreign_signal": [
+    "camera <= HONOR X7e Smartphone, Silicon-Carbon Battery, 45W HONOR SuperCharge, 1",
+    "camera <= Apple iPhone 17 Pro 512 GB: 6.3-inch Display with ProMotion up to 120H",
+    "camera <= Samsung Galaxy S25 Ultra AI Phone, 512GB Storage, 12GB RAM, Titanium B",
+    "camera/oled <= Nothing Phone (3a) Lite 5G / 8 GB/ 128 GB/ 6.77\"AMOLED flexible LTPS/ ",
+    "camera <= HONOR X7e Smartphone, Silicon-Carbon Battery, 45W HONOR SuperCharge, 1",
+    "camera <= realme 15 5G Smartphone 12GB+256GB Black | 6325mAh Battery, 45W Ultra "
+   ],
+   "none": [
+    "Unknown <= AGM M9 4G Rugged Mobile Phone, Basic Feature Cellphone, Large Button, IP68/IP69K",
+    "Apple <= Apple iPhone 16e (256 GB) - Black",
+    "Unknown <= TORRAS OrigArmor for iPhone 18 Pro Screen Protector, 6.3\", 1 Pack",
+    "Unknown <= ESR 3 Pack for iPhone 18 Pro Max/17 Pro Max Screen Protector, Armorite",
+    "Motorola <= Motorola Moto G35 DUAL-SIM 256GB ROM + 8GB RAM (GSM Only|No CDMA) Factory Unlock",
+    "Motorola <= Motorola Moto G86 Dual SIM 256GB ROM + 8GB RAM (GSM Only | No CDMA) Factory Unlo",
+    "Unknown <= Redmi 15C Midnight Black 8GB RAM 256GB 4G - Global Version",
+    "Unknown <= TV Smart Projector, 1080P FHD Home Theater, Portable Mini Projector Compatible w"
+   ]
+  },
+  "unmatched_sample": [
+   "HONOR | HONOR X7e Smartphone, Silicon-Carbon Battery, 45W HONOR SuperCharge, 120Hz Display, 50MP AI Camera, ",
+   "Unknown | AGM M9 4G Rugged Mobile Phone, Basic Feature Cellphone, Large Button, IP68/IP69K Waterproof, Drop-Pr",
+   "Apple | Apple iPhone 16e (256 GB) - Black",
+   "Apple | Apple iPhone 17 Pro 512 GB: 6.3-inch Display with ProMotion up to 120Hz, A19 Pro Chip, Breakthrough ",
+   "Samsung | Samsung Galaxy S25 Ultra AI Phone, 512GB Storage, 12GB RAM, Titanium Black, Android Smartphone, 200M",
+   "Unknown | TORRAS OrigArmor for iPhone 18 Pro Screen Protector, 6.3\", 1 Pack",
+   "Unknown | ESR 3 Pack for iPhone 18 Pro Max/17 Pro Max Screen Protector, Armorite",
+   "Motorola | Motorola Moto G35 DUAL-SIM 256GB ROM + 8GB RAM (GSM Only|No CDMA) Factory Unlocked 5G Smartphone (Mi",
+   "Unknown | Nothing Phone (3a) Lite 5G / 8 GB/ 128 GB/ 6.77\"AMOLED flexible LTPS/ 50 MP Camera/5000mAh/ Black",
+   "Motorola | Motorola Moto G86 Dual SIM 256GB ROM + 8GB RAM (GSM Only | No CDMA) Factory Unlocked 5G Smartphone (",
+   "HONOR | HONOR X7e Smartphone, Silicon-Carbon Battery, 45W HONOR SuperCharge, 120Hz Display, 50MP AI Camera, ",
+   "realme | realme 15 5G Smartphone 12GB+256GB Black | 6325mAh Battery, 45W Ultra Charge, 6.77-inch 144Hz Displa",
+   "realme | realme P4 Power 5G Smartphone Dual SIM, Mobile Phone 8GB RAM, 256GB Storage, 50MP Camera, Android 16",
+   "Apple | Apple iPhone Air 256 GB: Thinnest iPhone Ever, 6.5-inch Display with ProMotion up to 120Hz, Powerful",
+   "Unknown | Redmi 15C Midnight Black 8GB RAM 256GB 4G - Global Version",
+   "Unknown | TV Smart Projector, 1080P FHD Home Theater, Portable Mini Projector Compatible with Games Consoles &",
+   "Samsung | Samsung Galaxy A17 LTE, Dual SIM, 128GB Expandable to 2TB, Smartphone, Android 14, 4GB RAM, Exynos, ",
+   "Samsung | Samsung Galaxy A356E 5G,Android Smartphone, Dual SIM Mobile Phone, 6GB RAM, 128GB Storage, Awesome I",
+   "Motorola | Motorola Edge 60 Fusion Dual-SIM 256GB ROM + 8GB RAM (GSM Only | No CDMA) Factory Unlocked 5G Smartp",
+   "realme | realme P4x 4G Smartphone Dual SIM, Mobile Phone 6GB RAM, 128GB Storage, 50MP Camera, Android 15"
+  ]
+ },
+ "laptops": {
+  "amazon_sample": [
+   {
+    "key": "dell|latitude|i5|16|512|14|igpu",
+    "status": "valid",
+    "name": "Dell Latitude 5410 14\" Notebook - Full HD - 1920 x 1080 - Core i5 i5-10310U 10th Gen 1.7GHz Hexa-cor",
+    "asin": "B09P73HNN2"
+   },
+   {
+    "key": "lenovo|thinkpad|i5-10|16|512|15.6|igpu",
+    "status": "valid",
+    "name": "Lenovo ThinkPad T15 Gen 1 Laptop Touch | 15.6\" 1920x1080 FHD | Core i5-10210U - 512GB SSD Hard Drive",
+    "asin": "B0DT6QB34Z"
+   },
+   {
+    "key": "apple|macbook pro|m5max|48|2048|16.2|igpu",
+    "status": "valid",
+    "name": "Apple 2026 MacBook Pro Laptop with M5 Max chip with 18 CPU and 40 GPU: Built for AI, 16.2-inch Liqui",
+    "asin": "B0GR1FH8Y1"
+   },
+   {
+    "key": "dell|precision|i7-8|16|512|NO_SCREEN|igpu",
+    "status": "low_confidence_candidate",
+    "name": "Dell Precision 5530 15.6in LCD Mobile Workstation Laptop (Renewed, Intel Core i7-8850H 2.6 GHz,16GB ",
+    "asin": "B07RD1T2S6"
+   },
+   {
+    "key": "lenovo|ideapad 1|ryzen5-7|16|512|15.6|igpu",
+    "status": "valid",
+    "name": "Lenovo IdeaPad 1 15AMN7 AMD Ryzen 5 7520U Notebook 39.6 cm (15.6\") Full HD 16 GB LPDDR5-SDRAM 512 GB",
+    "asin": "B0D81C6WGH"
+   },
+   {
+    "key": "hp|victus|i5-13|16|512|15.6|rtx3050",
+    "status": "valid",
+    "name": "HP Victus Gaming Laptop 15-fa2011nx, 15.6\" FHD, Intel Core i5-13420H (13Th Gen), NVIDIA GeForce RTX ",
+    "asin": "B0GWN3PDT3"
+   },
+   {
+    "key": "apple|macbook air|m4|24|512|15|igpu",
+    "status": "valid",
+    "name": "Apple 2025 MacBook Air (15-inch, Apple M4 chip with 10-core CPU and 10-core GPU, 24GB Unified Memory",
+    "asin": "B0DZDXHNBH"
+   },
+   {
+    "key": "acer|aspire|i5-13|8|512|NO_SCREEN|igpu",
+    "status": "low_confidence_candidate",
+    "name": "Acer Aspire Lite AL16 Laptop Intel Core i5-1334U Processor, 8GB Ram, 512GB SSD M.2, Intel UHD Graphi",
+    "asin": "B0F28MY3R3"
+   },
+   {
+    "key": "apple|macbook air|m5|24|1024|NO_SCREEN|igpu",
+    "status": "low_confidence_candidate",
+    "name": "Apple 2026 MacBook Air 13-inch Laptop with M5 chip: AI and Apple Intelligence, 13.6-inch Liquid Reti",
+    "asin": "B0GR1KFNWC"
+   },
+   {
+    "key": "acer|nitro|i9-13|32|1024|15.6|rtx4060",
+    "status": "valid",
+    "name": "Acer Nitro V Gaming Laptop | Intel Core i9-13900H Processor | NVIDIA GeForce RTX 4060 Laptop GPU | 1",
+    "asin": "B0D8JZDJBG"
+   },
+   {
+    "key": "lenovo|thinkpad|i5-8|8|256|14|igpu",
+    "status": "valid",
+    "name": "Lenovo ThinkPad T480 Notebook Computer, Intel Core i5-8350U, 14 Inch, 8 GB RAM, 256 GB SSD, Black, I",
+    "asin": "B0GKY1DY5R"
+   },
+   {
+    "key": "lenovo|thinkpad|i5-6|8|256|14|igpu",
+    "status": "valid",
+    "name": "Lenovo ThinkPad T460s Laptop | 14\" 1366x768 HD | Core i5-6200U - 256GB SSD Hard Drive - 8GB RAM | 2 ",
+    "asin": "B0DT667F5C"
+   },
+   {
+    "key": "hp|probook|i5-12|8|256|14.1|igpu",
+    "status": "valid",
+    "name": "HP ProBook 440 G9 (Renewed) Business Laptop PC | intel Deca-Core i5-1235U CPU | 14.1 inch FHD Non-To",
+    "asin": "B0G2SM6WJ3"
+   },
+   {
+    "key": "lenovo|thinkpad|i5|16|512|14|igpu",
+    "status": "valid",
+    "name": "Lenovo ThinkPad T490 14\" Laptop, Intel Core i5, 16GB RAM, 512GB SSD, Win11 Pro. (Renewed)",
+    "asin": "B0DSQ7YZFY"
+   },
+   {
+    "key": "acer|aspire|i9-13|32|1024|NO_SCREEN|igpu",
+    "status": "low_confidence_candidate",
+    "name": "Acer Aspire Go 16in Laptop i9-13900H 32GB RAM 1TB SSD Touch",
+    "asin": "B0FRNMCYJ1"
+   },
+   {
+    "key": "lenovo|legion|ryzen7|32|1024|15.3|rtx5060",
+    "status": "valid",
+    "name": "Lenovo Legion 5a - 2026 - Gaming Laptop - NVIDIA GeForce RTX 5060-15.3\" OLED WQXGA Display - 165Hz R",
+    "asin": "B0GNB91TWT"
+   },
+   {
+    "key": "asus|rog|i5-13|16|1024|16|rtx5050",
+    "status": "valid",
+    "name": "ASUS (Upgraded) ROG Strix G16 (2025) Gaming Laptop, 16” FHD+ 16:10 165Hz/3ms, NVIDIA GeForce RTX 505",
+    "asin": "B0FFJ16XQ9"
+   },
+   {
+    "key": "msi|cyborg|core7|16|1024|17.3|rtx5060",
+    "status": "valid",
+    "name": "MSI Cyborg 17 17.3\" FHD 144Hz Gaming Laptop: Intel Core 7-240H, NVIDIA Geforce RTX 5060, 16GB DDR5, ",
+    "asin": "B0FSGJZDNT"
+   },
+   {
+    "key": "dell|MODEL:DC15250",
+    "status": "valid",
+    "name": "Dell 15 DC15250 15.6\" FHD Laptop - Intel core i5-1334U, 8GB RAM, 512GB SSD, Windows 11, Newest Model",
+    "asin": "B0FY7NQQ3W"
+   },
+   {
+    "key": "vivobook|MODEL:LY034W",
+    "status": "valid",
+    "name": "Vivobook 14 Laptop X1407QA-LY034W, 14\" WUXGA (1920 x 1200) Display 60Hz,Qualcomm Snapdragon X1 SE Pr",
+    "asin": "B0F8KSNL6B"
+   },
+   {
+    "key": "hp|pavilion|i7-13|16|1024|15.6|igpu",
+    "status": "valid",
+    "name": "HP Pavilion 15.6\" FHD Touchscreen Laptop | Intel 13th i7-1355U(Beats i9-10880H)| 16GB RAM | 1TB SSD ",
+    "asin": "B0G1Y3XD48"
+   },
+   {
+    "key": "dell|vostro|i7-13|16|1024|15.6|igpu",
+    "status": "valid",
+    "name": "Dell Vostro 3530 Laptop (2023) | 15.6\" 1920x1080 FHD | Core i7-1355U - 1TB SSD Hard Drive - 16GB RAM",
+    "asin": "B0D4H1V6ZK"
+   },
+   {
+    "key": "dell|inspiron|i3-13|8|512|15.6|igpu",
+    "status": "valid",
+    "name": "Dell Inspiron 3530 Laptop Intel 13th Gen Core i3-1305U Processor, 8GB RAM, 512 GB SSD, Intel Iris XE",
+    "asin": "B0D58L7YKD"
+   },
+   {
+    "key": "asus|rog|i7|16|1024|16|igpu",
+    "status": "valid",
+    "name": "ASUS ROG Strix G16 (2025) Gaming Laptop, 16” FHD+ 16:10 165Hz/3ms Display, NVIDIA® GeForce RTX™ 5060",
+    "asin": "B0DZZWMB2L"
+   },
+   {
+    "key": "microsoft|surface laptop|i7|16|256|15|igpu",
+    "status": "valid",
+    "name": "Microsoft Surface Laptop 3 15” FHD Intel Core i7-1065G7 1.3GHz Quad Core, 16GB RAM, 256GB SSD, Windo",
+    "asin": "B0CK6H22VX"
+   },
+   {
+    "key": "asus|vivobook|core7|16|512|15.6|igpu",
+    "status": "valid",
+    "name": "ASUS Vivobook Laptop, Core 7-150U Processor, 16GB Memory, 512GB SSD, 15.6 Inch FHD, Blue",
+    "asin": "B0GS5C3D5W"
+   },
+   {
+    "key": "lenovo|NO_FAMILY|i3-12|8|256|15.6|igpu",
+    "status": "low_confidence_candidate",
+    "name": "Lenovo, Laptop PC, Full HD 15.6 inches, Intel i3-1215U, 8GB RAM DDR4, 256GB SSD NVMe, Windows 11 Pro",
+    "asin": "B0CBVR9HSK"
+   },
+   {
+    "key": "asus|NO_FAMILY|i3-12|8|256|14|igpu",
+    "status": "low_confidence_candidate",
+    "name": "ASUS Chromebook Plus CX34 Laptop, 14\" Display (1920x1080), Intel® Core™ i3-1215U Processor, 8GB RAM,",
+    "asin": "B0CGJGZZ1L"
+   },
+   {
+    "key": "hp|NO_FAMILY|core3|8|512|15.6|igpu",
+    "status": "low_confidence_candidate",
+    "name": "HP 250R G10 Laptop, CORE3-1300U Processor, 8GB Memory, 512GB SSD, 15.6 Inch FHD, Intel Iris Xe Graph",
+    "asin": "B0G4495Z7B"
+   },
+   {
+    "key": "microsoft|surface laptop|i5|8|256|13.5|igpu",
+    "status": "valid",
+    "name": "Microsoft Surface Laptop 3 13.5\" - Core i5, 8GB RAM, 256GB SSD - Matte Black (Refurbished)",
+    "asin": "B089NTYJGL"
+   },
+   {
+    "key": "hp|NO_FAMILY|core7|16|512|15.6|igpu",
+    "status": "low_confidence_candidate",
+    "name": "HP 250R G10 Laptop, Intel Core 7-150U, 16GB RAM, 512GB M.2 SSD, 15.6\" Full HD (Upgraded) 1920x1080, ",
+    "asin": "B0GX9N1Q32"
+   },
+   {
+    "key": "msi|MODEL:A9WJG-037CA",
+    "status": "valid",
+    "name": "MSI Raider A18 HX A9WJG-037CA 18\" UHD+ mini LED 120Hz Gaming Laptop, AMD Ryzen R9-9955HX3D, RTX 5090",
+    "asin": "B0DWYGV2Y1"
+   },
+   {
+    "key": "acer|aspire|ultra9|32|1024|14|igpu",
+    "status": "valid",
+    "name": "Acer Aspire 14 AI Portable Laptop 14\" WUXGA IPS Touchscreen (100% sRGB) Intel Octa-core Ultra 9 288V",
+    "asin": "B0H97Q9KZJ"
+   },
+   {
+    "key": "lenovo|thinkpad|i5-8|8|256|13.3|igpu",
+    "status": "valid",
+    "name": "Lenovo ThinkPad X390 Notebook Computer, Intel Core i5-8265U, 13.3 Inch, 8 GB RAM, Black, 256 GB SSD,",
+    "asin": "B0GKY8KT3F"
+   },
+   {
+    "key": "apple|macbook pro|m5max|36|2048|14.2|igpu",
+    "status": "valid",
+    "name": "Apple 2026 MacBook Pro Laptop with M5 Max chip with 18 CPU and 32 GPU: Built for AI, 14.2-inch Liqui",
+    "asin": "B0GR1J83NW"
+   },
+   {
+    "key": "asus|vivobook|i3-12|8|128|NO_SCREEN|igpu",
+    "status": "low_confidence_candidate",
+    "name": "ASUS Vivobook 15 Laptop, 15.6â€ FHD (1920 x 1080) Display, Intel Core i3-1215U CPU, Intel UHD Graphi",
+    "asin": "B0BXRMMNH5"
+   },
+   {
+    "key": "acer|aspire 5|i7-13|16|512|NO_SCREEN|igpu",
+    "status": "low_confidence_candidate",
+    "name": "Acer Aspire 5 A515 Laptop 13th Gen Intel Core i7-13620H 14 Cores Upto 4.90GHz/16GB LPDDR5 RAM/512GB ",
+    "asin": "B0DJBQBKZ3"
+   },
+   {
+    "key": "lenovo|ideapad 3|ryzen5|8|512|17.3|igpu",
+    "status": "valid",
+    "name": "Lenovo IdeaPad 3 17ABA7 Laptop, 17.3 Inch Full HD Display, AMD Ryzen 5, 8GB RAM, 512GB SSD, AMD Rade",
+    "asin": "B0FKC3X8X3"
+   },
+   {
+    "key": "hp|elitebook|i5|16|512|NO_SCREEN|igpu",
+    "status": "low_confidence_candidate",
+    "name": "HP EliteBook X360 1040 G8 Convertible 2-IN-1 Laptop | Intel Core i5-1145G7, 16GB DDR4 RAM, 512GB PCI",
+    "asin": "B0GNJ31V1T"
+   },
+   {
+    "key": "samsung|MODEL:NP754XFG-KB1US",
+    "status": "valid",
+    "name": "SAMSUNG - 15.6\" Galaxy Book3/Windows 11 PRO/16GB Business Laptop - 512GB/13th Gen Intel® Core Proces",
+    "asin": "B0BX7KSS8L"
+   },
+   {
+    "key": "dell|latitude|i7|16|1024|14|igpu",
+    "status": "valid",
+    "name": "Dell Latitude 5420 Laptop | 14\" 1920x1080 FHD | Core i7-1165G7-1TB SSD Hard Drive - 16GB RAM | 4 cor",
+    "asin": "B09QJMZ69D"
+   },
+   {
+    "key": "msi|vector|ultra7|16|512|16|igpu",
+    "status": "valid",
+    "name": "MSI Vector 16 HX AI 16” 144Hz FHD+ Gaming Laptop: Intel Core Ultra 7-255HX, NVIDIA Geforce RTX 5070T",
+    "asin": "B0DTN2RZ1Q"
+   },
+   {
+    "key": "asus|MODEL:BQ715W",
+    "status": "valid",
+    "name": "Asus Vivobook 15 Slim Laptop | Intel Core i7-1355U, Intel Iris X Graphics, 16GB RAM, 512GB SSD, 15.6",
+    "asin": "B0FWJWN37R"
+   },
+   {
+    "key": "microsoft|inspiron|i7-12|32|1024|15.6|igpu",
+    "status": "valid",
+    "name": "Dell Inspiron 15.6\" Laptop Computer, Windows 11 Pro Laptop 32GB RAM 1TB SSD, Intel Core i7-1255U Pro",
+    "asin": "B0DNRKT2NV"
+   },
+   {
+    "key": "acer|aspire|core3|8|128|15.6|igpu",
+    "status": "valid",
+    "name": "Acer Aspire Go 15 AI Ready Laptop | 15.6\" Full HD (1920 x 1080) IPS Display | Intel Core 3 Processor",
+    "asin": "B0DT7FC9B7"
+   },
+   {
+    "key": "hp|probook|i5-8|8|256|14|igpu",
+    "status": "valid",
+    "name": "HP ProBook 640 G4 Laptop | 14\" 1920x1080 FHD | Core i5-8250U - 256GB SSD Hard Drive - 8GB RAM | 4 co",
+    "asin": "B0DT73MWB6"
+   },
+   {
+    "key": "apple|macbook pro|m4|24|1024|14|igpu",
+    "status": "valid",
+    "name": "Apple 2024 MacBook Pro (14-inch, Apple M4 chip with 10-core CPU and 10-core GPU, 24GB Unified Memory",
+    "asin": "B0DLHTN2KK"
+   },
+   {
+    "key": "huawei|NO_FAMILY|i5|8|512|16|igpu",
+    "status": "low_confidence_candidate",
+    "name": "HUAWEI MateBook D 16 Laptop with 16 Inch Eye Comfort FullView Display, Light and Metal Body, 12th Co",
+    "asin": "B0CQJNHMDL"
+   },
+   {
+    "key": "dell|latitude|i5|16|512|15.6|igpu",
+    "status": "valid",
+    "name": "Dell Latitude 5510 15.6\" Notebook - Full HD - 1920 x 1080 - Core i5 i5-10310U 10th Gen 1.7GHz Hexa-c",
+    "asin": "B08HV4MTXQ"
+   },
+   {
+    "key": "hp|NO_FAMILY|ultra5|8|256|15.6|igpu",
+    "status": "low_confidence_candidate",
+    "name": "HP Laptop AI 15-fd2010nx, 15.6\" FHD, Intel Core Ultra 5 225U, Intel Graphics, 8GB RAM, 256GB SSD, Wi",
+    "asin": "B0H2BJ7373"
+   },
+   {
+    "key": "lenovo|thinkpad|i5-10|16|512|NO_SCREEN|igpu",
+    "status": "low_confidence_candidate",
+    "name": "Lenovo ThinkPad X13 Gen 1 13.3-Inch Laptop, 10th Gen Quad-Core i5-10310U up to 4.4GHz, 16GB RAM, 512",
+    "asin": "B0FQV76N5T"
+   },
+   {
+    "key": "hp|NO_FAMILY|ryzen5-7|8|512|15.6|igpu",
+    "status": "low_confidence_candidate",
+    "name": "HP 15.6 inch Laptop, HD Touchscreen Display, AMD Ryzen 5 7520U, 8 GB RAM, 512 GB SSD, AMD Radeon Gra",
+    "asin": "B0DWPKQ3LH"
+   },
+   {
+    "key": "msi|NO_FAMILY|i7-13|16|512|15|rtx4050",
+    "status": "low_confidence_candidate",
+    "name": "MSI Notebook Slim 15-Inch Gaming Laptop, 15.6\" FHD 144Hz Panel, Intel Core i7-13620H, NVIDIA GeForce",
+    "asin": "B0BSLLF6F6"
+   },
+   {
+    "key": "apple|macbook pro|i9|16|1024|NO_SCREEN|igpu",
+    "status": "low_confidence_candidate",
+    "name": "Apple 2019 MacBook Pro (16-inch, Touch Bar, 2.3GHz 8-core Intel Core i9 processor, 16GB RAM, 1TB) - ",
+    "asin": "B0CQ2W7HG1"
+   },
+   {
+    "key": "asus|rog|ultra9|32|2048|16|rtx5080",
+    "status": "valid",
+    "name": "ASUS ROG Strix SCAR 16 (2025) Gaming Laptop, 16” ROG Nebula HDR 16:10 2.5K 240Hz/3ms, NVIDIA GeForce",
+    "asin": "B0DW1SB1F9"
+   },
+   {
+    "key": "hp|NO_FAMILY|i3-13|4|256|15.6|igpu",
+    "status": "low_confidence_candidate",
+    "name": "HP 250 G10 Laptop With 15.6-inch Full HD Display, Core i3-1315U Processor/4GB RAM/256GB SSD/DOS(With",
+    "asin": "B0CMDGHDMZ"
+   },
+   {
+    "key": "dell|precision|i9-9|32|512|15.6|igpu",
+    "status": "valid",
+    "name": "Dell Precision 5540 Workstation Laptop | 15.6” 4K UHD Display | Intel Core i9-9880H, 32GB DDR4 RAM, ",
+    "asin": "B0GN5JCTMV"
+   },
+   {
+    "key": "apple|macbook air|m5|24|1024|15|igpu",
+    "status": "valid",
+    "name": "Apple 2026 MacBook Air 15-inch Laptop with M5 chip: AI and Apple Intelligence, 15.3-inch Liquid Reti",
+    "asin": "B0GR1LMH79"
+   },
+   {
+    "key": "lenovo|thinkpad|i7-10|16|1024|13.3|igpu",
+    "status": "valid",
+    "name": "Lenovo (Renewed) ThinkPad X13 Yoga Gen 1 2-in-1 Laptop Touch | 13.3\" 1920x1080 FHD | Core i7-10510U ",
+    "asin": null
+   },
+   {
+    "key": "dell|latitude|i7-6|8|256|14|igpu",
+    "status": "valid",
+    "name": "Dell Latitude 7470 Renewed Business Laptop | Core i7-6600U CPU | 8GB RAM | 256GB Solid State Drive (",
+    "asin": "B01I9FUARA"
+   }
+  ],
+  "control_sample": [
+   {
+    "store": 4,
+    "key": "hp|MODEL:D80WREA",
+    "name": "HP Laptop, Core 7-150U,16GB, 512GB,15.6 FHD 250 nits, W11H6, Natural Silver"
+   },
+   {
+    "store": 4,
+    "key": "apple|MODEL:MDVK4AB/A",
+    "name": "APPLE MacBook Air, M5, 16GB, 1TB SSD, 15 Inch IPS, 10 Core GPU, Midnight"
+   },
+   {
+    "store": 5,
+    "key": "apple|MODEL:MDVK4AB/A",
+    "name": "Apple MacBook Air, M5 Chip, 10-Core CPU, 10-Core GPU, 1TB SSD, 16GB RAM, 15.3 Inch, macOS, Midnight"
+   },
+   {
+    "store": 4,
+    "key": "apple|MODEL:MDVA4AB/A",
+    "name": "APPLE MacBook Air, M5, 16GB, 1TB SSD, 15 Inch IPS, 10 Core GPU, Silver"
+   },
+   {
+    "store": 5,
+    "key": "lenovo|MODEL:83US0034AD",
+    "name": "Lenovo IdeaPad Slim 3 16IPH11, Intel Core Ultra 7 355, 512GB SSD, 8GB RAM, 16 Inch, WUXGA IPS 60Hz,"
+   },
+   {
+    "store": 4,
+    "key": "hp|MODEL:D93J1EA",
+    "name": "HP Laptop Gaming AMD Ryzen 9, 16GB, 1TB, RTX 5070 8GB, 15.3 WQXGA, Shadow Black"
+   },
+   {
+    "store": 4,
+    "key": "hp|MODEL:C20R2EA",
+    "name": "HP Laptop OmniBook 5 Flip x360, Core 3-100U, 8GB, 512GB, Touch 14 Inch WUXGA, Glacier Silver"
+   },
+   {
+    "store": 4,
+    "key": "apple|MODEL:MDH94AB/A",
+    "name": "APPLE MacBook Air, M5, 24GB, 1TB SSD, 13 Inch IPS, 10 Core GPU, Silver"
+   },
+   {
+    "store": 5,
+    "key": "asus|MODEL:FX607VJB-RL143W",
+    "name": "ASUS TUF Gaming F16, Intel Core 5 210H, 512GB SSD, 16GB RAM, 16 Inch, Windows 11 - Grey"
+   },
+   {
+    "store": 4,
+    "key": "asus|MODEL:FX607VJB-RL143W",
+    "name": "ASUS TUF F16 Gaming Laptop, Intel Core 5, 16GB, 512GB, RTX3050, 16 Inch, Mecha Gray"
+   },
+   {
+    "store": 4,
+    "key": "baseus|MODEL:SUZC-0G",
+    "name": "BASEUS Papery Notebook Holder, Dark gray"
+   },
+   {
+    "store": 4,
+    "key": "apple|MODEL:MGDT4AB/A",
+    "name": "APPLE MacBook Pro, Apple M5 Pro, 20 Core, 24GB, 2TB SSD, 14 Inch, Space Black"
+   },
+   {
+    "store": 5,
+    "key": "apple|MODEL:MGDT4AB/A",
+    "name": "Apple MacBook Pro 14, M5 Pro Chip, 18-Core CPU, 20-Core GPU, 2TB SSD, 24GB RAM, 14.2 Inch, macOS, Sp"
+   },
+   {
+    "store": 5,
+    "key": "lenovo|MODEL:83LC003KAD",
+    "name": "Lenovo Yoga 9 2-in-1 14ILL10 83LC003KAD, Intel Core Ultra 7 258V, 1TB SSD, 32GB RAM, 14 Inch, 2.8K O"
+   },
+   {
+    "store": 4,
+    "key": "apple|MODEL:MGDQ4AB/A",
+    "name": "APPLE MacBook Pro, Apple M5 Max, 32 Core, 36GB, 2TB SSD, 14 Inch, Silver"
+   },
+   {
+    "store": 4,
+    "key": "msi|katana|i7-14|16|512|15.6|rtx5060",
+    "name": "Msi katana 15 hx b14wfk gaming laptop i7-14650hx 16gb ddr5 512gb ssd rtx 5060 8gb dos"
+   },
+   {
+    "store": 4,
+    "key": "apple|MODEL:MX2X3AB/A",
+    "name": "APPLE MacBook Pro, M4 Pro, 24GB, 512GB SSD, 16.2 inch, 20 Core GPU, Space Black"
+   },
+   {
+    "store": 4,
+    "key": "asus|vivobook|core7|16|512|15.6|igpu",
+    "name": "Vivobook laptop with 15.6 inch full hd (1920x1080) display, core 7 150u processor/16gb ram ddr5/512g"
+   },
+   {
+    "store": 5,
+    "key": "apple|MODEL:MDE14AB/A",
+    "name": "Apple MacBook Pro, M5 10-Core CPU, 10-Core GPU, 1TB SSD, 16GB RAM, 14-Inch, macOS Tahoe, Black - MDE"
+   },
+   {
+    "store": 4,
+    "key": "apple|MODEL:MDE14AB/A",
+    "name": "APPLE MacBook Pro, Apple M5, 10 Core, 16GB, 1TB SSD, 14 inch Space Black"
+   },
+   {
+    "store": 4,
+    "key": "asus|MODEL:G835LXG-TQ512W",
+    "name": "ASUS ROG Strix SCAR 18 Gaming Laptop, Intel Core Ultra 9, 64GB, 2TB, RTX5090, 18 Inch, Off Black"
+   },
+   {
+    "store": 5,
+    "key": "apple|MODEL:MGE44AB/A",
+    "name": "Apple MacBook M5 Pro, 18 Core CPU/20 Core GPU, 1TB SSD, 24GB RAM, 16.2 Inch, macOS, Silver - MGE44AB"
+   },
+   {
+    "store": 4,
+    "key": "apple|MODEL:MGE44AB/A",
+    "name": "APPLE MacBook Pro, Apple M5 Pro, 20 Core, 24GB, 1TB SSD, 16 Inch, Silver"
+   },
+   {
+    "store": 5,
+    "key": "hp|MODEL:CD7R5EA",
+    "name": "HP Laptop 15-fd1051nx, Intel Core 5 120U, 512GB SSD, 8GB RAM, 15.6-inch FHD, Intel Graphics, Windows"
+   },
+   {
+    "store": 4,
+    "key": "microsoft|MODEL:EP2-31657",
+    "name": "MICROSOFT Surface Laptop, Snapdragon X Plus, 16GB, 512GB, Platinum Metal"
+   },
+   {
+    "store": 4,
+    "key": "apple|MODEL:MDHA4AB/A",
+    "name": "APPLE MacBook Air, M5, 16GB, 512GB SSD, 13 Inch IPS, 8 Core GPU, Starlight"
+   },
+   {
+    "store": 4,
+    "key": "apple|MODEL:MDVT4AB/A",
+    "name": "APPLE MacBook Air, M5, 16GB, 1TB SSD, 15 Inch IPS, 10 Core GPU, Sky Blue"
+   },
+   {
+    "store": 4,
+    "key": "microsoft|MODEL:EP2-61435",
+    "name": "MICROSOFT Surface Laptop, Snapdragon X2 Elite, 16GB, 512GB, 13.8 inch Touch, Jade"
+   },
+   {
+    "store": 5,
+    "key": "apple|MODEL:MHFC4AB/A",
+    "name": "Apple MacBook Neo A18 Pro, 6 Core CPU, 5 Core GPU, 512GB SSD, 8GB RAM, 13 Inch, macOS, Silver - MHFC"
+   },
+   {
+    "store": 4,
+    "key": "apple|MODEL:MHFC4AB/A",
+    "name": "APPLE MacBook Neo, A18 Pro, 8GB, 512GB SSD, 13 Inch, Touch ID, Silver"
+   },
+   {
+    "store": 5,
+    "key": "acer|MODEL:NX.DD1EM.002",
+    "name": "Acer Aspire Lite, Core 3-350, 256GB SSD, 8GB RAM, 15.6 Inch Display, Windows 11- Silver"
+   },
+   {
+    "store": 5,
+    "key": "hp|MODEL:C22JNEA",
+    "name": "HP OmniBook 3 C22JNEA, AMD Ryzen AI 5 340, 16GB DDR5 RAM, 512GB PCIe Gen4 NVMe SSD, 15.6\" FHD Anti-G"
+   },
+   {
+    "store": 5,
+    "key": "lenovo|MODEL:83UR007EAD",
+    "name": "Lenovo IdeaPad Slim 3 15IPH11 83UR007EAD, Intel Core Ultra 5 322, 512GB SSD, 16GB, 15.3 Inch WUXGA 6"
+   },
+   {
+    "store": 4,
+    "key": "dell|latitude|ultra7|16|512|14|igpu",
+    "name": "Latitude 3450 laptop with 14 inch full hd (1920x1080) display, core ultra 7-155u processor/16gb ram"
+   },
+   {
+    "store": 4,
+    "key": "msi|vector|ultra9|16|1024|16|rtx5080",
+    "name": "Gaming laptop vector 16 hx ai core ultra 9-275hx 16gb ddr5 1tb ssd, DOS (No Windows) rtx 5080 16gb."
+   },
+   {
+    "store": 4,
+    "key": "hp|MODEL:D80WYEA",
+    "name": "HP Laptop, Core 5-120U, 8GB , 512GB ,15.6 FHD 250 nits , W11H6 , Natural Silver"
+   },
+   {
+    "store": 4,
+    "key": "hp|MODEL:D80X0EA",
+    "name": "HP Laptop Clamshell Intel Ultra 5, 8GB, 512GB ,15.6 FHD, Natural Silver"
+   },
+   {
+    "store": 4,
+    "key": "microsoft|MODEL:ZGM-00050",
+    "name": "MICROSOFT Surface Laptop 7, Snapdragon X Plus, 16GB, 512GB, 13.8 inch, Black"
+   },
+   {
+    "store": 4,
+    "key": "asus|vivobook|core9|16|512|16|igpu",
+    "name": "Asus vivobook 16 laptop, core 9 270h, 16gb ram, 512gb ssd, 16-inch display, dos"
+   },
+   {
+    "store": 4,
+    "key": "apple|MODEL:MDE34AB/A",
+    "name": "APPLE MacBook Pro, Apple M5, 10 Core, 24GB, 1TB SSD, 14 inch Space Black"
+   },
+   {
+    "store": 5,
+    "key": "asus|MODEL:G614FP-RV028W",
+    "name": "ASUS ROG Strix G16 G614FP-RV028W, AMD Ryzen 9 9955HX, 1TB SSD, 32GB RAM, 16 Inch WUXGA IPS-Level 165"
+   },
+   {
+    "store": 4,
+    "key": "lenovo|MODEL:22AY0000A",
+    "name": "Thinkpad e16 gen 3 laptop with 16-inch wuxga (1920x1200) ips display, intel core™ ultra 5-226v proce"
+   },
+   {
+    "store": 4,
+    "key": "lenovo|ideapad 1|i5-13|8|256|15.6|igpu",
+    "name": "Ideapad 1 15iru7 laptop with 15.6 inch full hd (1920x1080) touchscreen display, core i5-1335u proces"
+   },
+   {
+    "store": 4,
+    "key": "microsoft|MODEL:ZGM-00079",
+    "name": "MICROSOFT Surface Laptop 7, Snapdragon X Plus, 16GB, 512GB, 13.8 inch, Dune"
+   },
+   {
+    "store": 4,
+    "key": "hp|MODEL:C27K0EA",
+    "name": "HP Laptop OmniBook X Flipx360, Intel Core Ultra 5, 16GB, 512GB, Touch 16 Inch, Glacier Sil"
+   },
+   {
+    "store": 4,
+    "key": "acer|aspire|core5|16|512|15.6|igpu",
+    "name": "Acer aspire lite laptop, intel core 5-120u, 16gb ram, 512gb ssd, DOS (No Windows), 15.6-inch display"
+   },
+   {
+    "store": 4,
+    "key": "lenovo|loq|i7-13|16|512|15.6|rtx5050",
+    "name": "Loq 15irx10 gaming laptop with 15.6 inch full hd (1920x1080) display, core i7-13645hx processor/16gb"
+   },
+   {
+    "store": 4,
+    "key": "apple|MODEL:MDVQ4AB/A",
+    "name": "APPLE MacBook Air, M5, 16GB, 512GB SSD, 15 Inch IPS, 10 Core GPU, Sky Blue"
+   },
+   {
+    "store": 5,
+    "key": "lenovo|MODEL:83US0033AD",
+    "name": "Lenovo IdeaPad Slim 3 16IPH11, Intel Core Ultra 5 322, 512GB SSD, 8GB RAM, 16 Inch, WUXGA, IPS 60Hz,"
+   },
+   {
+    "store": 4,
+    "key": "asus|tuf|i7-14|16|1024|16|rtx5060",
+    "name": "Tuf gaming f16 laptop dos (no windows) with 16\" wuxga (1920x1200) intel core i7-14650hx processor/1"
+   },
+   {
+    "store": 4,
+    "key": "hp|MODEL:D93HBEA",
+    "name": "HP Laptop 2IN1 Intel Ultra 7, 32GB, 1TB PCIe, Touch/14.0 2.8K, Eclipse Gray"
+   },
+   {
+    "store": 4,
+    "key": "apple|MODEL:MDH84AB/A",
+    "name": "APPLE MacBook Air, M5, 16GB, 1TB SSD, 13 Inch IPS, 10 Core GPU, Silver"
+   },
+   {
+    "store": 5,
+    "key": "apple|MODEL:MDH84AB/A",
+    "name": "Apple MacBook Air M5, 10 Core CPU/10 Core GPU, 1TB SSD, 16GB RAM, 13.6 Inch, macOS, Silver - MDH84AB"
+   },
+   {
+    "store": 4,
+    "key": "asus|tuf|core7|16|1024|16|rtx5050",
+    "name": "Tuf gaming laptopdos (no windows) with 16\" wuxga (1920x1200) ips 144hz intel core 7 2600 processor/"
+   },
+   {
+    "store": 4,
+    "key": "hp|MODEL:C20RQEA",
+    "name": "HP Laptop OmniBook 5 Flip x360, Core 5-120U, 16GB, 512GB, Touch 14 Inch WUXGA, Glacier Silver"
+   },
+   {
+    "store": 5,
+    "key": "asus|MODEL:X1605VA-MB2772WS",
+    "name": "ASUS VivoBook 16, X1605VA-MB2772WS, Intel Core 9 270H, 512GB NVMe SSD, 16GB RAM, 16 Inch WUXGA IPS 6"
+   },
+   {
+    "store": 4,
+    "key": "apple|MODEL:MDHE4AB/A",
+    "name": "APPLE MacBook Air, M5, 16GB, 512GB SSD, 13 Inch IPS, 8 Core GPU, Midnight"
+   },
+   {
+    "store": 4,
+    "key": "hp|MODEL:D80WTEA",
+    "name": "HP Laptop Clamshell Intel Core 7, 8GB, 512GB, 15.6 FHD, Natural Silver"
+   },
+   {
+    "store": 5,
+    "key": "hp|MODEL:D80WTEA",
+    "name": "HP 15-fd1010nx, Intel Core 7 150U, 15.6 Inch FHD, 512GB SSD, 8GB RAM, Windows 11 - Silver"
+   },
+   {
+    "store": 5,
+    "key": "lenovo|MODEL:83TN00AGAD",
+    "name": "Lenovo LOQ 15AHP11, AMD Ryzen 7 250, 512GB SSD, 16GB RAM, 15.3 Inch, WUXGA IPS 165Hz, Windows 11 Hom"
+   }
+  ],
+  "amazon_model_keys": 5,
+  "control_model_keys": 50,
+  "amazon_renewed": 6,
+  "amazon_no_family_or_screen": 18
+ },
+ "propagation": {
+  "n": 53,
+  "causes": {
+   "NO_STOREFRONT_ROW (unreachable by price_update lanes)": 15,
+   "STOREFRONT_ALSO_STALE (capacity/back-off)": 18,
+   "FRESH_OBSERVATION_IS_OUT_OF_STOCK (correctly ineligible)": 8,
+   "FRESH_PDP_RAW_EXISTS_BUT_NO_NORMALIZED_ROW (normalize sweep did not pick it up / rejected)": 7,
+   "FRESH_PDP_NORMALIZED_TO_A_DIFFERENT_KEY (sibling key: google|MODEL:55Q6800H)": 1,
+   "FRESH_PDP_NORMALIZED_TO_A_DIFFERENT_KEY (sibling key: google|MODEL:65Q6820H)": 1,
+   "FRESH_PDP_NORMALIZED_TO_A_DIFFERENT_KEY (sibling key: google|MODEL:55X6600H)": 1,
+   "FRESH_PDP_NORMALIZED_TO_A_DIFFERENT_KEY (sibling key: google|98|4k|mini_led|144)": 1,
+   "FRESH_PDP_NORMALIZED_TO_A_DIFFERENT_KEY (sibling key: google|65|4k|mini_led|144)": 1
+  },
+  "rows": [
+   {
+    "asin": "B01DBGHEOO",
+    "category": "washing_machine",
+    "stale_key": "hisense|front_load|7|washer",
+    "stale_price": "1964",
+    "stale_observed": "2026-08-30T12:05:47.701Z",
+    "reason": "stale",
+    "storefront": null,
+    "latest_pdp_raw": null,
+    "latest_any_raw": {
+     "id": "2220187",
+     "at": "2026-08-30T12:05:47.701Z",
+     "method": "amazon-search",
+     "price": "1964.01",
+     "avail": "in_stock",
+     "category": "appliance"
+    },
+    "npo_for_latest_pdp_name": [],
+    "offers_for_asin": [
+     {
+      "key": "hisense|front_load|7|washer",
+      "cat": "washing_machine",
+      "status": "valid",
+      "price": "1964",
+      "at": "2026-08-30T12:05:47.701Z",
+      "avail": null
+     }
+    ],
+    "cause": "NO_STOREFRONT_ROW (unreachable by price_update lanes)"
+   },
+   {
+    "asin": "B07BR6945J",
+    "category": "printer",
+    "stale_key": "canon|pixma g3410",
+    "stale_price": "479",
+    "stale_observed": "2026-08-29T02:47:04.999Z",
+    "reason": "stale",
+    "storefront": {
+     "id": "88a343a4-f981-4f45-bc0d-96d7d36cb798",
+     "price": "479",
+     "availability": "limited_stock",
+     "updated_at": "2026-07-27T09:01:32.980Z",
+     "last_checked_at": "2026-10-01T05:29:28.999Z",
+     "last_scraped_at": "2026-08-29T02:47:05.236Z",
+     "scrape_status": "failed",
+     "misses": 5
+    },
+    "latest_pdp_raw": {
+     "id": "2180831",
+     "at": "2026-08-29T02:47:04.999Z",
+     "price": "479",
+     "avail": "limited_stock",
+     "name": "Canon PIXMA G3410 - Compact, connected high yield print, copy and scan, Black"
+    },
+    "latest_any_raw": {
+     "id": "2180831",
+     "at": "2026-08-29T02:47:04.999Z",
+     "method": "scraper",
+     "price": "479",
+     "avail": "limited_stock",
+     "category": "accessories"
+    },
+    "npo_for_latest_pdp_name": [],
+    "offers_for_asin": [
+     {
+      "key": "canon|pixma g3410",
+      "cat": "printer",
+      "status": "valid",
+      "price": "479",
+      "at": "2026-08-29T02:47:04.999Z",
+      "avail": null
+     }
+    ],
+    "cause": "STOREFRONT_ALSO_STALE (capacity/back-off)"
+   },
+   {
+    "asin": "B0856QVMZP",
+    "category": "washing_machine",
+    "stale_key": "panasonic|front_load|12|washer",
+    "stale_price": "2599",
+    "stale_observed": "2026-09-04T06:07:40.521Z",
+    "reason": "stale",
+    "storefront": null,
+    "latest_pdp_raw": null,
+    "latest_any_raw": {
+     "id": "2345516",
+     "at": "2026-09-04T06:07:40.521Z",
+     "method": "amazon-search",
+     "price": "2599",
+     "avail": "in_stock",
+     "category": "appliance"
+    },
+    "npo_for_latest_pdp_name": [],
+    "offers_for_asin": [
+     {
+      "key": "panasonic|front_load|12|washer",
+      "cat": "washing_machine",
+      "status": "valid",
+      "price": "2599",
+      "at": "2026-09-04T06:07:40.521Z",
+      "avail": null
+     }
+    ],
+    "cause": "NO_STOREFRONT_ROW (unreachable by price_update lanes)"
+   },
+   {
+    "asin": "B08K7PGC98",
+    "category": "refrigerator",
+    "stale_key": "hitachi|top_mount|600|standard",
+    "stale_price": "4277",
+    "stale_observed": "2026-09-21T12:08:12.421Z",
+    "reason": "stale",
+    "storefront": {
+     "id": "0022ae2e-7022-4170-806d-f51aa6b9068d",
+     "price": "4277",
+     "availability": "in_stock",
+     "updated_at": "2026-09-21T12:08:48.919Z",
+     "last_checked_at": "2026-09-30T23:34:25.945Z",
+     "last_scraped_at": null,
+     "scrape_status": "failed",
+     "misses": 1
+    },
+    "latest_pdp_raw": null,
+    "latest_any_raw": {
+     "id": "2846054",
+     "at": "2026-09-21T12:08:12.421Z",
+     "method": "amazon-search",
+     "price": "4277",
+     "avail": "in_stock",
+     "category": "appliance"
+    },
+    "npo_for_latest_pdp_name": [],
+    "offers_for_asin": [
+     {
+      "key": "hitachi|top_mount|600|standard",
+      "cat": "refrigerator",
+      "status": "valid",
+      "price": "4277",
+      "at": "2026-09-21T12:08:12.421Z",
+      "avail": "in_stock"
+     }
+    ],
+    "cause": "STOREFRONT_ALSO_STALE (capacity/back-off)"
+   },
+   {
+    "asin": "B08K97MLK5",
+    "category": "vacuum",
+    "stale_key": "hitachi|NA|2000",
+    "stale_price": "539",
+    "stale_observed": "2026-09-20T18:08:34.516Z",
+    "reason": "stale",
+    "storefront": {
+     "id": "aad2c68e-32b3-462b-9ee8-65041bd83919",
+     "price": "539",
+     "availability": "in_stock",
+     "updated_at": "2026-09-20T18:10:46.923Z",
+     "last_checked_at": "2026-09-30T23:33:20.300Z",
+     "last_scraped_at": null,
+     "scrape_status": "failed",
+     "misses": 1
+    },
+    "latest_pdp_raw": null,
+    "latest_any_raw": {
+     "id": "2822912",
+     "at": "2026-09-20T18:08:34.516Z",
+     "method": "amazon-search",
+     "price": "539",
+     "avail": "in_stock",
+     "category": "appliance"
+    },
+    "npo_for_latest_pdp_name": [],
+    "offers_for_asin": [
+     {
+      "key": "hitachi|NA|2000",
+      "cat": "vacuum",
+      "status": "valid",
+      "price": "539",
+      "at": "2026-09-20T18:08:34.516Z",
+      "avail": "in_stock"
+     }
+    ],
+    "cause": "STOREFRONT_ALSO_STALE (capacity/back-off)"
+   },
+   {
+    "asin": "B09XN1MSXZ",
+    "category": "refrigerator",
+    "stale_key": "samsung|single_door|390|inverter",
+    "stale_price": "3578",
+    "stale_observed": "2026-09-06T18:06:30.768Z",
+    "reason": "stale",
+    "storefront": null,
+    "latest_pdp_raw": null,
+    "latest_any_raw": {
+     "id": "2414805",
+     "at": "2026-09-06T18:06:30.768Z",
+     "method": "amazon-search",
+     "price": "3577.98",
+     "avail": "in_stock",
+     "category": "appliance"
+    },
+    "npo_for_latest_pdp_name": [],
+    "offers_for_asin": [
+     {
+      "key": "samsung|single_door|390|inverter",
+      "cat": "refrigerator",
+      "status": "valid",
+      "price": "3578",
+      "at": "2026-09-06T18:06:30.768Z",
+      "avail": null
+     }
+    ],
+    "cause": "NO_STOREFRONT_ROW (unreachable by price_update lanes)"
+   },
+   {
+    "asin": "B0BYWMLVG1",
+    "category": "audio",
+    "stale_key": "jbl|tune 520",
+    "stale_price": "115",
+    "stale_observed": "2026-09-17T18:04:24.601Z",
+    "reason": "stale",
+    "storefront": {
+     "id": "ca434950-a23c-4797-a96e-95468841bcd7",
+     "price": "115",
+     "availability": "in_stock",
+     "updated_at": "2026-09-17T18:05:21.181Z",
+     "last_checked_at": "2026-09-30T23:31:22.501Z",
+     "last_scraped_at": "2026-09-16T19:52:45.383Z",
+     "scrape_status": "failed",
+     "misses": 1
+    },
+    "latest_pdp_raw": {
+     "id": "2721273",
+     "at": "2026-09-16T19:52:45.153Z",
+     "price": "115.65",
+     "avail": "in_stock",
+     "name": "JBL Tune 520 OVER-EAR BT Headphone Black"
+    },
+    "latest_any_raw": {
+     "id": "2734221",
+     "at": "2026-09-17T18:04:24.601Z",
+     "method": "amazon-search",
+     "price": "115",
+     "avail": "in_stock",
+     "category": "audio"
+    },
+    "npo_for_latest_pdp_name": [
+     {
+      "key": "jbl|tune 520",
+      "cat": "audio",
+      "status": "valid",
+      "at": "2026-09-17T18:04:24.601Z"
+     },
+     {
+      "key": "jbl|tune 520",
+      "cat": "audio",
+      "status": "valid",
+      "at": "2026-09-16T19:52:45.153Z"
+     },
+     {
+      "key": "jbl|tune 520",
+      "cat": "audio",
+      "status": "valid",
+      "at": "2026-09-15T18:08:57.494Z"
+     },
+     {
+      "key": "jbl|tune 520",
+      "cat": "audio",
+      "status": "valid",
+      "at": "2026-09-14T12:06:47.986Z"
+     }
+    ],
+    "offers_for_asin": [
+     {
+      "key": "jbl|tune 520",
+      "cat": "audio",
+      "status": "valid",
+      "price": "115",
+      "at": "2026-09-17T18:04:24.601Z",
+      "avail": "in_stock"
+     }
+    ],
+    "cause": "STOREFRONT_ALSO_STALE (capacity/back-off)"
+   },
+   {
+    "asin": "B0CD1FHLMH",
+    "category": "audio",
+    "stale_key": "anker|soundcore h30",
+    "stale_price": "93.89",
+    "stale_observed": "2026-09-16T19:59:12.335Z",
+    "reason": "stale",
+    "storefront": {
+     "id": "8021e887-a649-49b8-9938-91a45e9a4286",
+     "price": "93.89",
+     "availability": "in_stock",
+     "updated_at": "2026-09-09T12:13:45.476Z",
+     "last_checked_at": "2026-09-30T23:30:03.014Z",
+     "last_scraped_at": "2026-09-16T19:59:12.725Z",
+     "scrape_status": "failed",
+     "misses": 1
+    },
+    "latest_pdp_raw": {
+     "id": "2721554",
+     "at": "2026-09-16T19:59:12.335Z",
+     "price": "93.89",
+     "avail": "in_stock",
+     "name": "Soundcore H30i Wireless On-Ear Headphones, Foldable Design, Pure Bass, 70H Playt"
+    },
+    "latest_any_raw": {
+     "id": "2721554",
+     "at": "2026-09-16T19:59:12.335Z",
+     "method": "scraper",
+     "price": "93.89",
+     "avail": "in_stock",
+     "category": "audio"
+    },
+    "npo_for_latest_pdp_name": [
+     {
+      "key": "anker|soundcore h30",
+      "cat": "audio",
+      "status": "valid",
+      "at": "2026-09-16T19:59:12.335Z"
+     },
+     {
+      "key": "anker|soundcore h30",
+      "cat": "audio",
+      "status": "valid",
+      "at": "2026-09-09T12:09:03.638Z"
+     }
+    ],
+    "offers_for_asin": [
+     {
+      "key": "anker|soundcore h30",
+      "cat": "audio",
+      "status": "valid",
+      "price": "93.89",
+      "at": "2026-09-16T19:59:12.335Z",
+      "avail": "in_stock"
+     }
+    ],
+    "cause": "STOREFRONT_ALSO_STALE (capacity/back-off)"
+   },
+   {
+    "asin": "B0CHXS73N7",
+    "category": "mobile",
+    "stale_key": "apple|iPhone|15|Standard|128",
+    "stale_price": "2548.95",
+    "stale_observed": "2026-10-03T08:13:04.417Z",
+    "reason": "oos",
+    "storefront": {
+     "id": "d9d76219-e48d-4e54-9ff5-69f74e3e3613",
+     "price": "2548.95",
+     "availability": "out_of_stock",
+     "updated_at": "2026-10-03T08:13:04.231Z",
+     "last_checked_at": "2026-10-03T08:13:04.667Z",
+     "last_scraped_at": "2026-10-03T08:13:04.667Z",
+     "scrape_status": "ok",
+     "misses": 0
+    },
+    "latest_pdp_raw": {
+     "id": "3224275",
+     "at": "2026-10-03T08:13:04.417Z",
+     "price": "2548.95",
+     "avail": "out_of_stock",
+     "name": "Apple iPhone 15 (128 GB) - Blue"
+    },
+    "latest_any_raw": {
+     "id": "3224275",
+     "at": "2026-10-03T08:13:04.417Z",
+     "method": "scraper",
+     "price": "2548.95",
+     "avail": "out_of_stock",
+     "category": "smartphone"
+    },
+    "npo_for_latest_pdp_name": [
+     {
+      "key": "apple|iPhone|15|Standard|128",
+      "cat": "mobile",
+      "status": "valid",
+      "at": "2026-10-03T08:13:04.417Z"
+     },
+     {
+      "key": "apple|iPhone|15|Standard|128",
+      "cat": "mobile",
+      "status": "valid",
+      "at": "2026-10-02T13:42:09.030Z"
+     },
+     {
+      "key": "apple|iPhone|15|Standard|128",
+      "cat": "mobile",
+      "status": "valid",
+      "at": "2026-10-02T00:52:27.149Z"
+     },
+     {
+      "key": "apple|iPhone|15|Standard|128",
+      "cat": "mobile",
+      "status": "valid",
+      "at": "2026-09-29T12:40:08.271Z"
+     }
+    ],
+    "offers_for_asin": [
+     {
+      "key": "apple|iPhone|15|Standard|128",
+      "cat": "mobile",
+      "status": "valid",
+      "price": "2548.95",
+      "at": "2026-10-03T08:13:04.417Z",
+      "avail": "out_of_stock"
+     }
+    ],
+    "cause": "FRESH_OBSERVATION_IS_OUT_OF_STOCK (correctly ineligible)"
+   },
+   {
+    "asin": "B0CTMVFL59",
+    "category": "audio",
+    "stale_key": "jbl|tune 310",
+    "stale_price": "45.99",
+    "stale_observed": "2026-09-16T19:59:24.576Z",
+    "reason": "stale",
+    "storefront": {
+     "id": "0d64df35-6fda-4e95-8a9c-3dafe5f8b924",
+     "price": "45.99",
+     "availability": "in_stock",
+     "updated_at": "2026-09-13T00:09:06.342Z",
+     "last_checked_at": "2026-09-30T23:30:14.103Z",
+     "last_scraped_at": "2026-09-16T19:59:24.760Z",
+     "scrape_status": "failed",
+     "misses": 1
+    },
+    "latest_pdp_raw": {
+     "id": "2721564",
+     "at": "2026-09-16T19:59:24.576Z",
+     "price": "45.99",
+     "avail": "in_stock",
+     "name": "JBL TUNE 310C USB-C Wired Hi-Res In-Ear Headphones, Blue"
+    },
+    "latest_any_raw": {
+     "id": "2721564",
+     "at": "2026-09-16T19:59:24.576Z",
+     "method": "scraper",
+     "price": "45.99",
+     "avail": "in_stock",
+     "category": "audio"
+    },
+    "npo_for_latest_pdp_name": [
+     {
+      "key": "jbl|tune 310",
+      "cat": "audio",
+      "status": "valid",
+      "at": "2026-09-16T19:59:24.576Z"
+     },
+     {
+      "key": "jbl|tune 310",
+      "cat": "audio",
+      "status": "valid",
+      "at": "2026-09-13T00:07:52.870Z"
+     },
+     {
+      "key": "jbl|tune 310",
+      "cat": "audio",
+      "status": "valid",
+      "at": "2026-09-09T12:09:03.638Z"
+     }
+    ],
+    "offers_for_asin": [
+     {
+      "key": "jbl|tune 310",
+      "cat": "audio",
+      "status": "valid",
+      "price": "45.99",
+      "at": "2026-09-16T19:59:24.576Z",
+      "avail": "in_stock"
+     }
+    ],
+    "cause": "STOREFRONT_ALSO_STALE (capacity/back-off)"
+   },
+   {
+    "asin": "B0CX5C6WP3",
+    "category": "audio",
+    "stale_key": "jbl|go 4",
+    "stale_price": "179",
+    "stale_observed": "2026-09-01T12:55:39.984Z",
+    "reason": "stale",
+    "storefront": {
+     "id": "4560c45e-5fbe-472a-8ed3-04cedc7140b9",
+     "price": "178.96",
+     "availability": "limited_stock",
+     "updated_at": "2026-07-27T09:01:32.980Z",
+     "last_checked_at": "2026-10-01T05:30:00.095Z",
+     "last_scraped_at": "2026-09-01T12:55:40.163Z",
+     "scrape_status": "failed",
+     "misses": 4
+    },
+    "latest_pdp_raw": {
+     "id": "2274151",
+     "at": "2026-09-01T12:55:39.984Z",
+     "price": "178.96",
+     "avail": "limited_stock",
+     "name": "JBL Go4 Ultra-portable waterproof speaker,Black"
+    },
+    "latest_any_raw": {
+     "id": "2274151",
+     "at": "2026-09-01T12:55:39.984Z",
+     "method": "scraper",
+     "price": "178.96",
+     "avail": "limited_stock",
+     "category": "audio"
+    },
+    "npo_for_latest_pdp_name": [],
+    "offers_for_asin": [
+     {
+      "key": "jbl|go 4",
+      "cat": "audio",
+      "status": "valid",
+      "price": "179",
+      "at": "2026-09-01T12:55:39.984Z",
+      "avail": null
+     }
+    ],
+    "cause": "STOREFRONT_ALSO_STALE (capacity/back-off)"
+   },
+   {
+    "asin": "B0CZ9GMLQZ",
+    "category": "washing_machine",
+    "stale_key": "samsung|front_load|8|washer",
+    "stale_price": null,
+    "stale_observed": "2026-10-02T04:17:24.360Z",
+    "reason": "oos",
+    "storefront": {
+     "id": "bb00e596-e308-4b67-ba33-4c2601650a3d",
+     "price": "1614",
+     "availability": "out_of_stock",
+     "updated_at": "2026-10-01T09:54:18.184Z",
+     "last_checked_at": "2026-10-02T04:17:24.637Z",
+     "last_scraped_at": "2026-10-01T09:54:18.561Z",
+     "scrape_status": "ok",
+     "misses": 1
+    },
+    "latest_pdp_raw": {
+     "id": "3187924",
+     "at": "2026-10-02T04:17:24.360Z",
+     "price": null,
+     "avail": "out_of_stock",
+     "name": "Samsung WW80CGC04DAEYL Frontload Washer 8kg,1400 rpm, Eco Bubble, Auto Dispense,"
+    },
+    "latest_any_raw": {
+     "id": "3187924",
+     "at": "2026-10-02T04:17:24.360Z",
+     "method": "scraper",
+     "price": null,
+     "avail": "out_of_stock",
+     "category": "appliance"
+    },
+    "npo_for_latest_pdp_name": [
+     {
+      "key": "samsung|front_load|8|washer",
+      "cat": "washing_machine",
+      "status": "valid",
+      "at": "2026-10-02T04:17:24.360Z"
+     },
+     {
+      "key": "samsung|front_load|8|washer",
+      "cat": "washing_machine",
+      "status": "valid",
+      "at": "2026-10-01T09:54:18.363Z"
+     },
+     {
+      "key": "samsung|front_load|8|washer",
+      "cat": "washing_machine",
+      "status": "valid",
+      "at": "2026-09-27T18:08:14.258Z"
+     },
+     {
+      "key": "samsung|front_load|8|washer",
+      "cat": "washing_machine",
+      "status": "valid",
+      "at": "2026-09-23T18:08:36.764Z"
+     }
+    ],
+    "offers_for_asin": [
+     {
+      "key": "samsung|front_load|8|washer",
+      "cat": "washing_machine",
+      "status": "valid",
+      "price": null,
+      "at": "2026-10-02T04:17:24.360Z",
+      "avail": "out_of_stock"
+     }
+    ],
+    "cause": "FRESH_OBSERVATION_IS_OUT_OF_STOCK (correctly ineligible)"
+   },
+   {
+    "asin": "B0D49WRVXJ",
+    "category": "tablet",
+    "stale_key": "huawei|matepad se|NO_GEN|128|wifi|11",
+    "stale_price": "786",
+    "stale_observed": "2026-09-07T06:05:59.762Z",
+    "reason": "stale",
+    "storefront": null,
+    "latest_pdp_raw": null,
+    "latest_any_raw": {
+     "id": "2423956",
+     "at": "2026-09-07T06:05:59.762Z",
+     "method": "amazon-search",
+     "price": "785.9",
+     "avail": "in_stock",
+     "category": "tablet"
+    },
+    "npo_for_latest_pdp_name": [],
+    "offers_for_asin": [
+     {
+      "key": "huawei|matepad se|NO_GEN|128|wifi|11",
+      "cat": "tablet",
+      "status": "valid",
+      "price": "786",
+      "at": "2026-09-07T06:05:59.762Z",
+      "avail": null
+     }
+    ],
+    "cause": "NO_STOREFRONT_ROW (unreachable by price_update lanes)"
+   },
+   {
+    "asin": "B0D8LCDBYH",
+    "category": "smartwatch",
+    "stale_key": "samsung|Galaxy Watch|7|Standard|44|gps",
+    "stale_price": "697",
+    "stale_observed": "2026-09-24T18:08:55.216Z",
+    "reason": "stale",
+    "storefront": {
+     "id": "8ed681d9-32db-4bd4-9e7c-3e3da534595f",
+     "price": "697",
+     "availability": "in_stock",
+     "updated_at": "2026-09-24T18:09:55.796Z",
+     "last_checked_at": "2026-10-01T07:25:25.665Z",
+     "last_scraped_at": null,
+     "scrape_status": "failed",
+     "misses": 1
+    },
+    "latest_pdp_raw": null,
+    "latest_any_raw": {
+     "id": "2962132",
+     "at": "2026-09-24T18:08:55.216Z",
+     "method": "amazon-search",
+     "price": "697",
+     "avail": "in_stock",
+     "category": "smartwatch"
+    },
+    "npo_for_latest_pdp_name": [],
+    "offers_for_asin": [
+     {
+      "key": "samsung|Galaxy Watch|7|Standard|44|gps",
+      "cat": "smartwatch",
+      "status": "valid",
+      "price": "697",
+      "at": "2026-09-24T18:08:55.216Z",
+      "avail": "in_stock"
+     }
+    ],
+    "cause": "STOREFRONT_ALSO_STALE (capacity/back-off)"
+   },
+   {
+    "asin": "B0DD413Q9J",
+    "category": "audio",
+    "stale_key": "apple|earpods",
+    "stale_price": "69",
+    "stale_observed": "2026-09-21T18:44:44.624Z",
+    "reason": "stale",
+    "storefront": {
+     "id": "23d45991-c981-44fb-a2f2-ee3c38bab1cf",
+     "price": "81.45",
+     "availability": "out_of_stock",
+     "updated_at": "2026-10-03T14:03:59.987Z",
+     "last_checked_at": "2026-10-03T14:04:00.600Z",
+     "last_scraped_at": "2026-10-03T14:04:00.600Z",
+     "scrape_status": "ok",
+     "misses": 0
+    },
+    "latest_pdp_raw": {
+     "id": "3233042",
+     "at": "2026-10-03T14:04:00.184Z",
+     "price": "81.45",
+     "avail": "out_of_stock",
+     "name": "Apple EarPods (USB-C) ​​​​​​​"
+    },
+    "latest_any_raw": {
+     "id": "3233042",
+     "at": "2026-10-03T14:04:00.184Z",
+     "method": "scraper",
+     "price": "81.45",
+     "avail": "out_of_stock",
+     "category": "accessories"
+    },
+    "npo_for_latest_pdp_name": [],
+    "offers_for_asin": [
+     {
+      "key": "apple|earpods",
+      "cat": "audio",
+      "status": "valid",
+      "price": "69",
+      "at": "2026-09-21T18:44:44.624Z",
+      "avail": "in_stock"
+     }
+    ],
+    "cause": "FRESH_PDP_RAW_EXISTS_BUT_NO_NORMALIZED_ROW (normalize sweep did not pick it up / rejected)"
+   },
+   {
+    "asin": "B0DFVG6RY3",
+    "category": "tv",
+    "stale_key": "samsung|MODEL:QA75QN70FAUXSA",
+    "stale_price": "4999",
+    "stale_observed": "2026-09-14T05:12:46.330Z",
+    "reason": "stale",
+    "storefront": null,
+    "latest_pdp_raw": {
+     "id": "2632913",
+     "at": "2026-09-14T05:12:46.330Z",
+     "price": "4999",
+     "avail": "in_stock",
+     "name": "Samsung 75 Inch Neo QLED TV, QN70F, 4K, Mini LED, NQ4 AI Gen2 Processor, 4K AI U"
+    },
+    "latest_any_raw": {
+     "id": "2632913",
+     "at": "2026-09-14T05:12:46.330Z",
+     "method": "scraper",
+     "price": "4999",
+     "avail": "in_stock",
+     "category": "tv"
+    },
+    "npo_for_latest_pdp_name": [
+     {
+      "key": "samsung|MODEL:QA75QN70FAUXSA",
+      "cat": "tv",
+      "status": "valid",
+      "at": "2026-09-14T05:12:46.330Z"
+     },
+     {
+      "key": "samsung|MODEL:QA75QN70FAUXSA",
+      "cat": "tv",
+      "status": "valid",
+      "at": "2026-09-10T17:08:39.439Z"
+     }
+    ],
+    "offers_for_asin": [
+     {
+      "key": "samsung|MODEL:QA75QN70FAUXSA",
+      "cat": "tv",
+      "status": "valid",
+      "price": "4999",
+      "at": "2026-09-14T05:12:46.330Z",
+      "avail": null
+     }
+    ],
+    "cause": "NO_STOREFRONT_ROW (unreachable by price_update lanes)"
+   },
+   {
+    "asin": "B0DJ8WGY3Q",
+    "category": "air_conditioner",
+    "stale_key": "lg|split|FreshDV|18000|Inverter|hot_cold",
+    "stale_price": null,
+    "stale_observed": "2026-09-07T15:43:26.969Z",
+    "reason": "stale",
+    "storefront": {
+     "id": "99695ae3-bfe1-4b8c-9d1a-c2dcad9eaf6d",
+     "price": "0",
+     "availability": "in_stock",
+     "updated_at": "2026-09-07T15:59:50.312Z",
+     "last_checked_at": "2026-10-01T05:31:00.366Z",
+     "last_scraped_at": null,
+     "scrape_status": "failed",
+     "misses": 3
+    },
+    "latest_pdp_raw": null,
+    "latest_any_raw": {
+     "id": "2438431",
+     "at": "2026-09-07T15:43:26.969Z",
+     "method": "amazon-search",
+     "price": "0",
+     "avail": "in_stock",
+     "category": "air_conditioner"
+    },
+    "npo_for_latest_pdp_name": [],
+    "offers_for_asin": [
+     {
+      "key": "lg|split|FreshDV|18000|Inverter|hot_cold",
+      "cat": "air_conditioner",
+      "status": "valid",
+      "price": null,
+      "at": "2026-09-07T15:43:26.969Z",
+      "avail": null
+     }
+    ],
+    "cause": "STOREFRONT_ALSO_STALE (capacity/back-off)"
+   },
+   {
+    "asin": "B0DWLQHZP4",
+    "category": "mobile",
+    "stale_key": "apple|iPhone|15|Pro Max|256",
+    "stale_price": null,
+    "stale_observed": "2026-10-01T09:53:54.026Z",
+    "reason": "oos",
+    "storefront": {
+     "id": "09681b9f-c274-4835-9e10-a7932fd2ce10",
+     "price": "2799",
+     "availability": "out_of_stock",
+     "updated_at": "2026-09-27T12:01:16.225Z",
+     "last_checked_at": "2026-10-01T09:53:54.269Z",
+     "last_scraped_at": "2026-09-27T12:01:17.175Z",
+     "scrape_status": "ok",
+     "misses": 1
+    },
+    "latest_pdp_raw": {
+     "id": "3165644",
+     "at": "2026-10-01T09:53:54.026Z",
+     "price": null,
+     "avail": "out_of_stock",
+     "name": "Apple (Refurbished) iPhone 15 Pro Max (256 GB) - White Titanium"
+    },
+    "latest_any_raw": {
+     "id": "3165644",
+     "at": "2026-10-01T09:53:54.026Z",
+     "method": "scraper",
+     "price": null,
+     "avail": "out_of_stock",
+     "category": "smartphone"
+    },
+    "npo_for_latest_pdp_name": [
+     {
+      "key": "apple|iPhone|15|Pro Max|256",
+      "cat": "mobile",
+      "status": "valid",
+      "at": "2026-10-01T09:53:54.026Z"
+     }
+    ],
+    "offers_for_asin": [
+     {
+      "key": "apple|iPhone|15|Pro Max|256",
+      "cat": "mobile",
+      "status": "valid",
+      "price": null,
+      "at": "2026-10-01T09:53:54.026Z",
+      "avail": "out_of_stock"
+     }
+    ],
+    "cause": "FRESH_OBSERVATION_IS_OUT_OF_STOCK (correctly ineligible)"
+   },
+   {
+    "asin": "B0DX26NJ12",
+    "category": "washing_machine",
+    "stale_key": "haier|front_load|10|combo",
+    "stale_price": "2221",
+    "stale_observed": "2026-08-17T12:05:44.221Z",
+    "reason": "stale",
+    "storefront": null,
+    "latest_pdp_raw": null,
+    "latest_any_raw": {
+     "id": "1834971",
+     "at": "2026-08-17T12:05:44.221Z",
+     "method": "amazon-search",
+     "price": "2220.84",
+     "avail": "in_stock",
+     "category": "appliance"
+    },
+    "npo_for_latest_pdp_name": [],
+    "offers_for_asin": [
+     {
+      "key": "haier|front_load|10|combo",
+      "cat": "washing_machine",
+      "status": "valid",
+      "price": "2221",
+      "at": "2026-08-17T12:05:44.221Z",
+      "avail": null
+     }
+    ],
+    "cause": "NO_STOREFRONT_ROW (unreachable by price_update lanes)"
+   },
+   {
+    "asin": "B0DXQQCYKY",
+    "category": "mobile",
+    "stale_key": "apple|iPhone|16e|Standard|256",
+    "stale_price": null,
+    "stale_observed": "2026-10-01T15:44:12.899Z",
+    "reason": "oos",
+    "storefront": {
+     "id": "a0faf1f8-6b42-4859-9bca-fb430318e499",
+     "price": "2689.75",
+     "availability": "out_of_stock",
+     "updated_at": "2026-09-24T00:08:57.826Z",
+     "last_checked_at": "2026-10-01T15:44:13.157Z",
+     "last_scraped_at": null,
+     "scrape_status": "ok",
+     "misses": 2
+    },
+    "latest_pdp_raw": {
+     "id": "3169545",
+     "at": "2026-10-01T15:44:12.899Z",
+     "price": null,
+     "avail": "out_of_stock",
+     "name": "Apple iPhone 16e (256 GB) - White"
+    },
+    "latest_any_raw": {
+     "id": "3169545",
+     "at": "2026-10-01T15:44:12.899Z",
+     "method": "scraper",
+     "price": null,
+     "avail": "out_of_stock",
+     "category": "smartphone"
+    },
+    "npo_for_latest_pdp_name": [
+     {
+      "key": "apple|iPhone|16e|Standard|256",
+      "cat": "mobile",
+      "status": "valid",
+      "at": "2026-10-01T15:44:12.899Z"
+     },
+     {
+      "key": "apple|iPhone|16e|Standard|256",
+      "cat": "mobile",
+      "status": "valid",
+      "at": "2026-09-24T00:08:24.215Z"
+     },
+     {
+      "key": "apple|iPhone|16e|Standard|256",
+      "cat": "mobile",
+      "status": "valid",
+      "at": "2026-09-17T06:08:23.410Z"
+     },
+     {
+      "key": "apple|iPhone|16e|Standard|256",
+      "cat": "mobile",
+      "status": "valid",
+      "at": "2026-09-14T18:08:25.800Z"
+     }
+    ],
+    "offers_for_asin": [
+     {
+      "key": "apple|iPhone|16e|Standard|256",
+      "cat": "mobile",
+      "status": "valid",
+      "price": null,
+      "at": "2026-10-01T15:44:12.899Z",
+      "avail": "out_of_stock"
+     }
+    ],
+    "cause": "STOREFRONT_ALSO_STALE (capacity/back-off)"
+   },
+   {
+    "asin": "B0F1TN1WB9",
+    "category": "washing_machine",
+    "stale_key": "midea|top_load|13|washer",
+    "stale_price": "1798",
+    "stale_observed": "2026-09-04T06:07:40.521Z",
+    "reason": "stale",
+    "storefront": null,
+    "latest_pdp_raw": null,
+    "latest_any_raw": {
+     "id": "2345504",
+     "at": "2026-09-04T06:07:40.521Z",
+     "method": "amazon-search",
+     "price": "1798",
+     "avail": "in_stock",
+     "category": "appliance"
+    },
+    "npo_for_latest_pdp_name": [],
+    "offers_for_asin": [
+     {
+      "key": "midea|top_load|13|washer",
+      "cat": "washing_machine",
+      "status": "valid",
+      "price": "1798",
+      "at": "2026-09-04T06:07:40.521Z",
+      "avail": null
+     }
+    ],
+    "cause": "NO_STOREFRONT_ROW (unreachable by price_update lanes)"
+   },
+   {
+    "asin": "B0F9KPTKJG",
+    "category": "tv",
+    "stale_key": "samsung|MODEL:UA43F6000FUXSA",
+    "stale_price": "989",
+    "stale_observed": "2026-08-20T06:07:13.841Z",
+    "reason": "stale",
+    "storefront": {
+     "id": "f6c5d7cc-5a78-4a0b-921d-ccddd4e4be31",
+     "price": "999",
+     "availability": "in_stock",
+     "updated_at": "2026-10-03T02:08:18.256Z",
+     "last_checked_at": "2026-10-03T02:08:18.845Z",
+     "last_scraped_at": "2026-10-03T02:08:18.845Z",
+     "scrape_status": "ok",
+     "misses": 0
+    },
+    "latest_pdp_raw": {
+     "id": "3215413",
+     "at": "2026-10-03T02:08:18.641Z",
+     "price": "999",
+     "avail": "in_stock",
+     "name": "Samsung 43 Inch FHD TV, F6000F, Free contents by Samsung TV Plus, Secured by Kno"
+    },
+    "latest_any_raw": {
+     "id": "3215413",
+     "at": "2026-10-03T02:08:18.641Z",
+     "method": "scraper",
+     "price": "999",
+     "avail": "in_stock",
+     "category": "accessories"
+    },
+    "npo_for_latest_pdp_name": [],
+    "offers_for_asin": [
+     {
+      "key": "samsung|MODEL:UA43F6000FUXSA",
+      "cat": "tv",
+      "status": "valid",
+      "price": "989",
+      "at": "2026-08-20T06:07:13.841Z",
+      "avail": null
+     }
+    ],
+    "cause": "FRESH_PDP_RAW_EXISTS_BUT_NO_NORMALIZED_ROW (normalize sweep did not pick it up / rejected)"
+   },
+   {
+    "asin": "B0F9KRNWV3",
+    "category": "tv",
+    "stale_key": "samsung|MODEL:QA83S90FAEXSA",
+    "stale_price": "13889",
+    "stale_observed": "2026-09-16T07:34:22.041Z",
+    "reason": "stale",
+    "storefront": null,
+    "latest_pdp_raw": {
+     "id": "2702041",
+     "at": "2026-09-16T07:34:22.041Z",
+     "price": "13889",
+     "avail": "in_stock",
+     "name": "Samsung 83 Inch OLED TV, S90F, 4K, NQ4 AI Gen3 Processor, 4K AI Upscaling Pro, O"
+    },
+    "latest_any_raw": {
+     "id": "2702041",
+     "at": "2026-09-16T07:34:22.041Z",
+     "method": "scraper",
+     "price": "13889",
+     "avail": "in_stock",
+     "category": "tv"
+    },
+    "npo_for_latest_pdp_name": [
+     {
+      "key": "samsung|MODEL:QA83S90FAEXSA",
+      "cat": "tv",
+      "status": "valid",
+      "at": "2026-09-16T07:34:22.041Z"
+     },
+     {
+      "key": "samsung|MODEL:QA83S90FAEXSA",
+      "cat": "tv",
+      "status": "valid",
+      "at": "2026-09-15T06:20:27.222Z"
+     },
+     {
+      "key": "samsung|MODEL:QA83S90FAEXSA",
+      "cat": "tv",
+      "status": "valid",
+      "at": "2026-09-14T19:49:07.423Z"
+     },
+     {
+      "key": "samsung|MODEL:QA83S90FAEXSA",
+      "cat": "tv",
+      "status": "valid",
+      "at": "2026-09-13T18:38:43.982Z"
+     }
+    ],
+    "offers_for_asin": [
+     {
+      "key": "samsung|MODEL:QA83S90FAEXSA",
+      "cat": "tv",
+      "status": "valid",
+      "price": "13889",
+      "at": "2026-09-16T07:34:22.041Z",
+      "avail": null
+     }
+    ],
+    "cause": "NO_STOREFRONT_ROW (unreachable by price_update lanes)"
+   },
+   {
+    "asin": "B0F9KV483D",
+    "category": "tv",
+    "stale_key": "samsung|MODEL:UA32H5000FUXSA",
+    "stale_price": "771",
+    "stale_observed": "2026-08-19T20:14:02.569Z",
+    "reason": "stale",
+    "storefront": {
+     "id": "fc7c4aa3-8422-4e90-8779-73df872ce2a7",
+     "price": "719",
+     "availability": "in_stock",
+     "updated_at": "2026-10-03T14:03:55.236Z",
+     "last_checked_at": "2026-10-03T14:03:55.623Z",
+     "last_scraped_at": "2026-10-03T14:03:55.623Z",
+     "scrape_status": "ok",
+     "misses": 0
+    },
+    "latest_pdp_raw": {
+     "id": "3233041",
+     "at": "2026-10-03T14:03:55.415Z",
+     "price": "719",
+     "avail": "in_stock",
+     "name": "Samsung 32 Inch HD TV, H5000F, Free contents by Samsung TV Plus, Secured by Knox"
+    },
+    "latest_any_raw": {
+     "id": "3233041",
+     "at": "2026-10-03T14:03:55.415Z",
+     "method": "scraper",
+     "price": "719",
+     "avail": "in_stock",
+     "category": "accessories"
+    },
+    "npo_for_latest_pdp_name": [],
+    "offers_for_asin": [
+     {
+      "key": "samsung|MODEL:UA32H5000FUXSA",
+      "cat": "tv",
+      "status": "valid",
+      "price": "771",
+      "at": "2026-08-19T20:14:02.569Z",
+      "avail": null
+     }
+    ],
+    "cause": "FRESH_PDP_RAW_EXISTS_BUT_NO_NORMALIZED_ROW (normalize sweep did not pick it up / rejected)"
+   },
+   {
+    "asin": "B0F9KWTWJH",
+    "category": "tv",
+    "stale_key": "samsung|MODEL:UA85U8000FUXSA",
+    "stale_price": "3749",
+    "stale_observed": "2026-09-11T18:08:29.429Z",
+    "reason": "stale",
+    "storefront": {
+     "id": "1fe022d9-98e8-4db7-8610-7c13d6907166",
+     "price": "3749",
+     "availability": "in_stock",
+     "updated_at": "2026-09-11T18:09:18.759Z",
+     "last_checked_at": "2026-10-01T05:32:01.196Z",
+     "last_scraped_at": null,
+     "scrape_status": "failed",
+     "misses": 3
+    },
+    "latest_pdp_raw": null,
+    "latest_any_raw": {
+     "id": "2555047",
+     "at": "2026-09-11T18:08:29.429Z",
+     "method": "amazon-search",
+     "price": "3749",
+     "avail": "in_stock",
+     "category": "accessories"
+    },
+    "npo_for_latest_pdp_name": [],
+    "offers_for_asin": [
+     {
+      "key": "samsung|MODEL:UA85U8000FUXSA",
+      "cat": "tv",
+      "status": "valid",
+      "price": "3749",
+      "at": "2026-09-11T18:08:29.429Z",
+      "avail": null
+     }
+    ],
+    "cause": "STOREFRONT_ALSO_STALE (capacity/back-off)"
+   },
+   {
+    "asin": "B0FB9R7Y6S",
+    "category": "washing_machine",
+    "stale_key": "samsung|top_load|13|washer",
+    "stale_price": "2179",
+    "stale_observed": "2026-08-17T12:05:44.221Z",
+    "reason": "stale",
+    "storefront": {
+     "id": "6f625543-392a-4363-a88e-8b782a563aac",
+     "price": "2349",
+     "availability": "in_stock",
+     "updated_at": "2026-10-03T14:03:43.970Z",
+     "last_checked_at": "2026-10-03T14:03:44.554Z",
+     "last_scraped_at": "2026-10-03T14:03:44.554Z",
+     "scrape_status": "ok",
+     "misses": 0
+    },
+    "latest_pdp_raw": {
+     "id": "3233039",
+     "at": "2026-10-03T14:03:44.335Z",
+     "price": "2349",
+     "avail": "in_stock",
+     "name": "Samsung WA80F13B6LYL 13KG top load washing machine,inverter motor with 10Years w"
+    },
+    "latest_any_raw": {
+     "id": "3233039",
+     "at": "2026-10-03T14:03:44.335Z",
+     "method": "scraper",
+     "price": "2349",
+     "avail": "in_stock",
+     "category": "appliance"
+    },
+    "npo_for_latest_pdp_name": [],
+    "offers_for_asin": [
+     {
+      "key": "samsung|top_load|13|washer",
+      "cat": "washing_machine",
+      "status": "valid",
+      "price": "2179",
+      "at": "2026-08-17T12:05:44.221Z",
+      "avail": null
+     }
+    ],
+    "cause": "FRESH_PDP_RAW_EXISTS_BUT_NO_NORMALIZED_ROW (normalize sweep did not pick it up / rejected)"
+   },
+   {
+    "asin": "B0FGDMJJHK",
+    "category": "tv",
+    "stale_key": "skyworth|MODEL:55Q6800H",
+    "stale_price": "1498.98",
+    "stale_observed": "2026-09-21T12:08:12.421Z",
+    "reason": "stale",
+    "storefront": {
+     "id": "3d6885ba-1aa1-4e9c-8d68-23c84536f3ba",
+     "price": "1497.52",
+     "availability": "in_stock",
+     "updated_at": "2026-10-03T08:10:30.225Z",
+     "last_checked_at": "2026-10-03T08:10:30.617Z",
+     "last_scraped_at": "2026-10-03T08:10:30.617Z",
+     "scrape_status": "ok",
+     "misses": 0
+    },
+    "latest_pdp_raw": {
+     "id": "3224254",
+     "at": "2026-10-03T08:10:30.411Z",
+     "price": "1497.52",
+     "avail": "in_stock",
+     "name": "SKYWORTH 55Q6800H 55-Inch QLED+ 4K Google TV, 120Hz, Dolby Vision & Atmos, HDMI "
+    },
+    "latest_any_raw": {
+     "id": "3224254",
+     "at": "2026-10-03T08:10:30.411Z",
+     "method": "scraper",
+     "price": "1497.52",
+     "avail": "in_stock",
+     "category": "accessories"
+    },
+    "npo_for_latest_pdp_name": [
+     {
+      "key": "google|MODEL:55Q6800H",
+      "cat": "tv",
+      "status": "valid",
+      "at": "2026-10-03T08:10:30.411Z"
+     },
+     {
+      "key": "google|MODEL:55Q6800H",
+      "cat": "tv",
+      "status": "valid",
+      "at": "2026-10-02T13:39:26.659Z"
+     },
+     {
+      "key": "google|MODEL:55Q6800H",
+      "cat": "tv",
+      "status": "valid",
+      "at": "2026-10-01T18:57:29.589Z"
+     },
+     {
+      "key": "google|MODEL:55Q6800H",
+      "cat": "tv",
+      "status": "valid",
+      "at": "2026-10-01T06:29:10.959Z"
+     }
+    ],
+    "offers_for_asin": [
+     {
+      "key": "google|MODEL:55Q6800H",
+      "cat": "tv",
+      "status": "valid",
+      "price": "1497.52",
+      "at": "2026-10-03T08:10:30.411Z",
+      "avail": "in_stock"
+     },
+     {
+      "key": "skyworth|MODEL:55Q6800H",
+      "cat": "tv",
+      "status": "valid",
+      "price": "1498.98",
+      "at": "2026-09-21T12:08:12.421Z",
+      "avail": "in_stock"
+     }
+    ],
+    "cause": "FRESH_PDP_NORMALIZED_TO_A_DIFFERENT_KEY (sibling key: google|MODEL:55Q6800H)"
+   },
+   {
+    "asin": "B0FJLGM4L7",
+    "category": "tv",
+    "stale_key": "skyworth|MODEL:65Q6820H",
+    "stale_price": "1999",
+    "stale_observed": "2026-08-16T12:07:20.568Z",
+    "reason": "stale",
+    "storefront": {
+     "id": "032fc6ed-7ae9-4ae4-b7dd-f0e8a9db9d9a",
+     "price": "1970",
+     "availability": "limited_stock",
+     "updated_at": "2026-10-03T14:06:03.665Z",
+     "last_checked_at": "2026-10-03T14:06:04.057Z",
+     "last_scraped_at": "2026-10-03T14:06:04.057Z",
+     "scrape_status": "ok",
+     "misses": 0
+    },
+    "latest_pdp_raw": {
+     "id": "3233063",
+     "at": "2026-10-03T14:06:03.844Z",
+     "price": "1970",
+     "avail": "limited_stock",
+     "name": "Skyworth 65-Inch QLED+ Google TV, 120Hz Refresh Rate, Model 65Q6820H, 2025, Smar"
+    },
+    "latest_any_raw": {
+     "id": "3233063",
+     "at": "2026-10-03T14:06:03.844Z",
+     "method": "scraper",
+     "price": "1970",
+     "avail": "limited_stock",
+     "category": "tv"
+    },
+    "npo_for_latest_pdp_name": [
+     {
+      "key": "google|MODEL:65Q6820H",
+      "cat": "tv",
+      "status": "valid",
+      "at": "2026-10-03T14:06:03.844Z"
+     },
+     {
+      "key": "google|MODEL:65Q6820H",
+      "cat": "tv",
+      "status": "valid",
+      "at": "2026-10-02T13:44:55.447Z"
+     },
+     {
+      "key": "google|MODEL:65Q6820H",
+      "cat": "tv",
+      "status": "valid",
+      "at": "2026-10-02T00:56:31.821Z"
+     },
+     {
+      "key": "google|MODEL:65Q6820H",
+      "cat": "tv",
+      "status": "valid",
+      "at": "2026-10-01T07:25:59.632Z"
+     }
+    ],
+    "offers_for_asin": [
+     {
+      "key": "google|MODEL:65Q6820H",
+      "cat": "tv",
+      "status": "valid",
+      "price": "1970",
+      "at": "2026-10-03T14:06:03.844Z",
+      "avail": "limited_stock"
+     },
+     {
+      "key": "skyworth|MODEL:65Q6820H",
+      "cat": "tv",
+      "status": "valid",
+      "price": "1999",
+      "at": "2026-08-16T12:07:20.568Z",
+      "avail": null
+     }
+    ],
+    "cause": "FRESH_PDP_NORMALIZED_TO_A_DIFFERENT_KEY (sibling key: google|MODEL:65Q6820H)"
+   },
+   {
+    "asin": "B0FN885C5T",
+    "category": "tablet",
+    "stale_key": "samsung|galaxy tab s11|NO_GEN|128|wifi|NO_SIZE",
+    "stale_price": "3149",
+    "stale_observed": "2026-10-03T14:06:47.823Z",
+    "reason": "oos",
+    "storefront": {
+     "id": "ab16d09f-1b0e-4399-b1f9-2aec4cf82189",
+     "price": "3149",
+     "availability": "out_of_stock",
+     "updated_at": "2026-10-03T14:06:47.633Z",
+     "last_checked_at": "2026-10-03T14:06:48.386Z",
+     "last_scraped_at": "2026-10-03T14:06:48.386Z",
+     "scrape_status": "ok",
+     "misses": 0
+    },
+    "latest_pdp_raw": {
+     "id": "3233070",
+     "at": "2026-10-03T14:06:47.823Z",
+     "price": "3149",
+     "avail": "out_of_stock",
+     "name": "Samsung Galaxy Tab S11, AI Tablet, Gray, WiFi, 12GB RAM, 128GB Storage, Lightwei"
+    },
+    "latest_any_raw": {
+     "id": "3233070",
+     "at": "2026-10-03T14:06:47.823Z",
+     "method": "scraper",
+     "price": "3149",
+     "avail": "out_of_stock",
+     "category": "tablet"
+    },
+    "npo_for_latest_pdp_name": [
+     {
+      "key": "samsung|galaxy tab s11|NO_GEN|128|wifi|NO_SIZE",
+      "cat": "tablet",
+      "status": "valid",
+      "at": "2026-10-03T14:06:47.823Z"
+     },
+     {
+      "key": "samsung|galaxy tab s11|NO_GEN|128|wifi|NO_SIZE",
+      "cat": "tablet",
+      "status": "valid",
+      "at": "2026-10-02T20:09:40.456Z"
+     },
+     {
+      "key": "samsung|galaxy tab s11|NO_GEN|128|wifi|NO_SIZE",
+      "cat": "tablet",
+      "status": "valid",
+      "at": "2026-10-02T00:56:54.114Z"
+     },
+     {
+      "key": "samsung|galaxy tab s11|NO_GEN|128|wifi|NO_SIZE",
+      "cat": "tablet",
+      "status": "valid",
+      "at": "2026-10-01T07:26:22.074Z"
+     }
+    ],
+    "offers_for_asin": [
+     {
+      "key": "samsung|galaxy tab s11|NO_GEN|128|wifi|NO_SIZE",
+      "cat": "tablet",
+      "status": "valid",
+      "price": "3149",
+      "at": "2026-10-03T14:06:47.823Z",
+      "avail": "out_of_stock"
+     }
+    ],
+    "cause": "FRESH_OBSERVATION_IS_OUT_OF_STOCK (correctly ineligible)"
+   },
+   {
+    "asin": "B0FNDNRQ8H",
+    "category": "smartwatch",
+    "stale_key": "huawei|Huawei Watch GT|6|Standard|41|gps",
+    "stale_price": "799",
+    "stale_observed": "2026-09-22T18:48:50.499Z",
+    "reason": "stale",
+    "storefront": {
+     "id": "cba99cdd-2ac5-4f10-8201-19a6eca36536",
+     "price": "799",
+     "availability": "limited_stock",
+     "updated_at": "2026-09-22T00:11:39.019Z",
+     "last_checked_at": "2026-10-01T05:34:56.905Z",
+     "last_scraped_at": "2026-09-22T18:48:50.779Z",
+     "scrape_status": "failed",
+     "misses": 1
+    },
+    "latest_pdp_raw": {
+     "id": "2891551",
+     "at": "2026-09-22T18:48:50.499Z",
+     "price": "799",
+     "avail": "limited_stock",
+     "name": "HUAWEI WATCH GT 6 41mm Smart Watch, up to 21 days battery life, Compatible with "
+    },
+    "latest_any_raw": {
+     "id": "2891551",
+     "at": "2026-09-22T18:48:50.499Z",
+     "method": "scraper",
+     "price": "799",
+     "avail": "limited_stock",
+     "category": "smartwatch"
+    },
+    "npo_for_latest_pdp_name": [
+     {
+      "key": "huawei|Huawei Watch GT|6|Standard|41|gps",
+      "cat": "smartwatch",
+      "status": "valid",
+      "at": "2026-09-22T18:48:50.499Z"
+     },
+     {
+      "key": "huawei|Huawei Watch GT|6|Standard|41|gps",
+      "cat": "smartwatch",
+      "status": "valid",
+      "at": "2026-09-22T00:08:19.470Z"
+     },
+     {
+      "key": "huawei|Huawei Watch GT|6|Standard|41|gps",
+      "cat": "smartwatch",
+      "status": "valid",
+      "at": "2026-09-18T00:08:36.474Z"
+     },
+     {
+      "key": "huawei|Huawei Watch GT|6|Standard|41|gps",
+      "cat": "smartwatch",
+      "status": "valid",
+      "at": "2026-09-15T06:07:59.501Z"
+     }
+    ],
+    "offers_for_asin": [
+     {
+      "key": "huawei|Huawei Watch GT|6|Standard|41|gps",
+      "cat": "smartwatch",
+      "status": "valid",
+      "price": "799",
+      "at": "2026-09-22T18:48:50.499Z",
+      "avail": "limited_stock"
+     }
+    ],
+    "cause": "STOREFRONT_ALSO_STALE (capacity/back-off)"
+   },
+   {
+    "asin": "B0FNDRHQ4R",
+    "category": "smartwatch",
+    "stale_key": "huawei|Huawei Watch GT|6|Standard|46|gps",
+    "stale_price": "699",
+    "stale_observed": "2026-10-03T14:05:46.504Z",
+    "reason": "oos",
+    "storefront": {
+     "id": "e3bc740b-a61e-444e-8815-af49aee9c656",
+     "price": "699",
+     "availability": "out_of_stock",
+     "updated_at": "2026-10-03T14:05:46.325Z",
+     "last_checked_at": "2026-10-03T14:05:46.709Z",
+     "last_scraped_at": "2026-10-03T14:05:46.709Z",
+     "scrape_status": "ok",
+     "misses": 0
+    },
+    "latest_pdp_raw": {
+     "id": "3233060",
+     "at": "2026-10-03T14:05:46.504Z",
+     "price": "699",
+     "avail": "out_of_stock",
+     "name": "HUAWEI WATCH GT 6 46mm Smart Watch, 1.47'' Display, up to 21 days battery life, "
+    },
+    "latest_any_raw": {
+     "id": "3233060",
+     "at": "2026-10-03T14:05:46.504Z",
+     "method": "scraper",
+     "price": "699",
+     "avail": "out_of_stock",
+     "category": "smartwatch"
+    },
+    "npo_for_latest_pdp_name": [
+     {
+      "key": "huawei|Huawei Watch GT|6|Standard|46|gps",
+      "cat": "smartwatch",
+      "status": "valid",
+      "at": "2026-10-03T14:05:46.504Z"
+     },
+     {
+      "key": "huawei|Huawei Watch GT|6|Standard|46|gps",
+      "cat": "smartwatch",
+      "status": "valid",
+      "at": "2026-10-02T13:44:37.889Z"
+     },
+     {
+      "key": "huawei|Huawei Watch GT|6|Standard|46|gps",
+      "cat": "smartwatch",
+      "status": "valid",
+      "at": "2026-10-02T00:56:15.479Z"
+     },
+     {
+      "key": "huawei|Huawei Watch GT|6|Standard|46|gps",
+      "cat": "smartwatch",
+      "status": "valid",
+      "at": "2026-10-01T07:25:37.569Z"
+     }
+    ],
+    "offers_for_asin": [
+     {
+      "key": "huawei|Huawei Watch GT|6|Standard|46|gps",
+      "cat": "smartwatch",
+      "status": "valid",
+      "price": "699",
+      "at": "2026-10-03T14:05:46.504Z",
+      "avail": "out_of_stock"
+     }
+    ],
+    "cause": "FRESH_OBSERVATION_IS_OUT_OF_STOCK (correctly ineligible)"
+   },
+   {
+    "asin": "B0FPG8T352",
+    "category": "mobile",
+    "stale_key": "samsung|Galaxy A|A06|Standard|64",
+    "stale_price": null,
+    "stale_observed": "2026-10-01T16:38:20.958Z",
+    "reason": "oos",
+    "storefront": {
+     "id": "b16f22eb-34d4-4be2-82fc-3efd8f0aaecb",
+     "price": "469",
+     "availability": "out_of_stock",
+     "updated_at": "2026-09-23T18:12:43.004Z",
+     "last_checked_at": "2026-10-01T16:38:21.249Z",
+     "last_scraped_at": null,
+     "scrape_status": "ok",
+     "misses": 2
+    },
+    "latest_pdp_raw": {
+     "id": "3176168",
+     "at": "2026-10-01T16:38:20.958Z",
+     "price": null,
+     "avail": "out_of_stock",
+     "name": "Samsung Galaxy A06 5G, 64GB Storage, 4GB RAM, 6.7\" PLS LCD Display, 90Hz, HD+ (7"
+    },
+    "latest_any_raw": {
+     "id": "3176168",
+     "at": "2026-10-01T16:38:20.958Z",
+     "method": "scraper",
+     "price": null,
+     "avail": "out_of_stock",
+     "category": "smartphone"
+    },
+    "npo_for_latest_pdp_name": [
+     {
+      "key": "samsung|Galaxy A|A06|Standard|64",
+      "cat": "mobile",
+      "status": "valid",
+      "at": "2026-10-01T16:38:20.958Z"
+     },
+     {
+      "key": "samsung|Galaxy A|A06|Standard|64",
+      "cat": "mobile",
+      "status": "valid",
+      "at": "2026-10-01T09:58:16.299Z"
+     }
+    ],
+    "offers_for_asin": [
+     {
+      "key": "samsung|Galaxy A|A06|Standard|64",
+      "cat": "mobile",
+      "status": "valid",
+      "price": null,
+      "at": "2026-10-01T16:38:20.958Z",
+      "avail": "out_of_stock"
+     }
+    ],
+    "cause": "STOREFRONT_ALSO_STALE (capacity/back-off)"
+   },
+   {
+    "asin": "B0FPGM3GQL",
+    "category": "refrigerator",
+    "stale_key": "haier|single_door|90|standard",
+    "stale_price": "619",
+    "stale_observed": "2026-09-23T18:08:36.764Z",
+    "reason": "stale",
+    "storefront": {
+     "id": "536f5b29-8968-44d0-aecd-d53b385cd841",
+     "price": "619",
+     "availability": "in_stock",
+     "updated_at": "2026-09-23T18:10:21.545Z",
+     "last_checked_at": "2026-10-01T07:23:01.960Z",
+     "last_scraped_at": null,
+     "scrape_status": "failed",
+     "misses": 1
+    },
+    "latest_pdp_raw": null,
+    "latest_any_raw": {
+     "id": "2926433",
+     "at": "2026-09-23T18:08:36.764Z",
+     "method": "amazon-search",
+     "price": "619",
+     "avail": "in_stock",
+     "category": "appliance"
+    },
+    "npo_for_latest_pdp_name": [],
+    "offers_for_asin": [
+     {
+      "key": "haier|single_door|90|standard",
+      "cat": "refrigerator",
+      "status": "valid",
+      "price": "619",
+      "at": "2026-09-23T18:08:36.764Z",
+      "avail": "in_stock"
+     }
+    ],
+    "cause": "STOREFRONT_ALSO_STALE (capacity/back-off)"
+   },
+   {
+    "asin": "B0FQ5S4CR9",
+    "category": "tablet",
+    "stale_key": "samsung|galaxy tab a11|NO_GEN|64|4g|8.7",
+    "stale_price": "585",
+    "stale_observed": "2026-09-14T00:08:13.031Z",
+    "reason": "stale",
+    "storefront": {
+     "id": "d7178c7a-93f9-49f4-a39b-407b4b7404c1",
+     "price": "585",
+     "availability": "in_stock",
+     "updated_at": "2026-09-14T00:09:02.248Z",
+     "last_checked_at": "2026-09-30T17:30:11.918Z",
+     "last_scraped_at": null,
+     "scrape_status": "failed",
+     "misses": 2
+    },
+    "latest_pdp_raw": {
+     "id": "1308028",
+     "at": "2026-08-08T08:29:56.142Z",
+     "price": "523",
+     "avail": "in_stock",
+     "name": "Samsung Galaxy Tab A11, LTE, Android Tablet, Silver, 4GB RAM, 64GB Storage, 8.7\""
+    },
+    "latest_any_raw": {
+     "id": "2625414",
+     "at": "2026-09-14T00:08:13.031Z",
+     "method": "amazon-search",
+     "price": "585",
+     "avail": "in_stock",
+     "category": "tablet"
+    },
+    "npo_for_latest_pdp_name": [
+     {
+      "key": "samsung|galaxy tab a11|NO_GEN|64|4g|8.7",
+      "cat": "tablet",
+      "status": "valid",
+      "at": "2026-09-14T00:08:13.031Z"
+     },
+     {
+      "key": "samsung|galaxy tab a11|NO_GEN|64|4g|8.7",
+      "cat": "tablet",
+      "status": "valid",
+      "at": "2026-09-12T00:08:53.775Z"
+     },
+     {
+      "key": "samsung|galaxy tab a11|NO_GEN|64|4g|8.7",
+      "cat": "tablet",
+      "status": "valid",
+      "at": "2026-09-03T18:08:00.918Z"
+     }
+    ],
+    "offers_for_asin": [
+     {
+      "key": "samsung|galaxy tab a11|NO_GEN|64|4g|8.7",
+      "cat": "tablet",
+      "status": "valid",
+      "price": "585",
+      "at": "2026-09-14T00:08:13.031Z",
+      "avail": null
+     }
+    ],
+    "cause": "STOREFRONT_ALSO_STALE (capacity/back-off)"
+   },
+   {
+    "asin": "B0FRSPH88Z",
+    "category": "mobile",
+    "stale_key": "honor|Honor X|5|Plus|128",
+    "stale_price": "529",
+    "stale_observed": "2026-09-10T06:09:55.999Z",
+    "reason": "stale",
+    "storefront": {
+     "id": "79eb4be0-2935-4490-9089-e90b7e566f73",
+     "price": "529",
+     "availability": "in_stock",
+     "updated_at": "2026-09-10T06:13:15.903Z",
+     "last_checked_at": "2026-10-01T05:31:30.337Z",
+     "last_scraped_at": null,
+     "scrape_status": "failed",
+     "misses": 3
+    },
+    "latest_pdp_raw": null,
+    "latest_any_raw": {
+     "id": "2508771",
+     "at": "2026-09-10T06:09:55.999Z",
+     "method": "amazon-search",
+     "price": "529",
+     "avail": "in_stock",
+     "category": "smartphone"
+    },
+    "npo_for_latest_pdp_name": [],
+    "offers_for_asin": [
+     {
+      "key": "honor|Honor X|5|Plus|128",
+      "cat": "mobile",
+      "status": "valid",
+      "price": "529",
+      "at": "2026-09-10T06:09:55.999Z",
+      "avail": null
+     }
+    ],
+    "cause": "STOREFRONT_ALSO_STALE (capacity/back-off)"
+   },
+   {
+    "asin": "B0G4WXP8P1",
+    "category": "monitor",
+    "stale_key": "gameon|27|fhd|144|ips",
+    "stale_price": null,
+    "stale_observed": "2026-10-03T02:13:05.640Z",
+    "reason": "oos",
+    "storefront": {
+     "id": "091e724d-b28f-431e-9721-8f41697c9f3a",
+     "price": "458",
+     "availability": "out_of_stock",
+     "updated_at": "2026-10-02T07:33:46.130Z",
+     "last_checked_at": "2026-10-03T02:13:05.838Z",
+     "last_scraped_at": "2026-10-02T07:33:46.551Z",
+     "scrape_status": "ok",
+     "misses": 1
+    },
+    "latest_pdp_raw": {
+     "id": "3215456",
+     "at": "2026-10-03T02:13:05.640Z",
+     "price": null,
+     "avail": "out_of_stock",
+     "name": "GAMEON GOES27FHD144IPS 27 Inch FHD Gaming Monitor, 144Hz, Fast IPS, 0.5ms MPRT, "
+    },
+    "latest_any_raw": {
+     "id": "3215456",
+     "at": "2026-10-03T02:13:05.640Z",
+     "method": "scraper",
+     "price": null,
+     "avail": "out_of_stock",
+     "category": "monitor"
+    },
+    "npo_for_latest_pdp_name": [
+     {
+      "key": "gameon|27|fhd|144|ips",
+      "cat": "monitor",
+      "status": "valid",
+      "at": "2026-10-03T02:13:05.640Z"
+     },
+     {
+      "key": "gameon|27|fhd|144|ips",
+      "cat": "monitor",
+      "status": "valid",
+      "at": "2026-10-02T07:33:46.320Z"
+     },
+     {
+      "key": "gameon|27|fhd|144|ips",
+      "cat": "monitor",
+      "status": "valid",
+      "at": "2026-10-01T15:40:35.272Z"
+     },
+     {
+      "key": "gameon|27|fhd|144|ips",
+      "cat": "monitor",
+      "status": "valid",
+      "at": "2026-09-30T17:34:04.705Z"
+     }
+    ],
+    "offers_for_asin": [
+     {
+      "key": "gameon|27|fhd|144|ips",
+      "cat": "monitor",
+      "status": "valid",
+      "price": null,
+      "at": "2026-10-03T02:13:05.640Z",
+      "avail": "out_of_stock"
+     }
+    ],
+    "cause": "FRESH_OBSERVATION_IS_OUT_OF_STOCK (correctly ineligible)"
+   },
+   {
+    "asin": "B0G5ZJYGQ4",
+    "category": "mobile",
+    "stale_key": "xiaomi|Redmi Note|15|Pro|256",
+    "stale_price": "1369",
+    "stale_observed": "2026-09-10T06:09:55.999Z",
+    "reason": "stale",
+    "storefront": {
+     "id": "bf8bad13-0d84-4526-950e-11cdde9111c7",
+     "price": "1230",
+     "availability": "in_stock",
+     "updated_at": "2026-10-01T18:54:57.230Z",
+     "last_checked_at": "2026-10-02T07:30:34.784Z",
+     "last_scraped_at": "2026-10-01T18:54:57.628Z",
+     "scrape_status": "failed",
+     "misses": 1
+    },
+    "latest_pdp_raw": {
+     "id": "3177386",
+     "at": "2026-10-01T18:54:57.411Z",
+     "price": "1230",
+     "avail": "in_stock",
+     "name": "Redmi Note 15 Pro 5G Dual SIM+eSIM Titanium Gold 12GB RAM 256GB 5G - Global Vers"
+    },
+    "latest_any_raw": {
+     "id": "3177386",
+     "at": "2026-10-01T18:54:57.411Z",
+     "method": "scraper",
+     "price": "1230",
+     "avail": "in_stock",
+     "category": "smartphone"
+    },
+    "npo_for_latest_pdp_name": [
+     {
+      "key": "xiaomi|Redmi Note|15|Pro|256",
+      "cat": "mobile",
+      "status": "valid",
+      "at": "2026-09-10T06:09:55.999Z"
+     }
+    ],
+    "offers_for_asin": [
+     {
+      "key": "xiaomi|Redmi Note|15|Pro|256",
+      "cat": "mobile",
+      "status": "valid",
+      "price": "1369",
+      "at": "2026-09-10T06:09:55.999Z",
+      "avail": null
+     }
+    ],
+    "cause": "FRESH_PDP_RAW_EXISTS_BUT_NO_NORMALIZED_ROW (normalize sweep did not pick it up / rejected)"
+   },
+   {
+    "asin": "B0GPW3Q4NN",
+    "category": "monitor",
+    "stale_key": "dahua|27|qhd|200|ips",
+    "stale_price": "569",
+    "stale_observed": "2026-08-20T12:07:07.738Z",
+    "reason": "stale",
+    "storefront": null,
+    "latest_pdp_raw": null,
+    "latest_any_raw": {
+     "id": "1923481",
+     "at": "2026-08-20T12:07:07.738Z",
+     "method": "amazon-search",
+     "price": "569",
+     "avail": "in_stock",
+     "category": "monitor"
+    },
+    "npo_for_latest_pdp_name": [],
+    "offers_for_asin": [
+     {
+      "key": "dahua|27|qhd|200|ips",
+      "cat": "monitor",
+      "status": "valid",
+      "price": "569",
+      "at": "2026-08-20T12:07:07.738Z",
+      "avail": null
+     }
+    ],
+    "cause": "NO_STOREFRONT_ROW (unreachable by price_update lanes)"
+   },
+   {
+    "asin": "B0GQDXNH3L",
+    "category": "tv",
+    "stale_key": "hisense|55|4k|mini_led|144",
+    "stale_price": null,
+    "stale_observed": "2026-10-01T12:34:45.620Z",
+    "reason": "oos",
+    "storefront": {
+     "id": "128b6447-f01c-479a-bf62-8e5deb0a44fb",
+     "price": "1999",
+     "availability": "out_of_stock",
+     "updated_at": "2026-09-29T19:31:27.234Z",
+     "last_checked_at": "2026-10-01T12:34:45.936Z",
+     "last_scraped_at": "2026-09-29T19:31:27.057Z",
+     "scrape_status": "ok",
+     "misses": 1
+    },
+    "latest_pdp_raw": {
+     "id": "3168173",
+     "at": "2026-10-01T12:34:45.620Z",
+     "price": null,
+     "avail": "out_of_stock",
+     "name": "Hisense-55 Inch Mini LED 4K Smart TV,55E8S,8 Years OS Update,Hi-View AI Engine,1"
+    },
+    "latest_any_raw": {
+     "id": "3168173",
+     "at": "2026-10-01T12:34:45.620Z",
+     "method": "scraper",
+     "price": null,
+     "avail": "out_of_stock",
+     "category": "tv"
+    },
+    "npo_for_latest_pdp_name": [
+     {
+      "key": "hisense|55|4k|mini_led|144",
+      "cat": "tv",
+      "status": "valid",
+      "at": "2026-10-01T12:34:45.620Z"
+     },
+     {
+      "key": "hisense|55|4k|mini_led|144",
+      "cat": "tv",
+      "status": "valid",
+      "at": "2026-09-29T19:31:20.023Z"
+     },
+     {
+      "key": "hisense|55|4k|mini_led|144",
+      "cat": "tv",
+      "status": "valid",
+      "at": "2026-09-29T17:46:20.461Z"
+     },
+     {
+      "key": "hisense|55|4k|mini_led|144",
+      "cat": "tv",
+      "status": "valid",
+      "at": "2026-09-26T04:16:30.743Z"
+     }
+    ],
+    "offers_for_asin": [
+     {
+      "key": "hisense|55|4k|mini_led|144",
+      "cat": "tv",
+      "status": "valid",
+      "price": null,
+      "at": "2026-10-01T12:34:45.620Z",
+      "avail": "out_of_stock"
+     }
+    ],
+    "cause": "FRESH_OBSERVATION_IS_OUT_OF_STOCK (correctly ineligible)"
+   },
+   {
+    "asin": "B0GQVC1VFT",
+    "category": "tablet",
+    "stale_key": "apple|ipad air|m4|128|wifi|11",
+    "stale_price": "3499",
+    "stale_observed": "2026-10-03T14:08:04.343Z",
+    "reason": "oos",
+    "storefront": {
+     "id": "b77c902a-947d-4066-b5a2-84c3da01df07",
+     "price": "3499",
+     "availability": "out_of_stock",
+     "updated_at": "2026-10-03T14:08:04.165Z",
+     "last_checked_at": "2026-10-03T14:08:04.544Z",
+     "last_scraped_at": "2026-10-03T14:08:04.544Z",
+     "scrape_status": "ok",
+     "misses": 0
+    },
+    "latest_pdp_raw": {
+     "id": "3233083",
+     "at": "2026-10-03T14:08:04.343Z",
+     "price": "3499",
+     "avail": "out_of_stock",
+     "name": "Apple iPad Air 11-inch (M4): Liquid Retina Display, 128GB, 12MP Front/Back Camer"
+    },
+    "latest_any_raw": {
+     "id": "3233083",
+     "at": "2026-10-03T14:08:04.343Z",
+     "method": "scraper",
+     "price": "3499",
+     "avail": "out_of_stock",
+     "category": "tablet"
+    },
+    "npo_for_latest_pdp_name": [
+     {
+      "key": "apple|ipad air|m4|128|wifi|11",
+      "cat": "tablet",
+      "status": "valid",
+      "at": "2026-10-03T14:08:04.343Z"
+     },
+     {
+      "key": "apple|ipad air|m4|128|wifi|11",
+      "cat": "tablet",
+      "status": "valid",
+      "at": "2026-10-02T20:10:51.707Z"
+     },
+     {
+      "key": "apple|ipad air|m4|128|wifi|11",
+      "cat": "tablet",
+      "status": "valid",
+      "at": "2026-10-02T04:16:56.891Z"
+     },
+     {
+      "key": "apple|ipad air|m4|128|wifi|11",
+      "cat": "tablet",
+      "status": "valid",
+      "at": "2026-10-01T09:53:35.474Z"
+     }
+    ],
+    "offers_for_asin": [
+     {
+      "key": "apple|ipad air|m4|128|wifi|11",
+      "cat": "tablet",
+      "status": "valid",
+      "price": "3499",
+      "at": "2026-10-03T14:08:04.343Z",
+      "avail": "out_of_stock"
+     }
+    ],
+    "cause": "FRESH_OBSERVATION_IS_OUT_OF_STOCK (correctly ineligible)"
+   },
+   {
+    "asin": "B0GS2FM5TY",
+    "category": "tv",
+    "stale_key": "samsung|MODEL:QA98Q7FAAUXSA",
+    "stale_price": "7999",
+    "stale_observed": "2026-09-24T00:08:24.215Z",
+    "reason": "stale",
+    "storefront": {
+     "id": "2f9dd7db-21f6-4056-a5eb-18356cdcc982",
+     "price": "7999",
+     "availability": "in_stock",
+     "updated_at": "2026-09-24T00:10:23.770Z",
+     "last_checked_at": "2026-10-01T07:24:27.367Z",
+     "last_scraped_at": null,
+     "scrape_status": "failed",
+     "misses": 1
+    },
+    "latest_pdp_raw": {
+     "id": "2760604",
+     "at": "2026-09-18T16:11:23.603Z",
+     "price": "7999",
+     "avail": "in_stock",
+     "name": "Samsung 98 Inch QLED Smart TV, Q7F, 4K, Q4 AI Processor, 100% Color Volume with "
+    },
+    "latest_any_raw": {
+     "id": "2935291",
+     "at": "2026-09-24T00:08:24.215Z",
+     "method": "amazon-search",
+     "price": "7999",
+     "avail": "in_stock",
+     "category": "tv"
+    },
+    "npo_for_latest_pdp_name": [
+     {
+      "key": "samsung|MODEL:QA98Q7FAAUXSA",
+      "cat": "tv",
+      "status": "valid",
+      "at": "2026-09-24T00:08:24.215Z"
+     },
+     {
+      "key": "samsung|MODEL:QA98Q7FAAUXSA",
+      "cat": "tv",
+      "status": "valid",
+      "at": "2026-09-18T16:11:23.603Z"
+     },
+     {
+      "key": "samsung|MODEL:QA98Q7FAAUXSA",
+      "cat": "tv",
+      "status": "valid",
+      "at": "2026-09-18T09:08:23.842Z"
+     }
+    ],
+    "offers_for_asin": [
+     {
+      "key": "samsung|MODEL:QA98Q7FAAUXSA",
+      "cat": "tv",
+      "status": "valid",
+      "price": "7999",
+      "at": "2026-09-24T00:08:24.215Z",
+      "avail": "in_stock"
+     }
+    ],
+    "cause": "STOREFRONT_ALSO_STALE (capacity/back-off)"
+   },
+   {
+    "asin": "B0GS65PCTJ",
+    "category": "tv",
+    "stale_key": "skyworth|MODEL:55X6600H",
+    "stale_price": "1899",
+    "stale_observed": "2026-09-07T00:07:40.042Z",
+    "reason": "stale",
+    "storefront": {
+     "id": "d1f9ca41-6c35-4251-8217-d0805da0f620",
+     "price": "1749",
+     "availability": "limited_stock",
+     "updated_at": "2026-10-03T08:09:00.638Z",
+     "last_checked_at": "2026-10-03T08:09:01.024Z",
+     "last_scraped_at": "2026-10-03T08:09:01.024Z",
+     "scrape_status": "ok",
+     "misses": 0
+    },
+    "latest_pdp_raw": {
+     "id": "3224242",
+     "at": "2026-10-03T08:09:00.827Z",
+     "price": "1749",
+     "avail": "limited_stock",
+     "name": "Skyworth Smart TV 4K Mini LED Google TV, 55 Inch, Eye Care 5.0 Display, Dolby Vi"
+    },
+    "latest_any_raw": {
+     "id": "3224242",
+     "at": "2026-10-03T08:09:00.827Z",
+     "method": "scraper",
+     "price": "1749",
+     "avail": "limited_stock",
+     "category": "tv"
+    },
+    "npo_for_latest_pdp_name": [
+     {
+      "key": "google|MODEL:55X6600H",
+      "cat": "tv",
+      "status": "valid",
+      "at": "2026-10-03T08:09:00.827Z"
+     },
+     {
+      "key": "google|MODEL:55X6600H",
+      "cat": "tv",
+      "status": "valid",
+      "at": "2026-10-02T13:30:54.501Z"
+     },
+     {
+      "key": "google|MODEL:55X6600H",
+      "cat": "tv",
+      "status": "valid",
+      "at": "2026-10-01T18:56:01.300Z"
+     },
+     {
+      "key": "google|MODEL:55X6600H",
+      "cat": "tv",
+      "status": "valid",
+      "at": "2026-10-01T05:33:40.054Z"
+     }
+    ],
+    "offers_for_asin": [
+     {
+      "key": "google|MODEL:55X6600H",
+      "cat": "tv",
+      "status": "valid",
+      "price": "1749",
+      "at": "2026-10-03T08:09:00.827Z",
+      "avail": "limited_stock"
+     },
+     {
+      "key": "skyworth|MODEL:55X6600H",
+      "cat": "tv",
+      "status": "valid",
+      "price": "1899",
+      "at": "2026-09-07T00:07:40.042Z",
+      "avail": null
+     }
+    ],
+    "cause": "FRESH_PDP_NORMALIZED_TO_A_DIFFERENT_KEY (sibling key: google|MODEL:55X6600H)"
+   },
+   {
+    "asin": "B0GXB2PJKP",
+    "category": "washing_machine",
+    "stale_key": "hisense|top_load|8|washer",
+    "stale_price": "1195",
+    "stale_observed": "2026-09-05T00:06:27.413Z",
+    "reason": "stale",
+    "storefront": null,
+    "latest_pdp_raw": null,
+    "latest_any_raw": {
+     "id": "2361918",
+     "at": "2026-09-05T00:06:27.413Z",
+     "method": "amazon-search",
+     "price": "1195.04",
+     "avail": "in_stock",
+     "category": "appliance"
+    },
+    "npo_for_latest_pdp_name": [],
+    "offers_for_asin": [
+     {
+      "key": "hisense|top_load|8|washer",
+      "cat": "washing_machine",
+      "status": "valid",
+      "price": "1195",
+      "at": "2026-09-05T00:06:27.413Z",
+      "avail": null
+     }
+    ],
+    "cause": "NO_STOREFRONT_ROW (unreachable by price_update lanes)"
+   },
+   {
+    "asin": "B0GZKW57KP",
+    "category": "tv",
+    "stale_key": "samsung|MODEL:QA75QN80HAUXSA",
+    "stale_price": "5795",
+    "stale_observed": "2026-09-04T12:05:52.679Z",
+    "reason": "stale",
+    "storefront": null,
+    "latest_pdp_raw": null,
+    "latest_any_raw": {
+     "id": "2346323",
+     "at": "2026-09-04T12:05:52.679Z",
+     "method": "amazon-search",
+     "price": "5795",
+     "avail": "in_stock",
+     "category": "tv"
+    },
+    "npo_for_latest_pdp_name": [],
+    "offers_for_asin": [
+     {
+      "key": "samsung|MODEL:QA75QN80HAUXSA",
+      "cat": "tv",
+      "status": "valid",
+      "price": "5795",
+      "at": "2026-09-04T12:05:52.679Z",
+      "avail": null
+     }
+    ],
+    "cause": "NO_STOREFRONT_ROW (unreachable by price_update lanes)"
+   },
+   {
+    "asin": "B0H1M7X5R7",
+    "category": "tv",
+    "stale_key": "tcl|85|4k|mini_led|144",
+    "stale_price": "5178",
+    "stale_observed": "2026-09-07T00:07:40.042Z",
+    "reason": "stale",
+    "storefront": null,
+    "latest_pdp_raw": null,
+    "latest_any_raw": {
+     "id": "2415892",
+     "at": "2026-09-07T00:07:40.042Z",
+     "method": "amazon-search",
+     "price": "5178",
+     "avail": "in_stock",
+     "category": "tv"
+    },
+    "npo_for_latest_pdp_name": [],
+    "offers_for_asin": [
+     {
+      "key": "tcl|85|4k|mini_led|144",
+      "cat": "tv",
+      "status": "valid",
+      "price": "5178",
+      "at": "2026-09-07T00:07:40.042Z",
+      "avail": null
+     }
+    ],
+    "cause": "NO_STOREFRONT_ROW (unreachable by price_update lanes)"
+   },
+   {
+    "asin": "B0H1MCWLLK",
+    "category": "tv",
+    "stale_key": "tcl|98|4k|mini_led|144",
+    "stale_price": "6888",
+    "stale_observed": "2026-09-04T12:05:52.679Z",
+    "reason": "stale",
+    "storefront": {
+     "id": "f04c9dfc-2669-47da-a042-998b06fb72f6",
+     "price": "7999",
+     "availability": "in_stock",
+     "updated_at": "2026-10-01T07:25:14.674Z",
+     "last_checked_at": "2026-10-02T00:56:10.845Z",
+     "last_scraped_at": "2026-10-01T07:25:15.592Z",
+     "scrape_status": "failed",
+     "misses": 1
+    },
+    "latest_pdp_raw": {
+     "id": "3159251",
+     "at": "2026-10-01T07:25:15.412Z",
+     "price": "7999",
+     "avail": "in_stock",
+     "name": "TCL 98Q6C Television 98 Inch Smart TV 4K QD-Mini LED Colorful Quantum Crystal HD"
+    },
+    "latest_any_raw": {
+     "id": "3159251",
+     "at": "2026-10-01T07:25:15.412Z",
+     "method": "scraper",
+     "price": "7999",
+     "avail": "in_stock",
+     "category": "tv"
+    },
+    "npo_for_latest_pdp_name": [
+     {
+      "key": "google|98|4k|mini_led|144",
+      "cat": "tv",
+      "status": "valid",
+      "at": "2026-10-01T07:25:15.412Z"
+     },
+     {
+      "key": "google|98|4k|mini_led|144",
+      "cat": "tv",
+      "status": "valid",
+      "at": "2026-09-24T17:40:10.046Z"
+     },
+     {
+      "key": "google|98|4k|mini_led|144",
+      "cat": "tv",
+      "status": "valid",
+      "at": "2026-09-24T14:28:27.650Z"
+     },
+     {
+      "key": "google|98|4k|mini_led|144",
+      "cat": "tv",
+      "status": "valid",
+      "at": "2026-09-24T00:08:24.215Z"
+     }
+    ],
+    "offers_for_asin": [
+     {
+      "key": "google|98|4k|mini_led|144",
+      "cat": "tv",
+      "status": "valid",
+      "price": "7999",
+      "at": "2026-10-01T07:25:15.412Z",
+      "avail": "in_stock"
+     },
+     {
+      "key": "tcl|98|4k|mini_led|144",
+      "cat": "tv",
+      "status": "valid",
+      "price": "6888",
+      "at": "2026-09-04T12:05:52.679Z",
+      "avail": null
+     }
+    ],
+    "cause": "FRESH_PDP_NORMALIZED_TO_A_DIFFERENT_KEY (sibling key: google|98|4k|mini_led|144)"
+   },
+   {
+    "asin": "B0H1MJ88Y3",
+    "category": "tv",
+    "stale_key": "tcl|65|4k|mini_led|144",
+    "stale_price": "2928",
+    "stale_observed": "2026-09-04T12:05:52.679Z",
+    "reason": "stale",
+    "storefront": {
+     "id": "0c115451-04d5-4f12-a476-d50e2a4753cc",
+     "price": "2899",
+     "availability": "out_of_stock",
+     "updated_at": "2026-10-02T20:13:38.871Z",
+     "last_checked_at": "2026-10-02T20:13:39.288Z",
+     "last_scraped_at": "2026-10-02T20:13:39.288Z",
+     "scrape_status": "ok",
+     "misses": 0
+    },
+    "latest_pdp_raw": {
+     "id": "3206967",
+     "at": "2026-10-02T20:13:39.061Z",
+     "price": "2899",
+     "avail": "out_of_stock",
+     "name": "TCL 65T8D Television 65 Inch Smart TV 4K QD-Mini LED Dimming Colorful Quantum Cr"
+    },
+    "latest_any_raw": {
+     "id": "3206967",
+     "at": "2026-10-02T20:13:39.061Z",
+     "method": "scraper",
+     "price": "2899",
+     "avail": "out_of_stock",
+     "category": "tv"
+    },
+    "npo_for_latest_pdp_name": [
+     {
+      "key": "google|65|4k|mini_led|144",
+      "cat": "tv",
+      "status": "valid",
+      "at": "2026-10-02T20:13:39.061Z"
+     },
+     {
+      "key": "google|65|4k|mini_led|144",
+      "cat": "tv",
+      "status": "valid",
+      "at": "2026-10-02T04:20:43.209Z"
+     },
+     {
+      "key": "google|65|4k|mini_led|144",
+      "cat": "tv",
+      "status": "valid",
+      "at": "2026-10-01T12:31:35.590Z"
+     },
+     {
+      "key": "google|65|4k|mini_led|144",
+      "cat": "tv",
+      "status": "valid",
+      "at": "2026-09-28T19:22:14.025Z"
+     }
+    ],
+    "offers_for_asin": [
+     {
+      "key": "google|65|4k|mini_led|144",
+      "cat": "tv",
+      "status": "valid",
+      "price": "2899",
+      "at": "2026-10-02T20:13:39.061Z",
+      "avail": "out_of_stock"
+     },
+     {
+      "key": "tcl|65|4k|mini_led|144",
+      "cat": "tv",
+      "status": "valid",
+      "price": "2928",
+      "at": "2026-09-04T12:05:52.679Z",
+      "avail": null
+     }
+    ],
+    "cause": "FRESH_PDP_NORMALIZED_TO_A_DIFFERENT_KEY (sibling key: google|65|4k|mini_led|144)"
+   },
+   {
+    "asin": "B0H7S7G94G",
+    "category": "monitor",
+    "stale_key": "lg|32|fhd|144|va",
+    "stale_price": "999",
+    "stale_observed": "2026-09-06T15:07:59.843Z",
+    "reason": "stale",
+    "storefront": {
+     "id": "01d13d66-6033-46c9-900f-467c6818ea23",
+     "price": "999",
+     "availability": "in_stock",
+     "updated_at": "2026-08-03T10:55:19.204Z",
+     "last_checked_at": "2026-10-01T05:30:55.141Z",
+     "last_scraped_at": "2026-09-06T15:08:00.019Z",
+     "scrape_status": "failed",
+     "misses": 4
+    },
+    "latest_pdp_raw": {
+     "id": "2413746",
+     "at": "2026-09-06T15:07:59.843Z",
+     "price": "999",
+     "avail": "in_stock",
+     "name": "LG UltraGear 32G403B-B.AMI 32” VA FHD (1920 x 1080) 144Hz 1ms MBR, 5ms GtG at Fa"
+    },
+    "latest_any_raw": {
+     "id": "2413746",
+     "at": "2026-09-06T15:07:59.843Z",
+     "method": "scraper",
+     "price": "999",
+     "avail": "in_stock",
+     "category": "monitor"
+    },
+    "npo_for_latest_pdp_name": [
+     {
+      "key": "lg|32|fhd|144|va",
+      "cat": "monitor",
+      "status": "valid",
+      "at": "2026-09-06T15:07:59.843Z"
+     }
+    ],
+    "offers_for_asin": [
+     {
+      "key": "lg|32|fhd|144|va",
+      "cat": "monitor",
+      "status": "valid",
+      "price": "999",
+      "at": "2026-09-06T15:07:59.843Z",
+      "avail": null
+     }
+    ],
+    "cause": "STOREFRONT_ALSO_STALE (capacity/back-off)"
+   },
+   {
+    "asin": "B0H872ZJ9V",
+    "category": "tv",
+    "stale_key": "samsung|MODEL:QA85QN70HAUXSA",
+    "stale_price": "6999",
+    "stale_observed": "2026-09-02T00:08:28.163Z",
+    "reason": "stale",
+    "storefront": null,
+    "latest_pdp_raw": null,
+    "latest_any_raw": {
+     "id": "2289236",
+     "at": "2026-09-02T00:08:28.163Z",
+     "method": "amazon-search",
+     "price": "6999",
+     "avail": "in_stock",
+     "category": "tv"
+    },
+    "npo_for_latest_pdp_name": [],
+    "offers_for_asin": [
+     {
+      "key": "samsung|MODEL:QA85QN70HAUXSA",
+      "cat": "tv",
+      "status": "valid",
+      "price": "6999",
+      "at": "2026-09-02T00:08:28.163Z",
+      "avail": null
+     }
+    ],
+    "cause": "NO_STOREFRONT_ROW (unreachable by price_update lanes)"
+   },
+   {
+    "asin": "B0H9RF7V9K",
+    "category": "mobile",
+    "stale_key": "xiaomi|Redmi|17|Standard|256",
+    "stale_price": "927.25",
+    "stale_observed": "2026-09-17T06:08:23.410Z",
+    "reason": "stale",
+    "storefront": {
+     "id": "881d1488-f066-410a-b0a5-2d3177b75344",
+     "price": "895",
+     "availability": "in_stock",
+     "updated_at": "2026-10-03T02:08:30.681Z",
+     "last_checked_at": "2026-10-03T02:08:31.065Z",
+     "last_scraped_at": "2026-10-03T02:08:31.065Z",
+     "scrape_status": "ok",
+     "misses": 0
+    },
+    "latest_pdp_raw": {
+     "id": "3215415",
+     "at": "2026-10-03T02:08:30.865Z",
+     "price": "895",
+     "avail": "in_stock",
+     "name": "Redmi 17 5G Dual SIM – 6GB RAM, 256GB Storage, Black - Global Version"
+    },
+    "latest_any_raw": {
+     "id": "3215415",
+     "at": "2026-10-03T02:08:30.865Z",
+     "method": "scraper",
+     "price": "895",
+     "avail": "in_stock",
+     "category": "accessories"
+    },
+    "npo_for_latest_pdp_name": [
+     {
+      "key": "xiaomi|Redmi|17|Standard|256",
+      "cat": "mobile",
+      "status": "valid",
+      "at": "2026-09-17T06:08:23.410Z"
+     }
+    ],
+    "offers_for_asin": [
+     {
+      "key": "xiaomi|Redmi|17|Standard|256",
+      "cat": "mobile",
+      "status": "valid",
+      "price": "927.25",
+      "at": "2026-09-17T06:08:23.410Z",
+      "avail": "in_stock"
+     }
+    ],
+    "cause": "FRESH_PDP_RAW_EXISTS_BUT_NO_NORMALIZED_ROW (normalize sweep did not pick it up / rejected)"
+   },
+   {
+    "asin": "B0HD17NYHD",
+    "category": "mobile",
+    "stale_key": "infinix|Infinix Hot|70|Standard|256",
+    "stale_price": "849",
+    "stale_observed": "2026-09-21T12:08:12.421Z",
+    "reason": "stale",
+    "storefront": {
+     "id": "f7613e4e-ef96-42af-8ee2-6312f5dbaf16",
+     "price": "829",
+     "availability": "in_stock",
+     "updated_at": "2026-10-02T13:21:50.325Z",
+     "last_checked_at": "2026-10-03T02:08:49.115Z",
+     "last_scraped_at": "2026-10-02T13:21:50.738Z",
+     "scrape_status": "failed",
+     "misses": 1
+    },
+    "latest_pdp_raw": {
+     "id": "3197960",
+     "at": "2026-10-02T13:21:50.517Z",
+     "price": "829",
+     "avail": "in_stock",
+     "name": "Infinix Hot 70 Smartphone, 6GB RAM, 256GB, Night Pulse"
+    },
+    "latest_any_raw": {
+     "id": "3197960",
+     "at": "2026-10-02T13:21:50.517Z",
+     "method": "scraper",
+     "price": "829",
+     "avail": "in_stock",
+     "category": "smartphone"
+    },
+    "npo_for_latest_pdp_name": [
+     {
+      "key": "infinix|Infinix Hot|70|Standard|256",
+      "cat": "mobile",
+      "status": "valid",
+      "at": "2026-09-21T12:08:12.421Z"
+     }
+    ],
+    "offers_for_asin": [
+     {
+      "key": "infinix|Infinix Hot|70|Standard|256",
+      "cat": "mobile",
+      "status": "valid",
+      "price": "849",
+      "at": "2026-09-21T12:08:12.421Z",
+      "avail": "in_stock"
+     }
+    ],
+    "cause": "FRESH_PDP_RAW_EXISTS_BUT_NO_NORMALIZED_ROW (normalize sweep did not pick it up / rejected)"
+   },
+   {
+    "asin": "B0HD7ZCFDR",
+    "category": "mobile",
+    "stale_key": "samsung|Galaxy S|S26|Ultra|512",
+    "stale_price": "4698",
+    "stale_observed": "2026-09-20T08:32:38.513Z",
+    "reason": "stale",
+    "storefront": null,
+    "latest_pdp_raw": {
+     "id": "2814614",
+     "at": "2026-09-20T08:32:38.513Z",
+     "price": "4698",
+     "avail": "in_stock",
+     "name": "Galaxy S26 Ultra Cobalt Violet, 512GB Storage, AI Phone, 12GB RAM,Built-in Priva"
+    },
+    "latest_any_raw": {
+     "id": "2814614",
+     "at": "2026-09-20T08:32:38.513Z",
+     "method": "scraper",
+     "price": "4698",
+     "avail": "in_stock",
+     "category": "smartphone"
+    },
+    "npo_for_latest_pdp_name": [
+     {
+      "key": "samsung|Galaxy S|S26|Ultra|512",
+      "cat": "mobile",
+      "status": "valid",
+      "at": "2026-09-20T08:32:38.513Z"
+     }
+    ],
+    "offers_for_asin": [
+     {
+      "key": "samsung|Galaxy S|S26|Ultra|512",
+      "cat": "mobile",
+      "status": "valid",
+      "price": "4698",
+      "at": "2026-09-20T08:32:38.513Z",
+      "avail": "in_stock"
+     }
+    ],
+    "cause": "NO_STOREFRONT_ROW (unreachable by price_update lanes)"
+   },
+   {
+    "asin": null,
+    "category": "washing_machine",
+    "stale_key": "samsung|front_load|9|washer",
+    "stale_price": "3349",
+    "stale_observed": "2026-09-15T12:08:12.299Z",
+    "reason": "stale",
+    "storefront": null,
+    "latest_pdp_raw": null,
+    "latest_any_raw": null,
+    "npo_for_latest_pdp_name": [],
+    "offers_for_asin": [],
+    "cause": "NO_STOREFRONT_ROW (unreachable by price_update lanes)"
+   }
+  ]
+ }
+}

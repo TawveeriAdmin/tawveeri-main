@@ -1,0 +1,40 @@
+{
+ "classes": {
+  "NORMALIZED_EARLIER_ONLY (older NPO row exists; this newer observation was not staged)": 240,
+  "NEVER_NORMALIZED (no NPO row for this title at any time)": 1647,
+  "NORMALIZED_LATER (a newer observation of the same title has an NPO row)": 122
+ },
+ "never_by_category": {
+  "smartphone": 41,
+  "accessories": 201,
+  "air_conditioner": 17,
+  "monitor": 29,
+  "laptop": 36,
+  "appliance": 20,
+  "tv": 1201,
+  "kitchen": 18,
+  "tablet": 31,
+  "audio": 19,
+  "gaming": 18,
+  "smartwatch": 1,
+  "camera": 14,
+  "printer": 1
+ },
+ "examples": {
+  "NORMALIZED_EARLIER_ONLY (older NPO row exists; this newer observation was not staged)": [
+   "NESCAFÉ DOLCE GUSTO by Delonghi GENIO 2 Automatic Capsule Coffee Mach",
+   "Ninja Foodi 8-in-1 Flip Oven, Portable Mini Oven for Countertop and Wo",
+   "TCL Double Door Refrigerator 16.5 Cu.Ft (465 Liters), Inverter Technol"
+  ],
+  "NEVER_NORMALIZED (no NPO row for this title at any time)": [
+   "Samsung Galaxy S26 Ultra Black, 256GB Storage, AI Phone, 12GB RAM, Cus",
+   "ATW24A2DI-BSA: Aux Air conditioning unit Ultra Cool Model - 24000 BTU,",
+   "Portable Air Conditioner 3 Speeds,USB Air Conditiiner 3 Levels of Humi"
+  ],
+  "NORMALIZED_LATER (a newer observation of the same title has an NPO row)": [
+   "Samsung Galaxy A26 Dual-SIM 128GB ROM + 6GB RAM (GSM Only | No CDMA) F",
+   "Philips Dual-Stack AirFryer XXL, 10L/2KG, 2750W, 13 Functions, 6 Prese",
+   "Philips Baristina Coffee Machine, 16 Bar, 170g Beans box, 1.2L Water T"
+  ]
+ }
+}

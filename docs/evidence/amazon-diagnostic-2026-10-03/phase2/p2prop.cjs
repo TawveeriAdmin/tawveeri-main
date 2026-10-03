@@ -1,0 +1,35 @@
+const fs = require('fs'); const pg = require('pg');
+require('dotenv').config({ path: 'C:/Users/Hp/Downloads/Tawveeri-Official/.env.local', quiet: true });
+const { toPoolerDbUrl } = require('C:/Users/Hp/Downloads/Tawveeri-Official/scripts/tps-core/pooler-url');
+const OUT = process.argv[2];
+const ASIN = `'/(?:dp|gp/product|gp/aw/d)/([A-Za-z0-9]{10})(?:[/?&#]|$)'`;
+const ELIG = (a) => `(${a}.price>0 and ${a}.observed_at>=now()-interval '168 hours' and coalesce(${a}.payload->>'_availability','')<>'out_of_stock')`;
+(async () => {
+  const c = new pg.Client({ connectionString: toPoolerDbUrl(process.env.SUPABASE_DB_URL), ssl: { rejectUnauthorized: false }, statement_timeout: 120000 });
+  await c.connect(); await c.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
+  const out = { captured_at: new Date().toISOString() };
+  const { rows: stale } = await c.query(`with v as (select identity_key, category, price, observed_at, url, payload, raw_obs_id, upper((regexp_match(url, ${ASIN}))[1]) asin from tps_current_offers where store_id=2 and status='valid'), riv as (select identity_key from tps_current_offers t where t.status='valid' and t.store_id in (4,5) and ${ELIG('t')} group by 1) select v.asin, v.category, v.identity_key, v.price, v.observed_at, v.raw_obs_id, v.payload->>'_availability' avail, case when not (v.price>0) then 'no_price' when coalesce(v.payload->>'_availability','')='out_of_stock' then 'oos' else 'stale' end reason from v join riv using (identity_key) where not ${ELIG('v')} order by v.asin`);
+  out.stale = stale; const asins = [...new Set(stale.map(s => s.asin).filter(Boolean))];
+  const { rows: ps } = await c.query(`select id, product_id, external_id, product_url, current_price, availability, updated_at, last_checked_at, last_scraped_at, scrape_status, consecutive_misses from product_stores where store_id=2 and (external_id = any($1::text[]) or product_url ~ ('/(' || array_to_string($1::text[], '|') || ')([/?&#]|$)'))`, [asins]);
+  out.product_stores = ps;
+  const { rows: raws } = await c.query(`select distinct on (payload->>'sku') id, payload->>'sku' asin, scraped_at, raw_name, source_method, payload->>'current_price' price, payload->>'availability' avail, payload->>'category' category, payload->>'brand' brand from raw_observations where store_id=2 and payload->>'sku' = any($1::text[]) order by payload->>'sku', scraped_at desc`, [asins]);
+  out.latest_raw_any = raws;
+  const { rows: rawsPdp } = await c.query(`select distinct on (payload->>'sku') id, payload->>'sku' asin, scraped_at, raw_name, payload->>'current_price' price, payload->>'availability' avail from raw_observations where store_id=2 and source_method='scraper' and payload->>'sku' = any($1::text[]) order by payload->>'sku', scraped_at desc`, [asins]);
+  out.latest_raw_pdp = rawsPdp;
+  const names = [...new Set(raws.map(r => r.raw_name).concat(rawsPdp.map(r => r.raw_name)))];
+  const { rows: npo } = await c.query(`select raw_name, identity_key, detected_category, identity_key_status, confidence, canonical_product_id, observed_at, source_record_id from normalized_product_observations where store_id::text='2' and raw_name = any($1::text[]) and observed_at>=now()-interval '30 days' order by raw_name, observed_at desc`, [names]);
+  out.npo = npo;
+  const { rows: offers } = await c.query(`select upper((regexp_match(url, ${ASIN}))[1]) asin, identity_key, category, status, price, observed_at, raw_obs_id, payload->>'_availability' avail from tps_current_offers where store_id=2 and url ~ ('/(' || array_to_string($1::text[], '|') || ')([/?&#]|$)') order by 1, observed_at desc`, [asins]);
+  out.all_offers = offers;
+  // eXtra feed identifier fill
+  const { rows: ext } = await c.query(`select count(*) n, count(*) filter (where nullif(payload->>'barCode','') is not null) barcode_filled, count(*) filter (where nullif(payload->>'modelNumber','') is not null) model_filled, count(*) filter (where nullif(payload->>'brandEn','') is not null) brand_filled, count(*) filter (where payload->>'barCode' ~ '^[0-9]{12,14}$') barcode_gtin_shaped, count(*) filter (where nullif(payload->>'featureEnSeriesName','') is not null) series_filled from raw_observations where store_id=4 and source_method='unbxd_extra' and scraped_at>=now()-interval '1 day'`);
+  out.extra_feed_fill = ext[0];
+  const { rows: extEx } = await c.query(`select payload->>'nameEn' name, payload->>'brandEn' brand, payload->>'modelNumber' model, payload->>'barCode' barcode, payload->>'productCode' code, payload->>'familyEn' family, payload->>'featureEnSeriesName' series from raw_observations where store_id=4 and source_method='unbxd_extra' and scraped_at>=now()-interval '1 day' order by md5(id::text) limit 8`);
+  out.extra_feed_examples = extEx;
+  const { rows: almEx } = await c.query(`select payload->>'name_en' name, payload->>'brand' brand, payload->>'model' model, payload->>'sku' sku from raw_observations where store_id=5 and scraped_at>=now()-interval '1 day' and nullif(payload->>'model','') is not null order by md5(id::text) limit 8`);
+  out.almanea_feed_examples = almEx;
+  await c.query('ROLLBACK'); await c.end();
+  fs.writeFileSync(OUT, JSON.stringify(out, null, 1));
+  console.log('stale', stale.length, 'asins', asins.length, 'ps rows', ps.length, 'latest raw', raws.length, 'pdp', rawsPdp.length, 'npo', npo.length, 'offers', offers.length);
+  console.log('extra feed fill', JSON.stringify(ext[0])); for (const e of extEx) console.log(JSON.stringify(e)); for (const e of almEx) console.log(JSON.stringify(e));
+})().catch(e => { console.error('FATAL', e.message); process.exit(1); });

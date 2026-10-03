@@ -32,6 +32,8 @@ import { partitionEligible, distinctStoreCount } from '@/lib/compare/offer-eligi
 import { deriveCampaignEligibility, type CampaignEligibilityEvidence } from '@/lib/providers/campaigns/blackbox-riyal-festival';
 import { buildGoUrl } from '@/lib/analytics/build-go-url';
 import { applyAffiliateTrueTieOrder } from '@/lib/compare/affiliate-true-tie';
+import { identityGateEnabled } from '../../../scripts/tps-core/identity-flags';
+import { modelCodeOfKey, resolveGroup } from '../../../scripts/tps-core/identity-verifier';
 
 interface PriceRow {
   store_name: string;
@@ -75,6 +77,9 @@ export interface CompareOffer {
   /** Level-2 conditional-campaign evidence (e.g. Black Box's "مهرجان الريال") — never a
    *  price claim, TTL-gated, null once stale or absent. See blackbox-riyal-festival.ts. */
   campaign_eligibility: CampaignEligibilityEvidence | null;
+  /** Phase 3B identity verifier verdict against the other offers of this key (absent = verified match
+   *  or gate off). `review` offers are reference rows only; rejected offers never reach the list. */
+  identity_verdict?: { outcome: 'review'; reasons: string[] };
 }
 
 export interface ComparisonResult {
@@ -473,7 +478,18 @@ export async function getComparison(params: {
   // merchant may lead a group of offers already proven genuinely tied on price and every
   // shopper-relevant dimension this codebase can verify — never otherwise. See
   // src/lib/compare/affiliate-true-tie.ts for the full definition and safety proof.
-  const offers: CompareOffer[] = applyAffiliateTrueTieOrder(priceOrdered);
+  // ── 4b. IDENTITY VERIFIER GATE (Phase 3B, 2026-10-03; flags `TPS_IDENTITY_GATE` / `TPS_IDENTITY_V2`, default OFF) ──
+  // Key equality proposes; the verifier decides. On the Phase-3A labelled set (459 cross-store
+  // pairs) key equality alone merged refurbished with new, LTE with 5G, 8 GB with 12 GB RAM and
+  // different washer/microwave/dishwasher models under one spec key (31 false merges, 65%
+  // precision). Each listing here is verified against every other listing of the same key:
+  //   reject → the offer is NOT this purchasable item and is dropped from this page;
+  //   review → kept only as a reference row (never backs a cheapest claim), with reasons;
+  //   match  → unchanged. Store-neutral; reads titles only; no price, ranking or affiliate input.
+  const gated: CompareOffer[] = identityGateEnabled(canonical.category)
+    ? applyIdentityVerifierGate(priceOrdered, canonical.category, canonical.name_en || canonical.name_ar, modelCodeOfKey(canonical.tps_identity_key))
+    : priceOrdered;
+  const offers: CompareOffer[] = applyAffiliateTrueTieOrder(gated);
 
   // ── 5. summary ───────────────────────────────────────────────
   const { summary, message } = deriveComparisonSummary(offers);
@@ -551,8 +567,40 @@ export function partitionOffersByEligibility(
 ): { eligible: CompareOffer[]; older: CompareOffer[] } {
   // A CompareOffer always carries a positive price and an observation time (the loader
   // drops anything else), so the shared rule reduces to in-stock + fresh here.
+  // Phase 3B: an offer the identity verifier sent to REVIEW is a reference row, never a
+  // current competitor — a known-unknown (region tag, colour-code suffix) must not back a
+  // "cheapest" claim. (Rejected offers never reach this list — see applyIdentityVerifierGate.)
   const p = partitionEligible(offers, (o) => ({ price: o.price, availability: o.availability, observed_at: o.observed_at }), nowMs);
-  return { eligible: p.eligible, older: p.excluded.map((e) => e.item) };
+  const eligible = p.eligible.filter((o) => o.identity_verdict?.outcome !== 'review');
+  const older = [...p.excluded.map((e) => e.item), ...p.eligible.filter((o) => o.identity_verdict?.outcome === 'review')];
+  return { eligible, older };
+}
+
+/**
+ * Phase 3B identity verifier gate for one comparison page (pure; flag-gated by the caller).
+ * Every offer is verified against the page's own identity (the canonical name, `anchorTitle`)
+ * and against every other offer of the same key. Verdicts are symmetric, so the gate must
+ * decide WHICH side leaves when two listings conflict:
+ *   1. an offer that conflicts with the anchor is a different purchasable item → dropped;
+ *   2. remaining pairwise conflicts resolve to the largest mutually-consistent set (greedy:
+ *      fewest conflicts first, then price order) — a single refurbished / 5G listing leaves,
+ *      it never empties the page;
+ *   3. review verdicts mark the side the evidence points at (the region-tagged side, the side
+ *      without a model code); a symmetric unknown (colour-code suffix) marks the side that is
+ *      not an exact-code match with the anchor, or both when the anchor cannot tell.
+ * A review-tier offer stays as a reference row (never backs the cheapest claim). Reasons are
+ * attached for the UI/JSON-LD and for audit. Deterministic; title text only.
+ */
+export function applyIdentityVerifierGate(offers: CompareOffer[], category: string, anchorTitle?: string | null, sharedModel?: string | null): CompareOffer[] {
+  if (offers.length < 2) return offers;
+  const res = resolveGroup(offers.map((o) => ({ title: o.raw_name, label: o.store_slug })), category, anchorTitle, sharedModel);
+  const out: CompareOffer[] = [];
+  offers.forEach((o, i) => {
+    const r = res[i];
+    if (r.outcome === 'reject') return;
+    out.push(r.outcome === 'review' ? { ...o, identity_verdict: { outcome: 'review', reasons: r.reasons } } : o);
+  });
+  return out;
 }
 
 export function isComparisonError(v: ComparisonResult | ComparisonError): v is ComparisonError {
