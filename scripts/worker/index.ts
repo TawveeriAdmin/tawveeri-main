@@ -281,7 +281,7 @@ async function runOneJob(job: JobDef) {
     currentCancel = null;
     const durationS = ((Date.now() - startedAt) / 1000).toFixed(1);
     console.log(`[worker] ${job.name} finished: outcome=${outcome} duration=${durationS}s note=${note.slice(0, 300)}`);
-    await jobDone(job.name, outcome, note);
+    await jobDone(job.name, outcome, note, { startedAtMs: startedAt });
     await heartbeat({ status: `${job.name}:${outcome}` });
     // Confirm termination BEFORE releasing the lock or starting the next job —
     // lock.release() below only proceeds once the guarded child's promise

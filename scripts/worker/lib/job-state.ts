@@ -95,10 +95,28 @@ export async function jobDue(job: string, intervalMs: number): Promise<boolean> 
   }
 }
 
+export interface JobDoneStats {
+  /** When the job started (ms epoch). Lets a scraping job sum what its own
+   *  scraping_runs rows recorded since then, so the counter reflects writes
+   *  the ledger already holds — nothing is re-counted or estimated. */
+  startedAtMs?: number;
+}
+
+/** Jobs whose per-store children close `scraping_runs` rows with the same
+ *  `job_type` as the job name (price-update.ts / discovery.ts). */
+const SCRAPING_RUN_JOBS = new Set(['price_update', 'discovery']);
+
 /** Records a completed run. For anything other than a clean success, `note`
  *  should start with the JobOutcome so history is queryable
- *  (`last_note like 'timeout:%'` etc.) without a schema change. */
-export async function jobDone(job: string, outcome: JobOutcome, note?: string): Promise<void> {
+ *  (`last_note like 'timeout:%'` etc.) without a schema change.
+ *
+ *  `last_partial_at` / `rows_written` (2026-10-03): amazon, extra and samsung
+ *  price_update have ended `partial` on every cycle since 2026-09-29 (the 480s
+ *  ceiling, by design — ADR-394), so `last_success_at` froze at 2026-09-29 while
+ *  the job wrote ~60 rows per cycle. A dashboard reading only last_success_at
+ *  read that as a stall. These two columns make a partial cycle visible WITHOUT
+ *  changing what `success` means or how jobDue uses last_success_at. */
+export async function jobDone(job: string, outcome: JobOutcome, note?: string, stats?: JobDoneStats): Promise<void> {
   const url = dbUrl();
   if (!url) return;
   try {
@@ -106,15 +124,37 @@ export async function jobDone(job: string, outcome: JobOutcome, note?: string): 
     await c.connect();
     await c.query(`create table if not exists tps_job_state (
       job text primary key, last_success_at timestamptz, last_note text, updated_at timestamptz not null default now())`);
+    await c.query(`alter table tps_job_state
+      add column if not exists last_partial_at timestamptz,
+      add column if not exists rows_written integer`);
     const fullNote = `${outcome}${note ? ': ' + note : ''}`.slice(0, 200);
+
+    // What this run wrote, as its own scraping_runs rows recorded it (every
+    // store's row for this job since it started). Null for jobs without a
+    // scraping_runs ledger, so the column never claims a number it cannot source.
+    let rowsWritten: number | null = null;
+    if (stats?.startedAtMs && SCRAPING_RUN_JOBS.has(job)) {
+      const { rows } = await c.query(
+        `select coalesce(sum(products_updated), 0)::int as n from scraping_runs
+          where job_type = $1 and started_at >= to_timestamp($2 / 1000.0)`,
+        [job, stats.startedAtMs],
+      );
+      rowsWritten = Number(rows[0]?.n ?? 0);
+    }
+
     if (outcome === 'success') {
-      await c.query(`insert into tps_job_state (job, last_success_at, last_note, updated_at) values ($1, now(), $2, now())
-                     on conflict (job) do update set last_success_at=now(), last_note=$2, updated_at=now()`, [job, fullNote]);
+      await c.query(`insert into tps_job_state (job, last_success_at, last_note, rows_written, updated_at) values ($1, now(), $2, $3, now())
+                     on conflict (job) do update set last_success_at=now(), last_note=$2, rows_written=$3, updated_at=now()`, [job, fullNote, rowsWritten]);
     } else {
       // Do NOT advance last_success_at on failure/timeout/cancellation — jobDue must keep
       // treating the job as due so the next tick retries it, not wait a full interval.
-      await c.query(`insert into tps_job_state (job, last_note, updated_at) values ($1, $2, now())
-                     on conflict (job) do update set last_note=$2, updated_at=now()`, [job, fullNote]);
+      // A partial run stamps last_partial_at instead, so "last did something" stays readable.
+      const partial = outcome === 'partial';
+      await c.query(`insert into tps_job_state (job, last_note, rows_written, last_partial_at, updated_at)
+                     values ($1, $2, $3, case when $4::boolean then now() end, now())
+                     on conflict (job) do update set last_note=$2, rows_written=$3,
+                       last_partial_at = case when $4::boolean then now() else tps_job_state.last_partial_at end,
+                       updated_at=now()`, [job, fullNote, rowsWritten, partial]);
     }
     try { await c.end(); } catch { /* ignore */ }
   } catch { /* best-effort */ }
