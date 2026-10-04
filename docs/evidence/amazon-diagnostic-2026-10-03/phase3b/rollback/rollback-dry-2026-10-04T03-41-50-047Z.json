@@ -1,0 +1,333 @@
+{
+ "at": "2026-10-04T03:41:50.437Z",
+ "mode": "dry",
+ "categories": [
+  "mobile",
+  "tv"
+ ],
+ "stamped_current_offers": 8,
+ "overwritten_restored_exactly": 2,
+ "neutral_marker_only": 0,
+ "v2_born_retired": 6,
+ "v1_rows_restored": 1,
+ "unresolved_missing_raw": 0,
+ "canonicals_deactivated": 5,
+ "by_category": {
+  "mobile": {
+   "stamped": 5,
+   "born": 5,
+   "deactivated": 5
+  },
+  "tv": {
+   "stamped": 3,
+   "born": 1,
+   "deactivated": 0
+  }
+ },
+ "examples": [
+  {
+   "category": "mobile",
+   "store_id": 5,
+   "name": "هونر X9d، جيجا 256، 12 جيجا رام، 5G، شريحتين اتصال – احمر",
+   "v2_key": "honor|Honor X|9d|Standard|256",
+   "v1_key": "honor|Honor X|9|Standard|256"
+  },
+  {
+   "category": "tv",
+   "store_id": 4,
+   "name": "LG 34\" UltraWide VA WQHD Curved (1800R) 144Hz HDR10 USB Type-C, Black",
+   "v2_key": "lg|MODEL:34U640B-B.AMI",
+   "v1_key": "lg|34|qhd|144|va"
+  },
+  {
+   "category": "mobile",
+   "store_id": 5,
+   "name": "هونر X5c بلص، 128 جيجابايت، 4 جيجابايت رام، 4G، شريحتين اتصال - ازرق م",
+   "v2_key": "honor|Honor X|5c|Plus|128",
+   "v1_key": "honor|Honor X|5|Standard|128"
+  },
+  {
+   "category": "mobile",
+   "store_id": 5,
+   "name": "هونر 600 لايت، سعة 256 جيجابايت، رام 8 جيجابايت، 5G، شريحتين - اسود مخ",
+   "v2_key": "honor|Honor|600|Lite|256",
+   "v1_key": "honor|Honor|60|Lite|256"
+  },
+  {
+   "category": "mobile",
+   "store_id": 5,
+   "name": "هونر X7e، سعة 265 جيجا، 6 جيجا رام، شبكة الجيل الرابع، شريحتين - منتصف",
+   "v2_key": "honor|Honor X|7e|Standard|NO_STORAGE",
+   "v1_key": "honor|Honor X|7|Standard|NO_STORAGE"
+  },
+  {
+   "category": "mobile",
+   "store_id": 5,
+   "name": "هونر 600 لايت، سعة 128 جيجابايت، رام 8 جيجابايت، 5G، شريحتين - ذهبي صح",
+   "v2_key": "honor|Honor|600|Lite|128",
+   "v1_key": null
+  }
+ ],
+ "before_state": {
+  "born": [
+   {
+    "category": "mobile",
+    "identity_key": "honor|Honor X|9d|Standard|256",
+    "store_id": 5,
+    "raw_obs_id": "3153773",
+    "status": "valid",
+    "price": "1598.99",
+    "url": "https://m.dev-almanea.com/honor-x9d-256gb-12gb-5g-dual-sim-reddish-brown-p-170112701030075",
+    "name": "هونر X9d، جيجا 256، 12 جيجا رام، 5G، شريحتين اتصال – احمر",
+    "confidence": 100,
+    "observed_at": "2026-10-01T06:00:05.958Z",
+    "payload": {
+     "color": "red",
+     "family": "Honor X",
+     "ram_gb": 12,
+     "network": "5G",
+     "variant": "Standard",
+     "generation": "9d",
+     "storage_gb": 256,
+     "_identity_rules": "v2"
+    }
+   },
+   {
+    "category": "tv",
+    "identity_key": "lg|MODEL:34U640B-B.AMI",
+    "store_id": 4,
+    "raw_obs_id": "3166402",
+    "status": "valid",
+    "price": "1759",
+    "url": "https://www.extra.com/en-sa/computer/monitors/led/lg-34-ultrawide-va-wqhd-curved-1800r-144hz-hdr10-usb-type-c-black/p/100522618",
+    "name": "LG 34\" UltraWide VA WQHD Curved (1800R) 144Hz HDR10 USB Type-C, Black",
+    "confidence": 82,
+    "observed_at": "2026-10-01T12:04:14.586Z",
+    "payload": {
+     "brand": "lg",
+     "color": "black",
+     "panel": null,
+     "smart": false,
+     "series": null,
+     "resolution": "4k",
+     "screen_size": 34,
+     "refresh_rate": 144,
+     "_identity_rules": "v2"
+    }
+   },
+   {
+    "category": "mobile",
+    "identity_key": "honor|Honor X|5c|Plus|128",
+    "store_id": 5,
+    "raw_obs_id": "3153797",
+    "status": "valid",
+    "price": "549",
+    "url": "https://m.dev-almanea.com/honor-x5c-plus-128gb-4gb-4g-dual-sim-ocean-cyan-p-170112701025023",
+    "name": "هونر X5c بلص، 128 جيجابايت، 4 جيجابايت رام، 4G، شريحتين اتصال - ازرق محيطي",
+    "confidence": 100,
+    "observed_at": "2026-10-01T06:00:05.958Z",
+    "payload": {
+     "color": "blue",
+     "family": "Honor X",
+     "ram_gb": 4,
+     "network": "4G",
+     "variant": "Plus",
+     "generation": "5c",
+     "storage_gb": 128,
+     "_identity_rules": "v2"
+    }
+   },
+   {
+    "category": "mobile",
+    "identity_key": "honor|Honor|600|Lite|256",
+    "store_id": 5,
+    "raw_obs_id": "3153874",
+    "status": "valid",
+    "price": "1399",
+    "url": "https://m.dev-almanea.com/honor-600-lite-256gb-8gb-ram-5g-dual-sim-velvet-black-p-170112702030013",
+    "name": "هونر 600 لايت، سعة 256 جيجابايت، رام 8 جيجابايت، 5G، شريحتين - اسود مخملي",
+    "confidence": 100,
+    "observed_at": "2026-10-01T06:00:05.958Z",
+    "payload": {
+     "color": "black",
+     "family": "Honor",
+     "ram_gb": null,
+     "network": "5G",
+     "variant": "Lite",
+     "generation": "600",
+     "storage_gb": 256,
+     "_identity_rules": "v2"
+    }
+   },
+   {
+    "category": "mobile",
+    "identity_key": "honor|Honor X|7e|Standard|NO_STORAGE",
+    "store_id": 5,
+    "raw_obs_id": "3153861",
+    "status": "valid",
+    "price": "949",
+    "url": "https://m.dev-almanea.com/honor-x7e-256gb-6gb-4g-dual-sim-midnight-black-p-170112702030028",
+    "name": "هونر X7e، سعة 265 جيجا، 6 جيجا رام، شبكة الجيل الرابع، شريحتين - منتصف الليل",
+    "confidence": 60,
+    "observed_at": "2026-10-01T06:00:05.958Z",
+    "payload": {
+     "color": null,
+     "family": "Honor X",
+     "ram_gb": 6,
+     "network": null,
+     "variant": "Standard",
+     "generation": "7e",
+     "storage_gb": null,
+     "_identity_rules": "v2"
+    }
+   },
+   {
+    "category": "mobile",
+    "identity_key": "honor|Honor|600|Lite|128",
+    "store_id": 5,
+    "raw_obs_id": "3153865",
+    "status": "valid",
+    "price": "1299.01",
+    "url": "https://m.dev-almanea.com/honor-600-lite-128gb-8gb-ram-5g-dual-sim-desert-gold-p-170112702025011",
+    "name": "هونر 600 لايت، سعة 128 جيجابايت، رام 8 جيجابايت، 5G، شريحتين - ذهبي صحراوي",
+    "confidence": 100,
+    "observed_at": "2026-10-01T06:00:05.958Z",
+    "payload": {
+     "color": "gold",
+     "family": "Honor",
+     "ram_gb": null,
+     "network": "5G",
+     "variant": "Lite",
+     "generation": "600",
+     "storage_gb": 128,
+     "_identity_rules": "v2"
+    }
+   }
+  ],
+  "overwritten": [
+   {
+    "category": "tv",
+    "identity_key": "samsung|MODEL:UA43F6000FUXSA",
+    "store_id": 2,
+    "raw_obs_id": "3159218",
+    "status": "valid",
+    "price": "999",
+    "url": "https://www.amazon.sa/-/en/Samsung-F6000F-contents-Secured-UA43F6000FUXSA/dp/B0F9KPTKJG/ref=sr_1_9?dib=eyJ2IjoiMSJ9.ltP43YZOPsLlKMErh7YsJq6OxhE23E2n5uUfpPGRX7HoNAQlAuZ3ow_nAMlWTpTLWRnyTcxJ93iGl405CBSzUCjVJdIuPaTr1IR56a4VTnp8ctL_Zt-CrIRKREWEfOLLz4P3843MwnFmM8zpAYAs4QdSsGCyeM2m5N_6jlDwDBdA5CzBY63TnCoiZ_fIeZvzCeDbto4VMxbv8NnuX5WCgRUb_OSIAsSCwLBt7isXO9kPYwrPhhhaW-_dbbJ9QK2S49OqVr2uwpwhJpAQ2feDfg6H8OqGFbhARJuC9kLdNTk.a8qQZDNpfzZoQVJj5khKJRkyrzhGrtfagoNXQXrh1EI&dib_tag=se&keywords=smart+tv&qid=1786519852&s=electronics&sr=1-9",
+    "name": "Samsung 43 Inch FHD TV, F6000F, Free contents by Samsung TV Plus, Secured by Knox, HDR, OTS Lite, UA43F6000FUXSA (2025 - KSA Version)",
+    "confidence": 82,
+    "observed_at": "2026-10-01T07:21:46.650Z",
+    "payload": {
+     "brand": "samsung",
+     "color": null,
+     "panel": null,
+     "smart": false,
+     "_image": "https://m.media-amazon.com/images/I/61T-aEI2HlL.jpg",
+     "series": null,
+     "resolution": "fhd",
+     "screen_size": 43,
+     "refresh_rate": 50,
+     "_availability": "in_stock",
+     "_identity_prev": {
+      "url": "https://www.amazon.sa/-/en/Samsung-F6000F-contents-Secured-UA43F6000FUXSA/dp/B0F9KPTKJG/ref=sr_1_18?dib=eyJ2IjoiMSJ9.-VBdFsw0GT1qmIRmOy6FvId02T5e-mcECqjScUk8bDTecIMVknpz05yT9-khWH0h0cFXwTMfr9GC1evovacqyKH2XCGD4EGeahkMTt7BOf6fVSQFL1ig0A_FhvlOQEV4WrvIBMp_tlzjEpFBI54r3V-ZOzJJZH3_eaUaC_eaZhEPR2m-DK3UiZy2YeWYpRXEVcpyidHt9s6q1YOM1IJj3YrQon_XJu8okMBNo1i911A_ksasZrIxLQA8eD1xLLoJgGldh__ATcEojVqkIICWflEyvgJGQyLKRnSqlnBSEhc.s0mjf3QIsUjVmMSnQzx7Sa_bHfPgnKrzR7hGD0ggUzg&dib_tag=se&keywords=%D8%AA%D9%84%D9%81%D8%B2%D9%8A%D9%88%D9%86&qid=1787206030&sr=8-18",
+      "name": "Samsung 43 Inch FHD TV, F6000F, Free contents by Samsung TV Plus, Secured by Knox, HDR, OTS Lite, UA43F6000FUXSA (2025 - KSA Version)",
+      "price": 989,
+      "status": "valid",
+      "payload": {
+       "brand": "samsung",
+       "color": null,
+       "panel": null,
+       "smart": false,
+       "_image": "https://m.media-amazon.com/images/I/61T-aEI2HlL._AC_UL320_.jpg",
+       "series": null,
+       "resolution": "fhd",
+       "screen_size": 43,
+       "refresh_rate": null
+      },
+      "confidence": 82,
+      "raw_obs_id": 1915713,
+      "observed_at": "2026-08-20T06:07:13.841493+00:00"
+     },
+     "_identity_rules": "v2"
+    }
+   },
+   {
+    "category": "tv",
+    "identity_key": "samsung|MODEL:UA32H5000FUXSA",
+    "store_id": 2,
+    "raw_obs_id": "3158980",
+    "status": "valid",
+    "price": "719",
+    "url": "https://www.amazon.sa/-/en/Samsung-H5000F-contents-Secured-UA32H5000FUXSA/dp/B0F9KV483D/ref=sr_1_29?dib=eyJ2IjoiMSJ9.2Q7aCF3nZKj_PNt-xUN6QB7-t6jPVU7V4XLJdSMXiczqiisxME5Y7vElCaue4xe30ZS5bDgsJQV3sZ-bnH06v_duSvIcipC7wHmczj_Ibr6dvxSSgSiaBwKEZVp8_hFjQyWAHBLSzIbbX3XpYYXUHwYmJauHihZFgtjPeq64l3-zyH1QzcJ1bpNUmvx-6hV1UkKXED_PepKUc5Kbp_mNeOvYa9vGPp8ziiHZ3QOb5L3nNlZBVzflAWkXFnWsXSHggwsz_0KGUWCTgyhi2L9w92zyNnaY_-88om9easDJIyo.GIVZ_6FhMB6Gw5HKHpjqWY6qms8Du2b7DJcHqOoSx1E&dib_tag=se&keywords=smart+tv&qid=1790836075&s=electronics&sr=1-29",
+    "name": "Samsung 32 Inch HD TV, H5000F, Free contents by Samsung TV Plus, Secured by Knox, HDR, OTS Lite, UA32H5000FUXSA (2025 - KSA Version)",
+    "confidence": 82,
+    "observed_at": "2026-10-01T06:29:10.959Z",
+    "payload": {
+     "brand": "samsung",
+     "color": null,
+     "panel": null,
+     "smart": false,
+     "_image": "https://m.media-amazon.com/images/I/61-ZI00iLaL._AC_UL320_.jpg",
+     "series": null,
+     "resolution": "hd",
+     "screen_size": 32,
+     "refresh_rate": null,
+     "_availability": "in_stock",
+     "_identity_prev": {
+      "url": "https://www.amazon.sa/-/en/Samsung-H5000F-contents-Secured-UA32H5000FUXSA/dp/B0F9KV483D/ref=sr_1_9?dib=eyJ2IjoiMSJ9.-VBdFsw0GT1qmIRmOy6FvBDhwjJ_yKknCZjd3h5CdG7rJKiWvSOp3iBwNwlQkGQC1OCtv3oMq9uC_nLS6DXZdJDVuqtSMYg8kLH1JkOFfN1GiGZaMaJgmXjlTBbWad1TPoX9p5afBCek6YuNg9e-bIMRbkO6VpSyWgXrNJVBazimYupezSMj4BelPnqGPBK69s0fpbXwhWjT3hm-K5zooiQ7Bm6cddiSq5AG5lUGH8_ZRFbvtmkKS2LXmXjRkRvJ__KzRe-WomtDPv7jSHFh9QJLGBQw0fK7eyCZhAC5TEM.GPwBO6dcfTNRqpcG0uSUQL03tEXvl_ZLk-WISAzchyc&dib_tag=se&keywords=smart+tv&qid=1787170404&s=electronics&sr=1-9",
+      "name": "Samsung 32 Inch HD TV, H5000F, Free contents by Samsung TV Plus, Secured by Knox, HDR, OTS Lite, UA32H5000FUXSA (2025 - KSA Version)",
+      "price": 771,
+      "status": "valid",
+      "payload": {
+       "brand": "samsung",
+       "color": null,
+       "panel": null,
+       "smart": false,
+       "_image": "https://m.media-amazon.com/images/I/61-ZI00iLaL._AC_UL320_.jpg",
+       "series": null,
+       "resolution": "hd",
+       "screen_size": 32,
+       "refresh_rate": null
+      },
+      "confidence": 82,
+      "raw_obs_id": 1906196,
+      "observed_at": "2026-08-19T20:14:02.569+00:00"
+     },
+     "_identity_rules": "v2",
+     "_original_price": 799
+    }
+   }
+  ],
+  "deactivate": [
+   {
+    "id": "4fce29e2-5607-4a71-b601-5e7ce33f9d8b",
+    "tps_identity_key": "honor|Honor X|7e|Standard|NO_STORAGE",
+    "category": "mobile",
+    "is_active": true
+   },
+   {
+    "id": "d61253c1-1e54-4960-a2b8-f025038de738",
+    "tps_identity_key": "honor|Honor|600|Lite|128",
+    "category": "mobile",
+    "is_active": true
+   },
+   {
+    "id": "204fbbb6-a679-44f6-959c-93f8db47e8d6",
+    "tps_identity_key": "honor|Honor X|9d|Standard|256",
+    "category": "mobile",
+    "is_active": true
+   },
+   {
+    "id": "b68fa801-9a52-48a1-9778-d87f6e973d61",
+    "tps_identity_key": "honor|Honor X|5c|Plus|128",
+    "category": "mobile",
+    "is_active": true
+   },
+   {
+    "id": "441a53fc-34d9-4bfd-81a1-5c3826d33f49",
+    "tps_identity_key": "honor|Honor|600|Lite|256",
+    "category": "mobile",
+    "is_active": true
+   }
+  ]
+ }
+}

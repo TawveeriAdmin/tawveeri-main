@@ -1100,11 +1100,11 @@
   },
   "F": {
    "label": "E + VERIFICATION layer: key proposes, stated attributes verify (conflict ⇒ reject; region ⇒ abstain to review)",
-   "sent_to_review": 35,
+   "sent_to_review": 41,
    "review_labels": {
     "AMBIGUOUS": 17,
     "INSUFFICIENT_EVIDENCE": 14,
-    "SAME_EXACT_VARIANT": 3,
+    "SAME_EXACT_VARIANT": 9,
     "DIFFERENT_PRODUCT": 1
    },
    "phones": {
@@ -1120,13 +1120,13 @@
    },
    "tv_amazon_titles_accepted": "202/203",
    "pairs": {
-    "asserted": 175,
-    "tp": 170,
+    "asserted": 169,
+    "tp": 164,
     "fp_different_variant": 0,
     "fp_different_product": 0,
     "ambiguous_or_unlabeled": 5,
     "precision_on_labeled": "100.0%",
-    "recall_of_labeled_same": "92.9%",
+    "recall_of_labeled_same": "89.6%",
     "per_category": {
      "mobile": {
       "asserted": 157,
@@ -1136,8 +1136,8 @@
       "gt_same": 158
      },
      "tv": {
-      "asserted": 6,
-      "tp": 6,
+      "asserted": 2,
+      "tp": 2,
       "fp": 0,
       "amb": 0,
       "gt_same": 6
@@ -1171,8 +1171,8 @@
       "gt_same": 1
      },
      "air_conditioner": {
-      "asserted": 2,
-      "tp": 2,
+      "asserted": 0,
+      "tp": 0,
       "fp": 0,
       "amb": 0,
       "gt_same": 2
@@ -2783,19 +2783,13 @@
     "P319",
     "P321",
     "P322",
-    "P326",
     "P336",
-    "P337",
-    "P346",
-    "P347",
     "P348",
     "P369",
     "P376",
     "P399",
     "P402",
     "P411",
-    "P417",
-    "P418",
     "P420",
     "P422",
     "P424",
@@ -2824,6 +2818,10 @@
     "P231",
     "P242",
     "P243",
+    "P326",
+    "P337",
+    "P346",
+    "P347",
     "P396",
     "P398",
     "P405",
@@ -2835,6 +2833,8 @@
     "P413",
     "P415",
     "P416",
+    "P417",
+    "P418",
     "P425",
     "P431",
     "P433"

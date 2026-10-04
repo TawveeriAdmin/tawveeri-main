@@ -1,0 +1,6 @@
+.data
+node_modules
+bin
+*.pid
+*.log
+_explore.cjs

@@ -227,3 +227,21 @@ describe('identity verifier — notation across key / title / merchant (producti
     expect(rel('Skyworth 60" Smart TV, 4K QLED+, 120 Hz, Q6800H', 'SKYWORTH, 60 Inch, QLED 4K Smart TV', 'tv', undefined, '60Q6820H').outcome).not.toBe('match');
   });
 });
+
+describe('v2 write-path pre-image (rollback support)', () => {
+  const { withV2PreImage } = require('../../scripts/tps-core/progressive-engine') as typeof import('../../scripts/tps-core/progressive-engine');
+  const prev = { raw_obs_id: 10, status: 'valid', price: 799, url: 'u', name: 'n', observed_at: '2026-10-01T00:00:00Z', confidence: 90, payload: { _availability: 'in_stock', _identity_rules: undefined } };
+  const old = process.env.TPS_IDENTITY_V2;
+  afterEach(() => { if (old === undefined) delete process.env.TPS_IDENTITY_V2; else process.env.TPS_IDENTITY_V2 = old; });
+  test('flag off: the payload is returned untouched', () => { delete process.env.TPS_IDENTITY_V2; const p = { a: 1 }; expect(withV2PreImage('tv', p, prev)).toBe(p); });
+  test('flag on: first overwrite keeps the previous content; later overwrites carry it forward; v2-born rows keep nothing', () => {
+    process.env.TPS_IDENTITY_V2 = 'tv';
+    const first = withV2PreImage('tv', { a: 1 }, prev) as { _identity_prev: { price: number } };
+    expect(first._identity_prev.price).toBe(799);
+    const second = withV2PreImage('tv', { a: 2 }, { ...prev, price: 719, payload: { ...first } }) as { _identity_prev: { price: number } };
+    expect(second._identity_prev.price).toBe(799);                                   // the ORIGINAL, not the intermediate
+    expect(withV2PreImage('tv', { a: 3 }, { ...prev, payload: { _identity_rules: 'v2' } })).toEqual({ a: 3 });
+    expect(withV2PreImage('tv', { a: 4 }, undefined)).toEqual({ a: 4 });             // new row: nothing to restore
+    process.env.TPS_IDENTITY_V2 = 'mobile'; expect(withV2PreImage('tv', { a: 5 }, prev)).toEqual({ a: 5 });  // other category: untouched
+  });
+});

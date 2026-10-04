@@ -75,8 +75,10 @@ async function main() {
       rows.forEach((r) => raw.set(r.id, { raw_name: r.raw_name, payload: r.payload ?? {} }));
     }
 
-    const neutral: typeof stamped = [], born: Array<{ row: (typeof stamped)[number]; v1_key: string | null; v1_status: string | null }> = [], unresolved: typeof stamped = [];
+    const neutral: typeof stamped = [], born: Array<{ row: (typeof stamped)[number]; v1_key: string | null; v1_status: string | null }> = [], unresolved: typeof stamped = [], overwritten: typeof stamped = [];
     for (const r of stamped) {
+      // A row the v2 path OVERWROTE IN PLACE carries its pre-v2 content (progressive-engine withV2PreImage): restore it exactly.
+      if (r.payload._identity_prev) { overwritten.push(r); continue; }
       const src = raw.get(r.raw_obs_id);
       if (!src) { unresolved.push(r); continue; }                                  // raw evidence missing → leave untouched, report
       if (typeof r.payload._manufacturer_model === "string") { neutral.push(r); continue; } // manufacturer identity does not depend on the flag
@@ -104,11 +106,11 @@ async function main() {
 
     const report = {
       at: new Date().toISOString(), mode: GO ? "applied" : "dry", categories: CATS ?? "all",
-      stamped_current_offers: stamped.length, neutral_marker_only: neutral.length, v2_born_retired: born.length, v1_rows_restored: restores.length,
+      stamped_current_offers: stamped.length, overwritten_restored_exactly: overwritten.length, neutral_marker_only: neutral.length, v2_born_retired: born.length, v1_rows_restored: restores.length,
       unresolved_missing_raw: unresolved.length, canonicals_deactivated: deactivate.length,
       by_category: Object.fromEntries([...new Set(stamped.map((r) => r.category))].map((c) => [c, { stamped: stamped.filter((r) => r.category === c).length, born: born.filter((b) => b.row.category === c).length, deactivated: deactivate.filter((d) => d.category === c).length }])),
       examples: born.slice(0, 15).map((b) => ({ category: b.row.category, store_id: b.row.store_id, name: (b.row.name ?? "").slice(0, 70), v2_key: b.row.identity_key, v1_key: b.v1_key })),
-      before_state: { born: born.map((b) => b.row), deactivate },
+      before_state: { born: born.map((b) => b.row), overwritten, deactivate },
     };
     mkdirSync(dirname(OUT), { recursive: true }); writeFileSync(OUT, JSON.stringify(report, null, 1));
 
@@ -131,6 +133,15 @@ async function main() {
              on conflict (category, identity_key, store_id) do nothing`,
             [r.row.category, r.v1_key, r.row.store_id, r.row.raw_obs_id, r.row.status, r.row.price, r.row.url, r.row.name, r.row.confidence, JSON.stringify(Object.fromEntries(Object.entries(r.row.payload).filter(([k]) => k !== "_identity_rules"))), r.row.observed_at]);
         }
+        for (const o of overwritten) {
+          const p = o.payload._identity_prev as { raw_obs_id: number | string | null; status: string | null; price: number | string | null; url: string | null; name: string | null; observed_at: string | null; confidence: number | null; payload: Record<string, unknown> };
+          await pg.query(
+            `update tps_current_offers set raw_obs_id = $4::bigint, status = $5, price = $6::numeric, url = $7, name = $8, confidence = $9, observed_at = $10, payload = $11::jsonb, updated_at = now()
+              where category = $1 and identity_key = $2 and store_id = $3`,
+            [o.category, o.identity_key, o.store_id, p.raw_obs_id, p.status, p.price, p.url, p.name, p.confidence, p.observed_at, JSON.stringify(p.payload ?? {})]);
+        }
+        // Canonicals the v2 path stamped but that stay active (neutral or restored keys): drop the stamp.
+        await pg.query("update canonical_products set attributes = attributes - 'identity_rules' where attributes->>'identity_rules' = 'v2' and is_active and not (id = any($1::uuid[]))" + (CATS ? " and category = any($2::text[])" : ""), CATS ? [deactivate.map((d) => d.id), CATS] : [deactivate.map((d) => d.id)]);
         for (const n of neutral) await pg.query("update tps_current_offers set payload = payload - '_identity_rules', updated_at = now() where category = $1 and identity_key = $2 and store_id = $3", [n.category, n.identity_key, n.store_id]);
         if (deactivate.length) {
           const ids = deactivate.map((d) => d.id), keys = deactivate.map((d) => d.tps_identity_key);

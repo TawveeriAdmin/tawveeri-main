@@ -1,0 +1,2301 @@
+{
+  "generatedAt": "2026-10-04T03:12:05.452Z",
+  "prodVersion": "PostgreSQL 17.6 on aarch64-unknown-linux-gnu, compiled by gcc (GCC) 13.2.0, 64-bit",
+  "tables": [
+    {
+      "name": "stores",
+      "cols": [
+        {
+          "name": "id",
+          "type": "integer",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": "nextval('stores_id_seq'::regclass)",
+          "collation": null
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "offer",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "coupon_code",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "link",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "category",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "slug",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "name_ar",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "name_en",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "logo_url",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "website_url",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "average_rating",
+          "type": "numeric",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": "0",
+          "collation": null
+        },
+        {
+          "name": "total_reviews",
+          "type": "integer",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": "0",
+          "collation": null
+        },
+        {
+          "name": "description_ar",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "description_en",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "delivery_info_ar",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "delivery_info_en",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "return_policy_ar",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "return_policy_en",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "warranty_info_ar",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "warranty_info_en",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        }
+      ],
+      "pk": [
+        "id"
+      ],
+      "pkTypes": [
+        "integer"
+      ],
+      "prodRowEstimate": -1
+    },
+    {
+      "name": "canonical_products",
+      "cols": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": "gen_random_uuid()",
+          "collation": null
+        },
+        {
+          "name": "name_ar",
+          "type": "text",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "name_en",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "brand",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "model_number",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "category",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "image_url",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "attributes",
+          "type": "jsonb",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": "'{}'::jsonb",
+          "collation": null
+        },
+        {
+          "name": "is_active",
+          "type": "boolean",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": "true",
+          "collation": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": "now()",
+          "collation": null
+        },
+        {
+          "name": "data_quality_score",
+          "type": "smallint",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": "0.0",
+          "collation": null
+        },
+        {
+          "name": "identity_confidence",
+          "type": "smallint",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": "0.0",
+          "collation": null
+        },
+        {
+          "name": "variant_key",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "data_updated_at",
+          "type": "timestamp with time zone",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "tps_identity_key",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "tps_version",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": "'1.0'::text",
+          "collation": null
+        }
+      ],
+      "pk": [
+        "id"
+      ],
+      "pkTypes": [
+        "uuid"
+      ],
+      "prodRowEstimate": 21224
+    },
+    {
+      "name": "normalized_product_observations",
+      "cols": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": "gen_random_uuid()",
+          "collation": null
+        },
+        {
+          "name": "source_table",
+          "type": "text",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "source_record_id",
+          "type": "uuid",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "store_id",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "canonical_product_id",
+          "type": "uuid",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "raw_name",
+          "type": "text",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "raw_payload",
+          "type": "jsonb",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "detected_category",
+          "type": "text",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "language",
+          "type": "text",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "brand",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "model_number",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "color",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "identity_key",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "identity_key_status",
+          "type": "text",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "normalized_payload",
+          "type": "jsonb",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": "'{}'::jsonb",
+          "collation": null
+        },
+        {
+          "name": "confidence",
+          "type": "integer",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "missing_critical",
+          "type": "text[]",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": "'{}'::text[]",
+          "collation": null
+        },
+        {
+          "name": "ambiguity_flags",
+          "type": "text[]",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": "'{}'::text[]",
+          "collation": null
+        },
+        {
+          "name": "needs_llm",
+          "type": "boolean",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": "false",
+          "collation": null
+        },
+        {
+          "name": "ignored_terms",
+          "type": "text[]",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": "'{}'::text[]",
+          "collation": null
+        },
+        {
+          "name": "normalizer_version",
+          "type": "text",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "tps_version",
+          "type": "text",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": "'1.0'::text",
+          "collation": null
+        },
+        {
+          "name": "observed_at",
+          "type": "timestamp with time zone",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": "now()",
+          "collation": null
+        },
+        {
+          "name": "plugin_version",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        }
+      ],
+      "pk": [
+        "id"
+      ],
+      "pkTypes": [
+        "uuid"
+      ],
+      "prodRowEstimate": 788317
+    },
+    {
+      "name": "product_matches",
+      "cols": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "notNull": true,
+          "identity": "a",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "raw_observation_id",
+          "type": "uuid",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "canonical_product_id",
+          "type": "uuid",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "match_method",
+          "type": "text",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "confidence",
+          "type": "smallint",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "is_verified",
+          "type": "boolean",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": "false",
+          "collation": null
+        },
+        {
+          "name": "matched_at",
+          "type": "timestamp with time zone",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": "now()",
+          "collation": null
+        },
+        {
+          "name": "identity_resolution_event_id",
+          "type": "uuid",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        }
+      ],
+      "pk": [
+        "id"
+      ],
+      "pkTypes": [
+        "bigint"
+      ],
+      "prodRowEstimate": 9927
+    },
+    {
+      "name": "price_history",
+      "cols": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "notNull": true,
+          "identity": "a",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "canonical_product_id",
+          "type": "uuid",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "store_name",
+          "type": "text",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "price",
+          "type": "numeric(12,2)",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "original_price",
+          "type": "numeric(12,2)",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "coupon_code",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "effective_price",
+          "type": "numeric(12,2)",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "availability",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "observed_at",
+          "type": "timestamp with time zone",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": "now()",
+          "collation": null
+        },
+        {
+          "name": "product_store_id",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "scraping_run_id",
+          "type": "bigint",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "raw_observation_id",
+          "type": "bigint",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "tps_observation_id",
+          "type": "uuid",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "store_id",
+          "type": "integer",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        }
+      ],
+      "pk": [
+        "id"
+      ],
+      "pkTypes": [
+        "bigint"
+      ],
+      "prodRowEstimate": 285350
+    },
+    {
+      "name": "raw_observations",
+      "cols": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "notNull": true,
+          "identity": "a",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "store_name",
+          "type": "text",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "source_method",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": "'scraper'::text",
+          "collation": null
+        },
+        {
+          "name": "raw_name",
+          "type": "text",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "raw_url",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "price",
+          "type": "numeric(12,2)",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "original_price",
+          "type": "numeric(12,2)",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "availability",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "coupon_code",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "payload",
+          "type": "jsonb",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "scraped_at",
+          "type": "timestamp with time zone",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": "now()",
+          "collation": null
+        },
+        {
+          "name": "scraping_run_id",
+          "type": "bigint",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "external_product_id",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "payload_hash",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "parser_version",
+          "type": "text",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": "'1.0'::text",
+          "collation": null
+        },
+        {
+          "name": "processing_status",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": "'pending'::text",
+          "collation": null
+        },
+        {
+          "name": "processing_error",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "store_id",
+          "type": "integer",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        }
+      ],
+      "pk": [
+        "id"
+      ],
+      "pkTypes": [
+        "bigint"
+      ],
+      "prodRowEstimate": 3158872
+    },
+    {
+      "name": "tps_identity_staging",
+      "cols": [
+        {
+          "name": "category",
+          "type": "text",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "raw_obs_id",
+          "type": "bigint",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "store_id",
+          "type": "integer",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "identity_key",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "price",
+          "type": "numeric",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "url",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "confidence",
+          "type": "integer",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "detected",
+          "type": "boolean",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": "true",
+          "collation": null
+        },
+        {
+          "name": "payload",
+          "type": "jsonb",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": "'{}'::jsonb",
+          "collation": null
+        },
+        {
+          "name": "observed_at",
+          "type": "timestamp with time zone",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": "now()",
+          "collation": null
+        }
+      ],
+      "pk": [
+        "category",
+        "raw_obs_id"
+      ],
+      "pkTypes": [
+        "text",
+        "bigint"
+      ],
+      "prodRowEstimate": 1394817
+    },
+    {
+      "name": "tps_current_offers",
+      "cols": [
+        {
+          "name": "category",
+          "type": "text",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "identity_key",
+          "type": "text",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "store_id",
+          "type": "integer",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "raw_obs_id",
+          "type": "bigint",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "price",
+          "type": "numeric",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "url",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "confidence",
+          "type": "integer",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "payload",
+          "type": "jsonb",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": "'{}'::jsonb",
+          "collation": null
+        },
+        {
+          "name": "observed_at",
+          "type": "timestamp with time zone",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": "now()",
+          "collation": null
+        }
+      ],
+      "pk": [
+        "category",
+        "identity_key",
+        "store_id"
+      ],
+      "pkTypes": [
+        "text",
+        "text",
+        "integer"
+      ],
+      "prodRowEstimate": 10968
+    },
+    {
+      "name": "tps_progress_cursors",
+      "cols": [
+        {
+          "name": "category",
+          "type": "text",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "store_id",
+          "type": "integer",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "last_raw_id",
+          "type": "bigint",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": "0",
+          "collation": null
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": "now()",
+          "collation": null
+        }
+      ],
+      "pk": [
+        "category",
+        "store_id"
+      ],
+      "pkTypes": [
+        "text",
+        "integer"
+      ],
+      "prodRowEstimate": 34
+    },
+    {
+      "name": "tps_price_implausibility_signals",
+      "cols": [
+        {
+          "name": "canonical_product_id",
+          "type": "uuid",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "store_display_name",
+          "type": "text",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "observed_price",
+          "type": "numeric",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "plausible_floor",
+          "type": "numeric",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "reason",
+          "type": "text",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "detected_at",
+          "type": "timestamp with time zone",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": "now()",
+          "collation": null
+        },
+        {
+          "name": "source",
+          "type": "text",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": "'price-plausibility-scan'::text",
+          "collation": null
+        }
+      ],
+      "pk": [
+        "canonical_product_id",
+        "store_display_name"
+      ],
+      "pkTypes": [
+        "uuid",
+        "text"
+      ],
+      "prodRowEstimate": 249
+    },
+    {
+      "name": "tps_offer_delist_signals",
+      "cols": [
+        {
+          "name": "canonical_product_id",
+          "type": "uuid",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "store_slug",
+          "type": "text",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "store_display_name",
+          "type": "text",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "url",
+          "type": "text",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "status_code",
+          "type": "integer",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "observed_gone_at",
+          "type": "timestamp with time zone",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": "now()",
+          "collation": null
+        },
+        {
+          "name": "source",
+          "type": "text",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": "'reobserve-comparables'::text",
+          "collation": null
+        }
+      ],
+      "pk": [
+        "canonical_product_id",
+        "store_slug"
+      ],
+      "pkTypes": [
+        "uuid",
+        "text"
+      ],
+      "prodRowEstimate": 13
+    },
+    {
+      "name": "tps_product_projection",
+      "cols": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": "gen_random_uuid()",
+          "collation": null
+        },
+        {
+          "name": "canonical_id",
+          "type": "uuid",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "tps_identity_key",
+          "type": "text",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "display_name_ar",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "display_name_en",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "brand",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "category",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "lowest_price",
+          "type": "numeric(10,2)",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "highest_price",
+          "type": "numeric(10,2)",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "saving",
+          "type": "numeric(10,2)",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "cheapest_store",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "store_count",
+          "type": "smallint",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": "0",
+          "collation": null
+        },
+        {
+          "name": "compare_url",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "has_comparison",
+          "type": "boolean",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": "false",
+          "collation": null
+        },
+        {
+          "name": "image_url",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "identity_confidence",
+          "type": "smallint",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": "0",
+          "collation": null
+        },
+        {
+          "name": "built_at",
+          "type": "timestamp with time zone",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": "now()",
+          "collation": null
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": "now()",
+          "collation": null
+        },
+        {
+          "name": "text_for_search",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "affiliate_best_url",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "price_spread_pct",
+          "type": "numeric(5,2)",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "algolia_synced_at",
+          "type": "timestamp with time zone",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "click_count",
+          "type": "integer",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": "0",
+          "collation": null
+        },
+        {
+          "name": "compare_count",
+          "type": "integer",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": "0",
+          "collation": null
+        },
+        {
+          "name": "model_number",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "last_observed_at",
+          "type": "timestamp with time zone",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        }
+      ],
+      "pk": [
+        "id"
+      ],
+      "pkTypes": [
+        "uuid"
+      ],
+      "prodRowEstimate": 9405
+    },
+    {
+      "name": "samsung_official_url_baseline",
+      "cols": [
+        {
+          "name": "official_url",
+          "type": "text",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "model_code",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "identity_key",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "category",
+          "type": "text",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "classification",
+          "type": "text",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "lifecycle_state",
+          "type": "text",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": "'CURRENT'::text",
+          "collation": null
+        },
+        {
+          "name": "first_seen_at",
+          "type": "timestamp with time zone",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": "now()",
+          "collation": null
+        },
+        {
+          "name": "last_seen_at",
+          "type": "timestamp with time zone",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": "now()",
+          "collation": null
+        },
+        {
+          "name": "last_validated_at",
+          "type": "timestamp with time zone",
+          "notNull": false,
+          "identity": "",
+          "generated": "",
+          "default": null,
+          "collation": null
+        },
+        {
+          "name": "consecutive_misses",
+          "type": "integer",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": "0",
+          "collation": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": "now()",
+          "collation": null
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "notNull": true,
+          "identity": "",
+          "generated": "",
+          "default": "now()",
+          "collation": null
+        }
+      ],
+      "pk": [
+        "official_url"
+      ],
+      "pkTypes": [
+        "text"
+      ],
+      "prodRowEstimate": 3189
+    }
+  ],
+  "constraints": [
+    {
+      "table": "canonical_products",
+      "name": "canonical_products_pkey",
+      "type": "p",
+      "def": "PRIMARY KEY (id)"
+    },
+    {
+      "table": "canonical_products",
+      "name": "canonical_products_data_quality_score_check",
+      "type": "c",
+      "def": "CHECK (((data_quality_score >= 0) AND (data_quality_score <= 100)))"
+    },
+    {
+      "table": "canonical_products",
+      "name": "canonical_products_identity_confidence_check",
+      "type": "c",
+      "def": "CHECK (((identity_confidence >= 0) AND (identity_confidence <= 100)))"
+    },
+    {
+      "table": "normalized_product_observations",
+      "name": "normalized_product_observations_pkey",
+      "type": "p",
+      "def": "PRIMARY KEY (id)"
+    },
+    {
+      "table": "normalized_product_observations",
+      "name": "normalized_product_observations_confidence_check",
+      "type": "c",
+      "def": "CHECK (((confidence >= 0) AND (confidence <= 100)))"
+    },
+    {
+      "table": "normalized_product_observations",
+      "name": "normalized_product_observations_identity_key_status_check",
+      "type": "c",
+      "def": "CHECK ((identity_key_status = ANY (ARRAY['valid'::text, 'low_confidence_candidate'::text, 'invalid'::text])))"
+    },
+    {
+      "table": "price_history",
+      "name": "price_history_pkey",
+      "type": "p",
+      "def": "PRIMARY KEY (id)"
+    },
+    {
+      "table": "product_matches",
+      "name": "product_matches_pkey",
+      "type": "p",
+      "def": "PRIMARY KEY (id)"
+    },
+    {
+      "table": "raw_observations",
+      "name": "raw_observations_pkey",
+      "type": "p",
+      "def": "PRIMARY KEY (id)"
+    },
+    {
+      "table": "raw_observations",
+      "name": "raw_observations_processing_status_check",
+      "type": "c",
+      "def": "CHECK ((processing_status = ANY (ARRAY['pending'::text, 'processing'::text, 'done'::text, 'failed'::text, 'skipped'::text])))"
+    },
+    {
+      "table": "samsung_official_url_baseline",
+      "name": "samsung_official_url_baseline_pkey",
+      "type": "p",
+      "def": "PRIMARY KEY (official_url)"
+    },
+    {
+      "table": "stores",
+      "name": "stores_pkey",
+      "type": "p",
+      "def": "PRIMARY KEY (id)"
+    },
+    {
+      "table": "tps_current_offers",
+      "name": "tps_current_offers_pkey",
+      "type": "p",
+      "def": "PRIMARY KEY (category, identity_key, store_id)"
+    },
+    {
+      "table": "tps_identity_staging",
+      "name": "tps_identity_staging_pkey",
+      "type": "p",
+      "def": "PRIMARY KEY (category, raw_obs_id)"
+    },
+    {
+      "table": "tps_offer_delist_signals",
+      "name": "tps_offer_delist_signals_pkey",
+      "type": "p",
+      "def": "PRIMARY KEY (canonical_product_id, store_slug)"
+    },
+    {
+      "table": "tps_price_implausibility_signals",
+      "name": "tps_price_implausibility_signals_pkey",
+      "type": "p",
+      "def": "PRIMARY KEY (canonical_product_id, store_display_name)"
+    },
+    {
+      "table": "tps_product_projection",
+      "name": "tps_product_projection_pkey",
+      "type": "p",
+      "def": "PRIMARY KEY (id)"
+    },
+    {
+      "table": "tps_product_projection",
+      "name": "tps_product_projection_tps_identity_key_key",
+      "type": "u",
+      "def": "UNIQUE (tps_identity_key)"
+    },
+    {
+      "table": "tps_progress_cursors",
+      "name": "tps_progress_cursors_pkey",
+      "type": "p",
+      "def": "PRIMARY KEY (category, store_id)"
+    }
+  ],
+  "fks": [
+    {
+      "table": "normalized_product_observations",
+      "name": "normalized_product_observations_canonical_product_id_fkey",
+      "def": "FOREIGN KEY (canonical_product_id) REFERENCES canonical_products(id) ON DELETE SET NULL",
+      "kept": true
+    },
+    {
+      "table": "price_history",
+      "name": "price_history_canonical_product_id_fkey",
+      "def": "FOREIGN KEY (canonical_product_id) REFERENCES canonical_products(id)",
+      "kept": true
+    },
+    {
+      "table": "price_history",
+      "name": "price_history_raw_observation_id_fkey",
+      "def": "FOREIGN KEY (raw_observation_id) REFERENCES raw_observations(id) ON DELETE SET NULL",
+      "kept": false,
+      "reason": "raw_observations is a 3-day sample; copied price_history rows reference older raw rows (engine writes NULL here)"
+    },
+    {
+      "table": "price_history",
+      "name": "price_history_scraping_run_id_fkey",
+      "def": "FOREIGN KEY (scraping_run_id) REFERENCES scraping_runs(id) ON DELETE SET NULL",
+      "kept": false,
+      "reason": "references scraping_runs, not replicated"
+    },
+    {
+      "table": "price_history",
+      "name": "price_history_store_id_fkey",
+      "def": "FOREIGN KEY (store_id) REFERENCES stores(id)",
+      "kept": true
+    },
+    {
+      "table": "product_matches",
+      "name": "product_matches_canonical_product_id_fkey",
+      "def": "FOREIGN KEY (canonical_product_id) REFERENCES canonical_products(id)",
+      "kept": true
+    },
+    {
+      "table": "product_matches",
+      "name": "product_matches_identity_resolution_event_id_fkey",
+      "def": "FOREIGN KEY (identity_resolution_event_id) REFERENCES identity_resolution_events(id)",
+      "kept": false,
+      "reason": "references identity_resolution_events, not replicated"
+    },
+    {
+      "table": "product_matches",
+      "name": "product_matches_raw_observation_id_fkey",
+      "def": "FOREIGN KEY (raw_observation_id) REFERENCES normalized_product_observations(id) ON DELETE CASCADE",
+      "kept": true
+    },
+    {
+      "table": "raw_observations",
+      "name": "raw_observations_scraping_run_id_fkey",
+      "def": "FOREIGN KEY (scraping_run_id) REFERENCES scraping_runs(id) ON DELETE SET NULL",
+      "kept": false,
+      "reason": "references scraping_runs, not replicated"
+    },
+    {
+      "table": "raw_observations",
+      "name": "raw_observations_store_id_fkey",
+      "def": "FOREIGN KEY (store_id) REFERENCES stores(id)",
+      "kept": true
+    },
+    {
+      "table": "tps_offer_delist_signals",
+      "name": "tps_offer_delist_signals_canonical_product_id_fkey",
+      "def": "FOREIGN KEY (canonical_product_id) REFERENCES canonical_products(id) ON DELETE CASCADE",
+      "kept": true
+    },
+    {
+      "table": "tps_price_implausibility_signals",
+      "name": "tps_price_implausibility_signals_canonical_product_id_fkey",
+      "def": "FOREIGN KEY (canonical_product_id) REFERENCES canonical_products(id) ON DELETE CASCADE",
+      "kept": true
+    },
+    {
+      "table": "tps_product_projection",
+      "name": "tps_product_projection_canonical_id_fkey",
+      "def": "FOREIGN KEY (canonical_id) REFERENCES canonical_products(id) ON DELETE CASCADE",
+      "kept": true
+    }
+  ],
+  "indexes": [
+    {
+      "table": "canonical_products",
+      "name": "canonical_products_brand_model_number_idx",
+      "def": "CREATE UNIQUE INDEX canonical_products_brand_model_number_idx ON public.canonical_products USING btree (brand, model_number) WHERE (model_number IS NOT NULL)"
+    },
+    {
+      "table": "canonical_products",
+      "name": "canonical_products_tps_identity_key_uidx",
+      "def": "CREATE UNIQUE INDEX canonical_products_tps_identity_key_uidx ON public.canonical_products USING btree (tps_identity_key) WHERE (tps_identity_key IS NOT NULL)"
+    },
+    {
+      "table": "canonical_products",
+      "name": "idx_canonical_products_model_number",
+      "def": "CREATE INDEX idx_canonical_products_model_number ON public.canonical_products USING btree (model_number)"
+    },
+    {
+      "table": "canonical_products",
+      "name": "idx_canonical_products_name_brand_unique",
+      "def": "CREATE UNIQUE INDEX idx_canonical_products_name_brand_unique ON public.canonical_products USING btree (lower(TRIM(BOTH FROM name_ar)), lower(TRIM(BOTH FROM brand)))"
+    },
+    {
+      "table": "canonical_products",
+      "name": "idx_canonical_products_variant_key",
+      "def": "CREATE INDEX idx_canonical_products_variant_key ON public.canonical_products USING btree (variant_key)"
+    },
+    {
+      "table": "canonical_products",
+      "name": "idx_cp_tps_identity_key",
+      "def": "CREATE INDEX idx_cp_tps_identity_key ON public.canonical_products USING btree (tps_identity_key) WHERE (tps_identity_key IS NOT NULL)"
+    },
+    {
+      "table": "normalized_product_observations",
+      "name": "idx_npo_canonical",
+      "def": "CREATE INDEX idx_npo_canonical ON public.normalized_product_observations USING btree (canonical_product_id) WHERE (canonical_product_id IS NOT NULL)"
+    },
+    {
+      "table": "normalized_product_observations",
+      "name": "idx_npo_category_confidence",
+      "def": "CREATE INDEX idx_npo_category_confidence ON public.normalized_product_observations USING btree (detected_category, confidence DESC)"
+    },
+    {
+      "table": "normalized_product_observations",
+      "name": "idx_npo_identity_key",
+      "def": "CREATE INDEX idx_npo_identity_key ON public.normalized_product_observations USING btree (identity_key) WHERE (identity_key_status = 'valid'::text)"
+    },
+    {
+      "table": "normalized_product_observations",
+      "name": "idx_npo_observed_at",
+      "def": "CREATE INDEX idx_npo_observed_at ON public.normalized_product_observations USING btree (observed_at DESC)"
+    },
+    {
+      "table": "normalized_product_observations",
+      "name": "idx_npo_payload",
+      "def": "CREATE INDEX idx_npo_payload ON public.normalized_product_observations USING gin (normalized_payload)"
+    },
+    {
+      "table": "normalized_product_observations",
+      "name": "idx_npo_payload_url",
+      "def": "CREATE INDEX idx_npo_payload_url ON public.normalized_product_observations USING btree (((normalized_payload ->> '_url'::text)))"
+    },
+    {
+      "table": "normalized_product_observations",
+      "name": "idx_npo_source",
+      "def": "CREATE INDEX idx_npo_source ON public.normalized_product_observations USING btree (source_table, source_record_id)"
+    },
+    {
+      "table": "price_history",
+      "name": "idx_price_history_product_store",
+      "def": "CREATE INDEX idx_price_history_product_store ON public.price_history USING btree (product_store_id)"
+    },
+    {
+      "table": "price_history",
+      "name": "idx_price_history_product_time",
+      "def": "CREATE INDEX idx_price_history_product_time ON public.price_history USING btree (canonical_product_id, observed_at DESC)"
+    },
+    {
+      "table": "price_history",
+      "name": "idx_price_history_scraping_run",
+      "def": "CREATE INDEX idx_price_history_scraping_run ON public.price_history USING btree (scraping_run_id)"
+    },
+    {
+      "table": "price_history",
+      "name": "idx_price_history_store_name",
+      "def": "CREATE INDEX idx_price_history_store_name ON public.price_history USING btree (store_name, observed_at DESC)"
+    },
+    {
+      "table": "price_history",
+      "name": "price_history_canonical_product_id_observed_at_idx",
+      "def": "CREATE INDEX price_history_canonical_product_id_observed_at_idx ON public.price_history USING btree (canonical_product_id, observed_at DESC)"
+    },
+    {
+      "table": "product_matches",
+      "name": "idx_pm_resolution_event",
+      "def": "CREATE INDEX idx_pm_resolution_event ON public.product_matches USING btree (identity_resolution_event_id)"
+    },
+    {
+      "table": "product_matches",
+      "name": "product_matches_canonical_product_id_idx",
+      "def": "CREATE INDEX product_matches_canonical_product_id_idx ON public.product_matches USING btree (canonical_product_id)"
+    },
+    {
+      "table": "product_matches",
+      "name": "product_matches_raw_canonical_uidx",
+      "def": "CREATE UNIQUE INDEX product_matches_raw_canonical_uidx ON public.product_matches USING btree (raw_observation_id, canonical_product_id)"
+    },
+    {
+      "table": "raw_observations",
+      "name": "idx_raw_obs_external_id",
+      "def": "CREATE INDEX idx_raw_obs_external_id ON public.raw_observations USING btree (external_product_id)"
+    },
+    {
+      "table": "raw_observations",
+      "name": "idx_raw_obs_payload_hash_unique",
+      "def": "CREATE UNIQUE INDEX idx_raw_obs_payload_hash_unique ON public.raw_observations USING btree (payload_hash) WHERE (payload_hash IS NOT NULL)"
+    },
+    {
+      "table": "raw_observations",
+      "name": "idx_raw_obs_processing_status",
+      "def": "CREATE INDEX idx_raw_obs_processing_status ON public.raw_observations USING btree (processing_status)"
+    },
+    {
+      "table": "raw_observations",
+      "name": "idx_raw_obs_scraper_run",
+      "def": "CREATE INDEX idx_raw_obs_scraper_run ON public.raw_observations USING btree (scraping_run_id)"
+    },
+    {
+      "table": "raw_observations",
+      "name": "raw_observations_store_id_id_idx",
+      "def": "CREATE INDEX raw_observations_store_id_id_idx ON public.raw_observations USING btree (store_id, id)"
+    },
+    {
+      "table": "raw_observations",
+      "name": "raw_observations_store_name_scraped_at_idx",
+      "def": "CREATE INDEX raw_observations_store_name_scraped_at_idx ON public.raw_observations USING btree (store_name, scraped_at DESC)"
+    },
+    {
+      "table": "samsung_official_url_baseline",
+      "name": "samsung_official_url_baseline_identity_idx",
+      "def": "CREATE INDEX samsung_official_url_baseline_identity_idx ON public.samsung_official_url_baseline USING btree (identity_key)"
+    },
+    {
+      "table": "samsung_official_url_baseline",
+      "name": "samsung_official_url_baseline_lifecycle_idx",
+      "def": "CREATE INDEX samsung_official_url_baseline_lifecycle_idx ON public.samsung_official_url_baseline USING btree (lifecycle_state)"
+    },
+    {
+      "table": "tps_current_offers",
+      "name": "tps_current_offers_key_idx",
+      "def": "CREATE INDEX tps_current_offers_key_idx ON public.tps_current_offers USING btree (category, identity_key)"
+    },
+    {
+      "table": "tps_identity_staging",
+      "name": "idx_tps_staging_cat_key",
+      "def": "CREATE INDEX idx_tps_staging_cat_key ON public.tps_identity_staging USING btree (category, identity_key) WHERE (identity_key IS NOT NULL)"
+    },
+    {
+      "table": "tps_product_projection",
+      "name": "idx_tps_proj_brand",
+      "def": "CREATE INDEX idx_tps_proj_brand ON public.tps_product_projection USING btree (brand)"
+    },
+    {
+      "table": "tps_product_projection",
+      "name": "idx_tps_proj_category",
+      "def": "CREATE INDEX idx_tps_proj_category ON public.tps_product_projection USING btree (category)"
+    },
+    {
+      "table": "tps_product_projection",
+      "name": "idx_tps_proj_has_comparison",
+      "def": "CREATE INDEX idx_tps_proj_has_comparison ON public.tps_product_projection USING btree (has_comparison) WHERE (has_comparison = true)"
+    },
+    {
+      "table": "tps_product_projection",
+      "name": "idx_tps_proj_lowest_price",
+      "def": "CREATE INDEX idx_tps_proj_lowest_price ON public.tps_product_projection USING btree (lowest_price)"
+    }
+  ],
+  "functions": [
+    {
+      "name": "write_ac_batch",
+      "sig": "write_ac_batch(jsonb,jsonb,jsonb,jsonb,uuid[])"
+    }
+  ],
+  "sequences": [
+    "stores_id_seq|stores.id"
+  ],
+  "omissions": [
+    {
+      "kind": "foreign key",
+      "object": "price_history.price_history_raw_observation_id_fkey",
+      "detail": "FOREIGN KEY (raw_observation_id) REFERENCES raw_observations(id) ON DELETE SET NULL — raw_observations is a 3-day sample; copied price_history rows reference older raw rows (engine writes NULL here)"
+    },
+    {
+      "kind": "foreign key",
+      "object": "price_history.price_history_scraping_run_id_fkey",
+      "detail": "FOREIGN KEY (scraping_run_id) REFERENCES scraping_runs(id) ON DELETE SET NULL — references scraping_runs, not replicated"
+    },
+    {
+      "kind": "foreign key",
+      "object": "product_matches.product_matches_identity_resolution_event_id_fkey",
+      "detail": "FOREIGN KEY (identity_resolution_event_id) REFERENCES identity_resolution_events(id) — references identity_resolution_events, not replicated"
+    },
+    {
+      "kind": "foreign key",
+      "object": "raw_observations.raw_observations_scraping_run_id_fkey",
+      "detail": "FOREIGN KEY (scraping_run_id) REFERENCES scraping_runs(id) ON DELETE SET NULL — references scraping_runs, not replicated"
+    },
+    {
+      "kind": "inbound FK / dependent table",
+      "object": "outbound_clicks",
+      "detail": "outbound_clicks_canonical_product_id_fkey: FOREIGN KEY (canonical_product_id) REFERENCES canonical_products(id) (table not replicated)"
+    },
+    {
+      "kind": "inbound FK / dependent table",
+      "object": "product_stores",
+      "detail": "product_stores_store_id_fkey: FOREIGN KEY (store_id) REFERENCES stores(id) (table not replicated)"
+    },
+    {
+      "kind": "inbound FK / dependent table",
+      "object": "product_links",
+      "detail": "product_links_primary_product_id_fkey: FOREIGN KEY (primary_product_id) REFERENCES canonical_products(id) (table not replicated)"
+    },
+    {
+      "kind": "inbound FK / dependent table",
+      "object": "product_links",
+      "detail": "product_links_linked_product_id_fkey: FOREIGN KEY (linked_product_id) REFERENCES canonical_products(id) (table not replicated)"
+    },
+    {
+      "kind": "inbound FK / dependent table",
+      "object": "extracted_facts",
+      "detail": "extracted_facts_raw_observation_id_fkey: FOREIGN KEY (raw_observation_id) REFERENCES raw_observations(id) ON DELETE CASCADE (table not replicated)"
+    },
+    {
+      "kind": "inbound FK / dependent table",
+      "object": "scraping_runs",
+      "detail": "scraping_runs_store_id_fkey: FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE SET NULL (table not replicated)"
+    },
+    {
+      "kind": "inbound FK / dependent table",
+      "object": "scraping_schedules",
+      "detail": "scraping_schedules_store_id_fkey: FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE (table not replicated)"
+    },
+    {
+      "kind": "inbound FK / dependent table",
+      "object": "products",
+      "detail": "products_canonical_product_id_fkey: FOREIGN KEY (canonical_product_id) REFERENCES canonical_products(id) ON DELETE SET NULL (table not replicated)"
+    },
+    {
+      "kind": "inbound FK / dependent table",
+      "object": "identity_resolution_events",
+      "detail": "identity_resolution_events_canonical_product_id_fkey: FOREIGN KEY (canonical_product_id) REFERENCES canonical_products(id) ON DELETE SET NULL (table not replicated)"
+    },
+    {
+      "kind": "inbound FK / dependent table",
+      "object": "parser_improvement_queue",
+      "detail": "parser_improvement_queue_observation_id_fkey: FOREIGN KEY (observation_id) REFERENCES normalized_product_observations(id) (table not replicated)"
+    },
+    {
+      "kind": "inbound FK / dependent table",
+      "object": "store_sync_status",
+      "detail": "store_sync_status_store_id_fkey: FOREIGN KEY (store_id) REFERENCES stores(id) (table not replicated)"
+    },
+    {
+      "kind": "inbound FK / dependent table",
+      "object": "store_name_resolution",
+      "detail": "store_name_resolution_store_id_fkey: FOREIGN KEY (store_id) REFERENCES stores(id) (table not replicated)"
+    },
+    {
+      "kind": "inbound FK / dependent table",
+      "object": "store_reviews",
+      "detail": "store_reviews_store_id_fkey: FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE (table not replicated)"
+    },
+    {
+      "kind": "inbound FK / dependent table",
+      "object": "coupons",
+      "detail": "coupons_store_id_fkey: FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE (table not replicated)"
+    },
+    {
+      "kind": "function (not copied)",
+      "object": "get_category_coverage_matrix()",
+      "detail": "references replicated tables but is not on the engine write path (runSweepUnit only calls write_ac_batch)"
+    },
+    {
+      "kind": "function (not copied)",
+      "object": "get_tps_active_store_counts()",
+      "detail": "references replicated tables but is not on the engine write path (runSweepUnit only calls write_ac_batch)"
+    },
+    {
+      "kind": "function (not copied)",
+      "object": "smart_search(text,numeric,integer)",
+      "detail": "references replicated tables but is not on the engine write path (runSweepUnit only calls write_ac_batch)"
+    },
+    {
+      "kind": "function (not copied)",
+      "object": "write_mobile_batch(jsonb,jsonb,jsonb,jsonb,uuid[])",
+      "detail": "references replicated tables but is not on the engine write path (runSweepUnit only calls write_ac_batch)"
+    }
+  ]
+}

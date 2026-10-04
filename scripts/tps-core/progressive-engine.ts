@@ -358,6 +358,22 @@ export async function normalizeSweep(sb: SupabaseClient, defs: CategoryDef[], li
   return m;
 }
 
+/**
+ * ADR-403 write-path rollback support. A current-state row is keyed (category, identity_key, store): when the v2 rules
+ * re-observe a listing under a key that ALREADY has a row, the upsert overwrites it in place and the pre-v2 content is gone.
+ * While TPS_IDENTITY_V2 is on for the category, the FIRST overwrite of a row not yet touched by v2 keeps its previous content
+ * under payload._identity_prev (later overwrites carry it forward unchanged), so scripts/tps-core/rollback-identity-v2.ts can
+ * restore the row EXACTLY instead of guessing. Flag off: the payload is returned untouched (byte-identical to before).
+ */
+export function withV2PreImage(category: string, payload: Record<string, unknown>, prev: { raw_obs_id?: number | string | null; status?: string | null; price?: number | string | null; url?: string | null; name?: string | null; observed_at?: string | null; confidence?: number | null; payload?: Record<string, unknown> | null } | undefined): Record<string, unknown> {
+  if (!identityV2Enabled(category) || !prev) return payload;
+  const prevPayload = prev.payload ?? {};
+  if (prevPayload._identity_prev) return { ...payload, _identity_prev: prevPayload._identity_prev };       // carry the original forward
+  if (prevPayload._identity_rules === "v2") return payload;                                                  // a v2-born row: nothing to restore
+  const { _identity_rules: _drop, ...clean } = prevPayload; void _drop;
+  return { ...payload, _identity_prev: { raw_obs_id: prev.raw_obs_id ?? null, status: prev.status ?? null, price: prev.price ?? null, url: prev.url ?? null, name: prev.name ?? null, observed_at: prev.observed_at ?? null, confidence: prev.confidence ?? null, payload: clean } };
+}
+
 export interface CorroborateMetrics { keysConsidered: number; corroborated: number; singleStore: number; canonicalsWritten: number; normalized: number; matches: number; prices: number; priceTransitionsRejected: number; pairDeferred: number; }
 
 export interface CorroborateOpts {
@@ -764,7 +780,7 @@ export async function corroboratePass(sb: SupabaseClient, def: CategoryDef, touc
       upserts.push({
         category: def.category, identity_key: o.identity_key, store_id: o.store_id,
         raw_obs_id: o.raw_obs_id, status: o.status, price: o.price, url: o.url, name: o.name,
-        confidence: o.confidence, payload: o.payload ?? {}, observed_at: o.observed_at ?? null,
+        confidence: o.confidence, payload: withV2PreImage(def.category, o.payload ?? {}, prev), observed_at: o.observed_at ?? null,
         updated_at: now,
       });
     }

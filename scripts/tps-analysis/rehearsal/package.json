@@ -1,0 +1,9 @@
+{
+  "name": "tps-rehearsal",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Local disposable replica of the Tawveeri TPS database for write-path rollback rehearsal",
+  "dependencies": {
+    "embedded-postgres": "17.6.0-beta.15"
+  }
+}

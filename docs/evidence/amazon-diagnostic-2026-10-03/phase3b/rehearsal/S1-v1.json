@@ -1,0 +1,30 @@
+{
+  "takenAt": "2026-10-04T03:37:30.950Z",
+  "tables": {
+    "canonical_products": {
+      "rows": 21225,
+      "full_hash": "a628eba70f8271d9f073c33b2ae9563d",
+      "content_hash": "10de9a0d564b5a134fcd77a802c77963"
+    },
+    "tps_current_offers": {
+      "rows": 10968,
+      "full_hash": "3c15c787b462f02c6b3eced3ad52279e",
+      "content_hash": "9dfac01d0a992d103eb13048396a26cc"
+    },
+    "price_history": {
+      "rows": 42059,
+      "full_hash": "1e0f89ac4106ef827da9243a473ec493",
+      "content_hash": "c4a76a4fa7f5b3a4cef8aebf3b4e53ec"
+    },
+    "normalized_product_observations": {
+      "rows": 164863,
+      "full_hash": "c098108dee2817a6852ea85fc59f6efe",
+      "content_hash": "c098108dee2817a6852ea85fc59f6efe"
+    },
+    "product_matches": {
+      "rows": 2349,
+      "full_hash": "dee2c2f1b4f42df13859c90aba6ca2dd",
+      "content_hash": "d640af0c5cc19d24d750265981a9255d"
+    }
+  }
+}

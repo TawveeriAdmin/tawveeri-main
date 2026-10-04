@@ -1,0 +1,22 @@
+{
+ "at": "2026-10-04T03:41:56.222Z",
+ "mode": "applied",
+ "categories": [
+  "mobile",
+  "tv"
+ ],
+ "stamped_current_offers": 0,
+ "overwritten_restored_exactly": 0,
+ "neutral_marker_only": 0,
+ "v2_born_retired": 0,
+ "v1_rows_restored": 0,
+ "unresolved_missing_raw": 0,
+ "canonicals_deactivated": 0,
+ "by_category": {},
+ "examples": [],
+ "before_state": {
+  "born": [],
+  "overwritten": [],
+  "deactivate": []
+ }
+}

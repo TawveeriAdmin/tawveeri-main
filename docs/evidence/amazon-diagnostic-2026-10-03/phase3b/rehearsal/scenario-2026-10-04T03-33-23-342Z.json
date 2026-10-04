@@ -1,0 +1,848 @@
+{
+ "v1_sweeps": [],
+ "S1_v1_steady": {
+  "label": "S1_v1_steady",
+  "v2_stamped_canonicals": [],
+  "v2_stamped_current_offers": [],
+  "superseded_current_offers": {
+   "n": 252
+  },
+  "canonicals_in_scope": {
+   "active": 2162,
+   "total": 2272
+  },
+  "projection_in_scope": {
+   "n": 1720,
+   "comparable": 476
+  }
+ },
+ "S1_after_projection": {
+  "label": "S1_after_projection",
+  "v2_stamped_canonicals": [],
+  "v2_stamped_current_offers": [],
+  "superseded_current_offers": {
+   "n": 252
+  },
+  "canonicals_in_scope": {
+   "active": 2162,
+   "total": 2272
+  },
+  "projection_in_scope": {
+   "n": 1735,
+   "comparable": 480
+  }
+ },
+ "v2_sweeps": [],
+ "diff_S1_S2": [
+  "table                                rows A -> B          full_hash content_hash",
+  "canonical_products                   21225 -> 21230 (+5)  CHANGED   CHANGED",
+  "tps_current_offers                   10968 -> 10974 (+6)  CHANGED   CHANGED",
+  "price_history                        42059 -> 42078 (+19) CHANGED   CHANGED",
+  "normalized_product_observations      164863 -> 164868 (+5) CHANGED   CHANGED",
+  "product_matches                      2349 -> 2354 (+5)    CHANGED   CHANGED",
+  "5 table(s) differ"
+ ],
+ "S2_v2_written": {
+  "label": "S2_v2_written",
+  "v2_stamped_canonicals": [
+   {
+    "category": "mobile",
+    "n": 40
+   },
+   {
+    "category": "tv",
+    "n": 93
+   }
+  ],
+  "v2_stamped_current_offers": [
+   {
+    "category": "mobile",
+    "n": 5
+   },
+   {
+    "category": "tv",
+    "n": 21
+   }
+  ],
+  "superseded_current_offers": {
+   "n": 252
+  },
+  "canonicals_in_scope": {
+   "active": 2167,
+   "total": 2277
+  },
+  "projection_in_scope": {
+   "n": 1735,
+   "comparable": 480
+  }
+ },
+ "projection_v1_vs_v2_written": {
+  "rows_a": 1735,
+  "rows_b": 1740,
+  "only_in_a": 0,
+  "only_in_b": 5,
+  "changed": 3,
+  "equal": false,
+  "examples": {
+   "only_in_a": [],
+   "only_in_b": [
+    "honor|Honor X|5c|Plus|128",
+    "honor|Honor X|7e|Standard|NO_STORAGE",
+    "honor|Honor X|9d|Standard|256",
+    "honor|Honor|600|Lite|128",
+    "honor|Honor|600|Lite|256"
+   ],
+   "changed": [
+    {
+     "key": "hisense|65|4k|mini_led|165",
+     "a": {
+      "key": "hisense|65|4k|mini_led|165",
+      "category": "tv",
+      "store_count": 1,
+      "has_comparison": false,
+      "lowest_price": "5719.00",
+      "highest_price": "5719.00",
+      "cheapest_store": "اكسترا"
+     },
+     "b": {
+      "key": "hisense|65|4k|mini_led|165",
+      "category": "tv",
+      "store_count": 1,
+      "has_comparison": false,
+      "lowest_price": "3999.00",
+      "highest_price": "3999.00",
+      "cheapest_store": "اكسترا"
+     }
+    },
+    {
+     "key": "samsung|MODEL:UA32H5000FUXSA",
+     "a": {
+      "key": "samsung|MODEL:UA32H5000FUXSA",
+      "category": "tv",
+      "store_count": 4,
+      "has_comparison": true,
+      "lowest_price": "799.00",
+      "highest_price": "799.00",
+      "cheapest_store": "اكسترا"
+     },
+     "b": {
+      "key": "samsung|MODEL:UA32H5000FUXSA",
+      "category": "tv",
+      "store_count": 4,
+      "has_comparison": true,
+      "lowest_price": "719.00",
+      "highest_price": "799.00",
+      "cheapest_store": "أمازون"
+     }
+    },
+    {
+     "key": "samsung|MODEL:UA43F6000FUXSA",
+     "a": {
+      "key": "samsung|MODEL:UA43F6000FUXSA",
+      "category": "tv",
+      "store_count": 4,
+      "has_comparison": true,
+      "lowest_price": "999.00",
+      "highest_price": "1099.00",
+      "cheapest_store": "لولو هايبر ماركت"
+     },
+     "b": {
+      "key": "samsung|MODEL:UA43F6000FUXSA",
+      "category": "tv",
+      "store_count": 4,
+      "has_comparison": true,
+      "lowest_price": "999.00",
+      "highest_price": "1099.00",
+      "cheapest_store": "أمازون"
+     }
+    }
+   ]
+  }
+ },
+ "diff_S2_S3": [
+  "table                                rows A -> B          full_hash content_hash",
+  "canonical_products                   21230 (=)            CHANGED   CHANGED",
+  "tps_current_offers                   10974 (=)            CHANGED   CHANGED",
+  "price_history                        42078 -> 42090 (+12) CHANGED   CHANGED",
+  "normalized_product_observations      164868 (=)           CHANGED   CHANGED",
+  "product_matches                      2354 (=)             CHANGED   same",
+  "5 table(s) differ"
+ ],
+ "S3_flag_off_residual": {
+  "label": "S3_flag_off_residual",
+  "v2_stamped_canonicals": [
+   {
+    "category": "mobile",
+    "n": 5
+   },
+   {
+    "category": "tv",
+    "n": 2
+   }
+  ],
+  "v2_stamped_current_offers": [
+   {
+    "category": "mobile",
+    "n": 5
+   },
+   {
+    "category": "tv",
+    "n": 3
+   }
+  ],
+  "superseded_current_offers": {
+   "n": 252
+  },
+  "canonicals_in_scope": {
+   "active": 2167,
+   "total": 2277
+  },
+  "projection_in_scope": {
+   "n": 1740,
+   "comparable": 480
+  }
+ },
+ "projection_v1_vs_flagoff_residual": {
+  "rows_a": 1735,
+  "rows_b": 1740,
+  "only_in_a": 0,
+  "only_in_b": 5,
+  "changed": 3,
+  "equal": false,
+  "examples": {
+   "only_in_a": [],
+   "only_in_b": [
+    "honor|Honor X|5c|Plus|128",
+    "honor|Honor X|7e|Standard|NO_STORAGE",
+    "honor|Honor X|9d|Standard|256",
+    "honor|Honor|600|Lite|128",
+    "honor|Honor|600|Lite|256"
+   ],
+   "changed": [
+    {
+     "key": "hisense|65|4k|mini_led|165",
+     "a": {
+      "key": "hisense|65|4k|mini_led|165",
+      "category": "tv",
+      "store_count": 1,
+      "has_comparison": false,
+      "lowest_price": "5719.00",
+      "highest_price": "5719.00",
+      "cheapest_store": "اكسترا"
+     },
+     "b": {
+      "key": "hisense|65|4k|mini_led|165",
+      "category": "tv",
+      "store_count": 1,
+      "has_comparison": false,
+      "lowest_price": "3999.00",
+      "highest_price": "3999.00",
+      "cheapest_store": "اكسترا"
+     }
+    },
+    {
+     "key": "samsung|MODEL:UA32H5000FUXSA",
+     "a": {
+      "key": "samsung|MODEL:UA32H5000FUXSA",
+      "category": "tv",
+      "store_count": 4,
+      "has_comparison": true,
+      "lowest_price": "799.00",
+      "highest_price": "799.00",
+      "cheapest_store": "اكسترا"
+     },
+     "b": {
+      "key": "samsung|MODEL:UA32H5000FUXSA",
+      "category": "tv",
+      "store_count": 4,
+      "has_comparison": true,
+      "lowest_price": "719.00",
+      "highest_price": "799.00",
+      "cheapest_store": "أمازون"
+     }
+    },
+    {
+     "key": "samsung|MODEL:UA43F6000FUXSA",
+     "a": {
+      "key": "samsung|MODEL:UA43F6000FUXSA",
+      "category": "tv",
+      "store_count": 4,
+      "has_comparison": true,
+      "lowest_price": "999.00",
+      "highest_price": "1099.00",
+      "cheapest_store": "لولو هايبر ماركت"
+     },
+     "b": {
+      "key": "samsung|MODEL:UA43F6000FUXSA",
+      "category": "tv",
+      "store_count": 4,
+      "has_comparison": true,
+      "lowest_price": "999.00",
+      "highest_price": "1099.00",
+      "cheapest_store": "أمازون"
+     }
+    }
+   ]
+  }
+ },
+ "rollback_dry": {
+  "job": "rollback-identity-v2",
+  "at": "2026-10-04T03:32:29.760Z",
+  "mode": "dry",
+  "categories": [
+   "mobile",
+   "tv"
+  ],
+  "stamped_current_offers": 8,
+  "neutral_marker_only": 0,
+  "v2_born_retired": 8,
+  "v1_rows_restored": 1,
+  "unresolved_missing_raw": 0,
+  "canonicals_deactivated": 5,
+  "by_category": {
+   "mobile": {
+    "stamped": 5,
+    "born": 5,
+    "deactivated": 5
+   },
+   "tv": {
+    "stamped": 3,
+    "born": 3,
+    "deactivated": 0
+   }
+  },
+  "projection_rows_pruned": 0,
+  "signals_removed": 0,
+  "export": "docs/evidence/amazon-diagnostic-2026-10-03/phase3b/rollback/rollback-dry-2026-10-04T03-32-29-492Z.json",
+  "ms": 269
+ },
+ "rollback_go": {
+  "job": "rollback-identity-v2",
+  "at": "2026-10-04T03:32:32.324Z",
+  "mode": "applied",
+  "categories": [
+   "mobile",
+   "tv"
+  ],
+  "stamped_current_offers": 8,
+  "neutral_marker_only": 0,
+  "v2_born_retired": 8,
+  "v1_rows_restored": 1,
+  "unresolved_missing_raw": 0,
+  "canonicals_deactivated": 5,
+  "by_category": {
+   "mobile": {
+    "stamped": 5,
+    "born": 5,
+    "deactivated": 5
+   },
+   "tv": {
+    "stamped": 3,
+    "born": 3,
+    "deactivated": 0
+   }
+  },
+  "projection_rows_pruned": 5,
+  "signals_removed": 0,
+  "export": "docs/evidence/amazon-diagnostic-2026-10-03/phase3b/rollback/rollback-applied-2026-10-04T03-32-32-067Z.json",
+  "ms": 275
+ },
+ "S4_after_rollback": {
+  "label": "S4_after_rollback",
+  "v2_stamped_canonicals": [
+   {
+    "category": "mobile",
+    "n": 5
+   },
+   {
+    "category": "tv",
+    "n": 2
+   }
+  ],
+  "v2_stamped_current_offers": [],
+  "superseded_current_offers": {
+   "n": 260
+  },
+  "canonicals_in_scope": {
+   "active": 2162,
+   "total": 2277
+  },
+  "projection_in_scope": {
+   "n": 1735,
+   "comparable": 480
+  }
+ },
+ "rollback_go_again": {
+  "job": "rollback-identity-v2",
+  "at": "2026-10-04T03:32:35.579Z",
+  "mode": "applied",
+  "categories": [
+   "mobile",
+   "tv"
+  ],
+  "stamped_current_offers": 0,
+  "neutral_marker_only": 0,
+  "v2_born_retired": 0,
+  "v1_rows_restored": 0,
+  "unresolved_missing_raw": 0,
+  "canonicals_deactivated": 0,
+  "by_category": {},
+  "projection_rows_pruned": 0,
+  "signals_removed": 0,
+  "export": "docs/evidence/amazon-diagnostic-2026-10-03/phase3b/rollback/rollback-applied-2026-10-04T03-32-35-344Z.json",
+  "ms": 237
+ },
+ "projection_v1_vs_after_rollback": {
+  "rows_a": 1735,
+  "rows_b": 1735,
+  "only_in_a": 0,
+  "only_in_b": 0,
+  "changed": 2,
+  "equal": false,
+  "examples": {
+   "only_in_a": [],
+   "only_in_b": [],
+   "changed": [
+    {
+     "key": "samsung|MODEL:UA32H5000FUXSA",
+     "a": {
+      "key": "samsung|MODEL:UA32H5000FUXSA",
+      "category": "tv",
+      "store_count": 4,
+      "has_comparison": true,
+      "lowest_price": "799.00",
+      "highest_price": "799.00",
+      "cheapest_store": "اكسترا"
+     },
+     "b": {
+      "key": "samsung|MODEL:UA32H5000FUXSA",
+      "category": "tv",
+      "store_count": 3,
+      "has_comparison": true,
+      "lowest_price": "799.00",
+      "highest_price": "799.00",
+      "cheapest_store": "اكسترا"
+     }
+    },
+    {
+     "key": "samsung|MODEL:UA43F6000FUXSA",
+     "a": {
+      "key": "samsung|MODEL:UA43F6000FUXSA",
+      "category": "tv",
+      "store_count": 4,
+      "has_comparison": true,
+      "lowest_price": "999.00",
+      "highest_price": "1099.00",
+      "cheapest_store": "لولو هايبر ماركت"
+     },
+     "b": {
+      "key": "samsung|MODEL:UA43F6000FUXSA",
+      "category": "tv",
+      "store_count": 3,
+      "has_comparison": true,
+      "lowest_price": "999.00",
+      "highest_price": "1099.00",
+      "cheapest_store": "لولو هايبر ماركت"
+     }
+    }
+   ]
+  }
+ },
+ "signals_job_on": {
+  "job": "identity-signals",
+  "mode": "write",
+  "rules_version": "identity-gate-2026-10-04",
+  "gated_categories": [
+   "mobile",
+   "tv"
+  ],
+  "signals_desired": 153,
+  "upserted": 153,
+  "deleted": 0,
+  "by_category": {
+   "mobile": {
+    "canonicals": 953,
+    "multi_store": 314,
+    "listings_in_multi": 773,
+    "review": 51,
+    "reject": 58
+   },
+   "tv": {
+    "canonicals": 1209,
+    "multi_store": 239,
+    "listings_in_multi": 661,
+    "review": 43,
+    "reject": 1
+   }
+  },
+  "reasons": {
+   "model_code_one_side": 39,
+   "no_condition_conflict,network_conflict": 6,
+   "region_tag_one_side": 36,
+   "condition_conflict": 45,
+   "condition_refurbished_only": 4,
+   "conflict_unresolved": 30,
+   "no_condition_conflict,ram_conflict": 4,
+   "model_code_suffix_unknown": 6,
+   "no_condition_conflict,edition_conflict": 1,
+   "no_condition_conflict,storage_conflict": 1,
+   "no_condition_conflict,bundle_vs_single,network_conflict": 1,
+   "no_condition_conflict,model_code_conflict": 1
+  },
+  "ms": 1030
+ },
+ "projection_gate_off_vs_on": {
+  "rows_a": 1735,
+  "rows_b": 1735,
+  "only_in_a": 0,
+  "only_in_b": 0,
+  "changed": 102,
+  "equal": false,
+  "examples": {
+   "only_in_a": [],
+   "only_in_b": [],
+   "changed": [
+    {
+     "key": "apple|iPhone|11|Standard|128",
+     "a": {
+      "key": "apple|iPhone|11|Standard|128",
+      "category": "mobile",
+      "store_count": 2,
+      "has_comparison": true,
+      "lowest_price": "1049.00",
+      "highest_price": "1068.00",
+      "cheapest_store": "أمازون"
+     },
+     "b": {
+      "key": "apple|iPhone|11|Standard|128",
+      "category": "mobile",
+      "store_count": 1,
+      "has_comparison": false,
+      "lowest_price": "1068.00",
+      "highest_price": "1068.00",
+      "cheapest_store": "اكسترا"
+     }
+    },
+    {
+     "key": "apple|iPhone|12|Pro|128",
+     "a": {
+      "key": "apple|iPhone|12|Pro|128",
+      "category": "mobile",
+      "store_count": 2,
+      "has_comparison": true,
+      "lowest_price": null,
+      "highest_price": null,
+      "cheapest_store": null
+     },
+     "b": {
+      "key": "apple|iPhone|12|Pro|128",
+      "category": "mobile",
+      "store_count": 0,
+      "has_comparison": false,
+      "lowest_price": null,
+      "highest_price": null,
+      "cheapest_store": null
+     }
+    },
+    {
+     "key": "apple|iPhone|12|Standard|128",
+     "a": {
+      "key": "apple|iPhone|12|Standard|128",
+      "category": "mobile",
+      "store_count": 3,
+      "has_comparison": true,
+      "lowest_price": "1025.00",
+      "highest_price": "1025.00",
+      "cheapest_store": "أمازون"
+     },
+     "b": {
+      "key": "apple|iPhone|12|Standard|128",
+      "category": "mobile",
+      "store_count": 1,
+      "has_comparison": false,
+      "lowest_price": null,
+      "highest_price": null,
+      "cheapest_store": null
+     }
+    },
+    {
+     "key": "apple|iPhone|12|Standard|64",
+     "a": {
+      "key": "apple|iPhone|12|Standard|64",
+      "category": "mobile",
+      "store_count": 2,
+      "has_comparison": true,
+      "lowest_price": "890.00",
+      "highest_price": "999.00",
+      "cheapest_store": "أمازون"
+     },
+     "b": {
+      "key": "apple|iPhone|12|Standard|64",
+      "category": "mobile",
+      "store_count": 1,
+      "has_comparison": false,
+      "lowest_price": "999.00",
+      "highest_price": "999.00",
+      "cheapest_store": "اكسترا"
+     }
+    },
+    {
+     "key": "apple|iPhone|13|Pro Max|256",
+     "a": {
+      "key": "apple|iPhone|13|Pro Max|256",
+      "category": "mobile",
+      "store_count": 3,
+      "has_comparison": true,
+      "lowest_price": "2053.00",
+      "highest_price": "2053.00",
+      "cheapest_store": "أمازون"
+     },
+     "b": {
+      "key": "apple|iPhone|13|Pro Max|256",
+      "category": "mobile",
+      "store_count": 1,
+      "has_comparison": false,
+      "lowest_price": null,
+      "highest_price": null,
+      "cheapest_store": null
+     }
+    }
+   ]
+  }
+ },
+ "signals_rows": [
+  {
+   "category": "mobile",
+   "verdict": "reject",
+   "n": 58
+  },
+  {
+   "category": "mobile",
+   "verdict": "review",
+   "n": 51
+  },
+  {
+   "category": "tv",
+   "verdict": "reject",
+   "n": 1
+  },
+  {
+   "category": "tv",
+   "verdict": "review",
+   "n": 43
+  }
+ ],
+ "signals_job_rerun": {
+  "job": "identity-signals",
+  "mode": "write",
+  "rules_version": "identity-gate-2026-10-04",
+  "gated_categories": [
+   "mobile",
+   "tv"
+  ],
+  "signals_desired": 153,
+  "upserted": 0,
+  "deleted": 0,
+  "by_category": {
+   "mobile": {
+    "canonicals": 953,
+    "multi_store": 314,
+    "listings_in_multi": 773,
+    "review": 51,
+    "reject": 58
+   },
+   "tv": {
+    "canonicals": 1209,
+    "multi_store": 239,
+    "listings_in_multi": 661,
+    "review": 43,
+    "reject": 1
+   }
+  },
+  "reasons": {
+   "model_code_one_side": 39,
+   "no_condition_conflict,network_conflict": 6,
+   "region_tag_one_side": 36,
+   "condition_conflict": 45,
+   "condition_refurbished_only": 4,
+   "conflict_unresolved": 30,
+   "no_condition_conflict,ram_conflict": 4,
+   "model_code_suffix_unknown": 6,
+   "no_condition_conflict,edition_conflict": 1,
+   "no_condition_conflict,storage_conflict": 1,
+   "no_condition_conflict,bundle_vs_single,network_conflict": 1,
+   "no_condition_conflict,model_code_conflict": 1
+  },
+  "ms": 757
+ },
+ "signals_job_off": {
+  "job": "identity-signals",
+  "mode": "write",
+  "gated_categories": [],
+  "table_exists": true,
+  "rows_removed": 153,
+  "note": "gate flags unset — no category processed",
+  "ms": 174
+ },
+ "projection_after_gate_rollback_equals_original": {
+  "rows_a": 1735,
+  "rows_b": 1735,
+  "only_in_a": 0,
+  "only_in_b": 0,
+  "changed": 0,
+  "equal": true,
+  "examples": {
+   "only_in_a": [],
+   "only_in_b": [],
+   "changed": []
+  }
+ },
+ "signals_rows_after_off": [
+  {
+   "n": 0
+  }
+ ],
+ "timeline": [
+  {
+   "step": "start",
+   "ms": 10554,
+   "ok": true
+  },
+  {
+   "step": "snapshot list",
+   "ms": 2398,
+   "ok": true
+  },
+  {
+   "step": "restore baseline",
+   "ms": 19981,
+   "ok": true
+  },
+  {
+   "step": "A sweeps v1",
+   "ms": 72606,
+   "ok": true
+  },
+  {
+   "step": "A snapshot",
+   "ms": 15874,
+   "ok": true
+  },
+  {
+   "step": "save v1done",
+   "ms": 70581,
+   "ok": true
+  },
+  {
+   "step": "A projection v1",
+   "ms": 5540,
+   "ok": true
+  },
+  {
+   "step": "B sweeps v2",
+   "ms": 72942,
+   "ok": true
+  },
+  {
+   "step": "B snapshot",
+   "ms": 14474,
+   "ok": true
+  },
+  {
+   "step": "B diff",
+   "ms": 1940,
+   "ok": true
+  },
+  {
+   "step": "B projection v2",
+   "ms": 3978,
+   "ok": true
+  },
+  {
+   "step": "save v2done",
+   "ms": 70362,
+   "ok": true
+  },
+  {
+   "step": "C sweeps v1 (flag off)",
+   "ms": 74543,
+   "ok": true
+  },
+  {
+   "step": "C snapshot",
+   "ms": 17094,
+   "ok": true
+  },
+  {
+   "step": "C diff",
+   "ms": 2105,
+   "ok": true
+  },
+  {
+   "step": "C projection",
+   "ms": 4120,
+   "ok": true
+  },
+  {
+   "step": "D rollback dry",
+   "ms": 2645,
+   "ok": true
+  },
+  {
+   "step": "D rollback --go",
+   "ms": 2553,
+   "ok": true
+  },
+  {
+   "step": "D rollback --go (idempotency)",
+   "ms": 2790,
+   "ok": true
+  },
+  {
+   "step": "D projection",
+   "ms": 4065,
+   "ok": true
+  },
+  {
+   "step": "E restore v1done",
+   "ms": 20003,
+   "ok": true
+  },
+  {
+   "step": "E projection (gate unset)",
+   "ms": 5283,
+   "ok": true
+  },
+  {
+   "step": "E signals job (gate on)",
+   "ms": 3326,
+   "ok": true
+  },
+  {
+   "step": "E projection (gate on)",
+   "ms": 4140,
+   "ok": true
+  },
+  {
+   "step": "E signals job (idempotent re-run)",
+   "ms": 3010,
+   "ok": true
+  },
+  {
+   "step": "E signals job (flag OFF = rollback)",
+   "ms": 2424,
+   "ok": true
+  },
+  {
+   "step": "E projection (gate off again)",
+   "ms": 4247,
+   "ok": true
+  }
+ ],
+ "params": {
+  "stores": "2,4,5",
+  "repeat": "4",
+  "categories": "mobile,tv",
+  "at": "2026-10-04T03:33:23.340Z"
+ }
+}
