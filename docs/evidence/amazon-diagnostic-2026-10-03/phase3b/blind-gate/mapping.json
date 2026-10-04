@@ -1,0 +1,590 @@
+[
+ {
+  "n": 1,
+  "id": "P040",
+  "category": "mobile",
+  "a_store": "Almanea",
+  "b_store": "Amazon"
+ },
+ {
+  "n": 2,
+  "id": "P391",
+  "category": "refrigerator",
+  "a_store": "Almanea",
+  "b_store": "Amazon"
+ },
+ {
+  "n": 3,
+  "id": "P155",
+  "category": "mobile",
+  "a_store": "eXtra",
+  "b_store": "Amazon"
+ },
+ {
+  "n": 4,
+  "id": "P202",
+  "category": "mobile",
+  "a_store": "Amazon",
+  "b_store": "eXtra"
+ },
+ {
+  "n": 5,
+  "id": "P350",
+  "category": "laptop",
+  "a_store": "Amazon",
+  "b_store": "Almanea"
+ },
+ {
+  "n": 6,
+  "id": "P370",
+  "category": "tablet",
+  "a_store": "Amazon",
+  "b_store": "eXtra"
+ },
+ {
+  "n": 7,
+  "id": "P403",
+  "category": "washing_machine",
+  "a_store": "Almanea",
+  "b_store": "Amazon"
+ },
+ {
+  "n": 8,
+  "id": "P240",
+  "category": "mobile",
+  "a_store": "Amazon",
+  "b_store": "eXtra"
+ },
+ {
+  "n": 9,
+  "id": "P430",
+  "category": "microwave",
+  "a_store": "Amazon",
+  "b_store": "Almanea"
+ },
+ {
+  "n": 10,
+  "id": "P203",
+  "category": "mobile",
+  "a_store": "eXtra",
+  "b_store": "Amazon"
+ },
+ {
+  "n": 11,
+  "id": "P060",
+  "category": "mobile",
+  "a_store": "Amazon",
+  "b_store": "eXtra"
+ },
+ {
+  "n": 12,
+  "id": "P080",
+  "category": "mobile",
+  "a_store": "eXtra",
+  "b_store": "Amazon"
+ },
+ {
+  "n": 13,
+  "id": "P300",
+  "category": "mobile",
+  "a_store": "Amazon",
+  "b_store": "eXtra"
+ },
+ {
+  "n": 14,
+  "id": "P351",
+  "category": "laptop",
+  "a_store": "Amazon",
+  "b_store": "Almanea"
+ },
+ {
+  "n": 15,
+  "id": "P011",
+  "category": "mobile",
+  "a_store": "eXtra",
+  "b_store": "Amazon"
+ },
+ {
+  "n": 16,
+  "id": "P024",
+  "category": "mobile",
+  "a_store": "eXtra",
+  "b_store": "Amazon"
+ },
+ {
+  "n": 17,
+  "id": "P412",
+  "category": "washing_machine",
+  "a_store": "eXtra",
+  "b_store": "Amazon"
+ },
+ {
+  "n": 18,
+  "id": "P025",
+  "category": "mobile",
+  "a_store": "Almanea",
+  "b_store": "Amazon"
+ },
+ {
+  "n": 19,
+  "id": "P420",
+  "category": "vacuum",
+  "a_store": "Amazon",
+  "b_store": "eXtra"
+ },
+ {
+  "n": 20,
+  "id": "P210",
+  "category": "mobile",
+  "a_store": "Amazon",
+  "b_store": "eXtra"
+ },
+ {
+  "n": 21,
+  "id": "P422",
+  "category": "vacuum",
+  "a_store": "eXtra",
+  "b_store": "Amazon"
+ },
+ {
+  "n": 22,
+  "id": "P185",
+  "category": "mobile",
+  "a_store": "Almanea",
+  "b_store": "Amazon"
+ },
+ {
+  "n": 23,
+  "id": "P360",
+  "category": "laptop",
+  "a_store": "Amazon",
+  "b_store": "eXtra"
+ },
+ {
+  "n": 24,
+  "id": "P320",
+  "category": "mobile",
+  "a_store": "Amazon",
+  "b_store": "eXtra"
+ },
+ {
+  "n": 25,
+  "id": "P340",
+  "category": "tv",
+  "a_store": "Amazon",
+  "b_store": "eXtra"
+ },
+ {
+  "n": 26,
+  "id": "P243",
+  "category": "mobile",
+  "a_store": "Amazon",
+  "b_store": "Almanea"
+ },
+ {
+  "n": 27,
+  "id": "P020",
+  "category": "mobile",
+  "a_store": "Amazon",
+  "b_store": "eXtra"
+ },
+ {
+  "n": 28,
+  "id": "P120",
+  "category": "mobile",
+  "a_store": "eXtra",
+  "b_store": "Amazon"
+ },
+ {
+  "n": 29,
+  "id": "P213",
+  "category": "mobile",
+  "a_store": "Amazon",
+  "b_store": "eXtra"
+ },
+ {
+  "n": 30,
+  "id": "P421",
+  "category": "vacuum",
+  "a_store": "Amazon",
+  "b_store": "eXtra"
+ },
+ {
+  "n": 31,
+  "id": "P031",
+  "category": "mobile",
+  "a_store": "Almanea",
+  "b_store": "Amazon"
+ },
+ {
+  "n": 32,
+  "id": "P220",
+  "category": "mobile",
+  "a_store": "eXtra",
+  "b_store": "Amazon"
+ },
+ {
+  "n": 33,
+  "id": "P372",
+  "category": "tablet",
+  "a_store": "eXtra",
+  "b_store": "Amazon"
+ },
+ {
+  "n": 34,
+  "id": "P410",
+  "category": "washing_machine",
+  "a_store": "eXtra",
+  "b_store": "Amazon"
+ },
+ {
+  "n": 35,
+  "id": "P382",
+  "category": "tablet",
+  "a_store": "eXtra",
+  "b_store": "Amazon"
+ },
+ {
+  "n": 36,
+  "id": "P146",
+  "category": "mobile",
+  "a_store": "Amazon",
+  "b_store": "eXtra"
+ },
+ {
+  "n": 37,
+  "id": "P114",
+  "category": "mobile",
+  "a_store": "Amazon",
+  "b_store": "eXtra"
+ },
+ {
+  "n": 38,
+  "id": "P411",
+  "category": "washing_machine",
+  "a_store": "Almanea",
+  "b_store": "Amazon"
+ },
+ {
+  "n": 39,
+  "id": "P432",
+  "category": "dishwasher",
+  "a_store": "Amazon",
+  "b_store": "eXtra"
+ },
+ {
+  "n": 40,
+  "id": "P231",
+  "category": "mobile",
+  "a_store": "eXtra",
+  "b_store": "Amazon"
+ },
+ {
+  "n": 41,
+  "id": "P226",
+  "category": "mobile",
+  "a_store": "Amazon",
+  "b_store": "Almanea"
+ },
+ {
+  "n": 42,
+  "id": "P431",
+  "category": "dishwasher",
+  "a_store": "eXtra",
+  "b_store": "Amazon"
+ },
+ {
+  "n": 43,
+  "id": "P204",
+  "category": "mobile",
+  "a_store": "eXtra",
+  "b_store": "Amazon"
+ },
+ {
+  "n": 44,
+  "id": "P130",
+  "category": "mobile",
+  "a_store": "Amazon",
+  "b_store": "eXtra"
+ },
+ {
+  "n": 45,
+  "id": "P242",
+  "category": "mobile",
+  "a_store": "Amazon",
+  "b_store": "eXtra"
+ },
+ {
+  "n": 46,
+  "id": "P361",
+  "category": "laptop",
+  "a_store": "Amazon",
+  "b_store": "eXtra"
+ },
+ {
+  "n": 47,
+  "id": "P323",
+  "category": "tv",
+  "a_store": "Amazon",
+  "b_store": "eXtra"
+ },
+ {
+  "n": 48,
+  "id": "P401",
+  "category": "refrigerator",
+  "a_store": "Almanea",
+  "b_store": "Amazon"
+ },
+ {
+  "n": 49,
+  "id": "P332",
+  "category": "tv",
+  "a_store": "Amazon",
+  "b_store": "eXtra"
+ },
+ {
+  "n": 50,
+  "id": "P200",
+  "category": "mobile",
+  "a_store": "eXtra",
+  "b_store": "Amazon"
+ },
+ {
+  "n": 51,
+  "id": "P100",
+  "category": "mobile",
+  "a_store": "Amazon",
+  "b_store": "Almanea"
+ },
+ {
+  "n": 52,
+  "id": "P160",
+  "category": "mobile",
+  "a_store": "eXtra",
+  "b_store": "Amazon"
+ },
+ {
+  "n": 53,
+  "id": "P342",
+  "category": "tv",
+  "a_store": "eXtra",
+  "b_store": "Amazon"
+ },
+ {
+  "n": 54,
+  "id": "P110",
+  "category": "mobile",
+  "a_store": "Amazon",
+  "b_store": "eXtra"
+ },
+ {
+  "n": 55,
+  "id": "P214",
+  "category": "mobile",
+  "a_store": "Almanea",
+  "b_store": "Amazon"
+ },
+ {
+  "n": 56,
+  "id": "P310",
+  "category": "mobile",
+  "a_store": "Amazon",
+  "b_store": "Almanea"
+ },
+ {
+  "n": 57,
+  "id": "P170",
+  "category": "mobile",
+  "a_store": "Amazon",
+  "b_store": "eXtra"
+ },
+ {
+  "n": 58,
+  "id": "P150",
+  "category": "mobile",
+  "a_store": "Almanea",
+  "b_store": "Amazon"
+ },
+ {
+  "n": 59,
+  "id": "P270",
+  "category": "mobile",
+  "a_store": "Almanea",
+  "b_store": "Amazon"
+ },
+ {
+  "n": 60,
+  "id": "P402",
+  "category": "refrigerator",
+  "a_store": "Almanea",
+  "b_store": "Amazon"
+ },
+ {
+  "n": 61,
+  "id": "P330",
+  "category": "tv",
+  "a_store": "eXtra",
+  "b_store": "Amazon"
+ },
+ {
+  "n": 62,
+  "id": "P390",
+  "category": "refrigerator",
+  "a_store": "Amazon",
+  "b_store": "eXtra"
+ },
+ {
+  "n": 63,
+  "id": "P250",
+  "category": "mobile",
+  "a_store": "Almanea",
+  "b_store": "Amazon"
+ },
+ {
+  "n": 64,
+  "id": "P229",
+  "category": "mobile",
+  "a_store": "Amazon",
+  "b_store": "eXtra"
+ },
+ {
+  "n": 65,
+  "id": "P230",
+  "category": "mobile",
+  "a_store": "Amazon",
+  "b_store": "eXtra"
+ },
+ {
+  "n": 66,
+  "id": "P147",
+  "category": "mobile",
+  "a_store": "Amazon",
+  "b_store": "Almanea"
+ },
+ {
+  "n": 67,
+  "id": "P115",
+  "category": "mobile",
+  "a_store": "Amazon",
+  "b_store": "Almanea"
+ },
+ {
+  "n": 68,
+  "id": "P333",
+  "category": "tv",
+  "a_store": "Amazon",
+  "b_store": "eXtra"
+ },
+ {
+  "n": 69,
+  "id": "P380",
+  "category": "tablet",
+  "a_store": "Amazon",
+  "b_store": "eXtra"
+ },
+ {
+  "n": 70,
+  "id": "P400",
+  "category": "refrigerator",
+  "a_store": "Amazon",
+  "b_store": "Almanea"
+ },
+ {
+  "n": 71,
+  "id": "P381",
+  "category": "tablet",
+  "a_store": "Amazon",
+  "b_store": "eXtra"
+ },
+ {
+  "n": 72,
+  "id": "P030",
+  "category": "mobile",
+  "a_store": "Amazon",
+  "b_store": "eXtra"
+ },
+ {
+  "n": 73,
+  "id": "P010",
+  "category": "mobile",
+  "a_store": "Almanea",
+  "b_store": "Amazon"
+ },
+ {
+  "n": 74,
+  "id": "P371",
+  "category": "tablet",
+  "a_store": "Amazon",
+  "b_store": "eXtra"
+ },
+ {
+  "n": 75,
+  "id": "P140",
+  "category": "mobile",
+  "a_store": "Amazon",
+  "b_store": "Almanea"
+ },
+ {
+  "n": 76,
+  "id": "P331",
+  "category": "tv",
+  "a_store": "Amazon",
+  "b_store": "eXtra"
+ },
+ {
+  "n": 77,
+  "id": "P341",
+  "category": "tv",
+  "a_store": "Amazon",
+  "b_store": "Almanea"
+ },
+ {
+  "n": 78,
+  "id": "P425",
+  "category": "microwave",
+  "a_store": "Amazon",
+  "b_store": "Almanea"
+ },
+ {
+  "n": 79,
+  "id": "P260",
+  "category": "mobile",
+  "a_store": "eXtra",
+  "b_store": "Amazon"
+ },
+ {
+  "n": 80,
+  "id": "P070",
+  "category": "mobile",
+  "a_store": "Amazon",
+  "b_store": "Almanea"
+ },
+ {
+  "n": 81,
+  "id": "P050",
+  "category": "mobile",
+  "a_store": "Amazon",
+  "b_store": "eXtra"
+ },
+ {
+  "n": 82,
+  "id": "P215",
+  "category": "mobile",
+  "a_store": "Almanea",
+  "b_store": "Amazon"
+ },
+ {
+  "n": 83,
+  "id": "P184",
+  "category": "mobile",
+  "a_store": "Amazon",
+  "b_store": "eXtra"
+ },
+ {
+  "n": 84,
+  "id": "P036",
+  "category": "mobile",
+  "a_store": "Amazon",
+  "b_store": "eXtra"
+ }
+]
