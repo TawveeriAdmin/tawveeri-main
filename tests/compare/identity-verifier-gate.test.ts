@@ -156,3 +156,14 @@ describe("applyIdentityVerifierGate", () => {
     expect(applyIdentityVerifierGate(one, "mobile")).toBe(one);
   });
 });
+
+describe("review-tier wording (ADR-403)", () => {
+  it("an unverified listing is never labelled with the staleness wording — it may be fresh and in stock", async () => {
+    const { identityReviewLabel, exclusionLabelFor } = await import("../../src/lib/compare/observed-label");
+    for (const isAr of [true, false]) {
+      const label = identityReviewLabel(isAr);
+      expect(label).not.toBe(exclusionLabelFor("stale", hoursAgo(1), isAr, NOW));
+      expect(label).toMatch(isAr ? /نفس الموديل|الإصدار/ : /same model or version/);
+    }
+  });
+});

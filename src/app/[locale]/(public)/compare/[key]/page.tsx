@@ -26,7 +26,7 @@ import { categoryLabel } from '@/lib/agent/advisor-api';
 import { classifyCondition } from '@/lib/campaigns/condition';
 import { CONDITION_LABELS } from '@/components/compare/offer-description';
 import { PICK_FRESHNESS_MAX_HOURS } from '@/lib/intelligence/evidence-engine';
-import { freshnessLabel, observedLabel, availabilityLabelFor, exclusionLabelFor } from '@/lib/compare/observed-label';
+import { freshnessLabel, observedLabel, availabilityLabelFor, exclusionLabelFor, identityReviewLabel } from '@/lib/compare/observed-label';
 import { exclusionReasonFor } from '@/lib/compare/offer-eligibility';
 import { buildAlternates } from '@/lib/seo/metadata';
 import { retailerDisplayName, resolveApprovedSlug } from '@/lib/retailers/approved-retailers';
@@ -145,6 +145,7 @@ function availabilityLabel(offer: CompareOffer, isAr: boolean): { text: string; 
 /** Why an offer sits outside the comparison — one reason per offer, never a blanket label
  *  (a fresh out-of-stock offer is not "old"; founder review 2026-09-26). */
 function exclusionReason(offer: CompareOffer, isAr: boolean): string {
+  if (offer.identity_verdict?.outcome === 'review') return identityReviewLabel(isAr);   // ADR-403: unverified identity, not "old"
   const reason = exclusionReasonFor({ price: offer.price, availability: offer.availability, observed_at: offer.observed_at });
   return exclusionLabelFor(reason ?? 'stale', offer.observed_at, isAr);
 }
@@ -472,7 +473,9 @@ export default async function TpsComparePage({
               <Trophy className="h-3 w-3" />
               {featuredIsEligible
                 ? (eligibleOffers.length > 1 ? lowestOfferBadge(basis, isAr) : (isAr ? 'العرض المرصود' : 'Observed offer'))
-                : (isAr ? 'آخر سعر رصدناه' : 'Last observed price')}
+                : featured.identity_verdict?.outcome === 'review'
+                  ? (isAr ? 'سعر مرصود — الإصدار غير مؤكد' : 'Observed price — version not confirmed')
+                  : (isAr ? 'آخر سعر رصدناه' : 'Last observed price')}
             </span>
             {eligibleOffers.length > 1 && (
               <span className="text-xs text-on-surface-variant">

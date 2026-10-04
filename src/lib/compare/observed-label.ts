@@ -43,6 +43,15 @@ export function availabilityLabelFor(
 }
 
 /** Why an offer sits outside the comparison — one reason per offer, never a blanket label. */
+/**
+ * Why an offer the identity verifier could not stand behind sits outside the comparison (ADR-403).
+ * It is NOT old and NOT out of stock — it may be a fresh, in-stock listing — so it must never be
+ * labelled with the staleness wording. States the unknown plainly; never claims a difference either.
+ */
+export function identityReviewLabel(isAr: boolean): string {
+  return isAr ? 'لم نتأكد أنه نفس الموديل أو الإصدار — لا يدخل في المقارنة' : 'We could not confirm this is the same model or version — not part of the comparison';
+}
+
 export function exclusionLabelFor(
   reason: 'no_price' | 'out_of_stock' | 'stale' | 'unknown_age',
   observedAt: string | null | undefined,
