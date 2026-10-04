@@ -1,0 +1,178 @@
+[
+ {
+  "id": "T01",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "at": "2026-10-04T15:08:27.076Z",
+  "note": "",
+  "odd": []
+ },
+ {
+  "id": "T02",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "at": "2026-10-04T15:08:46.671Z",
+  "note": "",
+  "odd": []
+ },
+ {
+  "id": "T03",
+  "answer": "DIFFERENT_VARIANT",
+  "at": "2026-10-04T15:42:01.459Z",
+  "note": "",
+  "odd": [
+   "النخيل"
+  ]
+ },
+ {
+  "id": "T04",
+  "answer": "REVIEW_INSUFFICIENT_EVIDENCE",
+  "at": "2026-10-04T15:39:25.562Z",
+  "note": "",
+  "odd": [
+   "أمازون"
+  ]
+ },
+ {
+  "id": "T05",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "at": "2026-10-04T15:17:13.967Z",
+  "note": "",
+  "odd": []
+ },
+ {
+  "id": "T06",
+  "answer": "DIFFERENT_VARIANT",
+  "at": "2026-10-04T15:20:36.112Z",
+  "note": "",
+  "odd": [
+   "إكسترا"
+  ]
+ },
+ {
+  "id": "T07",
+  "answer": "DIFFERENT_VARIANT",
+  "at": "2026-10-04T15:36:44.805Z",
+  "note": "",
+  "odd": [
+   "إكسترا"
+  ]
+ },
+ {
+  "id": "T08",
+  "answer": "DIFFERENT_VARIANT",
+  "at": "2026-10-04T15:19:36.195Z",
+  "note": "",
+  "odd": [
+   "أمازون"
+  ]
+ },
+ {
+  "id": "T09",
+  "answer": "DIFFERENT_VARIANT",
+  "at": "2026-10-04T15:35:33.742Z",
+  "note": "",
+  "odd": [
+   "أمازون"
+  ]
+ },
+ {
+  "id": "T10",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "at": "2026-10-04T15:16:35.596Z",
+  "note": "",
+  "odd": []
+ },
+ {
+  "id": "T11",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "at": "2026-10-04T15:34:56.585Z",
+  "note": "",
+  "odd": []
+ },
+ {
+  "id": "T12",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "at": "2026-10-04T15:16:53.629Z",
+  "note": "",
+  "odd": []
+ },
+ {
+  "id": "T13",
+  "answer": "REVIEW_INSUFFICIENT_EVIDENCE",
+  "at": "2026-10-04T15:33:57.170Z",
+  "note": "",
+  "odd": [
+   "إكسترا"
+  ]
+ },
+ {
+  "id": "T14",
+  "answer": "DIFFERENT_VARIANT",
+  "at": "2026-10-04T15:17:59.057Z",
+  "note": "",
+  "odd": [
+   "إكسترا"
+  ]
+ },
+ {
+  "id": "T15",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "at": "2026-10-04T15:15:56.785Z",
+  "note": "",
+  "odd": []
+ },
+ {
+  "id": "T16",
+  "answer": "DIFFERENT_VARIANT",
+  "at": "2026-10-04T15:33:07.183Z",
+  "note": "",
+  "odd": [
+   "نون"
+  ]
+ },
+ {
+  "id": "T17",
+  "answer": "DIFFERENT_VARIANT",
+  "at": "2026-10-04T15:19:59.532Z",
+  "note": "",
+  "odd": [
+   "إكسترا"
+  ]
+ },
+ {
+  "id": "T18",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "at": "2026-10-04T15:15:28.962Z",
+  "note": "",
+  "odd": []
+ },
+ {
+  "id": "T19",
+  "answer": "DIFFERENT_VARIANT",
+  "at": "2026-10-04T15:12:21.448Z",
+  "note": "",
+  "odd": [
+   "إكسترا"
+  ]
+ },
+ {
+  "id": "T20",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "at": "2026-10-04T15:11:54.375Z",
+  "note": "",
+  "odd": []
+ },
+ {
+  "id": "T21",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "at": "2026-10-04T15:11:15.466Z",
+  "note": "",
+  "odd": []
+ },
+ {
+  "id": "T22",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "at": "2026-10-04T15:09:13.072Z",
+  "note": "",
+  "odd": []
+ }
+]
