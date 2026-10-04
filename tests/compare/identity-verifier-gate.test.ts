@@ -53,8 +53,8 @@ describe("applyIdentityVerifierGate", () => {
     const p = partitionOffersByEligibility(gated, NOW);
     expect(p.eligible.map((o) => o.store_slug)).toEqual(["extra"]);
     expect(p.older.map((o) => o.store_slug)).toEqual(["noon"]);
-    expect(deriveComparisonSummary(gated).summary.cheapest_store).toBe("إكسترا");
-    expect(deriveComparisonSummary(gated).summary.lowest_price).toBe(2999);
+    expect(deriveComparisonSummary(gated, NOW).summary.cheapest_store).toBe("إكسترا");
+    expect(deriveComparisonSummary(gated, NOW).summary.lowest_price).toBe(2999);
   });
 
   it("a two-sided conflict resolves against the page's own identity (anchor): the side that conflicts with the canonical name leaves", () => {
@@ -86,7 +86,7 @@ describe("applyIdentityVerifierGate", () => {
     // reversing the input order or the prices changes nothing
     const swapped = applyIdentityVerifierGate([{ ...offers[1], price: 399 }, { ...offers[0], price: 999 }], "mobile");
     expect(swapped.every((o) => o.identity_verdict?.outcome === "review")).toBe(true);
-    expect(deriveComparisonSummary(gated).summary.cheapest_store).toBeNull();
+    expect(deriveComparisonSummary(gated, NOW).summary.cheapest_store).toBeNull();
   });
 
   it("source-declared model codes (payload) decide where titles state none: eXtra's codeless title vs Almanea's declared code", () => {
@@ -120,7 +120,7 @@ describe("applyIdentityVerifierGate", () => {
     expect(anchored.find((o) => o.store_slug === "amazon")!.identity_verdict?.outcome).toBe("review");
     const blind = applyIdentityVerifierGate(offers, "refrigerator");
     expect(blind.every((o) => o.identity_verdict?.outcome === "review")).toBe(true);
-    expect(deriveComparisonSummary(blind).summary.cheapest_store).toBeNull();
+    expect(deriveComparisonSummary(blind, NOW).summary.cheapest_store).toBeNull();
   });
 
   it("a MODEL-keyed group shares its code: the key's code is structured evidence, so a title without the code is NOT a one-side review", () => {
@@ -148,7 +148,7 @@ describe("applyIdentityVerifierGate", () => {
     const g = applyIdentityVerifierGate(allRefurb, "mobile");
     expect(g.map((o) => o.identity_verdict?.outcome)).toEqual(["review", "review"]);
     expect(g[0].identity_verdict!.reasons.join(" ")).toMatch(/condition_refurbished_only/);
-    expect(deriveComparisonSummary(g).summary.cheapest_store).toBeNull();
+    expect(deriveComparisonSummary(g, NOW).summary.cheapest_store).toBeNull();
   });
 
   it("a single offer is returned untouched", () => {

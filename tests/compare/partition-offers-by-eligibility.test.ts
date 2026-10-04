@@ -41,7 +41,7 @@ describe("partitionOffersByEligibility — the FreshDV / ArtCool shapes", () => 
     const { eligible, older } = partitionOffersByEligibility(offers, NOW);
     expect(eligible).toHaveLength(5);
     expect(older).toHaveLength(0);
-    const { summary } = deriveComparisonSummary(offers);
+    const { summary } = deriveComparisonSummary(offers, NOW);
     expect(Math.min(...eligible.map((o) => o.price))).toBe(summary.lowest_price);
   });
 

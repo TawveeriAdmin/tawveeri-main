@@ -520,7 +520,7 @@ export async function getComparison(params: {
  * `CompareOffer.stale`: the founder has now approved exclusion from the CHEAPEST claim
  * specifically (the softer 72h `stale` caveat on every individual offer is unchanged).
  */
-export function deriveComparisonSummary(offers: CompareOffer[]): {
+export function deriveComparisonSummary(offers: CompareOffer[], nowMs: number = Date.now()): {
   summary: ComparisonResult["summary"];
   message?: string;
 } {
@@ -532,7 +532,7 @@ export function deriveComparisonSummary(offers: CompareOffer[]): {
   // the one the customer sees first, even when the fresh subset differs from the full one.
   // ADR-388: the eligibility test is the shared one every compare surface uses
   // (offer-eligibility.ts) — the multi-product page had re-derived its own and disagreed.
-  const partitioned = partitionOffersByEligibility(offers);
+  const partitioned = partitionOffersByEligibility(offers, nowMs);
   const priceSortedFresh = partitioned.eligible.slice().sort((a, b) => a.price - b.price);
   const freshOffers = applyAffiliateTrueTieOrder(priceSortedFresh);
   const noFreshEvidence = offers.length > 0 && freshOffers.length === 0;
