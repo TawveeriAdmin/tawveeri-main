@@ -30,12 +30,12 @@ describe('planIdentityRunner', () => {
     expect(shadow.args).toEqual(['--only', 'identity-gate', '--scope=tv,vacuum']);
     expect(shadow.projection).toBe(false);
     const full = planIdentityRunner({ ...ON, TPS_IDENTITY_RUNNER_PROJECTION: '1', TPS_IDENTITY_RUNNER_CATEGORIES: 'Vacuum, TV,tv' });
-    expect(full.args).toEqual(['--only', 'identity-gate,projection', '--scope=tv,vacuum']);
+    expect(full.args).toEqual(['--only', 'identity-gate,projection,identity-monitor', '--scope=tv,vacuum']);
   });
-  test('the plan can only ever name the two refresh steps — never normalize / facts / search / storefront', () => {
+  test('the plan can only ever name its three steps — never normalize / facts / search / storefront', () => {
     for (const env of [ON, { ...ON, TPS_IDENTITY_RUNNER_PROJECTION: '1' }]) {
       const only = planIdentityRunner(env).args[1].split(',');
-      expect(only.every((s) => ['identity-gate', 'projection'].includes(s))).toBe(true);
+      expect(only.every((s) => ['identity-gate', 'projection', 'identity-monitor'].includes(s))).toBe(true);
     }
   });
 });

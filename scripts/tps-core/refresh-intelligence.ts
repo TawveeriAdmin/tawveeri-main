@@ -29,6 +29,7 @@ import { config } from "dotenv";
 import { resolve } from "path";
 config({ path: resolve(process.cwd(), ".env.local") });
 import { spawnSync } from "child_process";
+import { identityGateEnabled, identityRunnerScope } from "./identity-flags";
 
 const SCOPE = process.argv.find((a) => a.startsWith("--scope="))?.slice("--scope=".length) || null;
 
@@ -40,6 +41,8 @@ interface Step {
   run: () => { ok: boolean; detail: string };
   /** Slow steps are skipped by --fast. */
   slow?: boolean;
+  /** Runs ONLY when named in --only — never part of the default chain (ADR-405 runner monitoring). */
+  explicit?: boolean;
 }
 
 function runScript(path: string, args: string[] = []): { ok: boolean; detail: string } {
@@ -151,6 +154,18 @@ const STEPS: Step[] = [
     run: () => runScript("scripts/tps-core/build-merchant-trust.ts"),
   },
   {
+    // ADR-405 — persistent Wave monitoring. EXPLICIT only: part of the isolated identity runner, never of the default chain.
+    // Measures every category in the runner scope whose read gate is on, appends the result to tps_identity_wave_log and exits 2
+    // (this step FAILS, the job is `failed`, `[ALERT]` is the last line) on ROLLBACK_REQUIRED. No flag is changed here: removing a
+    // category from TPS_IDENTITY_GATE needs a Railway token the worker must not hold.
+    key: "identity-monitor", label: "identity wave monitor (measure + persist + alert)", needs: ["projection"], explicit: true,
+    run: () => {
+      const cats = identityRunnerScope().filter((c) => identityGateEnabled(c));
+      if (!cats.length) return { ok: true, detail: "skipped — no category in the runner scope has its read gate on" };
+      return runScript("scripts/tps-analysis/identity-wave-monitor.ts", [`--categories=${cats.join(",")}`, "--baseline=db", "--persist", "--sample=3", "--consistency=6"]);
+    },
+  },
+  {
     key: "edges", label: "knowledge-graph edges (canonicals → relationships)", needs: ["projection"],
     run: () => runScript("scripts/tps-core/build-product-edges.ts"),
   },
@@ -161,7 +176,7 @@ const STEPS: Step[] = [
   const onlyArg = process.argv[process.argv.indexOf("--only") + 1];
   const only = process.argv.includes("--only") && onlyArg ? new Set(onlyArg.split(",").map((s) => s.trim())) : null;
 
-  const selected = STEPS.filter((s) => (only ? only.has(s.key) : !(fast && s.slow)));
+  const selected = STEPS.filter((s) => (only ? only.has(s.key) : !(fast && s.slow) && !s.explicit));
   console.log(`\n╔══ INTELLIGENCE REFRESH — ${selected.length} step(s)${fast ? " (fast: projection skipped)" : ""}\n`);
 
   const failed = new Set<string>();

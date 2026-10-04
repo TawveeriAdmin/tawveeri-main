@@ -39,6 +39,7 @@ export function planIdentityRunner(env: NodeJS.ProcessEnv): IdentityRunnerPlan {
     reason: projection ? "signals + scoped projection" : "signals only (shadow — no projection write)",
     categories,
     projection,
-    args: ["--only", projection ? "identity-gate,projection" : "identity-gate", `--scope=${categories.join(",")}`],
+    // The monitor rides only with the projection step: it measures a gate that is ON, then persists and alerts.
+    args: ["--only", projection ? "identity-gate,projection,identity-monitor" : "identity-gate", `--scope=${categories.join(",")}`],
   };
 }
