@@ -1,0 +1,156 @@
+{
+ "date": "2026-10-04",
+ "question": "if a customer buys the cheaper listing instead of the dearer, do they get exactly the same device?",
+ "pairs": [
+  {
+   "id": "P040",
+   "kind": "variant",
+   "founder": "DIFF",
+   "reference": "SAME_PRODUCT_FAMILY_DIFFERENT_VARIANT"
+  },
+  {
+   "id": "P350",
+   "kind": "diff_control",
+   "founder": "DIFF",
+   "reference": "DIFFERENT_PRODUCT"
+  },
+  {
+   "id": "P372",
+   "kind": "diff_control",
+   "founder": "DIFF",
+   "reference": "DIFFERENT_PRODUCT"
+  },
+  {
+   "id": "P403",
+   "kind": "diff_control",
+   "founder": "DIFF",
+   "reference": "DIFFERENT_PRODUCT"
+  },
+  {
+   "id": "P203",
+   "kind": "asym",
+   "founder": "SAME",
+   "reference": "AMBIGUOUS"
+  },
+  {
+   "id": "P382",
+   "kind": "diff_control",
+   "founder": "DIFF",
+   "reference": "DIFFERENT_PRODUCT"
+  },
+  {
+   "id": "P243",
+   "kind": "asym",
+   "founder": "SAME",
+   "reference": "AMBIGUOUS"
+  },
+  {
+   "id": "P030",
+   "kind": "variant",
+   "founder": "DIFF",
+   "reference": "SAME_PRODUCT_FAMILY_DIFFERENT_VARIANT"
+  },
+  {
+   "id": "P130",
+   "kind": "variant",
+   "founder": "DIFF",
+   "reference": "SAME_PRODUCT_FAMILY_DIFFERENT_VARIANT"
+  },
+  {
+   "id": "P412",
+   "kind": "asym",
+   "founder": "SAME",
+   "reference": "INSUFFICIENT_EVIDENCE"
+  },
+  {
+   "id": "P430",
+   "kind": "same_control",
+   "founder": "SAME",
+   "reference": "SAME_EXACT_VARIANT"
+  },
+  {
+   "id": "P432",
+   "kind": "asym",
+   "founder": "SAME",
+   "reference": "INSUFFICIENT_EVIDENCE"
+  },
+  {
+   "id": "P231",
+   "kind": "asym",
+   "founder": "SAME",
+   "reference": "AMBIGUOUS"
+  },
+  {
+   "id": "P213",
+   "kind": "asym",
+   "founder": "SAME",
+   "reference": "AMBIGUOUS"
+  },
+  {
+   "id": "P332",
+   "kind": "diff_control",
+   "founder": "DIFF",
+   "reference": "DIFFERENT_PRODUCT"
+  },
+  {
+   "id": "P200",
+   "kind": "same_control",
+   "founder": "SAME",
+   "reference": "SAME_EXACT_VARIANT"
+  },
+  {
+   "id": "P010",
+   "kind": "diff_control",
+   "founder": "DIFF",
+   "reference": "DIFFERENT_PRODUCT"
+  },
+  {
+   "id": "P330",
+   "kind": "diff_control",
+   "founder": "DIFF",
+   "reference": "DIFFERENT_PRODUCT"
+  },
+  {
+   "id": "P300",
+   "kind": "same_control",
+   "founder": "SAME",
+   "reference": "SAME_EXACT_VARIANT"
+  },
+  {
+   "id": "P100",
+   "kind": "same_control",
+   "founder": "SAME",
+   "reference": "SAME_EXACT_VARIANT"
+  },
+  {
+   "id": "P320",
+   "kind": "variant",
+   "founder": "DIFF",
+   "reference": "SAME_PRODUCT_FAMILY_DIFFERENT_VARIANT"
+  },
+  {
+   "id": "P170",
+   "kind": "variant",
+   "founder": "DIFF",
+   "reference": "SAME_PRODUCT_FAMILY_DIFFERENT_VARIANT"
+  },
+  {
+   "id": "P080",
+   "kind": "variant",
+   "founder": "DIFF",
+   "reference": "SAME_PRODUCT_FAMILY_DIFFERENT_VARIANT"
+  },
+  {
+   "id": "P421",
+   "kind": "diff_control",
+   "founder": "DIFF",
+   "reference": "DIFFERENT_PRODUCT"
+  }
+ ],
+ "crosstab": {
+  "variant->DIFF": 6,
+  "diff_control->DIFF": 8,
+  "asym->SAME": 6,
+  "same_control->SAME": 4
+ }
+}

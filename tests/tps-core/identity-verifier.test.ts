@@ -245,3 +245,20 @@ describe('v2 write-path pre-image (rollback support)', () => {
     process.env.TPS_IDENTITY_V2 = 'mobile'; expect(withV2PreImage('tv', { a: 5 }, prev)).toEqual({ a: 5 });  // other category: untouched
   });
 });
+
+// Founder ruling 2026-10-04 (blind-gate round 2): silence on RAM / network by ONE side is not a review trigger — it is
+// already a match when nothing stated conflicts. The only phone-level reason a pair that agrees on model and storage
+// reaches review is a region tag on one side, which stays review (Rule 15 is not relaxed).
+describe('identity verifier — one-sided silence on phones (founder 2026-10-04)', () => {
+  test('RAM / network stated by one side only matches (P243-shape without the region tag)', () => {
+    const r = v('SAMSUNG Galaxy S26 Ultra, 5G, 256 GB, Sky Blue', 'Samsung Galaxy S26 Ultra, 256GB, 12GB RAM, 5G - Cobalt Violet');
+    expect(r.outcome).toBe('match');
+  });
+  test('the same pair with a region tag on one side stays review (Rule 15)', () => {
+    const r = v('Samsung Galaxy S25 Ultra, 256GB (International Version)', 'SAMSUNG Galaxy S25 Ultra, 5G, 256 GB, Titanium Black');
+    expect(r.outcome).toBe('review'); expect(r.reasons).toContain('region_tag_one_side');
+  });
+  test('a STATED conflict is never softened by silence elsewhere', () => {
+    expect(v('Samsung Galaxy A26, 5G, 6+128 GB', 'Samsung Galaxy A26 5G 256GB Storage 8GB RAM').outcome).toBe('reject');
+  });
+});

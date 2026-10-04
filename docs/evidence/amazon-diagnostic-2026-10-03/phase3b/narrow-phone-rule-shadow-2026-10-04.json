@@ -1,0 +1,24 @@
+{
+  "date": "2026-10-04",
+  "rule": "mobile: same manufacturer model/code or strong identifier + same storage/class + no stated RAM/network/condition conflict + other side only silent on RAM/network => match in shadow; region-tagged listings stay review; appliances unchanged",
+  "method": "build-identity-signals.ts --dry --category=mobile against production (read-only) + verifyPair spot checks",
+  "result": {
+    "mobile_review_members": 51,
+    "breakdown": { "region_tag_only": 21, "stated_conflict": 26, "refurbished_only": 4 },
+    "review_to_match_recovered": 0,
+    "new_comparisons": 0,
+    "new_false_merges": 0,
+    "amazon_impact": 0,
+    "per_category_effect": { "mobile": 0, "all_other": 0 }
+  },
+  "finding": "The rule is already the current verifier behaviour: RAM/network silence on one side matches. The only phone pairs the founder confirmed as asymmetric carry an International-Version region tag, which the rule keeps in review.",
+  "informational_not_enabled": {
+    "region_relaxation_review_groups": 31,
+    "region_only_groups": 18,
+    "of_which_amazon": 15,
+    "false_merge_examples": ["Xiaomi 17 vs 17T Global", "Redmi Note 15 vs bundle with Bud 6 Play"],
+    "verdict": "keep Rule 15 (region tag one side = review)"
+  },
+  "production_changed": false,
+  "regression_test": "tests/tps-core/identity-verifier.test.ts — 'one-sided silence on phones (founder 2026-10-04)'"
+}

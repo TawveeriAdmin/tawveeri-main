@@ -1,0 +1,261 @@
+{
+ "date": "2026-10-04",
+ "answered": 41,
+ "total": 84,
+ "pairs": [
+  {
+   "id": "P040",
+   "category": "mobile",
+   "founder": "SAME",
+   "reference": "VARIANT"
+  },
+  {
+   "id": "P391",
+   "category": "refrigerator",
+   "founder": "UNSURE",
+   "reference": "DIFF"
+  },
+  {
+   "id": "P202",
+   "category": "mobile",
+   "founder": "SAME",
+   "reference": "UNSURE"
+  },
+  {
+   "id": "P350",
+   "category": "laptop",
+   "founder": "SAME",
+   "reference": "DIFF"
+  },
+  {
+   "id": "P370",
+   "category": "tablet",
+   "founder": "SAME",
+   "reference": "VARIANT"
+  },
+  {
+   "id": "P403",
+   "category": "washing_machine",
+   "founder": "SAME",
+   "reference": "DIFF"
+  },
+  {
+   "id": "P240",
+   "category": "mobile",
+   "founder": "SAME",
+   "reference": "VARIANT"
+  },
+  {
+   "id": "P430",
+   "category": "microwave",
+   "founder": "SAME",
+   "reference": "SAME"
+  },
+  {
+   "id": "P203",
+   "category": "mobile",
+   "founder": "SAME",
+   "reference": "UNSURE"
+  },
+  {
+   "id": "P060",
+   "category": "mobile",
+   "founder": "SAME",
+   "reference": "DIFF"
+  },
+  {
+   "id": "P080",
+   "category": "mobile",
+   "founder": "SAME",
+   "reference": "VARIANT"
+  },
+  {
+   "id": "P300",
+   "category": "mobile",
+   "founder": "SAME",
+   "reference": "SAME"
+  },
+  {
+   "id": "P351",
+   "category": "laptop",
+   "founder": "DIFF",
+   "reference": "DIFF"
+  },
+  {
+   "id": "P011",
+   "category": "mobile",
+   "founder": "SAME",
+   "reference": "VARIANT"
+  },
+  {
+   "id": "P024",
+   "category": "mobile",
+   "founder": "SAME",
+   "reference": "UNSURE"
+  },
+  {
+   "id": "P412",
+   "category": "washing_machine",
+   "founder": "SAME",
+   "reference": "UNSURE"
+  },
+  {
+   "id": "P025",
+   "category": "mobile",
+   "founder": "SAME",
+   "reference": "UNSURE"
+  },
+  {
+   "id": "P420",
+   "category": "vacuum",
+   "founder": "SAME",
+   "reference": "SAME"
+  },
+  {
+   "id": "P210",
+   "category": "mobile",
+   "founder": "SAME",
+   "reference": "VARIANT"
+  },
+  {
+   "id": "P422",
+   "category": "vacuum",
+   "founder": "SAME",
+   "reference": "UNSURE"
+  },
+  {
+   "id": "P185",
+   "category": "mobile",
+   "founder": "SAME",
+   "reference": "UNSURE"
+  },
+  {
+   "id": "P360",
+   "category": "laptop",
+   "founder": "SAME",
+   "reference": "DIFF"
+  },
+  {
+   "id": "P320",
+   "category": "mobile",
+   "founder": "SAME",
+   "reference": "VARIANT"
+  },
+  {
+   "id": "P340",
+   "category": "tv",
+   "founder": "SAME",
+   "reference": "DIFF"
+  },
+  {
+   "id": "P243",
+   "category": "mobile",
+   "founder": "SAME",
+   "reference": "UNSURE"
+  },
+  {
+   "id": "P020",
+   "category": "mobile",
+   "founder": "SAME",
+   "reference": "VARIANT"
+  },
+  {
+   "id": "P120",
+   "category": "mobile",
+   "founder": "SAME",
+   "reference": "SAME"
+  },
+  {
+   "id": "P213",
+   "category": "mobile",
+   "founder": "SAME",
+   "reference": "UNSURE"
+  },
+  {
+   "id": "P421",
+   "category": "vacuum",
+   "founder": "SAME",
+   "reference": "DIFF"
+  },
+  {
+   "id": "P031",
+   "category": "mobile",
+   "founder": "SAME",
+   "reference": "VARIANT"
+  },
+  {
+   "id": "P220",
+   "category": "mobile",
+   "founder": "SAME",
+   "reference": "SAME"
+  },
+  {
+   "id": "P372",
+   "category": "tablet",
+   "founder": "SAME",
+   "reference": "DIFF"
+  },
+  {
+   "id": "P410",
+   "category": "washing_machine",
+   "founder": "SAME",
+   "reference": "UNSURE"
+  },
+  {
+   "id": "P382",
+   "category": "tablet",
+   "founder": "SAME",
+   "reference": "DIFF"
+  },
+  {
+   "id": "P146",
+   "category": "mobile",
+   "founder": "SAME",
+   "reference": "UNSURE"
+  },
+  {
+   "id": "P114",
+   "category": "mobile",
+   "founder": "SAME",
+   "reference": "UNSURE"
+  },
+  {
+   "id": "P411",
+   "category": "washing_machine",
+   "founder": "SAME",
+   "reference": "SAME"
+  },
+  {
+   "id": "P432",
+   "category": "dishwasher",
+   "founder": "SAME",
+   "reference": "UNSURE"
+  },
+  {
+   "id": "P231",
+   "category": "mobile",
+   "founder": "SAME",
+   "reference": "UNSURE"
+  },
+  {
+   "id": "P226",
+   "category": "mobile",
+   "founder": "SAME",
+   "reference": "VARIANT"
+  },
+  {
+   "id": "P431",
+   "category": "dishwasher",
+   "founder": "SAME",
+   "reference": "UNSURE"
+  }
+ ],
+ "crosstab": {
+  "VARIANT->SAME": 10,
+  "DIFF->UNSURE": 1,
+  "UNSURE->SAME": 15,
+  "DIFF->SAME": 8,
+  "SAME->SAME": 6,
+  "DIFF->DIFF": 1
+ }
+}
