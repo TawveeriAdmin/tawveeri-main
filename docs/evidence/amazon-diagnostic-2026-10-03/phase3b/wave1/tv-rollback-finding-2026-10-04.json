@@ -1,0 +1,13 @@
+{
+  "date": "2026-10-04T10:15Z",
+  "trigger": "founder rule: one confirmed false merge in the 25-group audit sample => roll the category back immediately",
+  "action": "TPS_IDENTITY_GATE on tawveeri-worker changed from tv,vacuum to vacuum at 10:15Z; the web read gate was never enabled for TV. The next runner cycle rebuilds the scope projection with TV ungated (baseline).",
+  "confirmed_in_audit_sample": [
+    { "key": "tcl|85|4k|mini_led|144", "stated": { "amazon(2)": "TCL 85T8D (title)", "extra(4)": "85C6K PRO (declared modelNumber)", "noon(3)": "no code" } },
+    { "key": "hisense|65|4k|qled|144", "stated": { "jarir(1)": "Q71Q (title)", "extra(4)": "65S7N (declared modelNumber)", "amazon(2)": "no code" } }
+  ],
+  "root_cause": "extractManufacturerModel(payload) returns null for short size-prefixed codes (65S7N, 85C6K PRO, 85T8D, 55E8S ...) so the signals job feeds the verifier no code for those listings; with a spec family key and no code on any side the verifier correctly returns match. Direct resolveGroup with the code supplied returns review (model_code_one_side).",
+  "measurement_tv": { "multi_store_canonicals": 182, "groups_with_two_conflicting_stated_codes_(heuristic)": 17, "already_caught_by_gate": 7, "blind_to_gate": 10, "examples": ["hisense|55|4k|mini_led|144 55E8S vs 55U7S", "hisense|58|4k|led|60 58E6Q vs 58A6N", "hisense|65|4k|mini_led|144 65E8S vs 65U7S", "hisense|85|4k|mini_led|144 85U7Q vs 85U7S", "tcl|55|4k|mini_led|144 55P8L vs 55C7L", "tcl|55|4k|qled|144 55T8B vs 55P8K", "tcl|65|4k|mini_led|144 65T8D vs 65Q6C", "tcl|65|4k|qled|60 65T6D vs 65P7L", "tcl|75|4k|mini_led|144 75P8L vs 75Q7C", "tcl|85|4k|mini_led|144 85T8D vs 85C6K"] },
+  "measurement_vacuum": { "multi_store_canonicals": 58, "groups_with_two_conflicting_stated_codes_(heuristic)": 2, "already_caught_by_gate": 1, "remaining": "hitachi|cylinder|1800 CVBA18SS220BRE vs CVBA18SS220PWH = colour suffix, not a variant (founder rule) => not a false merge" },
+  "note": "the false merges predate Wave 1 (they are in the baseline projection too); the gate removes 31 other unverified comparisons but cannot see these. Heuristic: crude code tokenizer over current offers, not the verifier."
+}

@@ -1,0 +1,762 @@
+{
+ "at": "2026-10-04T10:13:34.849Z",
+ "categories": {
+  "tv": {
+   "projection": {
+    "comparable": 181,
+    "total": 1039
+   },
+   "signals": {
+    "review": 43,
+    "reject": 1,
+    "newest": "2026-10-04T06:57:52.703Z",
+    "version": "identity-gate-2026-10-04"
+   },
+   "listings_in_multi_store": 493,
+   "verdict_share": 0.0892,
+   "signal_age_hours": 0.02,
+   "baseline_comparable": 208,
+   "audit_sample": [
+    {
+     "id": "860e7644-117d-4fed-8968-7e9759b33663",
+     "key": "samsung|MODEL:MRA75R95HAUXSA",
+     "name_en": "75\" Micro RGB R95H 4K Samsung Vision AI Smart TV (2026) 75\" (MRA75R95HAUXSA)",
+     "stores": [
+      4,
+      6
+     ],
+     "titles": [
+      "Samsung, 75\", 4K Micro RGB, 165 Hz",
+      "75\" Micro RGB R95H 4K Samsung Vision AI Smart TV (2026) Inch (MRA75R95HAUXSA)"
+     ]
+    },
+    {
+     "id": "f8c7874d-1c2a-4bd7-b780-6cf839cfac07",
+     "key": "samsung|MODEL:UA98DU9000UXSA",
+     "name_en": "98 Inch Crystal UHD DU9000 4K Tizen OS Smart TV (2024) 98\" (UA98DU9000UXSA)",
+     "stores": [
+      4,
+      5,
+      6
+     ],
+     "titles": [
+      "Samsung UHD 4K TV, 98 Inch, Secured by Knox, 120Hz, Supersize Picture Enhancer",
+      "Samsung 98 inch 4K Crystal UHD Smart TV - UA98DU9000UXSA",
+      "98 Inch Crystal UHD DU9000 4K Tizen OS Smart TV (2024) 98\" (UA98DU9000UXSA)"
+     ]
+    },
+    {
+     "id": "b5f1fb26-4142-4fb5-8b6d-7e9d4ec36dfe",
+     "key": "hisense|65|4k|qled|144",
+     "name_en": "Hisense 65\" 4K UHD QLED 144Hz Smart TV",
+     "stores": [
+      1,
+      2,
+      4
+     ],
+     "titles": [
+      "Hisense 65\" Smart TV, 4K QLED, 144 Hz, Black, Q71Q",
+      "Hisense 65 Inch Smart TV, QLED, 4K Ultra HD, Dolby Atmos, VIDAA Smart OS, 144HZ, Game Mode",
+      "Hisense, 65 inch, QLED 4K Smart TV,144Hz ,8 Years OS update AI"
+     ]
+    },
+    {
+     "id": "2b87bd24-16ff-4ad5-a704-a16c3f3663b1",
+     "key": "samsung|MODEL:UA65M1EHAUXSA",
+     "name_en": "65\" Mini LED M1EH 4K Samsung Vision AI Smart TV (2026) 65\" (UA65M1EHAUXSA)",
+     "stores": [
+      2,
+      3,
+      6
+     ],
+     "titles": [
+      "Samsung 65 Inch Mini LED TV, M1EH, 4K, 120Hz DLG, Dynamic Sound Pack, Pure Spectrum Color,",
+      "65 inch, Mini LED 4K Upscaling, 120Hz DLG, Tizen™ Smart TV, Soccer Mode, Samsung Vision AI",
+      "65\" Mini LED M1EH 4K Samsung Vision AI Smart TV (2026) Inch (UA65M1EHAUXSA)"
+     ]
+    },
+    {
+     "id": "a34e0f16-1e3e-4aaa-b5ed-84e44e261826",
+     "key": "samsung|MODEL:QA55Q7FAAUXSA",
+     "name_en": "55\" QLED Q7F 4K Samsung Vision AI Smart TV (2025) Inch (QA55Q7FAAUXSA)",
+     "stores": [
+      2,
+      3,
+      4,
+      6,
+      7,
+      9
+     ],
+     "titles": [
+      "Samsung 55 Inch QLED TV, Q7F, 4K, Q4 AI Processor, 100% Color Volume with Quantum Dot, Sec",
+      "55 Inch QLED TV, Q7F, 4K, Q4 AI Processor, 100% Color Volume with Quantum Dot, Secured by ",
+      "Samsung QLED 4K TV, 55 Inch, 4K Upscaling, Secured by Knox",
+      "55\" QLED Q7F 4K Samsung Vision AI Smart TV (2025) Inch (QA55Q7FAAUXSA)",
+      "Samsung QLED Smart TV 55″ – Q7F – Q4 AI Processor 4K – BLACK – QA55Q7FAAUXSA",
+      "سامسونج شاشة سمارت 55 بوصة - 4K QLED - نظام تشغيل Tizen - موديل QA55Q7FAAUXSA"
+     ]
+    },
+    {
+     "id": "04426c5d-37d2-4689-b745-908c9292194c",
+     "key": "tcl|85|4k|mini_led|144",
+     "name_en": "Tcl 85\" 4K UHD Mini LED 144Hz Smart TV",
+     "stores": [
+      2,
+      3,
+      4
+     ],
+     "titles": [
+      "TCL 85T8D Television 85 Inch Smart TV 4K QD-Mini LED Dimming Colorful Quantum Crystal HDR ",
+      "Television 85 Inch Smart TV 4K QD-Mini LED Colorful Quantum Crystal HDR 10+ Gaming Google ",
+      "TCL, 85 Inch, MiniLED, AIPQ Pro, 144 Hz"
+     ]
+    },
+    {
+     "id": "e9b1eee9-871c-47c1-acf5-e643f2c178f4",
+     "key": "samsung|MODEL:UA65U8000FUXZN",
+     "name_en": "Samsung UA65U8000FUXZN TV",
+     "stores": [
+      4,
+      9,
+      23
+     ],
+     "titles": [
+      "SAMSUNG, 65 inch, UHD 4K Smart TV",
+      "سامسونج شاشة 65 بوصة سمارت - 4K كريستال UHD - موديل UA65U8000FUXZN",
+      "Samsung U8000f 65 Inches 4k Smart Led Tv 2025 Black Ua65u8000fuxzn"
+     ]
+    },
+    {
+     "id": "5ed1bf46-ca55-4e69-9107-18379a0222b7",
+     "key": "samsung|MODEL:UA50U8000HUXSA",
+     "name_en": "50\" Crystal UHD U8000H 4K Samsung Vision AI Smart TV (2026) 50\" (UA50U8000HUXSA)",
+     "stores": [
+      2,
+      3,
+      4,
+      6,
+      23
+     ],
+     "titles": [
+      "Samsung 50 Inch Crystal UHD TV, U8000H, 4K, 120Hz DLG,Crystal Processor, Dynamic Sound Pac",
+      "50 Inch, UHD 4K, 7 Years OS upgrade, 120Hz DLG, Tizen™ Smart TV, Secured By Knox, Samsung ",
+      "Samsung, 50\", 4K Crystal UHD",
+      "50\" Crystal UHD U8000H 4K Samsung Vision AI Smart TV (2026) 50\" (UA50U8000HUXSA)",
+      "Samsung 50 Inch 4k Smart Led Tv Ua50u8000huxsa"
+     ]
+    },
+    {
+     "id": "b8116b15-2a16-4fa5-bcc8-af8f9755f6d0",
+     "key": "samsung|MODEL:QA65S85HAEXSA",
+     "name_en": "65\" OLED S85H 4K Samsung Vision AI Smart TV (2026) 65\" (QA65S85HAEXSA)",
+     "stores": [
+      2,
+      4,
+      5,
+      6
+     ],
+     "titles": [
+      "Samsung 65 Inch OLED TV, S85H, 4K, HDR 10+, Motion Xcelerator 120Hz, Dolby Atmos, OLED HDR",
+      "Samsung, 65 inch 4K OLED 120 Hz Samsung Vision AI TV",
+      "Samsung 65 Inch 4K UHD Smart OLED TV, 120Hz, Anti-Reflection - QA65S85HAEXSA",
+      "65\" OLED S85H 4K Samsung Vision AI Smart TV (2026) Inch (QA65S85HAEXSA)"
+     ]
+    },
+    {
+     "id": "6f6d93f9-2b9a-480f-9120-a3b5b36af08a",
+     "key": "samsung|MODEL:QA55Q8FAAUXSA",
+     "name_en": "55\" QLED Q8F 4K Samsung Vision AI Smart TV (2025) 55\" (QA55Q8FAAUXSA)",
+     "stores": [
+      2,
+      4,
+      6
+     ],
+     "titles": [
+      "Samsung 55 Inch QLED TV, Q8F, 4K, Q4 AI Processor, 100% Color Volume with Quantum Dot, Air",
+      "SAMSUNG, 55 Inch, QLED 4K Smart TV, 4K Upscaling, 60 Hz",
+      "55\" QLED Q8F 4K Samsung Vision AI Smart TV (2025) Inch (QA55Q8FAAUXSA)"
+     ]
+    },
+    {
+     "id": "dc7c0bb1-383d-47cf-b0cf-aea569d005d8",
+     "key": "samsung|MODEL:QA65LS03HWUXSA",
+     "name_en": "تلفزيون ذا فريم برو الذكي 65 بوصة طراز إل إس 03 إتش دبليو بدقة 4كي مع تقنية سامسونج فيجن ايه آي (إصدار 2026) Ls03hw Inch (QA65LS03HWUXSA)",
+     "stores": [
+      4,
+      6
+     ],
+     "titles": [
+      "Samsung, 65 inch 4K Smart TV Frame, Wireless, 144 Hz",
+      "تلفزيون ذا فريم برو الذكي 65 بوصة طراز إل إس 03 إتش دبليو بدقة 4كي مع تقنية سامسونج فيجن ا"
+     ]
+    },
+    {
+     "id": "552ad87c-d099-42b4-977a-0730c6306a98",
+     "key": "hisense|85|4k|mini_led|144",
+     "name_en": "Hisense 85\" 4K UHD Mini LED 144Hz Smart TV",
+     "stores": [
+      3,
+      4
+     ],
+     "titles": [
+      "85 inch Mini LED 4K Smart TV 144 Hz 85U7Q black",
+      "Hisense, 85 Inch, MiniLed 4K Smart TV, 8 Years OS Update,144Hz"
+     ]
+    },
+    {
+     "id": "ec5acfd4-7f45-48f9-a2d1-40103f68c85c",
+     "key": "lg|MODEL:75QNED93A6A",
+     "name_en": "Lg 75QNED93A6A TV",
+     "stores": [
+      2,
+      4
+     ],
+     "titles": [
+      "LG 75QNED93A6A 75 inch Mini LED QNED evo AI WebOS 25 VRR 144hz 4K Smart TV alpha 8 AI Proc",
+      "LG, 75 inch, Mini LED 4K Smart TV, AI QNED93, 144 Hz"
+     ]
+    },
+    {
+     "id": "38d44193-d425-4c8b-bc1b-601bd3c67490",
+     "key": "samsung|MODEL:QA75Q7FAAUXSA",
+     "name_en": "75\" QLED Q7F 4K Samsung Vision AI Smart TV (2025) Inch (QA75Q7FAAUXSA)",
+     "stores": [
+      2,
+      3,
+      4,
+      6,
+      7,
+      9,
+      23
+     ],
+     "titles": [
+      "Samsung 75 Inch QLED TV, Q7F, 4K, Q4 AI Processor, 100% Color Volume with Quantum Dot, Sec",
+      "75 Inch QLED Q7F 4K Samsung Vision AI Smart TV, 4K Upscaling, Secured by Knox, Free conten",
+      "Samsung QLED 4K TV, 75 Inch, 4K Upscaling, Secured by Knox",
+      "75\" QLED Q7F 4K Samsung Vision AI Smart TV (2025) Inch (QA75Q7FAAUXSA)",
+      "Samsung QLED Smart TV 75″ – Q7F – Q4 AI Processor 4K – BLACK – QA75Q7FAAUXSA",
+      "سامسونج شاشة 75 بوصة سمارت - 4K UHD - QLED - نظام تشغيل Tizen - موديل QA75Q7FAAUXSA",
+      "Samsung 75 Inches 4k Smart Qled Tv 2025 Qa75q7faauxsa"
+     ]
+    },
+    {
+     "id": "02b30752-ae20-4379-acb7-cd7f8e509017",
+     "key": "samsung|MODEL:QA55S90HAUXSA",
+     "name_en": "55\" OLED S90H 4K Samsung Vision AI Smart TV (2026) 55\" (QA55S90HAUXSA)",
+     "stores": [
+      2,
+      4,
+      6
+     ],
+     "titles": [
+      "Samsung 55 Inch OLED TV, S90H, 4K, HDR 10+, Motion Xcelerator 165Hz, Dolby Atmos, Glare Fr",
+      "Samsung, 55 inch, 4K Smart Tv, OLED, 165 Hz",
+      "55\" OLED S90H 4K Samsung Vision AI Smart TV (2026) 55\" (QA55S90HAUXSA)"
+     ]
+    },
+    {
+     "id": "97324cbb-fd8c-4551-879d-1825985c9652",
+     "key": "samsung|MODEL:MRA85R95HAUXSA",
+     "name_en": "85\" Micro RGB R95H 4K Samsung Vision AI Smart TV (2026) 85\" (MRA85R95HAUXSA)",
+     "stores": [
+      4,
+      6
+     ],
+     "titles": [
+      "Samsung, 85\", 4K Micro RGB, 165 Hz",
+      "85\" Micro RGB R95H 4K Samsung Vision AI Smart TV (2026) 85\" (MRA85R95HAUXSA)"
+     ]
+    },
+    {
+     "id": "6d368078-9194-4e8a-8900-3164f8329b2c",
+     "key": "hisense|58|4k|led|60",
+     "name_en": "Hisense 58\" 4K UHD LED 60Hz Smart TV",
+     "stores": [
+      2,
+      4
+     ],
+     "titles": [
+      "Hisense 58 inch 4K UHD Smart TV 58E6Q,Dolby Vision,AI 4K Upscaler,Gaming in Dolby,Smooth M",
+      "Hisense, 58 inch, LED 4K Smart ,Dolby,8 Years OS update AI"
+     ]
+    },
+    {
+     "id": "78759f95-12d4-4bd1-ab57-6f6597442085",
+     "key": "lg|MODEL:98UT90006LA",
+     "name_en": "Lg 98UT90006LA TV",
+     "stores": [
+      4,
+      5,
+      18
+     ],
+     "titles": [
+      "LG, 98 Inch, UHD 4K Smart TV, 120 HZ",
+      "LG 98 Inch 4K UHD Smart LED TV – 98UT90006LA",
+      "شاشة ال جي 98 بوصة، LED، دقة ‎4K UHD ، ذكي – 98UT90006LA"
+     ]
+    },
+    {
+     "id": "70c60f0d-b781-4158-b039-0eb8f00673db",
+     "key": "samsung|MODEL:UA70U8000FUXSA",
+     "name_en": "تلفزيون ذكي من الفئة \"كريستال يو اتش دي\" طراز يو 8000 اف مقاس 70 بوصة بدقة 4 كي (إصدار 2025) 70\" (UA70U8000FUXSA)",
+     "stores": [
+      4,
+      6
+     ],
+     "titles": [
+      "SAMSUNG, 70 inch, UHD 4K Smart TV",
+      "تلفزيون ذكي من الفئة \"كريستال يو اتش دي\" طراز يو 8000 اف مقاس 70 بوصة بدقة 4 كي (إصدار 202"
+     ]
+    },
+    {
+     "id": "fcc2b0c1-f15b-41f2-acaa-83429ecabf51",
+     "key": "samsung|MODEL:MRA75R85HAUXSA",
+     "name_en": "75\" Micro RGB R85H 4K Samsung Vision AI Smart TV (2026) 75\" (MRA75R85HAUXSA)",
+     "stores": [
+      4,
+      5,
+      6
+     ],
+     "titles": [
+      "Samsung, 75\", 4K Micro RGB, 165 Hz",
+      "Samsung 75 Inch 4K UHD Smart RGB LED TV, Tizen, WiFi – MRA75R85HAUXSA",
+      "75\" Micro RGB R85H 4K Samsung Vision AI Smart TV (2026) Inch (MRA75R85HAUXSA)"
+     ]
+    },
+    {
+     "id": "8ee04b61-91d3-4ab2-b230-70b78cf9fada",
+     "key": "samsung|MODEL:QA65Q7FAAUXSA",
+     "name_en": "65\" QLED Q7F 4K Samsung Vision AI Smart TV (2025) 65\" (QA65Q7FAAUXSA)",
+     "stores": [
+      6,
+      7,
+      9
+     ],
+     "titles": [
+      "65\" QLED Q7F 4K Samsung Vision AI Smart TV (2025) 65\" (QA65Q7FAAUXSA)",
+      "Samsung QLED Smart TV 65″ – Q7F – Q4 AI Processor 4K – BLACK – QA65Q7FAAUXSA",
+      "سامسونج شاشة سمارت 65 بوصة QLED 4K - نظام تشغيل Tizen - موديل QA65Q7FAAUXSA"
+     ]
+    },
+    {
+     "id": "48990b64-7e68-45ca-9f43-8d84fc01e195",
+     "key": "samsung|MODEL:QA75Q8FAAUXZN",
+     "name_en": "Samsung QA75Q8FAAUXZN TV",
+     "stores": [
+      2,
+      4
+     ],
+     "titles": [
+      "Samsung 75 Inch QLED TV, Q8F, 4K, Q4 AI Processor, 100% Color Volume with Quantum Dot, Air",
+      "SAMSUNG, 75 inch, QLED, 4K Smart TV"
+     ]
+    },
+    {
+     "id": "32652cbe-be43-4064-9b22-8e23567e0f4e",
+     "key": "samsung|MODEL:QA65LS03HEUXSA",
+     "name_en": "65\" The Frame LS03HE 4K Samsung Vision AI Smart TV (2026) 65\" Black (QA65LS03HEUXSA)",
+     "stores": [
+      4,
+      5,
+      6
+     ],
+     "titles": [
+      "Samsung, 65inch 4K Smart TV Frame, 144 Hz, HDMI 4, USB 2",
+      "Samsung TV, 65 Inch, 4K UHD Smart, QLED, Frame, Tizen, WiFi – QA65LS03HEUXSA",
+      "65\" The Frame LS03HE 4K Samsung Vision AI Smart TV (2026) 65\" Black (QA65LS03HEUXSA)"
+     ]
+    },
+    {
+     "id": "b8cc182a-9e34-4cac-8205-6772168d8412",
+     "key": "lg|MODEL:OLED77G66LW.AMVG",
+     "name_en": "Lg OLED77G66LW.AMVG TV",
+     "stores": [
+      5,
+      18
+     ],
+     "titles": [
+      "LG TV 77 Inch, 4K Ultra HD (3840×2160), Smart, OLED, α11 AI Processor 4K Gen3 / Dolby Visi",
+      "شاشه ال جي 77 بوصة، دقة 4K فائقة الوضوح (3840×2160)، ذكي، OLED، معالج α11 AI، يدعم الجيل ا"
+     ]
+    },
+    {
+     "id": "2730336c-0552-4cbb-9b6b-71ca22237dcc",
+     "key": "samsung|MODEL:QA75Q8FAAUXSA",
+     "name_en": "75\" QLED Q8F 4K Samsung Vision AI Smart TV (2025) 75\" (QA75Q8FAAUXSA)",
+     "stores": [
+      4,
+      5,
+      6
+     ],
+     "titles": [
+      "Samsung, 75 Inch, QLED 4K Upscaling, 7 Years OS upgrade, AirSlim",
+      "Samsung 75 Inch 4K UHD Smart QLED TV, With Built-in Receiver - QA75Q8FAAUXSA",
+      "75\" QLED Q8F 4K Samsung Vision AI Smart TV (2025) 75\" (QA75Q8FAAUXSA)"
+     ]
+    }
+   ]
+  },
+  "vacuum": {
+   "projection": {
+    "comparable": 63,
+    "total": 441
+   },
+   "signals": {
+    "review": 10,
+    "reject": 2,
+    "newest": "2026-10-04T10:11:48.700Z",
+    "version": "identity-gate-2026-10-04"
+   },
+   "listings_in_multi_store": 123,
+   "verdict_share": 0.0976,
+   "signal_age_hours": 0.02,
+   "baseline_comparable": 65,
+   "audit_sample": [
+    {
+     "id": "d86505ed-958a-4627-9acb-a79131e372d7",
+     "key": "philips|MODEL:XC3031/61",
+     "name_en": "philips XC3031/61 vacuum cleaner",
+     "stores": [
+      4,
+      5
+     ],
+     "titles": [
+      "Philips 3000 Series Cordless Vacuum, 0.6L, Digital motor, Dark Blue",
+      "Philips Cordless Vacuum Cleaner, Dawn Mist, XC3031/61"
+     ]
+    },
+    {
+     "id": "c08f1653-2ef0-4549-bd66-52012fc7d1cf",
+     "key": "tefal|wet_dry|200",
+     "name_en": "tefal wet dry vacuum cleaner 200 W",
+     "stores": [
+      3,
+      4
+     ],
+     "titles": [
+      "Tefal X-Clean 4 | Wet Dry Cordless Vacuum Cleaner | Timesaving 2-in-1 Washing and Vacuumin",
+      "Tefal X-Clean, Cordless Vacuum and Mop, WET & DRY, 0.72L, 200W, Grey"
+     ]
+    },
+    {
+     "id": "4b33b0f0-a717-4b2a-bf5b-3e4e62fd0b47",
+     "key": "hitachi|cylinder|1600",
+     "name_en": "hitachi cylinder vacuum cleaner 1600 W",
+     "stores": [
+      4,
+      5
+     ],
+     "titles": [
+      "Hitachi Vacuum Cleaner Canister type, 5L, 1600W, Red",
+      "HITACHI vacuum canister (flat) 1600 watt, CV-W1600 SS220 WR"
+     ]
+    },
+    {
+     "id": "0ba53fe7-8f30-4f6b-a17d-90720bbd180a",
+     "key": "hitachi|NA|2500",
+     "name_en": "hitachi vacuum cleaner 2500 W",
+     "stores": [
+      4,
+      9
+     ],
+     "titles": [
+      "HITACHI, Vacuum Cleaner Drum, 2500W, 21L, Black & Red",
+      "مكنسة هيتاشي برميل 21 لتر 2500 واط - ياباني - أسود وأحمر - CV-9800MIJRGB"
+     ]
+    },
+    {
+     "id": "5fef2bd8-4fe3-4fb5-8f21-0ec2ac2635d5",
+     "key": "platinum|NA|2200",
+     "name_en": "platinum vacuum cleaner 2200 W",
+     "stores": [
+      3,
+      4
+     ],
+     "titles": [
+      "Platinum Drum Vacuum Cleaner 2200W, 25L, Cord 5M, Black & Gray - VC- 8325",
+      "Platinum, Vacuum Cleaner, 2200W, 25L, Black & Gray"
+     ]
+    },
+    {
+     "id": "149ded29-3d4d-4fe4-b74f-280a5572d330",
+     "key": "hoover|cylinder|2400",
+     "name_en": "hoover cylinder vacuum cleaner 2400 W",
+     "stores": [
+      2,
+      4
+     ],
+     "titles": [
+      "Hoover Power 7 Cyclonic Canister Vacuum Cleaner, 2400W, HEPA Filtration, Strong Suction Pe",
+      "Hoover Vacuum Cleaner, Canister, 2400W, 4 L Bin Capacity"
+     ]
+    },
+    {
+     "id": "663a66c6-5ef3-446b-8c0f-276faae8aa04",
+     "key": "hitachi|NA|2100",
+     "name_en": "hitachi vacuum cleaner 2100 W",
+     "stores": [
+      4,
+      9
+     ],
+     "titles": [
+      "CV-950H SS220 WR-Hitachi Vacuum Cleaner, Drum Type, 18Ltr,",
+      "هيتاشي مكنسة برميل - 18 ليتر - 2100 واط - أسود - CV-950H"
+     ]
+    },
+    {
+     "id": "0230d1ac-fb33-49d8-a91e-317e275540f8",
+     "key": "samsung|MODEL:VS25C9754QG/YL",
+     "name_en": "Bespoke Jet AI Stick VC with Powerfull Performance, 250W White Yl (VS25C9754QG/YL)",
+     "stores": [
+      5,
+      6
+     ],
+     "titles": [
+      "Samsung Dry Upright Vacuum Cleaner, 250W, 0.5L - VS25C9754QG/YL",
+      "Bespoke Jet AI Stick VC with Powerfull Performance, 250W White Yl (VS25C9754QG/YL)"
+     ]
+    },
+    {
+     "id": "4991056f-a902-40da-87a0-4c1287de6a38",
+     "key": "shark|MODEL:IZ201ME",
+     "name_en": "shark IZ201ME vacuum cleaner",
+     "stores": [
+      2,
+      4
+     ],
+     "titles": [
+      "Shark Anti Hair Wrap Cordless Stick Vacuum Cleaner with Flex Technology,‎ Burgundy Red, IZ",
+      "Shark Rocket Pro Cordless Stick Vacuum, 0.7L, Rechargeable, Cordless, Burgundy"
+     ]
+    },
+    {
+     "id": "83d46978-dd26-45b3-932a-e58077c02b66",
+     "key": "bissell|handheld|1100",
+     "name_en": "bissell handheld vacuum cleaner 1100 W",
+     "stores": [
+      4,
+      5
+     ],
+     "titles": [
+      "BISSELL SpotClean TrueHeat Portable Carpet & Furniture Deep Cleaner ,1100W",
+      "Bissell Handheld Vacuum Cleaner, 1100W, Black, 3924K"
+     ]
+    },
+    {
+     "id": "b533ecea-b480-452c-8128-830b28f01750",
+     "key": "hoover|MODEL:HT87-T1-ME",
+     "name_en": "hoover HT87-T1-ME vacuum cleaner",
+     "stores": [
+      4,
+      5
+     ],
+     "titles": [
+      "Hoover Vacuum Cleaner Capacity 18L",
+      "Hoover Powerforce Tank Vacuum Cleaner HT87-T1-ME"
+     ]
+    },
+    {
+     "id": "f9d375a0-d292-4244-b10e-9445dc9d81bd",
+     "key": "philips|MODEL:XU5100/11",
+     "name_en": "philips XU5100/11 vacuum cleaner",
+     "stores": [
+      4,
+      5
+     ],
+     "titles": [
+      "Philips HomeRun 5000 Series,  Robot Vacuum and Mop, Cashmere Grey",
+      "Philips Robot Vacuum Cleaner, 2.7L, Grey & Cashmere, XU5100/11"
+     ]
+    },
+    {
+     "id": "ff196936-3945-49bf-a9cb-78914ddb69ca",
+     "key": "koolen|NA|2000",
+     "name_en": "koolen vacuum cleaner 2000 W",
+     "stores": [
+      2,
+      4
+     ],
+     "titles": [
+      "Koolen Drum Vacuum cleaner 21L 2000W",
+      "Koolen Drum Vacuum Cleaner, 2000W, 21L Capacity, Black"
+     ]
+    },
+    {
+     "id": "7b8dd865-2a8f-4db7-a218-1b980789c2a5",
+     "key": "hitachi|NA|2200",
+     "name_en": "hitachi vacuum cleaner 2200 W",
+     "stores": [
+      2,
+      4,
+      5
+     ],
+     "titles": [
+      "Hitachi Vacuum Cleaner 2200 Watts, 21 Liters,Black - Cv-960F Ss220 Bk, min 2 yrs warranty",
+      "Hitachi Vacuum Cleaner, Drum Type, 21L, 2200W, Wine Red.",
+      "Hitachi Drum Vacuum Cleaner CV-960F SS220 WR"
+     ]
+    },
+    {
+     "id": "6a79ce47-dfc5-44aa-a9fa-49a1f6810622",
+     "key": "bissell|wet_dry|1500",
+     "name_en": "bissell wet dry vacuum cleaner 1500 W",
+     "stores": [
+      4,
+      5
+     ],
+     "titles": [
+      "Bissell Wet and Dry Drum Vacuum Cleaner, 21L Dry/15L Wet, 1500W",
+      "Bissell Wet Dry Drum Vacuum, 1500W, Black, 2026K"
+     ]
+    },
+    {
+     "id": "788dbe2c-3608-4800-9256-9d795bd61ce2",
+     "key": "fisher|NA|1000",
+     "name_en": "fisher vacuum cleaner 1000 W",
+     "stores": [
+      4,
+      9
+     ],
+     "titles": [
+      "Fisher Drum Vacuum Cleaner, 10L, 1000W, Red/White",
+      "فيشر مكنسة برميل - 10 ليتر - 1000 واط BSC-500"
+     ]
+    },
+    {
+     "id": "6ee82bd4-b8b2-4d3b-b36f-7556267577cf",
+     "key": "tefal|MODEL:TY9AD3HO",
+     "name_en": "tefal TY9AD3HO vacuum cleaner",
+     "stores": [
+      4,
+      5
+     ],
+     "titles": [
+      "TEFAL Stick Vacuum Cleaner, 150 W, Black",
+      "Tefal Cordless Vacuum Cleaner, 150W, Blue/Black, TY9AD3HO"
+     ]
+    },
+    {
+     "id": "a82dc3ff-13af-4c54-bf5a-93e496cc7ac0",
+     "key": "philips|cylinder|2000",
+     "name_en": "philips cylinder vacuum cleaner 2000 W",
+     "stores": [
+      3,
+      4
+     ],
+     "titles": [
+      "Canister Vacuum Cleaner 3 L 2000 W XD3010/61 Dark Royal Blue",
+      "Philips,3.0L Canister Vacuum Cleaner Bagged 2000W, Dark Royal Blue"
+     ]
+    },
+    {
+     "id": "71ebe976-d94e-400d-87d9-76a3e0ba1f41",
+     "key": "hitachi|MODEL:CV-100PPGGSA",
+     "name_en": "hitachi CV-100PPGGSA vacuum cleaner",
+     "stores": [
+      4,
+      5
+     ],
+     "titles": [
+      "Hitachi Dry Vacuum cleaner,1600W,7.5L,Grey",
+      "Hitachi Drum Vacuum Cleaner, 1600W, 7.5L, Grey- CV-100PPGGSA"
+     ]
+    },
+    {
+     "id": "e4bea80a-36db-41af-9932-2301571347b1",
+     "key": "tefal|NA|2400",
+     "name_en": "tefal vacuum cleaner 2400 W",
+     "stores": [
+      3,
+      4
+     ],
+     "titles": [
+      "TEFAL X-TREM POWER | Vacuum Cleaner | 2400W Powerful Performance | XXL 23L Dust Capacity |",
+      "Tefal X-TREM POWER, Vacuum Cleaner, 23L, 2400W, Gold Black"
+     ]
+    },
+    {
+     "id": "1e13fedd-2c7a-44dd-bd6e-431509bd1484",
+     "key": "shark|MODEL:BU3521ME",
+     "name_en": "shark BU3521ME vacuum cleaner",
+     "stores": [
+      4,
+      5
+     ],
+     "titles": [
+      "Shark Clean & Empty Cordless Vacuum Cleaner & Auto-Empty System",
+      "Shark Cordless Upright Vacuum Cleaner, 380W, BU3521ME"
+     ]
+    },
+    {
+     "id": "5ad161e6-8a17-407f-a1b9-2255554509d9",
+     "key": "shark|MODEL:IP1251MET",
+     "name_en": "shark IP1251MET vacuum cleaner",
+     "stores": [
+      4,
+      5
+     ],
+     "titles": [
+      "Shark Power Detect Cordless Vacuum Cleaner",
+      "Shark Cordless Stick Vacuum Cleaner, 380W, IP1251MET"
+     ]
+    },
+    {
+     "id": "3dfc8935-b4c0-443c-b7aa-0c67fd7d7dc8",
+     "key": "panasonic|NA|2300",
+     "name_en": "panasonic vacuum cleaner 2300 W",
+     "stores": [
+      4,
+      5
+     ],
+     "titles": [
+      "Panasonic 2300W Drum Vacuum Cleaner",
+      "Panasonic Drum Vacuum Cleaner, 2300W, 21L, MC-YL798NY47"
+     ]
+    },
+    {
+     "id": "a0e880db-c20d-4990-a62c-07a35f737083",
+     "key": "shark|MODEL:IP3251MET",
+     "name_en": "shark IP3251MET vacuum cleaner",
+     "stores": [
+      4,
+      5
+     ],
+     "titles": [
+      "Shark Detect Clean Auto Empty Device ,Primus",
+      "Shark Cordless Upright Vacuum Cleaner, 380W, IP3251MET"
+     ]
+    },
+    {
+     "id": "bab821cd-2d67-4b06-821e-c804a39b3ab0",
+     "key": "philips|MODEL:XC5041/61",
+     "name_en": "philips XC5041/61 vacuum cleaner",
+     "stores": [
+      4,
+      5
+     ],
+     "titles": [
+      "Philips 5000 Series Cordless Vacuum",
+      "Philips Cordless Vacuum Cleaner, Green/Grey, XC5041/61"
+     ]
+    }
+   ]
+  }
+ },
+ "runner": {
+  "identity_gate": {
+   "job": "identity_gate",
+   "last_success_at": "2026-10-04T10:12:05.976Z",
+   "updated_at": "2026-10-04T10:12:05.976Z",
+   "last_note": "success:             ↳   TOTAL           : 14.6s across 6 queries | npm warn config production Use `--omit=dev` instead. |   2/2 steps succeeded in 29.2s |   Verify propagation with: npm run tps:healt"
+  },
+  "refresh_chain": {
+   "job": "refresh",
+   "last_success_at": "2026-09-28T22:30:25.532Z",
+   "updated_at": "2026-09-29T09:49:41.949Z",
+   "last_note": "failed:   CHAIN-FAIL search: skipped — projection,presentation failed |   CHAIN-FAIL edges: skipped — projection failed |   Verify propagation with: npm run tps:health"
+  },
+  "run_age_hours": 0.02
+ },
+ "triggers": [],
+ "verdict": "HEALTHY"
+}
