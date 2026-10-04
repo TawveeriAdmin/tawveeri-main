@@ -43,6 +43,22 @@ if (!CATS.length) { console.error("--categories=<a,b> required"); process.exit(1
   const baseline = arg("baseline") ? JSON.parse(readFileSync(arg("baseline")!, "utf8")) : null;
   const saved: Record<string, unknown> = {};
   const hasTable = (await pg.query("select to_regclass('tps_offer_identity_signals') as t")).rows[0].t !== null;
+  // ADR-405 — freshness is the RUN's success, not a row's computed_at: the signals job only touches rows whose verdict
+  // changed, so a healthy runner over stable data leaves every computed_at old. Source: tps_job_state, written by the
+  // worker for the isolated runner ('identity_gate') or the full chain ('refresh').
+  const jobs = Object.fromEntries((await pg.query("select job, last_success_at, updated_at, last_note from tps_job_state where job in ('identity_gate','refresh')")).rows.map((r) => [r.job, r]));
+  const hoursSince = (v: unknown) => (v ? (Date.now() - new Date(v as string).getTime()) / 3_600_000 : null);
+  const runnerOkH = hoursSince(jobs.identity_gate?.last_success_at);
+  const chainOkH = hoursSince(jobs.refresh?.last_success_at);
+  const runAgeH = [runnerOkH, chainOkH].filter((v): v is number => v != null).sort((a, b) => a - b)[0] ?? null;
+  out.runner = { identity_gate: jobs.identity_gate ?? null, refresh_chain: jobs.refresh ?? null, run_age_hours: runAgeH == null ? null : Number(runAgeH.toFixed(2)) };
+  // "Repeatedly failing": the latest attempt ran > 1.5 h after the last success (≈ two consecutive failed hourly cycles).
+  const gateJob = jobs.identity_gate;
+  if (gateJob?.last_success_at && gateJob?.updated_at) {
+    const sinceOk = hoursSince(gateJob.last_success_at)!, sinceTry = hoursSince(gateJob.updated_at)!;
+    if (sinceOk - sinceTry > 1.5) triggers.push(`isolated runner failing: last success ${sinceOk.toFixed(1)} h ago, latest attempt ${sinceTry.toFixed(1)} h ago (${String(gateJob.last_note).slice(0, 80)})`);
+  }
+  if (baseline?.at && jobs.refresh?.updated_at && new Date(jobs.refresh.updated_at).getTime() > Date.parse(baseline.at)) triggers.push(`unexpected broad-chain execution: 'refresh' job state changed at ${new Date(jobs.refresh.updated_at).toISOString()} (after the baseline)`);
   for (const cat of CATS) {
     const proj = (await pg.query("select count(*) filter (where has_comparison)::int as comparable, count(*)::int as total from tps_product_projection where category = $1", [cat])).rows[0];
     let sig = { review: 0, reject: 0, newest: null as string | null, version: null as string | null };
@@ -53,11 +69,11 @@ if (!CATS.length) { console.error("--categories=<a,b> required"); process.exit(1
     const listings = (await pg.query(
       `select count(*)::int as n from tps_current_offers co join canonical_products c on c.tps_identity_key = co.identity_key
         where c.is_active and c.category = $1 and co.status = 'valid' and co.identity_key in (select identity_key from tps_current_offers where status='valid' group by 1 having count(distinct store_id) >= 2)`, [cat])).rows[0].n as number;
-    const ageH = sig.newest ? (Date.now() - Date.parse(sig.newest)) / 3_600_000 : null;
+    const ageH = runAgeH;
     const share = listings ? (sig.review + sig.reject) / listings : 0;
     const base = baseline?.categories?.[cat];
     const collapse = base?.comparable ? 1 - proj.comparable / base.comparable : 0;
-    if (!hasTable || ageH == null || ageH > STALE_H) triggers.push(`${cat}: signals missing/stale (age ${ageH?.toFixed(1) ?? "none"} h > ${STALE_H} h)`);
+    if (!hasTable || ageH == null || ageH > STALE_H) triggers.push(`${cat}: signals missing/stale (last successful run ${ageH?.toFixed(1) ?? "never"} h ago > ${STALE_H} h)`);
     if (listings >= 20 && share > MAX_SHARE) triggers.push(`${cat}: verdict share ${(share * 100).toFixed(1)}% > ${(MAX_SHARE * 100).toFixed(0)}%`);
     if (base && collapse > COLLAPSE && (sig.review + sig.reject) < (base.comparable - proj.comparable) / 4) triggers.push(`${cat}: comparable products fell ${(collapse * 100).toFixed(0)}% (${base.comparable} → ${proj.comparable}) with far fewer signals than the drop — unexplained`);
     // audit sample: random verified (no signal) comparison groups, titles side by side

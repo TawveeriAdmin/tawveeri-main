@@ -5,8 +5,9 @@
 // (listing title + the source-declared manufacturer model + the key's own MODEL code), so the
 // projection / search / UCP / agents cannot disagree with the compare page.
 //
-// FLAG-DRIVEN, DEFAULT OFF. A category is processed only when `identityGateEnabled(category)`
-// (TPS_IDENTITY_GATE and/or TPS_IDENTITY_V2). With NO category enabled the job performs no DDL and
+// FLAG-DRIVEN, DEFAULT OFF. A category is processed only when `identitySignalsEnabled(category)`:
+// the read gate is on (TPS_IDENTITY_GATE and/or TPS_IDENTITY_V2) or the isolated runner covers it
+// (TPS_IDENTITY_RUNNER_CATEGORIES, ADR-405 — computes signals without turning any read path on). With NO category enabled the job performs no DDL and
 // reads nothing but `to_regclass` — and, if the table exists from an earlier enablement, DELETES
 // every row: turning the flag off IS the read-path rollback, and it takes effect on the next
 // chain run (readers also stop consulting the table the moment the flag is unset, so the effect is
@@ -24,7 +25,7 @@ config({ path: resolve(process.cwd(), ".env.local") });
 import { Client } from "pg";
 import { TPS_STORES } from "./category-registry";
 import { toPoolerDbUrl } from "./pooler-url";
-import { identityGateEnabled } from "./identity-flags";
+import { identitySignalsEnabled } from "./identity-flags";
 import { extractManufacturerModel } from "../../src/lib/identity/store-identifiers";
 import { resolveApprovedSlug } from "../../src/lib/retailers/approved-retailers";
 import { computeIdentitySignals, IDENTITY_RULES_VERSION, type IdentitySignal, type SignalCanonical } from "../../src/lib/identity/identity-signals";
@@ -67,7 +68,7 @@ async function main() {
   await pg.query("set statement_timeout = 0");
   try {
     const { rows: catRows } = await pg.query<{ category: string }>("select distinct category from canonical_products where is_active and category is not null");
-    const gated = catRows.map((r) => r.category).filter((c) => identityGateEnabled(c) && (!ONLY || c === ONLY)).sort();
+    const gated = catRows.map((r) => r.category).filter((c) => identitySignalsEnabled(c) && (!ONLY || c === ONLY)).sort();
     const exists = (await pg.query<{ t: string | null }>("select to_regclass('tps_offer_identity_signals') as t")).rows[0].t !== null;
 
     if (!gated.length) {

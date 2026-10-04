@@ -46,6 +46,7 @@ import { collectProcessSnapshot } from './lib/process-snapshot';
 import { heartbeat, pressureOk, jobDue, jobDone, admit, reapOrphanedRuns, reapOrphanedSamsungRuns } from './lib/job-state';
 import { samsungRuntimeResources } from '../tps-core/samsung-runtime-resources';
 import { resolveSamsungDeltaRuntime } from '../tps-core/samsung-delta-runtime';
+import { planIdentityRunner } from './lib/identity-runner';
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const TSX_BIN = require.resolve('tsx/cli');
@@ -61,10 +62,12 @@ function jobEnabled(name: string, defaultOn = true): boolean {
 
 // ── Job registry: name, interval, timeout ceiling (measured evidence,
 //    see the migration report for how each ceiling was derived), priority ──
-type JobName = 'price_update' | 'discovery' | 'product_recovery' | 'dispatch_sweep' | 'refresh' | 'feed_ingest' | 'reobserve' | 'samsung_delta_watch' | 'manual_trigger' | 'founder_daily';
+type JobName = 'price_update' | 'discovery' | 'product_recovery' | 'dispatch_sweep' | 'refresh' | 'feed_ingest' | 'reobserve' | 'samsung_delta_watch' | 'manual_trigger' | 'founder_daily' | 'identity_gate';
 
 interface JobDef {
   name: JobName;
+  /** Switch default when WORKER_JOB_<NAME>_ENABLED is unset. Omitted = on (every pre-existing job). */
+  defaultOn?: boolean;
   intervalMs: number;
   timeoutMs: number;
   /** How to run it: either spawn an existing standalone script (refresh/
@@ -178,6 +181,25 @@ const JOBS: JobDef[] = [
     intervalMs: parseInt(process.env.WORKER_FOUNDER_DAILY_MS || String(60 * 60 * 1000), 10),
     timeoutMs: parseInt(process.env.WORKER_FOUNDER_DAILY_TIMEOUT_MS || String(5 * 60 * 1000), 10),
     spawn: workerJob('founder-daily.ts'),
+  },
+  {
+    // ADR-405 — isolated identity-gate runner. Spawns the SAME refresh orchestrator restricted to its
+    // `identity-gate` (+ optionally `projection`, scoped) steps, so a category wave runs while the hourly
+    // chain stays fenced (WORKER_JOB_REFRESH_ENABLED=0). DEFAULT OFF behind its own switch; the plan
+    // (scripts/worker/lib/identity-runner.ts) refuses categories outside the approved scope. High
+    // priority only because it is short and a stale signal is a rollback trigger; it never preempts.
+    name: 'identity_gate',
+    defaultOn: false,
+    // Hourly: a run is ~70 s (signals ~20 s + scoped projection ~20 s + two `npx tsx` start-ups, measured); the stale-signal
+    // rollback trigger is 3 h, i.e. two full missed cycles plus queue wait behind the longest in-flight job.
+    intervalMs: parseInt(process.env.WORKER_IDENTITY_GATE_MS || String(60 * 60 * 1000), 10),
+    timeoutMs: parseInt(process.env.WORKER_IDENTITY_GATE_TIMEOUT_MS || String(15 * 60 * 1000), 10),
+    spawn: () => {
+      const plan = planIdentityRunner(process.env);
+      if (!plan.enabled) throw new Error(`identity_gate refused: ${plan.reason}`);
+      return tsxJob('scripts/tps-core/refresh-intelligence.ts', plan.args)();
+    },
+    highPriority: true,
   },
 ];
 
@@ -314,9 +336,14 @@ async function supervisorTick() {
 //    but ENQUEUE instead of run-directly, so the priority queue above owns
 //    concurrency. ──────────────────────────────────────────────────────────
 function scheduleJob(job: JobDef) {
-  if (!jobEnabled(job.name)) {
-    console.log(`[worker] ${job.name} disabled (WORKER_JOB_${job.name.toUpperCase()}_ENABLED=0)`);
+  if (!jobEnabled(job.name, job.defaultOn ?? true)) {
+    console.log(`[worker] ${job.name} disabled (WORKER_JOB_${job.name.toUpperCase()}_ENABLED=${job.defaultOn === false ? 'unset/0 — default off' : '0'})`);
     return;
+  }
+  if (job.name === 'identity_gate') {
+    const plan = planIdentityRunner(process.env);
+    if (!plan.enabled) { console.error(`[worker] identity_gate NOT scheduled — ${plan.reason}`); return; }
+    console.log(`[worker] identity_gate plan: categories=${plan.categories.join(',')} mode=${plan.reason}`);
   }
   const bootDelay = parseInt(process.env.WORKER_FIRST_KICK_DELAY_MS || String(2 * 60 * 1000), 10);
   const jitter = Math.floor(Math.random() * 5 * 60 * 1000);

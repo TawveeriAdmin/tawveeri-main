@@ -21,6 +21,8 @@ import { createServerClient } from '@/lib/database';
 import { resolveApprovedSlug } from '@/lib/retailers/approved-retailers';
 import type { GroupedSearchProduct } from '@/lib/scraping/search/product-grouper';
 import type { SearchProduct } from '@/lib/scraping/search/types';
+import { isUnsignaled } from '@/lib/identity/identity-signals';
+import { loadStorefrontIdentitySignals } from '@/lib/catalog/storefront-identity-gate';
 
 const VERIFIED_LINK_FILTER = {
   status: 'active',
@@ -303,11 +305,17 @@ export async function mergeVerifiedCanonicalSearchResults(
     const canonicalByProductId = new Map((links ?? []).map((l) => [l.product_id, l.canonical_product_id]));
     if (!canonicalByProductId.size) return products.map(dedupeCardStores);
 
+    // ADR-405 — identity gate: a card carrying a listing the verifier did not confirm as the same item
+    // (review/reject in tps_offer_identity_signals) is never merged into the canonical's group; it stays its
+    // own card. Flags off ⇒ empty index, no query, behaviour unchanged.
+    const signals = await loadStorefrontIdentitySignals(supabase, [...new Set(canonicalByProductId.values())]);
+    const unconfirmed = (p: GroupedSearchProduct, cid: string) => signals.size > 0 && p.stores.some((s) => !isUnsignaled(signals, cid, storeKey(s)));
+
     const byCanonical = new Map<string, GroupedSearchProduct[]>();
     const passthrough: GroupedSearchProduct[] = [];
     for (const p of products) {
       const cid = p.product_id ? canonicalByProductId.get(p.product_id) : undefined;
-      if (!cid) { passthrough.push(p); continue; }
+      if (!cid || unconfirmed(p, cid)) { passthrough.push(p); continue; }
       const group = byCanonical.get(cid);
       if (group) group.push(p); else byCanonical.set(cid, [p]);
     }

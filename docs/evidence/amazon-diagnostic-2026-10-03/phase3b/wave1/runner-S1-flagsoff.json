@@ -1,0 +1,60 @@
+{
+  "takenAt": "2026-10-04T06:34:25.658Z",
+  "tables": {
+    "canonical_products": {
+      "rows": 21225,
+      "full_hash": "696bc2ebd5a5ae5f3ab01bcb6074b757",
+      "content_hash": "dc7a335759ab6abc6bef5c7b714ff4b6"
+    },
+    "tps_current_offers": {
+      "rows": 10968,
+      "full_hash": "6a1b064efa710ffee44cb2ee5b35a7e4",
+      "content_hash": "80c62b489333e118f9af7be1fe5be9f2"
+    },
+    "price_history": {
+      "rows": 41925,
+      "full_hash": "8453bcb6f01943025e1c8938e787ceb0",
+      "content_hash": "8443a236e754ca52d0975573eee92722"
+    },
+    "normalized_product_observations": {
+      "rows": 164341,
+      "full_hash": "4b58e90d88c8154d91cfca40ba92cf33",
+      "content_hash": "4b58e90d88c8154d91cfca40ba92cf33"
+    },
+    "product_matches": {
+      "rows": 1860,
+      "full_hash": "7839ba007fd599d902f6b832eaaa08bf",
+      "content_hash": "416d24206a4ec9488112b460d838f4d6"
+    },
+    "tps_identity_staging": {
+      "rows": 0,
+      "full_hash": "d41d8cd98f00b204e9800998ecf8427e",
+      "content_hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "tps_progress_cursors": {
+      "rows": 34,
+      "full_hash": "fc07165bb4b447065e2303c06f532a35",
+      "content_hash": "75dbc225f7f6a640a1e118ab2a9906bd"
+    },
+    "tps_price_implausibility_signals": {
+      "rows": 249,
+      "full_hash": "0339ddc28aef294ee8e45372e7fd61d7",
+      "content_hash": "a19a3fe3cbb857c50d28d48af496ee1e"
+    },
+    "tps_product_projection": {
+      "rows": 9405,
+      "full_hash": "0c7ea2bbaef8c356aa36509afe8fc9fa",
+      "content_hash": "0c7ea2bbaef8c356aa36509afe8fc9fa"
+    },
+    "raw_observations": {
+      "rows": 106385,
+      "full_hash": "8e1d86330477e418022d58e447abaa91",
+      "content_hash": "8e1d86330477e418022d58e447abaa91"
+    },
+    "stores": {
+      "rows": 24,
+      "full_hash": "09b8e50df868816a6d40d6375df6521d",
+      "content_hash": "09b8e50df868816a6d40d6375df6521d"
+    }
+  }
+}

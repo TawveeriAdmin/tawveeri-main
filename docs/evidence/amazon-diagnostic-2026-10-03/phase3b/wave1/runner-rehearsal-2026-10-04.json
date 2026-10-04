@@ -1,0 +1,192 @@
+{
+ "date": "2026-10-04T06:42:40.675Z",
+ "categories": [
+  "tv",
+  "vacuum"
+ ],
+ "all_pass": true,
+ "checks": [
+  {
+   "id": "1a",
+   "question": "flags/scope unset: the signals job processes nothing, creates no table, changes no pipeline table",
+   "pass": true,
+   "detail": {
+    "table": null,
+    "changed": []
+   }
+  },
+  {
+   "id": "1b",
+   "question": "flags off: the NEW unscoped projection build is identical to the ORIGINAL build (all categories)",
+   "pass": true,
+   "detail": {
+    "rows": 9527,
+    "only_a": 0,
+    "only_b": 0,
+    "changed": 0
+   }
+  },
+  {
+   "id": "3",
+   "question": "signals written by the runner (read gate OFF) == signals written by the original path (same inputs)",
+   "pass": true,
+   "detail": {
+    "original_rows": 51,
+    "runner_rows": 51,
+    "byCategory": {
+     "tv": 44,
+     "vacuum": 7
+    }
+   }
+  },
+  {
+   "id": "2a",
+   "question": "shadow runner executes exactly one chain step (identity-gate) and changes no pipeline table (projection untouched)",
+   "pass": true,
+   "detail": {
+    "stepsRan": [
+     "identity-gate"
+    ],
+    "exit": 0,
+    "changedTables": []
+   }
+  },
+  {
+   "id": "4a",
+   "question": "gated projection of the scope categories built by the runner == built by the original chain path",
+   "pass": true,
+   "detail": {
+    "scope_rows": 1479,
+    "only_a": 0,
+    "only_b": 0,
+    "changed": 0
+   }
+  },
+  {
+   "id": "2b",
+   "question": "scope fence: projection rows of every OTHER category are byte-identical to before the runner ran",
+   "pass": true,
+   "detail": {
+    "other_rows": 7948,
+    "only_a": 0,
+    "only_b": 0,
+    "changed": 0
+   }
+  },
+  {
+   "id": "2c",
+   "question": "runner (on) executes exactly identity-gate + projection; the only pipeline tables that change are the projection (scope rows) and the signals table",
+   "pass": true,
+   "detail": {
+    "stepsOn": [
+     "identity-gate",
+     "projection"
+    ],
+    "exit": 0,
+    "changedTables": [
+     "tps_product_projection"
+    ]
+   }
+  },
+  {
+   "id": "5",
+   "question": "re-running on the same inputs: 0 signal upserts/deletes, identical signals and projection rows, no row-count change",
+   "pass": true,
+   "detail": {
+    "signal_rows": 51,
+    "projection_rows": 9427,
+    "second_run_signal_line": "\"upserted\":0,\"deleted\":0",
+    "tables_differing_run1_vs_run2": [
+     "tps_product_projection"
+    ]
+   }
+  },
+  {
+   "id": "6a",
+   "question": "rollback (remove TPS_IDENTITY_GATE): the next runner cycle returns the scope's projection to the ungated baseline exactly",
+   "pass": true,
+   "detail": {
+    "scope_rows": 1479,
+    "only_a": 0,
+    "only_b": 0,
+    "changed": 0
+   }
+  },
+  {
+   "id": "6b",
+   "question": "kill switch + scope removed: a flags-off signals run deletes every signal row; nothing reads them",
+   "pass": true,
+   "detail": {
+    "rows_left": 0
+   }
+  },
+  {
+   "id": "6c",
+   "question": "after the whole rollback, no row outside the scope ever changed",
+   "pass": true,
+   "detail": {
+    "only_a": 0,
+    "only_b": 0,
+    "changed": 0
+   }
+  },
+  {
+   "id": "7a",
+   "question": "signals failure: job exits non-zero, projection step is SKIPPED, signals unchanged (transaction rolled back), projection unchanged",
+   "pass": true,
+   "detail": {
+    "exit": 1,
+    "skipLine": "[ SKIP ] projection  serving projection (canonicals → comparison rows)"
+   }
+  },
+  {
+   "id": "7b",
+   "question": "projection failure: job exits non-zero and NO row of the scope is partially updated (single transaction)",
+   "pass": true,
+   "detail": {
+    "exit": 1,
+    "only_a": 0,
+    "only_b": 0,
+    "changed": 0,
+    "failLine": "CHAIN-FAIL projection: FATAL rehearsal: forced projection failure"
+   }
+  }
+ ],
+ "gate_effect_on_scope_projection": {
+  "changed_rows": 35,
+  "only_a": 0,
+  "only_b": 0,
+  "comparable_before": {
+   "tv": 201,
+   "vacuum": 54
+  },
+  "comparable_after": {
+   "tv": 172,
+   "vacuum": 52
+  }
+ },
+ "timings_ms": {
+  "start": 56785,
+  "list": 3859,
+  "restore": 18637,
+  "snapshot": 23213,
+  "signals flags-off": 2559,
+  "projection ORIG unscoped": 11055,
+  "projection NEW unscoped": 5214,
+  "signals ORIG (gate flag)": 2524,
+  "runner shadow (identity-gate only)": 6031,
+  "ORIG chain (signals+projection, full)": 2753,
+  "projection ORIG gated unscoped": 4521,
+  "runner on (signals + scoped projection)": 8589,
+  "scoped ungated": 2451,
+  "runner #1": 7033,
+  "runner #2": 8501,
+  "runner after gate removed": 10390,
+  "signals flags-off clear": 2661,
+  "seed signals": 2450,
+  "runner signals-failure": 5782,
+  "seed signals #2": 2808,
+  "runner projection-failure": 10551
+ },
+ "replica_limits": "3-day raw sample; price_history for mobile/tv only (vacuum projects from tps_current_offers); no Algolia; no RLS; fsync off — timings are this machine's"
+}

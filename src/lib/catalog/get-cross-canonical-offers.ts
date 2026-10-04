@@ -25,6 +25,8 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { createServerClient } from '@/lib/database';
 import { isApprovedStoreId } from '@/lib/retailers/approved-retailers';
+import { isUnsignaled } from '@/lib/identity/identity-signals';
+import { loadStorefrontIdentitySignals } from '@/lib/catalog/storefront-identity-gate';
 import type { Database } from '@/lib/database/types';
 
 type StoreSummary = Pick<
@@ -94,6 +96,12 @@ export async function getCrossCanonicalOffers(
   const canonicalId = ownLink?.canonical_product_id;
   if (!canonicalId) return [];
 
+  // ADR-405 — identity gate. The verified link predates the verifier: apply the same verdicts every other grouping
+  // surface reads. A page whose OWN listing the verifier did not confirm as the same item makes no cross-store claim,
+  // and a sibling listing that is review/reject is never merged in. Flags off ⇒ empty index, no query, unchanged.
+  const signals = await loadStorefrontIdentitySignals(supabase, [canonicalId]);
+  if (signals.size && [...excludeStoreIds].some((sid) => !isUnsignaled(signals, canonicalId, sid))) return [];
+
   const { data: siblingLinks } = await supabase
     .from('storefront_identity_links')
     .select('product_id')
@@ -153,7 +161,7 @@ export async function getCrossCanonicalOffers(
   }
 
   return [...byStore.values()]
-    .filter((r) => isApprovedStoreId(r.store_id) && !excludeStoreIds.has(r.store_id))
+    .filter((r) => isApprovedStoreId(r.store_id) && !excludeStoreIds.has(r.store_id) && isUnsignaled(signals, canonicalId, r.store_id))
     .map((r) => ({
       id: r.id,
       current_price: r.current_price,

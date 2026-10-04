@@ -73,6 +73,21 @@ export function assertSamsungProjectionScope(rows: { tps_identity_key: string }[
 }
 const QUIET = process.argv.includes("--quiet") || DRY;
 
+/**
+ * `--categories=tv,vacuum` (ADR-405): rebuild — and prune — ONLY these categories' rows. Used by the isolated
+ * identity-gate runner so a category wave does not republish the whole catalogue. Absent ⇒ null ⇒ the SQL below
+ * is byte-identical to the unscoped build. Names are validated, then inlined as literals (no parameter renumbering).
+ */
+export function parseCategoryScope(argv: string[]): string[] | null {
+  const a = argv.find((x) => x.startsWith("--categories="));
+  if (!a) return null;
+  const cats = a.slice("--categories=".length).split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+  if (!cats.length || cats.some((c) => !/^[a-z0-9_]+$/.test(c))) throw new Error(`invalid --categories scope: ${a}`);
+  return [...new Set(cats)].sort();
+}
+const CATEGORY_SCOPE = parseCategoryScope(process.argv);
+const scopeList = CATEGORY_SCOPE ? CATEGORY_SCOPE.map((c) => `'${c}'`).join(",") : null;
+
 interface Row {
   canonical_id: string;
   tps_identity_key: string;
@@ -228,8 +243,8 @@ async function main() {
   const { rows } = await pg.query<Row>(`
     with scoped_canonicals as materialized (
       select c.* from canonical_products c
-      where not $2::boolean or (c.tps_identity_key like 'samsung|MODEL:%'
-        and exists(select 1 from tps_current_offers scoped where scoped.identity_key=c.tps_identity_key and scoped.store_id=6))
+      where ${scopeList ? "(" : ""}not $2::boolean or (c.tps_identity_key like 'samsung|MODEL:%'
+        and exists(select 1 from tps_current_offers scoped where scoped.identity_key=c.tps_identity_key and scoped.store_id=6))${scopeList ? `) and c.category in (${scopeList})` : ""}
     ), history_latest as (
       select distinct on (ph.canonical_product_id, ${STORE_NAME_CASE})
              ph.canonical_product_id, ${STORE_NAME_CASE} as store_name, ph.price, ph.observed_at,
@@ -386,7 +401,7 @@ async function main() {
 
   if (DRY) {
     console.log(JSON.stringify({
-      mode: "dry", scope: SAMSUNG_ONLY ? 'Samsung manufacturer identities with store 6 evidence' : 'all', canonicals: rows.length, comparable,
+      mode: "dry", scope: SAMSUNG_ONLY ? 'Samsung manufacturer identities with store 6 evidence' : CATEGORY_SCOPE ? 'categories: ' + CATEGORY_SCOPE.join(',') : 'all', canonicals: rows.length, comparable,
       read_ms: readMs, total_ms: Date.now() - t0, queries,
     }));
     await pg.end();
@@ -449,6 +464,12 @@ async function main() {
   // the real driver error, surfaced in this step's own summary line (never scrolls out of
   // the scheduler's tail-truncated buffer, since STEPS' run() detail becomes the printed
   // ↳ line either way).
+  // ADR-405: a SCOPED build (--categories) is ALL-OR-NOTHING — one transaction around every upsert and the prune,
+  // no per-row fallback. The isolated identity runner must never leave a category half-written or report success
+  // after skipping rows; a failure throws (exit 1) and the whole scope stays as it was. The unscoped chain build
+  // keeps its tolerant per-chunk behaviour (ADR-200) untouched.
+  const atomic = CATEGORY_SCOPE !== null;
+  if (atomic) await pg.query("begin");
   for (let i = 0; i < projected.length; i += CHUNK) {
     const chunk = projected.slice(i, i + CHUNK);
     const params: unknown[] = [];
@@ -458,6 +479,7 @@ async function main() {
       queries++;
       written += res.rowCount ?? 0;
     } catch (chunkErr) {
+      if (atomic) { await pg.query("rollback").catch(() => undefined); await pg.end(); throw chunkErr; }
       queries++;
       for (const row of chunk) {
         const rowParams = COLS.map((c) => (row as Record<string, unknown>)[c]);
@@ -492,15 +514,17 @@ async function main() {
     `delete from tps_product_projection p
       where (not $1::boolean or (p.tps_identity_key like 'samsung|MODEL:%'
         and exists(select 1 from tps_current_offers scoped where scoped.identity_key=p.tps_identity_key and scoped.store_id=6)))
+      ${scopeList ? `and p.category in (${scopeList})` : ""}
       and not exists (
         select 1 from canonical_products c
          where c.tps_identity_key = p.tps_identity_key and c.is_active)`, [SAMSUNG_ONLY]
   );
   queries++;
+  if (atomic) { await pg.query("commit"); queries++; }
   const totalMs = Date.now() - t0;
 
   if (!QUIET) {
-    console.log(`  scope           : ${SAMSUNG_ONLY ? 'Samsung manufacturer identities with store 6 evidence' : 'all'}`);
+    console.log(`  scope           : ${SAMSUNG_ONLY ? 'Samsung manufacturer identities with store 6 evidence' : CATEGORY_SCOPE ? 'categories: ' + CATEGORY_SCOPE.join(',') : 'all'}`);
     console.log(`TPS Layer 5 — Projection v3 (set-based)`);
     console.log(`  canonicals read : ${rows.length}   (${readMs} ms, 1 query)`);
     console.log(`  rows written    : ${written}       (${writeMs} ms, ${queries - 2} statements)`);

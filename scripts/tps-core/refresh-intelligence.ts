@@ -23,11 +23,14 @@
 //   npm run tps:refresh                 # full chain
 //   npm run tps:refresh -- --fast       # skip the slow projection rebuild
 //   npm run tps:refresh -- --only search,trust
+//   npm run tps:refresh -- --only identity-gate,projection --scope=tv,vacuum   # isolated identity runner (ADR-405)
 // ─────────────────────────────────────────────────────────────────────────────
 import { config } from "dotenv";
 import { resolve } from "path";
 config({ path: resolve(process.cwd(), ".env.local") });
 import { spawnSync } from "child_process";
+
+const SCOPE = process.argv.find((a) => a.startsWith("--scope="))?.slice("--scope=".length) || null;
 
 interface Step {
   key: string;
@@ -99,7 +102,8 @@ const STEPS: Step[] = [
   },
   {
     key: "projection", label: "serving projection (canonicals → comparison rows)", needs: ["resolved-single", "identity-gate"], slow: true,
-    run: () => runScript("scripts/build-tps-projection.ts"),
+    // ADR-405: `--scope=tv,vacuum` (isolated identity-gate runner) rebuilds and prunes only those categories; absent ⇒ the full build, unchanged.
+    run: () => runScript("scripts/build-tps-projection.ts", SCOPE ? [`--categories=${SCOPE}`] : []),
   },
   {
     // ADR-063/065: must run BEFORE the search sync, otherwise a newly-projected
