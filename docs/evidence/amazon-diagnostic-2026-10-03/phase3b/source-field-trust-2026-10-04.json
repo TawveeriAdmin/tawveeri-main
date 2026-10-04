@@ -1,0 +1,254 @@
+{
+ "date": "2026-10-04T14:11:30.892Z",
+ "offers_measured": 8920,
+ "rule": "HIGH: n>=20, traps<2% and (cross-merchant confirmed >=20% or in own title >=80%); LOW: traps>=20%; else MEDIUM",
+ "matrix": [
+  {
+   "merchant": "almanea",
+   "field": "top.model",
+   "declared": 1598,
+   "trap_pct": 0.8,
+   "own_title_pct": 65,
+   "confirmed_pct": 69.5,
+   "confirmable": 583,
+   "trust": "HIGH"
+  },
+  {
+   "merchant": "alnakheelk",
+   "field": "top.model",
+   "declared": 85,
+   "trap_pct": 100,
+   "own_title_pct": 0,
+   "confirmed_pct": null,
+   "confirmable": 0,
+   "trust": "LOW"
+  },
+  {
+   "merchant": "amazon",
+   "field": "top.model",
+   "declared": 1326,
+   "trap_pct": 44,
+   "own_title_pct": 30.2,
+   "confirmed_pct": 44.6,
+   "confirmable": 121,
+   "trust": "LOW"
+  },
+  {
+   "merchant": "amazon",
+   "field": "spec.model name",
+   "declared": 213,
+   "trap_pct": 8.5,
+   "own_title_pct": 21.1,
+   "confirmed_pct": 21.8,
+   "confirmable": 124,
+   "trust": "MEDIUM"
+  },
+  {
+   "merchant": "amazon",
+   "field": "spec.item model number",
+   "declared": 66,
+   "trap_pct": 33.3,
+   "own_title_pct": 30.3,
+   "confirmed_pct": 39.5,
+   "confirmable": 38,
+   "trust": "LOW"
+  },
+  {
+   "merchant": "amazon",
+   "field": "spec.model number",
+   "declared": 3,
+   "trap_pct": 0,
+   "own_title_pct": 66.7,
+   "confirmed_pct": 0,
+   "confirmable": 1,
+   "trust": "UNMEASURED (n<20)"
+  },
+  {
+   "merchant": "extra",
+   "field": "top.modelNumber",
+   "declared": 1643,
+   "trap_pct": 0.8,
+   "own_title_pct": 0,
+   "confirmed_pct": 80.5,
+   "confirmable": 722,
+   "trust": "HIGH"
+  },
+  {
+   "merchant": "extra",
+   "field": "top.model",
+   "declared": 446,
+   "trap_pct": 11.2,
+   "own_title_pct": 0,
+   "confirmed_pct": 9.5,
+   "confirmable": 137,
+   "trust": "MEDIUM"
+  },
+  {
+   "merchant": "jarir",
+   "field": "top.model",
+   "declared": 259,
+   "trap_pct": 63.7,
+   "own_title_pct": 1.2,
+   "confirmed_pct": 0,
+   "confirmable": 23,
+   "trust": "LOW"
+  },
+  {
+   "merchant": "noon",
+   "field": "top.model",
+   "declared": 1109,
+   "trap_pct": 10.9,
+   "own_title_pct": 0,
+   "confirmed_pct": 4,
+   "confirmable": 325,
+   "trust": "MEDIUM"
+  },
+  {
+   "merchant": "noon",
+   "field": "spec.model_number",
+   "declared": 361,
+   "trap_pct": 4.2,
+   "own_title_pct": 46.3,
+   "confirmed_pct": 31.1,
+   "confirmable": 180,
+   "trust": "MEDIUM"
+  },
+  {
+   "merchant": "noon",
+   "field": "spec.model_name",
+   "declared": 296,
+   "trap_pct": 7.1,
+   "own_title_pct": 38.9,
+   "confirmed_pct": 35.2,
+   "confirmable": 142,
+   "trust": "MEDIUM"
+  },
+  {
+   "merchant": "samsung_ksa",
+   "field": "top.model",
+   "declared": 1313,
+   "trap_pct": 0,
+   "own_title_pct": 90.9,
+   "confirmed_pct": 96.4,
+   "confirmable": 473,
+   "trust": "HIGH"
+  },
+  {
+   "merchant": "shaker",
+   "field": "top.model",
+   "declared": 3,
+   "trap_pct": 100,
+   "own_title_pct": 0,
+   "confirmed_pct": null,
+   "confirmable": 0,
+   "trust": "UNMEASURED (n<20)"
+  }
+ ],
+ "extraction_gap_spec_only_by_category": [
+  {
+   "category": "laptop",
+   "offers": 682,
+   "spec_only": 56,
+   "spec_only_in_multi_store_groups": 19,
+   "spec_only_pct": 8.2
+  },
+  {
+   "category": "tv",
+   "offers": 1122,
+   "spec_only": 26,
+   "spec_only_in_multi_store_groups": 13,
+   "spec_only_pct": 2.3
+  },
+  {
+   "category": "audio",
+   "offers": 377,
+   "spec_only": 24,
+   "spec_only_in_multi_store_groups": 17,
+   "spec_only_pct": 6.4
+  },
+  {
+   "category": "tablet",
+   "offers": 772,
+   "spec_only": 24,
+   "spec_only_in_multi_store_groups": 6,
+   "spec_only_pct": 3.1
+  },
+  {
+   "category": "air_fryer",
+   "offers": 362,
+   "spec_only": 20,
+   "spec_only_in_multi_store_groups": 2,
+   "spec_only_pct": 5.5
+  },
+  {
+   "category": "mobile",
+   "offers": 952,
+   "spec_only": 14,
+   "spec_only_in_multi_store_groups": 13,
+   "spec_only_pct": 1.5
+  },
+  {
+   "category": "monitor",
+   "offers": 773,
+   "spec_only": 11,
+   "spec_only_in_multi_store_groups": 5,
+   "spec_only_pct": 1.4
+  },
+  {
+   "category": "refrigerator",
+   "offers": 632,
+   "spec_only": 9,
+   "spec_only_in_multi_store_groups": 8,
+   "spec_only_pct": 1.4
+  },
+  {
+   "category": "washing_machine",
+   "offers": 697,
+   "spec_only": 7,
+   "spec_only_in_multi_store_groups": 7,
+   "spec_only_pct": 1
+  },
+  {
+   "category": "smartwatch",
+   "offers": 215,
+   "spec_only": 5,
+   "spec_only_in_multi_store_groups": 3,
+   "spec_only_pct": 2.3
+  },
+  {
+   "category": "vacuum",
+   "offers": 518,
+   "spec_only": 3,
+   "spec_only_in_multi_store_groups": 2,
+   "spec_only_pct": 0.6
+  },
+  {
+   "category": "printer",
+   "offers": 57,
+   "spec_only": 2,
+   "spec_only_in_multi_store_groups": 2,
+   "spec_only_pct": 3.5
+  },
+  {
+   "category": "dishwasher",
+   "offers": 241,
+   "spec_only": 2,
+   "spec_only_in_multi_store_groups": 2,
+   "spec_only_pct": 0.8
+  },
+  {
+   "category": "air_conditioner",
+   "offers": 108,
+   "spec_only": 2,
+   "spec_only_in_multi_store_groups": 2,
+   "spec_only_pct": 1.9
+  },
+  {
+   "category": "toaster",
+   "offers": 38,
+   "spec_only": 1,
+   "spec_only_in_multi_store_groups": 0,
+   "spec_only_pct": 2.6
+  }
+ ]
+}

@@ -1,95 +1,129 @@
-# TV short-model identity — research, shadow replay and proposal (2026-10-04)
+# TV short-model identity — research, independent review, replay and proposal (v2, 2026-10-04)
 
-**Status: research / shadow only. No production behaviour changed. TV stays HOLD (rolled back 2026-10-04 10:15Z).**
-Evidence: `docs/evidence/amazon-diagnostic-2026-10-03/phase3b/tv-short-model/` (`summary.json`, `token-dataset.json`, `replay-changed-groups.json`) · code: `src/lib/identity/tv-short-model.ts` (imported by nothing in production) · regression: `tests/identity/tv-short-model.test.ts` (42 cases) · research script: `scripts/tps-analysis/tv-short-model-research.ts` (read-only against production).
+**Status: research / shadow only. No production behaviour changed by this document. TV stays HOLD (rolled back 2026-10-04 10:15Z). No cutover without a separate approval.**
+v2 supersedes the first draft the same day: it adds the independent review of all 22 changed groups, the measured source-field trust matrix, the unified-evidence-function design, per-merchant impact and the scope-extension findings from the Vacuum review.
 
-## 1. What actually failed (diagnosis corrected)
+Evidence: `docs/evidence/amazon-diagnostic-2026-10-03/phase3b/tv-short-model/` (`summary.json`, `token-dataset.json`, `replay-changed-groups.json`) · `phase3b/source-field-trust-2026-10-04.json` · `phase3b/review/` (label-free sheets + blind answers) · code: `src/lib/identity/tv-short-model.ts` (imported by nothing in production) · regression: `tests/identity/tv-short-model.test.ts` (42 cases) · scripts: `scripts/tps-analysis/{tv-short-model-research,source-field-trust,review-sheets-build}.ts` (read-only against production).
 
-Wave 1's audit sample held TV groups with two different manufacturer codes — TCL **85T8D** (Amazon) vs **85C6K PRO** (Extra), Hisense **Q71Q** (Jarir) vs **65S7N** (Extra). First diagnosis ("short codes are rejected by `extractManufacturerModel`") was incomplete. The measured picture:
+## 1. What failed
 
-| Where | What it reads | Short code visible? |
-|---|---|---|
-| TV plugin (key builder) `normalize()` | payload → title (ADR-175) → size-prefixed (ADR-177) | only if the code is **declared in a payload field AND repeated verbatim in the title** |
-| Verifier callers (compare page `get-comparison.ts:410`, signals job, shadow) | `extractManufacturerModel(payload)` only, minimum 6 chars | **no** |
+Wave 1's audit sample held TV groups with two different manufacturer codes — TCL **85T8D** (Amazon) vs **85C6K PRO** (Extra), Hisense **Q71Q** (Jarir) vs **65S7N** (Extra). The cause is an **evidence-access inconsistency**, not a regex length:
 
-So the verifier is blind to what even the key builder sees (title-derived models: Samsung 279/422 listings seen vs 395 by the plugin; LG 106/176 vs 153; Skyworth 29/72 vs 54; Nikai 9/50 vs 45; Sony 0/11 vs 10), and **both** are blind to a short code that sits **only in the title** (Amazon `TCL 85T8D …`) or **only in a structured field** (Extra `modelNumber: 85C6K PRO`). Two different codes, zero evidence either side → the spec-family key (`tcl|85|4k|mini_led|144`) matches.
+| Where | What it reads |
+|---|---|
+| TV plugin (key builder) `normalize()` | payload → title (ADR-175) → size-prefixed short code (ADR-177, only a *payload* candidate repeated verbatim in the title) |
+| Verifier callers (compare page `get-comparison.ts`, signals job, shadow) | `extractManufacturerModel(payload)` only, minimum 6 characters |
 
-## 2. Short-code taxonomy (from the live catalogue, 1,110 TV listings, 182 multi-store groups)
+So the verifier sees less than the key builder (Samsung 279/422 listings seen vs 395; LG 106/176 vs 153; Skyworth 29/72 vs 54; Nikai 9/50 vs 45; Sony 0/11 vs 10), and **both** miss a short code that sits only in a title (Amazon `TCL 85T8D …`) or only in a structured field (Extra `modelNumber: 85C6K PRO`). Different codes, zero evidence either side → the family key (`tcl|85|4k|mini_led|144`) matches.
 
-| Class | Examples | Where it appears | Verdict-relevant |
-|---|---|---|---|
-| Size-prefixed series code (TCL / Hisense / Haier) | `85T8D` `65P7L` `98C6K` `98Q6C` `55E8S` `65S7N` `58A6N` `85U7Q` `75Q6Q` `H85M80FUX` | Extra `modelNumber`; Amazon/Noon/Almanea/Blackbox **titles** | yes — the codes that were invisible |
-| Same + variant word | `85C6K PRO` `55E7S PRO` | Extra `modelNumber` (also seen unspaced `85C6KPRO`); titles | yes — variant word is part of the model |
-| Long manufacturer code | `QA55Q7FAAUXSA` `75QNED93A6A` `OLED77C66LA` | all merchants | already handled |
-| Size-less series code | Jarir `…, Black, Q71Q` / `P7L` / `V6D` / `M1EH` | Jarir titles | **12 listings, 4 in multi-store groups** — too few to justify a lane; stays Unknown (one-sided → Review) |
-| Notation variants | `85C6K PRO` vs `85C6KPRO`, colour/region suffix | Extra | handled by the verifier's notation-robust comparison (ADR-403) |
+## 2. Governing rule for the fix
 
-Hisense and TCL carry the problem: Hisense 17 + TCL 20 listings have **only** a declared short code (invisible to the plugin lane), and the title lane adds 15 + 19 more.
+Do **not** lower a minimum length. Create **one normalized manufacturer-model evidence function**, aware of source semantics, that the key builder, the signals job, the compare page and the shadow script all call. Family/spec key proposes candidates; exact model evidence verifies; a stated conflict rejects; one-sided uncertain evidence stays Review.
 
-## 3. Source reliability — by (merchant, field), measured, not assumed
+### 2.1 Required output of the unified function
+`{ normalized, raw, source, trust, reason }` — normalized code (separators removed, manufacturer-significant suffixes such as `PRO` kept), the **raw** string exactly as stated, the **source path** (`payload.modelNumber`, `payload.mpn`, `spec.model_number`, `title.size_prefixed`, `plugin`), a trust class (`HIGH` structured field of a measured-reliable merchant, `MEDIUM` structured field with a measured trap rate, `TITLE` title-derived under the naming-convention test), and a human-readable reason for acceptance or refusal. A refusal is also an output (`null` + reason: retailer id, spec, whole title, technology word, size mismatch, untrusted generic field …) so the monitor can count refusals.
 
-Independent measure per field: declared value present in the listing's own title; **confirmed** = a *different* merchant independently states the same whole token (title word or structured field); **trap** = sizes, refresh rates, panel words, retailer SKUs, whole titles.
+### 2.2 Requirements and how each is met
+| Requirement | Mechanism |
+|---|---|
+| accept trusted source-explicit short codes | lane D: `mpn` / `modelNumber` / `model_number` (+ trusted spec keys, §4) |
+| preserve suffixes (`PRO`, `PLUS`…) | one token + variant word kept as part of the code |
+| reject retailer / internal SKUs | ASIN `B0…`, Noon `N\d+[A-Z]`, numeric ≥ 5 digits, `isStoreInternalIdentifier` |
+| size, refresh rate, panel, series words, whole titles | trap classes `size` `refresh_rate` `resolution` `panel_or_marketing`; title-equals-field; length cap |
+| untrusted generic `model` field | never read for short codes (measured traps: amazon 44 %, jarir 63.7 %, alnakheelk 100 %) |
+| separators | normalization strips non-alphanumerics; `85C6K PRO` ≡ `85C6KPRO` |
+| lane T (title) | ADR-177's three conditions on a *title* token: shape, leading digits = the listing's parsed screen size, not a prefix of a longer token; technology tails (`65QLED`) refused |
+| retain evidence and path | `raw` + `source` persisted with the verdict row |
 
-| merchant.field | values | in own title | confirmed by another merchant | traps | Reading |
+## 3. Taxonomy (live catalogue, 1,110 TV listings, 182 multi-store groups)
+
+Size-prefixed series codes (TCL / Hisense / Haier: `85T8D 65P7L 98C6K 98Q6C 55E8S 65S7N 58A6N 85U7Q 75Q6Q H85M80FUX`), the same with a variant word (`85C6K PRO`, `55E7S PRO`), long manufacturer codes (already handled), notation variants (`85C6K PRO` vs `85C6KPRO`; colour/region suffixes) and **size-less series codes** (Jarir `…, Black, Q71Q`: 12 listings, 4 in multi-store groups — too few to justify a lane; they stay Unknown and make the Jarir side one-sided Review).
+
+## 4. Source-field trust matrix — merchant + field + measured reliability
+
+Measured over 8,920 current valid offers, all categories, by rule and cross-merchant agreement (never by an extractor): `trap` = size / refresh rate / panel word / retailer SKU / whole title / fragment; `confirmed` = a *different* merchant independently states the same whole token (title word or structured field) in the same canonical group.
+
+| merchant.field | declared | trap % | in own title % | confirmed % (n) | trust |
 |---|---:|---:|---:|---:|---|
-| extra.modelNumber | 306 | 0 | 123 | **0** | structured manufacturer MPN, never repeated in the title — **most reliable source for short codes** |
-| samsung_ksa.model | 120 | 120 | 100 | 0 | official, reliable |
-| almanea.model | 123 | 118 | 55 | 0 | reliable |
-| amazon.model | 204 | 176 | 4 | **151 (74 %)** | truncations (`85T`), sizes — **never trust** |
-| jarir.model | 30 | 30 | 0 | 30 | the whole title |
-| alnakheelk.model | 31 | 0 | 0 | 31 | the whole title |
-| noon.model | 130 | 0 | 0 | 0 | title fragments (`Television 85 Inch Smart`) |
+| extra.`modelNumber` | 1,643 | 0.8 | 0 | 80.5 (722) | **HIGH** |
+| samsung_ksa.`model` | 1,313 | 0 | 90.9 | 96.4 (473) | **HIGH** |
+| almanea.`model` | 1,598 | 0.8 | 65 | 69.5 (583) | **HIGH** |
+| noon.spec `model_number` | 361 | 4.2 | 46.3 | 31.1 (180) | MEDIUM |
+| noon.spec `model_name` | 296 | 7.1 | 38.9 | 35.2 (142) | MEDIUM |
+| noon.`model` | 1,109 | 10.9 | 0 | 4.0 (325) | MEDIUM (title fragments) |
+| extra.`model` | 446 | 11.2 | 0 | 9.5 (137) | MEDIUM |
+| amazon.spec `model name` | 213 | 8.5 | 21.1 | 21.8 (124) | MEDIUM |
+| amazon.spec `item model number` | 66 | 33.3 | 30.3 | 39.5 (38) | LOW |
+| amazon.`model` | 1,326 | 44 | 30.2 | 44.6 (121) | **LOW** |
+| jarir.`model` | 259 | 63.7 | 1.2 | 0 (23) | **LOW** |
+| alnakheelk.`model` | 85 | 100 | 0 | – | **LOW** |
 
-Consequence for design: **the generic `model` field is never a source for short codes**; `mpn` / `modelNumber` / `model_number` are. Reliability is a property of the field a merchant uses, not of a string's length or regex shape — a short explicit `modelNumber` outweighs a long inferred title token, as required.
+Reliability is a property of the **(merchant, field)** pair, not of a field name: `model` is excellent at Samsung KSA and Almanea and junk at Amazon, Jarir and Alnakheelk. A short explicit `modelNumber` from a HIGH source outweighs a long inferred title token. The matrix is data (regenerated by `source-field-trust.ts`, reviewed by a human), not a hard-coded allowlist, so a merchant changing its feed shows up as a regression.
 
-## 4. Labelled dataset (labels independent of the extractors under test)
+**Extraction gap, all categories:** 206 offers (2.3 %) carry a model **only** in a spec field no lane reads (Noon `specifications.model_number`, Amazon `item model number`), 101 of them in multi-store groups (laptop 19, audio 17, TV 13, mobile 13, refrigerator 8, washing machine 7, tablet 6). Cheap, engineering-fixable, concentrated where comparisons exist.
 
-`token-dataset.json`: 1,013 declared-field tokens. Labels by rule / cross-merchant agreement only — **282 `model_confirmed_cross_merchant`**, 104 `model_declared_in_own_title`, 404 `declared_uncorroborated` (genuine-looking, no second source), and **213 non-model traps** (163 whole titles, 31 retailer numeric SKUs, 18 panel/marketing words, 1 size). Trap classes: ASIN `B0…`, Noon `N\d+[A-Z]`, numeric retailer SKU, `\d+INCH`, `\d+HZ`, `4K/UHD/FHD`, panel words (`QLED`, `MINILED`, `QNED`…). Corroboration requires a **whole-token** match (an earlier version used substring matching, which made `85T` "confirmed" by `85T8D`; that labelling bug was found, fixed and every figure here is from the corrected run).
+## 5. Independent review of ALL 22 changed groups (no sample)
 
-## 5. Proposed evidence (not a regex relaxation)
+Method: the 22 groups whose verifier outcome changes under the proposal were rendered label-free (merchant, titles, brand, **all** raw source model fields with the generic `model` field labelled as a title fragment, model found in title, size / panel / refresh / resolution, condition / bundle / region hints, URL; **no** verifier verdict, no expected label), group and listing order shuffled with a fixed seed, and put to the founder (`https://claude.ai/artifact/BT3HS2bvgYZDHxUQVnMEvC`, collection `tv22`) **and** to two independent blind AI reviewers (different models, reverse order for one, web search allowed, no repository access). The narrow question is the one that removed the wording artefact in the blind gate: *"If a shopper buys the cheapest listing instead of any other listing, do they get exactly the same TV?"*
 
-Two lanes added to what the verifier is given as the listing's declared model, **in this order after the plugin's own derivation**:
+**Result so far (founder's answers pending — they take precedence and will be appended):**
 
-* **Lane D — declared short model.** A value in `mpn` / `modelNumber` / `model_number` (not `model`), 4–22 chars, letters **and** digits, not a retailer id / spec / trap / the title repeated; one token or token + variant word (`PRO PLUS MAX ULTRA EVO LITE`).
-* **Lane T — title short model.** ADR-177's three conditions moved from "payload candidate verified in the title" to "title token": shape `<2–3 digits><letter><1–3 alnum>`, leading digits **equal the listing's parsed screen size**, not a prefix of a longer token in the same title, technology tails refused (`65QLED`), variant word kept.
+| | reviewer A | reviewer B |
+|---|---:|---:|
+| SAME_EXACT_COMMERCIAL_VARIANT | 2 (T03, T07) | 2 (T03, T07) |
+| DIFFERENT_VARIANT | 20 | 20 |
+| REVIEW / INSUFFICIENT_EVIDENCE | 0 | 0 |
+| **agreement between the two reviewers** | **22 / 22** | |
 
-Wiring (one function, three callers — the same change that fixes the write/verify asymmetry): the signals job, the compare page and the shadow script must obtain the declared model from **one** shared function. TV only; every other category stays byte-identical (parity tests). The verifier's rules are untouched: stated conflict ⇒ reject, code on one side ⇒ Review, agreeing codes ⇒ match; family key proposes, exact model verifies.
+Adjudication against the verifier (the verifier's before/after outcomes were read only **after** the reviews):
 
-## 6. Evaluation
+* **False merges removed: 16 groups** — live comparisons in which ≥ 2 listings stood as "match" while a reviewer-identified listing was a different model (TCL 85T8D/85C6K PRO, 65T8D/65Q6C, 65P7L/65T6D, 55T8B/55P8K, 55P8L/55C7L, 75P8L/75Q7C, 75V6D/75V6B, 98C6K/98C8K, 50P7L/50P7K, 55T69D/55T6D; Hisense 55E8S/55U7S, 65E8S/65U7S, 58E6Q/58A6N, 85U7Q/85U7S, 75Q72Q/75S7N, 55E7S PRO/55Q72Q, 65 QLED Q71Q/65S7N). **8 of the 16 contain an Amazon listing.**
+* **Four more DIFFERENT groups** (T02, T08, T14, T15) were already partly Review at baseline; the proposal leaves no comparison among different models there.
+* **Residual false merge after the proposal: 0** — in every one of the 20 DIFFERENT groups, no pair of listings that stands as "match" includes a reviewer-flagged odd listing (T04: Noon rejected, Amazon + Extra stand; T08: Amazon + Noon 98Q6C stand, Extra's 98C8L rejected).
+* **Legitimate comparisons recovered: 2** — Hisense 55U6Q (Noon + Extra agree) and Impex 75S4QLC2 (Noon + Alnakheel).
+* **False splits among the 22: 0** (both SAME groups become all-match).
+* **Traps:** 213 non-model tokens in the labelled set, **0 accepted**; title lane 69 codes accepted, 0 traps; refused 277 size-mismatch / 39 no parsed size / 14 technology words.
+* Flags the reviewers raised: T14 (55T69D vs 55T6D: close specs, distinct models, medium) and T21 (Extra page shows 85Q6EQ vs Noon "85Q6Q International Model": possibly a regional rebadge of near-identical hardware; the proposal leaves Noon standing alone and Extra Review — conservative).
 
-**Extractor vs independent labels** (282 confirmed models / 213 traps): recall P0 current gate wiring 97.5 % · P1 plugin parity 97.5 % · P2 +lane D 98.9 % · P3 +lane T 98.9 %; **false accepts 0 / 213 for all**. (The labelled positives are mostly long codes, so recall barely moves — the gain is in the *unlabelled* short codes below.) Lane T on titles: **69 codes accepted, 0 traps**; 4 confirmed by another merchant's structured field, 2 by another title, **63 unconfirmed** (sample read by hand: `85T8D 85C6K 85Q6C 65P7L 75Q6Q 55T69D 55E7S PRO 55Q72Q 65E8S 75Q7C 50S5K 50A62Q 55E8S 85P8L 85C7L 65E8Q` — all follow TCL/Hisense series naming, but "plausible" is not "confirmed": see §9). Refused by rule: 277 size-mismatch (e.g. `144HZ`), 39 no parsed size, 14 technology words.
+## 6. Replay (all 182 multi-store TV groups, current offers)
 
-**Verifier replay** over all 182 multi-store TV groups (493 listings), current offers: listing verdicts P0 479 match / 14 review / 0 reject → **P3 444 / 47 / 2**. Comparable groups (≥ 2 stores that stand): P0 **171** · P1 172 · P2 156 · **P3 159**; with Amazon P0 68 → P3 62. Named cases: **TCL 85T8D vs 85C6K PRO** → amazon *review*, noon *review*, extra *match* (no merge); **Hisense Q71Q vs 65S7N** → jarir *review*, amazon *review*, extra *match* (no merge).
+Listing verdicts: current wiring 479 match / 14 review / 0 reject → proposal **444 / 47 / 2**. Comparable groups (≥ 2 stores that stand): **171 → 159 (−12, −7 %)**; with Amazon **68 → 62**. Net coverage loss is the removal of the 16 false merges less 3 recoveries (2 reviewed + 1 partial).
 
-**The 22 groups whose outcome changes (P0 → P3), each read by hand:**
+Per-merchant effect inside the 22 changed groups (listings): Jarir 6 (all match→review: size-less series codes) · Amazon 10 (7 match→review, 1 review→match, 2 unchanged) · Extra 20 (13 match→review, 1 review→match, 5 unchanged, 1 other) · Noon 16 (10 match→review, 1 match→reject, 1 review→match, 4 unchanged) · Blackbox 1 (match→review) · Alnakheel 1 (unchanged). No merchant is targeted: the rule is symmetric and every change is traced to a stated or findable code.
 
-| # | Class | Groups |
-|---|---|---|
-| 16 | **False merge removed** — two different stated models | TCL 85T8D/85C6K PRO · 65T8D/65Q6C · 65P7L/65T6D (noon rejected) · 55T8B/55P8K · 55P8L/55C7L · 75P8L/75Q7C · 75V6D/75V6B · 98C6K/98C8K · 50P7L/50P7K; Hisense 55E8S/55U7S · 65E8S/65U7S · 58E6Q/58A6N · 85U7Q/85U7S · 75Q72Q/75S7N · 55E7S PRO/55Q72Q · TCL 55T69D/55T6D |
-| 3 | **Legitimate comparison recovered** (review → match) | Hisense 55U6Q (noon + extra agree) · TCL 98Q6C (amazon + noon verified; extra's 98C8L *rejected*) · Impex 75S4QLC2 |
-| 3 | **Conservative one-sided Review** (match → review, no stated conflict) | Hisense 85Q6Q (extra states nothing) · Hisense Q61Q/65Q6N (Jarir size-less) · Hisense Q71Q/65S7N (the named case) |
-
-Net: **−12 comparable groups (−7 %) for 16 groups that stop claiming two different models are one product.** Coverage falls; Integrity rises; none of the 22 is a false split that the evidence can show (the three one-sided cases are the price of "one-sided uncertain model stays Review").
+Named cases: **TCL 85T8D vs 85C6K PRO** → Amazon review, Noon review, Extra match. **Hisense Q71Q vs 65S7N** → Jarir review, Amazon review, Extra match. Neither pair merges. Permanent regression fixtures (`tests/identity/tv-short-model.test.ts`): those two, `55E8S 65S7N 85T8D 85C6K PRO`, retailer SKU traps (ASIN, Noon, numeric), title-like `model` fields, screen-size and refresh-rate false positives, technology words, prefix truncations, agreeing codes matching, odd-one-out rejected, family keys with no evidence unchanged.
 
 ## 7. Residual false-merge risk (stated)
 
-* TV groups with **no model evidence on any side** are unchanged (family key, nothing to contradict) — 6 of 167 verified groups today (`evidence_strength.family_only`), versus 149 exact-model-key and 2 agreeing stated codes.
-* Lane T accepts what *looks* like a series code; 63 of 69 are uncorroborated by a second merchant. A wrongly-read title token would produce a wrong **review/reject**, i.e. a lost comparison, never a false merge — the failure direction is conservative.
-* Size-less series codes (Jarir) remain Unknown.
-* The research replays **current offers**, not the price-history fallback the signals job also reads; the production shadow will cover it.
+* TV groups with no model evidence on any side are unchanged (family key, nothing to contradict): 6 of 167 verified groups today.
+* Lane T accepts what looks like a series code; 63 of 69 are uncorroborated by a second merchant (read by hand: all follow TCL / Hisense naming). A wrongly read token produces a wrong Review/reject (a lost comparison), never a false merge — the failure direction is conservative.
+* Size-less series codes (Jarir) stay Unknown.
+* The replay uses current offers, not the price-history fallback the signals job also reads — the production shadow covers it.
+* Labels are independent of the extractors but I authored both the code and the first classification; the blind reviewers are provisional until the founder's answers arrive.
 
-## 8. Recommendation — **GO WITH CONDITIONS** (not auto-enabled)
+## 8. Decision — **GO WITH CONDITIONS** (unchanged, now better evidenced; not auto-enabled)
 
-Conditions, all required before any TV cutover:
-1. **Reviewer audit**: the founder or a reviewer reads the 22 changed groups (`replay-changed-groups.json`, listing titles side by side) and a sample of the 63 uncorroborated title codes — the labels above are independent of the extractors but I authored both the code and the classification.
-2. Implement the **single shared function** and wire the signals job, compare page and shadow script to it; TV only; parity tests prove other categories byte-identical.
-3. **Production shadow** with the isolated runner (signals only, no read gate): confirm the 22-group effect on real signals including the history fallback.
-4. Fresh audit sample on TV after the wiring with **zero** confirmed false merge, and 85T8D/85C6K PRO + Q71Q/65S7N shown not to merge on the live compare page.
-5. Surfaces agree (search card / product / compare / category) — the storefront and agent bypasses are already gated.
-6. Approve adding `tv` to `IDENTITY_RUNNER_APPROVED_CATEGORIES` (a code change — deliberately not a variable).
+| Condition | Status |
+|---|---|
+| Full independent review of the 22 changed groups | **DONE by two blind reviewers (22/22 agreement, 0 residual, 0 false splits); founder's own answers pending and prevail** |
+| Known TCL/Hisense failures fixed | **DONE in replay** (both named cases no longer merge) |
+| No major new false-split class | **MET** (0 among the 22; the cost is 3 one-sided Reviews) |
+| 0 unacceptable trap acceptance | **MET** (0 / 213) |
+| One shared evidence function wired into signals job, compare page, shadow (TV only; other categories byte-identical, parity tests) | **NOT DONE** (designed in §2) |
+| Production shadow with the isolated runner (signals only) incl. history fallback | **NOT DONE** |
+| Fresh post-wiring audit sample with zero confirmed false merge; search / product / compare agree | **NOT DONE** |
+| Approval to add `tv` to `IDENTITY_RUNNER_APPROVED_CATEGORIES` (a code change) | **NOT DONE** |
 
-NO-GO triggers: any confirmed false merge in the post-wiring audit; comparable groups falling more than the 22-group analysis explains.
+NO-GO triggers: any confirmed false merge in the post-wiring audit; comparable groups falling more than this analysis explains.
 
-## 9. Limits of this evidence
+## 9. Scope-extension findings from the Vacuum review (affects the design, not the TV decision)
 
-Labels come from cross-merchant agreement and rules, not from a manufacturer database; 404 declared tokens and 63 title tokens are uncorroborated. Extra's `modelNumber` is treated as authoritative on the strength of 0 traps in 306 values and 123 independent confirmations — if Extra changes its feed that must be re-measured (the proposed lane D is per-field, not per-merchant, so the monitor's candidate scan will surface a regression).
+The same hidden-evidence class is not TV-specific:
+1. **Low-digit codes in titles** (`A9K-CORE` vs `A9K-PRO`, LG vacuums) fail the name-lane density rule (≥ 8 chars, ≥ 3 digits) exactly as `85T8D` fails the length rule.
+2. **Attribute conflicts** the verifier has no vacuum rule for: stated capacity in litres. A shadow paper-test of "both sides state litres and they differ by > 15 % ⇒ conflict" caught **3 of the 5** consensus Vacuum false merges (Midea 2 L vs 18 L, Panasonic 10 L vs 15 L, LG 1.5 L vs 0.44 L) and flagged **0 of 16** groups both reviewers judged exact.
+3. **Spec-only model evidence** (§4) and **Extra payloads without `modelNumber`** (186 of 264 Extra Vacuum offers carry it; the rest do not, while Extra's product pages show an mpn).
+So the unified function should be category-general in its *interface* and shipped TV-first; each category adds its own trust rows and attribute rules.
+
+## 10. Limits of this evidence
+
+Labels come from cross-merchant agreement, rules and two blind AI reviewers (one of which read Extra product pages), not from a manufacturer database. 404 declared tokens and 63 title tokens are uncorroborated. Extra's `modelNumber` is treated as authoritative on 0.8 % traps over 1,643 values and 80.5 % independent confirmation — the trust matrix must be re-measured if its feed changes. The 22 reviewed groups are the *changed* groups; unchanged groups were not re-reviewed (their outcome is by construction identical).

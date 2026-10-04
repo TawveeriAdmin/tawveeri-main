@@ -1,0 +1,221 @@
+<title>__TITLE__</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* One GROUP at a time: 2–4 listings side by side (stacked on phones), the evidence under each, answer buttons, an optional "which listing differs" chip row, and a numbered strip to jump anywhere. */
+:root {
+  --bg: #eef1ef; --surface: #ffffff; --surface-2: #f6f8f7; --ink: #15211c; --ink-2: #53635b; --line: #d5ddd9; --accent: #0e5c47;
+  --same: #0e6b4d; --same-bg: #dcf0e7; --fam: #7a5a0f; --fam-bg: #f4ead1; --diff: #a23a22; --diff-bg: #f6e1da; --unsure: #4a4f8a; --unsure-bg: #e4e6f5;
+  --focus: #1d4ed8; --font: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, sans-serif; --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #101714; --surface: #18221e; --surface-2: #1e2a25; --ink: #e8f0ec; --ink-2: #97aaa1; --line: #2b3a34; --accent: #5cc9a3;
+    --same: #6fd6ae; --same-bg: #17382c; --fam: #e6c46c; --fam-bg: #3a3017; --diff: #f09a82; --diff-bg: #3d211a; --unsure: #aab2ff; --unsure-bg: #25284a; --focus: #7aa2ff; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #101714; --surface: #18221e; --surface-2: #1e2a25; --ink: #e8f0ec; --ink-2: #97aaa1; --line: #2b3a34; --accent: #5cc9a3;
+  --same: #6fd6ae; --same-bg: #17382c; --fam: #e6c46c; --fam-bg: #3a3017; --diff: #f09a82; --diff-bg: #3d211a; --unsure: #aab2ff; --unsure-bg: #25284a; --focus: #7aa2ff; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 15px; line-height: 1.6; margin: 0; padding-inline: 16px; padding-block: 16px 96px; direction: rtl; }
+main { max-width: 1100px; margin-inline: auto; display: grid; gap: 16px; }
+button { font: inherit; color: inherit; cursor: pointer; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.top { display: grid; gap: 10px; }
+.top h1 { font-size: 1.35rem; margin: 0; font-weight: 700; text-wrap: balance; }
+.top p { margin: 0; color: var(--ink-2); max-width: 70ch; }
+.meter { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.bar { flex: 1 1 200px; height: 8px; background: var(--line); border-radius: 99px; overflow: hidden; }
+.bar > i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .25s; }
+.meter b { font-variant-numeric: tabular-nums; }
+.savenote { font-size: .85rem; color: var(--ink-2); }
+.savenote.warn { color: var(--diff); }
+.group { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: grid; gap: 16px; }
+.ghead { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.ghead .n { font-weight: 700; font-variant-numeric: tabular-nums; }
+.ghead .cat, .ghead .key { color: var(--ink-2); font-family: var(--mono); font-size: .82rem; direction: ltr; unicode-bidi: plaintext; }
+.listings { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 12px; }
+.listing { background: var(--surface-2); border-radius: 8px; padding: 12px 14px; min-width: 0; display: grid; gap: 8px; align-content: start; }
+.store { font-weight: 700; color: var(--accent); display: flex; justify-content: space-between; gap: 8px; }
+.store small { font-weight: 500; color: var(--ink-2); }
+.title { font-family: var(--mono); font-size: .86rem; line-height: 1.55; overflow-wrap: anywhere; unicode-bidi: plaintext; text-align: start; }
+.title[dir="rtl"] { font-family: var(--font); font-size: .95rem; }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; font-size: .86rem; }
+.kv dt { color: var(--ink-2); white-space: nowrap; }
+.kv dd { margin: 0; overflow-wrap: anywhere; unicode-bidi: plaintext; }
+.kv dd.none { color: var(--ink-2); }
+.srcmodel { background: var(--same-bg); border-radius: 6px; padding: 6px 8px; font-family: var(--mono); font-size: .8rem; direction: ltr; overflow-wrap: anywhere; }
+.srcmodel b { font-family: var(--font); font-weight: 600; }
+details { font-size: .82rem; color: var(--ink-2); }
+details ul { margin: 4px 0 0; padding-inline-start: 18px; direction: ltr; text-align: left; font-family: var(--mono); font-size: .78rem; overflow-wrap: anywhere; }
+a.link { font-size: .8rem; color: var(--focus); overflow-wrap: anywhere; direction: ltr; unicode-bidi: plaintext; }
+.question { font-weight: 600; margin: 0; text-wrap: balance; }
+.hint { margin: 2px 0 0; color: var(--ink-2); font-size: .85rem; font-weight: 400; }
+.answers { display: grid; grid-template-columns: repeat(__NOPT__, 1fr); gap: 10px; }
+.ans { border: 2px solid var(--line); background: var(--surface); border-radius: 10px; padding: 14px 10px; min-height: 68px; display: grid; gap: 2px; justify-items: center; align-content: center; text-align: center; font-weight: 700; }
+.ans small { font-weight: 400; color: var(--ink-2); font-size: .74rem; direction: ltr; }
+.ans[data-c="same"][aria-pressed="true"] { border-color: var(--same); background: var(--same-bg); color: var(--same); }
+.ans[data-c="fam"][aria-pressed="true"] { border-color: var(--fam); background: var(--fam-bg); color: var(--fam); }
+.ans[data-c="diff"][aria-pressed="true"] { border-color: var(--diff); background: var(--diff-bg); color: var(--diff); }
+.ans[data-c="unsure"][aria-pressed="true"] { border-color: var(--unsure); background: var(--unsure-bg); color: var(--unsure); }
+.ans:hover { border-color: var(--ink-2); }
+.odd { display: grid; gap: 6px; }
+.odd .lbl { color: var(--ink-2); font-size: .85rem; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip { border: 1px solid var(--line); background: var(--surface); border-radius: 99px; padding: 6px 14px; min-height: 36px; }
+.chip[aria-pressed="true"] { background: var(--diff-bg); border-color: var(--diff); color: var(--diff); font-weight: 600; }
+.note { width: 100%; min-height: 44px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); padding: 8px 10px; font: inherit; resize: vertical; }
+.nav { display: flex; justify-content: space-between; gap: 10px; }
+.nav button { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 9px 16px; min-height: 44px; }
+.nav button:disabled { opacity: .4; cursor: default; }
+.strip { display: grid; grid-template-columns: repeat(auto-fill, minmax(36px, 1fr)); gap: 6px; }
+.dot { border: 1px solid var(--line); background: var(--surface); border-radius: 6px; min-height: 36px; font-size: .8rem; font-variant-numeric: tabular-nums; }
+.dot[data-c="same"] { background: var(--same-bg); border-color: var(--same); }
+.dot[data-c="fam"] { background: var(--fam-bg); border-color: var(--fam); }
+.dot[data-c="diff"] { background: var(--diff-bg); border-color: var(--diff); }
+.dot[data-c="unsure"] { background: var(--unsure-bg); border-color: var(--unsure); }
+.dot[aria-current="true"] { outline: 3px solid var(--ink); outline-offset: 1px; }
+.legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: .85rem; color: var(--ink-2); }
+.legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-inline-end: 6px; background: var(--line); }
+.legend .same::before { background: var(--same); } .legend .fam::before { background: var(--fam); } .legend .diff::before { background: var(--diff); } .legend .unsure::before { background: var(--unsure); }
+.done { background: var(--same-bg); color: var(--same); border-radius: 10px; padding: 14px 16px; font-weight: 600; }
+@media (max-width: 640px) { .answers { grid-template-columns: 1fr; } .ans { min-height: 56px; } }
+@media (prefers-reduced-motion: reduce) { .bar > i { transition: none; } }
+</style>
+
+<main>
+  <header class="top">
+    <h1>__TITLE__</h1>
+    <p>__INTRO__</p>
+    <div class="meter">
+      <div class="bar" role="progressbar" aria-label="التقدم" aria-valuemin="0" aria-valuemax="__N__" id="bar"><i id="barfill"></i></div>
+      <span><b id="count">٠</b> من __NAR__</span>
+    </div>
+    <div class="savenote" id="savenote">جارٍ تجهيز الحفظ…</div>
+  </header>
+  <section class="group" id="group" aria-live="polite"></section>
+  <section aria-label="كل المجموعات" style="display:grid;gap:10px">
+    <div class="legend" id="legend"></div>
+    <div class="strip" id="strip"></div>
+  </section>
+  <div id="doneBox"></div>
+</main>
+
+<script>
+const SHEET = __SHEET__;
+const CFG = __CFG__;
+const AR_DIGITS = (n) => String(n).replace(/\d/g, (d) => "٠١٢٣٤٥٦٧٨٩"[d]);
+let idx = 0, answers = {}, odds = {}, notes = {}, db = null, saveMode = "pending";
+const LS = CFG.prefix;
+try { const s = localStorage.getItem(LS + "_idx"); if (s) idx = Math.min(Math.max(+s || 0, 0), SHEET.length - 1); } catch (e) {}
+try { const l = JSON.parse(localStorage.getItem(LS + "_local") || "{}"); if (l && typeof l === "object") { answers = l.answers || {}; odds = l.odds || {}; notes = l.notes || {}; } } catch (e) {}
+
+const $ = (id) => document.getElementById(id);
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+const isRtl = (s) => /[؀-ۿ]/.test(s);
+const persistLocal = () => { try { localStorage.setItem(LS + "_local", JSON.stringify({ answers, odds, notes })); } catch (e) {} };
+
+function listingCard(l, i) {
+  const c = el("div", "listing");
+  const st = el("div", "store"); st.append(el("span", null, l.merchant), el("small", null, "إعلان " + AR_DIGITS(i + 1))); c.append(st);
+  const t = el("div", "title", l.title); t.dir = isRtl(l.title) ? "rtl" : "ltr"; c.append(t);
+  const kv = el("dl", "kv");
+  const add = (k, v) => { const dt = el("dt", null, k); const dd = el("dd", /^(غير|لم|لا إشارة)/.test(String(v)) ? "none" : null, String(v)); kv.append(dt, dd); };
+  add("العلامة التجارية", l.brand);
+  for (const [k, v] of Object.entries(l.attributes || {})) add(CFG.attrLabels[k] || k, v);
+  c.append(kv);
+  const sm = Object.entries(l.source_model_fields || {});
+  const box = el("div", "srcmodel");
+  if (sm.length) { box.textContent = ""; sm.forEach(([k, v]) => { const row = el("div"); row.append(el("b", null, k + ": "), document.createTextNode(String(v))); box.append(row); }); }
+  else box.append(el("b", null, "لا حقل موديل في بيانات التاجر"));
+  c.append(box);
+  if (CFG.showTitleModel) { const m = el("div", "srcmodel"); m.append(el("b", null, "رمز موديل مقروء من العنوان: "), document.createTextNode(l.model_found_in_title || "—")); c.append(m); }
+  if (l.merchant_specs && l.merchant_specs.length) { const d = el("details"); d.append(el("summary", null, "مواصفات التاجر (" + AR_DIGITS(l.merchant_specs.length) + ")")); const u = el("ul"); l.merchant_specs.forEach((x) => u.append(el("li", null, x))); d.append(u); c.append(d); }
+  if (l.url) { const a = el("a", "link", l.url); a.href = l.url; a.target = "_blank"; a.rel = "noopener noreferrer"; c.append(a); }
+  return c;
+}
+
+function renderGroup() {
+  const g = SHEET[idx], box = $("group"); box.textContent = "";
+  const head = el("div", "ghead"); head.append(el("span", "n", "المجموعة " + AR_DIGITS(idx + 1) + " من " + AR_DIGITS(SHEET.length)));
+  const meta = el("span"); meta.append(el("span", "cat", g.category)); if (g.key) { meta.append(document.createTextNode("  ·  ")); meta.append(el("span", "key", g.key)); } head.append(meta); box.append(head);
+  const ls = el("div", "listings"); g.listings.forEach((l, i) => ls.append(listingCard(l, i))); box.append(ls);
+  box.append(el("p", "question", CFG.question));
+  const ans = el("div", "answers");
+  CFG.options.forEach((o, n) => {
+    const b = el("button", "ans"); b.type = "button"; b.dataset.c = o.c; b.setAttribute("aria-pressed", answers[g.id] === o.k ? "true" : "false");
+    b.append(el("span", null, (n + 1) + " · " + o.ar), el("small", null, o.en)); b.addEventListener("click", () => choose(o.k)); ans.append(b);
+  });
+  box.append(ans);
+  if (answers[g.id] && answers[g.id] !== CFG.sameKey) {
+    const odd = el("div", "odd"); odd.append(el("div", "lbl", "إن كان إعلان واحد هو المختلف أو غير المطابق، اختره (اختياري):"));
+    const chips = el("div", "chips");
+    g.listings.forEach((l, i) => { const ch = el("button", "chip", l.merchant + " (" + AR_DIGITS(i + 1) + ")"); ch.type = "button"; const on = (odds[g.id] || []).includes(i); ch.setAttribute("aria-pressed", on ? "true" : "false"); ch.addEventListener("click", () => toggleOdd(i)); chips.append(ch); });
+    odd.append(chips); box.append(odd);
+  }
+  const ta = el("textarea", "note"); ta.placeholder = "ملاحظة (اختياري)"; ta.value = notes[g.id] || ""; ta.addEventListener("change", () => saveNote(ta.value)); box.append(ta);
+  const nav = el("div", "nav"); const prev = el("button", null, "السابقة"), next = el("button", null, "التالية");
+  prev.type = next.type = "button"; prev.disabled = idx === 0; next.disabled = idx === SHEET.length - 1;
+  prev.addEventListener("click", () => go(idx - 1)); next.addEventListener("click", () => go(idx + 1)); nav.append(prev, next); box.append(nav);
+}
+function renderStrip() {
+  const s = $("strip"); s.textContent = "";
+  SHEET.forEach((g, i) => { const b = el("button", "dot", AR_DIGITS(i + 1)); b.type = "button"; const o = CFG.options.find((x) => x.k === answers[g.id]); if (o) b.dataset.c = o.c; if (i === idx) b.setAttribute("aria-current", "true"); b.setAttribute("aria-label", "المجموعة " + (i + 1)); b.addEventListener("click", () => go(i)); s.append(b); });
+}
+function renderMeter() {
+  const done = SHEET.filter((g) => answers[g.id]).length;
+  $("count").textContent = AR_DIGITS(done); $("barfill").style.width = (done / SHEET.length * 100) + "%"; $("bar").setAttribute("aria-valuenow", done);
+  const d = $("doneBox"); d.textContent = "";
+  if (done === SHEET.length) d.append(el("div", "done", "اكتملت الإجابات. أخبر Claude أنك انتهيت."));
+}
+function renderNote() {
+  const n = $("savenote"); n.classList.remove("warn");
+  if (saveMode === "db") n.textContent = "تُحفظ كل إجابة تلقائيًا ويمكنك الرجوع وتغييرها.";
+  else if (saveMode === "local") { n.textContent = "الحفظ على هذا المتصفح فقط. Claude لن يرى إجاباتك حتى تُفتح الصفحة بحساب يسمح بالحفظ."; n.classList.add("warn"); }
+  else n.textContent = "جارٍ تجهيز الحفظ…";
+}
+function renderLegend() { const l = $("legend"); l.textContent = ""; CFG.options.forEach((o) => l.append(el("span", o.c, o.ar))); }
+function renderAll() { renderGroup(); renderStrip(); renderMeter(); renderNote(); }
+function go(i) { idx = Math.min(Math.max(i, 0), SHEET.length - 1); try { localStorage.setItem(LS + "_idx", String(idx)); } catch (e) {} renderAll(); window.scrollTo({ top: 0 }); }
+
+async function saveRemote(id) {
+  const rec = { answer: answers[id], odd: (odds[id] || []).map((i) => (SHEET.find((g) => g.id === id).listings[i] || {}).merchant), note: notes[id] || "", at: new Date().toISOString() };
+  if (db) { try { await db.doc(CFG.collection + "/" + id).set(rec); } catch (e) { saveMode = "local"; renderNote(); } }
+}
+async function choose(k) {
+  const g = SHEET[idx]; answers[g.id] = k; if (k === CFG.sameKey) odds[g.id] = [];
+  persistLocal(); renderStrip(); renderMeter(); renderGroup(); await saveRemote(g.id);
+}
+async function toggleOdd(i) {
+  const g = SHEET[idx]; const cur = new Set(odds[g.id] || []); if (cur.has(i)) cur.delete(i); else cur.add(i); odds[g.id] = [...cur].sort();
+  persistLocal(); renderGroup(); await saveRemote(g.id);
+}
+async function saveNote(v) { const g = SHEET[idx]; notes[g.id] = v; persistLocal(); if (answers[g.id]) await saveRemote(g.id); }
+
+document.addEventListener("keydown", (e) => {
+  if (e.ctrlKey || e.metaKey || e.altKey || /^(TEXTAREA|INPUT)$/.test((e.target || {}).tagName || "")) return;
+  const n = +e.key; if (n >= 1 && n <= CFG.options.length) choose(CFG.options[n - 1].k);
+});
+
+renderLegend(); renderAll();
+
+(async () => {
+  try {
+    const c = window.claude; db = c && c.use ? await c.use("db") : null;
+    if (!db) { saveMode = "local"; renderNote(); return; }
+    saveMode = "db"; renderNote();
+    db.collection(CFG.collection).onSnapshot((snap) => {
+      const remote = {}; snap.docs.forEach((d) => { const v = d.data(); if (v && v.answer) remote[d.id] = v; });
+      const pending = Object.keys(answers).filter((id) => !remote[id]);
+      for (const id of Object.keys(remote)) {
+        answers[id] = remote[id].answer; notes[id] = remote[id].note || notes[id] || "";
+        const g = SHEET.find((x) => x.id === id); if (g && Array.isArray(remote[id].odd)) odds[id] = remote[id].odd.map((m) => g.listings.findIndex((l) => l.merchant === m)).filter((i) => i >= 0);
+      }
+      persistLocal(); renderStrip(); renderMeter(); renderGroup();
+      if (!window.__pushed) { window.__pushed = true; pending.reduce((pr, id) => pr.then(() => saveRemote(id)), Promise.resolve()); }
+    }, () => { saveMode = "local"; renderNote(); });
+  } catch (e) { saveMode = "local"; renderNote(); }
+})();
+</script>

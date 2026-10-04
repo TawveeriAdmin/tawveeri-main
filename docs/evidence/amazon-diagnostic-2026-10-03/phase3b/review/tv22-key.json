@@ -1,0 +1,286 @@
+[
+ {
+  "id": "T01",
+  "key": "hisense|65|4k|qled|144",
+  "verifier_before": [
+   "1:match",
+   "2:match",
+   "4:match"
+  ],
+  "verifier_after": [
+   "1:review(vs 4: model_code_one_side)",
+   "2:review(vs 4: model_code_one_side)",
+   "4:match()"
+  ]
+ },
+ {
+  "id": "T02",
+  "key": "hisense|75|4k|qled|144",
+  "verifier_before": [
+   "3:match",
+   "4:review"
+  ],
+  "verifier_after": [
+   "3:review(vs 4: conflict_unresolved: no_condition_conflict,model_code_conflict:7)",
+   "4:review(vs 3: conflict_unresolved: no_condition_conflict,model_code_conflict:7)"
+  ]
+ },
+ {
+  "id": "T03",
+  "key": "impex|MODEL:75S4QLC2",
+  "verifier_before": [
+   "3:review",
+   "23:match"
+  ],
+  "verifier_after": [
+   "3:match()",
+   "23:match()"
+  ]
+ },
+ {
+  "id": "T04",
+  "key": "tcl|65|4k|qled|60",
+  "verifier_before": [
+   "1:match",
+   "2:match",
+   "3:match",
+   "4:match"
+  ],
+  "verifier_after": [
+   "1:review(vs 2: model_code_one_side)",
+   "2:match()",
+   "3:reject(vs 2: no_condition_conflict,model_code_conflict:65P7L≠65T6D)",
+   "4:match()"
+  ]
+ },
+ {
+  "id": "T05",
+  "key": "hisense|55|4k|mini_led|144",
+  "verifier_before": [
+   "2:match",
+   "4:match"
+  ],
+  "verifier_after": [
+   "2:review(vs 4: conflict_unresolved: no_condition_conflict,model_code_conflict:5)",
+   "4:review(vs 2: conflict_unresolved: no_condition_conflict,model_code_conflict:5)"
+  ]
+ },
+ {
+  "id": "T06",
+  "key": "tcl|85|4k|mini_led|144",
+  "verifier_before": [
+   "2:match",
+   "3:match",
+   "4:match"
+  ],
+  "verifier_after": [
+   "2:review(vs 3: conflict_unresolved: no_condition_conflict,model_code_conflict:8)",
+   "3:review(vs 2: conflict_unresolved: no_condition_conflict,model_code_conflict:8)",
+   "4:review(vs 2: conflict_unresolved: no_condition_conflict,model_code_conflict:8)"
+  ]
+ },
+ {
+  "id": "T07",
+  "key": "hisense|55|4k|mini_led|60",
+  "verifier_before": [
+   "3:match",
+   "4:review"
+  ],
+  "verifier_after": [
+   "3:match()",
+   "4:match()"
+  ]
+ },
+ {
+  "id": "T08",
+  "key": "tcl|98|4k|mini_led|144",
+  "verifier_before": [
+   "2:review",
+   "3:match",
+   "4:review"
+  ],
+  "verifier_after": [
+   "2:match()",
+   "3:match()",
+   "4:reject(vs 3: no_condition_conflict,model_code_conflict:98C8L≠98Q6C)"
+  ]
+ },
+ {
+  "id": "T09",
+  "key": "tcl|65|4k|mini_led|144",
+  "verifier_before": [
+   "1:match",
+   "2:match",
+   "3:match",
+   "4:match"
+  ],
+  "verifier_after": [
+   "1:review(vs 3: model_code_one_side)",
+   "2:review(vs 3: conflict_unresolved: no_condition_conflict,model_code_conflict:6)",
+   "3:review(vs 4: conflict_unresolved: no_condition_conflict,model_code_conflict:6)",
+   "4:review(vs 3: conflict_unresolved: no_condition_conflict,model_code_conflict:6)"
+  ]
+ },
+ {
+  "id": "T10",
+  "key": "hisense|85|4k|mini_led|144",
+  "verifier_before": [
+   "3:match",
+   "4:match"
+  ],
+  "verifier_after": [
+   "3:review(vs 4: conflict_unresolved: no_condition_conflict,model_code_conflict:8)",
+   "4:review(vs 3: conflict_unresolved: no_condition_conflict,model_code_conflict:8)"
+  ]
+ },
+ {
+  "id": "T11",
+  "key": "tcl|98|4k|mini_led|120",
+  "verifier_before": [
+   "1:match",
+   "4:match"
+  ],
+  "verifier_after": [
+   "1:review(vs 4: conflict_unresolved: no_condition_conflict,model_code_conflict:9)",
+   "4:review(vs 1: conflict_unresolved: no_condition_conflict,model_code_conflict:9)"
+  ]
+ },
+ {
+  "id": "T12",
+  "key": "tcl|55|4k|qled|144",
+  "verifier_before": [
+   "3:match",
+   "4:match"
+  ],
+  "verifier_after": [
+   "3:review(vs 4: conflict_unresolved: no_condition_conflict,model_code_conflict:5)",
+   "4:review(vs 3: conflict_unresolved: no_condition_conflict,model_code_conflict:5)"
+  ]
+ },
+ {
+  "id": "T13",
+  "key": "tcl|55|4k|mini_led|144",
+  "verifier_before": [
+   "3:match",
+   "4:match"
+  ],
+  "verifier_after": [
+   "3:review(vs 4: conflict_unresolved: no_condition_conflict,model_code_conflict:5)",
+   "4:review(vs 3: conflict_unresolved: no_condition_conflict,model_code_conflict:5)"
+  ]
+ },
+ {
+  "id": "T14",
+  "key": "tcl|55|4k|qled|60",
+  "verifier_before": [
+   "3:match",
+   "4:review"
+  ],
+  "verifier_after": [
+   "3:review(vs 4: conflict_unresolved: no_condition_conflict,model_code_conflict:5)",
+   "4:review(vs 3: conflict_unresolved: no_condition_conflict,model_code_conflict:5)"
+  ]
+ },
+ {
+  "id": "T15",
+  "key": "hisense|55|4k|qled|144",
+  "verifier_before": [
+   "2:review",
+   "4:review",
+   "18:match"
+  ],
+  "verifier_after": [
+   "2:review(vs 18: conflict_unresolved: no_condition_conflict,model_code_conflict:)",
+   "4:review(vs 2: model_code_one_side)",
+   "18:review(vs 2: conflict_unresolved: no_condition_conflict,model_code_conflict:5)"
+  ]
+ },
+ {
+  "id": "T16",
+  "key": "hisense|65|4k|qled|60",
+  "verifier_before": [
+   "1:match",
+   "3:match"
+  ],
+  "verifier_after": [
+   "1:review(vs 3: model_code_one_side)",
+   "3:match()"
+  ]
+ },
+ {
+  "id": "T17",
+  "key": "tcl|50|4k|qled|60",
+  "verifier_before": [
+   "3:match",
+   "4:match"
+  ],
+  "verifier_after": [
+   "3:review(vs 4: conflict_unresolved: no_condition_conflict,model_code_conflict:5)",
+   "4:review(vs 3: conflict_unresolved: no_condition_conflict,model_code_conflict:5)"
+  ]
+ },
+ {
+  "id": "T18",
+  "key": "hisense|65|4k|mini_led|144",
+  "verifier_before": [
+   "2:match",
+   "4:match"
+  ],
+  "verifier_after": [
+   "2:review(vs 4: conflict_unresolved: no_condition_conflict,model_code_conflict:6)",
+   "4:review(vs 2: conflict_unresolved: no_condition_conflict,model_code_conflict:6)"
+  ]
+ },
+ {
+  "id": "T19",
+  "key": "tcl|75|4k|led|60",
+  "verifier_before": [
+   "3:match",
+   "4:match"
+  ],
+  "verifier_after": [
+   "3:review(vs 4: conflict_unresolved: no_condition_conflict,model_code_conflict:7)",
+   "4:review(vs 3: conflict_unresolved: no_condition_conflict,model_code_conflict:7)"
+  ]
+ },
+ {
+  "id": "T20",
+  "key": "tcl|75|4k|mini_led|144",
+  "verifier_before": [
+   "1:match",
+   "2:match",
+   "3:match",
+   "4:match"
+  ],
+  "verifier_after": [
+   "1:review(vs 4: model_code_one_side)",
+   "2:review(vs 4: model_code_one_side)",
+   "3:review(vs 4: conflict_unresolved: no_condition_conflict,model_code_conflict:7)",
+   "4:review(vs 3: conflict_unresolved: no_condition_conflict,model_code_conflict:7)"
+  ]
+ },
+ {
+  "id": "T21",
+  "key": "hisense|85|4k|qled|60",
+  "verifier_before": [
+   "3:match",
+   "4:match"
+  ],
+  "verifier_after": [
+   "3:match()",
+   "4:review(vs 3: model_code_one_side)"
+  ]
+ },
+ {
+  "id": "T22",
+  "key": "hisense|58|4k|led|60",
+  "verifier_before": [
+   "2:match",
+   "4:match"
+  ],
+  "verifier_after": [
+   "2:review(vs 4: conflict_unresolved: no_condition_conflict,model_code_conflict:5)",
+   "4:review(vs 2: conflict_unresolved: no_condition_conflict,model_code_conflict:5)"
+  ]
+ }
+]

@@ -1,0 +1,270 @@
+[
+ {
+  "id": "V01",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "odd": [],
+  "confidence": "medium",
+  "rationale": "Philips XD3010/61 3L 2000W bagged canister (Noon code); Extra title matches line, size, watt, bag type, colour; no code on Extra.",
+  "evidence": "titles only"
+ },
+ {
+  "id": "V02",
+  "answer": "DIFFERENT_VARIANT",
+  "odd": [
+   1
+  ],
+  "confidence": "high",
+  "rationale": "Extra Midea is 2L bagless 1800W; Shaker MDVC18 is 18L barrel 1800W. Capacity and form differ.",
+  "evidence": "titles only"
+ },
+ {
+  "id": "V03",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "odd": [],
+  "confidence": "high",
+  "rationale": "Tefal X-Trem Power TW4035M0 23L 2400W; Extra title identical spec, gold/black colour only.",
+  "evidence": "titles only"
+ },
+ {
+  "id": "V04",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "odd": [],
+  "confidence": "medium",
+  "rationale": "Koolen 1600W 21L black; barrel and drum are the same form. No model codes shown anywhere.",
+  "evidence": "titles only"
+ },
+ {
+  "id": "V05",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "odd": [],
+  "confidence": "high",
+  "rationale": "BLACK+DECKER BV2000-B5 drum 20L 2000W across Extra, Shaker, Amazon; consistent.",
+  "evidence": "titles only"
+ },
+ {
+  "id": "V06",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "odd": [],
+  "confidence": "medium",
+  "rationale": "ClassPro dry vacuum 25L 2200W steel on both; no model code but all specs identical.",
+  "evidence": "titles only"
+ },
+ {
+  "id": "V07",
+  "answer": "SAME_FAMILY_NOT_ENOUGH_EVIDENCE",
+  "odd": [],
+  "confidence": "low",
+  "rationale": "Tefal Compact Power XXL 900W bagless; Amazon TW4B25HA Classic Kit black/grey vs Extra aqua/grey with no code; colour may mean a different SKU/kit.",
+  "evidence": "titles only"
+ },
+ {
+  "id": "V08",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "odd": [],
+  "confidence": "medium",
+  "rationale": "Hoover Power Pro drum 22L 2300W; Amazon HT85-T3-ME, Extra same name/specs, no code.",
+  "evidence": "titles only"
+ },
+ {
+  "id": "V09",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "odd": [],
+  "confidence": "medium",
+  "rationale": "Hitachi drum 21L 2500W black/red; Najm CV-9800MIJRGB, Extra same specs without code.",
+  "evidence": "titles only"
+ },
+ {
+  "id": "V10",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "odd": [],
+  "confidence": "high",
+  "rationale": "Fisher BSC-2300 drum 20L 2300W on both.",
+  "evidence": "titles only"
+ },
+ {
+  "id": "V11",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "odd": [],
+  "confidence": "high",
+  "rationale": "Fisher BSC-2300 20L 2300W in Najm title and Noon model_number.",
+  "evidence": "titles only"
+ },
+ {
+  "id": "V12",
+  "answer": "DIFFERENT_VARIANT",
+  "odd": [
+   1
+  ],
+  "confidence": "high",
+  "rationale": "Bissell 2026K (23L) vs 2026E (21L): different explicit codes and capacities. Almanea itself lists 2026E and 2026K separately.",
+  "evidence": "https://www.almanea.sa/en/product/bissell-wet-dry-drum-vacuum-1500w-black-2026k-p-150207202999010 ; https://myxprs.com/products/bissell-2026k-multiclean-wet-dry-drum-vacuum-cleaner-1500w-23l-black-red"
+ },
+ {
+  "id": "V13",
+  "answer": "DIFFERENT_VARIANT",
+  "odd": [
+   2
+  ],
+  "confidence": "high",
+  "rationale": "Extra Panasonic 10L 1500W drum vs Almanea MC-YL690GY47 15L barrel; capacity differs.",
+  "evidence": "titles only"
+ },
+ {
+  "id": "V14",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "odd": [],
+  "confidence": "high",
+  "rationale": "Panasonic MC-CJ911RY47 6L 1900W red canister bagged on Noon; Extra identical specs.",
+  "evidence": "titles only"
+ },
+ {
+  "id": "V15",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "odd": [],
+  "confidence": "medium",
+  "rationale": "Both state Bissell 3924K 1100W (Extra modelNumber); Almanea title mislabels it handheld but code and watt match.",
+  "evidence": "titles only"
+ },
+ {
+  "id": "V16",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "odd": [],
+  "confidence": "medium",
+  "rationale": "Shark Anti Hair Wrap Upright Pet 750W NZ801 on Lulu/Extra; Extra capacity figures inconsistent but same product name.",
+  "evidence": "titles only"
+ },
+ {
+  "id": "V17",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "odd": [],
+  "confidence": "high",
+  "rationale": "Fisher BSC-1300 drum 13L 1300W on both.",
+  "evidence": "titles only"
+ },
+ {
+  "id": "V18",
+  "answer": "SAME_FAMILY_NOT_ENOUGH_EVIDENCE",
+  "odd": [],
+  "confidence": "low",
+  "rationale": "Tefal X-Clean wet-dry cordless 200W: Noon GF5035M0 X-Clean 4 740ml; Extra X-Clean 730ml grey with no code; could be another generation.",
+  "evidence": "titles only"
+ },
+ {
+  "id": "V19",
+  "answer": "DIFFERENT_VARIANT",
+  "odd": [
+   1,
+   2,
+   3
+  ],
+  "confidence": "high",
+  "rationale": "LG CordZero A9: A9K-CORE (0.44L) vs A9K-PRO (0.44L) are different codes; Extra 1.5L 379W vintage rose is another variant.",
+  "evidence": "titles only"
+ },
+ {
+  "id": "V20",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "odd": [],
+  "confidence": "high",
+  "rationale": "Hitachi CV-945F SS220 drum 18L 2000W; Amazon BK, Extra WR, Najm dark red: colour suffix only.",
+  "evidence": "titles only"
+ },
+ {
+  "id": "V21",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "odd": [],
+  "confidence": "high",
+  "rationale": "Platinum VC-8325 drum 25L 2200W black/gray on Noon; Extra same specs.",
+  "evidence": "titles only"
+ },
+ {
+  "id": "V22",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "odd": [],
+  "confidence": "medium",
+  "rationale": "Koolen drum 21L 2000W on both; no codes, specs identical.",
+  "evidence": "titles only"
+ },
+ {
+  "id": "V23",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "odd": [],
+  "confidence": "high",
+  "rationale": "Hitachi CV-950H drum 18L on both; Extra code SS220 WR is a colour/region suffix.",
+  "evidence": "titles only"
+ },
+ {
+  "id": "V24",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "odd": [],
+  "confidence": "medium",
+  "rationale": "Koolen handheld 600W purple on both; no codes.",
+  "evidence": "titles only"
+ },
+ {
+  "id": "V25",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "odd": [],
+  "confidence": "medium",
+  "rationale": "Fisher drum 10L 1000W; Najm BSC-500, Extra no code but specs identical.",
+  "evidence": "titles only"
+ },
+ {
+  "id": "V26",
+  "answer": "DIFFERENT_VARIANT",
+  "odd": [
+   2
+  ],
+  "confidence": "high",
+  "rationale": "Extra Bissell PowerClean 2027E drum 21L vs Almanea Bissell 1994K carpet/hard floor cleaner; different model and form.",
+  "evidence": "titles only"
+ },
+ {
+  "id": "V27",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "odd": [],
+  "confidence": "medium",
+  "rationale": "Hoover Power Swift drum 15L 1700W; Amazon HT85-T0-ME, Extra same name/specs (Capacity 15).",
+  "evidence": "titles only"
+ },
+ {
+  "id": "V28",
+  "answer": "SAME_FAMILY_NOT_ENOUGH_EVIDENCE",
+  "odd": [],
+  "confidence": "low",
+  "rationale": "Hoover 2400W canister: Amazon HC84-P7A-ME Power 7 blue/silver; Extra black 4L bagless no code; colours differ, may be a different model.",
+  "evidence": "titles only"
+ },
+ {
+  "id": "V29",
+  "answer": "SAME_FAMILY_NOT_ENOUGH_EVIDENCE",
+  "odd": [],
+  "confidence": "medium",
+  "rationale": "Panasonic 2300W drum: Almanea MC-YL798NY47 21L black; Extra no code/capacity, black gold, likely same but unproven.",
+  "evidence": "titles only"
+ },
+ {
+  "id": "V30",
+  "answer": "SAME_FAMILY_NOT_ENOUGH_EVIDENCE",
+  "odd": [],
+  "confidence": "medium",
+  "rationale": "Midea 2200W 23L: Extra blue dry drum with blower, no code; Shaker MDVC23 black barrel. Likely the same but unproven.",
+  "evidence": "titles only"
+ },
+ {
+  "id": "V31",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "odd": [],
+  "confidence": "medium",
+  "rationale": "Koolen wet&dry drum 20L 1600W; Najm orange 806101009, Extra red no code; colour only.",
+  "evidence": "titles only"
+ },
+ {
+  "id": "V32",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "odd": [],
+  "confidence": "medium",
+  "rationale": "Fisher BSC-1500 drum 1500W in both (Extra modelNumber, Najm title); capacity 15L only on Extra.",
+  "evidence": "titles only"
+ }
+]

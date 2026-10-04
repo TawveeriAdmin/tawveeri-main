@@ -6,7 +6,8 @@
 //                    authority (`extractManufacturerModel`: shape, not a retailer id, not a spec)
 //   model_in_title   a model recoverable from the title (ADR-175 name-derived lane)
 //   gtin             payload gtin / ean / upc / barcode with a valid length (8, 12, 13, 14 digits)
-//   specs_rich       `specifications` carries ≥ 3 attributes (variant attributes available to the verifier)
+//   specs_rich       `specifications` carries ≥ 3 attributes — a PROXY for variant-attribute coverage (the verifier's category rules need storage/RAM/size/capacity…)
+//   condition        condition STATED: a payload condition field, or new / used / refurbished / renewed / open-box wording in the title (silence = unknown, not new)
 //   availability     availability stated
 //   price_fresh      observed within 168 h (PICK_FRESHNESS_MAX_HOURS)
 // Used to guide merchant integrations, feed requirements and engineering priority (SOURCE_IDENTITY_GAP vs engineer-fixable).
@@ -28,7 +29,7 @@ const MIN = Number(arg("min") ?? 20);
 const FRESH_H = 168;
 const STORE: Record<number, string> = { 1: "jarir", 2: "amazon", 3: "noon", 4: "extra", 5: "almanea", 6: "samsung_ksa", 7: "shaker", 8: "swsg", 9: "najm", 10: "lulu", 16: "sony_world", 18: "blackbox", 21: "sharafdg", 23: "alnakheelk" };
 
-type Row = { identity_key: string | null; store_id: number; category: string; name: string | null; observed_at: string | null; brand: string | null; mpn: string | null; modelNumber: string | null; model_number: string | null; model: string | null; gtin: string | null; ean: string | null; upc: string | null; barcode: string | null; availability: string | null; spec_n: number | null };
+type Row = { identity_key: string | null; store_id: number; category: string; name: string | null; observed_at: string | null; brand: string | null; mpn: string | null; modelNumber: string | null; model_number: string | null; model: string | null; gtin: string | null; ean: string | null; upc: string | null; barcode: string | null; condition: string | null; availability: string | null; spec_n: number | null };
 
 (async () => {
   const url = process.env.SUPABASE_DB_URL; if (!url) throw new Error("SUPABASE_DB_URL missing");
@@ -38,14 +39,14 @@ type Row = { identity_key: string | null; store_id: number; category: string; na
   const rows = (await pg.query(
     `select co.identity_key, co.store_id, co.category, co.name, co.observed_at, r.payload->>'brand' as brand, r.payload->>'mpn' as mpn, r.payload->>'modelNumber' as "modelNumber",
             r.payload->>'model_number' as model_number, r.payload->>'model' as model, r.payload->>'gtin' as gtin, r.payload->>'ean' as ean, r.payload->>'upc' as upc,
-            r.payload->>'barcode' as barcode, coalesce(r.payload->>'availability', co.payload->>'_availability') as availability,
+            r.payload->>'barcode' as barcode, r.payload->>'condition' as condition, coalesce(r.payload->>'availability', co.payload->>'_availability') as availability,
             case when jsonb_typeof(r.payload->'specifications') = 'object' then (select count(*) from jsonb_object_keys(r.payload->'specifications'))::int else 0 end as spec_n
        from tps_current_offers co left join raw_observations r on r.id = co.raw_obs_id
       where co.status = 'valid' and co.category is not null`)).rows as Row[];
   await pg.query("rollback"); await pg.end();
 
   const validGtin = (v: string | null) => !!v && /^\d{8}$|^\d{12,14}$/.test(v.replace(/\D/g, "")) && v.replace(/\D/g, "").length === v.trim().length;
-  type Acc = { listings: number; brand: number; model_declared: number; model_in_title: number; gtin: number; specs_rich: number; availability: number; price_fresh: number };
+  type Acc = { listings: number; brand: number; model_declared: number; model_in_title: number; gtin: number; specs_rich: number; condition: number; availability: number; price_fresh: number };
   const acc = new Map<string, Acc>();
   // group-level view: a comparison needs the model on EVERY side, so coverage per listing is not the right denominator
   const groups = new Map<string, { category: string; list: { store: number; hasModel: boolean }[] }>();
@@ -53,13 +54,14 @@ type Row = { identity_key: string | null; store_id: number; category: string; na
     const k = `${STORE[r.store_id] ?? r.store_id}|${r.category}`;
     const hasModel = !!extractManufacturerModel({ mpn: r.mpn, modelNumber: r.modelNumber, model_number: r.model_number, model: r.model }) || !!(r.name && extractManufacturerModelFromName(r.name));
     if (r.identity_key) { const g = groups.get(r.identity_key) ?? { category: r.category, list: [] }; g.list.push({ store: r.store_id, hasModel }); groups.set(r.identity_key, g); }
-    const a = acc.get(k) ?? { listings: 0, brand: 0, model_declared: 0, model_in_title: 0, gtin: 0, specs_rich: 0, availability: 0, price_fresh: 0 };
+    const a = acc.get(k) ?? { listings: 0, brand: 0, model_declared: 0, model_in_title: 0, gtin: 0, specs_rich: 0, condition: 0, availability: 0, price_fresh: 0 };
     a.listings++;
     if (r.brand && !/^(unknown|other|generic|n\/a|-)$/i.test(r.brand.trim())) a.brand++;
     if (extractManufacturerModel({ mpn: r.mpn, modelNumber: r.modelNumber, model_number: r.model_number, model: r.model })) a.model_declared++;
     if (r.name && extractManufacturerModelFromName(r.name)) a.model_in_title++;
     if ([r.gtin, r.ean, r.upc, r.barcode].some(validGtin)) a.gtin++;
     if ((r.spec_n ?? 0) >= 3) a.specs_rich++;
+    if (r.condition || /(brand new|new|used|refurbished|renewed|open box|pre-owned)|جديد|مجدد|مستعمل/i.test(r.name ?? "")) a.condition++;
     if (r.availability) a.availability++;
     if (r.observed_at && (Date.now() - new Date(r.observed_at).getTime()) / 3_600_000 <= FRESH_H) a.price_fresh++;
     acc.set(k, a);
@@ -68,7 +70,7 @@ type Row = { identity_key: string | null; store_id: number; category: string; na
   const table = [...acc.entries()].filter(([, a]) => a.listings >= MIN).map(([k, a]) => {
     const [merchant, category] = k.split("|");
     return { merchant, category, listings: a.listings, brand_explicit_pct: pct(a.brand, a.listings), model_declared_pct: pct(a.model_declared, a.listings), model_in_title_pct: pct(a.model_in_title, a.listings),
-      model_any_pct: pct(Math.max(a.model_declared, a.model_in_title), a.listings), gtin_pct: pct(a.gtin, a.listings), specs_rich_pct: pct(a.specs_rich, a.listings), availability_pct: pct(a.availability, a.listings), price_fresh_pct: pct(a.price_fresh, a.listings) };
+      model_any_pct: pct(Math.max(a.model_declared, a.model_in_title), a.listings), gtin_pct: pct(a.gtin, a.listings), specs_rich_pct: pct(a.specs_rich, a.listings), condition_stated_pct: pct(a.condition, a.listings), availability_pct: pct(a.availability, a.listings), price_fresh_pct: pct(a.price_fresh, a.listings) };
   }).sort((x, y) => x.category.localeCompare(y.category) || y.listings - x.listings);
   // category roll-up: is the category engineer-fixable or source-limited? (best single merchant model coverage)
   const groupStats = new Map<string, { groups: number; all: number; atLeastTwo: number; none: number }>();

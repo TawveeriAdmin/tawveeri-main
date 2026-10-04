@@ -1,0 +1,261 @@
+[
+ {
+  "id": "V01",
+  "key": "philips|cylinder|2000",
+  "stores": [
+   3,
+   4
+  ]
+ },
+ {
+  "id": "V02",
+  "key": "midea|NA|1800",
+  "stores": [
+   4,
+   7
+  ]
+ },
+ {
+  "id": "V03",
+  "key": "tefal|NA|2400",
+  "stores": [
+   3,
+   4
+  ]
+ },
+ {
+  "id": "V04",
+  "key": "koolen|NA|1600",
+  "stores": [
+   2,
+   4
+  ]
+ },
+ {
+  "id": "V05",
+  "key": "black+decker|NA|2000",
+  "stores": [
+   2,
+   4,
+   7
+  ]
+ },
+ {
+  "id": "V06",
+  "key": "classpro|NA|2200",
+  "stores": [
+   3,
+   4
+  ]
+ },
+ {
+  "id": "V07",
+  "key": "tefal|NA|900",
+  "stores": [
+   2,
+   4
+  ]
+ },
+ {
+  "id": "V08",
+  "key": "hoover|NA|2300",
+  "stores": [
+   2,
+   4
+  ]
+ },
+ {
+  "id": "V09",
+  "key": "hitachi|NA|2500",
+  "stores": [
+   4,
+   9
+  ]
+ },
+ {
+  "id": "V10",
+  "key": "فيشر|NA|2300",
+  "stores": [
+   5,
+   9
+  ]
+ },
+ {
+  "id": "V11",
+  "key": "fisher|NA|2300",
+  "stores": [
+   3,
+   9
+  ]
+ },
+ {
+  "id": "V12",
+  "key": "bissell|wet_dry|1500",
+  "stores": [
+   4,
+   5
+  ]
+ },
+ {
+  "id": "V13",
+  "key": "panasonic|NA|1500",
+  "stores": [
+   4,
+   5
+  ]
+ },
+ {
+  "id": "V14",
+  "key": "panasonic|cylinder|1900",
+  "stores": [
+   3,
+   4
+  ]
+ },
+ {
+  "id": "V15",
+  "key": "bissell|handheld|1100",
+  "stores": [
+   4,
+   5
+  ]
+ },
+ {
+  "id": "V16",
+  "key": "shark|upright|750",
+  "stores": [
+   4,
+   23
+  ]
+ },
+ {
+  "id": "V17",
+  "key": "fisher|NA|1300",
+  "stores": [
+   4,
+   9
+  ]
+ },
+ {
+  "id": "V18",
+  "key": "tefal|wet_dry|200",
+  "stores": [
+   3,
+   4
+  ]
+ },
+ {
+  "id": "V19",
+  "key": "lg|NA|200",
+  "stores": [
+   4,
+   5,
+   18
+  ]
+ },
+ {
+  "id": "V20",
+  "key": "hitachi|NA|2000",
+  "stores": [
+   2,
+   4,
+   9
+  ]
+ },
+ {
+  "id": "V21",
+  "key": "platinum|NA|2200",
+  "stores": [
+   3,
+   4
+  ]
+ },
+ {
+  "id": "V22",
+  "key": "koolen|NA|2000",
+  "stores": [
+   2,
+   4
+  ]
+ },
+ {
+  "id": "V23",
+  "key": "hitachi|NA|2100",
+  "stores": [
+   4,
+   9
+  ]
+ },
+ {
+  "id": "V24",
+  "key": "koolen|handheld|600",
+  "stores": [
+   2,
+   4
+  ]
+ },
+ {
+  "id": "V25",
+  "key": "fisher|NA|1000",
+  "stores": [
+   4,
+   9
+  ]
+ },
+ {
+  "id": "V26",
+  "key": "bissell|NA|2000",
+  "stores": [
+   4,
+   5
+  ]
+ },
+ {
+  "id": "V27",
+  "key": "hoover|NA|1700",
+  "stores": [
+   2,
+   4
+  ]
+ },
+ {
+  "id": "V28",
+  "key": "hoover|cylinder|2400",
+  "stores": [
+   2,
+   4
+  ]
+ },
+ {
+  "id": "V29",
+  "key": "panasonic|NA|2300",
+  "stores": [
+   4,
+   5
+  ]
+ },
+ {
+  "id": "V30",
+  "key": "midea|NA|2200",
+  "stores": [
+   4,
+   7
+  ]
+ },
+ {
+  "id": "V31",
+  "key": "koolen|wet_dry|1600",
+  "stores": [
+   4,
+   9
+  ]
+ },
+ {
+  "id": "V32",
+  "key": "fisher|NA|1500",
+  "stores": [
+   4,
+   9
+  ]
+ }
+]
