@@ -195,6 +195,11 @@ async function ensureLogTable(pg: Client) {
     const byKey = new Map<string, typeof offerRows>();
     for (const x of offerRows) { const l = byKey.get(x.k); if (l) l.push(x); else byKey.set(x.k, [x]); }
     let verifiedGroups = 0; const candidates: string[] = [];
+    // Integrity vs Coverage (founder §22): how strongly is each VERIFIED group supported as one commercial variant?
+    //   exact_model_key  — the identity key itself carries a manufacturer MODEL code;
+    //   stated_codes_agree — ≥2 stores state a model code in title/payload and the codes are compatible;
+    //   family_only      — spec-family key (brand|size|tech… / brand|NA|watt) with no agreeing stated codes: reference-grade evidence.
+    const strength = { exact_model_key: 0, stated_codes_agree: 0, family_only: 0 };
     for (const [k, L] of byKey) {
       if (new Set(L.map((x) => x.store_id)).size < 2) continue;
       verifiedGroups++;
@@ -202,6 +207,9 @@ async function ensureLogTable(pg: Client) {
       let bad: [typeof cs[number], typeof cs[number]] | null = null;
       for (let i = 0; i < cs.length && !bad; i++) for (let j = i + 1; j < cs.length && !bad; j++) if (cs[i].codes.length && cs[j].codes.length && !codesCompatible(cs[i].codes, cs[j].codes)) bad = [cs[i], cs[j]];
       if (bad) candidates.push(`${k}  ${bad[0].s}:${bad[0].codes.join("/")}  vs  ${bad[1].s}:${bad[1].codes.join("/")}`);
+      else if (k.includes("|MODEL:")) strength.exact_model_key++;
+      else if (cs.filter((c) => c.codes.length).length >= 2) strength.stated_codes_agree++;
+      else strength.family_only++;
     }
     if (candidates.length) warnings.push(`${cat}: ${candidates.length} verified group(s) hold two different stated model codes — candidates for a human to confirm (not a trigger)`);
 
@@ -247,7 +255,7 @@ async function ensureLogTable(pg: Client) {
     (out.categories as Record<string, unknown>)[cat] = {
       projection: proj, signals: sig, listings_in_multi_store: listings, verdict_share: Number(share.toFixed(4)), signal_age_hours: round(ageH),
       baseline_comparable: base?.comparable ?? null, identity_effect: identityEffect, merchants,
-      verified_groups_scanned: verifiedGroups, code_conflict_candidates: candidates, surface, audit_sample: sample,
+      verified_groups_scanned: verifiedGroups, evidence_strength: strength, code_conflict_candidates: candidates, surface, audit_sample: sample,
     };
     saved[cat] = { comparable: proj.comparable, total: proj.total };
   }

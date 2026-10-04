@@ -15,6 +15,7 @@ import { getProductAlternatives } from "@/lib/intelligence/product-edges-lookup"
 import { assessTrust, hoursSince, PICK_FRESHNESS_MAX_HOURS } from "@/lib/intelligence/evidence-engine";
 import { getProviderByStoreId, getProvider } from "@/lib/providers/registry";
 import { getComparison, isComparisonError } from "@/lib/compare/get-comparison";
+import { dropUnconfirmedObservations } from "@/lib/identity/drop-unconfirmed-observations";
 
 // Must match `MIN_RETAILERS` in resolve-comparison.ts — the compare page's own "is this a
 // comparison" threshold. Store-count consistency audit (2026-09-08): duplicated rather than
@@ -246,7 +247,9 @@ export async function POST(req: NextRequest) {
     getCanonicalDiscountIntegrity(supabase, ids).catch(() => new Map()),
     getProductAlternatives(supabase, ids).catch(() => new Map()),
   ]);
-  const obs = ((obsRes as { data?: unknown })?.data ?? []) as ObsRaw[];
+  // ADR-405: an observation of a store the identity verifier marked review/reject is not corroboration of this canonical —
+  // it must not be named as one nor supply the /go link or the "best offer store". Flags off: unchanged, no query.
+  const obs = await dropUnconfirmedObservations(supabase, ((obsRes as { data?: unknown })?.data ?? []) as ObsRaw[]);
   for (const o of obs) {
     if (!goByCanon.has(o.canonical_product_id)) goByCanon.set(o.canonical_product_id, buildGoUrl(o.id));
     // store_id here is a STRING identity (Arabic name / slug / numeric id), not always numeric.

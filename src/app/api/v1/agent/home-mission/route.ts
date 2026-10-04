@@ -13,6 +13,7 @@ import { buildPublishedEvidence } from "@/lib/agent/published-evidence";
 import { guardAdvisorPayload } from "@/lib/agent/answer-guard";
 import { hoursSince } from "@/lib/intelligence/evidence-engine";
 import { getProviderByStoreId, getProvider } from "@/lib/providers/registry";
+import { dropUnconfirmedObservations } from "@/lib/identity/drop-unconfirmed-observations";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -234,7 +235,8 @@ export async function POST(req: NextRequest) {
     const obsRes = await sb.from("normalized_product_observations")
       .select("id, canonical_product_id, observed_at, store_id")
       .in("canonical_product_id", [...shownIds]).order("observed_at", { ascending: false });
-    const obs = ((obsRes as { data?: unknown })?.data ?? []) as { id: string; canonical_product_id: string; store_id: unknown }[];
+    // ADR-405: observations of a store the identity verifier marked review/reject are not "documented offers of the same model".
+    const obs = await dropUnconfirmedObservations(supabase, ((obsRes as { data?: unknown })?.data ?? []) as { id: string; canonical_product_id: string; store_id: unknown }[]);
     for (const o of obs) {
       if (!goByCanon.has(o.canonical_product_id)) goByCanon.set(o.canonical_product_id, buildGoUrl(o.id));
       const raw = o.store_id == null ? "" : String(o.store_id).trim();
