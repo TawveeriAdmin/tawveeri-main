@@ -75,6 +75,31 @@ describe("applyIdentityVerifierGate", () => {
     expect(applyIdentityVerifierGate(offers, "mobile").map((o) => o.store_slug)).toEqual(["extra", "almanea"]);
   });
 
+  it("a 1-vs-1 conflict nothing resolves leaves BOTH sides as reference rows — never a coin flip, never price-favoured", () => {
+    const offers = [
+      offer({ store_slug: "amazon", raw_name: "Samsung Galaxy A06 5G, Dual SIM, 4GB RAM, 128GB Storage, Black", price: 449 }),
+      offer({ store_slug: "extra", raw_name: "Samsung Galaxy A06, 4G, 128GB, 4GB RAM, Black", price: 499 }),
+    ];
+    const gated = applyIdentityVerifierGate(offers, "mobile");
+    expect(gated.map((o) => o.identity_verdict?.outcome)).toEqual(["review", "review"]);
+    expect(gated[0].identity_verdict!.reasons.join(" ")).toMatch(/conflict_unresolved/);
+    // reversing the input order or the prices changes nothing
+    const swapped = applyIdentityVerifierGate([{ ...offers[1], price: 399 }, { ...offers[0], price: 999 }], "mobile");
+    expect(swapped.every((o) => o.identity_verdict?.outcome === "review")).toBe(true);
+    expect(deriveComparisonSummary(gated).summary.cheapest_store).toBeNull();
+  });
+
+  it("source-declared model codes (payload) decide where titles state none: eXtra's codeless title vs Almanea's declared code", () => {
+    const offers = [
+      offer({ store_slug: "extra", raw_name: "Samsung Front Load Washer 21KG Hygiene Steam WIFI 1100 rpm Black", price: 2999, source_model: "WF21T6500GV" }),
+      offer({ store_slug: "almanea", raw_name: "غسالة سامسونج 21 ك فتحة امامية اسود WF21T6500GV", price: 3099, source_model: "WF21T6500GV" }),
+    ];
+    expect(applyIdentityVerifierGate(offers, "washing_machine").every((o) => o.identity_verdict === undefined)).toBe(true);
+    const conflicting = [offers[0], { ...offers[1], source_model: "WF21T6500GV/YL", raw_name: "Samsung WF21T6500GV/YL Frontload Washer 21kg" }, offer({ store_slug: "noon", raw_name: "Samsung Washer 21kg WF24B9600KE", price: 2899, source_model: "WF24B9600KE" })];
+    const gated = applyIdentityVerifierGate(conflicting, "washing_machine", null, "WF21T6500GV");
+    expect(gated.map((o) => o.store_slug)).toEqual(["extra", "almanea"]);
+  });
+
   it("a code on one side only marks the CODELESS side as the reference row (washer family key)", () => {
     const offers = [
       offer({ store_slug: "amazon", raw_name: "Bosch Washing Machine WGA144ZRSA, Series 4, Front Load 9 kg, 1400 RPM", price: 1899 }),
@@ -108,6 +133,22 @@ describe("applyIdentityVerifierGate", () => {
     // …and a title whose own code CONFLICTS with the key's code still leaves.
     const wrong = [offers[0], offer({ store_slug: "noon", raw_name: "Bosch Series 4 Washing Machine 9 kg WGA254ZRSA", price: 1799 })];
     expect(applyIdentityVerifierGate(wrong, "washing_machine", null, "WGA144ZRSA").map((o) => o.store_slug)).toEqual(["amazon"]);
+  });
+
+  it("refurbished never prices the new item: 1 refurbished vs 1 new → the refurbished listing leaves; ALL refurbished → every listing is a reference row", () => {
+    const mixed = [
+      offer({ store_slug: "amazon", raw_name: "Apple (Refurbished) iPhone 11 (128GB) - White", price: 1040 }),
+      offer({ store_slug: "extra", raw_name: "Apple iPhone 11 128GB Purple", price: 1068 }),
+    ];
+    expect(applyIdentityVerifierGate(mixed, "mobile").map((o) => o.store_slug)).toEqual(["extra"]);
+    const allRefurb = [
+      offer({ store_slug: "amazon", raw_name: "Apple (Refurbished) iPhone 11 (128GB) - White", price: 1040 }),
+      offer({ store_slug: "noon", raw_name: "Apple iPhone 11 128GB Renewed", price: 990 }),
+    ];
+    const g = applyIdentityVerifierGate(allRefurb, "mobile");
+    expect(g.map((o) => o.identity_verdict?.outcome)).toEqual(["review", "review"]);
+    expect(g[0].identity_verdict!.reasons.join(" ")).toMatch(/condition_refurbished_only/);
+    expect(deriveComparisonSummary(g).summary.cheapest_store).toBeNull();
   });
 
   it("a single offer is returned untouched", () => {

@@ -3,6 +3,7 @@ import { createServerClient } from "@/lib/database";
 import { productTrust, isFreshObservation } from '@/lib/intelligence/evidence-engine';
 import { ucpAdapter, type TawveeriProduct } from "@/lib/protocol/adapter";
 import { buildGoUrl } from "@/lib/analytics/build-go-url";
+import { loadIdentitySignals, isUnsignaled } from "@/lib/identity/identity-signals";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -45,6 +46,9 @@ export async function GET(req: NextRequest) {
       .select("canonical_product_id, store_name, price, observed_at").in("canonical_product_id", ids).order("observed_at", { ascending: false });
     const latestPrice = new Map<string, number>();
     for (const p of prices ?? []) { const k = `${p.canonical_product_id}|${p.store_name}`; if (!latestPrice.has(k)) latestPrice.set(k, Number(p.price)); }
+    // ADR-403 identity gate (flag-off: empty index, no read): a listing the verifier rejected or could
+    // not verify is not published as this product's offer to an external consumer.
+    const identitySignals = await loadIdentitySignals(supabase, canon.map((c) => ({ id: c.canonical_id, category: c.category })));
     const seen = new Set<string>();
     for (const o of obs ?? []) {
       // QUALITY PROGRAM P0 (2026-08-27, §11/§12 — stale-cheapest-store fix): `obs` is
@@ -53,6 +57,7 @@ export async function GET(req: NextRequest) {
       // older than PICK_FRESHNESS_MAX_HOURS — an external consumer has no way to know it
       // is stale. Excluded here, at the one place offers are assembled for this feed.
       if (!isFreshObservation(o.observed_at)) continue;
+      if (!isUnsignaled(identitySignals, o.canonical_product_id, o.store_id)) continue;
       const k = `${o.canonical_product_id}|${o.store_id}`;
       if (seen.has(k)) continue; seen.add(k);
       const list = offersByCanon.get(o.canonical_product_id) ?? [];

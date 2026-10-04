@@ -102,6 +102,9 @@ const readModelCode = (t: string): string | null => {
  *  hyphen prefix ("R-V805PS1KV", "CV-930F") is part of the manufacturer's code and is kept. */
 const stripCodeAffixes = (x: string) => x.replace(/^[A-Z]+\//, "").replace(/^[A-Z]{4,}-/, "").replace(/^SM-(?=[A-Z]\d{3})/, "");   // Samsung's universal "SM-" prefix is written by some merchants and not others
 
+/** A SOURCE-declared model (payload field, already shape-tested by the caller) in the same notation the title reader produces. */
+const normalizeDeclaredModel = (m: string | null | undefined): string | null => (m && m.trim() ? stripCodeAffixes(m.trim().toUpperCase()) : null);
+
 /** Canonical core of a code: strip a "/REGION" tail (Apple "MDVK4AB/A", Samsung "…GV/YL") or an LG
  *  ".MARKET" tail ("AM182C0.UK1") and separators. */
 const codeCore = (code: string) => code.replace(/\/[A-Z0-9]{1,3}$/, "").replace(/\.[A-Z0-9]{2,5}$/, "").replace(/[^A-Z0-9]/g, "");
@@ -209,7 +212,7 @@ export function verifyPair(a: VerifierInput, b: VerifierInput): Verdict {
   //    equal ≥8-char core is a colour/finish/revision designator whose meaning we do not know
   //    (RT62K7050SLB vs SLH) → review, never silent equivalence (Phase 3B brief §8).
   if (rules.includes("model_code")) {
-    const ma = (a.structured?.model ?? readModelCode(ta))?.toUpperCase() ?? null, mb = (b.structured?.model ?? readModelCode(tb))?.toUpperCase() ?? null; note("model_code", ma, mb);
+    const ma = normalizeDeclaredModel(a.structured?.model) ?? readModelCode(ta)?.toUpperCase() ?? null, mb = normalizeDeclaredModel(b.structured?.model) ?? readModelCode(tb)?.toUpperCase() ?? null; note("model_code", ma, mb);
     if (ma && mb) {
       const ka = codeCore(ma), kb = codeCore(mb);
       const shorter = Math.min(ka.length, kb.length), prefix = commonPrefixLength(ka, kb);
@@ -247,10 +250,16 @@ export function verifyPair(a: VerifierInput, b: VerifierInput): Verdict {
 // GROUP RESOLUTION — one authority for "which members of a shared key stay, which are reference
 // rows, which leave", used by the compare page gate and by the shadow job so both report the same
 // outcome. Pair verdicts are symmetric; this decides WHICH side leaves:
-//   1. a member that conflicts with the anchor (the group's own identity name, when known) leaves;
+//   0. condition (founder ruling 2026-10-04): a refurbished / renewed / used listing is excluded from a
+//      NEW-item comparison. Some members refurbished → those leave (reject). ALL members refurbished →
+//      every member is a reference row (review): no "new" price claim can rest on them;
+//   1. a member that conflicts with the anchor (the key's own model code, or a canonical name when the
+//      caller has one) leaves;
 //   2. remaining pairwise conflicts resolve to the largest mutually-consistent set (greedy: fewest
-//      conflicts first, then input order — callers pass price order) — a single refurbished / 5G
-//      listing leaves, it never empties the group;
+//      conflicts first, then title text — NEVER price, so no side is kept because it is cheaper) — a
+//      single refurbished / 5G listing leaves, it never empties the group. A conflict that nothing
+//      resolves (a 1-vs-1 tie with no anchor or key code to decide it) leaves BOTH sides as review
+//      rows: unresolved is abstention, never a coin flip;
 //   3. review verdicts mark the side the evidence points at (the region-tagged side, the side
 //      without a model code); a symmetric unknown (colour-code suffix, one-edit code) marks the
 //      side that is not an exact-code match with the anchor, or both when the anchor cannot tell.
@@ -258,7 +267,7 @@ export function verifyPair(a: VerifierInput, b: VerifierInput): Verdict {
 export interface GroupMember { title: string; label?: string; structured?: VerifierInput["structured"] }
 export interface MemberResolution { outcome: VerdictOutcome; reasons: string[] }
 
-const REVIEW_REASON = /unknown|one_side|near|region/;
+const REVIEW_REASON = /unknown|one_side|near|region|unresolved|refurbished_only/;
 const CONFLICT_REASON = /conflict|bundle/;
 
 /** The model code an identity key itself asserts (`brand|MODEL:<code>` keys): every member of such a
@@ -274,32 +283,44 @@ export function resolveGroup(members: GroupMember[], category: string, anchorTit
   // The key's code fills in for a title that states none; a title that states a DIFFERENT code
   // keeps its own, so the member that contradicts its key is the one the pairwise check removes.
   const input = (m: GroupMember): VerifierInput => {
-    const own = m.structured?.model ?? readModelCode(clean(m.title));
+    const own = normalizeDeclaredModel(m.structured?.model) ?? readModelCode(clean(m.title));
     const structured = sharedModel && !own ? { ...(m.structured || {}), model: sharedModel } : m.structured;
     return { title: m.title, category, structured };
   };
   const V = members.map((m) => members.map((p) => (m === p ? null : verifyPair(input(m), input(p)))));
-  const A = anchorTitle ? members.map((m) => verifyPair(input(m), { title: anchorTitle, category, structured: sharedModel ? { model: sharedModel } : undefined })) : null;
+  // The anchor is the page's own identity: its canonical name and/or the code its key asserts. A key code alone
+  // (no readable name) is still an anchor — a member whose own code contradicts it is the one that leaves.
+  const A = anchorTitle || sharedModel ? members.map((m) => verifyPair(input(m), { title: anchorTitle ?? "", category, structured: sharedModel ? { model: sharedModel } : undefined })) : null;
   const pick = (r: string[], re: RegExp) => r.filter((x) => re.test(x)).join(",");
   const label = (i: number) => members[i].label ?? `#${i}`;
   const res: MemberResolution[] = members.map(() => ({ outcome: "match", reasons: [] }));
 
+  // 0: condition. Refurbished is a separate commercial class, never a price for the new item.
+  const refurb = members.map((m) => readCondition(clean(m.title)) !== null || m.structured?.condition === "refurbished" || m.structured?.condition === "used");
+  const refurbCount = refurb.filter(Boolean).length;
+  const allRefurb = refurbCount === n;
   // 1 + 2: who stays.
-  const alive = members.map((_, i) => !(A && A[i].outcome === "reject"));
-  for (let i = 0; i < n; i++) if (!alive[i]) res[i] = { outcome: "reject", reasons: [`vs canonical: ${pick(A![i].reasons, CONFLICT_REASON)}`] };
+  const alive = members.map((_, i) => !(A && A[i].outcome === "reject") && !(refurb[i] && !allRefurb));
+  members.forEach((_, i) => { if (refurb[i] && !allRefurb) res[i] = { outcome: "reject", reasons: ["condition_conflict:refurbished_in_new_comparison"] }; });
+  for (let i = 0; i < n; i++) if (!alive[i] && res[i].outcome !== "reject") res[i] = { outcome: "reject", reasons: [`vs canonical: ${pick(A![i].reasons, CONFLICT_REASON)}`] };
   const rejectsOf = (i: number) => V[i].reduce((c, v, j) => c + (v && alive[j] && v.outcome === "reject" ? 1 : 0), 0);
-  const order = members.map((_, i) => i).filter((i) => alive[i]).sort((i, j) => rejectsOf(i) - rejectsOf(j) || i - j);
-  const kept: number[] = [];
+  const order = members.map((_, i) => i).filter((i) => alive[i]).sort((i, j) => rejectsOf(i) - rejectsOf(j) || members[i].title.localeCompare(members[j].title) || i - j);
+  const kept: number[] = []; const tied = new Map<number, string>();
   for (const i of order) {
     const clash = kept.find((j) => V[i][j]!.outcome === "reject");
-    if (clash === undefined) kept.push(i);
-    else { alive[i] = false; res[i] = { outcome: "reject", reasons: [`vs ${label(clash)}: ${pick(V[i][clash]!.reasons, CONFLICT_REASON)}`] }; }
+    if (clash === undefined) { kept.push(i); continue; }
+    if (rejectsOf(i) > rejectsOf(clash)) { alive[i] = false; res[i] = { outcome: "reject", reasons: [`vs ${label(clash)}: ${pick(V[i][clash]!.reasons, CONFLICT_REASON)}`] }; continue; }
+    // Equal standing and nothing external decides: neither side is established — both are reference rows.
+    kept.push(i);
+    const why = `conflict_unresolved: ${pick(V[i][clash]!.reasons, CONFLICT_REASON)}`;
+    tied.set(i, `vs ${label(clash)}: ${why}`); tied.set(clash, `vs ${label(i)}: ${why}`);
   }
 
   // 3: who is a reference row.
   for (const i of kept) {
     const reasons: string[] = [];
     if (A && A[i].outcome === "review") reasons.push(`vs canonical: ${pick(A[i].reasons, REVIEW_REASON)}`);
+    if (tied.has(i)) reasons.push(tied.get(i)!);
     for (const j of kept) {
       if (j === i) continue;
       const v = V[i][j]!;
@@ -314,6 +335,7 @@ export function resolveGroup(members: GroupMember[], category: string, anchorTit
       const iExact = !!A && A[i].reasons.includes("exact_model_code"), jExact = !!A && A[j].reasons.includes("exact_model_code");
       if (pointsAtMe || (symmetric && !(iExact && !jExact)) || (!pointsAtOther && !symmetric)) reasons.push(`vs ${label(j)}: ${pick(v.reasons, REVIEW_REASON)}`);
     }
+    if (allRefurb) reasons.push("condition_refurbished_only");
     if (reasons.length) res[i] = { outcome: "review", reasons };
   }
   return res;

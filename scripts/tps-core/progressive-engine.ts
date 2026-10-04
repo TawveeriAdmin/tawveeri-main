@@ -15,6 +15,7 @@ import { isValidGtin } from "../../src/lib/enrichment/icecat";
 import { isAccessoryOnlyAudioTitle } from "../../src/lib/scraping/utils/category-utils";
 import { assessPriceTransition } from "../../src/lib/intelligence/price-truth-gate";
 import { fetchAllPaginated } from "../../src/lib/database/paginated-fetch";
+import { identityV2Enabled } from "./identity-flags";
 import { samsungManufacturerIdentity, samsungCatalogExclusion, samsungDeclaredModelIdentity, isSamsungManufacturerBrand, type SamsungVerifiedModel } from "./samsung-manufacturer-identity";
 
 export function stableUuid(seed: string): string {
@@ -310,6 +311,12 @@ export async function normalizeSweep(sb: SupabaseClient, defs: CategoryDef[], li
             ...(manufacturer ? { _manufacturer_model: manufacturer.model,
               _source_name_ar: nameAr.toUpperCase().includes(manufacturer.model) ? nameAr : `${nameAr} (${manufacturer.model})`,
               _source_name_en: nameEn.toUpperCase().includes(manufacturer.model) ? nameEn : `${nameEn} (${manufacturer.model})` } : {}),
+            // ADR-403 version marker: stamped ONLY when this category's v2 identity rules (TPS_IDENTITY_V2)
+            // produced the key. It rides the staging payload into tps_current_offers.payload and the
+            // canonical's attributes, so every row a v2 write path created is identifiable — and
+            // therefore removable — by scripts/tps-core/rollback-identity-v2.ts. Flag off: absent,
+            // payloads byte-identical to before.
+            ...(identityV2Enabled(def.category) ? { _identity_rules: "v2" } : {}),
             ...(typeof p.availability === 'string' ? { _availability: p.availability } : {}),
             ...(typeof p.original_price === 'number' ? { _original_price: p.original_price } : {}),
             ...(rawImg ? { _image: rawImg } : {}), ...(isValidGtin(p.gtin as string) ? { _gtin: String(p.gtin).replace(/\D+/g, "") } : {}) },
@@ -685,7 +692,7 @@ export async function corroboratePass(sb: SupabaseClient, def: CategoryDef, touc
     canonicalRows.push({
       id: canonicalId, name_ar: nameAr, name_en: nameEn, brand: parts[0],
       model_number: isPrimary ? parts[1].slice(6) : null, category: def.category, image_url,
-      attributes: { ...(rep._manufacturer_model ? { ...Object.fromEntries(Object.entries(rep).filter(([field]) => !field.startsWith('_'))), manufacturer_model: rep._manufacturer_model } : def.attrs(key, rep)), identity_key: key, identity_tier: isPrimary ? "primary" : "fallback", stores: [...storeIds], offers_count: offers.length, parser_version: def.version, source: "progressive", comparison_eligible: !single, ...(observedGtin ? { gtin: observedGtin } : {}) },
+      attributes: { ...(rep._manufacturer_model ? { ...Object.fromEntries(Object.entries(rep).filter(([field]) => !field.startsWith('_'))), manufacturer_model: rep._manufacturer_model } : def.attrs(key, rep)), identity_key: key, identity_tier: isPrimary ? "primary" : "fallback", stores: [...storeIds], offers_count: offers.length, parser_version: def.version, source: "progressive", comparison_eligible: !single, ...(observedGtin ? { gtin: observedGtin } : {}), ...(offers.some((o) => o.payload?._identity_rules === "v2") ? { identity_rules: "v2" } : {}) },
       is_active: true, tps_identity_key: key, tps_version: def.version, variant_key: key,
       identity_confidence: groupConf, data_quality_score: Math.max(50, groupConf - 10), created_at: now, data_updated_at: now,
     });

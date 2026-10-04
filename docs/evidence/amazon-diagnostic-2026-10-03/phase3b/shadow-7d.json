@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-10-03T17:57:36.747Z",
+ "generated_at": "2026-10-04T02:56:51.305Z",
  "window_days": 7,
  "label": "SHADOW (offline replay of production observations; no DB write; user-visible comparison untouched)",
  "stores": [
@@ -21,111 +21,111 @@
   "lulu",
   "blackbox"
  ],
- "observations": 18133,
+ "observations": 17901,
  "identity_diff": {
-  "identity_unchanged": 6818,
-  "neither_valid": 11088,
+  "identity_unchanged": 6798,
+  "neither_valid": 10876,
   "key_changed": 197,
   "new_identity_from_detector": 30
  },
  "identity_diff_by_category": {
   "mobile": {
-   "identity_unchanged": 1137,
-   "neither_valid": 163,
+   "identity_unchanged": 1139,
+   "neither_valid": 164,
    "key_changed": 196,
    "new_identity_from_detector": 27
   },
   "none": {
-   "neither_valid": 6154
+   "neither_valid": 5937
   },
   "printer": {
    "identity_unchanged": 31,
    "neither_valid": 2
   },
   "camera": {
-   "neither_valid": 81,
+   "neither_valid": 86,
    "identity_unchanged": 12
   },
   "audio": {
    "identity_unchanged": 396,
-   "neither_valid": 199
+   "neither_valid": 198
   },
   "smartwatch": {
    "neither_valid": 430,
-   "identity_unchanged": 371
+   "identity_unchanged": 367
   },
   "tv": {
-   "neither_valid": 196,
-   "identity_unchanged": 810,
+   "neither_valid": 190,
+   "identity_unchanged": 804,
    "new_identity_from_detector": 3,
    "key_changed": 1
   },
   "vacuum": {
-   "neither_valid": 213,
-   "identity_unchanged": 406
+   "neither_valid": 201,
+   "identity_unchanged": 382
   },
   "microwave": {
    "neither_valid": 54,
    "identity_unchanged": 104
   },
   "coffee_maker": {
-   "neither_valid": 89,
-   "identity_unchanged": 107
+   "neither_valid": 42,
+   "identity_unchanged": 79
   },
   "air_conditioner": {
-   "neither_valid": 1653,
-   "identity_unchanged": 49
+   "neither_valid": 1671,
+   "identity_unchanged": 48
   },
   "tablet": {
-   "neither_valid": 147,
-   "identity_unchanged": 608
-  },
-  "air_fryer": {
-   "neither_valid": 62,
-   "identity_unchanged": 145
+   "neither_valid": 148,
+   "identity_unchanged": 611
   },
   "dishwasher": {
-   "neither_valid": 100,
-   "identity_unchanged": 214
+   "neither_valid": 96,
+   "identity_unchanged": 206
   },
   "washing_machine": {
-   "neither_valid": 395,
-   "identity_unchanged": 755
+   "neither_valid": 402,
+   "identity_unchanged": 787
   },
   "laptop": {
-   "neither_valid": 236,
-   "identity_unchanged": 281
+   "neither_valid": 239,
+   "identity_unchanged": 290
   },
   "refrigerator": {
-   "neither_valid": 413,
-   "identity_unchanged": 616
+   "neither_valid": 439,
+   "identity_unchanged": 622
   },
   "monitor": {
-   "neither_valid": 296,
-   "identity_unchanged": 262
+   "neither_valid": 330,
+   "identity_unchanged": 276
   },
   "cooker": {
    "neither_valid": 52,
    "identity_unchanged": 78
+  },
+  "air_fryer": {
+   "neither_valid": 42,
+   "identity_unchanged": 127
   },
   "stylus": {
    "neither_valid": 8,
    "identity_unchanged": 40
   },
   "kettle": {
-   "identity_unchanged": 85,
+   "identity_unchanged": 90,
    "neither_valid": 15
   },
   "oven": {
-   "identity_unchanged": 100,
+   "identity_unchanged": 98,
    "neither_valid": 44
   },
   "blender": {
-   "identity_unchanged": 110,
+   "identity_unchanged": 111,
    "neither_valid": 71
   },
   "toaster": {
-   "identity_unchanged": 16,
+   "identity_unchanged": 15,
    "neither_valid": 5
   },
   "air_purifier": {
@@ -166,10 +166,10 @@
   "samsung|Galaxy S|S26|Plus|512 ⇐ samsung|Galaxy S|S26|Plus|512 / samsung|Galaxy S|S26|Standard|512"
  ],
  "brand_changes": {},
- "shared_identities_v1": 699,
- "shared_identities_v2_proposed": 706,
- "shared_identities_v2_verified": 560,
- "newly_shared_verified": 18,
+ "shared_identities_v1": 698,
+ "shared_identities_v2_proposed": 705,
+ "shared_identities_v2_verified": 542,
+ "newly_shared_verified": 17,
  "newly_shared_examples": [
   {
    "key": "apple|iPhone|17e|Standard|256",
@@ -269,17 +269,6 @@
    "names": [
     "SAMSUNG Galaxy A26 5G 256 GB Black",
     "Samsung Galaxy A26 5G, Android Smartphone, 256GB Storage, 8G"
-   ]
-  },
-  {
-   "key": "xiaomi|Redmi|15c|Standard|256",
-   "stores": [
-    "amazon",
-    "extra"
-   ],
-   "names": [
-    "Xiaomi Redmi 15C Smartphone 8+256GB,Twilight Orange,6000mAh ",
-    "Xiaomi Redmi 15C, 4G, 256 GB, Mint Green"
    ]
   },
   {
@@ -403,14 +392,14 @@
   "honor|Honor|60|Standard|256"
  ],
  "verifier_verdicts_on_shared_members": {
-  "match": 1419,
-  "reject": 85,
-  "review": 213
+  "review": 342,
+  "match": 1322,
+  "reject": 47
  },
  "conflict_classes": {
-  "condition_conflict": 6,
-  "no_condition_conflict": 133,
-  "model_code_conflict": 82,
+  "condition_conflict": 7,
+  "no_condition_conflict": 135,
+  "model_code_conflict": 86,
   "bundle_vs_single": 1,
   "screen_size_conflict": 2,
   "ram_conflict": 6,
@@ -420,11 +409,11 @@
   "capacity_conflict": 3
  },
  "review_classes": {
+  "review_member_without_declared_model": 232,
   "region_tag_one_side": 18,
-  "model_code_one_side": 185,
-  "model_code_suffix_unknown": 51,
-  "review_with_payload_model_available": 115,
-  "model_code_near": 10
+  "model_code_one_side": 177,
+  "model_code_near": 10,
+  "model_code_suffix_unknown": 52
  },
  "class_examples": {
   "condition_conflict": [
@@ -438,7 +427,7 @@
    },
    {
     "category": "mobile",
-    "a": "amazon: Apple (Refurbished) iPhone 11 (128GB) - White",
+    "a": "amazon: Apple (Refurbished) iPhone 11 (128GB) - Green",
     "b": "extra: Apple iPhone 11 128GB Purple",
     "reasons": [
      "condition_conflict:refurbished≠new"
@@ -467,6 +456,16 @@
     "b": "amazon: Apple (Refurbished) iPhone 15 Pro Max (256 GB) - White Titanium",
     "reasons": [
      "condition_conflict:new≠refurbished"
+    ]
+   },
+   {
+    "category": "laptop",
+    "a": "noon: Renewed - Latitude 5430 With 14-Inch Full HD Notebook,Intel Core i5/12th Gen/10-Core/16GB RAM D",
+    "b": "amazon: Dell Latitude 5000 5430 14\" Rugged Notebook - Full HD - 1920 x 1080 - Intel Core i5 11th Gen i5",
+    "reasons": [
+     "condition_conflict:refurbished≠new",
+     "same_screen_size",
+     "model_code_conflict:I5/12TH≠I5-1145G7"
     ]
    },
    {
@@ -581,7 +580,7 @@
    {
     "category": "smartwatch",
     "a": "amazon: Samsung Galaxy Watch 8 44mm Bluetooth Smartwatch, Cushion Design, Fitness Tracker, Sleep Coachi",
-    "b": "extra: SAMSUNG Galaxy Watch 8, 44MM, Gray",
+    "b": "extra: SAMSUNG Galaxy Watch 8 44MM Gray",
     "reasons": [
      "no_condition_conflict",
      "region_tag_one_side"
@@ -713,15 +712,6 @@
     ]
    },
    {
-    "category": "dishwasher",
-    "a": "amazon: Beko Dishwasher With 5 Program And 14 Place Setting 11 L DVN05420W White",
-    "b": "extra: Beko Dishwasher 5 Program 14 Place Setting White",
-    "reasons": [
-     "no_condition_conflict",
-     "model_code_one_side"
-    ]
-   },
-   {
     "category": "washing_machine",
     "a": "extra: Bosch Series 4 Front Load Washing Machine 9 kg Grey",
     "b": "amazon: Bosch Washing Machine WGA144ZRSA, Series 4, Front Load 9 kg, 1400 RPM, AntiStain System, Pre-So",
@@ -740,15 +730,6 @@
      "no_condition_conflict",
      "same_capacity",
      "same_appliance_type",
-     "model_code_one_side"
-    ]
-   },
-   {
-    "category": "refrigerator",
-    "a": "amazon: Haier Side by Side Refrigerator 11.1Cu.ft, Freezer 4.2Cu.ft, 4 Doors, Twin Inverter, Gemstone B",
-    "b": "extra: Haier Side by Side Refrigerator 11 1Cu ft Freezer 4 2Cu ft 4 Doors Twin Inverter Gemstone Black",
-    "reasons": [
-     "no_condition_conflict",
      "model_code_one_side"
     ]
    },
@@ -870,24 +851,6 @@
     ]
    },
    {
-    "category": "dishwasher",
-    "a": "amazon: LG 14 Place Setting Dishwasher, QuadWash™, EasyRack™ Plus, Inverter Direct Drive Motor, Dual Zo",
-    "b": "extra: LG Dishwasher 14 Place Setting 5 Programs Easy Rack plus Silver",
-    "reasons": [
-     "no_condition_conflict",
-     "model_code_one_side"
-    ]
-   },
-   {
-    "category": "dishwasher",
-    "a": "extra: LG Dishwasher 14 Place Setting 5 Programs Easy Rack plus Silver",
-    "b": "almanea: غسالة صحون ال جي، سعة 14 مكان 5 برامج فضي DFC612FVE",
-    "reasons": [
-     "no_condition_conflict",
-     "model_code_one_side"
-    ]
-   },
-   {
     "category": "washing_machine",
     "a": "extra: LG Front Load 7kg Washing Machine Inverter 6Motion 1000rpm White",
     "b": "amazon: LG WF0712WH Front Load Washing Machine | 7 Kg Capacity | Inverter Direct Drive Motor | Steam™ |",
@@ -944,8 +907,8 @@
    },
    {
     "category": "washing_machine",
-    "a": "blackbox: LG Washing Machine Front Load 7Kg, Inverter Direct Drive, Smart Diagnosis, White - WF0712WH",
-    "b": "alnakheelk: غسالة ال جي أوتوماتيك، تحميل أمامي، سعة 7.0 كجم ، محرك انفيرتر مباشر ، خاصية البخار، تشخيص ذكي،",
+    "a": "alnakheelk: غسالة ال جي أوتوماتيك، تحميل أمامي، سعة 7.0 كجم ، محرك انفيرتر مباشر ، خاصية البخار، تشخيص ذكي،",
+    "b": "blackbox: LG Washing Machine Front Load 7Kg, Inverter Direct Drive, Smart Diagnosis, White - WF0712WH",
     "reasons": [
      "no_condition_conflict",
      "same_capacity",
@@ -1037,28 +1000,6 @@
    },
    {
     "category": "washing_machine",
-    "a": "amazon: Midea Washer Front Load - 12 kg washer - 14 Programs - Titanium- MF200W120W1TSA",
-    "b": "extra: Midea Frontload Washing Machine 12kg Wi-Fi Steam Inverter Titanium Color Black Door",
-    "reasons": [
-     "no_condition_conflict",
-     "same_capacity",
-     "same_appliance_type",
-     "model_code_one_side"
-    ]
-   },
-   {
-    "category": "washing_machine",
-    "a": "shaker: مايديا غسالة تحميل أمامي – 12 كجم غسيل – 14 برنامج – أبيض – MF200W120W1WSA",
-    "b": "extra: Midea Frontload Washing Machine 12kg Wi-Fi Steam Inverter Titanium Color Black Door",
-    "reasons": [
-     "no_condition_conflict",
-     "same_capacity",
-     "same_appliance_type",
-     "model_code_one_side"
-    ]
-   },
-   {
-    "category": "washing_machine",
     "a": "amazon: Midea Washer Top Load - 6 kg washer - 8 Programs - White - MA200W60WKSA",
     "b": "extra: Midea Top Load Washing Machine 6kg 8 Programs LED Display White",
     "reasons": [
@@ -1067,392 +1008,71 @@
      "same_appliance_type",
      "model_code_one_side"
     ]
-   }
-  ],
-  "model_code_suffix_unknown": [
-   {
-    "category": "monitor",
-    "a": "amazon: ASUS TUF Gaming Series 5 VG279QM5A-J, 27\" FHD (1920 x 1080) Fast IPS, 240Hz, 0.3ms, AMD FreeSyn",
-    "b": "noon: TUF Gaming Series 5 VG279QML5A Gaming Monitor: 27-inch Full HD Fast-IPS panel, 240Hz, 0.3ms, G-",
-    "reasons": [
-     "no_condition_conflict",
-     "same_screen_size",
-     "model_code_suffix_unknown:VG279QM5A-J~VG279QML5A"
-    ]
-   },
-   {
-    "category": "microwave",
-    "a": "najm: ميكرويف ال جي 25 لتر - 1000 واط - سولو - تحكم باللمس - 8 برامج - أبيض - MS2535GISW",
-    "b": "amazon: LG 25 Liter Microwave with Touch Button| Model No MS2535GIS",
-    "reasons": [
-     "no_condition_conflict",
-     "model_code_suffix_unknown:MS2535GISW~MS2535GIS"
-    ]
    },
    {
     "category": "washing_machine",
-    "a": "amazon: LG WFR1114MB Front Load Washing Machine | 11 Kg Capacity | Middle Black Colour | AI DD Technolo",
-    "b": "almanea: غسالة ال جي تحميل أمامي، 11 كجم، ابيض - WFR1114WH",
+    "a": "blackbox: Midea Top Load Automatic Washing Machine 6kg, 8Programs, White - MA200W60WKSA",
+    "b": "extra: Midea Top Load Washing Machine 6kg 8 Programs LED Display White",
     "reasons": [
      "no_condition_conflict",
      "same_capacity",
      "same_appliance_type",
-     "model_code_suffix_unknown:WFR1114MB~WFR1114WH"
-    ]
-   },
-   {
-    "category": "dishwasher",
-    "a": "amazon: Midea 12 Place Setting Dishwasher with 7 Program| Model No WQP125201CW with 2 Years Warranty",
-    "b": "shaker: مايديا غسالة صحون – 6 برامج – 12 مكان تخزين – أبيض – WQP125201CWEG",
-    "reasons": [
-     "no_condition_conflict",
-     "model_code_suffix_unknown:WQP125201CW~WQP125201CWEG"
-    ]
-   },
-   {
-    "category": "dishwasher",
-    "a": "amazon: Midea 12 Place Setting Dishwasher with 7 Program| Model No WQP125201CW with 2 Years Warranty",
-    "b": "blackbox: ميديا غسالة صحون 12 مكان، 7 برامج، 2 رف، فضي - WQP125201CSEG",
-    "reasons": [
-     "no_condition_conflict",
-     "model_code_suffix_unknown:WQP125201CW~WQP125201CSEG"
-    ]
-   },
-   {
-    "category": "dishwasher",
-    "a": "shaker: مايديا غسالة صحون – 6 برامج – 12 مكان تخزين – أبيض – WQP125201CWEG",
-    "b": "blackbox: ميديا غسالة صحون 12 مكان، 7 برامج، 2 رف، فضي - WQP125201CSEG",
-    "reasons": [
-     "no_condition_conflict",
-     "model_code_suffix_unknown:WQP125201CWEG~WQP125201CSEG"
+     "model_code_one_side"
     ]
    },
    {
     "category": "washing_machine",
-    "a": "amazon: Midea Frontload Washing Machine, 10kg, 14 Programs, WiFi, Silver - MF200W100W/T-SA",
-    "b": "shaker: مايديا غسالة تحميل أمامي – 10 كجم غسيل – 14 برنامج – أبيض – MF200W100W1WSA",
+    "a": "shaker: مايديا غسالة تحميل علوي – 6 كجم غسيل – 8 برامج – أبيض – MA200W60WKSA",
+    "b": "extra: Midea Top Load Washing Machine 6kg 8 Programs LED Display White",
     "reasons": [
      "no_condition_conflict",
      "same_capacity",
      "same_appliance_type",
-     "model_code_suffix_unknown:MF200W100W/T-SA~MF200W100W1WSA"
+     "model_code_one_side"
     ]
    },
    {
     "category": "washing_machine",
-    "a": "amazon: Midea Washer and Dryer Front Load-12 kg Washing & 8 kg Drying -14 Programs -Titanium- MF200D120",
-    "b": "shaker: مايديا غسالة و مجفف تحميل أمامي – 12 كجم غسيل و 8 كجم تجفيف – 16 برنامج – أبيض – MF200D120WWSA",
+    "a": "amazon: Panasonic Front Load Washing Machine Dark Silver And Black 7Kg Na-14Mg1Lsa",
+    "b": "extra: Panasonic Front Load Washing Machine 7kg Inverter Hygiene Care White",
     "reasons": [
      "no_condition_conflict",
      "same_capacity",
      "same_appliance_type",
-     "model_code_suffix_unknown:MF200D120W1TSA~MF200D120WWSA"
+     "model_code_one_side"
     ]
    },
    {
     "category": "washing_machine",
-    "a": "amazon: Midea Washer Front Load - 12 kg washer - 14 Programs - Titanium- MF200W120W1TSA",
-    "b": "shaker: مايديا غسالة تحميل أمامي – 12 كجم غسيل – 14 برنامج – أبيض – MF200W120W1WSA",
+    "a": "amazon: Panasonic Front Load Washing Machine Dark Silver and Black 9kg NA-18MG1LSA",
+    "b": "extra: Panasonic Front Load Washing Machine 9kg Hygiene Care Abaya Wash Silver",
     "reasons": [
      "no_condition_conflict",
      "same_capacity",
      "same_appliance_type",
-     "model_code_suffix_unknown:MF200W120W1TSA~MF200W120W1WSA"
-    ]
-   },
-   {
-    "category": "refrigerator",
-    "a": "amazon: Nikai 132L Double Door Compact Refrigerator | 4.7 Cu. Ft., Adjustable Thermostat, Energy Effici",
-    "b": "najm: نيكاي ثلاجة بابين 4.9 قدم مكعب - 132 لتر - ديفروست - أبيض - NRF170N26W",
-    "reasons": [
-     "no_condition_conflict",
-     "same_capacity",
-     "model_code_suffix_unknown:NRF170N23W~NRF170N26W"
-    ]
-   },
-   {
-    "category": "refrigerator",
-    "a": "amazon: Samsung 620 Liter Double Door Refrigerator with Inverter Technology| Model No RT62K7050SLB with",
-    "b": "almanea: ثلاجة سامسونج بابين، سعة 21.9 قدم مكعب، انفرتر، فضي - RT62K7050SLH",
-    "reasons": [
-     "no_condition_conflict",
-     "model_code_suffix_unknown:RT62K7050SLB~RT62K7050SLH"
-    ]
-   },
-   {
-    "category": "refrigerator",
-    "a": "noon: Samsung, top freezer 345L / 12.2 Cu.ft , (265 L fridge / 80 L freezer). Optimal Fresh+, SpaceMa",
-    "b": "almanea: ثلاجة سامسونج بابين 12.2 قدم أبيض RT35CG5420WWH",
-    "reasons": [
-     "no_condition_conflict",
-     "model_code_suffix_unknown:RT35CG5420WWZA~RT35CG5420WWH"
-    ]
-   },
-   {
-    "category": "refrigerator",
-    "a": "amazon: Samsung Double Door Refrigerator 345L,12.2 Cu Ft, RT35CG5420WWZA White with 2 Years Warranty Ma",
-    "b": "almanea: ثلاجة سامسونج بابين 12.2 قدم أبيض RT35CG5420WWH",
-    "reasons": [
-     "no_condition_conflict",
-     "model_code_suffix_unknown:RT35CG5420WWZA~RT35CG5420WWH"
-    ]
-   },
-   {
-    "category": "refrigerator",
-    "a": "almanea: ثلاجة سامسونج بابين 12.2 قدم أبيض RT35CG5420WWH",
-    "b": "samsung_ksa: Top Mount Freezer Refrigerator 345L Optimal Fresh+ White 345 L (RT35CG5420WWZA)",
-    "reasons": [
-     "no_condition_conflict",
-     "model_code_suffix_unknown:RT35CG5420WWH~RT35CG5420WWZA"
-    ]
-   },
-   {
-    "category": "refrigerator",
-    "a": "najm: سامسونج ثلاجة بابين 13.7 قدم مكعب - 388 ليتر - تايلندي - فضي - RT38CG6420S9",
-    "b": "almanea: ثلاجة سامسونج بابين 13.7 قدم فضي RT38CG6420S9H",
-    "reasons": [
-     "no_condition_conflict",
-     "model_code_suffix_unknown:RT38CG6420S9~RT38CG6420S9H"
-    ]
-   },
-   {
-    "category": "refrigerator",
-    "a": "najm: سامسونج ثلاجة بابين 13.7 قدم مكعب - 388 ليتر - تايلندي - فضي - RT38CG6420S9",
-    "b": "samsung_ksa: Top Mount Freezer Refrigerator Optimal Fresh+ Silver 388 L (RT38CG6420S9ZA)",
-    "reasons": [
-     "no_condition_conflict",
-     "model_code_suffix_unknown:RT38CG6420S9~RT38CG6420S9ZA"
-    ]
-   },
-   {
-    "category": "refrigerator",
-    "a": "amazon: Samsung Double Door Refrigerator RT38CG6420S9, 388L,13.7 Cu Ft,No Frost with 2 Years Warranty M",
-    "b": "almanea: ثلاجة سامسونج بابين 13.7 قدم فضي RT38CG6420S9H",
-    "reasons": [
-     "no_condition_conflict",
-     "model_code_suffix_unknown:RT38CG6420S9~RT38CG6420S9H"
-    ]
-   },
-   {
-    "category": "refrigerator",
-    "a": "amazon: Samsung Double Door Refrigerator RT38CG6420S9, 388L,13.7 Cu Ft,No Frost with 2 Years Warranty M",
-    "b": "samsung_ksa: Top Mount Freezer Refrigerator Optimal Fresh+ Silver 388 L (RT38CG6420S9ZA)",
-    "reasons": [
-     "no_condition_conflict",
-     "same_capacity",
-     "model_code_suffix_unknown:RT38CG6420S9~RT38CG6420S9ZA"
-    ]
-   },
-   {
-    "category": "refrigerator",
-    "a": "almanea: ثلاجة سامسونج بابين 13.7 قدم فضي RT38CG6420S9H",
-    "b": "samsung_ksa: Top Mount Freezer Refrigerator Optimal Fresh+ Silver 388 L (RT38CG6420S9ZA)",
-    "reasons": [
-     "no_condition_conflict",
-     "model_code_suffix_unknown:RT38CG6420S9H~RT38CG6420S9ZA"
-    ]
-   },
-   {
-    "category": "refrigerator",
-    "a": "amazon: Samsung Double Door Refrigerator RT42CG6420S9/ZA 411L,14.5Cu Ft,No Frost with 2 Years Warranty ",
-    "b": "almanea: ثلاجة سامسونج بابين 14.5 قدم سلفر RT42CG6420S9H",
-    "reasons": [
-     "no_condition_conflict",
-     "model_code_suffix_unknown:RT42CG6420S9/ZA~RT42CG6420S9H"
-    ]
-   },
-   {
-    "category": "refrigerator",
-    "a": "amazon: Samsung Double Door Refrigerator RT42CG6420S9/ZA 411L,14.5Cu Ft,No Frost with 2 Years Warranty ",
-    "b": "blackbox: Samsung Refrigerator, 2 Door, 14.5 Ft, 411 L, Wi-Fi, Steel - RT42CG6420S9ZA",
-    "reasons": [
-     "no_condition_conflict",
-     "same_capacity",
-     "model_code_suffix_unknown:RT42CG6420S9/ZA~RT42CG6420S9ZA"
-    ]
-   },
-   {
-    "category": "refrigerator",
-    "a": "almanea: ثلاجة سامسونج بابين 14.5 قدم سلفر RT42CG6420S9H",
-    "b": "samsung_ksa: RT42CG6420S9/ZA Top Mount Freezer Refrigerator Optimal Fresh+ Silver 411 L (RT42CG6420S9ZA)",
-    "reasons": [
-     "no_condition_conflict",
-     "model_code_suffix_unknown:RT42CG6420S9H~RT42CG6420S9/ZA"
-    ]
-   },
-   {
-    "category": "refrigerator",
-    "a": "almanea: ثلاجة سامسونج بابين 14.5 قدم سلفر RT42CG6420S9H",
-    "b": "blackbox: Samsung Refrigerator, 2 Door, 14.5 Ft, 411 L, Wi-Fi, Steel - RT42CG6420S9ZA",
-    "reasons": [
-     "no_condition_conflict",
-     "model_code_suffix_unknown:RT42CG6420S9H~RT42CG6420S9ZA"
-    ]
-   },
-   {
-    "category": "refrigerator",
-    "a": "samsung_ksa: RT42CG6420S9/ZA Top Mount Freezer Refrigerator Optimal Fresh+ Silver 411 L (RT42CG6420S9ZA)",
-    "b": "blackbox: Samsung Refrigerator, 2 Door, 14.5 Ft, 411 L, Wi-Fi, Steel - RT42CG6420S9ZA",
-    "reasons": [
-     "no_condition_conflict",
-     "same_capacity",
-     "model_code_suffix_unknown:RT42CG6420S9/ZA~RT42CG6420S9ZA"
-    ]
-   },
-   {
-    "category": "refrigerator",
-    "a": "almanea: ثلاجة سامسونج بابين 16.3 قدم أبيض RT47CG6422WWH",
-    "b": "samsung_ksa: RT47CG6422WW/ZA Top Mount Freezer Refrigerator 460LOptimal Fresh+ White 460 L (RT47CG6422WWZA)",
-    "reasons": [
-     "no_condition_conflict",
-     "model_code_suffix_unknown:RT47CG6422WWH~RT47CG6422WW/ZA"
+     "model_code_one_side"
     ]
    },
    {
     "category": "washing_machine",
-    "a": "amazon: Samsung WA80F16B9CYL 16KG top load Washing Machine,Charcoal color",
-    "b": "almanea: غسالة سامسونج 16 ك فتحه علوية Black WA80F16B9C",
-    "reasons": [
-     "no_condition_conflict",
-     "same_appliance_type",
-     "model_code_suffix_unknown:WA80F16B9CYL~WA80F16B9C"
-    ]
-   },
-   {
-    "category": "washing_machine",
-    "a": "almanea: غسالة سامسونج 16 ك فتحه علوية Black WA80F16B9C",
-    "b": "samsung_ksa: Samsung Bespoke AI Top Load Washer 16 kg AI Direct Drive Eco Bubble Smart Control Glam Deep Cha",
-    "reasons": [
-     "no_condition_conflict",
-     "same_appliance_type",
-     "model_code_suffix_unknown:WA80F16B9C~WA80F16B9CYL"
-    ]
-   },
-   {
-    "category": "washing_machine",
-    "a": "almanea: غسالة سامسونج 16 ك فتحه علوية Black WA80F16B9C",
-    "b": "shaker: سامسونج غسالة تحميل علوي – 16 كجم غسيل – 10 برامج – تيتانيوم – WA80F16B9CYL",
-    "reasons": [
-     "no_condition_conflict",
-     "same_appliance_type",
-     "model_code_suffix_unknown:WA80F16B9C~WA80F16B9CYL"
-    ]
-   },
-   {
-    "category": "audio",
-    "a": "amazon: Sony Wh-1000Xm5 Noise Cancelling Wireless Headphones - 30 Hours Battery Life - Over-Ear Style -",
-    "b": "noon: WH-1000XM5 Wireless Noise-Cancelling Headphones Black",
-    "reasons": [
-     "no_condition_conflict",
-     "model_code_suffix_unknown:WH1000XM5B~WH-1000XM5"
-    ]
-   },
-   {
-    "category": "monitor",
-    "a": "amazon: Viewsonic VX2719 PC MHD, 27” FHD 1920 X 1080, 240HZ, 1MS, CURVED GAMING MONITOR, 3.5MM AUDIO OU",
-    "b": "noon: 27 inch  FHD Curved Gaming Monitor  (1920 X 1080) 240hz, 1MS, 3.5 Audio Out X 1/ HDMI 2.0 X 2/ ",
-    "reasons": [
-     "no_condition_conflict",
-     "same_screen_size",
-     "model_code_suffix_unknown:VX2719~VX2719-PC-MHD"
-    ]
-   },
-   {
-    "category": "dishwasher",
-    "a": "shaker: مايديا غسالة صحون – 10 برامج – 14 مكان تخزين – فضي – WQP14W5233CS",
-    "b": "amazon: غسالة صحون ميديا 14 مكان تخزين 10برامج (واي فاي) سلفر WQP14-W5233C(S)-KSA",
-    "reasons": [
-     "no_condition_conflict",
-     "model_code_suffix_unknown:WQP14W5233CS~WQP14-W5233C"
-    ]
-   },
-   {
-    "category": "monitor",
-    "a": "noon: 27 inch UltraGear G5 Gaming Monitor, IPS Display, FHD Resolution, 200Hz Refresh Rate, 1ms (GtG ",
-    "b": "almanea: شاشة العاب إل جي، 27 بوصة، دقة FHD (1920×1080)، تقنية IPS، معدل تحديث 200 هرتز، زمن استجابة 1 م",
-    "reasons": [
-     "no_condition_conflict",
-     "same_screen_size",
-     "model_code_suffix_unknown:27G523B~27G523B-B.AMI"
-    ]
-   },
-   {
-    "category": "washing_machine",
-    "a": "alnakheelk: غسالة ال جي ذات التحميل الأمامي سعة 10.5 كجم WFV1114WHT",
-    "b": "noon: Front Load washing Machine 10.5 Kg WFV1114XMT Silver WFV1114XMT Silver",
+    "a": "extra: Samsung, Front load Washer/Dryer, 9 / 6kg,  AI Control, 1400 rpm, Steam, Wi-Fi",
+    "b": "almanea: غسالة سامسونج تحميل أمامي بمجفف، 9 كيلو، أسود – WD90HG6U94BB",
     "reasons": [
      "no_condition_conflict",
      "same_capacity",
      "same_appliance_type",
-     "model_code_suffix_unknown:WFV1114WHT~WFV1114XMT"
-    ]
-   },
-   {
-    "category": "refrigerator",
-    "a": "najm: سامسونج ثلاجة بابين 18.6 قدم مكعب 528 ليتر فضي RT53DG7A10S9",
-    "b": "samsung_ksa: Top Mount Freezer Refrigerator 528L18.6 Cu.ft Twin Cooling Plus Twist Ice Maker Wifi EmbeddedNo",
-    "reasons": [
-     "no_condition_conflict",
-     "model_code_suffix_unknown:RT53DG7A10S9~RT53DG7A10S9ZA"
-    ]
-   },
-   {
-    "category": "refrigerator",
-    "a": "noon: Samsung,Top  freezer Refrigerator 528L /18.7 Cu.ft, (403 L fridge / 125 L freezer). Twin Coolin",
-    "b": "samsung_ksa: Top Mount Freezer Refrigerator 528L18.6 Cu.ft Twin Cooling Plus Twist Ice Maker Wifi EmbeddedNo",
-    "reasons": [
-     "no_condition_conflict",
-     "same_capacity",
-     "model_code_suffix_unknown:RT53DG7A10S9~RT53DG7A10S9ZA"
-    ]
-   },
-   {
-    "category": "dishwasher",
-    "a": "shaker: اريستون غسالة صحون مدمجة – 6 برامج – 14 مكان تخزين – فضي – LIC3C26C60HZ",
-    "b": "alnakheelk: غسالة صحون اريستون بلت ان 6 برامج فضى 14 مكان LIC3C26C60H",
-    "reasons": [
-     "no_condition_conflict",
-     "model_code_suffix_unknown:LIC3C26C60HZ~LIC3C26C60H"
-    ]
-   },
-   {
-    "category": "air_conditioner",
-    "a": "alnakheelk: مكيف ال جي سبليت جداري، 21500 وحدة، بارد فقط ،ريش مزدوجة ، تشغيل هادئ، انفرتر مزدوج ، واي فاي،ت",
-    "b": "najm: ال جى مكيف سبليت 21500 وحدة بارد - انفرتر - ND242C0",
-    "reasons": [
-     "no_condition_conflict",
-     "model_code_suffix_unknown:ND242C~ND242C0"
+     "model_code_one_side"
     ]
    },
    {
     "category": "washing_machine",
-    "a": "blackbox: Midea Front Loading Washing Machine 8kg, Steam Care, Inverter, White - MF200W80W1WSA",
-    "b": "shaker: مايديا غسالة تحميل أمامي – 8 كجم غسيل – 14 برنامج – تيتانيوم – MF200W80W1TSA",
+    "a": "extra: Samsung, Front load Washer/Dryer, 9 / 6kg,  AI Control, 1400 rpm, Steam, Wi-Fi",
+    "b": "shaker: سامسونج غسالة ومجفف تحميل أمامي – 9 كجم غسيل و 6 كجم تجفيف – 24 برنامج – فضي – WD90T654DBN/YL",
     "reasons": [
      "no_condition_conflict",
      "same_capacity",
      "same_appliance_type",
-     "model_code_suffix_unknown:MF200W80W1WSA~MF200W80W1TSA"
-    ]
-   },
-   {
-    "category": "washing_machine",
-    "a": "almanea: غسالة سامسونج 13 ك فتحه علوية GRAY WA80F13B6L",
-    "b": "shaker: سامسونج غسالة تحميل علوي – 13 كجم غسيل – 10 برامج – فضي – WA80F13B6LYL",
-    "reasons": [
-     "no_condition_conflict",
-     "same_appliance_type",
-     "model_code_suffix_unknown:WA80F13B6L~WA80F13B6LYL"
-    ]
-   },
-   {
-    "category": "washing_machine",
-    "a": "almanea: غسالة سامسونج 13 ك فتحه علوية GRAY WA80F13B6L",
-    "b": "samsung_ksa: Samsung Bespoke AI Top Load Washer 13 kg AI Direct Drive Eco Bubble Smart Control Gray. Light G",
-    "reasons": [
-     "no_condition_conflict",
-     "same_appliance_type",
-     "model_code_suffix_unknown:WA80F13B6L~WA80F13B6LYL"
+     "model_code_one_side"
     ]
    }
   ],
@@ -1557,6 +1177,17 @@
    },
    {
     "category": "washing_machine",
+    "a": "extra: Midea washer front load,12 kg washer,14 programs,white,mf200w120w1wsa",
+    "b": "blackbox: Midea Front Loading Washing Machine 12kg, 100% Dry 8kg, Inverter, Titanium - MF200D120W1TSA",
+    "reasons": [
+     "no_condition_conflict",
+     "same_capacity",
+     "appliance_type_conflict:washer≠combo",
+     "model_code_conflict:MF200W120W1WSA≠MF200D120W1TSA"
+    ]
+   },
+   {
+    "category": "washing_machine",
     "a": "amazon: Midea Washer Front Load - 12 kg washer - 14 Programs - Titanium- MF200W120W1TSA",
     "b": "blackbox: Midea Front Loading Washing Machine 12kg, 100% Dry 8kg, Inverter, Titanium - MF200D120W1TSA",
     "reasons": [
@@ -1578,17 +1209,6 @@
     ]
    },
    {
-    "category": "washing_machine",
-    "a": "extra: Midea Frontload Washing Machine 12kg Wi-Fi Steam Inverter Titanium Color Black Door",
-    "b": "blackbox: Midea Front Loading Washing Machine 12kg, 100% Dry 8kg, Inverter, Titanium - MF200D120W1TSA",
-    "reasons": [
-     "no_condition_conflict",
-     "same_capacity",
-     "appliance_type_conflict:washer≠combo",
-     "model_code_one_side"
-    ]
-   },
-   {
     "category": "refrigerator",
     "a": "najm: نيكاي ثلاجة باب واحد 85 لتر - 3.1 قدم مكعب - فضي - NRF110N26S",
     "b": "amazon: Nikai 85L Mini Display Refrigerator with Glass Door | Fast Cooling Beverage Cooler, Adjustable ",
@@ -1596,15 +1216,6 @@
      "no_condition_conflict",
      "same_capacity",
      "model_code_conflict:NRF110N26S≠NSF120K"
-    ]
-   },
-   {
-    "category": "air_fryer",
-    "a": "amazon: Philips Airfryer XL, 6.2L/1.2KG, 1700W, 12 Functions | 1000 Series, Analogue Control, Rapid Air",
-    "b": "shaker: فيليبس قلاية هوائية – 6.2 لتر – 13 برنامج – سلسلة 2000 – أسود – NA230/00",
-    "reasons": [
-     "no_condition_conflict",
-     "model_code_conflict:NA130/00≠NA230/00"
     ]
    },
    {
@@ -1846,6 +1457,16 @@
      "no_condition_conflict",
      "network_conflict:4g≠5g"
     ]
+   },
+   {
+    "category": "mobile",
+    "a": "extra: Samsung Galaxy A16 5G 4+128 GB Light Gray",
+    "b": "noon: Galaxy A16 Dual SIM 4G Black 4GB RAM 128GB - Middle East Version",
+    "reasons": [
+     "no_condition_conflict",
+     "same_ram",
+     "network_conflict:5g≠4g"
+    ]
    }
   ],
   "model_code_conflict": [
@@ -1866,6 +1487,16 @@
     "reasons": [
      "no_condition_conflict",
      "model_code_conflict:JC70-B5≠GK220-B5"
+    ]
+   },
+   {
+    "category": "laptop",
+    "a": "noon: Renewed - Latitude 5430 With 14-Inch Full HD Notebook,Intel Core i5/12th Gen/10-Core/16GB RAM D",
+    "b": "amazon: Dell Latitude 5000 5430 14\" Rugged Notebook - Full HD - 1920 x 1080 - Intel Core i5 11th Gen i5",
+    "reasons": [
+     "condition_conflict:refurbished≠new",
+     "same_screen_size",
+     "model_code_conflict:I5/12TH≠I5-1145G7"
     ]
    },
    {
@@ -1910,6 +1541,17 @@
    },
    {
     "category": "washing_machine",
+    "a": "extra: Midea washer front load,12 kg washer,14 programs,white,mf200w120w1wsa",
+    "b": "blackbox: Midea Front Loading Washing Machine 12kg, 100% Dry 8kg, Inverter, Titanium - MF200D120W1TSA",
+    "reasons": [
+     "no_condition_conflict",
+     "same_capacity",
+     "appliance_type_conflict:washer≠combo",
+     "model_code_conflict:MF200W120W1WSA≠MF200D120W1TSA"
+    ]
+   },
+   {
+    "category": "washing_machine",
     "a": "shaker: مايديا غسالة تحميل أمامي – 12 كجم غسيل – 14 برنامج – أبيض – MF200W120W1WSA",
     "b": "blackbox: Midea Front Loading Washing Machine 12kg, 100% Dry 8kg, Inverter, Titanium - MF200D120W1TSA",
     "reasons": [
@@ -1927,15 +1569,6 @@
      "no_condition_conflict",
      "same_capacity",
      "model_code_conflict:NRF110N26S≠NSF120K"
-    ]
-   },
-   {
-    "category": "air_fryer",
-    "a": "amazon: Philips Airfryer XL, 6.2L/1.2KG, 1700W, 12 Functions | 1000 Series, Analogue Control, Rapid Air",
-    "b": "shaker: فيليبس قلاية هوائية – 6.2 لتر – 13 برنامج – سلسلة 2000 – أسود – NA230/00",
-    "reasons": [
-     "no_condition_conflict",
-     "model_code_conflict:NA130/00≠NA230/00"
     ]
    },
    {
@@ -2235,15 +1868,6 @@
      "no_condition_conflict",
      "model_code_conflict:RLA1-90MG5GE≠RQ1-90MG5GE"
     ]
-   },
-   {
-    "category": "refrigerator",
-    "a": "noon: Bespoke AI Side by Side Refrigerator 14.4Cu.ft, Freezer 7.1Cu.ft, Dispenser, Silver RS80F65GDTZ",
-    "b": "extra: SAMSUNG, Bespoke AI Side by Side Refrigerator 14.4Cu.ft, Freezer 7.1Cu.ft, Dispenser, Silver",
-    "reasons": [
-     "no_condition_conflict",
-     "model_code_conflict:RS80F65GDTZA≠14.4CU.FT"
-    ]
    }
   ],
   "model_code_near": [
@@ -2440,6 +2064,393 @@
     ]
    }
   ],
+  "model_code_suffix_unknown": [
+   {
+    "category": "microwave",
+    "a": "najm: ميكرويف ال جي 25 لتر - 1000 واط - سولو - تحكم باللمس - 8 برامج - أبيض - MS2535GISW",
+    "b": "amazon: LG 25 Liter Microwave with Touch Button| Model No MS2535GIS",
+    "reasons": [
+     "no_condition_conflict",
+     "model_code_suffix_unknown:MS2535GISW~MS2535GIS"
+    ]
+   },
+   {
+    "category": "washing_machine",
+    "a": "amazon: LG WFR1114MB Front Load Washing Machine | 11 Kg Capacity | Middle Black Colour | AI DD Technolo",
+    "b": "almanea: غسالة ال جي تحميل أمامي، 11 كجم، ابيض - WFR1114WH",
+    "reasons": [
+     "no_condition_conflict",
+     "same_capacity",
+     "same_appliance_type",
+     "model_code_suffix_unknown:WFR1114MB~WFR1114WH"
+    ]
+   },
+   {
+    "category": "dishwasher",
+    "a": "amazon: Midea 12 Place Setting Dishwasher with 7 Program| Model No WQP125201CW with 2 Years Warranty",
+    "b": "shaker: مايديا غسالة صحون – 6 برامج – 12 مكان تخزين – أبيض – WQP125201CWEG",
+    "reasons": [
+     "no_condition_conflict",
+     "model_code_suffix_unknown:WQP125201CW~WQP125201CWEG"
+    ]
+   },
+   {
+    "category": "dishwasher",
+    "a": "amazon: Midea 12 Place Setting Dishwasher with 7 Program| Model No WQP125201CW with 2 Years Warranty",
+    "b": "blackbox: ميديا غسالة صحون 12 مكان، 7 برامج، 2 رف، فضي - WQP125201CSEG",
+    "reasons": [
+     "no_condition_conflict",
+     "model_code_suffix_unknown:WQP125201CW~WQP125201CSEG"
+    ]
+   },
+   {
+    "category": "dishwasher",
+    "a": "shaker: مايديا غسالة صحون – 6 برامج – 12 مكان تخزين – أبيض – WQP125201CWEG",
+    "b": "blackbox: ميديا غسالة صحون 12 مكان، 7 برامج، 2 رف، فضي - WQP125201CSEG",
+    "reasons": [
+     "no_condition_conflict",
+     "model_code_suffix_unknown:WQP125201CWEG~WQP125201CSEG"
+    ]
+   },
+   {
+    "category": "washing_machine",
+    "a": "amazon: Midea Frontload Washing Machine, 10kg, 14 Programs, WiFi, Silver - MF200W100W/T-SA",
+    "b": "shaker: مايديا غسالة تحميل أمامي – 10 كجم غسيل – 14 برنامج – أبيض – MF200W100W1WSA",
+    "reasons": [
+     "no_condition_conflict",
+     "same_capacity",
+     "same_appliance_type",
+     "model_code_suffix_unknown:MF200W100W/T-SA~MF200W100W1WSA"
+    ]
+   },
+   {
+    "category": "washing_machine",
+    "a": "amazon: Midea Washer and Dryer Front Load-12 kg Washing & 8 kg Drying -14 Programs -Titanium- MF200D120",
+    "b": "shaker: مايديا غسالة و مجفف تحميل أمامي – 12 كجم غسيل و 8 كجم تجفيف – 16 برنامج – أبيض – MF200D120WWSA",
+    "reasons": [
+     "no_condition_conflict",
+     "same_capacity",
+     "same_appliance_type",
+     "model_code_suffix_unknown:MF200D120W1TSA~MF200D120WWSA"
+    ]
+   },
+   {
+    "category": "washing_machine",
+    "a": "extra: Midea washer front load,12 kg washer,14 programs,white,mf200w120w1wsa",
+    "b": "amazon: Midea Washer Front Load - 12 kg washer - 14 Programs - Titanium- MF200W120W1TSA",
+    "reasons": [
+     "no_condition_conflict",
+     "same_capacity",
+     "same_appliance_type",
+     "model_code_suffix_unknown:MF200W120W1WSA~MF200W120W1TSA"
+    ]
+   },
+   {
+    "category": "washing_machine",
+    "a": "amazon: Midea Washer Front Load - 12 kg washer - 14 Programs - Titanium- MF200W120W1TSA",
+    "b": "shaker: مايديا غسالة تحميل أمامي – 12 كجم غسيل – 14 برنامج – أبيض – MF200W120W1WSA",
+    "reasons": [
+     "no_condition_conflict",
+     "same_capacity",
+     "same_appliance_type",
+     "model_code_suffix_unknown:MF200W120W1TSA~MF200W120W1WSA"
+    ]
+   },
+   {
+    "category": "refrigerator",
+    "a": "amazon: Nikai 132L Double Door Compact Refrigerator | 4.7 Cu. Ft., Adjustable Thermostat, Energy Effici",
+    "b": "najm: نيكاي ثلاجة بابين 4.9 قدم مكعب - 132 لتر - ديفروست - أبيض - NRF170N26W",
+    "reasons": [
+     "no_condition_conflict",
+     "same_capacity",
+     "model_code_suffix_unknown:NRF170N23W~NRF170N26W"
+    ]
+   },
+   {
+    "category": "refrigerator",
+    "a": "amazon: Samsung 620 Liter Double Door Refrigerator with Inverter Technology| Model No RT62K7050SLB with",
+    "b": "almanea: ثلاجة سامسونج بابين، سعة 21.9 قدم مكعب، انفرتر، فضي - RT62K7050SLH",
+    "reasons": [
+     "no_condition_conflict",
+     "model_code_suffix_unknown:RT62K7050SLB~RT62K7050SLH"
+    ]
+   },
+   {
+    "category": "refrigerator",
+    "a": "noon: Samsung, top freezer 345L / 12.2 Cu.ft , (265 L fridge / 80 L freezer). Optimal Fresh+, SpaceMa",
+    "b": "almanea: ثلاجة سامسونج بابين 12.2 قدم أبيض RT35CG5420WWH",
+    "reasons": [
+     "no_condition_conflict",
+     "model_code_suffix_unknown:RT35CG5420WWZA~RT35CG5420WWH"
+    ]
+   },
+   {
+    "category": "refrigerator",
+    "a": "amazon: Samsung Double Door Refrigerator 345L,12.2 Cu Ft, RT35CG5420WWZA White with 2 Years Warranty Ma",
+    "b": "almanea: ثلاجة سامسونج بابين 12.2 قدم أبيض RT35CG5420WWH",
+    "reasons": [
+     "no_condition_conflict",
+     "model_code_suffix_unknown:RT35CG5420WWZA~RT35CG5420WWH"
+    ]
+   },
+   {
+    "category": "refrigerator",
+    "a": "almanea: ثلاجة سامسونج بابين 12.2 قدم أبيض RT35CG5420WWH",
+    "b": "samsung_ksa: Top Mount Freezer Refrigerator 345L Optimal Fresh+ White 345 L (RT35CG5420WWZA)",
+    "reasons": [
+     "no_condition_conflict",
+     "model_code_suffix_unknown:RT35CG5420WWH~RT35CG5420WWZA"
+    ]
+   },
+   {
+    "category": "refrigerator",
+    "a": "najm: سامسونج ثلاجة بابين 13.7 قدم مكعب - 388 ليتر - تايلندي - فضي - RT38CG6420S9",
+    "b": "almanea: ثلاجة سامسونج بابين 13.7 قدم فضي RT38CG6420S9H",
+    "reasons": [
+     "no_condition_conflict",
+     "model_code_suffix_unknown:RT38CG6420S9~RT38CG6420S9H"
+    ]
+   },
+   {
+    "category": "refrigerator",
+    "a": "najm: سامسونج ثلاجة بابين 13.7 قدم مكعب - 388 ليتر - تايلندي - فضي - RT38CG6420S9",
+    "b": "samsung_ksa: Top Mount Freezer Refrigerator Optimal Fresh+ Silver 388 L (RT38CG6420S9ZA)",
+    "reasons": [
+     "no_condition_conflict",
+     "model_code_suffix_unknown:RT38CG6420S9~RT38CG6420S9ZA"
+    ]
+   },
+   {
+    "category": "refrigerator",
+    "a": "amazon: Samsung Double Door Refrigerator RT38CG6420S9, 388L,13.7 Cu Ft,No Frost with 2 Years Warranty M",
+    "b": "almanea: ثلاجة سامسونج بابين 13.7 قدم فضي RT38CG6420S9H",
+    "reasons": [
+     "no_condition_conflict",
+     "model_code_suffix_unknown:RT38CG6420S9~RT38CG6420S9H"
+    ]
+   },
+   {
+    "category": "refrigerator",
+    "a": "amazon: Samsung Double Door Refrigerator RT38CG6420S9, 388L,13.7 Cu Ft,No Frost with 2 Years Warranty M",
+    "b": "samsung_ksa: Top Mount Freezer Refrigerator Optimal Fresh+ Silver 388 L (RT38CG6420S9ZA)",
+    "reasons": [
+     "no_condition_conflict",
+     "same_capacity",
+     "model_code_suffix_unknown:RT38CG6420S9~RT38CG6420S9ZA"
+    ]
+   },
+   {
+    "category": "refrigerator",
+    "a": "almanea: ثلاجة سامسونج بابين 13.7 قدم فضي RT38CG6420S9H",
+    "b": "samsung_ksa: Top Mount Freezer Refrigerator Optimal Fresh+ Silver 388 L (RT38CG6420S9ZA)",
+    "reasons": [
+     "no_condition_conflict",
+     "model_code_suffix_unknown:RT38CG6420S9H~RT38CG6420S9ZA"
+    ]
+   },
+   {
+    "category": "refrigerator",
+    "a": "amazon: Samsung Double Door Refrigerator RT42CG6420S9/ZA 411L,14.5Cu Ft,No Frost with 2 Years Warranty ",
+    "b": "almanea: ثلاجة سامسونج بابين 14.5 قدم سلفر RT42CG6420S9H",
+    "reasons": [
+     "no_condition_conflict",
+     "model_code_suffix_unknown:RT42CG6420S9/ZA~RT42CG6420S9H"
+    ]
+   },
+   {
+    "category": "refrigerator",
+    "a": "amazon: Samsung Double Door Refrigerator RT42CG6420S9/ZA 411L,14.5Cu Ft,No Frost with 2 Years Warranty ",
+    "b": "blackbox: Samsung Refrigerator, 2 Door, 14.5 Ft, 411 L, Wi-Fi, Steel - RT42CG6420S9ZA",
+    "reasons": [
+     "no_condition_conflict",
+     "same_capacity",
+     "model_code_suffix_unknown:RT42CG6420S9/ZA~RT42CG6420S9ZA"
+    ]
+   },
+   {
+    "category": "refrigerator",
+    "a": "almanea: ثلاجة سامسونج بابين 14.5 قدم سلفر RT42CG6420S9H",
+    "b": "samsung_ksa: RT42CG6420S9/ZA Top Mount Freezer Refrigerator Optimal Fresh+ Silver 411 L (RT42CG6420S9ZA)",
+    "reasons": [
+     "no_condition_conflict",
+     "model_code_suffix_unknown:RT42CG6420S9H~RT42CG6420S9/ZA"
+    ]
+   },
+   {
+    "category": "refrigerator",
+    "a": "almanea: ثلاجة سامسونج بابين 14.5 قدم سلفر RT42CG6420S9H",
+    "b": "blackbox: Samsung Refrigerator, 2 Door, 14.5 Ft, 411 L, Wi-Fi, Steel - RT42CG6420S9ZA",
+    "reasons": [
+     "no_condition_conflict",
+     "model_code_suffix_unknown:RT42CG6420S9H~RT42CG6420S9ZA"
+    ]
+   },
+   {
+    "category": "refrigerator",
+    "a": "samsung_ksa: RT42CG6420S9/ZA Top Mount Freezer Refrigerator Optimal Fresh+ Silver 411 L (RT42CG6420S9ZA)",
+    "b": "blackbox: Samsung Refrigerator, 2 Door, 14.5 Ft, 411 L, Wi-Fi, Steel - RT42CG6420S9ZA",
+    "reasons": [
+     "no_condition_conflict",
+     "same_capacity",
+     "model_code_suffix_unknown:RT42CG6420S9/ZA~RT42CG6420S9ZA"
+    ]
+   },
+   {
+    "category": "refrigerator",
+    "a": "almanea: ثلاجة سامسونج بابين 16.3 قدم أبيض RT47CG6422WWH",
+    "b": "samsung_ksa: RT47CG6422WW/ZA Top Mount Freezer Refrigerator 460LOptimal Fresh+ White 460 L (RT47CG6422WWZA)",
+    "reasons": [
+     "no_condition_conflict",
+     "model_code_suffix_unknown:RT47CG6422WWH~RT47CG6422WW/ZA"
+    ]
+   },
+   {
+    "category": "washing_machine",
+    "a": "amazon: Samsung WA80F16B9CYL 16KG top load Washing Machine,Charcoal color",
+    "b": "almanea: غسالة سامسونج 16 ك فتحه علوية Black WA80F16B9C",
+    "reasons": [
+     "no_condition_conflict",
+     "same_appliance_type",
+     "model_code_suffix_unknown:WA80F16B9CYL~WA80F16B9C"
+    ]
+   },
+   {
+    "category": "washing_machine",
+    "a": "almanea: غسالة سامسونج 16 ك فتحه علوية Black WA80F16B9C",
+    "b": "samsung_ksa: Samsung Bespoke AI Top Load Washer 16 kg AI Direct Drive Eco Bubble Smart Control Glam Deep Cha",
+    "reasons": [
+     "no_condition_conflict",
+     "same_appliance_type",
+     "model_code_suffix_unknown:WA80F16B9C~WA80F16B9CYL"
+    ]
+   },
+   {
+    "category": "washing_machine",
+    "a": "almanea: غسالة سامسونج 16 ك فتحه علوية Black WA80F16B9C",
+    "b": "shaker: سامسونج غسالة تحميل علوي – 16 كجم غسيل – 10 برامج – تيتانيوم – WA80F16B9CYL",
+    "reasons": [
+     "no_condition_conflict",
+     "same_appliance_type",
+     "model_code_suffix_unknown:WA80F16B9C~WA80F16B9CYL"
+    ]
+   },
+   {
+    "category": "audio",
+    "a": "amazon: Sony Wh-1000Xm5 Noise Cancelling Wireless Headphones - 30 Hours Battery Life - Over-Ear Style -",
+    "b": "noon: WH-1000XM5 Wireless Noise-Cancelling Headphones Black",
+    "reasons": [
+     "no_condition_conflict",
+     "model_code_suffix_unknown:WH1000XM5B~WH-1000XM5"
+    ]
+   },
+   {
+    "category": "vacuum",
+    "a": "amazon: Toshiba 22 Liter 2200W Drum Vacuum Cleaner with Steel Tub| Model No VC-DR220ABF(G) with 2 Years",
+    "b": "extra: Toshiba 2200w heavy-duty drum vacuum cleaner 22l model: vc-dr220abfme g - high suction power wi",
+    "reasons": [
+     "no_condition_conflict",
+     "model_code_suffix_unknown:VC-DR220ABF~VC-DR220ABFME"
+    ]
+   },
+   {
+    "category": "monitor",
+    "a": "amazon: Viewsonic VX2719 PC MHD, 27” FHD 1920 X 1080, 240HZ, 1MS, CURVED GAMING MONITOR, 3.5MM AUDIO OU",
+    "b": "noon: 27 inch  FHD Curved Gaming Monitor  (1920 X 1080) 240hz, 1MS, 3.5 Audio Out X 1/ HDMI 2.0 X 2/ ",
+    "reasons": [
+     "no_condition_conflict",
+     "same_screen_size",
+     "model_code_suffix_unknown:VX2719~VX2719-PC-MHD"
+    ]
+   },
+   {
+    "category": "dishwasher",
+    "a": "shaker: مايديا غسالة صحون – 10 برامج – 14 مكان تخزين – فضي – WQP14W5233CS",
+    "b": "amazon: غسالة صحون ميديا 14 مكان تخزين 10برامج (واي فاي) سلفر WQP14-W5233C(S)-KSA",
+    "reasons": [
+     "no_condition_conflict",
+     "model_code_suffix_unknown:WQP14W5233CS~WQP14-W5233C"
+    ]
+   },
+   {
+    "category": "monitor",
+    "a": "noon: 27 inch UltraGear G5 Gaming Monitor, IPS Display, FHD Resolution, 200Hz Refresh Rate, 1ms (GtG ",
+    "b": "almanea: شاشة العاب إل جي، 27 بوصة، دقة FHD (1920×1080)، تقنية IPS، معدل تحديث 200 هرتز، زمن استجابة 1 م",
+    "reasons": [
+     "no_condition_conflict",
+     "same_screen_size",
+     "model_code_suffix_unknown:27G523B~27G523B-B.AMI"
+    ]
+   },
+   {
+    "category": "washing_machine",
+    "a": "alnakheelk: غسالة ال جي ذات التحميل الأمامي سعة 10.5 كجم WFV1114WHT",
+    "b": "noon: Front Load washing Machine 10.5 Kg WFV1114XMT Silver WFV1114XMT Silver",
+    "reasons": [
+     "no_condition_conflict",
+     "same_capacity",
+     "same_appliance_type",
+     "model_code_suffix_unknown:WFV1114WHT~WFV1114XMT"
+    ]
+   },
+   {
+    "category": "refrigerator",
+    "a": "najm: سامسونج ثلاجة بابين 18.6 قدم مكعب 528 ليتر فضي RT53DG7A10S9",
+    "b": "samsung_ksa: Top Mount Freezer Refrigerator 528L18.6 Cu.ft Twin Cooling Plus Twist Ice Maker Wifi EmbeddedNo",
+    "reasons": [
+     "no_condition_conflict",
+     "model_code_suffix_unknown:RT53DG7A10S9~RT53DG7A10S9ZA"
+    ]
+   },
+   {
+    "category": "refrigerator",
+    "a": "noon: Samsung,Top  freezer Refrigerator 528L /18.7 Cu.ft, (403 L fridge / 125 L freezer). Twin Coolin",
+    "b": "samsung_ksa: Top Mount Freezer Refrigerator 528L18.6 Cu.ft Twin Cooling Plus Twist Ice Maker Wifi EmbeddedNo",
+    "reasons": [
+     "no_condition_conflict",
+     "same_capacity",
+     "model_code_suffix_unknown:RT53DG7A10S9~RT53DG7A10S9ZA"
+    ]
+   },
+   {
+    "category": "dishwasher",
+    "a": "shaker: اريستون غسالة صحون مدمجة – 6 برامج – 14 مكان تخزين – فضي – LIC3C26C60HZ",
+    "b": "alnakheelk: غسالة صحون اريستون بلت ان 6 برامج فضى 14 مكان LIC3C26C60H",
+    "reasons": [
+     "no_condition_conflict",
+     "model_code_suffix_unknown:LIC3C26C60HZ~LIC3C26C60H"
+    ]
+   },
+   {
+    "category": "air_conditioner",
+    "a": "alnakheelk: مكيف ال جي سبليت جداري، 21500 وحدة، بارد فقط ،ريش مزدوجة ، تشغيل هادئ، انفرتر مزدوج ، واي فاي،ت",
+    "b": "najm: ال جى مكيف سبليت 21500 وحدة بارد - انفرتر - ND242C0",
+    "reasons": [
+     "no_condition_conflict",
+     "model_code_suffix_unknown:ND242C~ND242C0"
+    ]
+   },
+   {
+    "category": "washing_machine",
+    "a": "blackbox: Midea Front Loading Washing Machine 8kg, Steam Care, Inverter, White - MF200W80W1WSA",
+    "b": "shaker: مايديا غسالة تحميل أمامي – 8 كجم غسيل – 14 برنامج – تيتانيوم – MF200W80W1TSA",
+    "reasons": [
+     "no_condition_conflict",
+     "same_capacity",
+     "same_appliance_type",
+     "model_code_suffix_unknown:MF200W80W1WSA~MF200W80W1TSA"
+    ]
+   },
+   {
+    "category": "washing_machine",
+    "a": "almanea: غسالة سامسونج 13 ك فتحه علوية GRAY WA80F13B6L",
+    "b": "shaker: سامسونج غسالة تحميل علوي – 13 كجم غسيل – 10 برامج – فضي – WA80F13B6LYL",
+    "reasons": [
+     "no_condition_conflict",
+     "same_appliance_type",
+     "model_code_suffix_unknown:WA80F13B6L~WA80F13B6LYL"
+    ]
+   }
+  ],
   "appliance_type_conflict": [
    {
     "category": "washing_machine",
@@ -2465,6 +2476,17 @@
    },
    {
     "category": "washing_machine",
+    "a": "extra: Midea washer front load,12 kg washer,14 programs,white,mf200w120w1wsa",
+    "b": "blackbox: Midea Front Loading Washing Machine 12kg, 100% Dry 8kg, Inverter, Titanium - MF200D120W1TSA",
+    "reasons": [
+     "no_condition_conflict",
+     "same_capacity",
+     "appliance_type_conflict:washer≠combo",
+     "model_code_conflict:MF200W120W1WSA≠MF200D120W1TSA"
+    ]
+   },
+   {
+    "category": "washing_machine",
     "a": "amazon: Midea Washer Front Load - 12 kg washer - 14 Programs - Titanium- MF200W120W1TSA",
     "b": "blackbox: Midea Front Loading Washing Machine 12kg, 100% Dry 8kg, Inverter, Titanium - MF200D120W1TSA",
     "reasons": [
@@ -2483,17 +2505,6 @@
      "same_capacity",
      "appliance_type_conflict:washer≠combo",
      "model_code_conflict:MF200W120W1WSA≠MF200D120W1TSA"
-    ]
-   },
-   {
-    "category": "washing_machine",
-    "a": "extra: Midea Frontload Washing Machine 12kg Wi-Fi Steam Inverter Titanium Color Black Door",
-    "b": "blackbox: Midea Front Loading Washing Machine 12kg, 100% Dry 8kg, Inverter, Titanium - MF200D120W1TSA",
-    "reasons": [
-     "no_condition_conflict",
-     "same_capacity",
-     "appliance_type_conflict:washer≠combo",
-     "model_code_one_side"
     ]
    },
    {
@@ -2692,18 +2703,29 @@
    {
     "category": "washing_machine",
     "a": "almanea: غسالة ال جي تحميل أمامي إنفرتر، بدون نشافة، 9 كجم، 9 برامج، ابيض – WFF0914WH",
-    "b": "blackbox: LG Front Loading Washing Machine, 9 kg, 5 kg Dryer, Inverter, Steam, Wi-Fi, Black - WSF0905MB",
+    "b": "extra: LG, Front Load Washer & Dryer 9/5Kg, 6Motion DD, Steam, Wi-Fi, Essence White",
     "reasons": [
      "no_condition_conflict",
      "same_capacity",
      "appliance_type_conflict:washer≠combo",
-     "model_code_conflict:WFF0914WH≠WSF0905MB"
+     "model_code_one_side"
     ]
    },
    {
     "category": "washing_machine",
     "a": "almanea: غسالة ال جي تحميل أمامي إنفرتر، بدون نشافة، 9 كجم، 9 برامج، ابيض – WFF0914WH",
-    "b": "extra: LG Front Load Fully Automatic Washer/Dryer 9/6kg with AI DD White",
+    "b": "blackbox: LG Front Loading Washing Machine, 9 kg, 5 kg Dryer, Inverter, Steam, Wi-Fi, Black - WSF0905MB",
+    "reasons": [
+     "no_condition_conflict",
+     "same_capacity",
+     "appliance_type_conflict:washer≠combo",
+     "model_code_conflict:WFF0914WH≠WSF0905MB"
+    ]
+   },
+   {
+    "category": "washing_machine",
+    "a": "alnakheelk: غسالة ال جي تحميل أمامي إنفرتر، بدون نشافة، 9 كجم، 9 برامج، ابيض – WFF0914WH",
+    "b": "extra: LG, Front Load Washer & Dryer 9/5Kg, 6Motion DD, Steam, Wi-Fi, Essence White",
     "reasons": [
      "no_condition_conflict",
      "same_capacity",
@@ -2724,18 +2746,7 @@
    },
    {
     "category": "washing_machine",
-    "a": "alnakheelk: غسالة ال جي تحميل أمامي إنفرتر، بدون نشافة، 9 كجم، 9 برامج، ابيض – WFF0914WH",
-    "b": "extra: LG Front Load Fully Automatic Washer/Dryer 9/6kg with AI DD White",
-    "reasons": [
-     "no_condition_conflict",
-     "same_capacity",
-     "appliance_type_conflict:washer≠combo",
-     "model_code_one_side"
-    ]
-   },
-   {
-    "category": "washing_machine",
-    "a": "extra: LG Front Load Washer & Dryer 13/ 8Kg 6 Motion DD Essence White",
+    "a": "extra: LG, Front Load Washer/Dryer 13kg/8Kg, 6 Motion Direct Drive, Essense Graphite",
     "b": "alnakheelk: غسالة ونشافة ال جي أمامية، 13 كجم، انفرتر DirectDrive، أسود بلاتينيوم - WK1310BST1",
     "reasons": [
      "no_condition_conflict",
@@ -3098,16 +3109,16 @@
   ]
  },
  "commercial_impact": {
-  "cheapest_merchant_changed": 127,
-  "merchant_removed": 261,
-  "offer_count_changed": 253,
-  "comparison_lost": 131,
-  "cheapest_price_changed": 120,
-  "saving_changed": 87,
-  "merchant_added": 145,
-  "best_price_opportunity_recovered": 55,
-  "comparison_created": 53,
-  "false_best_price_removed": 11
+  "merchant_removed": 328,
+  "offer_count_changed": 260,
+  "comparison_lost": 140,
+  "cheapest_merchant_changed": 103,
+  "cheapest_price_changed": 99,
+  "false_best_price_removed": 16,
+  "saving_changed": 85,
+  "merchant_added": 134,
+  "best_price_opportunity_recovered": 52,
+  "comparison_created": 49
  },
  "commercial_examples": [
   {
@@ -3117,26 +3128,26 @@
     "almanea:169",
     "jarir:169"
    ],
-   "v2": [
-    "jarir:169",
-    "almanea:169"
+   "v2": [],
+   "review": [
+    "jarir",
+    "almanea"
    ],
-   "review": [],
    "rejected": []
   },
   {
    "key": "apple|iPhone|11|Standard|128",
    "category": "mobile",
    "v1": [
-    "amazon:1040",
-    "extra:1068"
+    "extra:1068",
+    "amazon:1049"
    ],
    "v2": [
-    "amazon:1040"
+    "extra:1068"
    ],
    "review": [],
    "rejected": [
-    "extra:Apple iPhone 11 128GB Purple"
+    "amazon:Apple (Refurbished) iPhone 11 (128GB) - Green"
    ]
   },
   {
@@ -3147,11 +3158,11 @@
     "amazon:890"
    ],
    "v2": [
-    "amazon:890"
+    "extra:999"
    ],
    "review": [],
    "rejected": [
-    "extra:Apple iPhone 12 5G 64GB White"
+    "amazon:Apple (Refurbished) iPhone 12 (64GB) - Purple"
    ]
   },
   {
@@ -3162,26 +3173,24 @@
     "amazon:1378"
    ],
    "v2": [
-    "amazon:1378"
+    "extra:1700"
    ],
    "review": [],
    "rejected": [
-    "extra:Apple iPhone 14 5G 128GB Blue"
+    "amazon:Apple (Refurbished) iPhone 14 5G 128GB Phone - Mid"
    ]
   },
   {
-   "key": "apple|iPhone|15|Standard|128",
-   "category": "mobile",
+   "key": "apple|ipad|gen7|32|wifi|10.2",
+   "category": "tablet",
    "v1": [
-    "almanea:3799",
-    "lulu:2799",
-    "extra:2279"
+    "noon:578"
    ],
-   "v2": [
-    "extra:2749",
-    "lulu:2799"
+   "v2": [],
+   "review": [
+    "noon",
+    "amazon"
    ],
-   "review": [],
    "rejected": []
   },
   {
@@ -3189,7 +3198,7 @@
    "category": "mobile",
    "v1": [
     "amazon:3015.8",
-    "almanea:3799",
+    "almanea:3299.01",
     "extra:2239"
    ],
    "v2": [
@@ -3204,7 +3213,7 @@
    "key": "apple|iPhone|17|Standard|256",
    "category": "mobile",
    "v1": [
-    "almanea:4299",
+    "almanea:3999",
     "extra:2599"
    ],
    "v2": [
@@ -3219,7 +3228,7 @@
    "key": "apple|iPhone|17|Pro|256",
    "category": "mobile",
    "v1": [
-    "almanea:5199",
+    "almanea:4499",
     "extra:4399"
    ],
    "v2": [
@@ -3234,7 +3243,7 @@
    "key": "apple|iPhone|17|Pro Max|256",
    "category": "mobile",
    "v1": [
-    "almanea:5699",
+    "almanea:4999",
     "extra:4999",
     "noon:5149"
    ],
@@ -3297,11 +3306,11 @@
    "rejected": []
   },
   {
-   "key": "asus|27|fhd|240|ips",
+   "key": "benq|27|fhd|100|ips",
    "category": "monitor",
    "v1": [
-    "noon:999",
-    "amazon:599"
+    "noon:479",
+    "amazon:425"
    ],
    "v2": [],
    "review": [
@@ -3309,21 +3318,6 @@
     "noon"
    ],
    "rejected": []
-  },
-  {
-   "key": "benq|27|fhd|100|ips",
-   "category": "monitor",
-   "v1": [
-    "noon:479",
-    "amazon:425"
-   ],
-   "v2": [
-    "amazon:425"
-   ],
-   "review": [],
-   "rejected": [
-    "noon:BenQ GW2790 27 inch 100Hz Gaming Monitor FHD 1920x"
-   ]
   },
   {
    "key": "black+decker|NA|8",
@@ -3346,41 +3340,53 @@
     "amazon:129",
     "shaker:81.11"
    ],
-   "v2": [
-    "shaker:81.11"
-   ],
-   "review": [],
-   "rejected": [
-    "amazon:BLACK+DECKER Glass Kettle, 2200W Heating, Double W"
-   ]
-  },
-  {
-   "key": "bosch|front_load|9|washer",
-   "category": "washing_machine",
-   "v1": [
-    "amazon:1996",
-    "extra:1399"
-   ],
-   "v2": [
-    "amazon:1996"
-   ],
+   "v2": [],
    "review": [
-    "extra"
+    "shaker",
+    "amazon"
    ],
    "rejected": []
   },
   {
-   "key": "bosch|front_load|10|washer",
-   "category": "washing_machine",
+   "key": "dell|latitude|i5|16|512|14|igpu",
+   "category": "laptop",
    "v1": [
-    "amazon:2299",
-    "extra:1109"
+    "noon:1847"
    ],
    "v2": [
-    "amazon:2299"
+    "amazon:11709.05"
+   ],
+   "review": [],
+   "rejected": [
+    "noon:Renewed - Latitude 5430 With 14-Inch Full HD Noteb"
+   ]
+  },
+  {
+   "key": "gameon|27|fhd|144|ips",
+   "category": "monitor",
+   "v1": [
+    "extra:449",
+    "amazon:458"
+   ],
+   "v2": [
+    "amazon:458",
+    "extra:479"
+   ],
+   "review": [],
+   "rejected": []
+  },
+  {
+   "key": "haier|front_load|10|washer",
+   "category": "washing_machine",
+   "v1": [
+    "amazon:1610.59",
+    "extra:1399"
+   ],
+   "v2": [
+    "extra:1399"
    ],
    "review": [
-    "extra"
+    "amazon"
    ],
    "rejected": []
   },
@@ -3392,11 +3398,10 @@
     "amazon:3499"
    ],
    "v2": [
-    "amazon:3499"
+    "amazon:3499",
+    "extra:3499"
    ],
-   "review": [
-    "extra"
-   ],
+   "review": [],
    "rejected": []
   },
   {
@@ -3407,11 +3412,10 @@
     "amazon:1329"
    ],
    "v2": [
-    "amazon:1329"
+    "amazon:1329",
+    "extra:1329"
    ],
-   "review": [
-    "extra"
-   ],
+   "review": [],
    "rejected": []
   },
   {
@@ -3426,10 +3430,10 @@
     "amazon:1698",
     "blackbox:1699"
    ],
-   "review": [
-    "extra"
-   ],
-   "rejected": []
+   "review": [],
+   "rejected": [
+    "extra:Haier Top Load Washer 12 kg 12 Program DMM Inverte"
+   ]
   },
   {
    "key": "hisense|top_load|10|washer",
@@ -3440,11 +3444,28 @@
     "extra:1559"
    ],
    "v2": [
-    "alnakheelk:1499"
+    "alnakheelk:1499",
+    "extra:1559"
    ],
    "review": [
-    "amazon",
-    "extra"
+    "amazon"
+   ],
+   "rejected": []
+  },
+  {
+   "key": "hisense|top_load|12|washer",
+   "category": "washing_machine",
+   "v1": [
+    "alnakheelk:1399",
+    "extra:1669",
+    "amazon:1510"
+   ],
+   "v2": [
+    "extra:1669"
+   ],
+   "review": [
+    "alnakheelk",
+    "amazon"
    ],
    "rejected": []
   },
@@ -3462,10 +3483,11 @@
     "noon:2130"
    ],
    "review": [
-    "alnakheelk",
-    "extra"
+    "alnakheelk"
    ],
-   "rejected": []
+   "rejected": [
+    "extra:Hisense Top Load Washer 18 KG DD Inverter WiFi Col"
+   ]
   },
   {
    "key": "hisense|side_by_side|530|inverter",
@@ -3487,16 +3509,14 @@
    "category": "vacuum",
    "v1": [
     "najm:621",
-    "extra:519",
     "amazon:440"
    ],
-   "v2": [
-    "amazon:440"
+   "v2": [],
+   "review": [
+    "amazon",
+    "najm"
    ],
-   "review": [],
-   "rejected": [
-    "najm:هيتاشي مكنسة برميل - 15 ليتر - 1600 واط - رمادي - "
-   ]
+   "rejected": []
   },
   {
    "key": "honor|Honor|600|Lite|128",
@@ -3517,13 +3537,12 @@
     "extra:1549",
     "amazon:1570"
    ],
-   "v2": [
-    "extra:1549"
+   "v2": [],
+   "review": [
+    "extra",
+    "amazon"
    ],
-   "review": [],
-   "rejected": [
-    "amazon:HONOR Pad 10 12.1 Inch Wi-Fi Tablet 8GB RAM 256GB "
-   ]
+   "rejected": []
   },
   {
    "key": "honor|honor pad 20|NO_GEN|256|5g|NO_SIZE",
@@ -3606,13 +3625,12 @@
     "extra:1099",
     "amazon:599"
    ],
-   "v2": [
-    "amazon:599"
+   "v2": [],
+   "review": [
+    "amazon",
+    "extra"
    ],
-   "review": [],
-   "rejected": [
-    "extra:HUAWEI MatePad 11.5 WiFi 2025 New, 8+128 GB, Space"
-   ]
+   "rejected": []
   },
   {
    "key": "huawei|matepad|NO_GEN|256|wifi|NO_SIZE",
@@ -3654,11 +3672,12 @@
     "amazon:702.71"
    ],
    "v2": [
-    "extra:699",
-    "almanea:699",
     "amazon:702.71"
    ],
-   "review": [],
+   "review": [
+    "extra",
+    "almanea"
+   ],
    "rejected": []
   },
   {
@@ -3676,43 +3695,52 @@
    "rejected": []
   },
   {
-   "key": "koolen|handheld|600",
-   "category": "vacuum",
+   "key": "huawei|Huawei Watch GT|6|Standard|46|gps",
+   "category": "smartwatch",
    "v1": [
-    "extra:159",
-    "amazon:115"
+    "extra:799",
+    "almanea:799"
    ],
-   "v2": [
-    "extra:96",
-    "amazon:111.93"
+   "v2": [],
+   "review": [
+    "extra",
+    "almanea"
    ],
-   "review": [],
    "rejected": []
   },
   {
-   "key": "lg|split|ArtCool|18000|Inverter|cool_only",
-   "category": "air_conditioner",
+   "key": "jbl|quantum 100",
+   "category": "audio",
    "v1": [
-    "extra:3669",
-    "noon:3249",
-    "shaker:3665.56",
-    "alnakheelk:3269",
-    "amazon:3249"
+    "amazon:159",
+    "almanea:149.01"
    ],
-   "v2": [
-    "amazon:3249",
-    "noon:3249",
-    "alnakheelk:3269",
-    "shaker:3665.56",
-    "extra:3669"
+   "v2": [],
+   "review": [
+    "almanea",
+    "amazon"
    ],
-   "review": [],
+   "rejected": []
+  },
+  {
+   "key": "jbl|tune 720",
+   "category": "audio",
+   "v1": [
+    "almanea:189",
+    "amazon:331"
+   ],
+   "v2": [],
+   "review": [
+    "almanea",
+    "amazon"
+   ],
    "rejected": []
   },
   {
    "key": "lg|NA|14",
    "category": "dishwasher",
    "v1": [
+    "alnakheelk:2599",
     "amazon:2649"
    ],
    "v2": [],
@@ -3731,6 +3759,20 @@
    "review": [
     "najm",
     "amazon"
+   ],
+   "rejected": []
+  },
+  {
+   "key": "lg|27|fhd|120|ips",
+   "category": "monitor",
+   "v1": [
+    "extra:979",
+    "amazon:530"
+   ],
+   "v2": [],
+   "review": [
+    "amazon",
+    "extra"
    ],
    "rejected": []
   },
@@ -3763,19 +3805,39 @@
    "rejected": []
   },
   {
+   "key": "lg|side_by_side|510|inverter",
+   "category": "refrigerator",
+   "v1": [
+    "almanea:3999",
+    "alnakheelk:3999",
+    "blackbox:7499",
+    "extra:19999",
+    "amazon:3199.2"
+   ],
+   "v2": [
+    "almanea:3999"
+   ],
+   "review": [
+    "amazon",
+    "alnakheelk",
+    "blackbox",
+    "extra"
+   ],
+   "rejected": []
+  },
+  {
    "key": "lg|NA|20",
    "category": "microwave",
    "v1": [
     "amazon:449",
     "shaker:719.9"
    ],
-   "v2": [
-    "amazon:449"
+   "v2": [],
+   "review": [
+    "amazon",
+    "shaker"
    ],
-   "review": [],
-   "rejected": [
-    "shaker:ال جي منقي هواء – يغطي حتى 20 م² – تحكم باللمس – ف"
-   ]
+   "rejected": []
   },
   {
    "key": "lg|front_load|7|washer",
@@ -3785,38 +3847,25 @@
     "extra:900",
     "alnakheelk:1899",
     "amazon:1599",
-    "blackbox:1899"
+    "blackbox:2799"
    ],
    "v2": [
     "amazon:1599",
     "almanea:1899",
-    "blackbox:1899"
+    "blackbox:2799"
    ],
    "review": [
-    "extra",
     "alnakheelk"
    ],
-   "rejected": []
-  },
-  {
-   "key": "lg|front_load|9|washer",
-   "category": "washing_machine",
-   "v1": [
-    "extra:1699",
-    "amazon:2699"
-   ],
-   "v2": [
-    "amazon:2699"
-   ],
-   "review": [
-    "extra"
-   ],
-   "rejected": []
+   "rejected": [
+    "extra:LG Front Load 7kg Washing Machine Inverter 6Motion"
+   ]
   },
   {
    "key": "lg|front_load|11|washer",
    "category": "washing_machine",
    "v1": [
+    "alnakheelk:3299",
     "amazon:2849",
     "almanea:3119"
    ],
@@ -3825,6 +3874,25 @@
     "amazon",
     "alnakheelk",
     "almanea"
+   ],
+   "rejected": []
+  },
+  {
+   "key": "lg|top_load|8|washer",
+   "category": "washing_machine",
+   "v1": [
+    "alnakheelk:1799",
+    "almanea:1799",
+    "blackbox:2999",
+    "amazon:1709"
+   ],
+   "v2": [
+    "almanea:1799"
+   ],
+   "review": [
+    "amazon",
+    "alnakheelk",
+    "blackbox"
    ],
    "rejected": []
   },
@@ -3866,15 +3934,15 @@
    "category": "refrigerator",
    "v1": [
     "extra:2219",
-    "amazon:1943.23",
-    "shaker:2221.11"
+    "shaker:2221.11",
+    "amazon:1943.23"
    ],
    "v2": [
+    "extra:2219",
     "shaker:2221.11"
    ],
    "review": [
-    "amazon",
-    "extra"
+    "amazon"
    ],
    "rejected": []
   },
@@ -3918,32 +3986,13 @@
    ],
    "v2": [],
    "review": [
+    "extra",
     "amazon",
-    "shaker",
-    "extra"
+    "shaker"
    ],
    "rejected": [
     "blackbox:Midea Front Loading Washing Machine 12kg, 100% Dry"
    ]
-  },
-  {
-   "key": "midea|top_load|6|washer",
-   "category": "washing_machine",
-   "v1": [
-    "blackbox:954",
-    "extra:959",
-    "shaker:954.44",
-    "amazon:856.81"
-   ],
-   "v2": [
-    "amazon:856.81",
-    "blackbox:954",
-    "shaker:954.44"
-   ],
-   "review": [
-    "extra"
-   ],
-   "rejected": []
   },
   {
    "key": "nikai|top_mount|130|standard",
@@ -3972,378 +4021,380 @@
     "amazon"
    ],
    "rejected": []
-  },
-  {
-   "key": "nikai|single_door|90|standard",
-   "category": "refrigerator",
-   "v1": [
-    "amazon:656.7",
-    "najm:520"
-   ],
-   "v2": [
-    "najm:520"
-   ],
-   "review": [],
-   "rejected": [
-    "amazon:Nikai 85L Mini Display Refrigerator with Glass Doo"
-   ]
-  },
-  {
-   "key": "panasonic|front_load|7|washer",
-   "category": "washing_machine",
-   "v1": [
-    "extra:1199",
-    "amazon:1147"
-   ],
-   "v2": [
-    "amazon:1147"
-   ],
-   "review": [
-    "extra"
-   ],
-   "rejected": []
-  },
-  {
-   "key": "panasonic|front_load|9|washer",
-   "category": "washing_machine",
-   "v1": [
-    "extra:1749",
-    "amazon:1529"
-   ],
-   "v2": [
-    "amazon:1529"
-   ],
-   "review": [
-    "extra"
-   ],
-   "rejected": []
   }
  ],
  "amazon": {
-  "valid_identities_v1": 798,
-  "valid_identities_v2": 821,
-  "normalized_observations_v1": 869,
-  "normalized_observations_v2": 898,
-  "shared_with_extra_v1": 123,
-  "shared_with_extra_v2_verified": 96,
-  "shared_with_almanea_v1": 68,
-  "shared_with_almanea_v2_verified": 63,
+  "valid_identities_v1": 741,
+  "valid_identities_v2": 764,
+  "normalized_observations_v1": 808,
+  "normalized_observations_v2": 837,
+  "shared_with_extra_v1": 120,
+  "shared_with_extra_v2_verified": 94,
+  "shared_with_almanea_v1": 67,
+  "shared_with_almanea_v2_verified": 56,
   "in_shared_groups": {
-   "shown_in_comparison": 184,
-   "cheapest_when_eligible": 141,
-   "excluded_identity_conflict": 11,
-   "excluded_no_price_source": 10,
+   "excluded_identity_conflict": 10,
+   "shown_in_comparison": 162,
+   "cheapest_when_eligible": 122,
+   "excluded_identity_review": 55,
    "excluded_availability": 6,
-   "excluded_identity_review": 33
+   "excluded_no_price_source": 7
   }
  },
  "by_category": {
-  "monitor": {
-   "review_with_payload_model_available": 3,
-   "shared_v1": 26,
-   "shared_v2_proposed": 26,
-   "members_match": 45,
-   "members_review": 6,
-   "members_reject": 2,
-   "shared_v2_verified": 21,
-   "merchant_removed": 7,
-   "offer_count_changed": 11,
-   "comparison_lost": 4,
-   "amazon_excluded_identity_review": 2,
-   "amazon_shown_in_comparison": 10,
-   "amazon_cheapest_when_eligible": 9,
-   "cheapest_price_changed": 2,
-   "amazon_excluded_no_price_source": 1,
-   "merchant_added": 9,
-   "best_price_opportunity_recovered": 5,
-   "amazon_excluded_availability": 1,
-   "comparison_created": 4,
-   "cheapest_merchant_changed": 1
-  },
-  "washing_machine": {
-   "review_with_payload_model_available": 65,
-   "shared_v1": 114,
-   "shared_v2_proposed": 114,
-   "members_match": 167,
-   "members_review": 113,
-   "members_reject": 36,
-   "shared_v2_verified": 46,
-   "merchant_removed": 124,
-   "cheapest_merchant_changed": 44,
-   "cheapest_price_changed": 42,
-   "offer_count_changed": 86,
-   "comparison_lost": 61,
-   "amazon_shown_in_comparison": 20,
-   "amazon_cheapest_when_eligible": 17,
-   "saving_changed": 15,
-   "amazon_excluded_identity_review": 8,
-   "merchant_added": 11,
-   "false_best_price_removed": 3,
-   "amazon_excluded_identity_conflict": 1,
-   "amazon_excluded_no_price_source": 1,
-   "comparison_created": 2,
-   "best_price_opportunity_recovered": 1
-  },
-  "refrigerator": {
-   "review_with_payload_model_available": 28,
-   "shared_v1": 71,
-   "shared_v2_proposed": 71,
-   "members_match": 108,
-   "members_review": 46,
-   "members_reject": 10,
-   "shared_v2_verified": 40,
-   "merchant_removed": 47,
-   "cheapest_merchant_changed": 11,
-   "offer_count_changed": 33,
-   "comparison_lost": 29,
-   "amazon_shown_in_comparison": 7,
-   "amazon_cheapest_when_eligible": 7,
-   "cheapest_price_changed": 9,
-   "amazon_excluded_identity_review": 9,
-   "saving_changed": 1,
-   "amazon_excluded_identity_conflict": 2,
-   "false_best_price_removed": 1,
-   "merchant_added": 4,
-   "best_price_opportunity_recovered": 2,
-   "comparison_created": 2
-  },
-  "microwave": {
-   "review_with_payload_model_available": 2,
-   "shared_v1": 9,
-   "shared_v2_proposed": 9,
-   "shared_v2_verified": 5,
-   "members_match": 14,
-   "members_review": 5,
-   "members_reject": 1,
-   "cheapest_price_changed": 1,
-   "saving_changed": 3,
-   "amazon_shown_in_comparison": 4,
-   "amazon_cheapest_when_eligible": 3,
-   "merchant_removed": 4,
-   "offer_count_changed": 3,
-   "amazon_excluded_identity_review": 3,
+  "printer": {
+   "review_member_without_declared_model": 1,
+   "shared_v1": 3,
+   "shared_v2_proposed": 3,
+   "members_match": 4,
+   "members_review": 2,
+   "members_reject": 0,
+   "shared_v2_verified": 2,
+   "merchant_removed": 2,
+   "offer_count_changed": 1,
    "comparison_lost": 1,
-   "merchant_added": 1,
-   "cheapest_merchant_changed": 1
+   "amazon_shown_in_comparison": 2
+  },
+  "tablet": {
+   "review_member_without_declared_model": 9,
+   "shared_v1": 80,
+   "shared_v2_proposed": 80,
+   "members_match": 169,
+   "members_review": 9,
+   "members_reject": 1,
+   "shared_v2_verified": 75,
+   "merchant_removed": 9,
+   "offer_count_changed": 6,
+   "amazon_excluded_identity_review": 5,
+   "amazon_excluded_availability": 2,
+   "amazon_shown_in_comparison": 12,
+   "comparison_lost": 4,
+   "cheapest_merchant_changed": 13,
+   "amazon_cheapest_when_eligible": 7,
+   "saving_changed": 15,
+   "amazon_excluded_identity_conflict": 1,
+   "cheapest_price_changed": 19
+  },
+  "mobile": {
+   "review_member_without_declared_model": 10,
+   "shared_v1": 88,
+   "shared_v2_proposed": 95,
+   "members_match": 220,
+   "members_review": 11,
+   "members_reject": 13,
+   "shared_v2_verified": 85,
+   "newly_shared_verified": 17,
+   "previously_shared_lost": 11,
+   "merchant_removed": 21,
+   "cheapest_merchant_changed": 25,
+   "cheapest_price_changed": 26,
+   "offer_count_changed": 59,
+   "false_best_price_removed": 8,
+   "comparison_lost": 7,
+   "amazon_excluded_identity_conflict": 5,
+   "saving_changed": 16,
+   "amazon_excluded_availability": 1,
+   "amazon_shown_in_comparison": 32,
+   "amazon_cheapest_when_eligible": 24,
+   "amazon_excluded_no_price_source": 1,
+   "merchant_added": 91,
+   "best_price_opportunity_recovered": 31,
+   "comparison_created": 37,
+   "amazon_excluded_identity_review": 5
   },
   "dishwasher": {
-   "review_with_payload_model_available": 2,
+   "review_member_without_declared_model": 21,
    "shared_v1": 29,
    "shared_v2_proposed": 29,
    "shared_v2_verified": 21,
-   "members_match": 48,
-   "members_review": 19,
-   "members_reject": 2,
-   "merchant_removed": 22,
-   "saving_changed": 2,
-   "offer_count_changed": 12,
-   "amazon_shown_in_comparison": 4,
-   "amazon_cheapest_when_eligible": 3,
-   "amazon_excluded_identity_review": 3,
-   "comparison_lost": 9,
-   "amazon_excluded_availability": 1,
-   "cheapest_merchant_changed": 6,
-   "cheapest_price_changed": 4,
-   "false_best_price_removed": 1
-  },
-  "mobile": {
-   "review_with_payload_model_available": 3,
-   "shared_v1": 88,
-   "shared_v2_proposed": 95,
-   "members_match": 223,
-   "members_review": 7,
-   "members_reject": 15,
-   "shared_v2_verified": 86,
-   "newly_shared_verified": 18,
-   "previously_shared_lost": 11,
-   "merchant_removed": 21,
-   "offer_count_changed": 59,
-   "comparison_lost": 7,
-   "amazon_shown_in_comparison": 35,
-   "amazon_cheapest_when_eligible": 27,
-   "amazon_excluded_identity_conflict": 3,
-   "cheapest_price_changed": 25,
-   "saving_changed": 20,
-   "amazon_excluded_availability": 1,
-   "cheapest_merchant_changed": 23,
-   "amazon_excluded_no_price_source": 1,
-   "merchant_added": 92,
-   "best_price_opportunity_recovered": 30,
-   "comparison_created": 38,
-   "false_best_price_removed": 5,
-   "amazon_excluded_identity_review": 4
-  },
-  "tablet": {
-   "review_with_payload_model_available": 1,
-   "shared_v1": 80,
-   "shared_v2_proposed": 80,
-   "shared_v2_verified": 76,
-   "members_match": 174,
-   "members_review": 1,
-   "members_reject": 4,
-   "amazon_excluded_no_price_source": 1,
-   "amazon_excluded_availability": 2,
-   "amazon_shown_in_comparison": 13,
-   "merchant_removed": 5,
-   "offer_count_changed": 5,
-   "comparison_lost": 4,
-   "amazon_excluded_identity_conflict": 3,
-   "cheapest_merchant_changed": 13,
-   "amazon_cheapest_when_eligible": 8,
-   "saving_changed": 15,
-   "cheapest_price_changed": 19,
-   "amazon_excluded_identity_review": 1
-  },
-  "smartwatch": {
-   "review_with_payload_model_available": 3,
-   "shared_v1": 24,
-   "shared_v2_proposed": 24,
-   "shared_v2_verified": 23,
-   "members_match": 57,
-   "members_review": 4,
-   "members_reject": 2,
-   "amazon_shown_in_comparison": 13,
-   "amazon_excluded_no_price_source": 1,
-   "saving_changed": 7,
-   "amazon_cheapest_when_eligible": 8,
-   "cheapest_merchant_changed": 3,
-   "cheapest_price_changed": 3,
-   "amazon_excluded_availability": 1,
-   "merchant_added": 8,
-   "merchant_removed": 2,
-   "amazon_excluded_identity_review": 1,
-   "offer_count_changed": 6,
-   "comparison_created": 2,
-   "best_price_opportunity_recovered": 3
-  },
-  "audio": {
-   "review_with_payload_model_available": 8,
-   "shared_v1": 39,
-   "shared_v2_proposed": 39,
-   "shared_v2_verified": 34,
-   "members_match": 70,
-   "members_review": 8,
+   "members_match": 46,
+   "members_review": 21,
    "members_reject": 1,
-   "amazon_shown_in_comparison": 19,
-   "amazon_cheapest_when_eligible": 15,
-   "cheapest_price_changed": 2,
-   "saving_changed": 3,
+   "merchant_removed": 23,
+   "saving_changed": 2,
+   "offer_count_changed": 11,
+   "amazon_shown_in_comparison": 2,
+   "amazon_cheapest_when_eligible": 1,
+   "comparison_lost": 9,
+   "amazon_excluded_identity_review": 3,
+   "amazon_excluded_availability": 1,
+   "cheapest_merchant_changed": 5,
+   "cheapest_price_changed": 3
+  },
+  "monitor": {
+   "review_member_without_declared_model": 7,
+   "shared_v1": 26,
+   "shared_v2_proposed": 26,
+   "members_match": 37,
+   "members_review": 17,
+   "members_reject": 0,
+   "shared_v2_verified": 18,
+   "merchant_removed": 12,
+   "offer_count_changed": 14,
+   "comparison_lost": 5,
+   "amazon_excluded_identity_review": 4,
+   "amazon_shown_in_comparison": 8,
+   "amazon_cheapest_when_eligible": 7,
+   "cheapest_merchant_changed": 1,
+   "cheapest_price_changed": 1,
+   "saving_changed": 1,
+   "merchant_added": 10,
+   "comparison_created": 5,
+   "best_price_opportunity_recovered": 5,
+   "amazon_excluded_availability": 1
+  },
+  "air_fryer": {
+   "review_member_without_declared_model": 4,
+   "shared_v1": 6,
+   "shared_v2_proposed": 6,
+   "members_match": 9,
+   "members_review": 4,
+   "members_reject": 0,
+   "shared_v2_verified": 4,
    "merchant_removed": 4,
-   "offer_count_changed": 10,
+   "offer_count_changed": 2,
    "comparison_lost": 2,
    "amazon_excluded_identity_review": 1,
+   "amazon_shown_in_comparison": 5,
+   "amazon_cheapest_when_eligible": 4
+  },
+  "kettle": {
+   "review_member_without_declared_model": 2,
+   "shared_v1": 5,
+   "shared_v2_proposed": 5,
+   "members_match": 9,
+   "members_review": 2,
+   "members_reject": 0,
+   "shared_v2_verified": 4,
+   "merchant_removed": 2,
+   "offer_count_changed": 1,
+   "comparison_lost": 1,
+   "amazon_excluded_identity_review": 1,
+   "cheapest_price_changed": 2,
+   "saving_changed": 2,
+   "amazon_shown_in_comparison": 1
+  },
+  "washing_machine": {
+   "review_member_without_declared_model": 96,
+   "shared_v1": 114,
+   "shared_v2_proposed": 114,
+   "shared_v2_verified": 51,
+   "members_match": 144,
+   "members_review": 148,
+   "members_reject": 24,
+   "amazon_shown_in_comparison": 15,
+   "merchant_removed": 144,
+   "offer_count_changed": 83,
+   "comparison_lost": 56,
+   "amazon_excluded_identity_review": 13,
+   "cheapest_merchant_changed": 24,
+   "amazon_cheapest_when_eligible": 10,
+   "saving_changed": 13,
+   "cheapest_price_changed": 22,
+   "false_best_price_removed": 6,
+   "merchant_added": 11,
+   "amazon_excluded_identity_conflict": 2,
+   "comparison_created": 3,
+   "best_price_opportunity_recovered": 1
+  },
+  "refrigerator": {
+   "review_member_without_declared_model": 52,
+   "shared_v1": 71,
+   "shared_v2_proposed": 71,
+   "shared_v2_verified": 33,
+   "members_match": 87,
+   "members_review": 73,
+   "members_reject": 4,
+   "cheapest_merchant_changed": 8,
+   "amazon_shown_in_comparison": 5,
+   "amazon_cheapest_when_eligible": 5,
+   "merchant_removed": 64,
+   "cheapest_price_changed": 7,
+   "offer_count_changed": 39,
+   "comparison_lost": 35,
+   "amazon_excluded_identity_review": 12,
+   "saving_changed": 3,
+   "false_best_price_removed": 1,
+   "amazon_excluded_identity_conflict": 1,
+   "merchant_added": 1,
+   "best_price_opportunity_recovered": 1,
+   "comparison_created": 1
+  },
+  "vacuum": {
+   "review_member_without_declared_model": 4,
+   "shared_v1": 43,
+   "shared_v2_proposed": 43,
+   "shared_v2_verified": 41,
+   "members_match": 84,
+   "members_review": 4,
+   "members_reject": 0,
+   "amazon_shown_in_comparison": 3,
+   "amazon_cheapest_when_eligible": 3,
+   "merchant_removed": 4,
+   "offer_count_changed": 2,
+   "comparison_lost": 2,
+   "amazon_excluded_identity_review": 2,
+   "saving_changed": 8,
+   "cheapest_price_changed": 4,
+   "cheapest_merchant_changed": 5
+  },
+  "audio": {
+   "review_member_without_declared_model": 5,
+   "shared_v1": 39,
+   "shared_v2_proposed": 39,
+   "shared_v2_verified": 33,
+   "members_match": 67,
+   "members_review": 12,
+   "members_reject": 0,
+   "amazon_shown_in_comparison": 17,
+   "amazon_cheapest_when_eligible": 15,
+   "saving_changed": 3,
+   "merchant_removed": 8,
+   "offer_count_changed": 12,
+   "comparison_lost": 4,
+   "amazon_excluded_identity_review": 3,
    "cheapest_merchant_changed": 1,
+   "cheapest_price_changed": 1,
    "merchant_added": 10,
    "best_price_opportunity_recovered": 8,
    "comparison_created": 2
   },
-  "printer": {
-   "shared_v1": 3,
-   "shared_v2_proposed": 3,
-   "shared_v2_verified": 3,
-   "members_match": 6,
-   "members_review": 0,
-   "members_reject": 0,
-   "cheapest_merchant_changed": 1,
-   "amazon_shown_in_comparison": 2
-  },
-  "vacuum": {
-   "shared_v1": 44,
-   "shared_v2_proposed": 44,
-   "shared_v2_verified": 43,
-   "members_match": 89,
-   "members_review": 0,
-   "members_reject": 1,
-   "amazon_shown_in_comparison": 6,
-   "amazon_cheapest_when_eligible": 4,
-   "merchant_removed": 2,
-   "offer_count_changed": 1,
-   "comparison_lost": 1,
-   "saving_changed": 8,
-   "cheapest_merchant_changed": 6,
-   "cheapest_price_changed": 5
-  },
-  "air_fryer": {
-   "shared_v1": 6,
-   "shared_v2_proposed": 6,
-   "members_match": 10,
-   "members_review": 2,
-   "members_reject": 1,
+  "microwave": {
+   "review_member_without_declared_model": 7,
+   "shared_v1": 9,
+   "shared_v2_proposed": 9,
    "shared_v2_verified": 5,
-   "merchant_removed": 3,
-   "offer_count_changed": 2,
-   "comparison_lost": 1,
-   "amazon_excluded_identity_review": 1,
-   "amazon_shown_in_comparison": 5,
-   "amazon_cheapest_when_eligible": 4,
-   "saving_changed": 1
-  },
-  "kettle": {
-   "shared_v1": 5,
-   "shared_v2_proposed": 5,
-   "members_match": 10,
-   "members_review": 0,
-   "members_reject": 1,
-   "shared_v2_verified": 4,
-   "merchant_removed": 2,
+   "members_match": 13,
+   "members_review": 7,
+   "members_reject": 0,
+   "cheapest_price_changed": 1,
+   "saving_changed": 3,
+   "amazon_shown_in_comparison": 3,
+   "amazon_cheapest_when_eligible": 2,
+   "merchant_removed": 5,
    "offer_count_changed": 3,
+   "amazon_excluded_identity_review": 4,
    "comparison_lost": 1,
-   "amazon_excluded_identity_conflict": 1,
-   "cheapest_price_changed": 2,
-   "saving_changed": 2,
-   "amazon_shown_in_comparison": 1,
    "merchant_added": 1,
-   "comparison_created": 1
+   "cheapest_merchant_changed": 1
+  },
+  "smartwatch": {
+   "review_member_without_declared_model": 2,
+   "shared_v1": 24,
+   "shared_v2_proposed": 24,
+   "shared_v2_verified": 19,
+   "members_match": 47,
+   "members_review": 16,
+   "members_reject": 0,
+   "amazon_shown_in_comparison": 13,
+   "amazon_excluded_no_price_source": 1,
+   "saving_changed": 7,
+   "amazon_cheapest_when_eligible": 9,
+   "merchant_removed": 7,
+   "cheapest_merchant_changed": 3,
+   "cheapest_price_changed": 4,
+   "offer_count_changed": 6,
+   "comparison_lost": 2,
+   "amazon_excluded_availability": 1,
+   "merchant_added": 3,
+   "amazon_excluded_identity_review": 1,
+   "best_price_opportunity_recovered": 1
+  },
+  "cooker": {
+   "review_member_without_declared_model": 4,
+   "shared_v1": 4,
+   "shared_v2_proposed": 4,
+   "members_match": 5,
+   "members_review": 4,
+   "members_reject": 0,
+   "shared_v2_verified": 2,
+   "merchant_removed": 4,
+   "offer_count_changed": 2,
+   "comparison_lost": 2,
+   "amazon_excluded_identity_review": 1,
+   "cheapest_merchant_changed": 1,
+   "cheapest_price_changed": 1
   },
   "laptop": {
-   "shared_v1": 17,
-   "shared_v2_proposed": 17,
+   "review_member_without_declared_model": 2,
+   "shared_v1": 18,
+   "shared_v2_proposed": 18,
    "members_match": 30,
-   "members_review": 0,
-   "members_reject": 4,
-   "shared_v2_verified": 13,
+   "members_review": 4,
+   "members_reject": 2,
+   "shared_v2_verified": 14,
+   "merchant_added": 1,
+   "merchant_removed": 5,
+   "cheapest_merchant_changed": 1,
+   "cheapest_price_changed": 1,
+   "false_best_price_removed": 1,
+   "amazon_shown_in_comparison": 1,
+   "amazon_cheapest_when_eligible": 1,
    "amazon_excluded_identity_conflict": 1,
-   "merchant_removed": 3,
-   "offer_count_changed": 3,
-   "comparison_lost": 3,
+   "offer_count_changed": 2,
+   "comparison_lost": 2,
    "saving_changed": 2
   },
+  "toaster": {
+   "review_member_without_declared_model": 2,
+   "shared_v1": 1,
+   "shared_v2_proposed": 1,
+   "members_match": 0,
+   "members_review": 2,
+   "members_reject": 0,
+   "merchant_removed": 1,
+   "offer_count_changed": 1
+  },
+  "air_conditioner": {
+   "review_member_without_declared_model": 2,
+   "shared_v1": 9,
+   "shared_v2_proposed": 9,
+   "shared_v2_verified": 7,
+   "members_match": 20,
+   "members_review": 4,
+   "members_reject": 1,
+   "saving_changed": 2,
+   "amazon_shown_in_comparison": 1,
+   "amazon_cheapest_when_eligible": 1,
+   "cheapest_merchant_changed": 2,
+   "cheapest_price_changed": 2,
+   "merchant_removed": 2,
+   "offer_count_changed": 3,
+   "comparison_lost": 1,
+   "merchant_added": 2,
+   "best_price_opportunity_recovered": 2
+  },
+  "oven": {
+   "review_member_without_declared_model": 2,
+   "shared_v1": 3,
+   "shared_v2_proposed": 3,
+   "shared_v2_verified": 2,
+   "members_match": 5,
+   "members_review": 2,
+   "members_reject": 0,
+   "saving_changed": 1,
+   "merchant_removed": 2,
+   "offer_count_changed": 1,
+   "comparison_lost": 1
+  },
   "tv": {
-   "shared_v1": 118,
-   "shared_v2_proposed": 118,
-   "shared_v2_verified": 118,
-   "members_match": 311,
+   "shared_v1": 117,
+   "shared_v2_proposed": 117,
+   "shared_v2_verified": 117,
+   "members_match": 307,
    "members_review": 0,
    "members_reject": 0,
-   "amazon_shown_in_comparison": 41,
-   "amazon_cheapest_when_eligible": 33,
+   "amazon_shown_in_comparison": 40,
+   "amazon_cheapest_when_eligible": 32,
    "amazon_excluded_no_price_source": 5,
    "cheapest_merchant_changed": 13,
    "merchant_added": 2,
-   "cheapest_price_changed": 3,
-   "saving_changed": 4,
+   "cheapest_price_changed": 5,
+   "saving_changed": 6,
    "offer_count_changed": 10,
-   "best_price_opportunity_recovered": 1,
+   "best_price_opportunity_recovered": 2,
    "merchant_removed": 8,
    "comparison_lost": 5
-  },
-  "air_conditioner": {
-   "shared_v1": 9,
-   "shared_v2_proposed": 9,
-   "shared_v2_verified": 8,
-   "members_match": 24,
-   "members_review": 2,
-   "members_reject": 0,
-   "cheapest_merchant_changed": 2,
-   "amazon_shown_in_comparison": 1,
-   "amazon_cheapest_when_eligible": 1,
-   "merchant_removed": 2,
-   "cheapest_price_changed": 1,
-   "offer_count_changed": 4,
-   "comparison_lost": 1,
-   "merchant_added": 4,
-   "best_price_opportunity_recovered": 3,
-   "comparison_created": 1
   },
   "blender": {
    "shared_v1": 5,
@@ -4355,10 +4406,8 @@
    "amazon_shown_in_comparison": 1,
    "amazon_cheapest_when_eligible": 1,
    "merchant_removed": 1,
-   "saving_changed": 2,
-   "offer_count_changed": 1,
-   "cheapest_merchant_changed": 1,
-   "cheapest_price_changed": 1
+   "saving_changed": 1,
+   "offer_count_changed": 1
   },
   "coffee_maker": {
    "shared_v1": 3,
@@ -4368,33 +4417,6 @@
    "members_review": 0,
    "members_reject": 0,
    "amazon_shown_in_comparison": 1
-  },
-  "cooker": {
-   "shared_v1": 4,
-   "shared_v2_proposed": 4,
-   "members_match": 7,
-   "members_review": 0,
-   "members_reject": 2,
-   "shared_v2_verified": 3,
-   "merchant_removed": 2,
-   "offer_count_changed": 2,
-   "comparison_lost": 1,
-   "amazon_shown_in_comparison": 1,
-   "amazon_cheapest_when_eligible": 1,
-   "saving_changed": 1
-  },
-  "toaster": {
-   "shared_v1": 1,
-   "shared_v2_proposed": 1,
-   "members_match": 1,
-   "members_review": 0,
-   "members_reject": 1,
-   "merchant_added": 1,
-   "merchant_removed": 1,
-   "cheapest_merchant_changed": 1,
-   "cheapest_price_changed": 1,
-   "false_best_price_removed": 1,
-   "best_price_opportunity_recovered": 1
   },
   "tracker": {
    "shared_v1": 1,
@@ -4407,18 +4429,6 @@
    "offer_count_changed": 1,
    "best_price_opportunity_recovered": 1,
    "comparison_created": 1
-  },
-  "oven": {
-   "shared_v1": 3,
-   "shared_v2_proposed": 3,
-   "shared_v2_verified": 2,
-   "members_match": 6,
-   "members_review": 0,
-   "members_reject": 1,
-   "saving_changed": 1,
-   "merchant_removed": 1,
-   "offer_count_changed": 1,
-   "comparison_lost": 1
   }
  },
  "lost_identity_examples": [],
@@ -4663,5 +4673,906 @@
    "v1_key": "honor|Honor X|6|Standard|256",
    "v2_key": "honor|Honor X|6d|Standard|256"
   }
- ]
+ ],
+ "commercial_ab": {
+  "printer": {
+   "world1_comparisons": 3,
+   "world2_comparisons": 2,
+   "world1_listings_in_comparisons": 6,
+   "amazon_world1_in_comparison": 2,
+   "world2_listings_in_comparisons": 4,
+   "amazon_world2_in_comparison": 2,
+   "listing_removed_from_comparison": 2,
+   "removed_review_unverified": 2,
+   "unverified_best_price_demoted_to_reference": 1,
+   "comparison_lost_by_identity": 1
+  },
+  "ALL": {
+   "world1_comparisons": 573,
+   "world2_comparisons": 417,
+   "world1_listings_in_comparisons": 1342,
+   "amazon_world1_in_comparison": 195,
+   "world2_listings_in_comparisons": 951,
+   "amazon_world2_in_comparison": 148,
+   "listing_removed_from_comparison": 419,
+   "removed_review_unverified": 286,
+   "removed_rejected_by_verifier": 38,
+   "amazon_comparison_removed": 66,
+   "amazon_removed_rejected_by_verifier": 8,
+   "removed_group_fell_below_two_stores": 90,
+   "amazon_removed_group_fell_below_two_stores": 8,
+   "amazon_removed_review_unverified": 48,
+   "removed_regrouped_by_v2_key": 5,
+   "amazon_removed_regrouped_by_v2_key": 2,
+   "listing_added_to_comparison": 28,
+   "added_new_identity_from_detector_or_suffix": 19,
+   "amazon_comparison_recovered": 19,
+   "amazon_added_new_identity_from_detector_or_suffix": 19,
+   "added_regrouped_by_v2_key": 9,
+   "unverified_best_price_demoted_to_reference": 125,
+   "comparison_lost_by_identity": 163,
+   "false_best_price_removed_by_identity": 16,
+   "amazon_false_best_removed": 7,
+   "best_price_changed_attributable_to_identity": 13,
+   "best_price_delta_sar_total": 4292.93
+  },
+  "audio": {
+   "world1_comparisons": 33,
+   "world2_comparisons": 27,
+   "world1_listings_in_comparisons": 67,
+   "amazon_world1_in_comparison": 20,
+   "world2_listings_in_comparisons": 55,
+   "amazon_world2_in_comparison": 17,
+   "listing_removed_from_comparison": 12,
+   "removed_review_unverified": 12,
+   "amazon_comparison_removed": 3,
+   "amazon_removed_review_unverified": 3,
+   "unverified_best_price_demoted_to_reference": 6,
+   "comparison_lost_by_identity": 6
+  },
+  "mobile": {
+   "world1_comparisons": 80,
+   "world2_comparisons": 69,
+   "world1_listings_in_comparisons": 194,
+   "amazon_world1_in_comparison": 24,
+   "world2_listings_in_comparisons": 172,
+   "amazon_world2_in_comparison": 29,
+   "listing_removed_from_comparison": 48,
+   "removed_rejected_by_verifier": 10,
+   "amazon_comparison_removed": 12,
+   "amazon_removed_rejected_by_verifier": 4,
+   "removed_group_fell_below_two_stores": 25,
+   "amazon_removed_group_fell_below_two_stores": 3,
+   "removed_regrouped_by_v2_key": 5,
+   "amazon_removed_regrouped_by_v2_key": 2,
+   "removed_review_unverified": 8,
+   "amazon_removed_review_unverified": 3,
+   "listing_added_to_comparison": 26,
+   "added_new_identity_from_detector_or_suffix": 17,
+   "amazon_comparison_recovered": 17,
+   "amazon_added_new_identity_from_detector_or_suffix": 17,
+   "added_regrouped_by_v2_key": 9,
+   "false_best_price_removed_by_identity": 6,
+   "amazon_false_best_removed": 4,
+   "comparison_lost_by_identity": 18,
+   "unverified_best_price_demoted_to_reference": 4,
+   "best_price_changed_attributable_to_identity": 5,
+   "best_price_delta_sar_total": 788.01
+  },
+  "tablet": {
+   "world1_comparisons": 61,
+   "world2_comparisons": 57,
+   "world1_listings_in_comparisons": 138,
+   "amazon_world1_in_comparison": 17,
+   "world2_listings_in_comparisons": 127,
+   "amazon_world2_in_comparison": 12,
+   "listing_removed_from_comparison": 11,
+   "removed_review_unverified": 7,
+   "amazon_comparison_removed": 5,
+   "amazon_removed_review_unverified": 4,
+   "removed_rejected_by_verifier": 1,
+   "amazon_removed_rejected_by_verifier": 1,
+   "removed_group_fell_below_two_stores": 3,
+   "unverified_best_price_demoted_to_reference": 4,
+   "comparison_lost_by_identity": 4,
+   "best_price_changed_attributable_to_identity": 1,
+   "best_price_delta_sar_total": 120
+  },
+  "smartwatch": {
+   "world1_comparisons": 21,
+   "world2_comparisons": 16,
+   "world1_listings_in_comparisons": 56,
+   "amazon_world1_in_comparison": 14,
+   "world2_listings_in_comparisons": 38,
+   "amazon_world2_in_comparison": 12,
+   "listing_removed_from_comparison": 18,
+   "removed_group_fell_below_two_stores": 2,
+   "amazon_comparison_removed": 2,
+   "amazon_removed_group_fell_below_two_stores": 1,
+   "removed_review_unverified": 16,
+   "amazon_removed_review_unverified": 1,
+   "unverified_best_price_demoted_to_reference": 6,
+   "comparison_lost_by_identity": 5,
+   "best_price_changed_attributable_to_identity": 1,
+   "best_price_delta_sar_total": 400
+  },
+  "dishwasher": {
+   "world1_comparisons": 22,
+   "world2_comparisons": 13,
+   "world1_listings_in_comparisons": 53,
+   "amazon_world1_in_comparison": 5,
+   "world2_listings_in_comparisons": 27,
+   "amazon_world2_in_comparison": 2,
+   "listing_removed_from_comparison": 26,
+   "removed_review_unverified": 20,
+   "amazon_comparison_removed": 3,
+   "amazon_removed_review_unverified": 3,
+   "removed_group_fell_below_two_stores": 6,
+   "comparison_lost_by_identity": 9,
+   "unverified_best_price_demoted_to_reference": 7
+  },
+  "monitor": {
+   "world1_comparisons": 18,
+   "world2_comparisons": 12,
+   "world1_listings_in_comparisons": 37,
+   "amazon_world1_in_comparison": 10,
+   "world2_listings_in_comparisons": 24,
+   "amazon_world2_in_comparison": 7,
+   "listing_removed_from_comparison": 13,
+   "removed_review_unverified": 13,
+   "amazon_comparison_removed": 3,
+   "amazon_removed_review_unverified": 3,
+   "unverified_best_price_demoted_to_reference": 6,
+   "comparison_lost_by_identity": 6
+  },
+  "vacuum": {
+   "world1_comparisons": 41,
+   "world2_comparisons": 39,
+   "world1_listings_in_comparisons": 84,
+   "amazon_world1_in_comparison": 5,
+   "world2_listings_in_comparisons": 80,
+   "amazon_world2_in_comparison": 3,
+   "listing_removed_from_comparison": 4,
+   "removed_review_unverified": 4,
+   "amazon_comparison_removed": 2,
+   "amazon_removed_review_unverified": 2,
+   "unverified_best_price_demoted_to_reference": 2,
+   "comparison_lost_by_identity": 2
+  },
+  "air_fryer": {
+   "world1_comparisons": 6,
+   "world2_comparisons": 4,
+   "world1_listings_in_comparisons": 14,
+   "amazon_world1_in_comparison": 6,
+   "world2_listings_in_comparisons": 8,
+   "amazon_world2_in_comparison": 4,
+   "listing_removed_from_comparison": 6,
+   "removed_review_unverified": 5,
+   "amazon_comparison_removed": 2,
+   "amazon_removed_review_unverified": 1,
+   "removed_group_fell_below_two_stores": 1,
+   "amazon_removed_group_fell_below_two_stores": 1,
+   "unverified_best_price_demoted_to_reference": 1,
+   "comparison_lost_by_identity": 2
+  },
+  "kettle": {
+   "world1_comparisons": 5,
+   "world2_comparisons": 4,
+   "world1_listings_in_comparisons": 11,
+   "amazon_world1_in_comparison": 2,
+   "world2_listings_in_comparisons": 9,
+   "amazon_world2_in_comparison": 1,
+   "listing_removed_from_comparison": 2,
+   "removed_review_unverified": 2,
+   "amazon_comparison_removed": 1,
+   "amazon_removed_review_unverified": 1,
+   "unverified_best_price_demoted_to_reference": 1,
+   "comparison_lost_by_identity": 1
+  },
+  "washing_machine": {
+   "world1_comparisons": 104,
+   "world2_comparisons": 42,
+   "world1_listings_in_comparisons": 264,
+   "amazon_world1_in_comparison": 29,
+   "world2_listings_in_comparisons": 97,
+   "amazon_world2_in_comparison": 13,
+   "listing_removed_from_comparison": 167,
+   "removed_review_unverified": 117,
+   "amazon_comparison_removed": 16,
+   "amazon_removed_review_unverified": 12,
+   "removed_group_fell_below_two_stores": 29,
+   "removed_rejected_by_verifier": 21,
+   "amazon_removed_rejected_by_verifier": 2,
+   "amazon_removed_group_fell_below_two_stores": 2,
+   "comparison_lost_by_identity": 62,
+   "unverified_best_price_demoted_to_reference": 53,
+   "best_price_changed_attributable_to_identity": 5,
+   "false_best_price_removed_by_identity": 7,
+   "amazon_false_best_removed": 2,
+   "best_price_delta_sar_total": 2709.15
+  },
+  "laptop": {
+   "world1_comparisons": 17,
+   "world2_comparisons": 14,
+   "world1_listings_in_comparisons": 34,
+   "amazon_world1_in_comparison": 1,
+   "world2_listings_in_comparisons": 28,
+   "listing_removed_from_comparison": 6,
+   "removed_group_fell_below_two_stores": 1,
+   "amazon_comparison_removed": 1,
+   "amazon_removed_group_fell_below_two_stores": 1,
+   "removed_rejected_by_verifier": 1,
+   "removed_review_unverified": 4,
+   "false_best_price_removed_by_identity": 1,
+   "comparison_lost_by_identity": 3,
+   "unverified_best_price_demoted_to_reference": 2
+  },
+  "refrigerator": {
+   "world1_comparisons": 56,
+   "world2_comparisons": 19,
+   "world1_listings_in_comparisons": 126,
+   "amazon_world1_in_comparison": 16,
+   "world2_listings_in_comparisons": 39,
+   "amazon_world2_in_comparison": 3,
+   "listing_removed_from_comparison": 87,
+   "removed_review_unverified": 64,
+   "amazon_comparison_removed": 13,
+   "amazon_removed_review_unverified": 12,
+   "removed_group_fell_below_two_stores": 20,
+   "removed_rejected_by_verifier": 3,
+   "amazon_removed_rejected_by_verifier": 1,
+   "unverified_best_price_demoted_to_reference": 25,
+   "comparison_lost_by_identity": 37,
+   "best_price_changed_attributable_to_identity": 1,
+   "false_best_price_removed_by_identity": 1,
+   "amazon_false_best_removed": 1,
+   "best_price_delta_sar_total": 275.77
+  },
+  "tv": {
+   "world1_comparisons": 78,
+   "world2_comparisons": 78,
+   "world1_listings_in_comparisons": 193,
+   "amazon_world1_in_comparison": 35,
+   "world2_listings_in_comparisons": 195,
+   "amazon_world2_in_comparison": 37,
+   "listing_added_to_comparison": 2,
+   "added_new_identity_from_detector_or_suffix": 2,
+   "amazon_comparison_recovered": 2,
+   "amazon_added_new_identity_from_detector_or_suffix": 2
+  },
+  "microwave": {
+   "world1_comparisons": 6,
+   "world2_comparisons": 5,
+   "world1_listings_in_comparisons": 12,
+   "amazon_world1_in_comparison": 5,
+   "world2_listings_in_comparisons": 10,
+   "amazon_world2_in_comparison": 3,
+   "listing_removed_from_comparison": 2,
+   "removed_review_unverified": 2,
+   "amazon_comparison_removed": 2,
+   "amazon_removed_review_unverified": 2,
+   "unverified_best_price_demoted_to_reference": 2,
+   "comparison_lost_by_identity": 1
+  },
+  "air_conditioner": {
+   "world1_comparisons": 6,
+   "world2_comparisons": 4,
+   "world1_listings_in_comparisons": 18,
+   "amazon_world1_in_comparison": 1,
+   "world2_listings_in_comparisons": 13,
+   "amazon_world2_in_comparison": 1,
+   "listing_removed_from_comparison": 5,
+   "removed_group_fell_below_two_stores": 2,
+   "removed_review_unverified": 2,
+   "removed_rejected_by_verifier": 1,
+   "unverified_best_price_demoted_to_reference": 1,
+   "comparison_lost_by_identity": 2,
+   "false_best_price_removed_by_identity": 1
+  },
+  "blender": {
+   "world1_comparisons": 5,
+   "world2_comparisons": 5,
+   "world1_listings_in_comparisons": 11,
+   "amazon_world1_in_comparison": 1,
+   "world2_listings_in_comparisons": 10,
+   "amazon_world2_in_comparison": 1,
+   "listing_removed_from_comparison": 1,
+   "removed_rejected_by_verifier": 1
+  },
+  "coffee_maker": {
+   "world1_comparisons": 3,
+   "world2_comparisons": 3,
+   "world1_listings_in_comparisons": 7,
+   "amazon_world1_in_comparison": 1,
+   "world2_listings_in_comparisons": 7,
+   "amazon_world2_in_comparison": 1
+  },
+  "cooker": {
+   "world1_comparisons": 3,
+   "world2_comparisons": 1,
+   "world1_listings_in_comparisons": 7,
+   "amazon_world1_in_comparison": 1,
+   "world2_listings_in_comparisons": 2,
+   "listing_removed_from_comparison": 5,
+   "removed_review_unverified": 4,
+   "amazon_comparison_removed": 1,
+   "amazon_removed_review_unverified": 1,
+   "removed_group_fell_below_two_stores": 1,
+   "unverified_best_price_demoted_to_reference": 2,
+   "comparison_lost_by_identity": 2
+  },
+  "toaster": {
+   "world1_comparisons": 1,
+   "world1_listings_in_comparisons": 1,
+   "listing_removed_from_comparison": 1,
+   "removed_review_unverified": 1,
+   "unverified_best_price_demoted_to_reference": 1,
+   "comparison_lost_by_identity": 1
+  },
+  "tracker": {
+   "world1_comparisons": 1,
+   "world2_comparisons": 1,
+   "world1_listings_in_comparisons": 2,
+   "world2_listings_in_comparisons": 2
+  },
+  "oven": {
+   "world1_comparisons": 3,
+   "world2_comparisons": 2,
+   "world1_listings_in_comparisons": 6,
+   "world2_listings_in_comparisons": 4,
+   "listing_removed_from_comparison": 2,
+   "removed_review_unverified": 2,
+   "unverified_best_price_demoted_to_reference": 1,
+   "comparison_lost_by_identity": 1
+  },
+  "air_purifier": {
+   "world1_listings_in_comparisons": 1,
+   "listing_removed_from_comparison": 1,
+   "removed_review_unverified": 1
+  }
+ },
+ "commercial_ab_examples": {
+  "removed_review_unverified": [
+   {
+    "store": "jarir",
+    "cat": "printer",
+    "title": "Canon PIXMA TS3640 All-in-One Multi-function Printer",
+    "v1_key": "canon|pixma ts3640",
+    "v2_key": "canon|pixma ts3640"
+   },
+   {
+    "store": "almanea",
+    "cat": "printer",
+    "title": "كانون، طابعة بيكسيما تي اس 3640 اللاسلكية، طباعة، نسخ، مسح ضوئي، اسود",
+    "v1_key": "canon|pixma ts3640",
+    "v2_key": "canon|pixma ts3640"
+   },
+   {
+    "store": "extra",
+    "cat": "dishwasher",
+    "title": "Ariston Dishwasher 7 Program 14 Place Setting Inverter Silver",
+    "v1_key": "ariston|NA|14",
+    "v2_key": "ariston|NA|14"
+   },
+   {
+    "store": "almanea",
+    "cat": "dishwasher",
+    "title": "غسالة صحون اريستون 7 برامج ابيض 14 مكان LFC 3C26 W 60HZ",
+    "v1_key": "ariston|NA|14",
+    "v2_key": "ariston|NA|14"
+   },
+   {
+    "store": "amazon",
+    "cat": "monitor",
+    "title": "BenQ GW2791 27” IPS FHD 1080p 100Hz Home Office Monitor, 99% sRGB, HDMI, Display",
+    "v1_key": "benq|27|fhd|100|ips",
+    "v2_key": "benq|27|fhd|100|ips"
+   },
+   {
+    "store": "noon",
+    "cat": "monitor",
+    "title": "BenQ GW2790 27 inch 100Hz Gaming Monitor FHD 1920x1080p, IPS, Adaptive Brightnes",
+    "v1_key": "benq|27|fhd|100|ips",
+    "v2_key": "benq|27|fhd|100|ips"
+   },
+   {
+    "store": "amazon",
+    "cat": "air_fryer",
+    "title": "BLACK+DECKER Digital Air Fryer, 1700W, 8L Family-Sized Capacity, 7 Preset Functi",
+    "v1_key": "black+decker|NA|8",
+    "v2_key": "black+decker|NA|8"
+   },
+   {
+    "store": "shaker",
+    "cat": "air_fryer",
+    "title": "بلاك اند ديكر قلاية هوائية – 1700 واط – سعة 8 لتر – نافذة عرض – 7 برامج – SAF80W",
+    "v1_key": "black+decker|NA|8",
+    "v2_key": "black+decker|NA|8"
+   },
+   {
+    "store": "amazon",
+    "cat": "kettle",
+    "title": "BLACK+DECKER Glass Kettle, 2200W Heating, Double Wall Wrap Protection, 1.7L Capa",
+    "v1_key": "black+decker|NA|1.7",
+    "v2_key": "black+decker|NA|1.7"
+   },
+   {
+    "store": "shaker",
+    "cat": "kettle",
+    "title": "بلاك اند ديكر غلاية كهربائية – 2200 واط – سعة 1.7 لتر – JC70-B5",
+    "v1_key": "black+decker|NA|1.7",
+    "v2_key": "black+decker|NA|1.7"
+   },
+   {
+    "store": "amazon",
+    "cat": "washing_machine",
+    "title": "Haier Front Load Washer 10 kg, Inverter, 1400 RPM, 14 Programs, Silver",
+    "v1_key": "haier|front_load|10|washer",
+    "v2_key": "haier|front_load|10|washer"
+   },
+   {
+    "store": "amazon",
+    "cat": "washing_machine",
+    "title": "Hisense 10 KG Top Loading Automatic Washing Machine, Energy Saving, Premium Grey",
+    "v1_key": "hisense|top_load|10|washer",
+    "v2_key": "hisense|top_load|10|washer"
+   }
+  ],
+  "removed_rejected_by_verifier": [
+   {
+    "store": "amazon",
+    "cat": "mobile",
+    "title": "Apple (Refurbished) iPhone 11 (128GB) - Green",
+    "v1_key": "apple|iPhone|11|Standard|128",
+    "v2_key": "apple|iPhone|11|Standard|128"
+   },
+   {
+    "store": "amazon",
+    "cat": "mobile",
+    "title": "Apple (Refurbished) iPhone 12 (64GB) - Purple",
+    "v1_key": "apple|iPhone|12|Standard|64",
+    "v2_key": "apple|iPhone|12|Standard|64"
+   },
+   {
+    "store": "amazon",
+    "cat": "mobile",
+    "title": "Apple (Refurbished) iPhone 14 5G 128GB Phone - Midnight",
+    "v1_key": "apple|iPhone|14|Standard|128",
+    "v2_key": "apple|iPhone|14|Standard|128"
+   },
+   {
+    "store": "noon",
+    "cat": "laptop",
+    "title": "Renewed - Latitude 5430 With 14-Inch Full HD Notebook,Intel Core i5/12th Gen/10-",
+    "v1_key": "dell|latitude|i5|16|512|14|igpu",
+    "v2_key": "dell|latitude|i5|16|512|14|igpu"
+   },
+   {
+    "store": "extra",
+    "cat": "washing_machine",
+    "title": "Haier Top Load Washer 12 kg 12 Program DMM Inverter Rear Control with Knob Dark ",
+    "v1_key": "haier|top_load|12|washer",
+    "v2_key": "haier|top_load|12|washer"
+   },
+   {
+    "store": "extra",
+    "cat": "washing_machine",
+    "title": "Hisense Top Load Washer 18 KG DD Inverter WiFi Color Screen Black",
+    "v1_key": "hisense|top_load|18|washer",
+    "v2_key": "hisense|top_load|18|washer"
+   },
+   {
+    "store": "amazon",
+    "cat": "tablet",
+    "title": "HUAWEI MatePad 11.5 S 2026 Tablet 2.8K 144Hz Ultra-clear Papermatte Display, 12+",
+    "v1_key": "huawei|matepad|NO_GEN|256|wifi|NO_SIZE",
+    "v2_key": "huawei|matepad|NO_GEN|256|wifi|NO_SIZE"
+   },
+   {
+    "store": "extra",
+    "cat": "washing_machine",
+    "title": "LG Front Load 7kg Washing Machine Inverter 6Motion 1000rpm White",
+    "v1_key": "lg|front_load|7|washer",
+    "v2_key": "lg|front_load|7|washer"
+   },
+   {
+    "store": "blackbox",
+    "cat": "washing_machine",
+    "title": "Midea Front Loading Washing Machine 10kg, 100% Dry 7kg, Inverter, Titanium - MF2",
+    "v1_key": "midea|front_load|10|washer",
+    "v2_key": "midea|front_load|10|washer"
+   },
+   {
+    "store": "blackbox",
+    "cat": "washing_machine",
+    "title": "Midea Front Loading Washing Machine 12kg, 100% Dry 8kg, Inverter, Titanium - MF2",
+    "v1_key": "midea|front_load|12|washer",
+    "v2_key": "midea|front_load|12|washer"
+   },
+   {
+    "store": "extra",
+    "cat": "mobile",
+    "title": "Xiaomi Redmi 15C 4G 256 GB Mint Green",
+    "v1_key": "xiaomi|Redmi|15|Standard|256",
+    "v2_key": "xiaomi|Redmi|15|Standard|256"
+   },
+   {
+    "store": "shaker",
+    "cat": "refrigerator",
+    "title": "سامسونج ثلاجة و فريزر بابين – 12.5 قدم مكعب ثلاجة و 3.8 قدم مكعب فريزر – فضي – R",
+    "v1_key": "samsung|top_mount|350|standard",
+    "v2_key": "samsung|top_mount|350|standard"
+   }
+  ],
+  "removed_group_fell_below_two_stores": [
+   {
+    "store": "extra",
+    "cat": "mobile",
+    "title": "Apple iPhone 11 128GB Purple",
+    "v1_key": "apple|iPhone|11|Standard|128",
+    "v2_key": "apple|iPhone|11|Standard|128"
+   },
+   {
+    "store": "extra",
+    "cat": "mobile",
+    "title": "Apple iPhone 12 5G 64GB White",
+    "v1_key": "apple|iPhone|12|Standard|64",
+    "v2_key": "apple|iPhone|12|Standard|64"
+   },
+   {
+    "store": "extra",
+    "cat": "mobile",
+    "title": "Apple iPhone 14 5G 128GB Blue",
+    "v1_key": "apple|iPhone|14|Standard|128",
+    "v2_key": "apple|iPhone|14|Standard|128"
+   },
+   {
+    "store": "amazon",
+    "cat": "mobile",
+    "title": "Apple iPhone 18 Pro 256 GB: – Burgundy",
+    "v1_key": "apple|iPhone|18|Pro|256",
+    "v2_key": "apple|iPhone|18|Pro|256"
+   },
+   {
+    "store": "almanea",
+    "cat": "mobile",
+    "title": "ابل ايفون 18 برو ، سعة 256 جيجا، 12 جيجا رام، 5G - فضي",
+    "v1_key": "apple|iPhone|18|Pro|256",
+    "v2_key": "apple|iPhone|18|Pro|256"
+   },
+   {
+    "store": "amazon",
+    "cat": "mobile",
+    "title": "Apple iPhone 18 Pro 512 GB: – Glacier",
+    "v1_key": "apple|iPhone|18|Pro|512",
+    "v2_key": "apple|iPhone|18|Pro|512"
+   },
+   {
+    "store": "almanea",
+    "cat": "mobile",
+    "title": "ابل آيفون 18 برو، 512 جيجا، 12 جيجا رام، 5G - عنابي",
+    "v1_key": "apple|iPhone|18|Pro|512",
+    "v2_key": "apple|iPhone|18|Pro|512"
+   },
+   {
+    "store": "amazon",
+    "cat": "laptop",
+    "title": "Dell Latitude 5000 5430 14\" Rugged Notebook - Full HD - 1920 x 1080 - Intel Core",
+    "v1_key": "dell|latitude|i5|16|512|14|igpu",
+    "v2_key": "dell|latitude|i5|16|512|14|igpu"
+   },
+   {
+    "store": "extra",
+    "cat": "washing_machine",
+    "title": "Haier Front Load Washer 10 kg Inverter 14 Programs Silver",
+    "v1_key": "haier|front_load|10|washer",
+    "v2_key": "haier|front_load|10|washer"
+   },
+   {
+    "store": "extra",
+    "cat": "washing_machine",
+    "title": "HISENSE Top Load Washer 12KG Titanium Grey",
+    "v1_key": "hisense|top_load|12|washer",
+    "v2_key": "hisense|top_load|12|washer"
+   },
+   {
+    "store": "almanea",
+    "cat": "refrigerator",
+    "title": "ثلاجة هايسنس، دولابي بابين، 18.8 قدم 531 لتر، إنفرتر، أسود زجاجي - RS3G558NABC",
+    "v1_key": "hisense|side_by_side|530|inverter",
+    "v2_key": "hisense|side_by_side|530|inverter"
+   },
+   {
+    "store": "amazon",
+    "cat": "smartwatch",
+    "title": "HUAWEI Watch FIT 4 Pro Smartwatch, Sports Fitness Tracker, GPS, 5ATM Waterproof,",
+    "v1_key": "huawei|Huawei Watch Fit|4|Pro|NO_SIZE|gps",
+    "v2_key": "huawei|Huawei Watch Fit|4|Pro|NO_SIZE|gps"
+   }
+  ],
+  "removed_regrouped_by_v2_key": [
+   {
+    "store": "amazon",
+    "cat": "mobile",
+    "title": "Xiaomi Redmi 15C Smartphone 8+256GB,Twilight Orange,6000mAh Battery",
+    "v1_key": "xiaomi|Redmi|15|Standard|256",
+    "v2_key": "xiaomi|Redmi|15c|Standard|256"
+   },
+   {
+    "store": "amazon",
+    "cat": "mobile",
+    "title": "Xiaomi 17T Dual SIM+eSIM 5G Violet 12GB RAM 512GB - Global Version",
+    "v1_key": "xiaomi|Xiaomi|17|Standard|512",
+    "v2_key": "xiaomi|Xiaomi|17t|Standard|512"
+   },
+   {
+    "store": "extra",
+    "cat": "mobile",
+    "title": "Honor X7c 4G 256GB Forest Green",
+    "v1_key": "honor|Honor X|7|Standard|256",
+    "v2_key": "honor|Honor X|7c|Standard|256"
+   },
+   {
+    "store": "extra",
+    "cat": "mobile",
+    "title": "Honor X7d 5G 128 GB Desert Gold",
+    "v1_key": "honor|Honor X|7|Standard|128",
+    "v2_key": "honor|Honor X|7d|Standard|128"
+   },
+   {
+    "store": "extra",
+    "cat": "mobile",
+    "title": "HONOR X9c 5G 256 GB Sunrise Orange",
+    "v1_key": "honor|Honor X|9|Standard|256",
+    "v2_key": "honor|Honor X|9c|Standard|256"
+   }
+  ],
+  "added_new_identity_from_detector_or_suffix": [
+   {
+    "store": "amazon",
+    "cat": "mobile",
+    "title": "Apple iPhone 17 256 GB: 6.3-inch Display with ProMotion, A19 Chip, Center Stage ",
+    "v1_key": null,
+    "v2_key": "apple|iPhone|17|Standard|256"
+   },
+   {
+    "store": "amazon",
+    "cat": "mobile",
+    "title": "Apple iPhone 17 Pro 256 GB: 6.3-inch Display with ProMotion up to 120Hz, A19 Pro",
+    "v1_key": null,
+    "v2_key": "apple|iPhone|17|Pro|256"
+   },
+   {
+    "store": "amazon",
+    "cat": "mobile",
+    "title": "Apple iPhone 17 Pro Max 256 GB: 6.9-inch Display with ProMotion, A19 Pro Chip, B",
+    "v1_key": null,
+    "v2_key": "apple|iPhone|17|Pro Max|256"
+   },
+   {
+    "store": "amazon",
+    "cat": "mobile",
+    "title": "Apple iPhone 17e 256GB: 6.1-inch Super Retina XDR Display, A19 Chip, All-Day Bat",
+    "v1_key": null,
+    "v2_key": "apple|iPhone|17e|Standard|256"
+   },
+   {
+    "store": "amazon",
+    "cat": "mobile",
+    "title": "HONOR 600 Lite 5G Smartphone, 8GB RAM + 128GB Storage, 3180mAh Durable Battery, ",
+    "v1_key": null,
+    "v2_key": "honor|Honor|600|Lite|128"
+   },
+   {
+    "store": "amazon",
+    "cat": "mobile",
+    "title": "HONOR X7e Plus 5G Smartphone, 8GB RAM + 256GB Storage, Snapdragon 4 Gen 4, 6.87\"",
+    "v1_key": null,
+    "v2_key": "honor|Honor X|7e|Plus|256"
+   },
+   {
+    "store": "amazon",
+    "cat": "mobile",
+    "title": "HONOR X7e Smartphone, Silicon-Carbon Battery, 45W HONOR SuperCharge, 120Hz Displ",
+    "v1_key": null,
+    "v2_key": "honor|Honor X|7e|Standard|128"
+   },
+   {
+    "store": "amazon",
+    "cat": "mobile",
+    "title": "HONOR X7e Smartphone, Silicon-Carbon Battery, 45W HONOR SuperCharge, 120Hz Displ",
+    "v1_key": null,
+    "v2_key": "honor|Honor X|7e|Standard|256"
+   },
+   {
+    "store": "amazon",
+    "cat": "mobile",
+    "title": "HONOR X9d 5G Smartphone, 12GB RAM + 256GB Storage, Silicon-Carbon Battery, 108MP",
+    "v1_key": null,
+    "v2_key": "honor|Honor X|9d|Standard|256"
+   },
+   {
+    "store": "amazon",
+    "cat": "tv",
+    "title": "Samsung 32 Inch HD TV, H5000F, Free contents by Samsung TV Plus, Secured by Knox",
+    "v1_key": null,
+    "v2_key": "samsung|MODEL:UA32H5000FUXSA"
+   },
+   {
+    "store": "amazon",
+    "cat": "tv",
+    "title": "Samsung 43 Inch FHD TV, F6000F, Free contents by Samsung TV Plus, Secured by Kno",
+    "v1_key": null,
+    "v2_key": "samsung|MODEL:UA43F6000FUXSA"
+   },
+   {
+    "store": "amazon",
+    "cat": "mobile",
+    "title": "Samsung Galaxy A17 5G Smartphone | 6.7\" Super AMOLED 90Hz Display | 50MP OIS Tri",
+    "v1_key": null,
+    "v2_key": "samsung|Galaxy A|A17|Standard|256"
+   }
+  ],
+  "added_regrouped_by_v2_key": [
+   {
+    "store": "extra",
+    "cat": "mobile",
+    "title": "Apple iPhone 17E , 5G , 6.1 , 256GB , White",
+    "v1_key": "apple|iPhone|17e|Standard|256",
+    "v2_key": "apple|iPhone|17e|Standard|256"
+   },
+   {
+    "store": "extra",
+    "cat": "mobile",
+    "title": "Honor X7e 4G 128 GB Light Blue",
+    "v1_key": "honor|Honor X|7|Standard|128",
+    "v2_key": "honor|Honor X|7e|Standard|128"
+   },
+   {
+    "store": "extra",
+    "cat": "mobile",
+    "title": "Honor X7e 4G 256 GB Light Blue",
+    "v1_key": "honor|Honor X|7|Standard|256",
+    "v2_key": "honor|Honor X|7e|Standard|256"
+   },
+   {
+    "store": "extra",
+    "cat": "mobile",
+    "title": "HONOR X9d 5G 256 GB Reddish Brown",
+    "v1_key": "honor|Honor X|9|Standard|256",
+    "v2_key": "honor|Honor X|9d|Standard|256"
+   },
+   {
+    "store": "extra",
+    "cat": "mobile",
+    "title": "SAMSUNG Galaxy A26 5G 256 GB Black",
+    "v1_key": "samsung|Galaxy A|A26|Standard|256",
+    "v2_key": "samsung|Galaxy A|A26|Standard|256"
+   },
+   {
+    "store": "samsung_ksa",
+    "cat": "mobile",
+    "title": "Galaxy S26 Cobalt Violet 512 GB (SM-S942BZVPMEA)",
+    "v1_key": "samsung|Galaxy S|S26|Standard|512",
+    "v2_key": "samsung|Galaxy S|S26|Standard|512"
+   },
+   {
+    "store": "extra",
+    "cat": "mobile",
+    "title": "SAMSUNG Galaxy S26 Plus 5G 256 GB Black",
+    "v1_key": "samsung|Galaxy S|S26|Plus|256",
+    "v2_key": "samsung|Galaxy S|S26|Plus|256"
+   },
+   {
+    "store": "almanea",
+    "cat": "mobile",
+    "title": "سامسونج جالكسي S26+، جيجابايت 512، 12 جيجابايت رام، 5G، شريحتين - ابيض",
+    "v1_key": "samsung|Galaxy S|S26|Standard|512",
+    "v2_key": "samsung|Galaxy S|S26|Plus|512"
+   },
+   {
+    "store": "extra",
+    "cat": "mobile",
+    "title": "SAMSUNG Galaxy S26 Plus 5G 512 GB Black",
+    "v1_key": "samsung|Galaxy S|S26|Plus|512",
+    "v2_key": "samsung|Galaxy S|S26|Plus|512"
+   }
+  ],
+  "false_best_price": [
+   {
+    "cat": "mobile",
+    "store": "amazon",
+    "price": 1049,
+    "title": "Apple (Refurbished) iPhone 11 (128GB) - Green",
+    "key": "apple|iPhone|11|Standard|128"
+   },
+   {
+    "cat": "mobile",
+    "store": "amazon",
+    "price": 890,
+    "title": "Apple (Refurbished) iPhone 12 (64GB) - Purple",
+    "key": "apple|iPhone|12|Standard|64"
+   },
+   {
+    "cat": "mobile",
+    "store": "amazon",
+    "price": 1378,
+    "title": "Apple (Refurbished) iPhone 14 5G 128GB Phone - Midnight",
+    "key": "apple|iPhone|14|Standard|128"
+   },
+   {
+    "cat": "laptop",
+    "store": "noon",
+    "price": 1847,
+    "title": "Renewed - Latitude 5430 With 14-Inch Full HD Notebook,Intel Core i5/12th Gen/10-",
+    "key": "dell|latitude|i5|16|512|14|igpu"
+   },
+   {
+    "cat": "washing_machine",
+    "store": "extra",
+    "price": 900,
+    "title": "LG Front Load 7kg Washing Machine Inverter 6Motion 1000rpm White",
+    "key": "lg|front_load|7|washer"
+   },
+   {
+    "cat": "refrigerator",
+    "store": "amazon",
+    "price": 2559,
+    "title": "Samsung Double Door Refrigerator RT47CG6442S9ZA 460L,16.3 Cu Ft,No Frost,Optimal",
+    "key": "samsung|top_mount|460|standard"
+   },
+   {
+    "cat": "washing_machine",
+    "store": "amazon",
+    "price": 2209,
+    "title": "SAMSUNG Front Automatic Home Washing Machine Partial Dryer M/WW90DB8U94GBYL Blac",
+    "key": "samsung|front_load|9|combo"
+   },
+   {
+    "cat": "mobile",
+    "store": "extra",
+    "price": 299,
+    "title": "Samsung Galaxy A16 5G 4+128 GB Light Gray",
+    "key": "samsung|Galaxy A|A16|Standard|128"
+   },
+   {
+    "cat": "mobile",
+    "store": "amazon",
+    "price": 973,
+    "title": "Samsung Galaxy A36 Enterprise Edition DUAL-SIM 128GB ROM + 6GB RAM (GSM only | N",
+    "key": "samsung|Galaxy A|A36|Standard|128"
+   },
+   {
+    "cat": "washing_machine",
+    "store": "amazon",
+    "price": 1999,
+    "title": "TCL Front Load Automatic Washing Machine 12 Kg, 1400 RPM, Partial Drying, LED Di",
+    "key": "lg|front_load|12|washer"
+   },
+   {
+    "cat": "washing_machine",
+    "store": "najm",
+    "price": 2021,
+    "title": "سامسونج غسالة ملابس أتوماتيك فتحة علوية - 13 كيلو - رمادي - WA13CG5786BYY",
+    "key": "samsung|top_load|13|washer"
+   },
+   {
+    "cat": "washing_machine",
+    "store": "extra",
+    "price": 7099,
+    "title": "Samsung Bespoke AI Front Load Washer/Dryer 21/12kg Direct Drive Dark Steel",
+    "key": "samsung|front_load|21|combo"
+   }
+  ]
+ },
+ "unsafe_identities_removed_by_category": {
+  "mobile": 12,
+  "laptop": 2,
+  "washing_machine": 19,
+  "tablet": 1,
+  "refrigerator": 3,
+  "dishwasher": 1,
+  "air_conditioner": 1,
+  "blender": 1
+ }
 }

@@ -8,6 +8,7 @@ import { extractSpecsFromTitle } from '@/lib/scraping/config/spec-configs';
 import { searchAlgolia, isAlgoliaConfigured, type AlgoliaHit } from '@/lib/algolia/search';
 import { identityKeyToSlug } from '@/lib/catalog/getProductComparison';
 import { isApprovedStore, isDisplayableRetailer, resolveApprovedSlug, retailerDisplayName } from '@/lib/retailers/approved-retailers';
+import { loadIdentitySignals, isUnsignaled } from '@/lib/identity/identity-signals';
 import { buildGoUrl } from '@/lib/analytics/build-go-url';
 import { normalizeExitUrl } from '@/lib/retailers/exit-url';
 import { routeQuery } from '@/lib/agent/route-query';
@@ -2188,6 +2189,10 @@ async function searchTPSCanonical(
     // the same gap on THIS live, customer-facing surface. One more chunked, indexed IN()
     // lookup on the same id-count this function already pays for price_history/
     // normalized_product_observations — no new N+1, no unbounded per-request cost.
+    // ADR-403 identity gate: per-listing verdicts (reject = a different item, review = unverified) computed
+    // once per chain run by the SAME resolver the compare page calls. A signalled listing is not a store of
+    // this canonical on this card. Flag-off: empty index, no table read, behaviour unchanged.
+    const identitySignals = await loadIdentitySignals(supabase, matched.map((p) => ({ id: p.id, category: (p as { category?: string | null }).category })));
     const matchedForOffers = matched as unknown as { id: string; tps_identity_key: string | null }[];
     const identityKeyToCanonicalId = new Map(matchedForOffers.map((p) => [p.tps_identity_key, p.id]));
     const identityKeys = [...identityKeyToCanonicalId.keys()].filter((k): k is string => !!k);
@@ -2223,6 +2228,7 @@ async function searchTPSCanonical(
       if (!slug || !isDisplayableRetailer(slug)) continue;
       if (delisted.has(`${r.canonical_product_id}|${slug}`)) continue; // ADR-196
       if (implausible.has(`${r.canonical_product_id}|${r.store_name}`)) continue; // ADR-267 / §8.13
+      if (!isUnsignaled(identitySignals, r.canonical_product_id, slug)) continue; // ADR-403
       if (!latest.has(r.canonical_product_id)) latest.set(r.canonical_product_id, new Map());
       const m = latest.get(r.canonical_product_id)!;
       if (!m.has(slug)) m.set(slug, { price: Number(r.price), obsId: r.tps_observation_id, observedAt: r.observed_at });
@@ -2245,6 +2251,7 @@ async function searchTPSCanonical(
       if (!slug || !isDisplayableRetailer(slug)) continue;
       if (delisted.has(`${canonicalId}|${slug}`)) continue;
       if (implausible.has(`${canonicalId}|${slug}`)) continue;
+      if (!isUnsignaled(identitySignals, canonicalId, slug)) continue; // ADR-403
       if (!latest.has(canonicalId)) latest.set(canonicalId, new Map());
       const m = latest.get(canonicalId)!;
       if (co.payload?._superseded_by_identity) { m.delete(slug); continue; }

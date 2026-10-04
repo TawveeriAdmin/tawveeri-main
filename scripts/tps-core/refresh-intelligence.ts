@@ -89,7 +89,16 @@ const STEPS: Step[] = [
     run: () => runScript("scripts/tps-core/project-storefront-identity.ts", ["--go", "--limit", "500"]),
   },
   {
-    key: "projection", label: "serving projection (canonicals → comparison rows)", needs: ["resolved-single"], slow: true,
+    // ADR-403 — identity gate. Key equality proposes, the verifier decides: this step turns the
+    // verifier's per-listing verdicts into tps_offer_identity_signals, which the projection (and live
+    // search / UCP / agents) read as an exclusion. FLAG-DRIVEN, default off: with TPS_IDENTITY_GATE /
+    // TPS_IDENTITY_V2 unset it processes nothing (and clears any rows from an earlier enablement —
+    // flag off IS the read-path rollback). MUST run before the projection.
+    key: "identity-gate", label: "identity gate (verifier verdicts → signals)", needs: ["resolved-single"],
+    run: () => runScript("scripts/tps-core/build-identity-signals.ts"),
+  },
+  {
+    key: "projection", label: "serving projection (canonicals → comparison rows)", needs: ["resolved-single", "identity-gate"], slow: true,
     run: () => runScript("scripts/build-tps-projection.ts"),
   },
   {

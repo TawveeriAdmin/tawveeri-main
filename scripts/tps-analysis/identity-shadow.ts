@@ -17,6 +17,7 @@ import 'dotenv/config';
 import { CATEGORY_DEFS } from '../tps-core/category-registry';
 import { verifyPair, resolveGroup, modelCodeOfKey } from '../tps-core/identity-verifier';
 import { brandOrNull } from '../tps-core/store-identity-guard';
+import { extractManufacturerModel } from '../../src/lib/identity/store-identifiers';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { toPoolerDbUrl } = require('../tps-core/pooler-url');
 
@@ -44,6 +45,7 @@ function keyOf(o: Obs): Keyed {
   }
   return { key: null, status: null, category: null, detected: false };
 }
+const declaredModel = (o: Obs): string | null => (o.payload ? extractManufacturerModel(o.payload) : null);
 const eligible = (o: Obs, now: number) => (o.price ?? 0) > 0 && o.availability !== 'out_of_stock' && (now - Date.parse(o.scraped_at)) / 36e5 <= FRESH_H;
 const inc = (m: Record<string, number>, k: string, n = 1) => { m[k] = (m[k] || 0) + n; };
 
@@ -118,11 +120,11 @@ const inc = (m: Record<string, number>, k: string, n = 1) => { m[k] = (m[k] || 0
     // has no canonical name per key, so this is the conservative, anchor-less resolution).
     // The key's own MODEL: segment is structured evidence for every member (the compare page passes
     // the same); nothing else structured is passed, so this is exactly what the read gate can see.
-    const res = resolveGroup(members.map(i => ({ title: obs[i].raw_name, label: slugOf.get(obs[i].store_id) })), cat, null, modelCodeOfKey(key));
+    const res = resolveGroup(members.map(i => ({ title: obs[i].raw_name, label: slugOf.get(obs[i].store_id), structured: declaredModel(obs[i]) ? { model: declaredModel(obs[i])! } : undefined })), cat, null, modelCodeOfKey(key));
     members.forEach((i, m) => { const o = res[m].outcome; inc(verdicts, o); (o === 'reject' ? rejected : o === 'review' ? review : kept).push(i); });
     // Precondition sizing: a review member whose SOURCE payload states a model code the title does
     // not — feeding the source-explicit code to the verifier would resolve it (a data wiring task).
-    for (const i of review) { const p = obs[i].payload || {}; const pm = [p.modelNumber, p.model_number, p.model, p.mpn].find(x => typeof x === 'string' && /\d{3}/.test(x) && x.replace(/[^A-Za-z0-9]/g, '').length >= 6); if (pm) { inc(reviewClasses, 'review_with_payload_model_available'); catInc(cat, 'review_with_payload_model_available'); } }
+    for (const i of review) { if (!declaredModel(obs[i])) { inc(reviewClasses, 'review_member_without_declared_model'); catInc(cat, 'review_member_without_declared_model'); } }
     v2Shared.push({ key, category: cat, stores: storesIn, kept, review, rejected });
   }
   const newlyShared = v2Shared.filter(g => !sharedV1.has(g.key) && new Set(g.kept.map(i => obs[i].store_id)).size >= 2);
@@ -167,7 +169,55 @@ const inc = (m: Record<string, number>, k: string, n = 1) => { m[k] = (m[k] || 0
   const sharedWith = (keys: Set<string>, groups: Map<string, number[]>, store: number) => [...keys].filter(k => (groups.get(k) || []).some(i => obs[i].store_id === store)).length;
   const amazon = { valid_identities_v1: amzV1.size, valid_identities_v2: amzV2.size, normalized_observations_v1: v1.filter((k, i) => obs[i].store_id === AMZ && k.key && k.status === 'valid').length, normalized_observations_v2: v2.filter((k, i) => obs[i].store_id === AMZ && k.key && k.status === 'valid').length, shared_with_extra_v1: sharedWith(amzV1, v1Groups, 4), shared_with_extra_v2_verified: newlyShared.concat(v2Shared.filter(g => sharedV1.has(g.key))).filter(g => g.kept.some(i => obs[i].store_id === AMZ) && g.kept.some(i => obs[i].store_id === 4)).length, shared_with_almanea_v1: sharedWith(amzV1, v1Groups, 5), shared_with_almanea_v2_verified: v2Shared.filter(g => g.kept.some(i => obs[i].store_id === AMZ) && g.kept.some(i => obs[i].store_id === 5)).length, in_shared_groups: amz };
 
-  const out = { generated_at: new Date().toISOString(), window_days: DAYS, label: 'SHADOW (offline replay of production observations; no DB write; user-visible comparison untouched)', stores: stores.map((s: any) => s.slug), observations: obs.length, identity_diff: diff, identity_diff_by_category: byCat, merge_to_split: mergeToSplit.length, merge_to_split_examples: mergeToSplit.slice(0, 15).map(([k, s]) => `${k} ⇒ ${[...s].join(' / ')}`), split_to_merge: splitToMerge.length, split_to_merge_examples: splitToMerge.slice(0, 15).map(([k, s]) => `${k} ⇐ ${[...s].join(' / ')}`), brand_changes: brandChanges, shared_identities_v1: sharedV1.size, shared_identities_v2_proposed: v2Shared.length, shared_identities_v2_verified: v2Shared.filter(g => new Set(g.kept.map(i => obs[i].store_id)).size >= 2).length, newly_shared_verified: newlyShared.length, newly_shared_examples: newlyShared.slice(0, 25).map(g => ({ key: g.key, stores: g.kept.map(i => slugOf.get(obs[i].store_id)), names: g.kept.map(i => obs[i].raw_name.slice(0, 60)) })), previously_shared_lost: sharedLost.length, previously_shared_lost_examples: sharedLost.slice(0, 15), verifier_verdicts_on_shared_members: verdicts, conflict_classes: conflictClasses, review_classes: reviewClasses, class_examples: classExamples, commercial_impact: impact, commercial_examples: examples, amazon, by_category: byCatShared, lost_identity_examples: lostExamples, key_changed_examples: changedExamples };
+  // ── SAME-OBSERVATION A/B (ADR-403 / founder item 20) ──────────────────────────────────────────────
+  // The earlier commercial figures compared the DEPLOYED current-offer table with a later replay, so price
+  // drift and freshness leaked into "cheapest changed". Here BOTH worlds are built from the SAME newest
+  // observation per (store, listing), the SAME prices and the SAME eligibility rule; the only difference is
+  // grouping (v1 keys vs v2 keys + verifier verdicts). Every difference below is therefore identity-caused
+  // by construction. world1 = production grouping; world2 = candidate grouping, verified members only.
+  const AMZ_ID = 2;
+  const elig = (i: number) => eligible(obs[i], now);
+  const newestPerStore = (ix: number[], pred: (i: number) => boolean) => { const m = new Map<number, number>(); for (const i of ix) { if (!pred(i)) continue; const s = obs[i].store_id; const p = m.get(s); if (p == null || obs[i].scraped_at > obs[p].scraped_at || (obs[i].scraped_at === obs[p].scraped_at && i < p)) m.set(s, i); } return m; };
+  const catOf = (i: number) => v2[i].category || v1[i].category || 'none';
+  const inC1 = new Set<number>(), inC2 = new Set<number>(); const w1Groups: Array<{ key: string; members: number[] }> = [];
+  for (const [key, ix] of v1Groups) { const m = newestPerStore(ix, elig); if (m.size >= 2) { const mem = [...m.values()]; w1Groups.push({ key, members: mem }); mem.forEach(i => inC1.add(i)); } }
+  const verdictOf = new Map<number, 'match' | 'review' | 'reject'>();
+  const w2Count: Record<string, number> = {}; let w2Groups = 0;
+  for (const g of v2Shared) { g.kept.forEach(i => verdictOf.set(i, 'match')); g.review.forEach(i => verdictOf.set(i, 'review')); g.rejected.forEach(i => verdictOf.set(i, 'reject')); const m = newestPerStore(g.kept, elig); if (m.size >= 2) { w2Groups++; [...m.values()].forEach(i => inC2.add(i)); } }
+  const AB: Record<string, Record<string, number>> = {}; const abInc = (cat: string, k: string, n = 1) => { inc(AB[cat] = AB[cat] || {}, k, n); inc(AB.ALL = AB.ALL || {}, k, n); };
+  const abExamples: Record<string, any[]> = {};
+  const abEx = (k: string, e: any) => { const a = abExamples[k] = abExamples[k] || []; if (a.length < 12) a.push(e); };
+  for (const g of w1Groups) abInc(catOf(g.members[0]), 'world1_comparisons');
+  for (const g of v2Shared) { const m = newestPerStore(g.kept, elig); if (m.size >= 2) abInc(g.category, 'world2_comparisons'); }
+  for (const i of inC1) { const c = catOf(i); abInc(c, 'world1_listings_in_comparisons'); if (obs[i].store_id === AMZ_ID) abInc(c, 'amazon_world1_in_comparison'); }
+  for (const i of inC2) { const c = catOf(i); abInc(c, 'world2_listings_in_comparisons'); if (obs[i].store_id === AMZ_ID) abInc(c, 'amazon_world2_in_comparison'); }
+  for (const i of inC1) if (!inC2.has(i)) {
+    const c = catOf(i), vd = verdictOf.get(i); const reason = vd === 'reject' ? 'removed_rejected_by_verifier' : vd === 'review' ? 'removed_review_unverified' : (v1[i].key !== v2[i].key ? 'removed_regrouped_by_v2_key' : 'removed_group_fell_below_two_stores');
+    abInc(c, 'listing_removed_from_comparison'); abInc(c, reason); if (obs[i].store_id === AMZ_ID) { abInc(c, 'amazon_comparison_removed'); abInc(c, 'amazon_' + reason); }
+    abEx(reason, { store: slugOf.get(obs[i].store_id), cat: c, title: obs[i].raw_name.slice(0, 80), v1_key: v1[i].key, v2_key: v2[i].key });
+  }
+  for (const i of inC2) if (!inC1.has(i)) {
+    const c = catOf(i); const reason = !(v1[i].key && v1[i].status === 'valid') ? 'added_new_identity_from_detector_or_suffix' : 'added_regrouped_by_v2_key';
+    abInc(c, 'listing_added_to_comparison'); abInc(c, reason); if (obs[i].store_id === AMZ_ID) { abInc(c, 'amazon_comparison_recovered'); abInc(c, 'amazon_' + reason); }
+    abEx(reason, { store: slugOf.get(obs[i].store_id), cat: c, title: obs[i].raw_name.slice(0, 80), v1_key: v1[i].key, v2_key: v2[i].key });
+  }
+  // best-price effect, per world1 comparison, SAME prices: cheapest member vs cheapest member that survives in world2
+  for (const g of w1Groups) {
+    const c = catOf(g.members[0]); const cheapest = g.members.reduce((a, b) => (obs[b].price! < obs[a].price! || (obs[b].price === obs[a].price && obs[b].store_id < obs[a].store_id)) ? b : a);
+    const survivors = g.members.filter(i => inC2.has(i));
+    const vd = verdictOf.get(cheapest);
+    if (vd === 'reject') { abInc(c, 'false_best_price_removed_by_identity'); abEx('false_best_price', { cat: c, store: slugOf.get(obs[cheapest].store_id), price: obs[cheapest].price, title: obs[cheapest].raw_name.slice(0, 80), key: g.key }); if (obs[cheapest].store_id === AMZ_ID) abInc(c, 'amazon_false_best_removed'); }
+    else if (vd === 'review') abInc(c, 'unverified_best_price_demoted_to_reference');
+    if (survivors.length < 2) { abInc(c, 'comparison_lost_by_identity'); continue; }
+    const best2 = Math.min(...survivors.map(i => obs[i].price!));
+    if (best2 !== obs[cheapest].price) { abInc(c, 'best_price_changed_attributable_to_identity'); abInc(c, 'best_price_delta_sar_x100', Math.round((best2 - obs[cheapest].price!) * 100)); }
+  }
+  for (const [k, g] of Object.entries(AB)) if (g.best_price_delta_sar_x100 != null) { g.best_price_delta_sar_total = g.best_price_delta_sar_x100 / 100; delete g.best_price_delta_sar_x100; void k; }
+  // unsafe identities removed: v1 keys shared by ≥2 stores whose v2 verdict rejects ≥1 member
+  const unsafeRemoved: Record<string, number> = {};
+  for (const g of v2Shared) if (g.rejected.length) inc(unsafeRemoved, g.category);
+
+  const out = { generated_at: new Date().toISOString(), window_days: DAYS, label: 'SHADOW (offline replay of production observations; no DB write; user-visible comparison untouched)', stores: stores.map((s: any) => s.slug), observations: obs.length, identity_diff: diff, identity_diff_by_category: byCat, merge_to_split: mergeToSplit.length, merge_to_split_examples: mergeToSplit.slice(0, 15).map(([k, s]) => `${k} ⇒ ${[...s].join(' / ')}`), split_to_merge: splitToMerge.length, split_to_merge_examples: splitToMerge.slice(0, 15).map(([k, s]) => `${k} ⇐ ${[...s].join(' / ')}`), brand_changes: brandChanges, shared_identities_v1: sharedV1.size, shared_identities_v2_proposed: v2Shared.length, shared_identities_v2_verified: v2Shared.filter(g => new Set(g.kept.map(i => obs[i].store_id)).size >= 2).length, newly_shared_verified: newlyShared.length, newly_shared_examples: newlyShared.slice(0, 25).map(g => ({ key: g.key, stores: g.kept.map(i => slugOf.get(obs[i].store_id)), names: g.kept.map(i => obs[i].raw_name.slice(0, 60)) })), previously_shared_lost: sharedLost.length, previously_shared_lost_examples: sharedLost.slice(0, 15), verifier_verdicts_on_shared_members: verdicts, conflict_classes: conflictClasses, review_classes: reviewClasses, class_examples: classExamples, commercial_impact: impact, commercial_examples: examples, amazon, by_category: byCatShared, lost_identity_examples: lostExamples, key_changed_examples: changedExamples, commercial_ab: AB, commercial_ab_examples: abExamples, unsafe_identities_removed_by_category: unsafeRemoved };
   fs.mkdirSync(OUT.replace(/\/[^/]+$/, ''), { recursive: true });
   fs.writeFileSync(OUT, JSON.stringify(out, null, 1));
   console.log(JSON.stringify({ identity_diff: diff, merge_to_split: mergeToSplit.length, split_to_merge: splitToMerge.length, shared_v1: sharedV1.size, shared_v2_proposed: v2Shared.length, shared_v2_verified: out.shared_identities_v2_verified, newly_shared_verified: newlyShared.length, previously_shared_lost: sharedLost.length, verdicts, conflictClasses, reviewClasses, impact, amazon }, null, 1));

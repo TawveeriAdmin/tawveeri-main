@@ -7,6 +7,7 @@ import { resolveApprovedSlug, isDisplayableRetailer, retailerDisplayName } from 
 import { mapFreeGiftToConditionalOffer, summarizeOffers, type ConditionalOfferEvidence } from '@/lib/tps/v1-search-helpers';
 import { deriveCampaignEligibility, type CampaignEligibilityEvidence } from '@/lib/providers/campaigns/blackbox-riyal-festival';
 import { buildGoUrl } from '@/lib/analytics/build-go-url';
+import { loadIdentitySignals, isUnsignaled } from '@/lib/identity/identity-signals';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -116,6 +117,10 @@ export async function GET(req: NextRequest) {
       .order('observed_at', { ascending: false });
     const latestPrice = new Map<string, number>();
     for (const p of prices ?? []) { const k = `${p.canonical_product_id}|${p.store_name}`; if (!latestPrice.has(k)) latestPrice.set(k, Number(p.price)); }
+    // ADR-403 identity gate: the SAME per-listing verdicts the projection and the compare page apply.
+    // A listing the verifier rejected (a different item) or could not verify (review) is not an offer
+    // of this canonical here either. Flag-off: an empty index, no table read, unchanged behaviour.
+    const identitySignals = await loadIdentitySignals(supabase, [...canon, ...discovery].map((c) => ({ id: c.canonical_id, category: c.category })));
     const seenStore = new Set<string>();
     type NormObs = { id: string; store_id: string | null; canonical_product_id: string; observed_at: string | null; normalized_payload: { _raw_id?: number } | null };
     const kept: { o: NormObs; slug: string }[] = [];
@@ -131,6 +136,7 @@ export async function GET(req: NextRequest) {
       // `summarizeOffers`'s own doc comment), so excluding here is the single, consistent
       // enforcement point rather than a second gate downstream.
       if (!isFreshObservation(o.observed_at)) continue;
+      if (!isUnsignaled(identitySignals, o.canonical_product_id, o.store_id) || !isUnsignaled(identitySignals, o.canonical_product_id, slug)) continue;
       const key = `${o.canonical_product_id}|${slug}`;
       if (seenStore.has(key)) continue; // one authoritative offer per store
       seenStore.add(key);

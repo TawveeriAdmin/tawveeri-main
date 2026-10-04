@@ -32,6 +32,7 @@ import { partitionEligible, distinctStoreCount } from '@/lib/compare/offer-eligi
 import { deriveCampaignEligibility, type CampaignEligibilityEvidence } from '@/lib/providers/campaigns/blackbox-riyal-festival';
 import { buildGoUrl } from '@/lib/analytics/build-go-url';
 import { applyAffiliateTrueTieOrder } from '@/lib/compare/affiliate-true-tie';
+import { extractManufacturerModel } from '../identity/store-identifiers';
 import { identityGateEnabled } from '../../../scripts/tps-core/identity-flags';
 import { modelCodeOfKey, resolveGroup } from '../../../scripts/tps-core/identity-verifier';
 
@@ -80,6 +81,8 @@ export interface CompareOffer {
   /** Phase 3B identity verifier verdict against the other offers of this key (absent = verified match
    *  or gate off). `review` offers are reference rows only; rejected offers never reach the list. */
   identity_verdict?: { outcome: 'review'; reasons: string[] };
+  /** Manufacturer model code the SOURCE declared (payload), when it passes the store-identifier shape test. Internal: input to the identity verifier only. */
+  source_model?: string | null;
 }
 
 export interface ComparisonResult {
@@ -380,6 +383,10 @@ export async function getComparison(params: {
   const scrapedAtByRawId = new Map<number, string>();
   const availabilityByRawId = new Map<number, string>();
   const campaignByRawId = new Map<number, CampaignEligibilityEvidence>();
+  // Source-declared MANUFACTURER model code per raw observation (eXtra `modelNumber`, Almanea `model`):
+  // the identity verifier compares it instead of re-reading a code out of a title that may not state one
+  // (ADR-403 gate: appliance titles on eXtra carry no code, the payload does).
+  const modelByRawId = new Map<number, string>();
   {
     const priceLinkedRawIds = [...latestBySlug.values()]
       .map((p) => (p.obsId ? rawIdByObsId.get(p.obsId) : undefined))
@@ -397,9 +404,11 @@ export async function getComparison(params: {
       };
       const now = new Date();
       const { data: raws } = await db.from('raw_observations').select('id, scraped_at, payload').in('id', rawIds);
-      for (const r of (raws ?? []) as { id: number | string; scraped_at: string | null; payload: { availability?: string; specifications?: { campaign_eligibility?: { campaign_category_id?: number } } } }[]) {
+      for (const r of (raws ?? []) as { id: number | string; scraped_at: string | null; payload: Record<string, unknown> & { availability?: string; specifications?: { campaign_eligibility?: { campaign_category_id?: number } } } }[]) {
         if (r.scraped_at) scrapedAtByRawId.set(Number(r.id), r.scraped_at);
         if (r.payload?.availability) availabilityByRawId.set(Number(r.id), r.payload.availability);
+        const declaredModel = r.payload ? extractManufacturerModel(r.payload) : null;
+        if (declaredModel) modelByRawId.set(Number(r.id), declaredModel);
         const eligibility = deriveCampaignEligibility(r.payload?.specifications?.campaign_eligibility, r.scraped_at, now);
         if (eligibility) campaignByRawId.set(Number(r.id), eligibility);
       }
@@ -462,6 +471,7 @@ export async function getComparison(params: {
         // last-known price is still a real price, so it still competes for "cheapest" — the
         // page must say so plainly when that offer wins, not silently present it as current.
         stale: (Date.now() - Date.parse(observedAt)) / 3_600_000 > STALE_CAVEAT_HOURS,
+        source_model: modelByRawId.get(newestRawIdBySlug.get(slug)?.rawId ?? -1) ?? null,
         confidence: listing?.confidence ?? canonical.identity_confidence ?? 100,
         is_verified: !!listing,
         // Keyed off the truly-newest observation for this retailer (newestRawIdBySlug), NOT
@@ -487,7 +497,7 @@ export async function getComparison(params: {
   //   review → kept only as a reference row (never backs a cheapest claim), with reasons;
   //   match  → unchanged. Store-neutral; reads titles only; no price, ranking or affiliate input.
   const gated: CompareOffer[] = identityGateEnabled(canonical.category)
-    ? applyIdentityVerifierGate(priceOrdered, canonical.category, canonical.name_en || canonical.name_ar, modelCodeOfKey(canonical.tps_identity_key))
+    ? applyIdentityVerifierGate(priceOrdered, canonical.category, null, modelCodeOfKey(canonical.tps_identity_key))
     : priceOrdered;
   const offers: CompareOffer[] = applyAffiliateTrueTieOrder(gated);
 
@@ -593,7 +603,7 @@ export function partitionOffersByEligibility(
  */
 export function applyIdentityVerifierGate(offers: CompareOffer[], category: string, anchorTitle?: string | null, sharedModel?: string | null): CompareOffer[] {
   if (offers.length < 2) return offers;
-  const res = resolveGroup(offers.map((o) => ({ title: o.raw_name, label: o.store_slug })), category, anchorTitle, sharedModel);
+  const res = resolveGroup(offers.map((o) => ({ title: o.raw_name, label: o.store_slug, structured: o.source_model ? { model: o.source_model } : undefined })), category, anchorTitle, sharedModel);
   const out: CompareOffer[] = [];
   offers.forEach((o, i) => {
     const r = res[i];

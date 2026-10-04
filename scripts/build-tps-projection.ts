@@ -51,6 +51,7 @@ import { Client } from "pg";
 import { TPS_STORES } from "./tps-core/category-registry";
 import { toPoolerDbUrl } from './tps-core/pooler-url';
 import { PICK_FRESHNESS_MAX_HOURS } from "../src/lib/intelligence/evidence-engine";
+import { identityGateEnabled } from "./tps-core/identity-flags";
 
 // ADR-082: some price_history rows carry the numeric store_id as store_name (a
 // fallback from before a store was added to TPS_STORES). price_history is
@@ -200,6 +201,24 @@ async function main() {
   await pg.query("set statement_timeout = 0");
   let queries = 0;
 
+  // ── IDENTITY GATE (ADR-403; flags TPS_IDENTITY_GATE / TPS_IDENTITY_V2, default OFF) ──────────────
+  // A (canonical, store) listing the identity verifier did not let stand as the same purchasable item
+  // (tps_offer_identity_signals: reject = a different item, review = unverified) must not count as a
+  // comparison store, price a "cheapest" claim, or inflate store_count — so search, category cards and
+  // Algolia (all fed by this projection) carry the SAME identity truth as the compare page. Applied
+  // only to categories whose flag is on; with the flags unset the SQL below is byte-identical to before.
+  // Missing table while a category is gated: fail OPEN for the build (never take the refresh chain
+  // down), but loudly — the signals job fails closed and is the place that surfaces it.
+  const { rows: catRows } = await pg.query<{ category: string }>("select distinct category from canonical_products where category is not null");
+  let gatedCategories = catRows.map((r) => r.category).filter((c) => identityGateEnabled(c)).sort();
+  if (gatedCategories.length) {
+    const t = (await pg.query<{ t: string | null }>("select to_regclass('tps_offer_identity_signals') as t")).rows[0].t;
+    if (!t) { console.error("[projection] identity gate enabled for " + gatedCategories.join(",") + " but tps_offer_identity_signals does not exist — building WITHOUT the gate"); gatedCategories = []; }
+  }
+  const gateExcl = (canonicalIdExpr: string, storeIdExpr: string, storeNameExpr: string | null) => gatedCategories.length
+    ? `and not exists (select 1 from tps_offer_identity_signals g where g.canonical_product_id = ${canonicalIdExpr} and g.category = any($3::text[])
+            and (g.store_id = ${storeIdExpr}${storeNameExpr ? ` or g.store_display_name = ${storeNameExpr}` : ""}))` : "";
+
   // ── PHASE 1: one set-based read ───────────────────────────────────────────
   // `latest` takes the newest priced observation per (canonical, store); the
   // aggregate then emits parallel store/price arrays already ordered by price.
@@ -241,6 +260,7 @@ async function main() {
           where i.canonical_product_id = ph.canonical_product_id
             and i.store_display_name = ${STORE_NAME_CASE}
         )
+        ${gateExcl("ph.canonical_product_id", "ph.store_id", STORE_NAME_CASE)}
       order by ph.canonical_product_id, ${STORE_NAME_CASE}, ph.observed_at desc
     ),
     -- QUALITY PROGRAM P0 (2026-08-27, §11/§12): TRUE per-(canonical, STORE) observation
@@ -288,6 +308,7 @@ async function main() {
           where i.canonical_product_id = c.id
             and i.store_display_name = ${STORE_ID_NAME_CASE}
         )
+        ${gateExcl("c.id", "co.store_id", null)}
     ),
     combined as (
       select h.canonical_product_id, h.store_name, h.price, h.observed_at, h.store_id,
@@ -352,7 +373,7 @@ async function main() {
     where c.tps_identity_key is not null
       and c.is_active
     order by c.id
-  `, [PICK_FRESHNESS_MAX_HOURS, SAMSUNG_ONLY]);
+  `, gatedCategories.length ? [PICK_FRESHNESS_MAX_HOURS, SAMSUNG_ONLY, gatedCategories] : [PICK_FRESHNESS_MAX_HOURS, SAMSUNG_ONLY]);
   queries++;
   const readMs = Date.now() - t1;
 
