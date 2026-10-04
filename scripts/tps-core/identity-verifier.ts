@@ -103,18 +103,63 @@ const readModelCode = (t: string): string | null => {
 const stripCodeAffixes = (x: string) => x.replace(/^[A-Z]+\//, "").replace(/^[A-Z]{4,}-/, "").replace(/^SM-(?=[A-Z]\d{3})/, "");   // Samsung's universal "SM-" prefix is written by some merchants and not others
 
 /** A SOURCE-declared model (payload field, already shape-tested by the caller) in the same notation the title reader produces. */
-const normalizeDeclaredModel = (m: string | null | undefined): string | null => (m && m.trim() ? stripCodeAffixes(m.trim().toUpperCase()) : null);
+const normalizeDeclaredModel = (m: string | null | undefined): string | null => {
+  if (!m || !m.trim()) return null;
+  const c = stripCodeAffixes(m.trim().toUpperCase());
+  // A retailer SKU that slipped into a model field (one letter + ≥7 digits: "S200766459", "N70382194"; or all digits) is not a
+  // manufacturer code. Production audit 2026-10-04: three audio listings from one store declared such a value and every
+  // honest listing of the same product "conflicted" with it. Unknown beats a false conflict.
+  if (/^[A-Z]\d{7,}$/.test(c) || /^\d{6,}$/.test(c)) return null;
+  return c;
+};
 
 /** Canonical core of a code: strip a "/REGION" tail (Apple "MDVK4AB/A", Samsung "…GV/YL") or an LG
  *  ".MARKET" tail ("AM182C0.UK1") and separators. */
-const codeCore = (code: string, statedInches: Array<string | null | undefined> = []) => {
+const codeCore = (code: string) => {
   let c = code.replace(/\/[A-Z0-9]{1,3}$/, "").replace(/\.[A-Z0-9]{2,5}$/, "");
   // A one-to-three-letter maker prefix joined by a hyphen (Panasonic "MC-YL690GY47" / "MC YL690GY47") is optional notation.
   c = c.replace(/^[A-Z]{1,3}-(?=[A-Z0-9]{7,}$)/, "").replace(/[^A-Z0-9]/g, "");
-  // TV / monitor codes carry the screen size as a prefix on some merchants ("65X6600H" = 65" + "X6600H").
-  // Either side's stated size counts: a key-asserted code ("43UA73006LA") has no title of its own to state it.
-  for (const inch of statedInches) { if (inch && new RegExp("^" + inch + "[A-Z]").test(c) && c.length - inch.length >= 4) { c = c.slice(inch.length); break; } }
   return c;
+};
+
+/**
+ * Every notation a code can legitimately be written in. Merchants and the identity key disagree on notation, not on the
+ * product: the key keeps no separators ("SML705FAW1KSA", "29U531AWAMI", "MF0V4AFA") while a title keeps them
+ * ("SM-L705FAW1KSA", "29U531A-W.AMI", "MF0V4AF/A"); some merchants prefix the screen size ("65X6600H") or drop Samsung's "SM".
+ * Two codes are compared across ALL their forms and the CLOSEST relation wins, so a notation difference is never mistaken for
+ * a model difference — while a genuinely different code stays different in every form.
+ */
+const codeForms = (code: string, statedInches: Array<string | null | undefined>): string[] => {
+  const raw = code.toUpperCase();
+  const bases = new Set<string>([raw.replace(/[^A-Z0-9]/g, ""), codeCore(raw)]);
+  const out = new Set<string>();
+  for (const b of bases) {
+    out.add(b);
+    const noSm = b.replace(/^SM(?=[A-Z]\d{3})/, "");
+    out.add(noSm);
+    for (const inch of statedInches) { if (inch && new RegExp("^" + inch + "[A-Z]").test(noSm) && noSm.length - inch.length >= 4) out.add(noSm.slice(inch.length)); }
+  }
+  return [...out].filter((x) => x.length >= 4);
+};
+
+type CodeRelation = "exact" | "suffix" | "near" | "conflict";
+const RELATION_RANK: Record<CodeRelation, number> = { exact: 0, suffix: 1, near: 2, conflict: 3 };
+const relateForms = (ka: string, kb: string): CodeRelation => {
+  if (ka === kb) return "exact";
+  const shorter = Math.min(ka.length, kb.length), prefix = commonPrefixLength(ka, kb);
+  // One code contains the other (R-V905PS1KV vs R-V905PS1KV-1TWH; a marketing code "F6000F" inside the full
+  // "UA43F6000FUXZN"), or they share a ≥7-char stem with short differing tails (RT62K7050SLB vs SLH, WFR1114MB vs
+  // WFR1114WH): a colour/market/length designator whose meaning we do not know.
+  if (shorter >= 6 && (ka.includes(kb) || kb.includes(ka))) return "suffix";
+  if (prefix >= 7 && ka.length - prefix <= 4 && kb.length - prefix <= 4) return "suffix";
+  // One insertion/substitution/transposition on a ≥7-char code (SAF80-B5 vs SAF80W-B5, NRF400DS vs a typo NFR400DS).
+  if (shorter >= 7 && osaDistance(ka, kb) <= 1) return "near";
+  return "conflict";
+};
+const compareCodes = (ma: string, mb: string, inches: Array<string | null | undefined>): CodeRelation => {
+  let best: CodeRelation = "conflict";
+  for (const fa of codeForms(ma, inches)) for (const fb of codeForms(mb, inches)) { const r = relateForms(fa, fb); if (RELATION_RANK[r] < RELATION_RANK[best]) best = r; }
+  return best;
 };
 
 /** Optimal-string-alignment distance (Damerau-Levenshtein with adjacent transposition), capped at 2. */
@@ -166,9 +211,11 @@ const readBundle = (t: string): string | null => /\b(bundle|combo pack|\+\s*(bud
 /** Storage tier: expansion phrases stripped, "8+256GB" → 256, TB → GB, 1000/1024 → one tier. */
 const readStorageTier = (t: string): string | null => {
   const l = t.replace(/(?:expandable|expand|up)\s*(?:up\s*)?to\s*\d+\s*(?:gb|tb)/g, "").replace(/microsd[^,;|]*/g, "");
-  const plus = l.match(/(?<![\d.])(\d{1,2})\s*\+\s*(\d{2,4})\s*(?:gb|g\b|جيجا)/);
+  // "8+256GB" only: the first figure is not glued to a model name ("S10+ 12GB" is a Plus model, not RAM+storage)
+  // and the second is a storage tier.
+  const plus = l.match(/(?<![a-z\d.])(\d{1,2})\s*\+\s*(\d{2,4})\s*(?:gb|g\b|جيجا)/);
   let gb: number | null = null;
-  if (plus) gb = Number(plus[2]);
+  if (plus && Number(plus[1]) <= 24 && Number(plus[2]) >= 32) gb = Number(plus[2]);
   else {
     const tb = l.match(/(?<![\d.])(\d(?:\.\d)?)\s*(?:tb|تيرا)/);
     const gbs = [...l.matchAll(/(?<![\d.])(\d{2,4})\s*(?:gb|g\b|جيجا)/g)].map((m) => Number(m[1])).filter((n) => n >= 16);
@@ -181,7 +228,7 @@ const readStorageTier = (t: string): string | null => {
 };
 /** Tablet / watch connectivity: cellular vs Wi-Fi-only / Bluetooth-only, only when stated. */
 const readConnectivity = (t: string, category: string): string | null => {
-  const cellular = /(cellular|(?<![a-z0-9])(5g|4g|lte)(?![a-z0-9])|esim|(?<![a-z])sim(?![a-z])|5 جي|4 جي|شريحة)/.test(t);
+  const cellular = /(cellular|(?<![a-z0-9])(5g|4g|lte)(?![a-z0-9])|esim|(?<![a-z])sim(?![a-z])|5 جي|4 جي|شريحة|خلوي|خلوية|سيم)/.test(t);
   if (cellular) return "cellular";
   if (category === "smartwatch") return /bluetooth|بلوتوث/.test(t) ? "bluetooth" : null;
   return /wi-?fi|واي ?فاي/.test(t) ? "wifi_only" : null;
@@ -282,21 +329,13 @@ export function verifyPair(a: VerifierInput, b: VerifierInput): Verdict {
   if (rules.includes("model_code")) {
     const ma = normalizeDeclaredModel(a.structured?.model) ?? readModelCode(ta)?.toUpperCase() ?? null, mb = normalizeDeclaredModel(b.structured?.model) ?? readModelCode(tb)?.toUpperCase() ?? null; note("model_code", ma, mb);
     if (ma && mb) {
-      const inches = [readScreenInch(ta, category), readScreenInch(tb, category)];
-      const ka = codeCore(ma, inches), kb = codeCore(mb, inches);
-      const shorter = Math.min(ka.length, kb.length), prefix = commonPrefixLength(ka, kb);
-      if (ka === kb) reasons.push("exact_model_code");
-      // One code contains the other (R-V905PS1KV vs R-V905PS1KV-1TWH; a marketing code "F6000F" inside the
-      // full "UA43F6000FUXZN"): a colour/market/length designator whose meaning we do not know — review,
-      // never silent equivalence.
-      else if (shorter >= 6 && (ka.includes(kb) || kb.includes(ka))) review(`model_code_suffix_unknown:${ma}~${mb}`);
-      // Same ≥7-char stem with short differing tails (RT62K7050SLB vs SLH, WFR1114MB vs WFR1114WH,
-      // WQP125201CWEG vs CSEG): a finish/colour designator — review (Phase-3B shadow trace: 238 rejects
-      // in this class were inspected; the stem-equal ones were colour pairs, not different models).
-      else if (prefix >= 7 && ka.length - prefix <= 4 && kb.length - prefix <= 4) review(`model_code_suffix_unknown:${ma}~${mb}`);
-      // One insertion/substitution/transposition on a ≥7-char code (SAF80-B5 vs SAF80W-B5, NRF400DS vs a
-      // merchant's typo NFR400DS): too close to call different, too far to call the same — review.
-      else if (shorter >= 7 && osaDistance(ka, kb) <= 1) review(`model_code_near:${ma}~${mb}`);
+      // Compared across every notation (see codeForms); the closest relation decides. A stem-equal pair is a finish /
+      // colour / market designator we cannot read (Phase-3B shadow: the stem-equal rejects were colour pairs) → review,
+      // never silent equivalence; a one-edit pair is too close to call different and too far to call the same → review.
+      const rel = compareCodes(ma, mb, [readScreenInch(ta, category), readScreenInch(tb, category)]);
+      if (rel === "exact") reasons.push("exact_model_code");
+      else if (rel === "suffix") review(`model_code_suffix_unknown:${ma}~${mb}`);
+      else if (rel === "near") review(`model_code_near:${ma}~${mb}`);
       else reject(`model_code_conflict:${ma}≠${mb}`);
     } else if (!ma && !mb && SPEC_GROUP_REVIEW.has(category)) {
       review("no_model_code_spec_group_only");

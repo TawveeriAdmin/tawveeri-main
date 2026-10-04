@@ -194,3 +194,36 @@ describe('identity verifier — code notation (production shadow, 2026-10-04)', 
     expect(v('مكنسة هيتاشي برميل سعة 15 لتر، 1600 واط – CV-940YPG', 'هيتاشي مكنسة برميل - 15 ليتر - 1600 واط - رمادي - CV-940Y SS220 PG', 'vacuum').outcome).toBe('review');
   });
 });
+
+describe('identity verifier — production audit fixes (tablet reads)', () => {
+  test('"Tab S10+ 12GB RAM,256GB" is 256 GB storage — "S10+ 12GB" is a Plus model, not 10+12 storage', () => {
+    const r = v('SAMSUNG Galaxy Tab S10+ 12GB RAM,256GB Wi-Fi - Platinum - SM-X820NZSAMEA', 'Galaxy Tab S10 Plus Platinum Silver 12GB 256GB WiFi - Middle East Version', 'tablet');
+    expect(r.evidence.storage_gb).toEqual({ a: '256', b: '256' }); expect(r.outcome).not.toBe('reject');
+  });
+  test('Arabic "واي فاي/ خلوي" is a cellular listing: it does not conflict with a 5G title', () => {
+    const r = v('Apple IPAD PRO 2025, 512 GB, 12GB , 11 INCH, 5G M5, SPACE BLACK', 'آبل آيباد برو 11 إنش (2025) بمعالج إم 5، سعة 512 جيجابايت، واي فاي/ خلوي - اسود', 'tablet');
+    expect(r.reasons.some((x) => x.startsWith('connectivity_conflict'))).toBe(false);
+  });
+});
+
+describe('identity verifier — notation across key / title / merchant (production audit 2026-10-04)', () => {
+  const rel = (a: string, b: string, category: string, ma?: string, mb?: string) =>
+    verifyPair({ title: a, category, structured: ma ? { model: ma } : undefined }, { title: b, category, structured: mb ? { model: mb } : undefined });
+  test('the identity key keeps no separators; titles do — they are the same code (Samsung SM-, LG .AMI, Apple /A)', () => {
+    expect(rel('SAMSUNG Galaxy Watch Ultra 2025, 47MM, White', 'ساعة ذكية سامسونج جالكسي 8 ألترا 2025، أبيض - SM-L705FAW1KSA', 'smartwatch', 'SML705FAW1KSA').reasons).toContain('exact_model_code');
+    expect(rel('LG Ultrawide Flat Monitor, 29 inch WFHD IPS Display, White', 'شاشة كمبيوتر ال جي الترا وايد 29 بوصة 29U531A-W.AMI', 'monitor', '29U531AWAMI').reasons).toContain('exact_model_code');
+    expect(rel('Apple Watch Ultra 3 GPS + Cellular 49mm Black Titanium', 'ابل ساعة الترا 3 49 ملم', 'smartwatch', 'MF0V4AFA', 'MF0V4AF/A').reasons).toContain('exact_model_code');
+  });
+  test('27GS60F-B.AMI vs 27GS60F: a market/colour tail on the same model is review, not a conflict', () => {
+    const r = rel('LG UltraGear Gaming Monitor 27GS60F, 27 Inch, 1080p, 180Hz', 'شاشة قيمنق 27 بوصة Full HD، ال جي، 180 هرتز', 'monitor', '27GS60F', '27GS60F-B.AMI');
+    expect(r.reasons.some((x) => x.startsWith('model_code_conflict'))).toBe(false);
+  });
+  test('a retailer SKU in the model field (S200766459) is not a manufacturer code and never conflicts with a real one', () => {
+    const r = rel('Sony WH-1000XM5 Wireless Noise Cancelling Headphones Black', 'Sony Wh-1000Xm5 Noise Cancelling Wireless Headphones WH1000XM5B', 'audio', 'S200766459');
+    expect(r.reasons.some((x) => x.startsWith('model_code_conflict'))).toBe(false);
+  });
+  test('genuinely different codes stay different in every notation (CV-965NBLGSA vs CV-960F; Q6800H vs 60Q6820H)', () => {
+    expect(rel('Hitachi Vacuum Cleaner 21L 2200W CV-965NBLGSA', 'Hitachi Vacuum Cleaner 21L 2200W CV-960F SS220', 'vacuum').reasons.some((x) => x.startsWith('model_code_conflict'))).toBe(true);
+    expect(rel('Skyworth 60" Smart TV, 4K QLED+, 120 Hz, Q6800H', 'SKYWORTH, 60 Inch, QLED 4K Smart TV', 'tv', undefined, '60Q6820H').outcome).not.toBe('match');
+  });
+});

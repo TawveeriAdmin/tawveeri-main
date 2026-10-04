@@ -193,10 +193,12 @@ async function main() {
   // production ref; reject legacy. The old host-only regex threw "refusing: not
   // production" on Railway once ADR-078 rewrote the URL to the pooler (ref moves
   // from the host into the username), which was the projection step's 0.4s failure.
-  if (!url.includes("vyceqrzttspyycdpojtn") || url.includes("ffpsjjazsluolysgithg")) throw new Error("refusing: not production");
+  // A loopback database is the local rehearsal replica (scripts/tps-analysis/rehearsal) — allowed; anything else must be production.
+  const isLocalRehearsal = /@(localhost|127\.0\.0\.1)(:|\/)/.test(url);
+  if (!isLocalRehearsal && (!url.includes("vyceqrzttspyycdpojtn") || url.includes("ffpsjjazsluolysgithg"))) throw new Error("refusing: not production");
 
   const t0 = Date.now();
-  const pg = new Client({ connectionString: toPoolerDbUrl(url), ssl: { rejectUnauthorized: false } });
+  const pg = new Client({ connectionString: isLocalRehearsal ? url : toPoolerDbUrl(url), ssl: isLocalRehearsal ? undefined : { rejectUnauthorized: false } });
   await pg.connect();
   await pg.query("set statement_timeout = 0");
   let queries = 0;
