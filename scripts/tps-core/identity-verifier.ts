@@ -107,7 +107,15 @@ const normalizeDeclaredModel = (m: string | null | undefined): string | null => 
 
 /** Canonical core of a code: strip a "/REGION" tail (Apple "MDVK4AB/A", Samsung "…GV/YL") or an LG
  *  ".MARKET" tail ("AM182C0.UK1") and separators. */
-const codeCore = (code: string) => code.replace(/\/[A-Z0-9]{1,3}$/, "").replace(/\.[A-Z0-9]{2,5}$/, "").replace(/[^A-Z0-9]/g, "");
+const codeCore = (code: string, statedInches: Array<string | null | undefined> = []) => {
+  let c = code.replace(/\/[A-Z0-9]{1,3}$/, "").replace(/\.[A-Z0-9]{2,5}$/, "");
+  // A one-to-three-letter maker prefix joined by a hyphen (Panasonic "MC-YL690GY47" / "MC YL690GY47") is optional notation.
+  c = c.replace(/^[A-Z]{1,3}-(?=[A-Z0-9]{7,}$)/, "").replace(/[^A-Z0-9]/g, "");
+  // TV / monitor codes carry the screen size as a prefix on some merchants ("65X6600H" = 65" + "X6600H").
+  // Either side's stated size counts: a key-asserted code ("43UA73006LA") has no title of its own to state it.
+  for (const inch of statedInches) { if (inch && new RegExp("^" + inch + "[A-Z]").test(c) && c.length - inch.length >= 4) { c = c.slice(inch.length); break; } }
+  return c;
+};
 
 /** Optimal-string-alignment distance (Damerau-Levenshtein with adjacent transposition), capped at 2. */
 const osaDistance = (s: string, t: string): number => {
@@ -155,26 +163,80 @@ const readWasherType = (t: string): string | null => {
 /** Bundle / multi-item listings are never the same purchasable item as a single unit. */
 const readBundle = (t: string): string | null => /\b(bundle|combo pack|\+\s*(bud|buds|watch|band|cover|case)\b|with free|مع هديه|مع هدية|حزمه|حزمة|طقم)/.test(t) ? "bundle" : null;
 
-const CATEGORY_RULES: Record<string, Array<"ram" | "network" | "screen" | "kg" | "liters" | "washer_type" | "model_code">> = {
-  mobile: ["ram", "network"],
-  tablet: ["ram", "network", "screen"],
+/** Storage tier: expansion phrases stripped, "8+256GB" → 256, TB → GB, 1000/1024 → one tier. */
+const readStorageTier = (t: string): string | null => {
+  const l = t.replace(/(?:expandable|expand|up)\s*(?:up\s*)?to\s*\d+\s*(?:gb|tb)/g, "").replace(/microsd[^,;|]*/g, "");
+  const plus = l.match(/(?<![\d.])(\d{1,2})\s*\+\s*(\d{2,4})\s*(?:gb|g\b|جيجا)/);
+  let gb: number | null = null;
+  if (plus) gb = Number(plus[2]);
+  else {
+    const tb = l.match(/(?<![\d.])(\d(?:\.\d)?)\s*(?:tb|تيرا)/);
+    const gbs = [...l.matchAll(/(?<![\d.])(\d{2,4})\s*(?:gb|g\b|جيجا)/g)].map((m) => Number(m[1])).filter((n) => n >= 16);
+    if (tb && (!gbs.length || Number(tb[1]) <= 4)) gb = Math.round(Number(tb[1]) * 1024);
+    else if (gbs.length) gb = Math.max(...gbs);
+  }
+  if (gb == null) return null;
+  const tiers = [16, 32, 64, 128, 256, 512, 1024, 2048, 4096];
+  return String(tiers.reduce((best, x) => (Math.abs(x - gb!) < Math.abs(best - gb!) ? x : best), tiers[0]));
+};
+/** Tablet / watch connectivity: cellular vs Wi-Fi-only / Bluetooth-only, only when stated. */
+const readConnectivity = (t: string, category: string): string | null => {
+  const cellular = /(cellular|(?<![a-z0-9])(5g|4g|lte)(?![a-z0-9])|esim|(?<![a-z])sim(?![a-z])|5 جي|4 جي|شريحة)/.test(t);
+  if (cellular) return "cellular";
+  if (category === "smartwatch") return /bluetooth|بلوتوث/.test(t) ? "bluetooth" : null;
+  return /wi-?fi|واي ?فاي/.test(t) ? "wifi_only" : null;
+};
+const readRefreshHz = (t: string): string | null => {
+  const m = [...t.matchAll(/(?<![\d.])(\d{2,3})\s*hz/g)].map((x) => Number(x[1])).filter((n) => n >= 50 && n <= 540);
+  return m.length ? String(Math.max(...m)) : null;
+};
+const readPanel = (t: string): string | null => {
+  const found = new Set<string>();
+  if (/qd-?\s?oled/.test(t)) found.add("qd-oled"); else if (/(?<![a-z])oled(?![a-z])/.test(t)) found.add("oled");
+  if (/(?<![a-z])ips(?![a-z])/.test(t)) found.add("ips");
+  if (/(?<![a-z0-9])va(?![a-z0-9])/.test(t)) found.add("va");
+  if (/(?<![a-z])tn(?![a-z])/.test(t)) found.add("tn");
+  return found.size === 1 ? [...found][0] : null; // several panel words → not stated unambiguously
+};
+const readResolution = (t: string): string | null => {
+  if (/(?<![a-z0-9])(5k|5120\s*x\s*2880)(?![a-z0-9])/.test(t)) return "5k";
+  if (/(?<![a-z0-9])(4k|uhd|2160p?|3840\s*x\s*2160)(?![a-z0-9])/.test(t)) return "4k";
+  if (/(?<![a-z0-9])(qhd|wqhd|2k|1440p?|2560\s*x\s*1440)(?![a-z0-9])/.test(t)) return "qhd";
+  if (/(?<![a-z0-9])(fhd|full\s?hd|1080p?|1920\s*x\s*1080)(?![a-z0-9])/.test(t)) return "fhd";
+  return null;
+};
+const readWatchMm = (t: string): string | null => {
+  const m = t.match(/(?<![\d.])(\d{2})\s*(?:mm|ملم)/);
+  return m && Number(m[1]) >= 34 && Number(m[1]) <= 52 ? m[1] : null;
+};
+
+const CATEGORY_RULES: Record<string, Array<"ram" | "network" | "screen" | "kg" | "liters" | "washer_type" | "model_code" | "storage" | "connectivity" | "refresh" | "panel" | "resolution" | "watch_mm">> = {
+  // Phones/tablets: part numbers encode COLOUR and market (Apple MG6J3LL/A, Samsung …ZKIMEA), and colour is not a
+  // commercial variant here — so no model_code rule; storage / RAM / network / connectivity / size carry the variant.
+  mobile: ["ram", "network", "storage"],
+  tablet: ["ram", "network", "screen", "storage", "connectivity"],
   laptop: ["ram", "screen", "model_code"],
-  smartwatch: ["network", "model_code"],
+  smartwatch: ["network", "model_code", "watch_mm", "connectivity"],
   tv: ["screen", "model_code"],
-  monitor: ["screen", "model_code"],
+  // Monitors (founder 2026-10-04, high caution): an exact model-code conflict, a refresh-rate conflict or a
+  // different panel / resolution — each only when BOTH sides state it — rejects; spec similarity never beats a code conflict.
+  monitor: ["screen", "model_code", "refresh", "panel", "resolution"],
   washing_machine: ["kg", "washer_type", "model_code"],
   refrigerator: ["liters", "model_code"],
   dishwasher: ["model_code"],
   microwave: ["model_code"],
   vacuum: ["model_code"],
-  air_conditioner: ["model_code"],
+  air_conditioner: ["model_code"],   // + SPEC_GROUP_REVIEW / APPLIANCE_CODE_REQUIRED below
   audio: ["model_code"],
   camera: ["model_code"],
   printer: ["model_code"],
 };
 
 /** Categories whose spec-tuple key is a FAMILY key: a code on one side only sends the pair to review. */
-const APPLIANCE_CODE_REQUIRED = new Set(["washing_machine", "refrigerator", "dishwasher", "microwave"]);
+const APPLIANCE_CODE_REQUIRED = new Set(["washing_machine", "refrigerator", "dishwasher", "microwave", "air_conditioner", "tv", "monitor"]);
+/** Categories whose spec-tuple key is a series/capacity grouping: with NO code on either side the pair is a spec group only
+ *  (founder 2026-10-04, ACs) — review, never an "exact model" comparison and never a cheapest claim. */
+const SPEC_GROUP_REVIEW = new Set(["air_conditioner"]);
 
 export function verifyPair(a: VerifierInput, b: VerifierInput): Verdict {
   const ta = clean(a.title), tb = clean(b.title);
@@ -207,6 +269,12 @@ export function verifyPair(a: VerifierInput, b: VerifierInput): Verdict {
   if (rules.includes("kg")) both("capacity_kg", readKg(ta), readKg(tb), "capacity");
   if (rules.includes("liters")) both("capacity_l", readLiters(ta), readLiters(tb), "capacity");
   if (rules.includes("washer_type")) both("washer_type", readWasherType(ta), readWasherType(tb), "appliance_type");
+  if (rules.includes("storage")) both("storage_gb", a.structured?.storage_gb != null ? String(a.structured.storage_gb) : readStorageTier(ta), b.structured?.storage_gb != null ? String(b.structured.storage_gb) : readStorageTier(tb), "storage");
+  if (rules.includes("connectivity")) both("connectivity", readConnectivity(ta, category), readConnectivity(tb, category), "connectivity");
+  if (rules.includes("refresh")) both("refresh_hz", readRefreshHz(ta), readRefreshHz(tb), "refresh_rate");
+  if (rules.includes("panel")) both("panel", readPanel(ta), readPanel(tb), "panel");
+  if (rules.includes("resolution")) both("resolution", readResolution(ta), readResolution(tb), "resolution");
+  if (rules.includes("watch_mm")) both("watch_mm", readWatchMm(ta), readWatchMm(tb), "watch_size");
 
   // 5. Model code — compared on a canonical core; a 1-character tail difference on an otherwise
   //    equal ≥8-char core is a colour/finish/revision designator whose meaning we do not know
@@ -214,7 +282,8 @@ export function verifyPair(a: VerifierInput, b: VerifierInput): Verdict {
   if (rules.includes("model_code")) {
     const ma = normalizeDeclaredModel(a.structured?.model) ?? readModelCode(ta)?.toUpperCase() ?? null, mb = normalizeDeclaredModel(b.structured?.model) ?? readModelCode(tb)?.toUpperCase() ?? null; note("model_code", ma, mb);
     if (ma && mb) {
-      const ka = codeCore(ma), kb = codeCore(mb);
+      const inches = [readScreenInch(ta, category), readScreenInch(tb, category)];
+      const ka = codeCore(ma, inches), kb = codeCore(mb, inches);
       const shorter = Math.min(ka.length, kb.length), prefix = commonPrefixLength(ka, kb);
       if (ka === kb) reasons.push("exact_model_code");
       // One code contains the other (R-V905PS1KV vs R-V905PS1KV-1TWH; a marketing code "F6000F" inside the
@@ -229,6 +298,8 @@ export function verifyPair(a: VerifierInput, b: VerifierInput): Verdict {
       // merchant's typo NFR400DS): too close to call different, too far to call the same — review.
       else if (shorter >= 7 && osaDistance(ka, kb) <= 1) review(`model_code_near:${ma}~${mb}`);
       else reject(`model_code_conflict:${ma}≠${mb}`);
+    } else if (!ma && !mb && SPEC_GROUP_REVIEW.has(category)) {
+      review("no_model_code_spec_group_only");
     } else if ((ma || mb) && APPLIANCE_CODE_REQUIRED.has(category)) {
       // Appliance spec keys are family keys (9 kg front-load washer, 620 L top-mount fridge). With a
       // code on only one side the pair cannot be confirmed as one purchasable item — review tier,
@@ -267,7 +338,7 @@ export function verifyPair(a: VerifierInput, b: VerifierInput): Verdict {
 export interface GroupMember { title: string; label?: string; structured?: VerifierInput["structured"] }
 export interface MemberResolution { outcome: VerdictOutcome; reasons: string[] }
 
-const REVIEW_REASON = /unknown|one_side|near|region|unresolved|refurbished_only/;
+const REVIEW_REASON = /unknown|one_side|near|region|unresolved|refurbished_only|spec_group_only/;
 const CONFLICT_REASON = /conflict|bundle/;
 
 /** The model code an identity key itself asserts (`brand|MODEL:<code>` keys): every member of such a

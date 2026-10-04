@@ -58,8 +58,12 @@ describe('identity verifier — appliance model codes', () => {
   test('exact code on both sides matches (P433)', () => {
     expect(v('Midea 12 Place Setting Free Standing Dishwasher with 7 Programs| Model No WQP125201CS', 'Midea, Dishwasher, 12 Place Setting, 6 Programs, LED Display, Silver. WQP125201CS', 'dishwasher').outcome).toBe('match');
   });
-  test('a line name such as QNED86 is not a model code (P347)', () => {
-    expect(v('LG 65QNED86A6A 65 inch MiniLED QNED evo AI WebOS 25 VRR 144hz 4K Smart TV', 'LG, 65 inch, Mini LED 4K Smart TV, AI QNED86, 144 Hz', 'tv').outcome).toBe('match');
+  test('a line name such as QNED86 is not a model code (P347) — so the pair has a code on ONE side only: review for TV (spec keys are family keys)', () => {
+    const r = v('LG 65QNED86A6A 65 inch MiniLED QNED evo AI WebOS 25 VRR 144hz 4K Smart TV', 'LG, 65 inch, Mini LED 4K Smart TV, AI QNED86, 144 Hz', 'tv');
+    expect(r.evidence.model_code.b).toBeNull();            // "QNED86" is a line name, never read as the code
+    expect(r.outcome).toBe('review'); expect(r.reasons).toContain('model_code_one_side');
+    // a declared code on the codeless side resolves it
+    expect(verifyPair({ title: 'LG 65QNED86A6A 65 inch MiniLED QNED evo AI 4K Smart TV', category: 'tv' }, { title: 'LG, 65 inch, Mini LED 4K Smart TV, AI QNED86, 144 Hz', category: 'tv', structured: { model: '65QNED86A6A' } }).outcome).toBe('match');
   });
   // Phase-3B shadow trace (238 model_code_conflict rejects inspected on 2026-10-03):
   test('a code glued to a preceding word (MOTOR/…, M/…, BASALT-…) is the bare code', () => {
@@ -127,5 +131,66 @@ describe('identity verifier — sizes, region, absence', () => {
   test('reasons are machine-readable and evidence is recorded', () => {
     const r = v('Samsung Galaxy A17 LTE, Dual SIM, 128GB Expandable to 2TB, 4GB RAM', 'Samsung Galaxy A17,128GB , 4GB RAM , 4G - Gray');
     expect(r.outcome).toBe('match'); expect(r.evidence.network).toEqual({ a: '4g', b: '4g' }); expect(r.evidence.ram).toEqual({ a: '4', b: '4' });
+  });
+});
+
+// Founder rulings 2026-10-04 (ADR-403): category conditions for monitors, tablets, smartwatches, ACs.
+describe('identity verifier — founder category conditions', () => {
+  test('monitor: an exact model-code conflict rejects even when every stated spec is identical', () => {
+    // Different codes, identical specs: never a match. A shared 7-char stem with a short differing tail is a
+    // suffix/variant relationship we cannot read (review: neither side counts, neither backs a cheapest claim)…
+    const stem = v('ASUS TUF Gaming VG279QM5A-J 27" FHD Fast IPS 240Hz Gaming Monitor', 'TUF Gaming Series 5 VG279QML5A Gaming Monitor 27-inch Full HD Fast-IPS 240Hz', 'monitor');
+    expect(stem.outcome).not.toBe('match');
+    // …and a plain code conflict is a reject.
+    const r = v('BenQ GW2791 27" IPS FHD 100Hz Monitor', 'BenQ GW2790 27 inch IPS FHD 100Hz Monitor', 'monitor');
+    expect(r.outcome).toBe('reject'); expect(r.reasons.some((x) => x.startsWith('model_code_conflict'))).toBe(true);
+  });
+  test('monitor: refresh-rate, panel and resolution conflicts each reject — only when both sides state them', () => {
+    expect(v('Acme 27 inch IPS FHD 100Hz Monitor', 'Acme 27 inch IPS FHD 144Hz Monitor', 'monitor').reasons.some((x) => x.startsWith('refresh_rate_conflict'))).toBe(true);
+    expect(v('Acme 27 inch IPS FHD 144Hz Monitor', 'Acme 27 inch VA FHD 144Hz Monitor', 'monitor').reasons.some((x) => x.startsWith('panel_conflict'))).toBe(true);
+    expect(v('Acme 27 inch IPS FHD 144Hz Monitor', 'Acme 27 inch IPS QHD 144Hz Monitor', 'monitor').reasons.some((x) => x.startsWith('resolution_conflict'))).toBe(true);
+    expect(v('Acme 27 inch IPS FHD 144Hz Monitor', 'Acme 27 inch Monitor', 'monitor').outcome).toBe('match');            // absence is not evidence
+  });
+  test('tablet: Wi-Fi-only vs cellular and a storage mismatch reject; "8+128 GB" equals "128GB"', () => {
+    expect(v('Samsung Galaxy Tab A9 Wi-Fi 64GB', 'Samsung Galaxy Tab A9 5G 64GB', 'tablet').reasons.some((x) => x.startsWith('connectivity_conflict'))).toBe(true);
+    expect(v('Huawei MatePad 11.5 WiFi 128GB', 'Huawei MatePad 11.5 WiFi 256GB', 'tablet').reasons.some((x) => x.startsWith('storage_conflict'))).toBe(true);
+    expect(v('HUAWEI MatePad 11.5 WiFi 2025, 8+128 GB, Space Grey', 'Huawei MatePad 11.5 Wi-Fi 128GB', 'tablet').outcome).toBe('match');
+  });
+  test('tablet/phone colour is not a variant: no model-code rule (part numbers encode colour)', () => {
+    expect(v('Apple iPad 10th Gen Wi-Fi 64GB Blue MPQ13LL/A', 'Apple iPad 10th Gen Wi-Fi 64GB Silver MPQ03LL/A', 'tablet').outcome).toBe('match');
+  });
+  test('phone storage mismatch rejects; expansion phrase is not storage', () => {
+    expect(v('Samsung Galaxy A17 128GB 4GB RAM', 'Samsung Galaxy A17 256GB 4GB RAM', 'mobile').reasons.some((x) => x.startsWith('storage_conflict'))).toBe(true);
+    expect(v('Samsung Galaxy A17 LTE, 128GB Expandable to 2TB, 4GB RAM', 'Samsung Galaxy A17, 128GB, 4GB RAM, 4G', 'mobile').outcome).toBe('match');
+  });
+  test('smartwatch: Bluetooth vs LTE and 40 mm vs 44 mm reject; same size and connectivity match', () => {
+    expect(v('Galaxy Watch8 (Bluetooth 40 mm) Graphite', 'Samsung Galaxy Watch8 LTE 40mm Graphite', 'smartwatch').reasons.some((x) => x.startsWith('connectivity_conflict'))).toBe(true);
+    expect(v('Galaxy Watch8 (Bluetooth 40 mm) Graphite', 'Samsung Galaxy Watch8 Bluetooth 44mm', 'smartwatch').reasons.some((x) => x.startsWith('watch_size_conflict'))).toBe(true);
+    expect(v('Galaxy Watch8 (Bluetooth 40 mm) Graphite', 'Samsung Galaxy Watch8 Bluetooth 40mm Silver', 'smartwatch').outcome).toBe('match');
+  });
+  test('AC: same code matches; a code on one side only, or no code on either, is review — never an exact-model claim', () => {
+    expect(v('LG ArtCool Split AC 18000 BTU AM182C0.UK1', 'Artcool Split AC 18000 BTU Cool Only AM182C0 Black', 'air_conditioner').outcome).toBe('match');
+    const one = v('LG ArtCool Split AC 18000 BTU AM182C0', 'LG ArtCool Split AC 18000 BTU Cool Only Inverter', 'air_conditioner');
+    expect(one.outcome).toBe('review'); expect(one.reasons).toContain('model_code_one_side');
+    const none = v('LG ArtCool Split AC 18000 BTU Inverter', 'LG ArtCool Split AC 18000 BTU Cool Only Inverter', 'air_conditioner');
+    expect(none.outcome).toBe('review'); expect(none.reasons).toContain('no_model_code_spec_group_only');
+  });
+});
+
+describe('identity verifier — code notation (production shadow, 2026-10-04)', () => {
+  test('TV: a merchant that prefixes the screen size to the code ("65X6600H") matches the bare code ("X6600H")', () => {
+    const r = v('Skyworth 65" Smart TV, 4K QD Mini-LED, 120 Hz, Black, X6600H', 'SKYWORTH, 65 Inch, 4K Smart, Mini LED, 120Hz', 'tv');
+    expect(r.outcome).not.toBe('reject');
+    expect(verifyPair({ title: 'Skyworth 65" Smart TV X6600H', category: 'tv' }, { title: 'SKYWORTH, 65 Inch, 4K Smart TV', category: 'tv', structured: { model: '65X6600H' } }).reasons).toContain('exact_model_code');
+  });
+  test('a different code stays a conflict after size-prefix stripping (Q6800H vs 60Q6820H)', () => {
+    const r = verifyPair({ title: 'Skyworth 60" Smart TV, 4K QLED+, 120 Hz, Q6800H', category: 'tv' }, { title: 'SKYWORTH, 60 Inch, QLED 4K Smart TV', category: 'tv', structured: { model: '60Q6820H' } });
+    expect(r.outcome).not.toBe('match');
+  });
+  test('Panasonic "MC-YL690GY47" equals "YL690GY47"/"MC YL690GY47" (maker prefix is optional notation)', () => {
+    expect(v('Panasonic, 1500W, 15L, Barrel Vacuum Cleaner, MC-YL690GY47', 'مكنسة باناسونيك برميلية سعة 15 لتر 1500 واط – MC YL690GY47', 'vacuum').reasons).toContain('exact_model_code');
+  });
+  test('Hitachi CV-940YPG vs CV-940Y stays REVIEW (colour/market tail of unknown meaning)', () => {
+    expect(v('مكنسة هيتاشي برميل سعة 15 لتر، 1600 واط – CV-940YPG', 'هيتاشي مكنسة برميل - 15 ليتر - 1600 واط - رمادي - CV-940Y SS220 PG', 'vacuum').outcome).toBe('review');
   });
 });

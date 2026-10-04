@@ -32,6 +32,9 @@ import { computeIdentitySignals, IDENTITY_RULES_VERSION, type IdentitySignal, ty
 const argv = process.argv.slice(2);
 const DRY = argv.includes("--dry");
 const ONLY = argv.find((a) => a.startsWith("--category="))?.split("=")[1] ?? null;
+const EXAMPLES_N = Number(argv.find((a) => a.startsWith("--examples"))?.split("=")[1] ?? (argv.includes("--examples") ? 8 : 0));
+const EXAMPLES = EXAMPLES_N > 0;
+const EX_VERDICT = argv.find((a) => a.startsWith("--verdict="))?.split("=")[1] ?? null;
 const MAX_SHARE = Number(argv.find((a) => a.startsWith("--max-share="))?.split("=")[1] ?? 0.7);
 const STORE_NAME = new Map<number, string>(TPS_STORES.map((s) => [s.id, s.name]));
 
@@ -121,13 +124,17 @@ async function main() {
     const desired = new Map<string, IdentitySignal>();
     const ledger: Record<string, { canonicals: number; multi_store: number; listings_in_multi: number; review: number; reject: number }> = {};
     const reasonHist: Record<string, number> = {};
+    const examples: Record<string, unknown[]> = {};
+    const siblingTitles = new Map<string, string[]>();
     for (const c of assembled) {
       const L = (ledger[c.category] ??= { canonicals: 0, multi_store: 0, listings_in_multi: 0, review: 0, reject: 0 });
       L.canonicals++;
       const stores = new Set(c.listings.map((l) => l.storeId)).size;
       if (stores < 2) continue;
       L.multi_store++; L.listings_in_multi += stores;
+      siblingTitles.set(c.id, c.listings.map((l) => `${l.storeId}: ${l.title.slice(0, 70)}`));
       for (const s of computeIdentitySignals(c)) {
+        if (EXAMPLES && (!EX_VERDICT || s.verdict === EX_VERDICT)) { const ex = (examples[c.category] ??= []); if (ex.length < EXAMPLES_N) ex.push({ verdict: s.verdict, store: s.store_id, reasons: s.reasons, listing: s.listing_name.slice(0, 80), group: siblingTitles.get(c.id), key: c.key }); }
         desired.set(`${s.canonical_product_id}|${s.store_id}`, s);
         L[s.verdict]++;
         for (const r of s.reasons) { const k = r.replace(/^vs [^:]+: /, "").split(":")[0]; reasonHist[k] = (reasonHist[k] ?? 0) + 1; }
@@ -173,7 +180,7 @@ async function main() {
         await pg.query("commit");
       } catch (e) { await pg.query("rollback"); throw e; }
     }
-    console.log(JSON.stringify({ job: "identity-signals", mode: DRY ? "dry" : "write", rules_version: IDENTITY_RULES_VERSION, gated_categories: gated, signals_desired: desired.size, upserted, deleted, by_category: ledger, reasons: reasonHist, ms: Date.now() - t0 }));
+    console.log(JSON.stringify({ job: "identity-signals", mode: DRY ? "dry" : "write", rules_version: IDENTITY_RULES_VERSION, gated_categories: gated, signals_desired: desired.size, upserted, deleted, by_category: ledger, reasons: reasonHist, ...(EXAMPLES ? { examples } : {}), ms: Date.now() - t0 }));
   } finally {
     await pg.end();
   }

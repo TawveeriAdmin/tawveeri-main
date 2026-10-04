@@ -4,6 +4,7 @@ import { getProvider } from '@/lib/providers/registry';
 import { isDisplayableRetailer, resolveApprovedSlug, retailerDisplayName } from '@/lib/retailers/approved-retailers';
 import { buildGoUrl } from '@/lib/analytics/build-go-url';
 import { isFreshObservation } from '@/lib/intelligence/evidence-engine';
+import { loadIdentitySignals, isUnsignaled } from '@/lib/identity/identity-signals';
 import { parseProductLink, sameProductLink, isKnownShortLink, resolveShortLink } from './product-link';
 import { summarizeOffers, assessCheckHistory, classifyCondition, type CheckOffer } from './assessment';
 
@@ -50,14 +51,19 @@ export async function checkProduct(input: string, locale: 'ar' | 'en'): Promise<
   if (keys.size !== 1 || exact.length !== 1) return { state: 'ambiguous' };
   const source = exact[0];
   if (source.status !== 'valid' || !Number.isFinite(Number(source.price)) || Number(source.price) <= 0) return { state: 'unknown' };
-  const cp = await db.from('canonical_products').select('id,name_ar,name_en').eq('tps_identity_key', source.identity_key).eq('is_active', true).abortSignal(signal).maybeSingle();
+  const cp = await db.from('canonical_products').select('id,name_ar,name_en,category').eq('tps_identity_key', source.identity_key).eq('is_active', true).abortSignal(signal).maybeSingle();
   if (cp.error) throw new Error('check unavailable');
   if (!cp.data) return { state: 'unknown' };
   const canonicalId = cp.data.id as string;
   const current = await fetchAllPaginated<CurrentOffer>((from, to) => db.from('tps_current_offers')
     .select('identity_key,store_id,status,price,url,name,observed_at,raw_obs_id', { count: 'exact' })
     .eq('identity_key', source.identity_key).order('store_id').order('category').range(from, to).abortSignal(signal), { maxRows: 100 });
-  const eligible = current.filter(o => o.status === 'valid' && Number.isFinite(Number(o.price)) && Number(o.price) > 0 && isDisplayableRetailer(resolveApprovedSlug(o.store_id) ?? ''));
+  // ADR-403 identity gate (flag-off: empty index, no table read). A pasted link whose own listing the verifier
+  // could not stand behind is not compared at all ("unknown beats incorrect"); another store's listing the
+  // verifier rejected or could not verify is not offered as an alternative for this exact item.
+  const identitySignals = await loadIdentitySignals(db, [{ id: canonicalId, category: (cp.data as { category?: string | null }).category }]);
+  if (!isUnsignaled(identitySignals, canonicalId, source.store_id)) return { state: 'ambiguous' };
+  const eligible = current.filter(o => o.status === 'valid' && Number.isFinite(Number(o.price)) && Number(o.price) > 0 && isDisplayableRetailer(resolveApprovedSlug(o.store_id) ?? '') && isUnsignaled(identitySignals, canonicalId, o.store_id));
   const urls = [...new Set(eligible.map(o => o.url))];
   if (!urls.length) return { state: 'unknown' };
   const observations = await fetchAllPaginated<Observation>((from, to) => db.from('normalized_product_observations')
