@@ -120,7 +120,7 @@ NO-GO triggers: any confirmed false merge in the post-wiring audit; comparable g
 
 The same hidden-evidence class is not TV-specific:
 1. **Low-digit codes in titles** (`A9K-CORE` vs `A9K-PRO`, LG vacuums) fail the name-lane density rule (≥ 8 chars, ≥ 3 digits) exactly as `85T8D` fails the length rule.
-2. **Attribute conflicts** the verifier has no vacuum rule for: stated capacity in litres. A shadow paper-test of "both sides state litres and they differ by > 15 % ⇒ conflict" caught **3 of the 5** consensus Vacuum false merges (Midea 2 L vs 18 L, Panasonic 10 L vs 15 L, LG 1.5 L vs 0.44 L) and flagged **0 of 16** groups both reviewers judged exact.
+2. **Attribute conflicts** the verifier has no vacuum rule for: stated capacity in litres. A shadow paper-test of "both sides state litres and they differ by > 15 % ⇒ conflict" caught **3 of the 5** groups the two blind AI reviewers judged different (Midea 2 L vs 18 L, Panasonic 10 L vs 15 L, LG 1.5 L vs 0.44 L) and flagged **0 of 16** groups both judged exact. **The founder's own review of the same groups labelled those three "same family, not enough evidence" (only V14 different), so this rule is NOT validated against the founder's labels** and needs re-testing before it is adopted.
 3. **Spec-only model evidence** (§4) and **Extra payloads without `modelNumber`** (186 of 264 Extra Vacuum offers carry it; the rest do not, while Extra's product pages show an mpn).
 So the unified function should be category-general in its *interface* and shipped TV-first; each category adds its own trust rows and attribute rules.
 

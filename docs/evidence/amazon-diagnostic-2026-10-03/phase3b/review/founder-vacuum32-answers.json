@@ -1,0 +1,242 @@
+[
+ {
+  "id": "V01",
+  "answer": "UNSURE",
+  "at": "2026-10-04T14:19:25.042Z",
+  "note": "",
+  "odd": [
+   "إكسترا"
+  ]
+ },
+ {
+  "id": "V02",
+  "answer": "SAME_FAMILY_NOT_ENOUGH_EVIDENCE",
+  "at": "2026-10-04T14:20:11.901Z",
+  "note": "",
+  "odd": [
+   "إكسترا"
+  ]
+ },
+ {
+  "id": "V03",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "at": "2026-10-04T14:29:35.405Z",
+  "note": "",
+  "odd": []
+ },
+ {
+  "id": "V04",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "at": "2026-10-04T14:21:01.098Z",
+  "note": "",
+  "odd": []
+ },
+ {
+  "id": "V05",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "at": "2026-10-04T14:21:22.289Z",
+  "note": "",
+  "odd": []
+ },
+ {
+  "id": "V06",
+  "answer": "SAME_FAMILY_NOT_ENOUGH_EVIDENCE",
+  "at": "2026-10-04T14:33:24.900Z",
+  "note": "",
+  "odd": [
+   "إكسترا"
+  ]
+ },
+ {
+  "id": "V07",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "at": "2026-10-04T14:31:16.440Z",
+  "note": "",
+  "odd": []
+ },
+ {
+  "id": "V08",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "at": "2026-10-04T14:26:19.705Z",
+  "note": "",
+  "odd": []
+ },
+ {
+  "id": "V09",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "at": "2026-10-04T14:28:44.964Z",
+  "note": "",
+  "odd": []
+ },
+ {
+  "id": "V10",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "at": "2026-10-04T14:21:45.888Z",
+  "note": "",
+  "odd": []
+ },
+ {
+  "id": "V11",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "at": "2026-10-04T14:22:05.563Z",
+  "note": "",
+  "odd": []
+ },
+ {
+  "id": "V12",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "at": "2026-10-04T14:32:44.383Z",
+  "note": "",
+  "odd": []
+ },
+ {
+  "id": "V13",
+  "answer": "SAME_FAMILY_NOT_ENOUGH_EVIDENCE",
+  "at": "2026-10-04T14:24:44.836Z",
+  "note": "",
+  "odd": [
+   "إكسترا"
+  ]
+ },
+ {
+  "id": "V14",
+  "answer": "DIFFERENT_VARIANT",
+  "at": "2026-10-04T14:28:21.600Z",
+  "note": "",
+  "odd": [
+   "إكسترا"
+  ]
+ },
+ {
+  "id": "V15",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "at": "2026-10-04T14:23:33.064Z",
+  "note": "",
+  "odd": []
+ },
+ {
+  "id": "V16",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "at": "2026-10-04T14:26:49.853Z",
+  "note": "",
+  "odd": []
+ },
+ {
+  "id": "V17",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "at": "2026-10-04T14:23:48.583Z",
+  "note": "",
+  "odd": []
+ },
+ {
+  "id": "V18",
+  "answer": "SAME_FAMILY_NOT_ENOUGH_EVIDENCE",
+  "at": "2026-10-04T14:31:50.185Z",
+  "note": "",
+  "odd": [
+   "إكسترا"
+  ]
+ },
+ {
+  "id": "V19",
+  "answer": "SAME_FAMILY_NOT_ENOUGH_EVIDENCE",
+  "at": "2026-10-04T14:25:57.494Z",
+  "note": "",
+  "odd": [
+   "إكسترا"
+  ]
+ },
+ {
+  "id": "V20",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "at": "2026-10-04T14:23:12.758Z",
+  "note": "",
+  "odd": []
+ },
+ {
+  "id": "V21",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "at": "2026-10-04T14:32:06.045Z",
+  "note": "",
+  "odd": []
+ },
+ {
+  "id": "V22",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "at": "2026-10-04T14:27:49.016Z",
+  "note": "",
+  "odd": []
+ },
+ {
+  "id": "V23",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "at": "2026-10-04T14:25:10.271Z",
+  "note": "",
+  "odd": []
+ },
+ {
+  "id": "V24",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "at": "2026-10-04T14:26:35.806Z",
+  "note": "",
+  "odd": []
+ },
+ {
+  "id": "V25",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "at": "2026-10-04T14:22:25.282Z",
+  "note": "",
+  "odd": []
+ },
+ {
+  "id": "V26",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "at": "2026-10-04T14:29:11.763Z",
+  "note": "",
+  "odd": []
+ },
+ {
+  "id": "V27",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "at": "2026-10-04T14:34:11.435Z",
+  "note": "",
+  "odd": []
+ },
+ {
+  "id": "V28",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "at": "2026-10-04T14:24:10.735Z",
+  "note": "",
+  "odd": []
+ },
+ {
+  "id": "V29",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "at": "2026-10-04T14:33:53.768Z",
+  "note": "",
+  "odd": []
+ },
+ {
+  "id": "V30",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "at": "2026-10-04T14:27:30.722Z",
+  "note": "",
+  "odd": []
+ },
+ {
+  "id": "V31",
+  "answer": "SAME_EXACT_COMMERCIAL_VARIANT",
+  "at": "2026-10-04T14:32:21.593Z",
+  "note": "",
+  "odd": []
+ },
+ {
+  "id": "V32",
+  "answer": "SAME_FAMILY_NOT_ENOUGH_EVIDENCE",
+  "at": "2026-10-04T14:20:42.824Z",
+  "note": "",
+  "odd": [
+   "إكسترا"
+  ]
+ }
+]

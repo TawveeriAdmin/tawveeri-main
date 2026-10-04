@@ -4,7 +4,7 @@
 
 ## The position in one paragraph
 
-Tawveeri's edge is **fewer but trustworthy cross-store comparisons**, not the largest number of cards. The identity project proved the principle works (the verifier removes real false comparisons and false "lowest price" claims) and also proved, with independent reviewers, that a gate is only as good as the evidence it is fed: the Vacuum comparisons that survive on spec-family evidence alone are wrong roughly one time in five (5–7 of 32), and in TV 16 of the 182 multi-store groups (8.8 %) presented two different models as one. **Coverage and Integrity are tracked as two separate numbers and neither is allowed to buy the other.**
+Tawveeri's edge is **fewer but trustworthy cross-store comparisons**, not the largest number of cards. The identity project proved the principle works (the verifier removes real false comparisons and false "lowest price" claims) and also proved, with independent reviewers, that a gate is only as good as the evidence it is fed: of the 32 Vacuum comparisons that survive on spec-family evidence alone, the founder's own review found 24 exactly the same device, 6 not provable, 1 undecided and 1 different device; in TV, 16 of the 182 multi-store groups (8.8 %) presented two different models as one. **Coverage and Integrity are tracked as two separate numbers and neither is allowed to buy the other.**
 
 ## What improved
 
@@ -17,9 +17,9 @@ Tawveeri's edge is **fewer but trustworthy cross-store comparisons**, not the la
 
 | Area | Position |
 |---|---|
-| **Family-only comparisons** | 32 of 56 verified Vacuum comparisons rest on spec-family evidence; 16 are confirmed exact by both reviewers, 5 are different devices, the rest are undecided. Until evidence extraction improves they are reference-grade, not "exact" |
+| **Family-only comparisons** | 32 of 56 verified Vacuum comparisons rest on spec-family evidence; the founder's review: 24 exactly the same device (75 %), 6 not enough evidence, 1 unsure, 1 different device (V14). Until evidence extraction improves they are reference-grade, not "exact" |
 | **TV** | HOLD. Proposal ready (GO WITH CONDITIONS): shared evidence function, production shadow and a fresh audit are still required |
-| **Vacuum** | ROLLED BACK (confirmed false merges the gate cannot see) with a defined path back (capacity rule, low-digit code lane, Extra mpn ingestion) |
+| **Vacuum** | ROLLED BACK on one founder-confirmed false merge (V14, Panasonic — decisive evidence is Extra's page mpn, absent from our payload) that the gate cannot see; the founder's review lowers the severity and shortens the path back: Extra mpn ingestion first, then re-gate (his decision) |
 | **Appliances** | Mixed evidence pipeline, not "merchant data only": a model is on every listing of 50.7 % of washer, 72.5 % of refrigerator, 56.5 % of dishwasher groups. Closed to this mission |
 | **Laptops** | Model evidence on every side of only 44.7 % of groups; Noon states 11 % of laptop models |
 | **AC exact identity** | HOLD (54.5 % of listings carried a verdict; comparisons 6 → 0 in the shadow) — no exact-model claim without model evidence |
