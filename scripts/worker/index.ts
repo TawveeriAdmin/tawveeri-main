@@ -224,6 +224,10 @@ function enqueue(name: JobName) {
 const HIGH_PRIORITY_JOBS = new Set(JOBS.filter((j) => j.highPriority).map((j) => j.name));
 
 function nextFromQueue(): JobName | null {
+  // ADR-405: identity_gate runs ~15 s and its freshness is a mechanical rollback trigger (signals > 3 h), so it is
+  // served ahead of every other queued job — including price_update (up to 75 min) — without preempting a running one.
+  // Worst-case staleness = its own 60 min cycle + the longest job already in flight, never cycle + two long jobs.
+  if (pending.has('identity_gate')) return 'identity_gate';
   for (const name of pending) if (HIGH_PRIORITY_JOBS.has(name)) return name;
   const it = pending.values().next();
   return it.done ? null : it.value;
