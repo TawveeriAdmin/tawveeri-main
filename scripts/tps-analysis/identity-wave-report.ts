@@ -19,7 +19,7 @@ if (!CAT || !/^[a-z0-9_]+$/.test(CAT)) { console.error("--category=<name> requir
 
 type Metrics = {
   at: string; triggers?: string[]; warnings?: string[];
-  runner?: { run_age_hours: number | null; last_run_seconds: number | null };
+  runner?: { run_age_hours: number | null; last_run_seconds: number | null; previous_gap_hours?: number | null; stale_incident?: boolean };
   categories?: Record<string, {
     projection: { comparable: number; total: number }; signals: { review: number; reject: number }; verdict_share: number;
     identity_effect: Record<string, number> | null; merchants: { store_id: number; in_verified_comparisons: number; review: number; reject: number }[];
@@ -58,7 +58,8 @@ const stat = (a: number[]) => (a.length ? { min: Math.min(...a), p50: pct(a, 50)
       first: runner[0]?.taken_at ?? null, last: runner[runner.length - 1]?.taken_at ?? null,
       cycle_gap_minutes: stat(gaps), missed_cycles_over_90min: gaps.filter((g) => g > 90).length,
       run_seconds: stat(runner.map((r) => r.metrics.runner?.last_run_seconds).filter((v): v is number => typeof v === "number")),
-      max_signal_age_hours: Math.max(0, ...runner.map((r) => r.metrics.runner?.run_age_hours ?? 0)),
+      max_signal_age_hours: Math.max(0, ...runner.map((r) => r.metrics.runner?.previous_gap_hours ?? r.metrics.runner?.run_age_hours ?? 0)),
+      stale_signal_incidents: runner.filter((r) => r.metrics.runner?.stale_incident).length,
       trigger_history: [...new Set(rows.flatMap((r) => r.triggers))],
     },
     identity: {

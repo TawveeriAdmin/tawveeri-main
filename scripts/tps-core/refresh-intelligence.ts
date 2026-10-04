@@ -162,7 +162,7 @@ const STEPS: Step[] = [
     run: () => {
       const cats = identityRunnerScope().filter((c) => identityGateEnabled(c));
       if (!cats.length) return { ok: true, detail: "skipped — no category in the runner scope has its read gate on" };
-      return runScript("scripts/tps-analysis/identity-wave-monitor.ts", [`--categories=${cats.join(",")}`, "--baseline=db", "--persist", "--sample=3", "--consistency=6"]);
+      return runScript("scripts/tps-analysis/identity-wave-monitor.ts", [`--categories=${cats.join(",")}`, "--baseline=db", "--persist", "--fresh-run", "--sample=3", "--consistency=6"]);
     },
   },
   {

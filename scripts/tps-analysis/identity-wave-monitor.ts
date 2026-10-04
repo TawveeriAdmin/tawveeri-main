@@ -48,6 +48,10 @@ const COLLAPSE = Number(arg("collapse") ?? 0.4);
 const AUDIT_FALSE = Number(arg("audit-false-merges") ?? 0);
 const CONSISTENCY = Number(arg("consistency") ?? 0);
 const PERSIST = flag("persist");
+// --fresh-run: invoked by the runner itself right after its signals step succeeded. The previous success is then history, not
+// the present: staleness is not a trigger (the signals were just refreshed), but the GAP is recorded as an incident so the closure
+// still sees every stretch in which readers ran on older signals (queue contention behind a long job, a redeploy).
+const FRESH_RUN = flag("fresh-run");
 const SOURCE = (arg("source") ?? (PERSIST ? "runner" : "manual")) as "runner" | "manual" | "baseline";
 if (!CATS.length) { console.error("--categories=<a,b> required"); process.exit(1); }
 if (CATS.some((c) => !/^[a-z0-9_]+$/.test(c))) { console.error("invalid --categories"); process.exit(1); }
@@ -118,9 +122,11 @@ async function ensureLogTable(pg: Client) {
   const runAgeH = [runnerOkH, chainOkH].filter((v): v is number => v != null).sort((a, b) => a - b)[0] ?? null;
   const noteSeconds = /(\d+(?:\.\d+)?)s\b[^|]*$/.exec(String(jobs.identity_gate?.last_note ?? "").split("|").find((p) => /steps succeeded in/.test(p)) ?? "");
   out.runner = {
-    identity_gate: jobs.identity_gate ?? null, refresh_chain: jobs.refresh ?? null, run_age_hours: round(runAgeH),
+    identity_gate: jobs.identity_gate ?? null, refresh_chain: jobs.refresh ?? null, run_age_hours: FRESH_RUN ? 0 : round(runAgeH),
+    previous_gap_hours: round(runAgeH), stale_incident: FRESH_RUN && runAgeH != null && runAgeH > STALE_H,
     last_run_seconds: noteSeconds ? Number(noteSeconds[1]) : null,
   };
+  if (FRESH_RUN && runAgeH != null && runAgeH > STALE_H) warnings.push(`signals were ${runAgeH.toFixed(1)} h old before this refresh (> ${STALE_H} h): readers ran on older signals — recorded as a stale-signal incident, not a trigger (this cycle just refreshed them)`);
   // "Repeatedly failing": the latest attempt ran > 1.5 h after the last success (≈ two consecutive failed hourly cycles).
   const gateJob = jobs.identity_gate;
   if (gateJob?.last_success_at && gateJob?.updated_at) {
@@ -139,7 +145,7 @@ async function ensureLogTable(pg: Client) {
     const listings = (await pg.query(
       `select count(*)::int as n from tps_current_offers co join canonical_products c on c.tps_identity_key = co.identity_key
         where c.is_active and c.category = $1 and co.status = 'valid' and co.identity_key in (select identity_key from tps_current_offers where status='valid' group by 1 having count(distinct store_id) >= 2)`, [cat])).rows[0].n as number;
-    const ageH = runAgeH;
+    const ageH = FRESH_RUN ? 0 : runAgeH;
     const share = listings ? (sig.review + sig.reject) / listings : 0;
     const base = baseline?.categories?.[cat];
     const collapse = base?.comparable ? 1 - proj.comparable / base.comparable : 0;
