@@ -1,0 +1,669 @@
+{
+ "date": "2026-10-04T10:57:09.477Z",
+ "listings": 1110,
+ "multi_store_groups": 182,
+ "token_dataset_rows": 1013,
+ "label_counts": {
+  "non_model:panel_or_marketing": 18,
+  "non_model:whole_title": 163,
+  "declared_uncorroborated": 404,
+  "model_declared_in_own_title": 104,
+  "model_confirmed_cross_merchant": 282,
+  "non_model:retailer_numeric_sku": 31,
+  "unlabelled": 10,
+  "non_model:size": 1
+ },
+ "merchant_field_reliability": {
+  "amazon.model": {
+   "declared": 204,
+   "in_own_title": 176,
+   "cross_merchant_confirmed": 4,
+   "trap": 151
+  },
+  "extra.modelNumber": {
+   "declared": 306,
+   "in_own_title": 0,
+   "cross_merchant_confirmed": 123,
+   "trap": 0
+  },
+  "noon.model": {
+   "declared": 130,
+   "in_own_title": 0,
+   "cross_merchant_confirmed": 0,
+   "trap": 0
+  },
+  "almanea.model": {
+   "declared": 123,
+   "in_own_title": 118,
+   "cross_merchant_confirmed": 55,
+   "trap": 0
+  },
+  "samsung_ksa.model": {
+   "declared": 120,
+   "in_own_title": 120,
+   "cross_merchant_confirmed": 100,
+   "trap": 0
+  },
+  "jarir.model": {
+   "declared": 30,
+   "in_own_title": 30,
+   "cross_merchant_confirmed": 0,
+   "trap": 30
+  },
+  "extra.model": {
+   "declared": 69,
+   "in_own_title": 1,
+   "cross_merchant_confirmed": 0,
+   "trap": 1
+  },
+  "alnakheelk.model": {
+   "declared": 31,
+   "in_own_title": 0,
+   "cross_merchant_confirmed": 0,
+   "trap": 31
+  }
+ },
+ "lane_coverage_by_brand": {
+  "vision": {
+   "listings": 10,
+   "P0": 0,
+   "P1": 10,
+   "P2": 10,
+   "P3": 10,
+   "declared_short_only": 0
+  },
+  "hisense": {
+   "listings": 76,
+   "P0": 22,
+   "P1": 33,
+   "P2": 50,
+   "P3": 65,
+   "declared_short_only": 17
+  },
+  "skyworth": {
+   "listings": 72,
+   "P0": 29,
+   "P1": 54,
+   "P2": 54,
+   "P3": 54,
+   "declared_short_only": 0
+  },
+  "haier": {
+   "listings": 21,
+   "P0": 6,
+   "P1": 11,
+   "P2": 11,
+   "P3": 11,
+   "declared_short_only": 0
+  },
+  "google": {
+   "listings": 38,
+   "P0": 0,
+   "P1": 20,
+   "P2": 20,
+   "P3": 30,
+   "declared_short_only": 0
+  },
+  "lg": {
+   "listings": 176,
+   "P0": 106,
+   "P1": 153,
+   "P2": 153,
+   "P3": 154,
+   "declared_short_only": 0
+  },
+  "samsung": {
+   "listings": 422,
+   "P0": 279,
+   "P1": 395,
+   "P2": 395,
+   "P3": 395,
+   "declared_short_only": 0
+  },
+  "arrqw": {
+   "listings": 3,
+   "P0": 0,
+   "P1": 2,
+   "P2": 2,
+   "P3": 2,
+   "declared_short_only": 0
+  },
+  "tcl": {
+   "listings": 68,
+   "P0": 12,
+   "P1": 21,
+   "P2": 41,
+   "P3": 60,
+   "declared_short_only": 20
+  },
+  "أوجين": {
+   "listings": 2,
+   "P0": 0,
+   "P1": 2,
+   "P2": 2,
+   "P3": 2,
+   "declared_short_only": 0
+  },
+  "nikai": {
+   "listings": 50,
+   "P0": 9,
+   "P1": 45,
+   "P2": 45,
+   "P3": 45,
+   "declared_short_only": 0
+  },
+  "ogen": {
+   "listings": 4,
+   "P0": 0,
+   "P1": 4,
+   "P2": 4,
+   "P3": 4,
+   "declared_short_only": 0
+  },
+  "mtc": {
+   "listings": 12,
+   "P0": 0,
+   "P1": 12,
+   "P2": 12,
+   "P3": 12,
+   "declared_short_only": 0
+  },
+  "haam": {
+   "listings": 10,
+   "P0": 9,
+   "P1": 10,
+   "P2": 10,
+   "P3": 10,
+   "declared_short_only": 0
+  },
+  "dansat": {
+   "listings": 15,
+   "P0": 6,
+   "P1": 7,
+   "P2": 7,
+   "P3": 7,
+   "declared_short_only": 0
+  },
+  "impex": {
+   "listings": 11,
+   "P0": 0,
+   "P1": 5,
+   "P2": 5,
+   "P3": 6,
+   "declared_short_only": 0
+  },
+  "xiaomi": {
+   "listings": 9,
+   "P0": 1,
+   "P1": 1,
+   "P2": 1,
+   "P3": 1,
+   "declared_short_only": 0
+  },
+  "prime": {
+   "listings": 6,
+   "P0": 5,
+   "P1": 5,
+   "P2": 5,
+   "P3": 5,
+   "declared_short_only": 0
+  },
+  "huawei": {
+   "listings": 10,
+   "P0": 8,
+   "P1": 10,
+   "P2": 10,
+   "P3": 10,
+   "declared_short_only": 0
+  },
+  "sony": {
+   "listings": 11,
+   "P0": 0,
+   "P1": 10,
+   "P2": 10,
+   "P3": 10,
+   "declared_short_only": 0
+  },
+  "gvc pro": {
+   "listings": 1,
+   "P0": 0,
+   "P1": 1,
+   "P2": 1,
+   "P3": 1,
+   "declared_short_only": 0
+  },
+  "تي اي تي": {
+   "listings": 3,
+   "P0": 0,
+   "P1": 3,
+   "P2": 3,
+   "P3": 3,
+   "declared_short_only": 0
+  },
+  "apple": {
+   "listings": 11,
+   "P0": 3,
+   "P1": 8,
+   "P2": 8,
+   "P3": 8,
+   "declared_short_only": 0
+  },
+  "brateck": {
+   "listings": 1,
+   "P0": 1,
+   "P1": 1,
+   "P2": 1,
+   "P3": 1,
+   "declared_short_only": 0
+  },
+  "truva": {
+   "listings": 5,
+   "P0": 5,
+   "P1": 5,
+   "P2": 5,
+   "P3": 5,
+   "declared_short_only": 0
+  },
+  "fujika": {
+   "listings": 1,
+   "P0": 0,
+   "P1": 1,
+   "P2": 1,
+   "P3": 1,
+   "declared_short_only": 0
+  },
+  "magic": {
+   "listings": 1,
+   "P0": 0,
+   "P1": 0,
+   "P2": 0,
+   "P3": 0,
+   "declared_short_only": 0
+  },
+  "homez": {
+   "listings": 3,
+   "P0": 3,
+   "P1": 3,
+   "P2": 3,
+   "P3": 3,
+   "declared_short_only": 0
+  },
+  "panasonic": {
+   "listings": 4,
+   "P0": 1,
+   "P1": 1,
+   "P2": 1,
+   "P3": 1,
+   "declared_short_only": 0
+  },
+  "شركة الضوء البارق للتجارة": {
+   "listings": 2,
+   "P0": 0,
+   "P1": 2,
+   "P2": 2,
+   "P3": 2,
+   "declared_short_only": 0
+  },
+  "toshiro": {
+   "listings": 2,
+   "P0": 0,
+   "P1": 2,
+   "P2": 2,
+   "P3": 2,
+   "declared_short_only": 0
+  },
+  "sreen": {
+   "listings": 6,
+   "P0": 0,
+   "P1": 6,
+   "P2": 6,
+   "P3": 6,
+   "declared_short_only": 0
+  },
+  "generic": {
+   "listings": 2,
+   "P0": 0,
+   "P1": 2,
+   "P2": 2,
+   "P3": 2,
+   "declared_short_only": 0
+  },
+  "ارو": {
+   "listings": 3,
+   "P0": 0,
+   "P1": 3,
+   "P2": 3,
+   "P3": 3,
+   "declared_short_only": 0
+  },
+  "classpro": {
+   "listings": 19,
+   "P0": 15,
+   "P1": 15,
+   "P2": 15,
+   "P3": 15,
+   "declared_short_only": 0
+  },
+  "توشيرو": {
+   "listings": 9,
+   "P0": 0,
+   "P1": 9,
+   "P2": 9,
+   "P3": 9,
+   "declared_short_only": 0
+  },
+  "oscar": {
+   "listings": 2,
+   "P0": 0,
+   "P1": 2,
+   "P2": 2,
+   "P3": 2,
+   "declared_short_only": 0
+  },
+  "سامسون": {
+   "listings": 1,
+   "P0": 0,
+   "P1": 1,
+   "P2": 1,
+   "P3": 1,
+   "declared_short_only": 0
+  },
+  "stargold": {
+   "listings": 1,
+   "P0": 0,
+   "P1": 1,
+   "P2": 1,
+   "P3": 1,
+   "declared_short_only": 0
+  },
+  "mibro": {
+   "listings": 1,
+   "P0": 1,
+   "P1": 1,
+   "P2": 1,
+   "P3": 1,
+   "declared_short_only": 0
+  },
+  "general class": {
+   "listings": 2,
+   "P0": 0,
+   "P1": 2,
+   "P2": 2,
+   "P3": 2,
+   "declared_short_only": 0
+  },
+  "تي سي": {
+   "listings": 1,
+   "P0": 0,
+   "P1": 1,
+   "P2": 1,
+   "P3": 1,
+   "declared_short_only": 0
+  },
+  "hikers": {
+   "listings": 1,
+   "P0": 0,
+   "P1": 1,
+   "P2": 1,
+   "P3": 1,
+   "declared_short_only": 0
+  },
+  "arrow": {
+   "listings": 1,
+   "P0": 0,
+   "P1": 1,
+   "P2": 1,
+   "P3": 1,
+   "declared_short_only": 0
+  },
+  "gama": {
+   "listings": 1,
+   "P0": 0,
+   "P1": 1,
+   "P2": 1,
+   "P3": 1,
+   "declared_short_only": 0
+  }
+ },
+ "evaluation_vs_independent_labels": {
+  "P0": {
+   "confirmed_models": 282,
+   "accepted": 275,
+   "recall": 0.975,
+   "non_model_tokens": 213,
+   "false_accepts": 0
+  },
+  "P1": {
+   "confirmed_models": 282,
+   "accepted": 275,
+   "recall": 0.975,
+   "non_model_tokens": 213,
+   "false_accepts": 0
+  },
+  "P2": {
+   "confirmed_models": 282,
+   "accepted": 279,
+   "recall": 0.989,
+   "non_model_tokens": 213,
+   "false_accepts": 0
+  },
+  "P3": {
+   "confirmed_models": 282,
+   "accepted": 279,
+   "recall": 0.989,
+   "non_model_tokens": 213,
+   "false_accepts": 0
+  }
+ },
+ "sizeless_series_codes": {
+  "listings_with_series_code_and_no_other_model": 12,
+  "of_which_in_multi_store_groups": 4,
+  "examples": [
+   "jarir:M1EH | Samsung 65\" Smart TV, 4K Mini-LED, 50 Hz, Black, M1EH",
+   "jarir:P7L | TCL 65\" Smart TV, 4K QLED, 60 Hz, Black, P7L",
+   "jarir:V6D | TCL 55\" Smart TV, 4K LED, 60 Hz, Black, V6D",
+   "jarir:S85F | Samsung 65\" Smart TV, 4K OLED, 120 Hz, Graphite Black, S85F",
+   "jarir:H6F | Haier 75\" Smart TV, 4K QLED, 60 Hz, Black, H6F",
+   "jarir:H6F | Haier 55\" Smart TV, 4K QLED, 60 Hz, Black, H6F",
+   "jarir:H6F | Haier 65\" Smart TV, 4K QLED, 60 Hz, Black, H6F",
+   "jarir:V6D | TCL 65\" Smart TV, 4K LED, 60 Hz, Black, V6D",
+   "noon:H5F | 50 Inch 4K UHD Smart Google TV | Dolby Audio | HDR 10 | Gami",
+   "jarir:Q61Q | Hisense 65\" Smart TV, 4K QLED, 60 Hz, Black, Q61Q",
+   "jarir:Q71Q | Hisense 65\" Smart TV, 4K QLED, 144 Hz, Black, Q71Q",
+   "jarir:M1EH | Samsung 55\" Smart TV, 4K Mini-LED, 50 Hz, Black, M1EH"
+  ]
+ },
+ "comparable_under_each_wiring": {
+  "P0": {
+   "comparable_groups": 171,
+   "comparable_with_amazon": 68,
+   "amazon_listings_in_multi_store_groups_kept": 68,
+   "amazon_listings_held_back_by_verdict": 4
+  },
+  "P1": {
+   "comparable_groups": 172,
+   "comparable_with_amazon": 68,
+   "amazon_listings_in_multi_store_groups_kept": 68,
+   "amazon_listings_held_back_by_verdict": 4
+  },
+  "P2": {
+   "comparable_groups": 156,
+   "comparable_with_amazon": 60,
+   "amazon_listings_in_multi_store_groups_kept": 60,
+   "amazon_listings_held_back_by_verdict": 12
+  },
+  "P3": {
+   "comparable_groups": 159,
+   "comparable_with_amazon": 62,
+   "amazon_listings_in_multi_store_groups_kept": 62,
+   "amazon_listings_held_back_by_verdict": 10
+  }
+ },
+ "p3_title_token_audit": {
+  "accepted": 69,
+  "confirmed_by_other_merchant_declared": 4,
+  "confirmed_by_other_merchant_title": 2,
+  "unconfirmed": 63,
+  "trap_accepted": 0
+ },
+ "p3_title_tokens_refused_by_reason": {
+  "no_parsed_size": 39,
+  "technology_word": 14,
+  "size_mismatch": 277
+ },
+ "p3_unconfirmed_title_tokens": [
+  "amazon:85T8D | TCL 85T8D Television 85 Inch Smart TV 4K QD-Mini LED Dimming Colorful ",
+  "noon:85C6K | Television 85 Inch Smart TV 4K QD-Mini LED Colorful Quantum Crystal HD",
+  "almanea:85Q6C | TCL Smart TV 85\",4K UHD, Smart, QD Mini LED - 85Q6C",
+  "noon:65P7L | 65 Inch 4K QLED Google Smart TV, 60Hz, Colorful Quantum Crystal, HVA P",
+  "almanea:75Q6Q | Hisense Smart TV 75 Inch 4K UHD QLED, 8 Years OS update AI - 75Q6Q",
+  "noon:55T69D | 55 Inch 4K UHD smart TV, 60Hz, QLED, HDR, AIPQ processor, Google TV, M",
+  "amazon:55E7S PRO | Hisense 55 inch 4K Smart TV 144Hz QLED 55E7S PRO,Quantum Dot Colour, H",
+  "blackbox:55Q72Q | شاشة هايسنس 55 بوصة QLED كيو لد - 144 هرتز - 4K فوركي 55Q72Q",
+  "amazon:65E8S | Hisense-65 Inch Mini LED 4K Smart TV,65E8S,8 Years OS Update,Hi-View A",
+  "noon:75Q7C | Television 75 Inch Smart TV 4K QD-Mini LED Gaming Google TV, 144Hz Nat",
+  "noon:50S5K | 50 Inch Smart TV QLED HDR 10 Google TV, FHD, 60Hz, Dolby Audio, Game M",
+  "noon:50A62Q | Hisense 50 Inch Smart TV 4K UHD LCD Dolby Vision, ,60 Hz, VIDAA U5 OS,",
+  "amazon:55E8S | Hisense-55 Inch Mini LED 4K Smart TV,55E8S,8 Years OS Update,Hi-View A",
+  "almanea:85P8L | TCL 85 Inch, QLED Smart TV, Google TV - 85P8L",
+  "almanea:85C7L | TCL Smart TV 85 Inch 4K SQD-MiniLED, Google TV, Dolby Vision IQ - 85C7",
+  "amazon:65E8Q | Hisense 65 inch 4K Smart TV144Hz QLED 65E8Q,Quantum Dot Colour, AI Pic",
+  "noon:32HD | 32 Inch HD Smart LED TV - HD 1366 x 768 Resolution, Latest Android Tel",
+  "amazon:55T8C | TCL 55T8C Television 55 Inch Smart TV 4K QLED Colorful Quantum Crystal",
+  "amazon:98Q6C | TCL 98Q6C Television 98 Inch Smart TV 4K QD-Mini LED Colorful Quantum ",
+  "amazon:65T8D | TCL 65T8D Television 65 Inch Smart TV 4K QD-Mini LED Dimming Colorful ",
+  "noon:65Q6C | 65 Inch Smart TV 4K QD-Mini LED Colorful Quantum Crystal HDR 10+ Gamin",
+  "noon:75V6D | 75 Inch 4K UHD Google Smart TV, HVA Panel, 60Hz, HDR10, Dolby Audio, A",
+  "amazon:75T61D | TCL 75T61D Television 75 Inch Smart TV 4K Premium QLED Colorful Quantu",
+  "amazon:65T8D | TCL 65T8D Television 65 Inch Smart TV 4K QD-Mini LED Dimming Colorful ",
+  "jarir:98C6K | TCL 98\" Smart TV, 4K Mini-LED, 120 Hz, Black, 98C6K",
+  "noon:85U7Q | 85 inch Mini LED 4K Smart TV 144 Hz 85U7Q black",
+  "almanea:75P8L | TCL 75 Inch QLED Smart TV Google TV - 75P8L",
+  "noon:100U7K | 100 Inch  4K Smart TV  Mini LED 144Hz 100U7K Black",
+  "almanea:58A63N | Hisense 58 Inch 4K UHD Smart LED TV, Dolby Vision, 8 Years OS update A",
+  "almanea:85Q6Q | Hisense 85 Inch 4K UHD Smart QLED TV, 60 Hz, 8 Years OS update AI - 85",
+  "almanea:55Q63Q | Hisense 55 Inch 4K UHD Smart QLED TV, 8 Years OS update AI - 55Q63Q",
+  "amazon:58E6Q | Hisense 58 inch 4K UHD Smart TV 58E6Q,Dolby Vision,AI 4K Upscaler,Gami",
+  "almanea:75U7S | Hisense 75 Inch 4K UHD Smart Mini LED TV, 144Hz, HDR - 75U7S",
+  "almanea:98Q6C | TCL TV 98 Inch, 4K, QD Mini LED - 98Q6C",
+  "almanea:75U7Q | Hisense 75 Inch 4K UHD Smart Mini LED TV, 144Hz, 8 Years OS update AI ",
+  "noon:55P8L | Television 55 Inch 4K QD-Mini LED Dimming Google Smart TV, 144Hz Refre",
+  "noon:55T8B | 55 Inch QLED Pro 144Hz Onkyo Gaming TV, 4K UHD, HDR Pro, Google TV (Do",
+  "amazon:116UX | Hisense RGB Mini LED 116 Inch 165Hz VRR TV 4K Smart, Brightness 8000 n",
+  "almanea:85U7Q | Hisense 85 Inch 4K UHD Smart Mini LED TV, 144Hz, 8 Years OS update AI ",
+  "noon:85Q6Q | 85Q6Q  International Model | 85 Inch QLED 4K 60Hz VIDAA Smart TV | QLE"
+ ],
+ "p2_accepted_but_uncorroborated": [
+  "extra.modelNumber=75Q6EQ | Hisense, 75 inch, QLED 4K Smart TV,8 Years OS update AI",
+  "extra.modelNumber=24LP60G | SKYWORTH, 24 Inches,  FHD, Smart TV, Battery up to 3 Hr",
+  "extra.modelNumber=75X11L | TCL, 75 Inch, MiniLED, 4K Smart,  AI, Google TV, 144 Hz",
+  "extra.modelNumber=85C6KPRO | TCL, 85 Inch, MiniLED, AIPQ Pro, 144 Hz",
+  "extra.modelNumber=86MRGB85B6C | LG, 86 inch, Mini RGB 4K Smart TV, AI, 144 Hz",
+  "extra.modelNumber=OLED77C66LA | LG, 77 inch, OLED evo, 4K Smart TV, AI, 165 Hz",
+  "extra.modelNumber=85QNED93A6A | LG, 85 inch, Mini LED 4K Smart TV, AI QNED93, 144 Hz",
+  "almanea.model=HM43F550KG | Haam 43 Inch FHD Smart Google TV - HM40F550KG",
+  "extra.modelNumber=55T6D | TCL, 55 Inch, QLED, AIPQ Pro, Smart TV, HDMI 3, USB1",
+  "extra.modelNumber=H85M80FUX | Haier, 85 Inch, Mini LED, Google TV, Dolby Vision-Atmos",
+  "extra.modelNumber=75P8L | TCL, 75 Inch, QLED, AIPQ Pro, Smart TV, HDMI 3, USB1",
+  "extra.modelNumber=65U6QPRO | Hisense, 65 inch, Mini LED 4K Smart , 8 Years OS update AI",
+  "extra.modelNumber=65U7S | Hisense, 65 Inch, MiniLed 4K Smart TV, 8 Years OS Update,144Hz",
+  "extra.modelNumber=55P71L | TCL, 55 Inch, QLED, AIPQ Pro, Smart TV, HDMI 3, USB1",
+  "extra.modelNumber=60X6400H | Skyworth, 60 Inch, Mini LED 4K Smart,  Google TV, 60 Hz",
+  "extra.modelNumber=VGSCFF65BWBZN | SAMSUNG, 65 Inch, BROWN Frame Bezel, Customizable",
+  "extra.modelNumber=86QNED82A6A | LG, 86 inch, QNED 4K Smart TV, AI QNED82, 60 Hz",
+  "extra.modelNumber=QA75Q70DAUXSA | Samsung QLED TV, 75 Inch, 4K AI Upscaling, 120Hz, Air Slim Design, Secured by Knox",
+  "extra.modelNumber=75C79L | TCL, 75 Inch, MiniLED 4K, Google TV, 144 Hz",
+  "extra.modelNumber=M2225B1BLK | Redmi Smart Band 2, 1.47 Inch, Black",
+  "extra.modelNumber=OLED83B56LA | LG, 83 inch ,OLED, 4K Smart TV , AI B5,120 Hz",
+  "extra.modelNumber=86QNED80A6A | LG, 86 inch, QNED 4K Smart TV, AI, 60Hz",
+  "extra.modelNumber=PR75QLED | PRIME, 75 inch 4K QLED webOS Smart QLED TV",
+  "extra.modelNumber=OLED65C66LA | LG, 65 inch, OLED evo, 4K Smart TV, AI, 165 Hz",
+  "extra.modelNumber=75C7L | TCL, 75 Inch, MiniLED, AIPQ Pro, Ultra Slim, Smart TV",
+  "extra.modelNumber=50A6Q | Hisense, 50 inch, LED 4K Smart ,Dolby,8 Years OS update AI",
+  "extra.modelNumber=65G6520G | Skyworth, 65 Inch, 4K UHD Smart LED TV",
+  "extra.modelNumber=OLED77B56LA | LG, 77 inch , OLED, 4K Smart TV, AI B5, 120 Hz",
+  "extra.modelNumber=FS6044FW02 | Brateck, TV Cart, Nature-Inspired TV Carts with Wood Shelf",
+  "extra.modelNumber=85QNED91A6A | LG, 85 Inch, Mini LED  4K Smart TV, 144Hz VRR",
+  "extra.modelNumber=55QNED80T6B | LG, 55 inch, 4K Smart TV, QNED, 60Hz",
+  "extra.modelNumber=75QNED93B6A | LG, 75 inch, QNED, 4K Smart TV, 144 Hz",
+  "extra.modelNumber=50UA73006LA | LG, 50 inch, UHD 4K Smart TV, AI, 2025",
+  "extra.modelNumber=H100M96FUX | Haier, 100 Inch, Mini LED, Google TV, 144Hz",
+  "extra.modelNumber=55C6KPRO | TCL, 55 Inch, MiniLED 4K Smart TV, Google TV, 144 Hz",
+  "extra.modelNumber=55U7S | Hisense, 55 Inch, MiniLed 4K Smart TV, 8 Years OS Update,144Hz",
+  "extra.modelNumber=TR55UHD | TRUVA, 55 Inch, 4K UHD Smart LED TV",
+  "extra.modelNumber=27LX6TDGA | LG, 27 inch, Stand by ME 2, Portable, 60 Hz",
+  "extra.modelNumber=86X8700G | SKYWORTH, 86 Inch, Mini LED  4K Smart TV, 144Hz VRR",
+  "amazon.model=NIK65MEU | Nikai 65\" Inch QLED WebOS 4K Smart UHD TV, Hands-Free Voice Control, Dolby Digital, Built-"
+ ],
+ "p2_accepted_but_uncorroborated_count": 194,
+ "replay_listing_verdicts": {
+  "P0": {
+   "listings": 493,
+   "match": 479,
+   "review": 14,
+   "reject": 0
+  },
+  "P1": {
+   "listings": 493,
+   "match": 480,
+   "review": 13,
+   "reject": 0
+  },
+  "P2": {
+   "listings": 493,
+   "match": 452,
+   "review": 41,
+   "reject": 0
+  },
+  "P3": {
+   "listings": 493,
+   "match": 444,
+   "review": 47,
+   "reject": 2
+  }
+ },
+ "groups_changed_P0_to_P1": 1,
+ "groups_changed_P1_to_P2": 20,
+ "groups_changed_P2_to_P3": 20,
+ "groups_changed_P0_to_P3": 22,
+ "named_cases": [
+  {
+   "case": "TCL 85T8D vs 85C6K PRO",
+   "key": "tcl|85|4k|mini_led|144",
+   "P0": [
+    "amazon:match",
+    "noon:match",
+    "extra:match"
+   ],
+   "P1": [
+    "amazon:match",
+    "noon:match",
+    "extra:match"
+   ],
+   "P2": [
+    "amazon:review",
+    "noon:review",
+    "extra:match"
+   ]
+  },
+  {
+   "case": "Hisense Q71Q vs 65S7N",
+   "key": "hisense|65|4k|qled|144",
+   "P0": [
+    "jarir:match",
+    "amazon:match",
+    "extra:match"
+   ],
+   "P1": [
+    "jarir:match",
+    "amazon:match",
+    "extra:match"
+   ],
+   "P2": [
+    "jarir:review",
+    "amazon:review",
+    "extra:match"
+   ]
+  }
+ ]
+}

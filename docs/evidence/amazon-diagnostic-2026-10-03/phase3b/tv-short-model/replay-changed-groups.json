@@ -1,0 +1,558 @@
+[
+ {
+  "key": "tcl|85|4k|mini_led|144",
+  "titles": [
+   "amazon: TCL 85T8D Television 85 Inch Smart TV 4K QD-Mini LED Dimming Colorful Quantum Cr",
+   "noon: Television 85 Inch Smart TV 4K QD-Mini LED Colorful Quantum Crystal HDR 10+ Gami",
+   "extra: TCL, 85 Inch, MiniLED, AIPQ Pro, 144 Hz"
+  ],
+  "P0": [
+   "2:match",
+   "3:match",
+   "4:match"
+  ],
+  "P1": [
+   "2:match",
+   "3:match",
+   "4:match"
+  ],
+  "P2": [
+   "2:review",
+   "3:review",
+   "4:match"
+  ],
+  "P3": [
+   "2:review(vs 3: conflict_unresolved: no_condition_conflict,model_code_conflict:8)",
+   "3:review(vs 2: conflict_unresolved: no_condition_conflict,model_code_conflict:8)",
+   "4:review(vs 2: conflict_unresolved: no_condition_conflict,model_code_conflict:8)"
+  ]
+ },
+ {
+  "key": "tcl|65|4k|qled|60",
+  "titles": [
+   "jarir: TCL 65\" Smart TV, 4K QLED, 60 Hz, Black, P7L",
+   "amazon: TCL تلفزيون 65T6D ذكي 65 بوصة 4K QLED (موديل 2026)",
+   "noon: 65 Inch 4K QLED Google Smart TV, 60Hz, Colorful Quantum Crystal, HVA Panel, Dolb",
+   "extra: TCL, 65 Inch, QLED, AIPQ Pro, Smart TV, HDMI 3, USB1"
+  ],
+  "P0": [
+   "1:match",
+   "2:match",
+   "3:match",
+   "4:match"
+  ],
+  "P1": [
+   "1:match",
+   "2:match",
+   "3:match",
+   "4:match"
+  ],
+  "P2": [
+   "1:review",
+   "2:review",
+   "3:review",
+   "4:match"
+  ],
+  "P3": [
+   "1:review(vs 2: model_code_one_side)",
+   "2:match()",
+   "3:reject(vs 2: no_condition_conflict,model_code_conflict:65P7L≠65T6D)",
+   "4:match()"
+  ]
+ },
+ {
+  "key": "tcl|55|4k|qled|60",
+  "titles": [
+   "noon: 55 Inch 4K UHD smart TV, 60Hz, QLED, HDR, AIPQ processor, Google TV, Metallic Be",
+   "extra: TCL, 55 Inch, QLED, AIPQ Pro, Smart TV, HDMI 3, USB1"
+  ],
+  "P0": [
+   "3:match",
+   "4:review"
+  ],
+  "P1": [
+   "3:match",
+   "4:review"
+  ],
+  "P2": [
+   "3:review",
+   "4:review"
+  ],
+  "P3": [
+   "3:review(vs 4: conflict_unresolved: no_condition_conflict,model_code_conflict:5)",
+   "4:review(vs 3: conflict_unresolved: no_condition_conflict,model_code_conflict:5)"
+  ]
+ },
+ {
+  "key": "hisense|55|4k|qled|144",
+  "titles": [
+   "amazon: Hisense 55 inch 4K Smart TV 144Hz QLED 55E7S PRO,Quantum Dot Colour, HDR10+,HSR ",
+   "extra: Hisense, 55 inch,QLED 4K Smart TV,144Hz ,8 Years OS update AI",
+   "blackbox: شاشة هايسنس 55 بوصة QLED كيو لد - 144 هرتز - 4K فوركي 55Q72Q"
+  ],
+  "P0": [
+   "2:review",
+   "4:review",
+   "18:match"
+  ],
+  "P1": [
+   "2:review",
+   "4:review",
+   "18:match"
+  ],
+  "P2": [
+   "2:review",
+   "4:review",
+   "18:match"
+  ],
+  "P3": [
+   "2:review(vs 18: conflict_unresolved: no_condition_conflict,model_code_conflict:)",
+   "4:review(vs 2: model_code_one_side)",
+   "18:review(vs 2: conflict_unresolved: no_condition_conflict,model_code_conflict:5)"
+  ]
+ },
+ {
+  "key": "hisense|65|4k|mini_led|144",
+  "titles": [
+   "amazon: Hisense-65 Inch Mini LED 4K Smart TV,65E8S,8 Years OS Update,Hi-View AI Engine,1",
+   "extra: Hisense, 65 Inch, MiniLed 4K Smart TV, 8 Years OS Update,144Hz"
+  ],
+  "P0": [
+   "2:match",
+   "4:match"
+  ],
+  "P1": [
+   "2:match",
+   "4:match"
+  ],
+  "P2": [
+   "2:review",
+   "4:match"
+  ],
+  "P3": [
+   "2:review(vs 4: conflict_unresolved: no_condition_conflict,model_code_conflict:6)",
+   "4:review(vs 2: conflict_unresolved: no_condition_conflict,model_code_conflict:6)"
+  ]
+ },
+ {
+  "key": "tcl|75|4k|mini_led|144",
+  "titles": [
+   "jarir: TCL 75\" Smart TV, 4K SQD Mini-LED, 144 Hz, Black, Q7DPRO",
+   "amazon: TCL 75-Inch QD Mini LED TV, 144Hz Native Refresh Rate, AIPQ Processor, ONKYO Hi-",
+   "noon: Television 75 Inch Smart TV 4K QD-Mini LED Gaming Google TV, 144Hz Native Refres",
+   "extra: TCL, 75 Inch, MiniLED, AIPQ Pro, Ultra Slim, Smart TV"
+  ],
+  "P0": [
+   "1:match",
+   "2:match",
+   "3:match",
+   "4:match"
+  ],
+  "P1": [
+   "1:match",
+   "2:match",
+   "3:match",
+   "4:match"
+  ],
+  "P2": [
+   "1:review",
+   "2:review",
+   "3:review",
+   "4:match"
+  ],
+  "P3": [
+   "1:review(vs 4: model_code_one_side)",
+   "2:review(vs 4: model_code_one_side)",
+   "3:review(vs 4: conflict_unresolved: no_condition_conflict,model_code_conflict:7)",
+   "4:review(vs 3: conflict_unresolved: no_condition_conflict,model_code_conflict:7)"
+  ]
+ },
+ {
+  "key": "hisense|55|4k|mini_led|60",
+  "titles": [
+   "noon: 55 Inch Mini LED QLED 4K Smart TV 55U6Q Pro,Quantum Dot,HSR120Hz, AI Engine, Dol",
+   "extra: Hisense, 55 inch, Mini LED 4K Smart , 8 Years OS update AI"
+  ],
+  "P0": [
+   "3:match",
+   "4:review"
+  ],
+  "P1": [
+   "3:match",
+   "4:review"
+  ],
+  "P2": [
+   "3:review",
+   "4:review"
+  ],
+  "P3": [
+   "3:match()",
+   "4:match()"
+  ]
+ },
+ {
+  "key": "hisense|55|4k|mini_led|144",
+  "titles": [
+   "amazon: Hisense-55 Inch Mini LED 4K Smart TV,55E8S,8 Years OS Update,Hi-View AI Engine,1",
+   "extra: Hisense, 55 Inch, MiniLed 4K Smart TV, 8 Years OS Update,144Hz"
+  ],
+  "P0": [
+   "2:match",
+   "4:match"
+  ],
+  "P1": [
+   "2:match",
+   "4:match"
+  ],
+  "P2": [
+   "2:review",
+   "4:match"
+  ],
+  "P3": [
+   "2:review(vs 4: conflict_unresolved: no_condition_conflict,model_code_conflict:5)",
+   "4:review(vs 2: conflict_unresolved: no_condition_conflict,model_code_conflict:5)"
+  ]
+ },
+ {
+  "key": "tcl|65|4k|mini_led|144",
+  "titles": [
+   "jarir: TCL 65\" Smart TV, 4K SQD Mini-LED, 144 Hz, Black, Q7DPRO",
+   "amazon: TCL 65T8D Television 65 Inch Smart TV 4K QD-Mini LED Dimming Colorful Quantum Cr",
+   "noon: 65 Inch Smart TV 4K QD-Mini LED Colorful Quantum Crystal HDR 10+ Gaming Google T",
+   "extra: TCL, 65 Inch, MiniLED, AIPQ Pro, Ultra Slim, Smart TV"
+  ],
+  "P0": [
+   "1:match",
+   "2:match",
+   "3:match",
+   "4:match"
+  ],
+  "P1": [
+   "1:match",
+   "2:match",
+   "3:match",
+   "4:match"
+  ],
+  "P2": [
+   "1:review",
+   "2:review",
+   "3:review",
+   "4:match"
+  ],
+  "P3": [
+   "1:review(vs 3: model_code_one_side)",
+   "2:review(vs 3: conflict_unresolved: no_condition_conflict,model_code_conflict:6)",
+   "3:review(vs 4: conflict_unresolved: no_condition_conflict,model_code_conflict:6)",
+   "4:review(vs 3: conflict_unresolved: no_condition_conflict,model_code_conflict:6)"
+  ]
+ },
+ {
+  "key": "tcl|75|4k|led|60",
+  "titles": [
+   "noon: 75 Inch 4K UHD Google Smart TV, HVA Panel, 60Hz, HDR10, Dolby Audio, AiPQ Proces",
+   "extra: TCL, 75 Inch, UHD 4K Smart TV, 60 Hz"
+  ],
+  "P0": [
+   "3:match",
+   "4:match"
+  ],
+  "P1": [
+   "3:match",
+   "4:match"
+  ],
+  "P2": [
+   "3:review",
+   "4:match"
+  ],
+  "P3": [
+   "3:review(vs 4: conflict_unresolved: no_condition_conflict,model_code_conflict:7)",
+   "4:review(vs 3: conflict_unresolved: no_condition_conflict,model_code_conflict:7)"
+  ]
+ },
+ {
+  "key": "tcl|98|4k|mini_led|120",
+  "titles": [
+   "jarir: TCL 98\" Smart TV, 4K Mini-LED, 120 Hz, Black, 98C6K",
+   "extra: TCL, 98 Inch, Mini LED 4K Smart TV, 120Hz(VRR 144Hz)"
+  ],
+  "P0": [
+   "1:match",
+   "4:match"
+  ],
+  "P1": [
+   "1:match",
+   "4:match"
+  ],
+  "P2": [
+   "1:review",
+   "4:match"
+  ],
+  "P3": [
+   "1:review(vs 4: conflict_unresolved: no_condition_conflict,model_code_conflict:9)",
+   "4:review(vs 1: conflict_unresolved: no_condition_conflict,model_code_conflict:9)"
+  ]
+ },
+ {
+  "key": "hisense|85|4k|mini_led|144",
+  "titles": [
+   "noon: 85 inch Mini LED 4K Smart TV 144 Hz 85U7Q black",
+   "extra: Hisense, 85 Inch, MiniLed 4K Smart TV, 8 Years OS Update,144Hz"
+  ],
+  "P0": [
+   "3:match",
+   "4:match"
+  ],
+  "P1": [
+   "3:match",
+   "4:match"
+  ],
+  "P2": [
+   "3:review",
+   "4:match"
+  ],
+  "P3": [
+   "3:review(vs 4: conflict_unresolved: no_condition_conflict,model_code_conflict:8)",
+   "4:review(vs 3: conflict_unresolved: no_condition_conflict,model_code_conflict:8)"
+  ]
+ },
+ {
+  "key": "hisense|58|4k|led|60",
+  "titles": [
+   "amazon: Hisense 58 inch 4K UHD Smart TV 58E6Q,Dolby Vision,AI 4K Upscaler,Gaming in Dolb",
+   "extra: Hisense, 58 inch, LED 4K Smart ,Dolby,8 Years OS update AI"
+  ],
+  "P0": [
+   "2:match",
+   "4:match"
+  ],
+  "P1": [
+   "2:match",
+   "4:match"
+  ],
+  "P2": [
+   "2:review",
+   "4:match"
+  ],
+  "P3": [
+   "2:review(vs 4: conflict_unresolved: no_condition_conflict,model_code_conflict:5)",
+   "4:review(vs 2: conflict_unresolved: no_condition_conflict,model_code_conflict:5)"
+  ]
+ },
+ {
+  "key": "tcl|98|4k|mini_led|144",
+  "titles": [
+   "amazon: TCL 98Q6C Television 98 Inch Smart TV 4K QD-Mini LED Colorful Quantum Crystal HD",
+   "noon: 98 Inch Smart TV 4K QD-Mini LED Colorful Quantum Crystal HDR 10+ Gaming Google T",
+   "extra: TCL, 98 Inch, MiniLED, AIPQ Pro, Smart TV, HDMI 3, USB1, 144Hz"
+  ],
+  "P0": [
+   "2:review",
+   "3:match",
+   "4:review"
+  ],
+  "P1": [
+   "2:review",
+   "3:match",
+   "4:review"
+  ],
+  "P2": [
+   "2:review",
+   "3:review",
+   "4:review"
+  ],
+  "P3": [
+   "2:match()",
+   "3:match()",
+   "4:reject(vs 3: no_condition_conflict,model_code_conflict:98C8L≠98Q6C)"
+  ]
+ },
+ {
+  "key": "tcl|55|4k|mini_led|144",
+  "titles": [
+   "noon: Television 55 Inch 4K QD-Mini LED Dimming Google Smart TV, 144Hz Refresh Rate, 9",
+   "extra: TCL, 55 Inch, MiniLED, AIPQ Pro, Ultra Slim, Smart TV"
+  ],
+  "P0": [
+   "3:match",
+   "4:match"
+  ],
+  "P1": [
+   "3:match",
+   "4:match"
+  ],
+  "P2": [
+   "3:review",
+   "4:match"
+  ],
+  "P3": [
+   "3:review(vs 4: conflict_unresolved: no_condition_conflict,model_code_conflict:5)",
+   "4:review(vs 3: conflict_unresolved: no_condition_conflict,model_code_conflict:5)"
+  ]
+ },
+ {
+  "key": "tcl|55|4k|qled|144",
+  "titles": [
+   "noon: 55 Inch QLED Pro 144Hz Onkyo Gaming TV, 4K UHD, HDR Pro, Google TV (Dolby Vision",
+   "extra: TCL, 55 Inch, QLED 4K Smart TV, HDMI 4, USB1, 144Hz"
+  ],
+  "P0": [
+   "3:match",
+   "4:match"
+  ],
+  "P1": [
+   "3:match",
+   "4:match"
+  ],
+  "P2": [
+   "3:review",
+   "4:match"
+  ],
+  "P3": [
+   "3:review(vs 4: conflict_unresolved: no_condition_conflict,model_code_conflict:5)",
+   "4:review(vs 3: conflict_unresolved: no_condition_conflict,model_code_conflict:5)"
+  ]
+ },
+ {
+  "key": "impex|MODEL:75S4QLC2",
+  "titles": [
+   "noon: 75 Inch UHD Google QLED TV, 4K Ultra HD 3840x2160, HDR10, Dolby Audio, Smart TV ",
+   "alnakheelk: Impex 4k Smart Qled Tv 75 Inches 75s4qlc2"
+  ],
+  "P0": [
+   "3:review",
+   "23:match"
+  ],
+  "P1": [
+   "3:match",
+   "23:match"
+  ],
+  "P2": [
+   "3:match",
+   "23:match"
+  ],
+  "P3": [
+   "3:match()",
+   "23:match()"
+  ]
+ },
+ {
+  "key": "hisense|85|4k|qled|60",
+  "titles": [
+   "noon: 85Q6Q  International Model | 85 Inch QLED 4K 60Hz VIDAA Smart TV | QLED Colour| ",
+   "extra: Hisense, 85 inch, QLED 4K Smart TV, 60Hz"
+  ],
+  "P0": [
+   "3:match",
+   "4:match"
+  ],
+  "P1": [
+   "3:match",
+   "4:match"
+  ],
+  "P2": [
+   "3:match",
+   "4:match"
+  ],
+  "P3": [
+   "3:match()",
+   "4:review(vs 3: model_code_one_side)"
+  ]
+ },
+ {
+  "key": "hisense|65|4k|qled|60",
+  "titles": [
+   "jarir: Hisense 65\" Smart TV, 4K QLED, 60 Hz, Black, Q61Q",
+   "noon: Hisense, 65 inch, 4K Smart TV, QLED, 60 Hz 65Q6N Black"
+  ],
+  "P0": [
+   "1:match",
+   "3:match"
+  ],
+  "P1": [
+   "1:match",
+   "3:match"
+  ],
+  "P2": [
+   "1:match",
+   "3:match"
+  ],
+  "P3": [
+   "1:review(vs 3: model_code_one_side)",
+   "3:match()"
+  ]
+ },
+ {
+  "key": "hisense|75|4k|qled|144",
+  "titles": [
+   "noon: 75 Inch Smart TV, QLED, 4K Ultra HD, Dolby Atmos, VIDAA Smart OS, 144HZ, Game Mo",
+   "extra: Hisense, 75 inch, QLED 4K Smart TV,144Hz ,8 Years OS update AI"
+  ],
+  "P0": [
+   "3:match",
+   "4:review"
+  ],
+  "P1": [
+   "3:match",
+   "4:review"
+  ],
+  "P2": [
+   "3:review",
+   "4:review"
+  ],
+  "P3": [
+   "3:review(vs 4: conflict_unresolved: no_condition_conflict,model_code_conflict:7)",
+   "4:review(vs 3: conflict_unresolved: no_condition_conflict,model_code_conflict:7)"
+  ]
+ },
+ {
+  "key": "hisense|65|4k|qled|144",
+  "titles": [
+   "jarir: Hisense 65\" Smart TV, 4K QLED, 144 Hz, Black, Q71Q",
+   "amazon: Hisense 65 Inch Smart TV, QLED, 4K Ultra HD, Dolby Atmos, VIDAA Smart OS, 144HZ,",
+   "extra: Hisense, 65 inch, QLED 4K Smart TV,144Hz ,8 Years OS update AI"
+  ],
+  "P0": [
+   "1:match",
+   "2:match",
+   "4:match"
+  ],
+  "P1": [
+   "1:match",
+   "2:match",
+   "4:match"
+  ],
+  "P2": [
+   "1:review",
+   "2:review",
+   "4:match"
+  ],
+  "P3": [
+   "1:review(vs 4: model_code_one_side)",
+   "2:review(vs 4: model_code_one_side)",
+   "4:match()"
+  ]
+ },
+ {
+  "key": "tcl|50|4k|qled|60",
+  "titles": [
+   "noon: 50 Inch P7L Premium QLED TV, 4K UHD, Google TV, 60Hz, Dolby Vision · Atmos, Slim",
+   "extra: TCL, 50 Inch,QLED 4K Samrt TV, HDMI 3, USB, 60Hz, DLG 120Hz"
+  ],
+  "P0": [
+   "3:match",
+   "4:match"
+  ],
+  "P1": [
+   "3:match",
+   "4:match"
+  ],
+  "P2": [
+   "3:review",
+   "4:match"
+  ],
+  "P3": [
+   "3:review(vs 4: conflict_unresolved: no_condition_conflict,model_code_conflict:5)",
+   "4:review(vs 3: conflict_unresolved: no_condition_conflict,model_code_conflict:5)"
+  ]
+ }
+]
