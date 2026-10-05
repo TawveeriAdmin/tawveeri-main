@@ -1,6 +1,6 @@
 {
- "date": "2026-10-04T14:11:30.892Z",
- "offers_measured": 8920,
+ "date": "2026-10-04T17:56:25.245Z",
+ "offers_measured": 8924,
  "rule": "HIGH: n>=20, traps<2% and (cross-merchant confirmed >=20% or in own title >=80%); LOW: traps>=20%; else MEDIUM",
  "matrix": [
   {
@@ -9,48 +9,38 @@
    "declared": 1598,
    "trap_pct": 0.8,
    "own_title_pct": 65,
-   "confirmed_pct": 69.5,
-   "confirmable": 583,
+   "confirmed_pct": 69.6,
+   "confirmable": 582,
    "trust": "HIGH"
-  },
-  {
-   "merchant": "alnakheelk",
-   "field": "top.model",
-   "declared": 85,
-   "trap_pct": 100,
-   "own_title_pct": 0,
-   "confirmed_pct": null,
-   "confirmable": 0,
-   "trust": "LOW"
   },
   {
    "merchant": "amazon",
    "field": "top.model",
-   "declared": 1326,
-   "trap_pct": 44,
-   "own_title_pct": 30.2,
-   "confirmed_pct": 44.6,
-   "confirmable": 121,
+   "declared": 1328,
+   "trap_pct": 44.9,
+   "own_title_pct": 29.7,
+   "confirmed_pct": 43.7,
+   "confirmable": 119,
    "trust": "LOW"
   },
   {
    "merchant": "amazon",
    "field": "spec.model name",
-   "declared": 213,
-   "trap_pct": 8.5,
-   "own_title_pct": 21.1,
-   "confirmed_pct": 21.8,
+   "declared": 220,
+   "trap_pct": 8.6,
+   "own_title_pct": 21.4,
+   "confirmed_pct": 23.4,
    "confirmable": 124,
    "trust": "MEDIUM"
   },
   {
    "merchant": "amazon",
    "field": "spec.item model number",
-   "declared": 66,
+   "declared": 72,
    "trap_pct": 33.3,
-   "own_title_pct": 30.3,
-   "confirmed_pct": 39.5,
-   "confirmable": 38,
+   "own_title_pct": 29.2,
+   "confirmed_pct": 38.1,
+   "confirmable": 42,
    "trust": "LOW"
   },
   {
@@ -66,21 +56,21 @@
   {
    "merchant": "extra",
    "field": "top.modelNumber",
-   "declared": 1643,
+   "declared": 1637,
    "trap_pct": 0.8,
    "own_title_pct": 0,
-   "confirmed_pct": 80.5,
-   "confirmable": 722,
+   "confirmed_pct": 80.7,
+   "confirmable": 720,
    "trust": "HIGH"
   },
   {
    "merchant": "extra",
    "field": "top.model",
-   "declared": 446,
-   "trap_pct": 11.2,
+   "declared": 454,
+   "trap_pct": 11.7,
    "own_title_pct": 0,
-   "confirmed_pct": 9.5,
-   "confirmable": 137,
+   "confirmed_pct": 9.4,
+   "confirmable": 138,
    "trust": "MEDIUM"
   },
   {
@@ -91,6 +81,16 @@
    "own_title_pct": 1.2,
    "confirmed_pct": 0,
    "confirmable": 23,
+   "trust": "LOW"
+  },
+  {
+   "merchant": "lulu",
+   "field": "top.model",
+   "declared": 85,
+   "trap_pct": 100,
+   "own_title_pct": 0,
+   "confirmed_pct": null,
+   "confirmable": 0,
    "trust": "LOW"
   },
   {
@@ -106,19 +106,19 @@
   {
    "merchant": "noon",
    "field": "spec.model_number",
-   "declared": 361,
-   "trap_pct": 4.2,
-   "own_title_pct": 46.3,
-   "confirmed_pct": 31.1,
-   "confirmable": 180,
+   "declared": 365,
+   "trap_pct": 4.1,
+   "own_title_pct": 46,
+   "confirmed_pct": 30.9,
+   "confirmable": 181,
    "trust": "MEDIUM"
   },
   {
    "merchant": "noon",
    "field": "spec.model_name",
-   "declared": 296,
-   "trap_pct": 7.1,
-   "own_title_pct": 38.9,
+   "declared": 299,
+   "trap_pct": 7,
+   "own_title_pct": 38.8,
    "confirmed_pct": 35.2,
    "confirmable": 142,
    "trust": "MEDIUM"
@@ -147,10 +147,10 @@
  "extraction_gap_spec_only_by_category": [
   {
    "category": "laptop",
-   "offers": 682,
-   "spec_only": 56,
-   "spec_only_in_multi_store_groups": 19,
-   "spec_only_pct": 8.2
+   "offers": 683,
+   "spec_only": 59,
+   "spec_only_in_multi_store_groups": 20,
+   "spec_only_pct": 8.6
   },
   {
    "category": "tv",
@@ -160,18 +160,18 @@
    "spec_only_pct": 2.3
   },
   {
+   "category": "tablet",
+   "offers": 772,
+   "spec_only": 25,
+   "spec_only_in_multi_store_groups": 6,
+   "spec_only_pct": 3.2
+  },
+  {
    "category": "audio",
    "offers": 377,
    "spec_only": 24,
    "spec_only_in_multi_store_groups": 17,
    "spec_only_pct": 6.4
-  },
-  {
-   "category": "tablet",
-   "offers": 772,
-   "spec_only": 24,
-   "spec_only_in_multi_store_groups": 6,
-   "spec_only_pct": 3.1
   },
   {
    "category": "air_fryer",
@@ -196,7 +196,7 @@
   },
   {
    "category": "refrigerator",
-   "offers": 632,
+   "offers": 633,
    "spec_only": 9,
    "spec_only_in_multi_store_groups": 8,
    "spec_only_pct": 1.4
@@ -210,7 +210,7 @@
   },
   {
    "category": "smartwatch",
-   "offers": 215,
+   "offers": 216,
    "spec_only": 5,
    "spec_only_in_multi_store_groups": 3,
    "spec_only_pct": 2.3
