@@ -1,0 +1,112 @@
+{
+ "now": "2026-10-05T04:08:02.090Z",
+ "job": {
+  "last_success_at": "2026-10-05T04:06:58.073Z",
+  "n": "success:             ↳ skipped — no category in the runner scope has its read gate on |   3/3 steps succeeded in 35.6s |   Verify propagation with: npm run tps:health"
+ },
+ "projection": [
+  {
+   "category": "tv",
+   "comparable": 205,
+   "total": 1040,
+   "u": "2026-10-05T04:06:53.847Z"
+  },
+  {
+   "category": "vacuum",
+   "comparable": 67,
+   "total": 441,
+   "u": "2026-10-05T04:06:53.847Z"
+  }
+ ],
+ "signals": [
+  {
+   "category": "tv",
+   "verdict": "reject",
+   "n": 6,
+   "newest": "2026-10-05T04:06:38.272Z",
+   "v": "identity-gate-2026-10-04"
+  },
+  {
+   "category": "tv",
+   "verdict": "review",
+   "n": 95,
+   "newest": "2026-10-05T04:06:38.272Z",
+   "v": "identity-gate-2026-10-04"
+  },
+  {
+   "category": "vacuum",
+   "verdict": "reject",
+   "n": 2,
+   "newest": "2026-10-05T02:18:28.520Z",
+   "v": "identity-gate-2026-10-04"
+  },
+  {
+   "category": "vacuum",
+   "verdict": "review",
+   "n": 10,
+   "newest": "2026-10-05T04:06:38.272Z",
+   "v": "identity-gate-2026-10-04"
+  }
+ ],
+ "reasons": [
+  {
+   "category": "tv",
+   "reason": "conflict_unresolved",
+   "n": 59
+  },
+  {
+   "category": "tv",
+   "reason": "model_code_one_side",
+   "n": 30
+  },
+  {
+   "category": "tv",
+   "reason": "model_code_near",
+   "n": 20
+  },
+  {
+   "category": "tv",
+   "reason": "no_condition_conflict,model_code_conflict",
+   "n": 6
+  },
+  {
+   "category": "tv",
+   "reason": "model_code_suffix_unknown",
+   "n": 4
+  },
+  {
+   "category": "vacuum",
+   "reason": "conflict_unresolved",
+   "n": 8
+  },
+  {
+   "category": "vacuum",
+   "reason": "no_condition_conflict,model_code_conflict",
+   "n": 2
+  },
+  {
+   "category": "vacuum",
+   "reason": "model_code_suffix_unknown",
+   "n": 2
+  }
+ ],
+ "stale_rows": [
+  {
+   "category": "tv",
+   "older_than_30m": 17,
+   "total": 101
+  },
+  {
+   "category": "vacuum",
+   "older_than_30m": 10,
+   "total": 12
+  }
+ ],
+ "wave_log": [
+  {
+   "n": 5,
+   "newest": "2026-10-04T14:08:56.126Z",
+   "rollback": 0
+  }
+ ]
+}
