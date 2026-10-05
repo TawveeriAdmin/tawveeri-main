@@ -277,6 +277,18 @@ async function main() {
           where i.canonical_product_id = ph.canonical_product_id
             and i.store_display_name = ${STORE_NAME_CASE}
         )
+        -- COMMERCIAL TRUTH (2026-10-05, Amazon closure; QA65S90HAEXSA): a store whose CURRENT offer row exists and carries NO usable
+        -- price (price null/≤0, not an out-of-stock row — that case has its own handling) has no current price. A historical price
+        -- observed no later than that current row must not stand in for it: price_history is history, never the current price.
+        -- Measured: Samsung KSA's null-price row let a 20-day-old 6,999 win "cheapest" on search/category while compare showed 7,999.
+        and not exists (
+          select 1 from tps_current_offers cn
+          join canonical_products cc on cc.tps_identity_key = cn.identity_key
+          where cc.id = ph.canonical_product_id and cn.store_id = ph.store_id and cn.status = 'valid'
+            and coalesce(cn.price, 0) <= 0
+            and cn.payload->>'_availability' is distinct from 'out_of_stock'
+            and cn.observed_at >= ph.observed_at
+        )
         ${gateExcl("ph.canonical_product_id", "ph.store_id", STORE_NAME_CASE)}
       order by ph.canonical_product_id, ${STORE_NAME_CASE}, ph.observed_at desc
     ),

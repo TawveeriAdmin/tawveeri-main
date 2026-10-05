@@ -1,0 +1,137 @@
+{
+ "at": "2026-10-05T12:05:20.656Z",
+ "days": 7,
+ "tps": {
+  "valid": 1340,
+  "priced": 1298,
+  "claim_eligible": 736,
+  "h24": 176,
+  "h48": 251,
+  "stale_reference": 562,
+  "current_null_price": 42
+ },
+ "legacy": {
+  "visible": 4439,
+  "no_observation_time": 3262,
+  "no_canonical": 3756,
+  "search_url_with_session_params": 3890,
+  "sponsored_click_urls": 83
+ },
+ "current_null_in_cheapest": {
+  "n": 13
+ },
+ "asin_overlap": {
+  "legacy_asins": 6904,
+  "tps_asins": 1234,
+  "overlap": 1101
+ },
+ "exits": {
+  "total": 7,
+  "test": 0,
+  "bot_ua": 0,
+  "with_interaction_id": 0,
+  "render_token_valid": 1,
+  "raw_request": 6,
+  "tagged": 6,
+  "tagged_human_evidenced": 0,
+  "legacy_ps_exits": 0
+ },
+ "live_probes": [
+  {
+   "query": "ps5",
+   "card": {
+    "store": "أمازون",
+    "tps": false,
+    "observed": false
+   }
+  },
+  {
+   "query": "nintendo switch",
+   "card": {
+    "store": "أمازون",
+    "tps": false,
+    "observed": false
+   }
+  },
+  {
+   "query": "airpods pro",
+   "card": {
+    "store": "أمازون السعودية",
+    "tps": true,
+    "observed": true
+   }
+  },
+  {
+   "query": "samsung tv 65",
+   "card": {
+    "store": "المنيع",
+    "tps": true,
+    "observed": true
+   }
+  },
+  {
+   "query": "sony wh-1000xm5",
+   "card": {
+    "store": "أمازون",
+    "tps": false,
+    "observed": false
+   }
+  },
+  {
+   "query": "iphone 15",
+   "card": {
+    "store": "إكسترا",
+    "tps": true,
+    "observed": true
+   }
+  },
+  {
+   "query": "dyson",
+   "card": {
+    "store": "اكسترا",
+    "tps": false,
+    "observed": false
+   }
+  },
+  {
+   "query": "gopro",
+   "card": {
+    "store": "أمازون السعودية",
+    "tps": false,
+    "observed": false
+   }
+  },
+  {
+   "query": "mac book air",
+   "card": {
+    "store": "نون",
+    "tps": false,
+    "observed": false
+   }
+  },
+  {
+   "query": "air fryer",
+   "card": {
+    "store": "نون",
+    "tps": false,
+    "observed": false
+   }
+  }
+ ],
+ "summary": {
+  "claim_eligible_tps_offers": "736/1340 (55%)",
+  "reference_only_stale_tps": "562/1340 (42%)",
+  "current_null_offers": "42/1340 (3%)",
+  "legacy_visible_without_observation_time": "3262/4439 (73%)",
+  "current_null_offers_winning_cheapest": 13,
+  "human_evidenced_tagged_exits": "0/7 (0%)",
+  "legacy_exits_through_go": "0/7 (0%)",
+  "live": {
+   "queries": 10,
+   "cards": 10,
+   "cards_without_observation_time": 7,
+   "accessory_picks_for_device_queries": 2,
+   "store_filter_amazon_restricts_results": false
+  }
+ }
+}

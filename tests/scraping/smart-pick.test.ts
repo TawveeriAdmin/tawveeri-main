@@ -80,7 +80,8 @@ describe('ADR-193: the pick label is conditioned on the age of its price evidenc
 
   it('the search route withholds the card beyond the freshness floor band', () => {
     expect(routeSrc).toMatch(/PICK_FRESHNESS_MAX_HOURS/);
-    expect(routeSrc).toMatch(/const pickTooStale = pickAgeHours != null && pickAgeHours > PICK_FRESHNESS_MAX_HOURS/);
+    // 2026-10-05: an UNKNOWN observation time is no longer read as "live" — the gate is the single freshness predicate (null → withheld).
+    expect(routeSrc).toMatch(/const pickTooStale = !isFreshObservation\(pickObservedAt\)/);
     expect(routeSrc).toMatch(/trustworthyPick && best && !pickTooStale/);
   });
 

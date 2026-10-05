@@ -726,6 +726,29 @@ export function hasAccessoryHint(nameAr: string, nameEn: string): boolean {
 }
 
 /**
+ * Is every mention of the query's own device token a COMPATIBILITY mention ("…Gaming Headset … for PS5, PS4, Xbox") rather than the
+ * product's own name? Generic (no device or merchant list): a listing whose title names the queried device only after for / compatible with /
+ * works with, and not in its first words, is an accessory OF that device — the exact shape of the "ps5" → gaming-headset pick.
+ */
+export function isCompatOnlyMention(nameEn: string, nameAr: string, rawQuery: string): boolean {
+  const tokens = (rawQuery || '').toLowerCase().split(/[^a-z0-9]+/).filter((t) => t.length >= 3 && /[a-z]/.test(t) && /\d/.test(t));
+  if (tokens.length === 0) return false;
+  const title = `${nameEn || ''} ${nameAr || ''}`.toLowerCase();
+  const head = title.split(/\s+/).slice(0, 3).join(' ');
+  return tokens.every((tok) => {
+    if (head.includes(tok)) return false;
+    let i = title.indexOf(tok); let seen = false;
+    while (i !== -1) {
+      seen = true;
+      const before = title.slice(Math.max(0, i - 30), i);
+      if (!/(for|compatible with|works with|fits|designed for|متوافق مع|لجهاز|لـ)\s*[a-z0-9 ,/&+-]*$/.test(before)) return false;
+      i = title.indexOf(tok, i + tok.length);
+    }
+    return seen;
+  });
+}
+
+/**
  * Does the QUERY ITSELF ask for an accessory (2026-08-10, D→E mission Part B — the founder's
  * own distinction: "I want an iPhone 16" vs "I want an iPhone 16 case"). Reuses the SAME
  * accessory vocabulary `hasAccessoryHint` already applies to PRODUCT titles — this is the
@@ -1711,6 +1734,9 @@ export function selectClosestOptions(
 
 function buildReasonAr(p: GroupedSearchProduct, isCheapest: boolean): string {
   const parts: string[] = [];
+  // Claim eligibility (see buildDecisionLayer): when the cheapest entry has no credible observation time, say so instead of claiming.
+  const priceEntry = p.stores.find((s) => s.current_price === p.best_price) ?? p.stores[0] ?? null;
+  if (priceEntry && !isFreshObservation(priceEntry.observed_at)) return 'سعر مرجعي — لم نتحقق من حداثة الرصد';
   // ADR-389: «أرخص سعر» read as a cross-store claim on a single-store pick. `isCheapest` is
   // "cheapest among THESE results" — say exactly that.
   if (isCheapest) parts.push('الأرخص بين النتائج');
@@ -1760,7 +1786,7 @@ function buildDecisionLayer(
   // is not a defensible answer to "iphone 15"). When the best available match
   // is an accessory for a product search, we show no smart-pick card rather
   // than a misleading one — the ranked results still render below it.
-  const bestIsAccessory = best ? hasAccessoryHint(best.name_ar || '', best.name_en || '') : false;
+  const bestIsAccessory = best ? (hasAccessoryHint(best.name_ar || '', best.name_en || '') || isCompatOnlyMention(best.name_en || '', best.name_ar || '', rawQuery)) : false;
   // A pick must also actually ANSWER the query. When nothing matches every word-group,
   // showing the least-bad item as "اختيار توفيري" asserts an answer we do not have —
   // unknown beats incorrect. The results list still renders below; only the claim goes.
@@ -1768,8 +1794,10 @@ function buildDecisionLayer(
     const hay = productQueryText(best);
     return relevanceGroups.every((g) => g.some((t) => hay.includes(t)));
   })();
+  // Device intent = the query does not itself ask for an accessory. (`queryIsMainProduct` alone missed bare device names such as
+  // "ps5", whose pick was a gaming headset.) Generic: no merchant or product list involved.
   const trustworthyPick = !!best && best.best_price > 0 && bestMatchesQuery
-    && !(queryIsMainProduct && bestIsAccessory);
+    && !(bestIsAccessory && !isAccessoryShapedQuery(rawQuery));
 
   // ADR-193 — the pick's price claim carries its observation time, and the label is not
   // awarded on evidence in the freshness floor band (>PICK_FRESHNESS_MAX_HOURS). The
@@ -1781,9 +1809,13 @@ function buildDecisionLayer(
     : null;
   const pickObservedAt = bestStoreEntry?.observed_at ?? null;
   const pickAgeHours = hoursSince(pickObservedAt);
-  const pickTooStale = pickAgeHours != null && pickAgeHours > PICK_FRESHNESS_MAX_HOURS;
+  // COMMERCIAL CLAIM ELIGIBILITY (2026-10-05, Amazon closure): an UNKNOWN observation time is not a fresh one. The old gate read
+  // `observed_at = null` as "live-scraped, observed this request", but /api/search performs no live scrape — a null here is a
+  // storefront (legacy product_stores) offer with no observation proof (measured: 73% of visible legacy Amazon rows). Such an
+  // offer stays discoverable below; it can never carry the "اختيار توفيري" claim. One authority: isFreshObservation (null → false).
+  const pickTooStale = !isFreshObservation(pickObservedAt);
   if (pickTooStale && best) {
-    console.warn(`[smart-pick-freshness] label withheld: age=${Math.round(pickAgeHours)}h > ${PICK_FRESHNESS_MAX_HOURS}h · "${(best.name_ar || best.name_en || '').slice(0, 60)}"`);
+    console.warn(`[smart-pick-freshness] label withheld: age=${pickAgeHours == null ? 'unknown' : Math.round(pickAgeHours) + 'h'} (limit ${PICK_FRESHNESS_MAX_HOURS}h) · "${(best.name_ar || best.name_en || '').slice(0, 60)}"`);
   }
 
   // TV SIZE-MISMATCH DISCLOSURE (Decision Card v1, ruling B1, 2026-08-22) — the same patch
@@ -3289,6 +3321,15 @@ function applyPostFilters(products: GroupedSearchProduct[], body: SearchBody): G
       })
     );
   }
+  // STORE FILTER (2026-10-05): the filter used to change `total` only. Resolve every requested store (slug, Arabic/English name, numeric id)
+  // to its approved slug and keep products that carry an offer from one of them; a request naming no known store yields an honest zero.
+  if (body.stores && body.stores.length > 0) {
+    const wanted = new Set(body.stores.map((s) => resolveApprovedSlug(s)).filter((s): s is string => !!s));
+    result = wanted.size === 0 ? [] : result.filter((product) => product.stores.some((s) => {
+      const slug = resolveApprovedSlug(s.store_name || s.store);
+      return !!slug && wanted.has(slug);
+    }));
+  }
   if (body.specs && Object.keys(body.specs).length > 0) {
     result = result.filter((product) => {
       const fallbackSpecs = extractSpecsFromTitle(product.name_en || product.name_ar || '');
@@ -3317,7 +3358,10 @@ function toGroupedSearchProduct(row: ProductRow): GroupedSearchProduct | null {
     current_price: Number(ps.current_price),
     original_price: ps.original_price !== null && ps.original_price !== undefined ? Number(ps.original_price) : null,
     availability: ps.availability || 'in_stock',
-    product_url: normalizeExitUrl(ps.product_url) || '',
+    // One measurable exit truth: a storefront (legacy) offer leaves through /go/ps_<id> like every TPS offer, so a human click is
+    // recorded and attributed by the provider framework; the raw merchant URL (88% of legacy Amazon rows are scraped search URLs
+    // with session params) is never handed to the shopper directly. Falls back to the repaired direct URL only when no row id exists.
+    product_url: ps.id ? buildGoUrl(`ps_${ps.id}`) : (normalizeExitUrl(ps.product_url) || ''),
     image_urls: row.image_url ? [row.image_url] : [],
     specifications: {} as Record<string, unknown>,
     category: (row.category || '') as ProductCategory,

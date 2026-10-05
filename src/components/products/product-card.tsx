@@ -18,7 +18,7 @@ import { StoreLogo } from '@/components/ui/store-logo';
 import { bestPrice as bestPriceCopy } from '@/lib/copy';
 import { applyAffiliateTag } from '@/lib/transactions/affiliate-config';
 import { track } from '@/lib/analytics/track';
-import { recordFirstPartyInteraction } from '@/lib/analytics/interaction';
+import { recordFirstPartyInteraction, appendInteractionId } from '@/lib/analytics/interaction';
 import { ProductImageFrame, PRODUCT_PLACEHOLDER_IMAGE } from '@/components/products/shared-product-card';
 import { isFreshObservation, hoursSince, observedAgoLabel } from '@/lib/intelligence/evidence-engine';
 import { brandDisplayName } from '@/lib/compare/brand-display';
@@ -306,13 +306,24 @@ export function ProductCard({
         {children}
       </button>
     ) : isDbProduct ? (
-      productLink.startsWith('http') ? (
+      (productLink.startsWith('http') || productLink.startsWith('/go/')) ? (
         <a
           href={productLink}
           target="_blank"
-          rel="noopener noreferrer"
+          rel="nofollow noopener noreferrer"
           className="flex flex-col h-full"
-          onClick={() => {
+          onClick={(e) => {
+            // A /go exit (legacy storefront offers now leave through /go/ps_<id>) is a real anchor, never a next/link: a link would be
+            // prefetched by the router and a prefetch is not a click (ADR-398). The interaction id minted here is the human evidence /go
+            // needs to attach the affiliate tag, so the href is opened with ?iid= exactly like category-exit-link.
+            if (productLink.startsWith('/go/')) {
+              e.preventDefault();
+              const goId = (productLink.match(/^\/go\/([^?]+)/) || [])[1] ?? null;
+              track('go_click', { canonical_id: product.id, store: String(primaryStoreSlug ?? ''), category: product.category ?? null, source: 'search_card', meta: { measured: true } });
+              const interactionId = recordFirstPartyInteraction({ goId, canonicalId: product.id, surface: 'search_card' });
+              window.open(goId ? appendInteractionId(productLink, interactionId) : productLink, '_blank', 'noopener,noreferrer');
+              return;
+            }
             // ADR-244: previously a completely unmeasured retailer exit. No
             // product_stores ledger row exists for scraped externals, so the
             // affiliate-tagged direct link stays; the event is the measurement.
