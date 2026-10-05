@@ -30,6 +30,8 @@ const TRAPS: { cls: string; re: RegExp }[] = [
   { cls: 'retailer_numeric_sku', re: /^\d{5,}$/ },
   { cls: 'size', re: /^\d{2,3}(INCH|IN)$/ },
   { cls: 'refresh_rate', re: /^\d{2,3}HZ$/ },
+  // a number glued to a unit is a spec, not a model: "3000NITS" (brightness), "1800W", "2000ML", "128GB" — found when a title's HDR claim became a declared model
+  { cls: 'unit_value', re: /^\d{2,5}(NITS?|WATTS?|W|KW|ML|L|LTR|LITERS?|LITRES?|KG|G|CM|MM|GB|TB|MAH|BTU|RPM|PPI|MS|FPS|MP|DB|V)$/ },
   { cls: 'resolution', re: /^(4K|8K|UHD|FHD|HD|2160P|1080P)$/ },
   { cls: 'panel_or_marketing', re: /^(QLED|NEOQLED|OLED|MINILED|MINI|LED|QNED|ULED|CRYSTAL|GOOGLE|ANDROID|SMART|DOLBY|ATMOS|VIDAA|WEBOS|TIZEN|HDR10|HDR10PLUS|AI)$/ },
 ];

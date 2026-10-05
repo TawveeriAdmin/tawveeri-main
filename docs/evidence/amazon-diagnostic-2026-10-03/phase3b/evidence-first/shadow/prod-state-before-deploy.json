@@ -1,0 +1,52 @@
+{
+ "now": "2026-10-05T02:35:05.685Z",
+ "job": {
+  "last_success_at": "2026-10-05T02:18:47.913Z",
+  "updated_at": "2026-10-05T02:18:47.913Z"
+ },
+ "projection": [
+  {
+   "category": "tv",
+   "comparable": 201,
+   "total": 1040
+  },
+  {
+   "category": "vacuum",
+   "comparable": 67,
+   "total": 441
+  }
+ ],
+ "signals": [
+  {
+   "category": "tv",
+   "verdict": "reject",
+   "n": 1,
+   "v": "identity-gate-2026-10-04",
+   "newest": "2026-10-04T06:57:52.703Z"
+  },
+  {
+   "category": "tv",
+   "verdict": "review",
+   "n": 44,
+   "v": "identity-gate-2026-10-04",
+   "newest": "2026-10-04T19:18:25.615Z"
+  },
+  {
+   "category": "vacuum",
+   "verdict": "reject",
+   "n": 2,
+   "v": "identity-gate-2026-10-04",
+   "newest": "2026-10-05T02:18:28.520Z"
+  },
+  {
+   "category": "vacuum",
+   "verdict": "review",
+   "n": 10,
+   "v": "identity-gate-2026-10-04",
+   "newest": "2026-10-05T02:18:28.520Z"
+  }
+ ],
+ "evidence_rows": {
+  "n": 2932
+ }
+}

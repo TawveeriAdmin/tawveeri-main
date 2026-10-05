@@ -118,6 +118,11 @@ describe('relateModels — rules A–F', () => {
     const a = ev('amazon', 'Hisense-55 Inch Mini LED 4K Smart TV,55E8S,8 Years OS Update,Hi-View AI Engine,144Hz', {}, 'hisense');
     expect(codes(a.evidence)).toEqual(['55E8S']);
   });
+  it('a unit value in a title ("HDR 3000nits", "1800W") is never a model', () => {
+    const t = ev('amazon', 'TCL Q7C-Series | 4K Smart TV QD Mini LED Google TV, HDR 3000nits, 144Hz Native Refresh Rate', {}, 'tcl');
+    expect(codes(t.evidence)).toEqual([]);
+    expect(codes(ev('extra', 'Panasonic vacuum 1800W 2000ML', {}).evidence)).toEqual([]);
+  });
   it('a size-prefix notation difference is the same code (Jarir short `Q71Q` vs `65Q71Q`) but different sizes never are', () => {
     const a = ev('jarir', 'Hisense 65" TV Q71Q', {}, 'hisense');
     const b = ev('extra', 'Hisense', { modelNumber: '65Q71Q' }, 'hisense');

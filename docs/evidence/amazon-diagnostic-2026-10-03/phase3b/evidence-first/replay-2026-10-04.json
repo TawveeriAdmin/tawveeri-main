@@ -1,5 +1,5 @@
 {
- "date": "2026-10-04T17:57:57.329Z",
+ "date": "2026-10-05T02:44:42.167Z",
  "categories": [
   "tv",
   "vacuum"
@@ -9,38 +9,79 @@
  "limit": "cannot show comparisons recovered across groups (needs re-keying = cutover)",
  "tv": {
   "tally": {
-   "groups_multi_store": 182,
-   "comparable_before": 182,
+   "groups_multi_store": 183,
+   "comparable_before": 183,
    "comparable_after": 154,
    "fully_verified": 152,
    "split": 2,
    "partially_verified": 0,
-   "unverified": 28,
+   "unverified": 29,
    "with_different_pair": 18,
-   "with_review_pair": 12
+   "with_review_pair": 13
   },
   "pairs_by_relation": {
    "MATCH_CANDIDATE_STRONG": 406,
    "MATCH_CANDIDATE_MEDIUM": 51,
    "DIFFERENT_VARIANT": 27,
    "DIFFERENT_CONDITION": 0,
-   "REVIEW": 22,
+   "REVIEW": 23,
    "NO_EVIDENCE": 7
   },
   "amazon": {
-   "groups_with_amazon": 73,
+   "groups_with_amazon": 74,
    "verified_inclusion": 59,
    "removed_due_to_conflict": 7,
-   "review_due_to_uncertainty": 5,
+   "review_due_to_uncertainty": 6,
    "no_evidence": 2
   },
   "claims": {
-   "lowest_price_claims_before": 180,
+   "lowest_price_claims_before": 181,
    "retained_verified": 152,
-   "no_longer_supported": 28,
+   "no_longer_supported": 29,
    "in_group_with_different_pair": 18
   },
   "groups": [
+   {
+    "cid": "020271b0-b418-4343-98d7-c5504f6e8c8d",
+    "key": "hisense|75|4k|qled|60",
+    "state": "unverified",
+    "comparable_after": false,
+    "listings": [
+     {
+      "i": 0,
+      "store": "amazon",
+      "title": "Hisense 75 Inch QLED 4K Smart TV, 60 Hz, Dolby Atmos Vision, AI Smooth Mothion & 4K Upscaler, Vidaa, Voice Con",
+      "url": "https://www.amazon.sa/-/en/Hisense-Vision-Mothion-Upscaler-Control/dp/B0H5X1RTXL/ref=sr_1_67?dib=eyJ2IjoiMSJ9.YMf5vslVIakx-IAMwV9exj_aQCvylXv_dQVmgG0rmIE911F2JYSEhm98X8oskRGvD8uk_vGSGWzyrWRqwHPGmEHk7lKkp5zAws7xtALLcv8HKWY4CYXYWiIw8HT_OeqKuZaYwEii9I0cOyMt00hw-ff-uuqFDbxY5X-llp-9XDxKaHxQkkn00ndQX__tHPac-AWlPi3cLk1RgofezeJ9GUIzvqI-Ym0mQeLvk7FY7wkGv8cYlBsl9LEVuKgeXV0kO4l1L8iaosqNGbtydf4-Zo7GQAgp5CGzE8sPifL8dh0.WjKI4niOHg7g4mcuB9s-u_WI1QHrV3yZW037wPvhkhk&dib_tag=se&keywords=%D8%AA%D9%84%D9%81%D8%B2%D9%8A%D9%88%D9%86&qid=1791137138&sr=8-67",
+      "codes": [],
+      "condition": "unknown"
+     },
+     {
+      "i": 1,
+      "store": "noon",
+      "title": "75 Inch QLED 4K Smart TV, 60 Hz, Dolby Atmos Vision, AI Smooth Mothion & 4K Upscaler, Vidaa, Voice Control 75Q",
+      "url": "https://www.noon.com/saudi-en/75-inch-qled-4k-smart-tv-60-hz-dolby-atmos-vision-ai-smooth-mothion-4k-upscaler-vidaa-voice-control-75q612q-black/N70339962V/p/?o=ac7be71d6dde7a7d",
+      "codes": [
+       "75Q612Q@spec.model_number[MEDIUM]"
+      ],
+      "condition": "unknown"
+     }
+    ],
+    "verified": [],
+    "unverified": [
+     0,
+     1
+    ],
+    "pairs": [
+     {
+      "a": 0,
+      "b": 1,
+      "relation": "REVIEW",
+      "reasons": [
+       "trusted code on one side only"
+      ]
+     }
+    ]
+   },
    {
     "cid": "02b30752-ae20-4379-acb7-cd7f8e509017",
     "key": "samsung|MODEL:QA55S90HAUXSA",
@@ -2003,7 +2044,7 @@
      {
       "i": 1,
       "store": "samsung_ksa",
-      "title": "55\" The Frame 4K Samsung Vision AI Smart TV (2025) Ls03f Inch Store Black (QA55LS03FAUXSA)",
+      "title": "55\" The Frame 4K Samsung Vision AI Smart TV (2025) 55\" Black (QA55LS03FAUXSA)",
       "url": "https://www.samsung.com/sa_en/lifestyle-tvs/the-frame/ls03f-55-inch-art-store-black-qa55ls03fauxsa/",
       "codes": [
        "QA55LS03FAUXSA@top.model[HIGH]",
@@ -2379,7 +2420,7 @@
      {
       "i": 2,
       "store": "samsung_ksa",
-      "title": "65\" The Frame LS03HE 4K Samsung Vision AI Smart TV (2026) Inch (QA65LS03HEUXSA)",
+      "title": "65\" The Frame LS03HE 4K Samsung Vision AI Smart TV (2026) 65\" Black (QA65LS03HEUXSA)",
       "url": "https://www.samsung.com/sa_en/lifestyle-tvs/the-frame/ls03he-65-inch-qa65ls03heuxsa/",
       "codes": [
        "QA65LS03HEUXSA@top.model[HIGH]",
@@ -3435,7 +3476,7 @@
      {
       "i": 3,
       "store": "samsung_ksa",
-      "title": "85\" The Frame LS03HE 4K Samsung Vision AI Smart TV (2026) Inch (QA85LS03HEUXSA)",
+      "title": "85\" The Frame LS03HE 4K Samsung Vision AI Smart TV (2026) 85\" Black (QA85LS03HEUXSA)",
       "url": "https://www.samsung.com/sa_en/lifestyle-tvs/the-frame/ls03he-85-inch-qa85ls03heuxsa/",
       "codes": [
        "QA85LS03HEUXSA@top.model[HIGH]",
@@ -5374,7 +5415,7 @@
       "i": 0,
       "store": "amazon",
       "title": "Samsung 77 Inch OLED TV, S85F, 4K, Gaming TV, NQ4 AI Gen2 Processor, 4K AI Upscaling, 120Hz, Dolby Atmos, QA77",
-      "url": "https://www.amazon.sa/-/en/Samsung-Gaming-Processor-Upscaling-QA77S85FAEXSA/dp/B0F9KVSP41/ref=sr_1_6?dib=eyJ2IjoiMSJ9.yRlTlJgzvZUuA0Rv4iJdQDNoZUUiea_GXqnA2nJsXP1X0KrPVjeDPhTBBjzAyr129pxectiJAQnytRgZboMeNMwFC6Wbaz21Iwc8cCcRb4WklH0QrMm1hWROOccP-tY8lxmvz8aDQq-Cyni_AqDtMO8AGAjb7suABIvdz4YM2Wx2Ve26tbyuvSm60tjD-I-kIneJODlCEJY2iMaWDrMKLv1FMqlxdqFkTiS3egrPLX5HKz5lT8VrJDTOEXaop4enCFzc5DyHzPYNj_dc35Hhd3j_0G-NAm_a_9ztDTL3YRA.2ubgNETCmSd2NjG1pCO8ECLFIpbdlWR0wEkirfyBVmY&dib_tag=se&keywords=oled+tv&qid=1790129862&s=electronics&sr=1-6",
+      "url": "https://www.amazon.sa/-/en/Samsung-Gaming-Processor-Upscaling-QA55S85FAEXSA/dp/B0F8VXZKMC/ref=sr_1_79?dib=eyJ2IjoiMSJ9.StZxx8xlNCf4GMpnKuHjmAkbV1JOxpknnRntlz1qLBc8EL-9969kRbFJlu6Ul7M_CUhUiZAUF2F_2j6LAQT8vyCd-E9S1M76rcb3swFp-u6PCzdnvxawZyJxz_oKNYcrn6OJ0sNddD2yReOLPuh1xT3K9zkWyIuSFzxyzrJhnvYZs3BMmX-kh5bNwVK1qZL1tbFppdqPVmWqunpLj-mfpiH7fBe1K0bKnaVPITPbGswHi_gouAhPdmR_h83vXov_zJ5tYR0bXclZkxOCR6VzSM2cAIX1_ZrhN6SrNlUQxXQ.KXdrNcRw72TIij7nP__L4ICJ-jlzAexJVrvZk14I7gQ&dib_tag=se&keywords=%D8%AA%D9%84%D9%81%D8%B2%D9%8A%D9%88%D9%86&qid=1789495723&sr=8-79",
       "codes": [
        "QA77S85FAEXSA@title[MEDIUM]"
       ],
@@ -5972,7 +6013,7 @@
      {
       "i": 2,
       "store": "samsung_ksa",
-      "title": "75\" The Frame LS03HE 4K Samsung Vision AI Smart TV (2026) Inch (QA75LS03HEUXSA)",
+      "title": "75\" The Frame LS03HE 4K Samsung Vision AI Smart TV (2026) 75\" Black (QA75LS03HEUXSA)",
       "url": "https://www.samsung.com/sa_en/lifestyle-tvs/the-frame/ls03he-75-inch-qa75ls03heuxsa/",
       "codes": [
        "QA75LS03HEUXSA@top.model[HIGH]",
@@ -8354,7 +8395,7 @@
      {
       "i": 1,
       "store": "samsung_ksa",
-      "title": "65\" The Frame Pro 4K Samsung Vision AI Smart TV (2025) Ls03fw Inch Black (QA65LS03FWUXSA)",
+      "title": "65\" The Frame Pro 4K Samsung Vision AI Smart TV (2025) 65\" Black (QA65LS03FWUXSA)",
       "url": "https://www.samsung.com/sa_en/lifestyle-tvs/the-frame/ls03fw-65-inch-black-qa65ls03fwuxsa/",
       "codes": [
        "QA65LS03FWUXSA@top.model[HIGH]",
@@ -9690,7 +9731,7 @@
      {
       "i": 1,
       "store": "samsung_ksa",
-      "title": "75\" The Frame Pro 4K Samsung Vision AI Smart TV (2025) Ls03fw Inch Black (QA75LS03FWUXSA)",
+      "title": "75\" The Frame Pro 4K Samsung Vision AI Smart TV (2025) 75\" Black (QA75LS03FWUXSA)",
       "url": "https://www.samsung.com/sa_en/lifestyle-tvs/the-frame/ls03fw-75-inch-black-qa75ls03fwuxsa/",
       "codes": [
        "QA75LS03FWUXSA@top.model[HIGH]",
@@ -12895,7 +12936,7 @@
      {
       "i": 1,
       "store": "samsung_ksa",
-      "title": "Bespoke Jet AI Stick VC with Powerfull Performance, 250W White Yl (VS25C9754QG/YL)",
+      "title": "Bespoke Jet AI Stick VC with Powerfull Performance, 250W Black (VS25C9754QG/YL)",
       "url": "https://www.samsung.com/sa_en/vacuum-cleaners/stick/bespoke-jet-ai-stick-vc-with-powerfull-performance-white-vs25c9754qg-yl/",
       "codes": [
        "VS25C9754QGYL@top.model[HIGH]",
@@ -14386,8 +14427,8 @@
      {
       "i": 3,
       "store": "najm",
-      "title": "هيتاشي مكنسة برميل - 21 ليتر - 2200 واط - أحمر - CV-960F",
-      "url": "https://najm.store/هيتاشي-مكنسة-برميل-21-ليتر-2200-واط-أحمر-cv-960f/p1954441502",
+      "title": "هيتاشي مكنسة برميل - 21 ليتر - 2200 واط - ذهبي - CV-970Y SS220 TG",
+      "url": "https://najm.store/هيتاشي-مكنسة-برميل-21-ليتر-2200-واط/p1959996046",
       "codes": [],
       "condition": "unknown"
      }
