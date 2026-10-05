@@ -74,3 +74,10 @@ describe('Algolia (legacy) hits also leave through /go', () => {
     expect(routeSrc).toMatch(/return withLegacyGoExits\(products\.filter/);
   });
 });
+
+describe('an out-of-stock current offer cannot win "cheapest" (executive closure, 2026-10-05)', () => {
+  it('latest_fresh marks a store with an out-of-stock CURRENT offer (observed no earlier than the chosen price row) as not fresh — coverage is untouched', () => {
+    expect(builderSrc).toMatch(/cn\.payload->>'_availability' = 'out_of_stock'\s+and cn\.observed_at >= l\.observed_at/);
+    expect(builderSrc).toMatch(/\) as is_fresh/);
+  });
+});

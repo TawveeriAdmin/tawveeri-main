@@ -365,7 +365,19 @@ async function main() {
     ),
     latest_fresh as (
       select l.*,
-             l.effective_observed_at >= (now() - ($1 || ' hours')::interval) as is_fresh
+             -- COMMERCIAL TRUTH (2026-10-05, Amazon executive closure): a store whose CURRENT offer is out of stock — observed no
+             -- earlier than the price row chosen here — cannot WIN "cheapest", whatever freshness that row borrowed from store_obs.
+             -- Measured: 49 projection rows named an out-of-stock store cheapest on a historical price (Amazon 13, TV 12, …) while the
+             -- compare page already excluded the offer. The store stays in the price arrays, so store_count / has_comparison (coverage)
+             -- are unchanged; only the price claim moves — the same eligibility rule getComparison applies (ADR-388).
+             (l.effective_observed_at >= (now() - ($1 || ' hours')::interval))
+             and not exists (
+               select 1 from tps_current_offers cn
+               join canonical_products cc on cc.tps_identity_key = cn.identity_key
+               where cc.id = l.canonical_product_id and cn.store_id = l.store_id and cn.status = 'valid'
+                 and cn.payload->>'_availability' = 'out_of_stock'
+                 and cn.observed_at >= l.observed_at
+             ) as is_fresh
       from latest l
     ),
     agg as (
