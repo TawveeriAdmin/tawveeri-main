@@ -84,5 +84,27 @@ export function normalizeExitUrl(url: string | null | undefined, locale: 'ar' | 
     return `https://www.almanea.sa/${loc}/product/p-${almaneaDev[1]}`;
   }
 
+  const amazonAd = amazonSponsoredToProduct(url);
+  if (amazonAd) return amazonAd;
+
   return url;
+}
+
+/**
+ * Amazon sponsored-ad click URLs (`/sspa/click?…&url=<encoded product path>`) are Amazon Ads tracking endpoints, not the product page:
+ * a click through one is an advertiser click, its result depends on the ad auction, and it is not a Special Link Amazon provides.
+ * Measured 2026-10-05: 88 of 7,596 priced storefront Amazon rows hold one, and the product path inside `url=` names the ASIN in 88/88.
+ * The ASIN IS the variant on Amazon, so `/dp/<ASIN>` is the same product by construction — never a guess. If the inner path carries no
+ * ASIN the URL is returned untouched by the caller (unknown beats incorrect).
+ */
+export function amazonSponsoredToProduct(url: string): string | null {
+  try {
+    const u = new URL(url);
+    if (!/(^|\.)amazon\.[a-z.]+$/i.test(u.hostname) || !/\/sspa\/click\/?$/i.test(u.pathname)) return null;
+    const inner = decodeURIComponent(u.searchParams.get('url') || '');
+    const asin = /\/(?:dp|gp\/product)\/([A-Z0-9]{10})(?:[/?]|$)/i.exec(inner)?.[1];
+    return asin ? `${u.protocol}//${u.host}/dp/${asin.toUpperCase()}` : null;
+  } catch {
+    return null;
+  }
 }

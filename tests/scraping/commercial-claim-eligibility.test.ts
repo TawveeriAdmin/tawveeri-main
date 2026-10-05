@@ -8,6 +8,7 @@ import fs from 'fs';
 import path from 'path';
 import { isFreshObservation } from '@/lib/intelligence/evidence-engine';
 import { isCompatOnlyMention, isAccessoryShapedQuery, isOffGradeTitle } from '@/app/api/search/route';
+import { amazonSponsoredToProduct, normalizeExitUrl } from '@/lib/retailers/exit-url';
 
 const read = (...p: string[]) => fs.readFileSync(path.join(process.cwd(), ...p), 'utf8');
 const routeSrc = read('src', 'app', 'api', 'search', 'route.ts');
@@ -99,5 +100,20 @@ describe('new is not refurbished (executive closure, 2026-10-05)', () => {
   it('the pick pool drops off-grade listings unless the query asks for one', () => {
     expect(routeSrc).toMatch(/const wantsOffGrade = isOffGradeTitle\(rawQuery\)/);
     expect(routeSrc).toMatch(/wantsOffGrade \? ranked : ranked\.filter/);
+  });
+});
+
+describe('Amazon sponsored-ad click URLs never reach the shopper as a destination (executive closure, 2026-10-05)', () => {
+  const sspa = 'https://www.amazon.sa/-/en/sspa/click?ie=UTF8&spc=MTo1ODU3&url=%2FPortable-Conditioner-Cooling%2Fdp%2FB0ABCDE123%2Fref%3Dsspa_dk_detail_0%3Fpsc%3D1';
+  it('resolves to the plain /dp/<ASIN> of the ad\'s own product', () => {
+    expect(amazonSponsoredToProduct(sspa)).toBe('https://www.amazon.sa/dp/B0ABCDE123');
+    expect(normalizeExitUrl(sspa)).toBe('https://www.amazon.sa/dp/B0ABCDE123');
+  });
+  it('leaves everything else untouched: normal PDPs, other hosts, ad URLs without an ASIN', () => {
+    const pdp = 'https://www.amazon.sa/-/en/Some-Product/dp/B0H6Y5NTKZ/ref=sr_1_61?dib=abc';
+    expect(amazonSponsoredToProduct(pdp)).toBeNull();
+    expect(normalizeExitUrl(pdp)).toBe(pdp);
+    expect(amazonSponsoredToProduct('https://example.com/sspa/click?url=%2Fdp%2FB0ABCDE123')).toBeNull();
+    expect(amazonSponsoredToProduct('https://www.amazon.sa/-/en/sspa/click?url=%2Fno-asin-here')).toBeNull();
   });
 });
