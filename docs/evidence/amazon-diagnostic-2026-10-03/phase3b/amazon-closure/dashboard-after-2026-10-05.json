@@ -1,0 +1,177 @@
+{
+ "at": "2026-10-05T17:13:08.193Z",
+ "days": 7,
+ "tps": {
+  "valid": 1342,
+  "priced": 1297,
+  "claim_eligible": 732,
+  "reference_only_stale": 565,
+  "current_null_price": 45,
+  "unknown_age": 0
+ },
+ "hot_set_freshness": {
+  "hot_total": 468,
+  "h24": 104,
+  "h48": 188,
+  "h168": 338,
+  "over168": 130,
+  "unknown": 0
+ },
+ "legacy": {
+  "visible": 4456,
+  "no_observation_time": 3270,
+  "search_url_with_session_params": 3887
+ },
+ "identity": {
+  "amazon_priced_listings": 1285,
+  "review": 27,
+  "reject": 0,
+  "no_flag": 1267
+ },
+ "commercial": {
+  "amazon_cheapest_rows": 640,
+  "comparison_participation": 421,
+  "amazon_priced_canonicals": 1291
+ },
+ "unavailable_or_null_in_cheapest": {
+  "n": 0,
+  "tv": 0
+ },
+ "asin_overlap": {
+  "legacy_asins": 6928,
+  "tps_asins": 1235,
+  "overlap": 1102
+ },
+ "funnel_window": {
+  "raw_requests": 5,
+  "test": 0,
+  "bot_ua": 0,
+  "human_evidenced": 0,
+  "tagged": 4,
+  "tagged_human": 0,
+  "through_go_ps": 0
+ },
+ "funnel_since_adr398": {
+  "raw_requests": 1,
+  "test": 0,
+  "bot_ua": 0,
+  "human_evidenced": 0,
+  "tagged": 0,
+  "tagged_human": 0,
+  "through_go_ps": 0
+ },
+ "partner": {
+  "reported_orders": 0,
+  "shipped_qualifying": 0,
+  "commission_sar": 0
+ },
+ "live_probes": [
+  {
+   "query": "ps5",
+   "card": null
+  },
+  {
+   "query": "nintendo switch",
+   "card": null
+  },
+  {
+   "query": "airpods pro",
+   "card": {
+    "store": "أمازون السعودية",
+    "tps": true,
+    "observed": true
+   }
+  },
+  {
+   "query": "samsung tv 65",
+   "card": {
+    "store": "أمازون السعودية",
+    "tps": true,
+    "observed": true
+   }
+  },
+  {
+   "query": "sony wh-1000xm5",
+   "card": null
+  },
+  {
+   "query": "iphone 15",
+   "card": {
+    "store": "إكسترا",
+    "tps": true,
+    "observed": true
+   }
+  },
+  {
+   "query": "dyson",
+   "card": null
+  },
+  {
+   "query": "gopro",
+   "card": null
+  },
+  {
+   "query": "mac book air",
+   "card": null
+  },
+  {
+   "query": "air fryer",
+   "card": null
+  }
+ ],
+ "summary": {
+  "inventory": {
+   "amazon_valid_offers": 1342,
+   "priced": "1297/1342 (97%)",
+   "claim_eligible_le168h": "732/1342 (55%)",
+   "reference_only_stale": "565/1342 (42%)",
+   "current_null_price": "45/1342 (3%)",
+   "unknown_age_tps": "0/1342 (0%)",
+   "legacy_visible_without_observation_time": "3270/4456 (73%)",
+   "hot_set": {
+    "total": 468,
+    "le24h": "104/468 (22%)",
+    "le48h": "188/468 (40%)",
+    "le168h": "338/468 (72%)",
+    "over168h": "130/468 (28%)",
+    "unknown": "0/468 (0%)"
+   }
+  },
+  "identity": {
+   "amazon_priced_listings": 1285,
+   "review": "27/1285 (2%)",
+   "reject": "0/1285 (0%)",
+   "no_flag": "1267/1285 (99%)"
+  },
+  "commercial": {
+   "amazon_cheapest_rows": 640,
+   "comparison_participation": "421/1291 (33%)",
+   "unavailable_or_null_price_store_named_cheapest": 0
+  },
+  "funnel": {
+   "window_days": 7,
+   "raw_requests": 5,
+   "human_evidenced": "0/5 (0%)",
+   "tagged": "4/5 (80%)",
+   "tagged_human": "0/0",
+   "through_go_ps": "0/5 (0%)",
+   "since_adr398": {
+    "raw_requests": 1,
+    "human_evidenced": "0/1 (0%)",
+    "tagged": "0/1 (0%)",
+    "tagged_human": "0/0"
+   },
+   "partner_reported_orders": 0,
+   "shipped_qualifying_orders": 0,
+   "commission_sar": 0
+  },
+  "live": {
+   "queries": 10,
+   "cards": 3,
+   "cards_without_observation_time": 0,
+   "accessory_picks_for_device_queries": 0,
+   "off_grade_picks": 0,
+   "store_filter_amazon_restricts_results": true
+  }
+ }
+}
