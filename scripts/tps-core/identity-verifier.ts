@@ -71,7 +71,7 @@ const readRegion = (t: string): "non_ksa" | "ksa" | null =>
 
 /** Unit-like or descriptive segments that disqualify a hyphen/slash token from being a manufacturer code
  *  ("55-INCH-4K", "DUAL-SIM-4G-128GB", "1000RPM", "18000BTU" are specs, not codes). */
-const UNIT_SEGMENT = /^(\d+(?:\.\d+)?)(GB|TB|KG|HZ|MM|CM|MAH|W|L|K|P|MP|BTU|INCH|RPM|ML|KW|V|A|X|YEARS?|YR)$/;
+const UNIT_SEGMENT = /^(\d+(?:\.\d+)?)(GB|TB|KG|HZ|MM|CM|MAH|W|L|K|P|MP|BTU|INCH|RPM|ML|KW|V|A|X|YEARS?|YR|NITS?|WATTS?|LTRS?|DB|PPI|FPS)$/;   // NITS: "HDR 3000nits" was read as a model code and conflicted with a real code (shadow audit 2026-10-05)
 const WORD_SEGMENT = new Set(["INCH", "SMART", "TV", "DUAL", "SIM", "WIFI", "UHD", "FHD", "HD", "HDR", "LED", "OLED", "QLED", "RAM", "ROM", "SSD", "HDD", "USB", "HDMI", "BLUETOOTH", "ANDROID", "IOS", "GLOBAL", "VERSION", "BLACK", "WHITE", "SILVER", "GREY", "GRAY", "BLUE", "RED", "GOLD", "GREEN", "PINK", "PRO", "MAX", "PLUS", "ULTRA", "LITE", "MINI", "NEW", "INVERTER", "DIGITAL", "SERIES", "MODEL", "NO"]);
 
 /** A manufacturer-looking code: ≥6 chars, letters AND ≥3 digits, no spaces; unit/resolution/spec tokens excluded.

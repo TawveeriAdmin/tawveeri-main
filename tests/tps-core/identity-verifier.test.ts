@@ -262,3 +262,13 @@ describe('identity verifier — one-sided silence on phones (founder 2026-10-04)
     expect(v('Samsung Galaxy A26, 5G, 6+128 GB', 'Samsung Galaxy A26 5G 256GB Storage 8GB RAM').outcome).toBe('reject');
   });
 });
+
+describe('unit values are not model codes (shadow audit 2026-10-05)', () => {
+  it('"HDR 3000nits" in a TCL title does not conflict with a real LG code', () => {
+    const v = verifyPair(
+      { title: 'TCL Q7C-Series | 4K Smart TV QD Mini LED Google TV, HDR 3000nits, 144Hz Native Refresh Rate', category: 'tv' },
+      { title: 'LG, 75 inch, Mini LED 4K Smart TV, AI QNED86, 144 Hz', category: 'tv', structured: { model: '75QNED86A6A' } },
+    );
+    expect(v.reasons.join(' ')).not.toMatch(/3000NITS/);
+  });
+});
