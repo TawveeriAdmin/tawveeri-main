@@ -1,0 +1,308 @@
+{
+  "fetch_date": "2026-10-04",
+  "groups": [
+    {
+      "id": "T04",
+      "listings": [
+        {
+          "index": 1,
+          "merchant": "eXtra",
+          "stated_model_in_source": "modelNumber: 65T6D",
+          "pdp": {
+            "url": "https://www.extra.com/en-sa/electronics/television/qled-tv/tcl-65-inch-qled-aipq-pro-smart-tv-hdmi-3-usb1/p/100511512",
+            "fetched": true,
+            "model_or_mpn_shown": "65T6D",
+            "brand_shown": "TCL",
+            "key_specs": "65in QLED, 60 Hz, 3840x2160, Google TV, HDMI 3 / USB 1 (title)",
+            "notes": "Condition NewCondition; seller Extra Stores."
+          },
+          "manufacturer_model_resolved": "65T6D",
+          "manufacturer_page": {
+            "url": "https://www.tcl.com/sa/en/tvs/85t6d",
+            "model": "T6D Premium QLED (sizes 85T6D, 75T6D, 65T6D, 55T6D, 50T6D, 43T6D)",
+            "key_specs": "HVA panel 5000:1, 93% DCI-P3, AiPQ, Google TV, Dolby Vision/Atmos; 2.0 speakers below 85in. Third-party: 3 HDMI, 60Hz, 1446x833x73mm (https://www.smartprix.com/tvs/tcl-t6d-65-inch-ultra-hd-4k-smart-qled-tv-ppd1f5xa00vn)"
+          },
+          "warnings": ["Merchant brand field empty in source data; PDP shows TCL."]
+        },
+        {
+          "index": 2,
+          "merchant": "Amazon.sa",
+          "stated_model_in_source": "title: 65T6D (model field is a title fragment)",
+          "pdp": {
+            "url": "https://www.amazon.sa/dp/B0H7Q8GW13",
+            "fetched": true,
+            "model_or_mpn_shown": "Item model number 65T6D",
+            "brand_shown": "TCL",
+            "key_specs": "65in QLED, 4K, Google TV, HDR10+, Dolby Vision, DTS Virtual:X; refresh not shown on PDP",
+            "notes": "Original long URL returned HTTP 503; canonical /dp/ URL fetched. Condition New; sold by Amazon.sa."
+          },
+          "manufacturer_model_resolved": "65T6D",
+          "manufacturer_page": {
+            "url": "https://www.tcl.com/sa/en/tvs/85t6d",
+            "model": "T6D series incl. 65T6D",
+            "key_specs": "HVA, 93% DCI-P3, Google TV"
+          },
+          "warnings": ["Source brand field 'Unknown'; PDP shows TCL."]
+        },
+        {
+          "index": 3,
+          "merchant": "Jarir",
+          "stated_model_in_source": "title: P7L (series only); model field is title fragment",
+          "pdp": {
+            "url": "https://www.jarir.com/sa-en/tcl-p7l-smart-tv-682027.html",
+            "fetched": true,
+            "model_or_mpn_shown": "65P7L",
+            "brand_shown": "TCL",
+            "key_specs": "65in QLED, 60 Hz, 4K, black, 36 months agent warranty",
+            "notes": "Jarir SKU 682027 is a retailer id, not identity evidence."
+          },
+          "manufacturer_model_resolved": "65P7L",
+          "manufacturer_page": {
+            "url": "https://www.tcl.com/sa/en/tvs/85p7l",
+            "model": "P7L Premium QLED (85P7L page; 75/65/55/50/43 sizes)",
+            "key_specs": "HVA panel, 93% DCI-P3 QD, AiPQ, Google TV; ONKYO 2.1 only on 85in. Support page for 65P7L: https://www.tcl.com/eastafrica/en/support-tv/model/65p7l. Third-party: 4 HDMI, 1444x831x69.5mm (https://alta.ge/en/tv/tcl-65p7l-p48987)"
+          },
+          "warnings": []
+        },
+        {
+          "index": 4,
+          "merchant": "Noon",
+          "stated_model_in_source": "title: 65P7L",
+          "pdp": {
+            "url": "https://www.noon.com/saudi-en/65-inch-4k-qled-google-smart-tv-60hz-colorful-quantum-crystal-hva-panel-dolby-vision-atmos-93-dci-p3-aipq-slim-uni-body-design-2026-model-3-years-warranty-65p7l-black/N70356476V/p/",
+            "fetched": false,
+            "model_or_mpn_shown": "",
+            "brand_shown": "",
+            "key_specs": "",
+            "notes": "Fetch timed out (60s). Title states 65P7L, 60Hz, HVA, 93% DCI-P3, 2026 model; consistent with TCL P7L page."
+          },
+          "manufacturer_model_resolved": "65P7L",
+          "manufacturer_page": {
+            "url": "https://www.tcl.com/sa/en/tvs/85p7l",
+            "model": "P7L series",
+            "key_specs": "HVA, 93% DCI-P3, Google TV"
+          },
+          "warnings": ["PDP not verified; code taken from title only."]
+        }
+      ],
+      "alias_evidence": [
+        {
+          "code_a": "T6D",
+          "code_b": "P7L",
+          "statement": "No alias found. TCL Saudi lists T6D and P7L as separate series in its 'What's New' nav (/sa/en/tvs/85t6d and /sa/en/tvs/85p7l).",
+          "url": "https://www.tcl.com/sa/en/qled-tv",
+          "date": "2026-10-04",
+          "confidence": "high"
+        }
+      ],
+      "pairs": [
+        {"a": 1, "b": 2, "relation": "SAME_EXACT", "basis": "Both PDPs show TCL model 65T6D (eXtra modelNumber, Amazon item model number), and the code is on TCL's Saudi T6D page. No spec conflict.", "evidence": ["https://www.extra.com/en-sa/electronics/television/qled-tv/tcl-65-inch-qled-aipq-pro-smart-tv-hdmi-3-usb1/p/100511512", "https://www.amazon.sa/dp/B0H7Q8GW13", "https://www.tcl.com/sa/en/tvs/85t6d"], "confidence": "high"},
+        {"a": 1, "b": 3, "relation": "DIFFERENT", "basis": "The codes 65T6D and 65P7L are different. TCL Saudi publishes them as separate series pages. Third-party sources show 3 HDMI for T6D vs 4 for P7L, and different dimensions. No alias statement was found.", "evidence": ["https://www.tcl.com/sa/en/tvs/85t6d", "https://www.tcl.com/sa/en/tvs/85p7l", "https://www.jarir.com/sa-en/tcl-p7l-smart-tv-682027.html", "https://alta.ge/en/tv/tcl-65p7l-p48987"], "confidence": "high"},
+        {"a": 1, "b": 4, "relation": "DIFFERENT", "basis": "Same reason as 1-3: the codes 65T6D and 65P7L are different series on TCL Saudi, and no alias was found.", "evidence": ["https://www.tcl.com/sa/en/tvs/85t6d", "https://www.tcl.com/sa/en/tvs/85p7l"], "confidence": "high"},
+        {"a": 2, "b": 3, "relation": "DIFFERENT", "basis": "The codes 65T6D and 65P7L are different TCL series. No alias was found.", "evidence": ["https://www.amazon.sa/dp/B0H7Q8GW13", "https://www.jarir.com/sa-en/tcl-p7l-smart-tv-682027.html", "https://www.tcl.com/sa/en/qled-tv"], "confidence": "high"},
+        {"a": 2, "b": 4, "relation": "DIFFERENT", "basis": "The codes 65T6D and 65P7L are different TCL series. No alias was found.", "evidence": ["https://www.amazon.sa/dp/B0H7Q8GW13", "https://www.tcl.com/sa/en/tvs/85p7l"], "confidence": "high"},
+        {"a": 3, "b": 4, "relation": "SAME_EXACT", "basis": "Jarir's PDP shows model 65P7L and Noon's title shows 65P7L. The code is on TCL's P7L series page. The specs agree (QLED, 60Hz, 4K). Noon's PDP itself was not verified.", "evidence": ["https://www.jarir.com/sa-en/tcl-p7l-smart-tv-682027.html", "https://www.tcl.com/sa/en/tvs/85p7l", "https://www.tcl.com/eastafrica/en/support-tv/model/65p7l"], "confidence": "medium"}
+      ]
+    },
+    {
+      "id": "T06",
+      "listings": [
+        {
+          "index": 1,
+          "merchant": "Amazon.sa",
+          "stated_model_in_source": "title: 85T8D (model field '85T' is a fragment)",
+          "pdp": {
+            "url": "https://www.amazon.sa/dp/B0H1M7X5R7",
+            "fetched": true,
+            "model_or_mpn_shown": "Item model number 85T8D",
+            "brand_shown": "TCL",
+            "key_specs": "85in QD-Mini LED, 144Hz, 4K, Google TV, Onkyo 2.1, 2026 model year",
+            "notes": "Condition New; sold by Amazon.sa. Title marketing text is nearly identical to Noon's C6K title, so it is not identity evidence."
+          },
+          "manufacturer_model_resolved": "85T8D",
+          "manufacturer_page": {
+            "url": "https://www.lcd-compare.com/televiseur-TCL85T8D-TCL-85T8D.htm",
+            "model": "T8D 2026 series (55/65/75/85/98T8D)",
+            "key_specs": "No TCL Saudi page found (tcl.com/sa/en/tvs/85t8d returns 404). Third-party: 144Hz native, HDMI '2x HDMI 144Hz, 2x HDMI 60Hz', Onkyo 2.1 40W, launched ~April 2026, zones unspecified. Retailer: 'up to 512 zones', 144Hz (https://www.komplett.no/product/1338658/tv-lyd-bilde/tv-er/over-80-tommer-tv/tcl-t8d-85-4k-qd-mini-led-smart-tv-2026). Lulu KSA sells 98T8D as its own model (https://gcc.luluhypermarket.com/ar-sa/tcl-t8d-98-inches-4k-smart-qd-mini-led-tv-2026-98t8d/p/2709108/)"
+          },
+          "warnings": ["No manufacturer page found; T8D specs come only from third parties.", "The EU retailer Coolblue lists the T8D at 100Hz; the Amazon.sa PDP says 144Hz."]
+        },
+        {
+          "index": 2,
+          "merchant": "Noon",
+          "stated_model_in_source": "title: 85C6K",
+          "pdp": {
+            "url": "https://www.noon.com/saudi-en/television-85-inch-smart-tv-4k-qd-mini-led-colorful-quantum-crystal-hdr-10-gaming-google-tv-144hz-native-refresh-rate-onkyo-2-1-hi-fi-dolby-atmos-ai-mode-2025-model-85c6k-black/N70206861V/p/",
+            "fetched": false,
+            "model_or_mpn_shown": "",
+            "brand_shown": "",
+            "key_specs": "",
+            "notes": "Fetch timed out, and the short URL /saudi-en/N70206861V/p/ also timed out. Title states 85C6K, 2025 model, 144Hz, ONKYO 2.1."
+          },
+          "manufacturer_model_resolved": "85C6K",
+          "manufacturer_page": {
+            "url": "https://www.tcl.com/gulf/en/news/tcl-unveils-the-new-c6k-qd-mini-led",
+            "model": "C6K QD-Mini LED (TCL Gulf press release, 7 May 2025; sizes 50-98in)",
+            "key_specs": "Over 512 local dimming zones, 144Hz native, ONKYO 2.1, matte panel on 85/98in, Google TV"
+          },
+          "warnings": ["PDP not verified; code taken from title only."]
+        },
+        {
+          "index": 3,
+          "merchant": "eXtra",
+          "stated_model_in_source": "modelNumber: 85C6K PRO",
+          "pdp": {
+            "url": "https://www.extra.com/en-sa/electronics/television/miniled/tcl-85-inch-miniled-aipq-pro-144-hz/p/100517292",
+            "fetched": true,
+            "model_or_mpn_shown": "85C6K PRO",
+            "brand_shown": "TCL",
+            "key_specs": "85in MiniLED, 144Hz, 3840x2160, Google TV, 4 HDMI",
+            "notes": "Condition NewCondition; seller Extra Stores."
+          },
+          "manufacturer_model_resolved": "85C6K PRO",
+          "manufacturer_page": {
+            "url": "https://www.tcl.com/sa/en/tvs/98c6k-pro",
+            "model": "C6K Pro (98/85/75/65/55/50 C6K Pro)",
+            "key_specs": "Matte HVA on 98/85in, up to 512 zones (98in), 144Hz native, AiPQ Pro, ONKYO 2.1, Google TV. Third-party: 2026, 85in ≥420 zones, 4x HDMI 2.1 (https://www.lcd-compare.com/serie-tcl-c6k-pro-2026-liste-534.htm)"
+          },
+          "warnings": []
+        }
+      ],
+      "alias_evidence": [
+        {"code_a": "C6K", "code_b": "C6K Pro", "statement": "Not aliases. TCL Saudi has a separate 'C6K Pro' series page. C6K was launched in the Gulf on 7 May 2025, and C6K Pro is listed as a 2026 series.", "url": "https://www.tcl.com/sa/en/tvs/98c6k-pro", "date": "2026-10-04", "confidence": "high"},
+        {"code_a": "T8D", "code_b": "C6K Pro", "statement": "No alias statement found. lcd-compare presents T8D as its own 'Série TCL QD Mini-LED T8D 2026' and gives a different HDMI layout ('2x HDMI 144Hz, 2x HDMI 60Hz' vs four HDMI 2.1 on C6K Pro).", "url": "https://www.lcd-compare.com/televiseur-TCL85T8D-TCL-85T8D.htm", "date": "2026-10-04", "confidence": "medium"},
+        {"code_a": "C6K", "code_b": "C61K / C69K", "statement": "A third party (Notebookcheck search snippet) calls C6K 'known in some markets as the C61K or the C69K'. This does not involve T8D or C6K Pro.", "url": "https://www.notebookcheck.net/TCL-C6K-QD-MiniLED-TV-with-gaming-features-now-available.1033790.0.html", "date": "2026-10-04", "confidence": "low"}
+      ],
+      "pairs": [
+        {"a": 1, "b": 2, "relation": "DIFFERENT", "basis": "The codes 85T8D (2026 series) and 85C6K (2025 series, TCL Gulf press release) are different. No manufacturer alias statement was found. The near-identical marketing titles are WEAK evidence and are not used.", "evidence": ["https://www.amazon.sa/dp/B0H1M7X5R7", "https://www.tcl.com/gulf/en/news/tcl-unveils-the-new-c6k-qd-mini-led", "https://www.lcd-compare.com/televiseur-TCL85T8D-TCL-85T8D.htm"], "confidence": "medium"},
+        {"a": 1, "b": 3, "relation": "DIFFERENT", "basis": "The codes 85T8D and 85C6K PRO are different. Both are 2026 QD-Mini LED 144Hz sets, but no alias evidence was found. A third party reports a different HDMI layout (T8D 2x144Hz + 2x60Hz vs C6K Pro 4x HDMI 2.1).", "evidence": ["https://www.amazon.sa/dp/B0H1M7X5R7", "https://www.extra.com/en-sa/electronics/television/miniled/tcl-85-inch-miniled-aipq-pro-144-hz/p/100517292", "https://www.tcl.com/sa/en/tvs/98c6k-pro", "https://www.lcd-compare.com/televiseur-TCL85T8D-TCL-85T8D.htm", "https://www.lcd-compare.com/serie-tcl-c6k-pro-2026-liste-534.htm"], "confidence": "medium"},
+        {"a": 2, "b": 3, "relation": "DIFFERENT", "basis": "PRO is a distinct product. TCL Saudi lists 'C6K Pro' as its own series (2026), separate from C6K (Gulf launch May 2025). Third-party specs differ: 85in C6K Pro ≥420 zones vs the C6K's 512+ zone claim. Noon's title also says '2025 Model'.", "evidence": ["https://www.tcl.com/sa/en/tvs/98c6k-pro", "https://www.tcl.com/gulf/en/news/tcl-unveils-the-new-c6k-qd-mini-led", "https://www.lcd-compare.com/serie-tcl-c6k-pro-2026-liste-534.htm"], "confidence": "high"}
+      ]
+    },
+    {
+      "id": "T07",
+      "listings": [
+        {
+          "index": 1,
+          "merchant": "Noon",
+          "stated_model_in_source": "title: 55U6Q PRO",
+          "pdp": {
+            "url": "https://www.noon.com/saudi-en/55-inch-mini-led-qled-4k-smart-tv-55u6q-pro-quantum-dot-hsr120hz-ai-engine-dolby-vision-atmos-hdr10-built-in-subwoofer-filmmaker-mode-8-years-os-update-55u6q-pro-black/N70305737V/p/",
+            "fetched": false,
+            "model_or_mpn_shown": "",
+            "brand_shown": "",
+            "key_specs": "",
+            "notes": "Fetch timed out. Title states 55U6Q Pro twice, HSR120Hz, built-in subwoofer."
+          },
+          "manufacturer_model_resolved": "55U6Q PRO",
+          "manufacturer_page": {
+            "url": "https://hisense.co.za/products/hisense-u6q-pro-55-mini-led-smart-tv/",
+            "model": "55U6Q PRO",
+            "key_specs": "60Hz native, HSR 120, 400 nits, VIDAA, 3 HDMI (eARC on HDMI 3), built-in subwoofer, Dolby Atmos (Hisense South Africa official site; no Hisense KSA page found)"
+          },
+          "warnings": ["PDP not verified; code taken from title only.", "The manufacturer page is Hisense South Africa, not KSA."]
+        },
+        {
+          "index": 2,
+          "merchant": "eXtra",
+          "stated_model_in_source": "modelNumber: 55U6Q PRO",
+          "pdp": {
+            "url": "https://www.extra.com/en-sa/electronics/television/miniled/hisense-55-inch-mini-led-4k-smart-8-years-os-update-ai/p/100473936",
+            "fetched": true,
+            "model_or_mpn_shown": "55U6Q PRO",
+            "brand_shown": "HISENSE",
+            "key_specs": "55in, 4K, 60Hz, VIDAA, 3 HDMI, Dolby Atmos",
+            "notes": "Condition New; seller Extra Stores."
+          },
+          "manufacturer_model_resolved": "55U6Q PRO",
+          "manufacturer_page": {
+            "url": "https://hisense.co.za/products/hisense-u6q-pro-55-mini-led-smart-tv/",
+            "model": "55U6Q PRO",
+            "key_specs": "60Hz native / HSR120, VIDAA, 3 HDMI"
+          },
+          "warnings": []
+        }
+      ],
+      "alias_evidence": [
+        {"code_a": "55U6Q PRO", "code_b": "55U6Q", "statement": "Not applicable: both listings carry the PRO code. The Hisense ZA page covers only the PRO variants (55/65). No non-Pro listing is in this group.", "url": "https://hisense.co.za/products/hisense-u6q-pro-55-mini-led-smart-tv/", "date": "2026-10-04", "confidence": "medium"}
+      ],
+      "pairs": [
+        {"a": 1, "b": 2, "relation": "SAME_EXACT", "basis": "Both sides carry Hisense 55U6Q PRO, including the PRO suffix: eXtra in its structured modelNumber (shown on the PDP) and Noon in its title. The code exists on the Hisense official page. The specs agree (60Hz panel / HSR120, VIDAA, 3 HDMI). Noon's PDP was not verified.", "evidence": ["https://www.extra.com/en-sa/electronics/television/miniled/hisense-55-inch-mini-led-4k-smart-8-years-os-update-ai/p/100473936", "https://hisense.co.za/products/hisense-u6q-pro-55-mini-led-smart-tv/", "https://www.jumbo.ae/hisense-u6q-pro-55-inch-4k-mini-led-tv-55u6q-pro.html"], "confidence": "high"}
+      ]
+    },
+    {
+      "id": "T08",
+      "listings": [
+        {
+          "index": 1,
+          "merchant": "Amazon.sa",
+          "stated_model_in_source": "title: 98Q6C (model field '98Q' is a fragment)",
+          "pdp": {
+            "url": "https://www.amazon.sa/dp/B0H1MCWLLK",
+            "fetched": true,
+            "model_or_mpn_shown": "Item model number 98Q6C",
+            "brand_shown": "TCL",
+            "key_specs": "98in QD-Mini LED, 144Hz native, 4K, Google TV, 2.1 Dolby Atmos",
+            "notes": "Condition New; sold by Amazon.sa. Model year not shown."
+          },
+          "manufacturer_model_resolved": "98Q6C",
+          "manufacturer_page": {
+            "url": "https://www.alternate.de/TCL/98Q6C-Mini-LED-QLED-Fernseher/html/product/100195987",
+            "model": "Q6C (European series name; no TCL official Q6C page reachable: tcl.com/uk/en/tvs/q6c and tcl.com/gulf/en/support-tv/model/98q6c both 404)",
+            "key_specs": "Third-party: 98in QD-Mini LED, 144Hz panel, 512 zones, ONKYO 2.1, Google TV, matte HVA, 2025 (https://www.euronics.co.uk/catalogue/tv-and-entertainment/tvs/80-inch-plus-televisions/80-inch-plus-led-televisions/80-inch-plus-led-4k-uhd-televisions/tcl-98q6c-uk-98-4k-qd-mini-led-uhd-smart-google-tv/p/TCL98Q6CUK)"
+          },
+          "warnings": ["No TCL Middle East page found for Q6C; the code appears to be a European series name."]
+        },
+        {
+          "index": 2,
+          "merchant": "eXtra",
+          "stated_model_in_source": "modelNumber: 98C8L",
+          "pdp": {
+            "url": "https://www.extra.com/en-sa/electronics/television/led/tcl-98-inch-miniled-aipq-pro-smart-tv-hdmi-3-usb1-144hz/p/100511700",
+            "fetched": true,
+            "model_or_mpn_shown": "98C8L",
+            "brand_shown": "TCL",
+            "key_specs": "98in MiniLED, 144Hz, 3840x2160, Google TV, HDMI 3",
+            "notes": "Condition NewCondition; seller Extra Stores."
+          },
+          "manufacturer_model_resolved": "98C8L",
+          "manufacturer_page": {
+            "url": "https://www.tcl.com/sa/en/tvs/c8l",
+            "model": "C8L SQD-Mini LED (98C8L, 85C8L, 75C8L, 65C8L)",
+            "key_specs": "4,032 dimming zones (98/85in), 144Hz native (288Hz VRR), up to 6,000 nits, Bang & Olufsen audio, Google TV"
+          },
+          "warnings": ["Manufacturer page does not list an HDMI count; eXtra says 3."]
+        },
+        {
+          "index": 3,
+          "merchant": "Noon",
+          "stated_model_in_source": "title: 98Q6C/98C6K (dual code)",
+          "pdp": {
+            "url": "https://www.noon.com/saudi-en/98-inch-mini-led-4k-smart-tv-hdmi-4-usb1-120hz-3-years-warranty-98q6c-98c6k-black/N70173181V/p/",
+            "fetched": false,
+            "model_or_mpn_shown": "",
+            "brand_shown": "",
+            "key_specs": "",
+            "notes": "Fetch timed out. The title states both '98Q6C/98C6K', 144Hz, 2025 Model. The URL slug says '120hz' and 'hdmi-4', which conflicts with the 144Hz title."
+          },
+          "manufacturer_model_resolved": null,
+          "manufacturer_page": {
+            "url": "https://www.tcl.com/gulf/ar/support-tv/model/98c6k",
+            "model": "98C6K (TCL Gulf support page: 'C6K Premium QD-MiniLED TV'; no mention of Q6C)",
+            "key_specs": "C6K Gulf press release: 512+ zones, 144Hz native, ONKYO 2.1, matte panel on 98in (https://www.tcl.com/gulf/en/news/tcl-unveils-the-new-c6k-qd-mini-led)"
+          },
+          "warnings": ["The merchant states two codes, so it cannot be resolved to one manufacturer code.", "Slug says 120Hz but title says 144Hz.", "PDP not verified."]
+        }
+      ],
+      "alias_evidence": [
+        {"code_a": "98Q6C", "code_b": "98C6K", "statement": "Merchant claim only: Noon's title reads '98Q6C/98C6K'. No manufacturer statement found. TCL Gulf's 98C6K support page and C6K press release do not mention Q6C. Third parties describe Q6C as a separate European launch, and give C6K's regional names as C61K/C69K. The specs overlap (512 zones, 144Hz, ONKYO 2.1, matte HVA) but that is only WEAK evidence.", "url": "https://www.tcl.com/gulf/ar/support-tv/model/98c6k", "date": "2026-10-04", "confidence": "low"},
+        {"code_a": "98Q6C", "code_b": "98C8L", "statement": "Not aliases. The C8L is a separate SQD-Mini LED flagship with '4,032 precise dimming zones' and Bang & Olufsen audio.", "url": "https://www.tcl.com/sa/en/tvs/c8l", "date": "2026-10-04", "confidence": "high"}
+      ],
+      "pairs": [
+        {"a": 1, "b": 2, "relation": "DIFFERENT", "basis": "The codes 98Q6C and 98C8L are different. The C8L is a different tier per TCL Saudi (4,032 zones, B&O audio, up to 6,000 nits), while the Q6C has 512 zones and ONKYO 2.1.", "evidence": ["https://www.amazon.sa/dp/B0H1MCWLLK", "https://www.extra.com/en-sa/electronics/television/led/tcl-98-inch-miniled-aipq-pro-smart-tv-hdmi-3-usb1-144hz/p/100511700", "https://www.tcl.com/sa/en/tvs/c8l"], "confidence": "high"},
+        {"a": 1, "b": 3, "relation": "REVIEW", "basis": "Amazon's PDP item model is 98Q6C, and Noon's title contains 98Q6C, but Noon also lists 98C6K. No manufacturer alias makes Q6C equal to C6K, so the unit Noon ships is ambiguous. Noon's slug (120Hz) also conflicts with its title (144Hz), and Noon's PDP could not be checked. This leans SAME_EXACT if Noon's structured model field shows 98Q6C only.", "evidence": ["https://www.amazon.sa/dp/B0H1MCWLLK", "https://www.noon.com/saudi-en/98-inch-mini-led-4k-smart-tv-hdmi-4-usb1-120hz-3-years-warranty-98q6c-98c6k-black/N70173181V/p/", "https://www.tcl.com/gulf/ar/support-tv/model/98c6k"], "confidence": "medium"},
+        {"a": 2, "b": 3, "relation": "DIFFERENT", "basis": "98C8L does not match either Noon code (98Q6C or 98C6K). C8L is a distinct series per TCL Saudi.", "evidence": ["https://www.tcl.com/sa/en/tvs/c8l", "https://www.tcl.com/gulf/ar/support-tv/model/98c6k"], "confidence": "high"}
+      ]
+    }
+  ]
+}

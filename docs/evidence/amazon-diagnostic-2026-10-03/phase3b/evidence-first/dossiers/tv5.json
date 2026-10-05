@@ -1,0 +1,442 @@
+{
+  "fetch_date": "2026-10-04",
+  "groups": [
+    {
+      "id": "T18",
+      "listings": [
+        {
+          "index": 1,
+          "merchant": "eXtra",
+          "stated_model_in_source": "modelNumber: 65U7S",
+          "pdp": {
+            "url": "https://www.extra.com/en-sa/electronics/television/miniled/hisense-65-inch-miniled-4k-smart-tv-8-years-os-update-144hz/p/100514449",
+            "fetched": true,
+            "model_or_mpn_shown": "65U7S",
+            "brand_shown": "HISENSE",
+            "key_specs": "65in; MiniLED; 144Hz; 3840x2160; OS Vidaa; local dimming zones not stated",
+            "notes": "Condition NewCondition; seller Extra Stores."
+          },
+          "manufacturer_model_resolved": "65U7S",
+          "manufacturer_page": {
+            "url": "https://www.hisenseme.com/products/u7-uled-miniled",
+            "model": "U7S (Hisense Middle East U7 ULED MiniLED page; sizes 55/65/75/85/100)",
+            "key_specs": "DLED Hi-QLED MiniLED, native 144Hz game mode, VIDAA, 2x10W+20W subwoofer, tuned by Devialet; 65in net weight 19.4kg, 1445x837x325mm with stand"
+          },
+          "warnings": [
+            "Input brand field 'not stated' but PDP shows HISENSE.",
+            "Other markets sell U7S Pro (165Hz) and U7SE variants (https://www.displayspecifications.com/en/model/11824b0c); eXtra's 144Hz matches plain U7S."
+          ]
+        },
+        {
+          "index": 2,
+          "merchant": "Amazon.sa",
+          "stated_model_in_source": "title: 65E8S (generic model field is a title fragment)",
+          "pdp": {
+            "url": "https://www.amazon.sa/dp/B0GQF24H9M?language=en_AE",
+            "fetched": true,
+            "model_or_mpn_shown": "65E8S (title/meta only; Product details table not retrievable)",
+            "brand_shown": "Hisense",
+            "key_specs": "65in Mini LED 4K; 144Hz (HSR 240Hz in title); Dolby Vision IQ; built-in subwoofer",
+            "notes": "Original ref URL returned HTTP 503; dp URL returned head/meta only, no Item model number row visible. Sold on amazon.sa."
+          },
+          "manufacturer_model_resolved": "65E8S",
+          "manufacturer_page": {
+            "url": "https://www.hisense.es/televisores/miniled/serie-e8-miniled-tv-hisense-65e8s/",
+            "model": "65E8S",
+            "key_specs": "MiniLED, 160 local dimming zones, native 144Hz VRR, ADS panel, 20W subwoofer + 2x10W Devialet, VIDAA U9; also Hisense ME E8 page https://www.hisenseme.com/products/e8-uled-miniled (E8S, 55/65/75/85)"
+          },
+          "warnings": [
+            "Amazon title says 'HSR 240Hz' while manufacturer pages say HSR 288Hz; minor marketing discrepancy.",
+            "Amazon brand field 'Unknown' in input; PDP title says Hisense."
+          ]
+        }
+      ],
+      "alias_evidence": [],
+      "pairs": [
+        {
+          "a": 1,
+          "b": 2,
+          "relation": "DIFFERENT",
+          "basis": "Two different real Hisense manufacturer codes (65U7S vs 65E8S). Hisense Middle East lists U7 (U7S) and E8 (E8S) as separate products in its ULED MiniLED range; no alias or regional-equivalence statement found. Specs are close (both 144Hz MiniLED with subwoofer) but this is only family-level similarity.",
+          "evidence": [
+            "https://www.extra.com/en-sa/electronics/television/miniled/hisense-65-inch-miniled-4k-smart-tv-8-years-os-update-144hz/p/100514449",
+            "https://www.amazon.sa/dp/B0GQF24H9M?language=en_AE",
+            "https://www.hisenseme.com/product-listing/tv",
+            "https://www.hisenseme.com/products/u7-uled-miniled",
+            "https://www.hisenseme.com/products/e8-uled-miniled",
+            "https://www.hisense.es/televisores/miniled/serie-e8-miniled-tv-hisense-65e8s/"
+          ],
+          "confidence": "high"
+        }
+      ]
+    },
+    {
+      "id": "T19",
+      "listings": [
+        {
+          "index": 1,
+          "merchant": "eXtra",
+          "stated_model_in_source": "modelNumber: 75V6B",
+          "pdp": {
+            "url": "https://www.extra.com/en-sa/electronics/television/led/tcl-75-inch-uhd-4k-smart-tv-60-hz/p/100365325",
+            "fetched": false,
+            "model_or_mpn_shown": "",
+            "brand_shown": "",
+            "key_specs": "",
+            "notes": "HTTP 404 Not Found on 2026-10-04 (also /en-sa/p/100365325 404). Listing may be delisted; the model comes only from the merchant structured field in the input."
+          },
+          "manufacturer_model_resolved": "75V6B",
+          "manufacturer_page": {
+            "url": "https://www.tcl.com/sa/en/support-tv/model/75v6b",
+            "model": "75V6B ('V6B TCL 4K HDR Google TV')",
+            "key_specs": "TCL SA support page lists no detailed specs. Third-party: 75in Direct LED 4K 60Hz, HDR10, Dolby Audio, Google TV, launched 2024 (https://www.gizbot.com/smart-tv/tcl-v6b-4k-hdr-metallic-bezel-less-google-smart-tv-75v6b-189cm-75-inch-4k-uhd-hdr-925/)"
+          },
+          "warnings": [
+            "PDP not accessible (404); model not re-verified on the PDP."
+          ]
+        },
+        {
+          "index": 2,
+          "merchant": "Noon",
+          "stated_model_in_source": "title: 75V6D (generic model field '75 Inch 4K UHD' is a title fragment)",
+          "pdp": {
+            "url": "https://www.noon.com/saudi-en/75-inch-4k-uhd-google-smart-tv-hva-panel-60hz-hdr10-dolby-audio-aipq-processor-metallic-bezel-less-design-2026-model-75v6d-black-75v6d-black/N70356487V/p/",
+            "fetched": false,
+            "model_or_mpn_shown": "",
+            "brand_shown": "",
+            "key_specs": "",
+            "notes": "Fetch timed out (60s) three times (en, short and ar URLs). The title in the input states '(2026 Model), 75V6D'."
+          },
+          "manufacturer_model_resolved": "75V6D",
+          "manufacturer_page": {
+            "url": "https://www.tcl.com/sa/en/support-tv/model/75v6d",
+            "model": "75V6D ('V6D 4K Smart TV')",
+            "key_specs": "TCL SA support page has no detailed specs. Third-party: 75in HVA, Direct LED, 4K 60Hz, Google TV, 2x15W Dolby Atmos, 2026 model (https://www.tvsfaq.com/en/specifications/tcl-75v6d)"
+          },
+          "warnings": [
+            "PDP not accessible (timeout)."
+          ]
+        }
+      ],
+      "alias_evidence": [],
+      "pairs": [
+        {
+          "a": 1,
+          "b": 2,
+          "relation": "DIFFERENT",
+          "basis": "Two different TCL manufacturer codes, each with its own TCL Saudi support page (75V6B vs 75V6D). Third-party sources date V6B to 2024 and V6D to 2026 (different generations). No alias evidence. Same size and 60Hz is only family-level similarity.",
+          "evidence": [
+            "https://www.tcl.com/sa/en/support-tv/model/75v6b",
+            "https://www.tcl.com/sa/en/support-tv/model/75v6d",
+            "https://www.gizbot.com/smart-tv/tcl-v6b-4k-hdr-metallic-bezel-less-google-smart-tv-75v6b-189cm-75-inch-4k-uhd-hdr-925/",
+            "https://www.tvsfaq.com/en/specifications/tcl-75v6d"
+          ],
+          "confidence": "medium"
+        }
+      ]
+    },
+    {
+      "id": "T20",
+      "listings": [
+        {
+          "index": 1,
+          "merchant": "Amazon.sa",
+          "stated_model_in_source": "title ends '75P8L' (input model_found_in_title=null, but the code is in the title)",
+          "pdp": {
+            "url": "https://www.amazon.sa/dp/B0GXZZL47T?language=en_AE",
+            "fetched": true,
+            "model_or_mpn_shown": "75P8L (title; Arabic title ends '75P8L من TCL'); Product details table not retrievable",
+            "brand_shown": "TCL",
+            "key_specs": "75in Quantum Dot Mini LED; native 144Hz; AiPQ; ONKYO Hi-Fi; Dolby Vision/Atmos; HDR10+",
+            "notes": "Original ref URL returned HTTP 503; dp URL gave title/meta only. Sold on amazon.sa."
+          },
+          "manufacturer_model_resolved": "75P8L",
+          "manufacturer_page": {
+            "url": "https://www.tcl.com/sa/en/support-tv/model/75p8l",
+            "model": "75P8L ('TCL P8L Mini LED TV')",
+            "key_specs": "TCL SA support page has no detailed specs. Retailer specs: QD-Mini LED, HVA, native 144Hz, ONKYO 2.1, Google TV, 2026 (https://www.currys.co.uk/products/tcl-p8l-75-qdmini-led-4k-hdr-smart-google-tv-2026-75p8luk-10303771.html)"
+          },
+          "warnings": [
+            "Input missed the code in the title; the code is 75P8L."
+          ]
+        },
+        {
+          "index": 2,
+          "merchant": "Noon",
+          "stated_model_in_source": "title: 75Q7C (generic model field is a title fragment)",
+          "pdp": {
+            "url": "https://www.noon.com/saudi-en/television-75-inch-smart-tv-4k-qd-mini-led-gaming-google-tv-144hz-native-refresh-rate-precise-dimming-series-crystglow-hva-panel-hdr-3000-nits-ultra-slim-design-2025-model-75q7c-black/N70204381V/p/",
+            "fetched": false,
+            "model_or_mpn_shown": "",
+            "brand_shown": "",
+            "key_specs": "",
+            "notes": "Fetch timed out (60s), full and short URL. The title in the input says '(2025 Model) 75Q7C'."
+          },
+          "manufacturer_model_resolved": "75Q7C",
+          "manufacturer_page": {
+            "url": "https://www.tcl.com/sa/en/support-tv/model/75q7c",
+            "model": "75Q7C ('TCL TV Q7C Premium QD-MiniLED TV')",
+            "key_specs": "TCL SA support page has no detailed specs. Retailer specs: QD-Mini LED, 144Hz, HDR Premium 3000, Bang & Olufsen audio, Google TV (https://www.testsieger.de/ultra-hd-fernseher/7CQUCS2W22RV2-tcl-75q7c-75-zoll-qd-mini-led-fernseher-4k-hdr-premium-3000-smart-google-tv-dolby-vision-iq-und-atmos-hva-panel-bang-und-olufsen-audio-144hz-motion-clarity-pro-game-master.html)"
+          },
+          "warnings": [
+            "PDP not accessible (timeout).",
+            "2025 model generation; the other listings are 2026 lines."
+          ]
+        },
+        {
+          "index": 3,
+          "merchant": "eXtra",
+          "stated_model_in_source": "modelNumber: 75C7L",
+          "pdp": {
+            "url": "https://www.extra.com/en-sa/electronics/television/led/tcl-75-inch-miniled-aipq-pro-ultra-slim-smart-tv/p/100511704",
+            "fetched": true,
+            "model_or_mpn_shown": "75C7L",
+            "brand_shown": "TCL",
+            "key_specs": "75in MiniLED; 144Hz motion; 3840x2160; Google TV; zones not stated",
+            "notes": "Condition NewCondition; seller Extra Stores."
+          },
+          "manufacturer_model_resolved": "75C7L",
+          "manufacturer_page": {
+            "url": "https://www.tcl.com/sa/en/support-tv/model/75c7l",
+            "model": "75C7L ('TCL C7L SQD-Mini LED TV')",
+            "key_specs": "TCL SA support page has no detailed specs. TCL CO page has the same model name 'C7L SQD-Mini LED TV' (https://www.tcl.com/co/en/support-tv/model/75c7l). Retailer specs: SQD-Mini LED, HVA 2.0 Pro, 144Hz, Bang & Olufsen, 2026 (https://www.currys.co.uk/products/tcl-c7l-75-sqdmini-led-4k-hdr-smart-google-tv-75c7luk-10303634.html)"
+          },
+          "warnings": [
+            "Input brand field 'not stated' but PDP shows TCL.",
+            "C7L (2026) is not the 2025 C7K; a forum notes C7K and Q7C look identical (https://forum.fibra.click/d/70251-tv-tcl-serie-c7k-e-q7c-uguali), but that concerns C7K, not C7L."
+          ]
+        },
+        {
+          "index": 4,
+          "merchant": "Jarir",
+          "stated_model_in_source": "title: 'Q7DPRO' (generic model field is a title fragment)",
+          "pdp": {
+            "url": "https://www.jarir.com/sa-en/tcl-q7d-smart-tv-683682.html",
+            "fetched": true,
+            "model_or_mpn_shown": "Manufacturer No: 75Q7DPRO (Jarir SKU 683682)",
+            "brand_shown": "TCL",
+            "key_specs": "75in SQD Mini-LED; 144Hz; 4K; black; zones/OS not stated",
+            "notes": "Warranty 36 months by agent."
+          },
+          "manufacturer_model_resolved": "75Q7D PRO",
+          "manufacturer_page": {
+            "url": "https://www.tcl.com/sa/en/support-tv/model/75-q7d-pro",
+            "model": "75 Q7D Pro ('TCL Q7D Pro SQD-Mini LED TV')",
+            "key_specs": "TCL SA support page has no detailed specs. Retailer specs: SQD-Mini LED, 144Hz, 2000 nits, ONKYO 2.1 (https://www.chollometro.com/ofertas/tcl-tv-75q7d-pro-75-sqd-mini-led-4k-hdr-2000-nits-760-zonas-de-atenuacion-google-tv-dolby-vision-iq-y-atmos-21-onkyo144hz-1924989)"
+          },
+          "warnings": [
+            "Input model fields did not capture the code; Jarir PDP shows Manufacturer No 75Q7DPRO."
+          ]
+        }
+      ],
+      "alias_evidence": [],
+      "pairs": [
+        {
+          "a": 1,
+          "b": 2,
+          "relation": "DIFFERENT",
+          "basis": "Different TCL codes 75P8L vs 75Q7C, each with its own TCL SA support page. They are different series (P8L 2026 with ONKYO audio vs Q7C 2025 with B&O audio). No alias evidence.",
+          "evidence": [
+            "https://www.tcl.com/sa/en/support-tv/model/75p8l",
+            "https://www.tcl.com/sa/en/support-tv/model/75q7c",
+            "https://www.amazon.sa/dp/B0GXZZL47T?language=en_AE"
+          ],
+          "confidence": "high"
+        },
+        {
+          "a": 1,
+          "b": 3,
+          "relation": "DIFFERENT",
+          "basis": "Different TCL codes 75P8L vs 75C7L. TCL SA has a separate support page for each ('P8L Mini LED TV' vs 'C7L SQD-Mini LED TV'). Audio differs (ONKYO vs Bang & Olufsen). No alias evidence.",
+          "evidence": [
+            "https://www.tcl.com/sa/en/support-tv/model/75p8l",
+            "https://www.tcl.com/sa/en/support-tv/model/75c7l",
+            "https://www.extra.com/en-sa/electronics/television/led/tcl-75-inch-miniled-aipq-pro-ultra-slim-smart-tv/p/100511704"
+          ],
+          "confidence": "high"
+        },
+        {
+          "a": 1,
+          "b": 4,
+          "relation": "DIFFERENT",
+          "basis": "Different TCL codes 75P8L vs 75Q7DPRO (Jarir Manufacturer No). Separate TCL SA support pages (P8L Mini LED vs Q7D Pro SQD-Mini LED). No alias evidence.",
+          "evidence": [
+            "https://www.tcl.com/sa/en/support-tv/model/75p8l",
+            "https://www.tcl.com/sa/en/support-tv/model/75-q7d-pro",
+            "https://www.jarir.com/sa-en/tcl-q7d-smart-tv-683682.html"
+          ],
+          "confidence": "high"
+        },
+        {
+          "a": 2,
+          "b": 3,
+          "relation": "DIFFERENT",
+          "basis": "Different TCL codes 75Q7C (2025 'Q7C Premium QD-MiniLED') vs 75C7L (2026 'C7L SQD-Mini LED'). Separate TCL SA support pages, different generations and backlight tech (QD vs SQD). No alias evidence.",
+          "evidence": [
+            "https://www.tcl.com/sa/en/support-tv/model/75q7c",
+            "https://www.tcl.com/sa/en/support-tv/model/75c7l",
+            "https://www.tcl.com/co/en/support-tv/model/75c7l"
+          ],
+          "confidence": "high"
+        },
+        {
+          "a": 2,
+          "b": 4,
+          "relation": "DIFFERENT",
+          "basis": "Different TCL codes 75Q7C vs 75Q7DPRO. Separate TCL SA support pages, different generations ('Q7C Premium QD-MiniLED' 2025 vs 'Q7D Pro SQD-Mini LED'). No alias evidence.",
+          "evidence": [
+            "https://www.tcl.com/sa/en/support-tv/model/75q7c",
+            "https://www.tcl.com/sa/en/support-tv/model/75-q7d-pro",
+            "https://www.jarir.com/sa-en/tcl-q7d-smart-tv-683682.html"
+          ],
+          "confidence": "high"
+        },
+        {
+          "a": 3,
+          "b": 4,
+          "relation": "DIFFERENT",
+          "basis": "Different TCL codes 75C7L vs 75Q7DPRO. TCL publishes them as separate SQD-Mini LED models with separate SA support pages (C7L 'More Affordable Premium' vs Q7D Pro 'Smart Choice'), and TCL South Africa lists C7L and Q7D as distinct lines. Audio differs (B&O vs ONKYO). No alias evidence.",
+          "evidence": [
+            "https://www.tcl.com/sa/en/support-tv/model/75c7l",
+            "https://www.tcl.com/sa/en/support-tv/model/75-q7d-pro",
+            "https://www.tcl.com/southafrica/en/tvs/75-inch-tv"
+          ],
+          "confidence": "high"
+        }
+      ]
+    },
+    {
+      "id": "T21",
+      "listings": [
+        {
+          "index": 1,
+          "merchant": "eXtra",
+          "stated_model_in_source": "none in input (generic model field ', 85 inch, QLED' is a title fragment)",
+          "pdp": {
+            "url": "https://www.extra.com/en-sa/electronics/television/qled-tv/hisense-85-inch-qled-4k-smart-tv-60hz/p/100484180",
+            "fetched": true,
+            "model_or_mpn_shown": "MPN: 85Q6EQ (same on the EN and AR PDP; series 'Q6')",
+            "brand_shown": "HISENSE",
+            "key_specs": "85in QLED 4K; 60Hz; Vidaa; Dolby Atmos 2.0 2x10W; 3 HDMI; 36.5kg; 189.1x113.5x43cm",
+            "notes": "Condition NewCondition; seller Extra Stores. AR PDP: https://www.extra.com/ar-sa/electronics/television/qled-tv/hisense-85-inch-qled-4k-smart-tv-60hz/p/100484180"
+          },
+          "manufacturer_model_resolved": null,
+          "manufacturer_page": {
+            "url": "https://www.hisenseme.com/products/q6q",
+            "model": "Q6 4K QLED Smart TV (page slug q6q; sizes 50/65/75/85/98); no per-size model codes shown and no 'Q6EQ' string on the page",
+            "key_specs": "QLED Quantum Dot, 4K, Dolby Atmos, AI 4K Upscaler, Game Mode PLUS VRR/ALLM"
+          },
+          "warnings": [
+            "MPN '85Q6EQ' could not be found on any Hisense page or anywhere on the web (searches for 85Q6EQ, Q6EQ, 55/65/75Q6EQ returned only Q6Q/Q6S). It may be an eXtra-internal or erroneous code, or an unpublished regional suffix. Unvalidated."
+          ]
+        },
+        {
+          "index": 2,
+          "merchant": "Noon",
+          "stated_model_in_source": "title: '85Q6Q  International Model' (generic model field repeats the title fragment)",
+          "pdp": {
+            "url": "https://www.noon.com/saudi-en/85q6q-international-model-85-inch-qled-4k-60hz-vidaa-smart-tv-qled-colour-dolby-vision-dolby-atmos-ai-4k-upscaler-ai-smooth-motion-game-mode-plus-60hz-allm-game-bar-voice-control-85q6q-black/N70270757V/p/",
+            "fetched": false,
+            "model_or_mpn_shown": "",
+            "brand_shown": "",
+            "key_specs": "",
+            "notes": "Fetch timed out (60s) twice. The title in the input says 'International Model'."
+          },
+          "manufacturer_model_resolved": "85Q6Q",
+          "manufacturer_page": {
+            "url": "https://www.hisenseme.com/products/q6q",
+            "model": "Q6Q (Hisense ME product slug /products/q6q, 'Q6 4K QLED SMART TV', 85in size listed)",
+            "key_specs": "QLED, 4K, Dolby Atmos, VRR/ALLM, VIDAA. 85Q6Q also sold in GCC: https://gcc.luluhypermarket.com/en-kw/hisense-85-inches-smart-qled-tv-85q6q/p/2523839/"
+          },
+          "warnings": [
+            "'International Model' in the title suggests a non-local or grey-import version (region/warranty difference).",
+            "PDP not accessible."
+          ]
+        }
+      ],
+      "alias_evidence": [],
+      "pairs": [
+        {
+          "a": 1,
+          "b": 2,
+          "relation": "REVIEW",
+          "basis": "eXtra's PDP states MPN 85Q6EQ, a code with no manufacturer or web corroboration. Noon states 85Q6Q, a real Hisense Q6Q code, labelled 'International Model'. The codes differ literally, and no evidence shows 85Q6EQ is an alias of 85Q6Q (it could be a typo or a regional variant). The region flag ('International Model') also blocks SAME_EXACT. Matching family/spec (85in Q6 QLED 60Hz) is WEAK evidence only.",
+          "evidence": [
+            "https://www.extra.com/en-sa/electronics/television/qled-tv/hisense-85-inch-qled-4k-smart-tv-60hz/p/100484180",
+            "https://www.extra.com/ar-sa/electronics/television/qled-tv/hisense-85-inch-qled-4k-smart-tv-60hz/p/100484180",
+            "https://www.hisenseme.com/products/q6q",
+            "https://www.noon.com/saudi-en/85q6q-international-model-85-inch-qled-4k-60hz-vidaa-smart-tv-qled-colour-dolby-vision-dolby-atmos-ai-4k-upscaler-ai-smooth-motion-game-mode-plus-60hz-allm-game-bar-voice-control-85q6q-black/N70270757V/p/"
+          ],
+          "confidence": "low"
+        }
+      ]
+    },
+    {
+      "id": "T22",
+      "listings": [
+        {
+          "index": 1,
+          "merchant": "eXtra",
+          "stated_model_in_source": "modelNumber: 58A6N",
+          "pdp": {
+            "url": "https://www.extra.com/en-sa/electronics/television/uhd/hisense-58-inch-led-4k-smart-dolby-8-years-os-update-ai/p/100378394",
+            "fetched": false,
+            "model_or_mpn_shown": "",
+            "brand_shown": "",
+            "key_specs": "",
+            "notes": "HTTP 404 Not Found on 2026-10-04 (also /en-sa/p/100378394 404). Listing may be delisted; the model comes only from the merchant structured field in the input."
+          },
+          "manufacturer_model_resolved": "58A6N",
+          "manufacturer_page": {
+            "url": "https://al.hisense.com/produktet/tv/uhd-tv/TV-SET-58A6N-HSN/p/000000000020014384",
+            "model": "58A6N ('58 '' A6N | UHD Smart TV 4K 60 Hz 58A6N', from search result title; page not fetched)",
+            "key_specs": "4K UHD 60Hz Direct LED, Dolby Vision/HDR10+, VIDAA; released 2024 per retailer (https://galaxus.fr/en/s1/product/hisense-tv-58a6n-58-lcd-uhd-2024-tv-45649937). Hisense ME A6 page lists a 58in A6 (VIDAA U8.5, 60Hz) but shows no per-size codes: https://www.hisenseme.com/products/a6"
+          },
+          "warnings": [
+            "PDP not accessible (404); model not re-verified on the PDP.",
+            "Input brand field 'not stated'."
+          ]
+        },
+        {
+          "index": 2,
+          "merchant": "Amazon.sa",
+          "stated_model_in_source": "title: 58E6Q (generic model field is a title fragment)",
+          "pdp": {
+            "url": "https://www.amazon.sa/dp/B0FWKHZTC5?language=en_AE",
+            "fetched": true,
+            "model_or_mpn_shown": "58E6Q (title/meta only; Product details table not retrievable)",
+            "brand_shown": "Hisense",
+            "key_specs": "58in 4K UHD; Dolby Vision; MEMC; VIDAA updates (title)",
+            "notes": "Sold on amazon.sa."
+          },
+          "manufacturer_model_resolved": "58E6Q",
+          "manufacturer_page": {
+            "url": "https://uae.sharafdg.com/?p=5563069",
+            "model": "58E6Q (no Hisense ME page found; nearest documentation is a GCC distributor/retailer page: 'Hisense 58″ E6Q ... (2025 Model)'; UK manufacturer variant 58E6QTUK)",
+            "key_specs": "58in 4K 60Hz, VIDAA, Dolby Vision, MEMC, DTS Virtual:X; 1295x808x274mm with stand, 11.9kg. UK variant specs: https://www.tvsfaq.com/en/specifications/hisense-58e6qtuk"
+          },
+          "warnings": [
+            "No Hisense-owned page for 58E6Q was retrievable (uk.hisense.com returns 403)."
+          ]
+        }
+      ],
+      "alias_evidence": [],
+      "pairs": [
+        {
+          "a": 1,
+          "b": 2,
+          "relation": "DIFFERENT",
+          "basis": "Two different Hisense codes from different series and years: 58A6N (A6 series, 2024; official Hisense page exists) vs 58E6Q (E6 series, 2025 model per Sharaf DG). Third-party decoding of Hisense year letters (N=2024, Q=2025) is consistent with this. No alias or equivalence statement found. Both being 58in 4K 60Hz VIDAA is family-level only. Confidence is medium because eXtra's PDP (404) could not re-confirm 58A6N.",
+          "evidence": [
+            "https://al.hisense.com/produktet/tv/uhd-tv/TV-SET-58A6N-HSN/p/000000000020014384",
+            "https://galaxus.fr/en/s1/product/hisense-tv-58a6n-58-lcd-uhd-2024-tv-45649937",
+            "https://uae.sharafdg.com/?p=5563069",
+            "https://www.amazon.sa/dp/B0FWKHZTC5?language=en_AE",
+            "https://bgr.com/2090619/major-hisense-tv-model-explained/"
+          ],
+          "confidence": "medium"
+        }
+      ]
+    }
+  ]
+}

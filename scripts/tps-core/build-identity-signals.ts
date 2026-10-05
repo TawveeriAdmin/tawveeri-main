@@ -25,8 +25,9 @@ config({ path: resolve(process.cwd(), ".env.local") });
 import { Client } from "pg";
 import { TPS_STORES } from "./category-registry";
 import { toPoolerDbUrl } from "./pooler-url";
-import { identitySignalsEnabled } from "./identity-flags";
+import { identitySignalsEnabled, identityEvidenceEnabled } from "./identity-flags";
 import { extractManufacturerModel } from "../../src/lib/identity/store-identifiers";
+import { declaredModelForListing, newestCaptures, type CapturedItem } from "../../src/lib/identity/manufacturer-model-evidence";
 import { resolveApprovedSlug } from "../../src/lib/retailers/approved-retailers";
 import { computeIdentitySignals, IDENTITY_RULES_VERSION, type IdentitySignal, type SignalCanonical } from "../../src/lib/identity/identity-signals";
 
@@ -45,7 +46,7 @@ function assertTarget(url: string) {
   if (!local && !prod) throw new Error("refusing: neither production nor a local rehearsal database");
 }
 
-export interface RawListing { cid: string; storeId: number; title: string; rawId: number | null }
+export interface RawListing { cid: string; storeId: number; title: string; rawId: number | null; url?: string | null }
 
 /** Pure grouping step, exported for tests: raw listing rows → canonicals with declared models resolved. */
 export function assembleCanonicals(
@@ -86,8 +87,8 @@ async function main() {
     // ── inputs ──
     const { rows: canonicals } = await pg.query<{ id: string; key: string | null; category: string }>(
       "select id::text as id, tps_identity_key as key, category from canonical_products where is_active and category = any($1::text[])", [gated]);
-    const { rows: cur } = await pg.query<{ cid: string; store_id: number; title: string; raw_id: string | null }>(
-      `select c.id::text as cid, co.store_id, co.name as title, co.raw_obs_id::text as raw_id
+    const { rows: cur } = await pg.query<{ cid: string; store_id: number; title: string; raw_id: string | null; url: string | null }>(
+      `select c.id::text as cid, co.store_id, co.name as title, co.raw_obs_id::text as raw_id, co.url
          from canonical_products c join tps_current_offers co on co.identity_key = c.tps_identity_key
         where c.is_active and c.category = any($1::text[]) and co.status = 'valid' and co.payload->>'_superseded_by_identity' is null`, [gated]);
     const { rows: superseded } = await pg.query<{ cid: string; store_id: number }>(
@@ -105,7 +106,7 @@ async function main() {
     const have = new Set(cur.map((r) => `${r.cid}|${r.store_id}`));
     const retired = new Set(superseded.map((r) => `${r.cid}|${r.store_id}`));
     const listings: RawListing[] = [
-      ...cur.map((r) => ({ cid: r.cid, storeId: Number(r.store_id), title: r.title, rawId: r.raw_id ? Number(r.raw_id) : null })),
+      ...cur.map((r) => ({ cid: r.cid, storeId: Number(r.store_id), title: r.title, rawId: r.raw_id ? Number(r.raw_id) : null, url: r.url })),
       ...hist.filter((r) => !have.has(`${r.cid}|${r.store_id}`) && !retired.has(`${r.cid}|${r.store_id}`) && r.title)
         .map((r) => ({ cid: r.cid, storeId: Number(r.store_id), title: r.title as string, rawId: r.raw_id && /^\d+$/.test(r.raw_id) ? Number(r.raw_id) : null })),
     ];
@@ -113,11 +114,44 @@ async function main() {
     // Source-declared manufacturer models for exactly the raw observations those listings point at.
     const rawIds = [...new Set(listings.map((l) => l.rawId).filter((v): v is number => v != null))];
     const modelByRawId = new Map<number, string>();
+    // EVIDENCE LAYER (TPS_IDENTITY_EVIDENCE, default off): for categories it covers, the declared model comes from the ONE unified
+    // function — payload fields + specifications + title + page-captured evidence — instead of `extractManufacturerModel`.
+    const catByCid = new Map(canonicals.map((c) => [c.id, c.category]));
+    const evidenceCats = new Set(gated.filter((c) => identityEvidenceEnabled(c)));
+    const listingByRaw = new Map<number, RawListing>();
+    for (const l of listings) if (l.rawId != null && !listingByRaw.has(l.rawId)) listingByRaw.set(l.rawId, l);
+    let captured = new Map<string, CapturedItem[]>();
+    if (evidenceCats.size) {
+      const hasTable = (await pg.query<{ t: string | null }>("select to_regclass('tps_listing_evidence') as t")).rows[0].t !== null;
+      if (hasTable) {
+        const keys = listings.filter((l) => l.url && evidenceCats.has(catByCid.get(l.cid) ?? "")).map((l) => [l.storeId, l.url as string] as const);
+        const rows: { store_id: number; url: string; field: string; raw_value: string; captured_at: Date }[] = [];
+        for (let i = 0; i < keys.length; i += 1000) {
+          const chunk = keys.slice(i, i + 1000);
+          rows.push(...(await pg.query(
+            `select store_id, url, field, raw_value, captured_at from tps_listing_evidence
+              where (store_id, url) in (select * from unnest($1::int[], $2::text[]))`, [chunk.map((k) => k[0]), chunk.map((k) => k[1])])).rows);
+        }
+        captured = newestCaptures(rows);
+      }
+    }
     for (let i = 0; i < rawIds.length; i += 2000) {
-      const { rows } = await pg.query<{ id: string; mpn: string | null; modelNumber: string | null; model_number: string | null; model: string | null }>(
-        `select id::text as id, payload->>'mpn' as mpn, payload->>'modelNumber' as "modelNumber", payload->>'model_number' as model_number, payload->>'model' as model
+      const { rows } = await pg.query<{ id: string; mpn: string | null; modelNumber: string | null; model_number: string | null; model: string | null; payload: Record<string, unknown> | null }>(
+        `select id::text as id, payload->>'mpn' as mpn, payload->>'modelNumber' as "modelNumber", payload->>'model_number' as model_number, payload->>'model' as model,
+                ${evidenceCats.size ? "jsonb_build_object('mpn', payload->'mpn', 'modelNumber', payload->'modelNumber', 'model_number', payload->'model_number', 'model', payload->'model', 'gtin', payload->'gtin', 'brand', payload->'brand', 'name_ar', payload->'name_ar', 'name_en', payload->'name_en', 'specifications', payload->'specifications')" : "null::jsonb"} as payload
            from raw_observations where id = any($1::bigint[])`, [rawIds.slice(i, i + 2000)]);
-      for (const r of rows) { const m = extractManufacturerModel({ mpn: r.mpn, modelNumber: r.modelNumber, model_number: r.model_number, model: r.model }); if (m) modelByRawId.set(Number(r.id), m); }
+      for (const r of rows) {
+        const l = listingByRaw.get(Number(r.id));
+        const cat = l ? catByCid.get(l.cid) : undefined;
+        const m = l && cat && evidenceCats.has(cat) && r.payload
+          ? declaredModelForListing({
+              merchant: resolveApprovedSlug(l.storeId) ?? String(l.storeId), title: l.title ?? "",
+              brand: typeof r.payload.brand === "string" ? r.payload.brand : null, payload: r.payload,
+              captured: l.url ? captured.get(`${l.storeId}|${l.url}`) : undefined,
+            })
+          : extractManufacturerModel({ mpn: r.mpn, modelNumber: r.modelNumber, model_number: r.model_number, model: r.model });
+        if (m) modelByRawId.set(Number(r.id), m);
+      }
     }
 
     // ── compute ──

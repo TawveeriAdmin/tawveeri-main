@@ -33,7 +33,8 @@ import { deriveCampaignEligibility, type CampaignEligibilityEvidence } from '@/l
 import { buildGoUrl } from '@/lib/analytics/build-go-url';
 import { applyAffiliateTrueTieOrder } from '@/lib/compare/affiliate-true-tie';
 import { extractManufacturerModel } from '../identity/store-identifiers';
-import { identityGateEnabled } from '../../../scripts/tps-core/identity-flags';
+import { identityGateEnabled, identityEvidenceEnabled } from '../../../scripts/tps-core/identity-flags';
+import { declaredModelForListing, newestCaptures, type CapturedItem } from '../identity/manufacturer-model-evidence';
 import { modelCodeOfKey, resolveGroup } from '../../../scripts/tps-core/identity-verifier';
 
 interface PriceRow {
@@ -404,10 +405,35 @@ export async function getComparison(params: {
       };
       const now = new Date();
       const { data: raws } = await db.from('raw_observations').select('id, scraped_at, payload').in('id', rawIds);
+      // EVIDENCE LAYER (TPS_IDENTITY_EVIDENCE, default off — same flag, same function the signals job uses, so the compare page and the
+      // projection cannot disagree about what a listing declares). Page-captured evidence is keyed (merchant slug derived from store_id, listing URL).
+      const useEvidence = identityEvidenceEnabled(canonical.category);
+      let capturedByListing = new Map<string, CapturedItem[]>();
+      const slugByRawId = new Map<number, string>();
+      if (useEvidence) {
+        for (const [slug, v] of newestRawIdBySlug) slugByRawId.set(v.rawId, slug);
+        for (const [slug, rawId] of currentRawIdBySlug) if (!slugByRawId.has(rawId)) slugByRawId.set(rawId, slug);
+        const urls = [...currentBySlug.values()].map((r) => r.url).filter((u): u is string => !!u);
+        if (urls.length) {
+          try {
+            const { data: cap, error } = await (supabase as unknown as { from(t: string): { select(c: string): { in(col: string, vals: unknown[]): Promise<{ data: unknown; error: { message: string } | null }> } } })
+              .from('tps_listing_evidence').select('store_id, url, field, raw_value, captured_at').in('url', urls);
+            // fail-open: a missing table / outage means payload + title evidence only, never an error page
+            if (!error) capturedByListing = newestCaptures(((cap ?? []) as { store_id: number; url: string; field: string; raw_value: string; captured_at: string }[]).map((c) => ({ ...c, store_id: resolveApprovedSlug(c.store_id) ?? c.store_id })));
+          } catch { /* fail-open */ }
+        }
+      }
       for (const r of (raws ?? []) as { id: number | string; scraped_at: string | null; payload: Record<string, unknown> & { availability?: string; specifications?: { campaign_eligibility?: { campaign_category_id?: number } } } }[]) {
         if (r.scraped_at) scrapedAtByRawId.set(Number(r.id), r.scraped_at);
         if (r.payload?.availability) availabilityByRawId.set(Number(r.id), r.payload.availability);
-        const declaredModel = r.payload ? extractManufacturerModel(r.payload) : null;
+        const evSlug = useEvidence ? slugByRawId.get(Number(r.id)) : undefined;
+        const declaredModel = !r.payload ? null
+          : evSlug
+            ? declaredModelForListing({
+                merchant: evSlug, title: listingBySlug.get(evSlug)?.rawName ?? '', brand: typeof r.payload.brand === 'string' ? r.payload.brand : null,
+                payload: r.payload, captured: capturedByListing.get(`${evSlug}|${currentBySlug.get(evSlug)?.url ?? ''}`),
+              })
+            : extractManufacturerModel(r.payload);
         if (declaredModel) modelByRawId.set(Number(r.id), declaredModel);
         const eligibility = deriveCampaignEligibility(r.payload?.specifications?.campaign_eligibility, r.scraped_at, now);
         if (eligibility) campaignByRawId.set(Number(r.id), eligibility);

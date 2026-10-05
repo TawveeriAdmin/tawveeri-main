@@ -1,0 +1,329 @@
+{
+  "fetch_date": "2026-10-04",
+  "method_note": "Direct WebFetch used first; Amazon.sa (503) and Noon (timeout/403) were retried via the r.jina.ai reader proxy. Amazon succeeded via proxy; Noon failed on both routes. Price is never used as a basis.",
+  "groups": [
+    {
+      "id": "T01",
+      "listings": [
+        {
+          "index": 1,
+          "merchant": "جرير (Jarir)",
+          "stated_model_in_source": "none (generic model field = title fragment)",
+          "pdp": {
+            "url": "https://www.jarir.com/sa-en/hisense-q71q-smart-tv-682058.html",
+            "fetched": true,
+            "model_or_mpn_shown": "65Q71Q (spec table 'Manufacturer No'); 682058 is Jarir SKU",
+            "brand_shown": "Hisense",
+            "key_specs": "65 in, QLED, 4K, 144 Hz, black; OS/backlight/audio not stated on PDP",
+            "notes": "New; 24-month agent warranty; seller Jarir Bookstore KSA"
+          },
+          "manufacturer_model_resolved": "65Q71Q",
+          "manufacturer_page": {
+            "url": "https://uae.sharafdg.com/product/hisense-65inch-q71q-4k-qled-smart-television-2025-model-65q71q/",
+            "model": "65Q71Q",
+            "key_specs": "No Hisense-owned page found (not listed on hisenseksa.com TV catalogue pages 1-3). Independent retailers: Direct LED, 144 Hz, VIDAA, 400 nits, MT9618, 15 W, BT 5.0 (Sharaf DG UAE; https://www.elryan.com/en/hisense-65q71q-65-inch-4k-qled-144hz-vidaa-black-2075729.html)"
+          },
+          "warnings": [
+            "65Q71Q is not on the official Hisense KSA site (https://www.hisenseksa.com/tv/ , /tv/page/2/, /tv/page/3/); code is corroborated only by multiple independent retailers (Jarir, Sharaf DG, Elryan, Carrefour UAE)",
+            "Q71Q may be a channel/retailer-specific code; no Hisense statement found either way"
+          ]
+        },
+        {
+          "index": 2,
+          "merchant": "أمازون (Amazon.sa)",
+          "stated_model_in_source": "none (generic model field = title fragment)",
+          "pdp": {
+            "url": "https://www.amazon.sa/-/en/Hisense-Smart-Ultra-Dolby-Picture/dp/B0G1YGNLQX/ref=sr_1_48",
+            "fetched": true,
+            "model_or_mpn_shown": "65Q72Q (product details 'Model Number')",
+            "brand_shown": "Hisense",
+            "key_specs": "65 in, QLED, 4K, 144 Hz, VIDAA, 2.1 ch Dolby Atmos, 4 HDMI, VESA 600x400",
+            "notes": "Direct fetch returned HTTP 503; content obtained via https://r.jina.ai/https://www.amazon.sa/dp/B0G1YGNLQX?language=en_AE . New; sellers 'starcold' (FBA) and Amazon.sa; 2-year warranty. ASIN identifies the Amazon listing only."
+          },
+          "manufacturer_model_resolved": "65Q72Q",
+          "manufacturer_page": {
+            "url": "https://www.carrefourksa.com/mafsau/en/qled-qned-tv/hisense-65-inch-qled-4k-smart-tv-144hz-vrr-ai-picture-dolby-atoms-voice-control-65q72q-black/p/6942351426969",
+            "model": "65Q72Q",
+            "key_specs": "No Hisense-owned page found. Independent retailer Carrefour KSA: brand Hisense, model 65Q72Q, EAN 6942351426969, QLED, 144 Hz Game Mode Pro/VRR, Dolby Vision, Dolby Atmos (fetched via r.jina.ai proxy; seller Arabian Appliances co)"
+          },
+          "warnings": [
+            "65Q72Q not on official Hisense KSA catalogue; corroborated by Amazon.sa details + Carrefour KSA (with EAN 6942351426969)",
+            "Amazon page model came from a proxy render of the PDP; direct fetch blocked"
+          ]
+        },
+        {
+          "index": 3,
+          "merchant": "إكسترا (eXtra)",
+          "stated_model_in_source": "modelNumber = 65S7N",
+          "pdp": {
+            "url": "https://www.extra.com/en-sa/electronics/television/qled-tv/hisense-65-inch-qled-4k-smart-tv-144hz-8-years-os-update-ai/p/100440221",
+            "fetched": true,
+            "model_or_mpn_shown": "65S7N",
+            "brand_shown": "HISENSE",
+            "key_specs": "65 in, 4K 3840x2160, 144 Hz, OS Vidaa",
+            "notes": "New; seller Extra Stores"
+          },
+          "manufacturer_model_resolved": "65S7N",
+          "manufacturer_page": {
+            "url": "https://www.hisenseksa.com/s7/hisense-65-inch-s7-qled-4k-vidaa-smart-tv-144-hz-65s7n/",
+            "model": "65S7N",
+            "key_specs": "Official Hisense KSA: S7 QLED 'CanvasTV' (art mode, motion detector, matte low-reflection coating, flush wall mount), 65 in, 4K, 144 Hz Game Mode PRO, VRR 48-144 Hz, 40 W Dolby Atmos, WiFi 6E; SKU 3TE000024872"
+          },
+          "warnings": [
+            "OS conflict: eXtra PDP says 'Vidaa'; Hisense KSA page body says 'Google TV' (its URL slug says vidaa); the global S7N is a Google TV CanvasTV (e.g. https://www.harveynorman.co.uk/products/hisense-class-s7-canvas-65-qled-4k-smart-google-tv-65s7nqtuk). Regional OS unresolved.",
+            "Hisense KSA page text also internally inconsistent on backlight ('Mini-LED Pro' vs QLED series name)"
+          ]
+        }
+      ],
+      "alias_evidence": [],
+      "alias_search_note": "Searched for any Hisense/distributor statement equating Q71Q, Q72Q and S7N (and Q7Q). None found. https://www.hisenseksa.com/tv/page/2/ lists S7N under its own S7 line alongside Q7N/Q7Q; Q71Q/Q72Q are not listed.",
+      "pairs": [
+        {
+          "a": 1,
+          "b": 2,
+          "relation": "DIFFERENT",
+          "basis": "Two different model codes stated by merchant PDPs (Jarir 'Manufacturer No' 65Q71Q; Amazon 'Model Number' 65Q72Q), each corroborated by an independent retailer (Sharaf DG/Elryan for Q71Q; Carrefour KSA with EAN 6942351426969 for Q72Q). No alias statement found. Retailer specs also differ on audio (Q71Q: 15 W Dolby audio; Q72Q: 2.1 ch Dolby Atmos). Neither code has a Hisense-owned page, so confidence is not high.",
+          "evidence": [
+            "https://www.jarir.com/sa-en/hisense-q71q-smart-tv-682058.html",
+            "https://www.amazon.sa/-/en/Hisense-Smart-Ultra-Dolby-Picture/dp/B0G1YGNLQX/ref=sr_1_48",
+            "https://uae.sharafdg.com/product/hisense-65inch-q71q-4k-qled-smart-television-2025-model-65q71q/",
+            "https://www.elryan.com/en/hisense-65q71q-65-inch-4k-qled-144hz-vidaa-black-2075729.html",
+            "https://www.carrefourksa.com/mafsau/en/qled-qned-tv/hisense-65-inch-qled-4k-smart-tv-144hz-vrr-ai-picture-dolby-atoms-voice-control-65q72q-black/p/6942351426969"
+          ],
+          "confidence": "medium"
+        },
+        {
+          "a": 1,
+          "b": 3,
+          "relation": "DIFFERENT",
+          "basis": "Different codes (65Q71Q vs 65S7N). 65S7N is a manufacturer-confirmed S7 CanvasTV (art mode, matte coating, flush mount, 40 W Atmos) on hisenseksa.com; Q71Q is a Direct LED 400-nit 15 W VIDAA set per retailers. Different product line, no alias evidence.",
+          "evidence": [
+            "https://www.jarir.com/sa-en/hisense-q71q-smart-tv-682058.html",
+            "https://www.extra.com/en-sa/electronics/television/qled-tv/hisense-65-inch-qled-4k-smart-tv-144hz-8-years-os-update-ai/p/100440221",
+            "https://www.hisenseksa.com/s7/hisense-65-inch-s7-qled-4k-vidaa-smart-tv-144-hz-65s7n/",
+            "https://uae.sharafdg.com/product/hisense-65inch-q71q-4k-qled-smart-television-2025-model-65q71q/"
+          ],
+          "confidence": "high"
+        },
+        {
+          "a": 2,
+          "b": 3,
+          "relation": "DIFFERENT",
+          "basis": "Different codes (65Q72Q vs 65S7N). 65S7N is the manufacturer-confirmed S7 CanvasTV line; 65Q72Q is a separate code (EAN 6942351426969) with no alias statement. Shared 65in/QLED/144Hz tuple is only WEAK family evidence.",
+          "evidence": [
+            "https://www.amazon.sa/-/en/Hisense-Smart-Ultra-Dolby-Picture/dp/B0G1YGNLQX/ref=sr_1_48",
+            "https://www.extra.com/en-sa/electronics/television/qled-tv/hisense-65-inch-qled-4k-smart-tv-144hz-8-years-os-update-ai/p/100440221",
+            "https://www.hisenseksa.com/s7/hisense-65-inch-s7-qled-4k-vidaa-smart-tv-144-hz-65s7n/",
+            "https://www.carrefourksa.com/mafsau/en/qled-qned-tv/hisense-65-inch-qled-4k-smart-tv-144hz-vrr-ai-picture-dolby-atoms-voice-control-65q72q-black/p/6942351426969"
+          ],
+          "confidence": "high"
+        }
+      ]
+    },
+    {
+      "id": "T02",
+      "listings": [
+        {
+          "index": 1,
+          "merchant": "إكسترا (eXtra)",
+          "stated_model_in_source": "modelNumber = 75S7N",
+          "pdp": {
+            "url": "https://www.extra.com/en-sa/electronics/television/qled-tv/hisense-75-inch-qled-4k-smart-tv-144hz-8-years-os-update-ai/p/100440222",
+            "fetched": true,
+            "model_or_mpn_shown": "75S7N",
+            "brand_shown": "HISENSE",
+            "key_specs": "75 in, 4K 3840x2160, 144 Hz, OS Vidaa",
+            "notes": "New; seller Extra Stores"
+          },
+          "manufacturer_model_resolved": "75S7N",
+          "manufacturer_page": {
+            "url": "https://www.hisenseksa.com/s7/hisense-75-inch-s7-qled-4k-vidaa-smart-tv-144-hz-75s7n/",
+            "model": "75S7N",
+            "key_specs": "Official Hisense KSA: S7 QLED, 75 in (74.5 in), 4K, 144 Hz Game Mode PRO, Dolby Vision/HDR10+, 46 W DTS Virtual X, Motion Detector, Total Ambient Adaptive, Hi-Matte display; SKU 3TE000033225"
+          },
+          "warnings": [
+            "OS conflict: eXtra says 'Vidaa'; Hisense KSA page body says 'Google TV' (URL slug says vidaa)"
+          ]
+        },
+        {
+          "index": 2,
+          "merchant": "نون (Noon)",
+          "stated_model_in_source": "model in title = 75Q72Q",
+          "pdp": {
+            "url": "https://www.noon.com/saudi-en/75-inch-smart-tv-qled-4k-ultra-hd-dolby-atmos-vidaa-smart-os-144hz-game-mode-ai-picture-75q72q-black/N70255681V/p/",
+            "fetched": false,
+            "model_or_mpn_shown": "",
+            "brand_shown": "",
+            "key_specs": "",
+            "notes": "Direct fetch timed out (60 s) twice (also https://www.noon.com/saudi-en/N70255681V/p/); r.jina.ai proxy returned 403. Model 75Q72Q known only from the listing title/URL slug."
+          },
+          "manufacturer_model_resolved": "75Q72Q",
+          "manufacturer_page": {
+            "url": "",
+            "model": "75Q72Q",
+            "key_specs": "No Hisense-owned page found and no independent retailer page found for the 75-inch Q72Q. The Q72Q code itself is corroborated only at 65 in (Amazon.sa B0G1YGNLQX; Carrefour KSA EAN 6942351426969)."
+          },
+          "warnings": [
+            "75Q72Q is a title-only code (unverified PDP); the Noon title template is identical to the Amazon 65Q72Q title template (QLED/Dolby Atmos/VIDAA/144HZ/Game Mode/AI Picture)"
+          ]
+        }
+      ],
+      "alias_evidence": [],
+      "alias_search_note": "No statement found equating S7N with Q72Q. Hisense KSA lists S7N as a distinct S7 line (https://www.hisenseksa.com/tv/page/2/).",
+      "pairs": [
+        {
+          "a": 1,
+          "b": 2,
+          "relation": "DIFFERENT",
+          "basis": "Different codes (75S7N vs 75Q72Q). 75S7N is manufacturer-confirmed as the S7 line (Hi-Matte, motion-detector art features, 46 W audio) on hisenseksa.com; Q72Q is a separate code family (65Q72Q has its own EAN). No alias evidence. Confidence medium only because the Noon PDP could not be opened and 75Q72Q itself has no manufacturer page.",
+          "evidence": [
+            "https://www.extra.com/en-sa/electronics/television/qled-tv/hisense-75-inch-qled-4k-smart-tv-144hz-8-years-os-update-ai/p/100440222",
+            "https://www.hisenseksa.com/s7/hisense-75-inch-s7-qled-4k-vidaa-smart-tv-144-hz-75s7n/",
+            "https://www.noon.com/saudi-en/75-inch-smart-tv-qled-4k-ultra-hd-dolby-atmos-vidaa-smart-os-144hz-game-mode-ai-picture-75q72q-black/N70255681V/p/",
+            "https://www.carrefourksa.com/mafsau/en/qled-qned-tv/hisense-65-inch-qled-4k-smart-tv-144hz-vrr-ai-picture-dolby-atoms-voice-control-65q72q-black/p/6942351426969"
+          ],
+          "confidence": "medium"
+        }
+      ]
+    },
+    {
+      "id": "T03",
+      "listings": [
+        {
+          "index": 1,
+          "merchant": "نون (Noon)",
+          "stated_model_in_source": "model in title = 75S4QLC2 (title: 'evoQ 75S4QLC2 Evoq75QLC/evoQ75S4QLC2')",
+          "pdp": {
+            "url": "https://www.noon.com/saudi-en/75-inch-uhd-google-qled-tv-4k-ultra-hd-3840x2160-hdr10-dolby-audio-smart-tv-with-google-assistant-netflix-youtube-prime-video-disney-wifi-bluetooth-hdmi-arc-evoq-75s4qlc2-evoq75qlc-evoq75s4qlc2-black/N70204849V/p/",
+            "fetched": false,
+            "model_or_mpn_shown": "",
+            "brand_shown": "",
+            "key_specs": "",
+            "notes": "Direct fetch timed out (60 s); r.jina.ai proxy returned 403. Title/URL state 75 in, Google QLED TV, 4K 3840x2160, HDR10, Dolby Audio, model evoQ 75S4QLC2."
+          },
+          "manufacturer_model_resolved": "75S4QLC2",
+          "manufacturer_page": {
+            "url": "",
+            "model": "75S4QLC2",
+            "key_specs": "No Impex-owned page found. Sibling codes seen at retailers: EVO85S4QLC2 (https://www.carrefourksa.com/mafsau/ar/qled-qned-tv/impex-85-tv-qledgoogle-evo85s4qlc2/p/760157), 55S4QLC2R/65S4QLC2R (Lulu), and India's 75S4QLC3 (https://www.myg.in/tv/impex/impex-evoq-uhd-android-led-tv-189-cm-75-inch-75s4qlc3/) - a different suffix, not evidence for C2."
+          },
+          "warnings": [
+            "Noon PDP not accessible; model and brand taken from the title only"
+          ]
+        },
+        {
+          "index": 2,
+          "merchant": "النخيل / LuLu",
+          "stated_model_in_source": "title model 75S4QLC2; generic model field '2464997' is the LuLu item id",
+          "pdp": {
+            "url": "https://gcc.luluhypermarket.com/en-sa/impex-4k-smart-qled-tv-75-inches-75s4qlc2/p/2464997/",
+            "fetched": true,
+            "model_or_mpn_shown": "75S4QLC2",
+            "brand_shown": "Impex",
+            "key_specs": "75 in, QLED, 3840x2160, 120 Hz with MEMC, Google TV (Android 14), MediaTek MT9603, 2 GB/16 GB, Dolby Vision & Atmos, HDR10",
+            "notes": "Direct fetch 403; obtained via r.jina.ai proxy. New; seller LuLu Hypermarket KSA."
+          },
+          "manufacturer_model_resolved": "75S4QLC2",
+          "manufacturer_page": {
+            "url": "",
+            "model": "75S4QLC2",
+            "key_specs": "No Impex manufacturer page found"
+          },
+          "warnings": [
+            "LuLu sells other sizes of this line with an 'R' suffix (55S4QLC2R, 65S4QLC2R: https://gcc.luluhypermarket.com/en-sa/impex-evoq-series-55-inches-4k-smart-qled-tv-55s4qlc2r/p/2266640/); the 75-inch listing shows no R suffix, matching Noon"
+          ]
+        }
+      ],
+      "alias_evidence": [
+        {
+          "code_a": "75S4QLC2",
+          "code_b": "EVOQ75S4QLC2 / Evoq75QLC",
+          "statement": "Noon title lists 'evoQ 75S4QLC2 Evoq75QLC/evoQ75S4QLC2' as names for the same listing (merchant statement, not manufacturer)",
+          "url": "https://www.noon.com/saudi-en/75-inch-uhd-google-qled-tv-4k-ultra-hd-3840x2160-hdr10-dolby-audio-smart-tv-with-google-assistant-netflix-youtube-prime-video-disney-wifi-bluetooth-hdmi-arc-evoq-75s4qlc2-evoq75qlc-evoq75s4qlc2-black/N70204849V/p/",
+          "date": "2026-10-04",
+          "confidence": "low"
+        }
+      ],
+      "pairs": [
+        {
+          "a": 1,
+          "b": 2,
+          "relation": "SAME_EXACT",
+          "basis": "Same brand (Impex/evoQ) and the same exact code 75S4QLC2, stated independently by two merchants (Noon title; LuLu PDP), with consistent 75in/4K/QLED/Google TV and no conflict found. Not high: there is no Impex manufacturer page, and the Noon PDP could not be opened to confirm specs or condition.",
+          "evidence": [
+            "https://www.noon.com/saudi-en/75-inch-uhd-google-qled-tv-4k-ultra-hd-3840x2160-hdr10-dolby-audio-smart-tv-with-google-assistant-netflix-youtube-prime-video-disney-wifi-bluetooth-hdmi-arc-evoq-75s4qlc2-evoq75qlc-evoq75s4qlc2-black/N70204849V/p/",
+            "https://gcc.luluhypermarket.com/en-sa/impex-4k-smart-qled-tv-75-inches-75s4qlc2/p/2464997/"
+          ],
+          "confidence": "medium"
+        }
+      ]
+    },
+    {
+      "id": "T05",
+      "listings": [
+        {
+          "index": 1,
+          "merchant": "أمازون (Amazon.sa)",
+          "stated_model_in_source": "model in title = 55E8S",
+          "pdp": {
+            "url": "https://www.amazon.sa/-/en/55E8S-240Hz%EF%BC%8CBuilt-Subwoofer%EF%BC%8CDolby-Motion%EF%BC%8CFilmmaker-Mode%EF%BC%8CHands-Free/dp/B0GQDXNH3L/ref=sr_1_29",
+            "fetched": true,
+            "model_or_mpn_shown": "55E8S (product details 'Model Number')",
+            "brand_shown": "Hisense",
+            "key_specs": "55 in, Mini LED QLED, 4K, 144 Hz, VIDAA U, 8000:1 contrast, 2.1.2 ch Dolby Atmos with built-in subwoofer, 4 HDMI",
+            "notes": "Direct fetch HTTP 503; content via https://r.jina.ai/https://www.amazon.sa/dp/B0GQDXNH3L?language=en_AE . New, 2026 model, 2-year warranty, sold by Amazon.sa."
+          },
+          "manufacturer_model_resolved": "55E8S",
+          "manufacturer_page": {
+            "url": "https://hisense.co.za/products/hisense-real-miniled-55e8s-55-144hz-240hsr-tv/",
+            "model": "55E8S",
+            "key_specs": "Hisense ZA: Hi-QLED MiniLED, native 144 Hz (240 HSR), 500 nit typical / 700 peak, VIDAA, built-in subwoofer tuned by Devialet, AMD FreeSync Premium. Also Hisense ES: https://www.hisense.es/televisores/miniled/serie-e8-miniled-tv-hisense-55e8s/ ('Modo Juego 144 Hz Nativos')"
+          },
+          "warnings": [
+            "55E8S is not listed on hisenseksa.com catalogue pages; Saudi-market spec not manufacturer-confirmed"
+          ]
+        },
+        {
+          "index": 2,
+          "merchant": "إكسترا (eXtra)",
+          "stated_model_in_source": "modelNumber = 55U7S",
+          "pdp": {
+            "url": "https://www.extra.com/en-sa/electronics/television/miniled/hisense-55-inch-miniled-4k-smart-tv-8-years-os-update-144hz/p/100514445",
+            "fetched": true,
+            "model_or_mpn_shown": "55U7S",
+            "brand_shown": "HISENSE",
+            "key_specs": "55 in, MiniLED, 4K 3840x2160, 144 Hz, OS Vidaa; dimming zones not stated",
+            "notes": "New; seller Extra Stores"
+          },
+          "manufacturer_model_resolved": "55U7S",
+          "manufacturer_page": {
+            "url": "https://www.hisenseksa.com/tv/75u7s/",
+            "model": "75U7S (sibling size; https://www.hisenseksa.com/tv/55u7s/ returned 404)",
+            "key_specs": "Official Hisense KSA U7S (75 in, SKU 75U73SAVT(01)): 384 local-dimming zones, 1,100 nit peak, VIDAA U9, 40 W Dolby Atmos. 55-inch U7S manufacturer page not found in KSA; European 55U7S PRO is 165 Hz / 512 zones (https://www.hisense.es/televisores/miniled/serie-u7-pro-miniled-pro-hisense-tv-55u7s-pro/) - regional variants differ."
+          },
+          "warnings": [
+            "55U7S Saudi spec not manufacturer-confirmed (KSA page 404); U7S specs vary by region"
+          ]
+        }
+      ],
+      "alias_evidence": [],
+      "alias_search_note": "No statement found equating E8S and U7S. Hisense publishes them as separate series (E8 MiniLED vs U7 MiniLED) in the same markets (e.g. Hisense ES has distinct E8S and U7S PRO pages).",
+      "pairs": [
+        {
+          "a": 1,
+          "b": 2,
+          "relation": "DIFFERENT",
+          "basis": "Two different trusted Hisense codes from different manufacturer series: 55E8S (E8 MiniLED, Amazon PDP model number, Hisense ZA/ES pages) vs 55U7S (U7 MiniLED, eXtra modelNumber; U7S on Hisense KSA with 384 zones/1,100 nit at 75 in). Hisense lists E8S and U7S as separate series; no alias evidence. Same 55in/MiniLED/144Hz is only WEAK family evidence.",
+          "evidence": [
+            "https://www.amazon.sa/-/en/55E8S-240Hz%EF%BC%8CBuilt-Subwoofer%EF%BC%8CDolby-Motion%EF%BC%8CFilmmaker-Mode%EF%BC%8CHands-Free/dp/B0GQDXNH3L/ref=sr_1_29",
+            "https://www.extra.com/en-sa/electronics/television/miniled/hisense-55-inch-miniled-4k-smart-tv-8-years-os-update-144hz/p/100514445",
+            "https://hisense.co.za/products/hisense-real-miniled-55e8s-55-144hz-240hsr-tv/",
+            "https://www.hisense.es/televisores/miniled/serie-e8-miniled-tv-hisense-55e8s/",
+            "https://www.hisenseksa.com/tv/75u7s/"
+          ],
+          "confidence": "high"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,367 @@
+{
+  "fetch_date": "2026-10-04",
+  "method_note": "Merchant PDPs fetched via WebFetch on 2026-10-04; manufacturer evidence from tcl.com (sa/gulf/global), hisenseksa.com (footer: '© Hisense Middle East 2026'), hisenseme.com, hisense.es. Price was never used as a basis. No alias/equivalence statement was found for any code pair in T13-T17 despite targeted searches.",
+  "groups": [
+    {
+      "id": "T13",
+      "listings": [
+        {
+          "index": 1,
+          "merchant": "نون",
+          "stated_model_in_source": "55P8L (title only; generic model field = 'Television 55 Inch 4K')",
+          "pdp": {
+            "url": "https://www.noon.com/saudi-en/television-55-inch-4k-qd-mini-led-dimming-google-smart-tv-144hz-refresh-rate-93-dci-p3-aipq-pro-slim-uni-body-design-2026-model-55p8l-black/N70356473V/p/",
+            "fetched": false,
+            "model_or_mpn_shown": "",
+            "brand_shown": "",
+            "key_specs": "",
+            "notes": "Noon PDP timed out (60s) on two attempts; nothing extracted. Title (from input) states 55P8L, QD-Mini LED, 144Hz, 2026 model."
+          },
+          "manufacturer_model_resolved": "55P8L",
+          "manufacturer_page": {
+            "url": "https://www.tcl.com/global/en/tvs/p8l",
+            "model": "55P8L (TCL P8L QD-Mini LED Dimming TV); also https://www.tcl.com/sa/en/support-tv/model/55p8l lists 'P8L Mini LED TV' 55P8L for Saudi",
+            "key_specs": "QD-Mini LED dimming, '144Hz Native Refresh Rate' (288Hz via HDMI), HVA panel '6000:1' (55\"), '16bit Backlight Control' on 55\", 2.0 speakers on 55\", Google TV"
+          },
+          "warnings": ["Model code taken from title only; PDP structured fields not verified (page blocked)."]
+        },
+        {
+          "index": 2,
+          "merchant": "إكسترا",
+          "stated_model_in_source": "55C7L (modelNumber)",
+          "pdp": {
+            "url": "https://www.extra.com/en-sa/electronics/television/led/tcl-55-inch-miniled-aipq-pro-ultra-slim-smart-tv/p/100511701",
+            "fetched": true,
+            "model_or_mpn_shown": "55C7L",
+            "brand_shown": "TCL",
+            "key_specs": "55\", MiniLED, 3840x2160, 144Hz motion flow, Google TV, 'Bang & Olufsen' sound, 3GB RAM/64GB, 3 HDMI/1 USB, 122.6x71x5.6 cm, 14.5 kg",
+            "notes": "Condition 'NewCondition'. Dimming-zone count not stated."
+          },
+          "manufacturer_model_resolved": "55C7L",
+          "manufacturer_page": {
+            "url": "https://www.tcl.com/sa/en/tvs/98c7l",
+            "model": "C7L series (55/65/75/85/98); 55C7L support page https://www.tcl.com/sa/en/support-tv/model/55c7l ('SQD-Mini LED')",
+            "key_specs": "SQD-Mini LED, CSOT HVA 2.0 Pro, '4K 144Hz', '288 VRR Game Accelerator', 'Audio by Bang & Olufsen', Google TV"
+          },
+          "warnings": []
+        }
+      ],
+      "alias_evidence": [],
+      "pairs": [
+        {
+          "a": 1,
+          "b": 2,
+          "relation": "DIFFERENT",
+          "basis": "Two different TCL manufacturer codes, both with their own official TCL Saudi support pages: 55P8L ('P8L Mini LED TV', QD-Mini LED) vs 55C7L ('C7L SQD-Mini LED', Bang & Olufsen audio). Different series; no alias statement found. Same size/144Hz/mini-LED is only a WEAK family tuple.",
+          "evidence": [
+            "https://www.tcl.com/sa/en/support-tv/model/55p8l",
+            "https://www.tcl.com/sa/en/support-tv/model/55c7l",
+            "https://www.tcl.com/global/en/tvs/p8l",
+            "https://www.tcl.com/sa/en/tvs/98c7l",
+            "https://www.extra.com/en-sa/electronics/television/led/tcl-55-inch-miniled-aipq-pro-ultra-slim-smart-tv/p/100511701"
+          ],
+          "confidence": "high"
+        }
+      ]
+    },
+    {
+      "id": "T14",
+      "listings": [
+        {
+          "index": 1,
+          "merchant": "نون",
+          "stated_model_in_source": "55T69D (title only; generic model field = '55 Inch 4K UHD')",
+          "pdp": {
+            "url": "https://www.noon.com/saudi-en/55-inch-4k-uhd-smart-tv-60hz-qled-hdr-aipq-processor-google-tv-metallic-bezel-less-model-2026-3-years-warranty-55t69d-black/N70341685V/p/",
+            "fetched": false,
+            "model_or_mpn_shown": "",
+            "brand_shown": "",
+            "key_specs": "",
+            "notes": "Noon PDP timed out (60s); nothing extracted. Title states 55T69D, QLED, 60Hz, 'Model 2026'."
+          },
+          "manufacturer_model_resolved": "55T69D",
+          "manufacturer_page": {
+            "url": "https://www.tcl.com/sa/en/support-tv/model/55t69d",
+            "model": "55T69D ('TCL T69D Premium QLED TV')",
+            "key_specs": "Support page only (no spec sheet). Independent retail spec (Carrefour UAE title): T69D '2026 Model', AiPQ, 93% DCI-P3, ONKYO 2.0, Dolby Vision/Atmos"
+          },
+          "warnings": ["Model code taken from title only; PDP not verified (page blocked)."]
+        },
+        {
+          "index": 2,
+          "merchant": "إكسترا",
+          "stated_model_in_source": "55T6D (modelNumber)",
+          "pdp": {
+            "url": "https://www.extra.com/en-sa/electronics/television/qled-tv/tcl-55-inch-qled-aipq-pro-smart-tv-hdmi-3-usb1/p/100511513",
+            "fetched": true,
+            "model_or_mpn_shown": "55T6D",
+            "brand_shown": "TCL",
+            "key_specs": "55\", QLED, 3840x2160, 60Hz, Google TV, 2GB/16GB, 10W, 3 HDMI/1 USB, 9.1 kg, 122.6 x 71.1 x 7.2 cm",
+            "notes": "Condition 'NewCondition'; origin China."
+          },
+          "manufacturer_model_resolved": "55T6D",
+          "manufacturer_page": {
+            "url": "https://www.tcl.com/sa/en/tvs/85t6d",
+            "model": "T6D Premium QLED (85/75/65/55/50/43); support page https://www.tcl.com/sa/en/support-tv/model/55t6d",
+            "key_specs": "QLED, HVA panel 5000:1, 93% DCI-P3, AiPQ, MEMC, Dolby Vision, Google TV, 2.0 speakers on 55\""
+          },
+          "warnings": []
+        }
+      ],
+      "alias_evidence": [],
+      "pairs": [
+        {
+          "a": 1,
+          "b": 2,
+          "relation": "DIFFERENT",
+          "basis": "Two different TCL codes, each with its own TCL Saudi support page (55T69D 'T69D Premium QLED' vs 55T6D 'T6D Premium QLED'); the TCL SA T6D product page presents the T69D as a separate related model, not an alias. Noon title says 'Model 2026' (T69D). Shared 55\"/QLED/60Hz is WEAK family evidence only.",
+          "evidence": [
+            "https://www.tcl.com/sa/en/support-tv/model/55t69d",
+            "https://www.tcl.com/sa/en/support-tv/model/55t6d",
+            "https://www.tcl.com/sa/en/tvs/85t6d",
+            "https://www.extra.com/en-sa/electronics/television/qled-tv/tcl-55-inch-qled-aipq-pro-smart-tv-hdmi-3-usb1/p/100511513"
+          ],
+          "confidence": "high"
+        }
+      ]
+    },
+    {
+      "id": "T15",
+      "listings": [
+        {
+          "index": 1,
+          "merchant": "إكسترا",
+          "stated_model_in_source": "none in input (generic model field = ', 55 inch,QLED 4K'); PDP structured MPN = 55Q7EQ",
+          "pdp": {
+            "url": "https://www.extra.com/en-sa/electronics/television/qled-tv/hisense-55-inch-qled-4k-smart-tv-144hz-8-years-os-update-ai/p/100484179",
+            "fetched": true,
+            "model_or_mpn_shown": "55Q7EQ",
+            "brand_shown": "HISENSE",
+            "key_specs": "55\", 3840x2160, 144Hz, Vidaa, Dolby Atmos, 10W 2.0ch, 3GB/8GB, 4 HDMI, 2 USB, Bluetooth 5.0, AirPlay, '8 Years OS update AI', 123.41 x 75 x 29.8 cm, 9.5 kg",
+            "notes": "Condition New. The PDP's model 55Q7EQ was NOT in the input source fields (input had only the generic field)."
+          },
+          "manufacturer_model_resolved": null,
+          "manufacturer_page": {
+            "url": "https://www.hisenseksa.com/q7/",
+            "model": "55Q7EQ NOT listed. Hisense Saudi Q7 category lists only 55Q7N, 55Q7Q (and other sizes); hisenseme.com lists Q7/Q7S/Q7Q/Q7N series pages, none naming Q7EQ",
+            "key_specs": "Nearest official: 55Q7Q (https://www.hisenseksa.com/q7/hisense-55-inch-q7-qled-4k-vidaa-smart-tv-144-hz-55q7q/): 350 nit, 144Hz, 3 HDMI, 2 USB 2.0, BT 5.0; Q7S (https://hisenseme.com/products/q7s): native 144Hz, VIDAA U9, 3GB/8GB, HDMI 2.1 on HDMI 3&4, 1 USB3 + 1 USB2"
+          },
+          "warnings": [
+            "55Q7EQ could not be found on any Hisense manufacturer site or third-party spec source; it may be a retailer-specific code, but no statement says so.",
+            "eXtra spec mix (4 HDMI, 3GB/8GB) does not match official 55Q7Q (3 HDMI); resembles Q7S, but that is WEAK spec evidence only."
+          ]
+        },
+        {
+          "index": 2,
+          "merchant": "أمازون",
+          "stated_model_in_source": "55E7S PRO (title only; brand field 'Unknown')",
+          "pdp": {
+            "url": "https://www.amazon.sa/-/en/Hisense-55E7S-PRO-Vison-Atmos-brightness/dp/B0GR7DTKP8/ref=sr_1_35",
+            "fetched": false,
+            "model_or_mpn_shown": "55E7S PRO (from page title/meta only via https://www.amazon.sa/dp/B0GR7DTKP8?language=en_AE)",
+            "brand_shown": "Hisense (title/meta)",
+            "key_specs": "Title/meta only: 55\" 4K QLED, 144Hz, HSR 240Hz, HDR10+, Dolby Vision/Atmos, '8 Years VIDAA OS Updates', '350 nits Typical brightness'",
+            "notes": "Original URL returned HTTP 503. Alternate /dp/ URL returned only framework code + title/meta; the 'Technical details / Item model number' table was NOT retrievable, so the code is effectively title-sourced. Seller/condition not verified."
+          },
+          "manufacturer_model_resolved": "55E7S PRO",
+          "manufacturer_page": {
+            "url": "https://www.hisense.es/televisores/qled/serie-e7-pro-qled-gaming-tv-hisense-55e7s-pro/",
+            "model": "55E7S PRO (Hisense Spain, E7 PRO series, 2026)",
+            "key_specs": "VA panel, native 144Hz, '350nits', QLED & DLED, 'HomeOS U9', 2x10W with subwoofer, HDMI 2.1 on HDMI 3&4 (4K 144Hz), 'BT5.4', FreeSync Premium PRO"
+          },
+          "warnings": [
+            "55E7S PRO is not listed on Hisense Saudi (hisenseksa.com) or Hisense Middle East pages found; verified only on Hisense Spain (European market model). Amazon.sa listing may be an import/region variant - not verified.",
+            "Spain spec 'BT5.4' differs from eXtra listing's 'Bluetooth 5.0' (weak conflict, different-market data)."
+          ]
+        },
+        {
+          "index": 3,
+          "merchant": "الصندوق الأسود",
+          "stated_model_in_source": "55Q72Q (title)",
+          "pdp": {
+            "url": "https://alnakheelk.com/en/%D8%B4%D8%A7%D8%B4%D8%A9-%D9%87%D8%A7%D9%8A%D8%B3%D9%86%D8%B3-55-%D8%A8%D9%88%D8%B5%D8%A9-qled-%D9%83%D9%8A%D9%88-%D9%84%D8%AF-144-%D9%87%D8%B1%D8%AA%D8%B2-4k-%D9%81%D9%88%D8%B1%D9%83%D9%8A-55q72q/p1865732211",
+            "fetched": true,
+            "model_or_mpn_shown": "55Q72Q (model and SKU)",
+            "brand_shown": "Hisense",
+            "key_specs": "55\", QLED, 144Hz, 4K, AirPlay2, Netflix/YouTube",
+            "notes": "Condition: new ('وصل حديثاً'); status 'Out of stock'. Brightness/OS not stated."
+          },
+          "manufacturer_model_resolved": null,
+          "manufacturer_page": {
+            "url": "https://www.hisenseksa.com/q7/",
+            "model": "55Q72Q NOT listed on Hisense Saudi or Hisense Middle East pages found",
+            "key_specs": "Code corroborated only by other retailers: Carrefour KSA sells 65Q72Q ('144Hz VRR, AI Picture') https://www.carrefourksa.com/mafsau/en/qled-qned-tv/hisense-65-inch-qled-4k-smart-tv-144hz-vrr-ai-picture-dolby-atoms-voice-control-65q72q-black/p/6942351426969 ; Pricena shows 55Q72Q at Noon https://sa.pricena.com/ar/product/hisense-55-inch-qled-4k-smart-tv-144hz-vrr-ai-picture-dolby-atoms-voice-control-55q72q-black-price-in-saudi-arabia-154647690"
+          },
+          "warnings": [
+            "Merchant name is 'الصندوق الأسود' but URL domain is alnakheelk.com - merchant/domain identity mismatch to check.",
+            "55Q72Q not found on any Hisense manufacturer page; existence corroborated only by retailers (MEDIUM at best)."
+          ]
+        }
+      ],
+      "alias_evidence": [],
+      "pairs": [
+        {
+          "a": 1,
+          "b": 2,
+          "relation": "DIFFERENT",
+          "basis": "Explicit different codes on each side: eXtra structured MPN 55Q7EQ vs Amazon title 55E7S PRO (E-series, verified as a distinct Hisense model on hisense.es). No alias/regional equivalence statement found; weak spec conflict (BT 5.0 vs 5.4). Shared 55\"/144Hz/QLED is WEAK family evidence. Confidence medium because 55Q7EQ is not manufacturer-validated and Amazon's tech table could not be read.",
+          "evidence": [
+            "https://www.extra.com/en-sa/electronics/television/qled-tv/hisense-55-inch-qled-4k-smart-tv-144hz-8-years-os-update-ai/p/100484179",
+            "https://www.amazon.sa/dp/B0GR7DTKP8?language=en_AE",
+            "https://www.hisense.es/televisores/qled/serie-e7-pro-qled-gaming-tv-hisense-55e7s-pro/",
+            "https://www.hisenseksa.com/q7/"
+          ],
+          "confidence": "medium"
+        },
+        {
+          "a": 1,
+          "b": 3,
+          "relation": "REVIEW",
+          "basis": "Different codes (55Q7EQ vs 55Q72Q) but NEITHER is found on any Hisense manufacturer page (Hisense Saudi lists only 55Q7Q/55Q7N in Q7). Both look like Q7-family GCC codes and could be retailer-specific names of one set, or distinct sets; no manufacturer/distributor alias statement either way. Two untrusted merchant codes = insufficient evidence for SAME_EXACT or a manufacturer-backed DIFFERENT. Do not merge.",
+          "evidence": [
+            "https://www.extra.com/en-sa/electronics/television/qled-tv/hisense-55-inch-qled-4k-smart-tv-144hz-8-years-os-update-ai/p/100484179",
+            "https://alnakheelk.com/en/%D8%B4%D8%A7%D8%B4%D8%A9-%D9%87%D8%A7%D9%8A%D8%B3%D9%86%D8%B3-55-%D8%A8%D9%88%D8%B5%D8%A9-qled-%D9%83%D9%8A%D9%88-%D9%84%D8%AF-144-%D9%87%D8%B1%D8%AA%D8%B2-4k-%D9%81%D9%88%D8%B1%D9%83%D9%8A-55q72q/p1865732211",
+            "https://www.hisenseksa.com/q7/"
+          ],
+          "confidence": "low"
+        },
+        {
+          "a": 2,
+          "b": 3,
+          "relation": "DIFFERENT",
+          "basis": "55E7S PRO (manufacturer-verified E7 PRO series, Hisense Spain, 2026) vs 55Q72Q (Q-series code, retailer-corroborated). Different series naming, no alias statement found in any Hisense source. Confidence medium: 55Q72Q is not on a manufacturer page and Amazon PDP tech table was unreadable.",
+          "evidence": [
+            "https://www.hisense.es/televisores/qled/serie-e7-pro-qled-gaming-tv-hisense-55e7s-pro/",
+            "https://www.amazon.sa/dp/B0GR7DTKP8?language=en_AE",
+            "https://alnakheelk.com/en/%D8%B4%D8%A7%D8%B4%D8%A9-%D9%87%D8%A7%D9%8A%D8%B3%D9%86%D8%B3-55-%D8%A8%D9%88%D8%B5%D8%A9-qled-%D9%83%D9%8A%D9%88-%D9%84%D8%AF-144-%D9%87%D8%B1%D8%AA%D8%B2-4k-%D9%81%D9%88%D8%B1%D9%83%D9%8A-55q72q/p1865732211",
+            "https://www.carrefourksa.com/mafsau/en/qled-qned-tv/hisense-65-inch-qled-4k-smart-tv-144hz-vrr-ai-picture-dolby-atoms-voice-control-65q72q-black/p/6942351426969"
+          ],
+          "confidence": "medium"
+        }
+      ]
+    },
+    {
+      "id": "T16",
+      "listings": [
+        {
+          "index": 1,
+          "merchant": "جرير",
+          "stated_model_in_source": "none in input (generic model field; brand 'Unknown'); PDP shows Model Q61Q, Manufacturer Number 65Q61Q",
+          "pdp": {
+            "url": "https://www.jarir.com/sa-en/hisense-hisense-q61q-smart-tv-672682.html",
+            "fetched": true,
+            "model_or_mpn_shown": "Model 'Q61Q'; Manufacturer Number '65Q61Q'; SKU 672682",
+            "brand_shown": "Hisense",
+            "key_specs": "65\", QLED, 60 Hz, 4K, Black",
+            "notes": "Condition new (no refurbished indication). OS not stated in fetched content."
+          },
+          "manufacturer_model_resolved": "65Q61Q",
+          "manufacturer_page": {
+            "url": "https://www.hisenseksa.com/q6/65q61q/",
+            "model": "65Q61Q (Q6 category, Hisense Saudi Arabia; footer '© Hisense Middle East 2026')",
+            "key_specs": "Official page shows code only, no spec table; retail sources describe 65Q61Q as '2025 Model', VIDAA, 4 HDMI/2 USB (https://uae.sharafdg.com/product/hisense-65inch-q61q-4k-qled-smart-television-2025-model-65q61q/ ; Carrefour UAE title 'UAE version')"
+          },
+          "warnings": ["Input lost the brand and MPN; Jarir PDP itself states Hisense and 65Q61Q."]
+        },
+        {
+          "index": 2,
+          "merchant": "نون",
+          "stated_model_in_source": "65Q6N (title)",
+          "pdp": {
+            "url": "https://www.noon.com/saudi-en/hisense-65-inch-4k-smart-tv-qled-60-hz-65q6n-black/N70118977V/p/",
+            "fetched": false,
+            "model_or_mpn_shown": "",
+            "brand_shown": "",
+            "key_specs": "",
+            "notes": "Noon PDP timed out (60s) on full and short URL; nothing extracted. Title states 65Q6N, QLED, 60Hz."
+          },
+          "manufacturer_model_resolved": "65Q6N",
+          "manufacturer_page": {
+            "url": "https://www.hisenseksa.com/qled/hisense-65-inch-q6-qled-4k-vidaa-smart-tv-60-hz-65q6n/",
+            "model": "65Q6N (Hisense Saudi page indexed by search with title '65Q6N - Hisense Saudi Arabia'; returned HTTP 404 on direct fetch 2026-10-04)",
+            "key_specs": "Search snippet of the official page: QLED 4K, 60Hz, VRR, Quantum Dot, Dolby Vision & Atmos, AI 4K Upscaler. Q6N is the 2024 model year (retail sources e.g. https://croma.com/hisense-q6n-165-cm-65-inch-qled-4k-ultra-hd-google-tv-with-dolby-vision-dolby-atmos-2024-model-/p/308167)"
+          },
+          "warnings": ["Official 65Q6N page now 404 (possibly discontinued); its existence is from the search index, not a live fetch."]
+        }
+      ],
+      "alias_evidence": [],
+      "pairs": [
+        {
+          "a": 1,
+          "b": 2,
+          "relation": "DIFFERENT",
+          "basis": "Jarir PDP states manufacturer number 65Q61Q; Noon title states 65Q6N. Hisense Saudi (Hisense Middle East) carries them as separate products (65Q61Q page in Q6 category; separate 65Q6N page, plus a separate 65Q6Q). Retail sources date Q61Q as 2025 model and Q6N as 2024 model. No alias/equivalence statement found. 65\"/QLED/60Hz match is WEAK family evidence only.",
+          "evidence": [
+            "https://www.jarir.com/sa-en/hisense-hisense-q61q-smart-tv-672682.html",
+            "https://www.hisenseksa.com/q6/65q61q/",
+            "https://www.hisenseksa.com/qled/hisense-65-inch-q6-qled-4k-vidaa-smart-tv-60-hz-65q6n/",
+            "https://uae.sharafdg.com/product/hisense-65inch-q61q-4k-qled-smart-television-2025-model-65q61q/",
+            "https://croma.com/hisense-q6n-165-cm-65-inch-qled-4k-ultra-hd-google-tv-with-dolby-vision-dolby-atmos-2024-model-/p/308167"
+          ],
+          "confidence": "high"
+        }
+      ]
+    },
+    {
+      "id": "T17",
+      "listings": [
+        {
+          "index": 1,
+          "merchant": "إكسترا",
+          "stated_model_in_source": "50P7K (modelNumber)",
+          "pdp": {
+            "url": "https://www.extra.com/en-sa/electronics/television/qled-tv/tcl-50-inch-qled-4k-samrt-tv-hdmi-3-usb-60hz-dlg-120hz/p/100397650",
+            "fetched": true,
+            "model_or_mpn_shown": "50P7K",
+            "brand_shown": "TCL",
+            "key_specs": "50\", 3840x2160, 60 Hz (title adds 'DLG 120Hz'), Google TV, 2GB/16GB, 2x10W, Dolby Atmos, 3 HDMI/1 USB",
+            "notes": "Condition 'NewCondition'."
+          },
+          "manufacturer_model_resolved": "50P7K",
+          "manufacturer_page": {
+            "url": "https://www.tcl.com/gulf/en/tvs/p7k",
+            "model": "P7K QLED (43-85\"); 50P7K also at https://www.tcl.com/au/en/support-tv/model/50p7k",
+            "key_specs": "QLED, HVA panel, native 60Hz, Game Accelerator 120Hz, 93% DCI-P3, AiPQ, Google TV, Dolby Atmos/DTS Virtual:X; 2025 series ('14% thinner than its predecessor P745')"
+          },
+          "warnings": []
+        },
+        {
+          "index": 2,
+          "merchant": "نون",
+          "stated_model_in_source": "50P7L (title; generic model field = '50 Inch P7L Premium')",
+          "pdp": {
+            "url": "https://www.noon.com/saudi-en/50-inch-p7l-premium-qled-tv-4k-uhd-google-tv-60hz-dolby-vision-model-year-2026-3-years-warranty-50p7l-black/N70341684V/p/",
+            "fetched": false,
+            "model_or_mpn_shown": "",
+            "brand_shown": "",
+            "key_specs": "",
+            "notes": "Noon PDP timed out (60s) on full and short URL; nothing extracted. Title states 50P7L, 'Model Year 2026'."
+          },
+          "manufacturer_model_resolved": "50P7L",
+          "manufacturer_page": {
+            "url": "https://www.tcl.com/sa/en/tvs/85p7l",
+            "model": "P7L Premium QLED (85/75/65/55/50/43P7L); support page https://www.tcl.com/sa/en/support-tv/model/50p7l",
+            "key_specs": "QLED, HVA panel 5000:1, 93% DCI-P3, AiPQ, MEMC, Google TV, 2.0 speakers below 85\"; no P7K alias mentioned"
+          },
+          "warnings": ["Model code taken from title only; PDP not verified (page blocked)."]
+        }
+      ],
+      "alias_evidence": [],
+      "pairs": [
+        {
+          "a": 1,
+          "b": 2,
+          "relation": "DIFFERENT",
+          "basis": "Two different TCL codes from successive series: 50P7K (P7K, 2025, TCL Gulf page) vs 50P7L (P7L Premium QLED, 2026, TCL Saudi page + 50P7L support page). TCL SA P7L page makes no reference to P7K as an equivalent. Same 50\"/QLED/60Hz is WEAK family evidence only.",
+          "evidence": [
+            "https://www.extra.com/en-sa/electronics/television/qled-tv/tcl-50-inch-qled-4k-samrt-tv-hdmi-3-usb-60hz-dlg-120hz/p/100397650",
+            "https://www.tcl.com/gulf/en/tvs/p7k",
+            "https://www.tcl.com/sa/en/tvs/85p7l",
+            "https://www.tcl.com/sa/en/support-tv/model/50p7l"
+          ],
+          "confidence": "high"
+        }
+      ]
+    }
+  ]
+}

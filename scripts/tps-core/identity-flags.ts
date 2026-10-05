@@ -70,3 +70,20 @@ export function identityAnyGateEnabled(): boolean {
   const v2 = (process.env.TPS_IDENTITY_V2 || "").trim().toLowerCase();
   return !off(gate) || !off(v2);
 }
+
+/**
+ * EVIDENCE-LAYER input flag (Evidence-First closure, 2026-10-04). When on for a category, every place that hands the VERIFIER a declared
+ * manufacturer model — the signals job and the compare page — asks the ONE unified function
+ * (`src/lib/identity/manufacturer-model-evidence.ts`, with page-captured evidence from `tps_listing_evidence`) instead of
+ * `extractManufacturerModel(payload)`. It changes WHAT the verifier is told, never whether any reader applies a verdict: reading is still
+ * governed by TPS_IDENTITY_GATE, so `TPS_IDENTITY_EVIDENCE=tv` with the gate off is a pure SHADOW (signals computed, nobody reading).
+ *
+ *   TPS_IDENTITY_EVIDENCE=tv,vacuum | 1 | all      (default OFF; read at call time)
+ */
+export function identityEvidenceEnabled(category?: string): boolean {
+  const raw = (process.env.TPS_IDENTITY_EVIDENCE || "").trim().toLowerCase();
+  if (!raw || raw === "0" || raw === "false" || raw === "off") return false;
+  if (raw === "1" || raw === "true" || raw === "all" || raw === "on") return true;
+  if (!category) return false;
+  return raw.split(",").map((s) => s.trim()).includes(category.toLowerCase());
+}

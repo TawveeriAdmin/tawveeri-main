@@ -1,0 +1,54 @@
+{
+ "date": "2026-10-04T18:16:38.243Z",
+ "categories": [
+  "tv",
+  "vacuum"
+ ],
+ "tally": {
+  "canonicals": 240,
+  "errors": 0,
+  "listings_compared": 553,
+  "agree": 548,
+  "signal_reject_but_page_lists": 0,
+  "signal_review_but_page_clean": 1,
+  "page_review_but_no_signal": 0,
+  "page_review_signal_reject": 1,
+  "omitted_by_page_not_flagged": 0
+ },
+ "mismatches": [
+  {
+   "key": "hisense|55|4k|mini_led|144",
+   "store": 2,
+   "signal": "review",
+   "page": "absent"
+  },
+  {
+   "key": "hisense|75|4k|qled|144",
+   "store": 4,
+   "signal": "reject",
+   "page": "review",
+   "reasons": [
+    "vs noon: model_code_one_side",
+    "vs amazon: model_code_one_side"
+   ]
+  },
+  {
+   "key": "panasonic|NA|1500",
+   "store": 3,
+   "signal": "review",
+   "page": "clean"
+  },
+  {
+   "key": "panasonic|NA|1500",
+   "store": 5,
+   "signal": "review",
+   "page": "absent"
+  },
+  {
+   "key": "panasonic|NA|1500",
+   "store": 8,
+   "signal": "review",
+   "page": "absent"
+  }
+ ]
+}

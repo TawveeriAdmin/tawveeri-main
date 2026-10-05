@@ -1,0 +1,536 @@
+{
+  "fetch_date": "2026-10-04",
+  "groups": [
+    {
+      "id": "V12",
+      "listings": [
+        {
+          "index": 1,
+          "merchant": "المنيع (Almanea)",
+          "stated_model_in_source": "2026K (generic model field + title)",
+          "pdp": {
+            "url": "https://www.almanea.sa/en/product/p-150207202999010",
+            "fetched": true,
+            "model_or_mpn_shown": "2026K",
+            "brand_shown": "Bissell",
+            "key_specs": "Wet Dry Drum Vacuum, 1500W, Black; capacity not stated on PDP",
+            "notes": "Almanea separately lists 2026E as distinct products (p-150207202999006 'PowerClean Drum Wet Dry 21L 2026E', p-150207202999009 '1500W green black 2026E'), i.e. the same retailer treats 2026K and 2026E as different SKUs."
+          },
+          "manufacturer_model_resolved": "2026K",
+          "manufacturer_page": {
+            "url": "https://myxprs.com/products/bissell-2026k-multiclean-wet-dry-drum-vacuum-cleaner-1500w-23l-black-red",
+            "model": "2026K = BISSELL MultiClean Wet & Dry Drum (no official bissell.com page found; distributor/retailer evidence)",
+            "key_specs": "1500W, 23L, wet & dry, Black/Red, auto tool kit (crevice, precision blower/suction, precision wet suction, upholstery brush, detailing/inflatable nozzles). Same family as EU 2026M MultiClean 23L (https://www.mediamarkt.at/de/product/_bissell-2026m-multiclean-wet-and-dry-drum-23-liter-vacuum-cleaners-maximale-leistung-1500-watt-rot-grau-139488051.html); Carrefour KSA titles 2026K 'Drum MultiClean ... 2026K Black/Mambo Red' (https://carrefourksa.com/mafsau/en/drum-vacuum-cleaners/bissell-drum-multiclean-wet-dry-vacuum-cleaner-specialized-tools-for-vehicle-and-garage-cleaning-versatile-combination-floor-tool-powerful-1500w-motor-2026k-black-mambo-red/p/3596971727628 — page timed out, title from search index)"
+          },
+          "warnings": [
+            "No bissell.com manufacturer page located for 2026K; family/capacity come from retailer/distributor pages.",
+            "PDP does not state capacity."
+          ]
+        },
+        {
+          "index": 2,
+          "merchant": "إكسترا (eXtra)",
+          "stated_model_in_source": "2026E (modelNumber field)",
+          "pdp": {
+            "url": "https://www.extra.com/en-sa/small-appliances/home-environment-care/vacuum-cleaner/bissell-wet-and-dry-drum-vacuum-cleaner-21l-dry-15l-wet-1500w/p/100144541",
+            "fetched": true,
+            "model_or_mpn_shown": "2026E",
+            "brand_shown": "BISSELL",
+            "key_specs": "Wet & dry drum, 1500W, 21L dry / 15L wet, Green-Black, 8 m cord, Multi-Surface Floor Tool, Product Type W&D-DRUM, new",
+            "notes": "eXtra structured MPN is 2026E."
+          },
+          "manufacturer_model_resolved": "2026E",
+          "manufacturer_page": {
+            "url": "https://www.aceuae.com/en-ae/bissell-drum-powerclean-1500w-wet-and-dry-21l-vacuum-cleaner-2026e-21-l-1500-w/1304760.html",
+            "model": "2026E = BISSELL PowerClean (Professional) Wet & Dry Drum 21L (no official bissell.com page found; retailer evidence)",
+            "key_specs": "1500W, 21L, wet & dry, green/black; multi-surface floor tool, wet tool, crevice, dusting brush, blower. Corroborated by Blackbox (https://store.ops.blackbox.com.sa/en/bissell-premium-power-clean-professional1500w-21l-wet-and-dry-canister-vacuum-cleaner-2026e-p-1518128810000046), Almanea (https://www.almanea.sa/en/product/bissell-powerclean-drum-wet-dry-21l-2026e-p-150207202999006)"
+          },
+          "warnings": [
+            "No bissell.com manufacturer page located; family identity from multiple independent retailers."
+          ]
+        }
+      ],
+      "alias_evidence": [
+        {
+          "code_a": "2026K",
+          "code_b": "2026E",
+          "statement": "No alias/equivalence statement found. Evidence points the other way: 2026K is sold as 'MultiClean ... 23L' and 2026E as 'PowerClean ... 21L'; Almanea lists both as separate products.",
+          "url": "https://myxprs.com/products/bissell-2026k-multiclean-wet-dry-drum-vacuum-cleaner-1500w-23l-black-red",
+          "date": "2026-10-04",
+          "confidence": "medium"
+        }
+      ],
+      "pairs": [
+        {
+          "a": 1,
+          "b": 2,
+          "relation": "DIFFERENT",
+          "basis": "Two different trusted manufacturer codes (2026K on Almanea PDP vs 2026E in eXtra structured MPN), no alias evidence. Independent retailers place them in different families (2026K = MultiClean 23L with auto/vehicle tool kit; 2026E = PowerClean Professional 21L) and Almanea itself sells 2026K and 2026E as separate products. The eXtra '21L dry/15L wet' listing is the 2026E, not 2026K.",
+          "evidence": [
+            "https://www.almanea.sa/en/product/p-150207202999010",
+            "https://www.extra.com/en-sa/small-appliances/home-environment-care/vacuum-cleaner/bissell-wet-and-dry-drum-vacuum-cleaner-21l-dry-15l-wet-1500w/p/100144541",
+            "https://myxprs.com/products/bissell-2026k-multiclean-wet-dry-drum-vacuum-cleaner-1500w-23l-black-red",
+            "https://www.aceuae.com/en-ae/bissell-drum-powerclean-1500w-wet-and-dry-21l-vacuum-cleaner-2026e-21-l-1500-w/1304760.html",
+            "https://www.almanea.sa/en/product/bissell-powerclean-drum-wet-dry-21l-2026e-p-150207202999006"
+          ],
+          "confidence": "high"
+        }
+      ]
+    },
+    {
+      "id": "V26",
+      "listings": [
+        {
+          "index": 1,
+          "merchant": "إكسترا (eXtra)",
+          "stated_model_in_source": "2027E (modelNumber field)",
+          "pdp": {
+            "url": "https://www.extra.com/en-sa/small-appliances/home-environment-care/vacuum-cleaner/bissell-powerclean-drum-vacuum-cleaner-2000-watt-21-liter-with-blower-function/p/100009425",
+            "fetched": true,
+            "model_or_mpn_shown": "2027E",
+            "brand_shown": "BISSELL",
+            "key_specs": "PowerClean dry drum, 2000W, 21L, Blue-Black, metal-plastic body, 8 m cord, Product Type DRY-DRUM, tools: Multi-Surface Floor Tool, Crevice Tool, Dusting Brush, new",
+            "notes": ""
+          },
+          "manufacturer_model_resolved": "2027E",
+          "manufacturer_page": {
+            "url": "https://aceuae.com/en-ae/bissell-drum-powerclean-2000w-dry-21l-vacuum-cleaner-2027e-21-l-2000-w/1257504.html",
+            "model": "2027E = BISSELL Drum PowerClean 2000W Dry 21L (no official bissell.com page found; retailer evidence, also Lulu/Almanea/Sharaf DG)",
+            "key_specs": "2000W, 21L drum, dry, blower function, metal body"
+          },
+          "warnings": [
+            "No bissell.com manufacturer page located."
+          ]
+        },
+        {
+          "index": 2,
+          "merchant": "المنيع (Almanea)",
+          "stated_model_in_source": "1994K (generic model field + title)",
+          "pdp": {
+            "url": "https://www.almanea.sa/en/product/p-150207205999037",
+            "fetched": true,
+            "model_or_mpn_shown": "1994K",
+            "brand_shown": "Bissell",
+            "key_specs": "Carpet & Hard Floor Vacuum Cleaner, 2000W, Red; capacity not stated; out of stock",
+            "notes": "Almanea also lists 1994K as 'vacuum cleaner 2000 watt 2.2 L 1994K' (https://www.almanea.sa/en/product/bissell-vacuum-cleaner-2000-watt-2-2-l-1994k-p-1301502198)."
+          },
+          "manufacturer_model_resolved": "1994K",
+          "manufacturer_page": {
+            "url": "https://www.aceuae.com/en-ae/bissell-canister-cleanview-multicyclonic-vacuum-cleaner-1994k-25-l-2000w/1375910.html",
+            "model": "1994K = BISSELL CleanView Multicyclonic canister (bagless cyclonic); official BISSELL AU sibling 1994U CleanView Turbo at https://bissell.com.au/products/cleanview-turbo-vacuum",
+            "key_specs": "2000W, ~2.2-2.5L cyclonic dust tank, canister, combination floor tool for carpet & hard floor, auto cord rewind"
+          },
+          "warnings": [
+            "1994K exact page on bissell.com not found; 1994U (AU) is a regional sibling, not documented as an alias of 1994K."
+          ]
+        }
+      ],
+      "alias_evidence": [],
+      "pairs": [
+        {
+          "a": 1,
+          "b": 2,
+          "relation": "DIFFERENT",
+          "basis": "Different trusted manufacturer codes (2027E vs 1994K), different form factor and capacity: 2027E is a 21L dry drum vacuum; 1994K is a CleanView multicyclonic canister with a ~2.2L dust tank. Only shared attributes are brand and 2000W (WEAK).",
+          "evidence": [
+            "https://www.extra.com/en-sa/small-appliances/home-environment-care/vacuum-cleaner/bissell-powerclean-drum-vacuum-cleaner-2000-watt-21-liter-with-blower-function/p/100009425",
+            "https://www.almanea.sa/en/product/p-150207205999037",
+            "https://www.almanea.sa/en/product/bissell-vacuum-cleaner-2000-watt-2-2-l-1994k-p-1301502198",
+            "https://www.aceuae.com/en-ae/bissell-canister-cleanview-multicyclonic-vacuum-cleaner-1994k-25-l-2000w/1375910.html",
+            "https://aceuae.com/en-ae/bissell-drum-powerclean-2000w-dry-21l-vacuum-cleaner-2027e-21-l-2000-w/1257504.html"
+          ],
+          "confidence": "high"
+        }
+      ]
+    },
+    {
+      "id": "V14",
+      "listings": [
+        {
+          "index": 1,
+          "merchant": "إكسترا (eXtra)",
+          "stated_model_in_source": "none in source fields (generic model field is a title fragment)",
+          "pdp": {
+            "url": "https://www.extra.com/en-sa/small-appliances/home-environment-care/vacuum-cleaner/panasonic-canister-vacuum-cleaner-6l-1900w-red/p/100377322",
+            "fetched": true,
+            "model_or_mpn_shown": "MC-CG711RY47",
+            "brand_shown": "PANASONIC",
+            "key_specs": "Canister, bagged, 1900W, 6.0L, Red, 5 m cord, 2 accessories, telescopic pipe, Made in Malaysia, new",
+            "notes": "eXtra PDP MPN = MC-CG711RY47 (not MC-CJ911)."
+          },
+          "manufacturer_model_resolved": "MC-CG711",
+          "manufacturer_page": {
+            "url": "https://www.panasonic.com/mea/en/consumer/home-appliances/vacuum-cleaners/bagged-canister/mc-cg711.html",
+            "model": "MC-CG711 (Deluxe series, bagged canister)",
+            "key_specs": "1900W max input, 6.0L dust bag, anti-bacteria filter, telescopic wand, 2-step nozzle (page returned HTTP 403 to fetch; specs from search-index snippet of panasonic.com/mea specs page)"
+          },
+          "warnings": [
+            "Panasonic MEA pages returned 403; manufacturer specs taken from search-index snippets of the official URLs."
+          ]
+        },
+        {
+          "index": 2,
+          "merchant": "نون (Noon)",
+          "stated_model_in_source": "MC-CJ911RY47 (merchant_specs model_number + model_name; also in title)",
+          "pdp": {
+            "url": "https://www.noon.com/saudi-en/canister-vacuum-cleaner-6-l-1900-w-mc-cj911ry47-red/N70147514V/p/",
+            "fetched": false,
+            "model_or_mpn_shown": "",
+            "brand_shown": "",
+            "key_specs": "",
+            "notes": "Fetch timed out twice (saudi-en and saudi-ar). Input merchant_specs state model_number/model_name MC-CJ911RY47, 1900 W, 6 L, red, 82 dB, 460 Pa."
+          },
+          "manufacturer_model_resolved": "MC-CJ911",
+          "manufacturer_page": {
+            "url": "https://www.panasonic.com/mea/en/consumer/home-appliances/vacuum-cleaners/bagged-canister/mc-cj911.html",
+            "model": "MC-CJ911 (CJ910 series, bagged canister)",
+            "key_specs": "1900W, 6L dust bag, anti-bacteria filter, 63 dB (JIS), made in Japan (403 to fetch; specs from search-index snippets; Blackbox lists 'MC-CJ911R747 ... Japan' https://www.blackbox.com.sa/en/product/panasonic-vacuum-cleaner-1900w-6l-japan-red-mc-cj911r747-p-1518116010000033)"
+          },
+          "warnings": [
+            "Noon PDP not accessible; model taken from input merchant structured fields.",
+            "Noon's '82 dB' differs from Panasonic's 63 dB (JIS) — different measurement basis likely; not used as identity evidence."
+          ]
+        }
+      ],
+      "alias_evidence": [
+        {
+          "code_a": "MC-CG711",
+          "code_b": "MC-CJ911",
+          "statement": "No alias statement found; Panasonic MEA publishes them as two separate model pages (mc-cg711.html, mc-cj911.html); CG711 sold as Made in Malaysia (eXtra) vs CJ911 Made in Japan (Blackbox/Panasonic).",
+          "url": "https://www.panasonic.com/mea/en/consumer/home-appliances/vacuum-cleaners/bagged-canister/mc-cj911.html",
+          "date": "2026-10-04",
+          "confidence": "medium"
+        }
+      ],
+      "pairs": [
+        {
+          "a": 1,
+          "b": 2,
+          "relation": "DIFFERENT",
+          "basis": "Two different trusted manufacturer codes: eXtra PDP MPN MC-CG711RY47 vs Noon structured model_number MC-CJ911RY47. Panasonic publishes separate pages for MC-CG711 and MC-CJ911; country of manufacture differs (Malaysia vs Japan). Shared 1900W/6L/red/bagged is only a WEAK spec tuple.",
+          "evidence": [
+            "https://www.extra.com/en-sa/small-appliances/home-environment-care/vacuum-cleaner/panasonic-canister-vacuum-cleaner-6l-1900w-red/p/100377322",
+            "https://www.panasonic.com/mea/en/consumer/home-appliances/vacuum-cleaners/bagged-canister/mc-cg711.html",
+            "https://www.panasonic.com/mea/en/consumer/home-appliances/vacuum-cleaners/bagged-canister/mc-cj911.html",
+            "https://www.blackbox.com.sa/en/product/panasonic-vacuum-cleaner-1900w-6l-japan-red-mc-cj911r747-p-1518116010000033"
+          ],
+          "confidence": "high"
+        }
+      ]
+    },
+    {
+      "id": "V07",
+      "listings": [
+        {
+          "index": 1,
+          "merchant": "أمازون (Amazon.sa)",
+          "stated_model_in_source": "TW4B25HA (title); generic model field 'TW4B'",
+          "pdp": {
+            "url": "https://www.amazon.sa/dp/B0D4ZL13M8?language=en_AE",
+            "fetched": true,
+            "model_or_mpn_shown": "Item model number TW4B25HA; MPN TW4B25HA",
+            "brand_shown": "Tefal (تيفال)",
+            "key_specs": "Compact Power XXL bagless, 900W, Classic Kit (مجموعة تنظيف كلاسيكية), black & gray, new; capacity not shown",
+            "notes": "Original /-/en/ URL returned HTTP 503; the dp/ASIN URL fetched."
+          },
+          "manufacturer_model_resolved": "TW4B25HA",
+          "manufacturer_page": {
+            "url": "https://manuall.de/tefal-tw4b25ha-compact-power-xxl-staubsauger/",
+            "model": "TW4B25HA (no official tefal.com page found; manual index + retailer)",
+            "key_specs": "Compact Power XXL, 900W, 2.5L, 3-level cyclonic filtration (retailer: https://ab-ps.prodab.frankfurt.platformos.com/items/en/tefal-compact-power-xxl-bagless-vacuum-tw4b25ha-2065009)"
+          },
+          "warnings": [
+            "No Tefal official product page found for TW4B25."
+          ]
+        },
+        {
+          "index": 2,
+          "merchant": "إكسترا (eXtra)",
+          "stated_model_in_source": "none in source fields (generic model field is a title fragment)",
+          "pdp": {
+            "url": "https://www.extra.com/en-sa/small-appliances/home-environment-care/vacuum-cleaner/tefal-vacuum-cleaner-compact-power-xxl-bagless-900w-/p/100387321",
+            "fetched": true,
+            "model_or_mpn_shown": "TW4B71HA",
+            "brand_shown": "TEFAL",
+            "key_specs": "Compact Power XXL bagless, 900W, 2.5L, Aqua/gris plume, 4 accessories, 6.2 m cord, new",
+            "notes": "eXtra PDP MPN = TW4B71HA."
+          },
+          "manufacturer_model_resolved": "TW4B71HA",
+          "manufacturer_page": {
+            "url": "https://www.tefal.com.sg/Home-Cleaning/Canister-Bagless/TW4B71-Compact-Power-XXL-Bagless-Vacuum-Cleaner/p/7211005191",
+            "model": "TW4B71 Compact Power XXL",
+            "key_specs": "4 included accessories for all floors incl. parquet; retail title 'Animal Kit ... Aqua and Gray ... TW4B71HA' (https://sa.pricena.com/ar/product/tefal-compact-power-xxl-bagless-vacuum-cleaner-animal-kit-900-w-max-low-consumption-motor-advanced-3-level-cyclonic-filtration-aqua-and-gray-2-years-warranty-tw4b71ha-price-in-saudi-arabia-88717150)"
+          },
+          "warnings": []
+        }
+      ],
+      "alias_evidence": [],
+      "pairs": [
+        {
+          "a": 1,
+          "b": 2,
+          "relation": "DIFFERENT",
+          "basis": "Two different trusted manufacturer codes (Amazon item model/MPN TW4B25HA vs eXtra MPN TW4B71HA). Bundle differs: TW4B25HA = Classic Kit (black & gray), TW4B71HA = Animal Kit (aqua/gray, 4 accessories). Same motor/capacity platform (900W, 2.5L) is only a family tuple.",
+          "evidence": [
+            "https://www.amazon.sa/dp/B0D4ZL13M8?language=en_AE",
+            "https://www.extra.com/en-sa/small-appliances/home-environment-care/vacuum-cleaner/tefal-vacuum-cleaner-compact-power-xxl-bagless-900w-/p/100387321",
+            "https://www.tefal.com.sg/Home-Cleaning/Canister-Bagless/TW4B71-Compact-Power-XXL-Bagless-Vacuum-Cleaner/p/7211005191",
+            "https://sa.pricena.com/ar/product/tefal-compact-power-xxl-bagless-vacuum-cleaner-animal-kit-900-w-max-low-consumption-motor-advanced-3-level-cyclonic-filtration-aqua-and-gray-2-years-warranty-tw4b71ha-price-in-saudi-arabia-88717150"
+          ],
+          "confidence": "high"
+        }
+      ]
+    },
+    {
+      "id": "V02",
+      "listings": [
+        {
+          "index": 1,
+          "merchant": "إكسترا (eXtra, marketplace SKU MP00009383)",
+          "stated_model_in_source": "none (generic model field is a title fragment)",
+          "pdp": {
+            "url": "https://www.extra.com/en-sa/small-appliances/home-environment-care/vacuum-cleaner/midea-vacuum-cleaner-bagless-corded-2-l-1800-w-blue/p/MP00009383",
+            "fetched": true,
+            "model_or_mpn_shown": "none (MPN field empty; MP00009383 is a retailer SKU)",
+            "brand_shown": "MIDEA",
+            "key_specs": "Bagless corded, 2L, 1800W, Blue, new",
+            "notes": "Specs consistent with Midea SA 2L/1800W canister MC08MEBU, but the PDP does not state that code."
+          },
+          "manufacturer_model_resolved": null,
+          "manufacturer_page": {
+            "url": "https://www.midea.com/sa/vacuum-cleaner/canister-vacuum-cleaner/2l-1800w-canister.mc08mebu",
+            "model": "MC08MEBU (candidate only — spec match, not stated by merchant)",
+            "key_specs": "Canister, 1800W, 2L, Blue, cyclone system, 6 m cord"
+          },
+          "warnings": [
+            "Manufacturer code not stated by eXtra; MC08MEBU is a spec-based candidate (WEAK) and is not asserted."
+          ]
+        },
+        {
+          "index": 2,
+          "merchant": "شاكر (Shaker)",
+          "stated_model_in_source": "MDVC18 (title)",
+          "pdp": {
+            "url": "https://shakersa.com/product/%d9%85%d8%a7%d9%8a%d8%af%d9%8a%d8%a7-%d9%85%d9%83%d9%86%d8%b3%d8%a9-%d9%83%d9%87%d8%b1%d8%a8%d8%a7%d8%a6%d9%8a%d8%a9-%d8%a8%d8%b1%d9%85%d9%8a%d9%84-%d8%b3%d9%84%d9%83%d9%8a%d8%a9-18-%d9%84%d8%aa/",
+            "fetched": true,
+            "model_or_mpn_shown": "MDVC18",
+            "brand_shown": "Midea",
+            "key_specs": "Barrel/drum corded, 18L, 1800W (290W suction), Blue, 83 dB, 5 m cord, crevice nozzle, round brush, telescopic tube, hose, floor nozzle, new",
+            "notes": "Page price displayed in a non-SAR currency symbol by the fetcher — price not used."
+          },
+          "manufacturer_model_resolved": "MDVC18",
+          "manufacturer_page": {
+            "url": "https://www.midea.com/sa/vacuum-cleaner/drum-vacuum-cleaner/18l-1800w-drum-vacuum-cleaner",
+            "model": "MDVC18",
+            "key_specs": "Drum, 1800W, 18L, Blue, blow function, crevice tool and dust brush"
+          },
+          "warnings": []
+        }
+      ],
+      "alias_evidence": [],
+      "pairs": [
+        {
+          "a": 1,
+          "b": 2,
+          "relation": "DIFFERENT",
+          "basis": "Both sides state capacity and form factor and they conflict: 2L bagless canister vs 18L drum/barrel. Midea Saudi site lists these as two separate products (2L/1800W canister MC08MEBU; 18L/1800W drum MDVC18). Shared 1800W/blue is WEAK.",
+          "evidence": [
+            "https://www.extra.com/en-sa/small-appliances/home-environment-care/vacuum-cleaner/midea-vacuum-cleaner-bagless-corded-2-l-1800-w-blue/p/MP00009383",
+            "https://shakersa.com/en/product/midea-vacuum-cleaner-barrel-corded-18-l-1800-w-blue-mdvc18/",
+            "https://www.midea.com/sa/vacuum-cleaner/drum-vacuum-cleaner/18l-1800w-drum-vacuum-cleaner",
+            "https://www.midea.com/sa/vacuum-cleaner/canister-vacuum-cleaner/2l-1800w-canister.mc08mebu"
+          ],
+          "confidence": "high"
+        }
+      ]
+    },
+    {
+      "id": "V13",
+      "listings": [
+        {
+          "index": 1,
+          "merchant": "إكسترا (eXtra)",
+          "stated_model_in_source": "none in source fields (generic model field is a title fragment)",
+          "pdp": {
+            "url": "https://www.extra.com/en-sa/small-appliances/home-environment-care/vacuum-cleaner/panasonic-10l-1500w-drum-vacuum-cleaner/p/100363689",
+            "fetched": true,
+            "model_or_mpn_shown": "MC-YL620KY47",
+            "brand_shown": "PANASONIC",
+            "key_specs": "Dry drum, 1500W, 10L, Black, 5 m cord, metal body, 1 accessory, Made in Malaysia, new",
+            "notes": "eXtra PDP MPN = MC-YL620KY47."
+          },
+          "manufacturer_model_resolved": "MC-YL620",
+          "manufacturer_page": {
+            "url": "https://www.panasonic.com/mea/en/consumer/home-appliances/vacuum-cleaners/tank/mc-yl620.specs.html",
+            "model": "MC-YL620",
+            "key_specs": "Drum (tank), 1500W, 10L dust capacity, 6.1 kg, 5 m cord (from search-index snippet; panasonic.com/mea blocks fetch with 403)"
+          },
+          "warnings": [
+            "Panasonic MEA page not fetched directly (403 on sibling pages); specs from search-index snippet."
+          ]
+        },
+        {
+          "index": 2,
+          "merchant": "المنيع (Almanea)",
+          "stated_model_in_source": "MC-YL690GY47 (generic model field + title)",
+          "pdp": {
+            "url": "https://www.almanea.sa/en/product/p-150204902999033",
+            "fetched": true,
+            "model_or_mpn_shown": "MC-YL690GY47",
+            "brand_shown": "Panasonic",
+            "key_specs": "Barrel, 1500W, 15L, black (per input), out of stock",
+            "notes": "Almanea separately sells MC-YL620KY47 10L as p-150204902999032 (https://www.almanea.sa/en/product/panasonic-1500w-10l-barrel-vacuum-cleaner-mc-yl620ky47-p-150204902999032)."
+          },
+          "manufacturer_model_resolved": "MC-YL690",
+          "manufacturer_page": {
+            "url": "https://www.panasonic.com/mea/en/consumer/home-appliances/vacuum-cleaners/tank/mc-yl690g-mashrabiya-inspired-elegance.html",
+            "model": "MC-YL690 (MC-YL690G variant)",
+            "key_specs": "Drum, 1500W, 15L, 6 m cord, made in Malaysia (retailer-corroborated; official page not fetched)"
+          },
+          "warnings": [
+            "Official Panasonic page for MC-YL690G not fetched (MEA domain blocks); specs from retailers (Blackbox, Saeel)."
+          ]
+        }
+      ],
+      "alias_evidence": [],
+      "pairs": [
+        {
+          "a": 1,
+          "b": 2,
+          "relation": "DIFFERENT",
+          "basis": "Two different trusted manufacturer codes (eXtra MPN MC-YL620KY47 vs Almanea MC-YL690GY47) and conflicting capacity stated by both sides (10L vs 15L). Panasonic publishes separate model pages; Almanea itself sells both as separate products.",
+          "evidence": [
+            "https://www.extra.com/en-sa/small-appliances/home-environment-care/vacuum-cleaner/panasonic-10l-1500w-drum-vacuum-cleaner/p/100363689",
+            "https://www.almanea.sa/en/product/p-150204902999033",
+            "https://www.almanea.sa/en/product/panasonic-1500w-10l-barrel-vacuum-cleaner-mc-yl620ky47-p-150204902999032",
+            "https://www.panasonic.com/mea/en/consumer/home-appliances/vacuum-cleaners/tank/mc-yl620.specs.html",
+            "https://www.panasonic.com/mea/en/consumer/home-appliances/vacuum-cleaners/tank/mc-yl690g-mashrabiya-inspired-elegance.html"
+          ],
+          "confidence": "high"
+        }
+      ]
+    },
+    {
+      "id": "V19",
+      "listings": [
+        {
+          "index": 1,
+          "merchant": "إكسترا (eXtra)",
+          "stated_model_in_source": "none in source fields (generic model field is a title fragment)",
+          "pdp": {
+            "url": "https://www.extra.com/en-sa/small-appliances/home-environment-care/vacuum-cleaner/lg-cordzero-a9-wireless-vacuum-cleaner-1-5l-200w/p/100337688",
+            "fetched": true,
+            "model_or_mpn_shown": "A9N-LITE",
+            "brand_shown": "LG",
+            "key_specs": "Stick vacuum, bagless, title 1.5L/200W, spec rows Power 379W, Capacity 1.5L, Vintage Rose, 1 assorted accessory, Made in Vietnam, new",
+            "notes": "eXtra PDP MPN = A9N-LITE. eXtra's 1.5L / 200W figures conflict with LG's A9N-LITE spec (0.44L bin, 160W suction) — eXtra spec data looks unreliable."
+          },
+          "manufacturer_model_resolved": "A9N-LITE",
+          "manufacturer_page": {
+            "url": "https://www.lg.com/ae/vacuum-cleaners/lg-a9n-lite",
+            "model": "A9N-LITE (CordZero A9N)",
+            "key_specs": "160W max suction, 0.44L bin, 1 battery, universal multi-surface nozzle, pet nozzle, crevice, combination tool; Vintage Wine"
+          },
+          "warnings": [
+            "eXtra capacity (1.5L) and wattage (200W/379W) contradict LG's published A9N-LITE specs."
+          ]
+        },
+        {
+          "index": 2,
+          "merchant": "الصندوق الأسود (Blackbox, alnakheelk.com URL)",
+          "stated_model_in_source": "A9K-CORE (title)",
+          "pdp": {
+            "url": "https://alnakheelk.com/en/%D9%85%D9%83%D9%86%D8%B3%D8%A9-%D8%A7%D9%84-%D8%AC%D9%8A-%D8%B9%D8%A7%D9%85%D9%88%D8%AF%D9%8A%D8%A9-%D8%AC%D8%A7%D9%81-044-%D9%84%D8%AA%D8%B1-200-%D9%88%D8%A7%D8%B7-%D8%B1%D9%85%D8%A7%D8%AF%D9%8A-a9k-core/p1847972105",
+            "fetched": true,
+            "model_or_mpn_shown": "A9K-CORE",
+            "brand_shown": "LG",
+            "key_specs": "Upright/stick dry, 0.44L, 200W, Gray, 'one battery', made in Vietnam, 2-year warranty, new",
+            "notes": "Product code 150200703999002 shown — numerically adjacent to Almanea's A9K-PRO id 150200703999001 (retailer internal id, not identity evidence). PDP says one battery whereas LG UAE/SG list A9K-CORE with 2 batteries."
+          },
+          "manufacturer_model_resolved": "A9K-CORE",
+          "manufacturer_page": {
+            "url": "https://www.lg.com/ae/vacuum-cleaners/lg-a9k-core-uae",
+            "model": "A9K-CORE (CordZero A9Kompressor)",
+            "key_specs": "200W max suction, 0.44L, 2 (dual) batteries, Slim Power Drive nozzle, Power Drive multi-surface, Power Drive Mini, combination tool, crevice; Silver"
+          },
+          "warnings": [
+            "Battery count on PDP (1) conflicts with LG UAE page (2)."
+          ]
+        },
+        {
+          "index": 3,
+          "merchant": "المنيع (Almanea)",
+          "stated_model_in_source": "A9K-PRO (generic model field + title)",
+          "pdp": {
+            "url": "https://www.almanea.sa/en/product/p-150200703999001",
+            "fetched": true,
+            "model_or_mpn_shown": "A9K-PRO",
+            "brand_shown": "LG",
+            "key_specs": "CordZero A9, 200W, 0.44L, Black, out of stock",
+            "notes": ""
+          },
+          "manufacturer_model_resolved": "A9K-PRO",
+          "manufacturer_page": {
+            "url": "https://www.lg.com/sg/vacuum-cleaners/a9k-pro/",
+            "model": "A9K-PRO (CordZero A9Kompressor)",
+            "key_specs": "0.44L, kit incl. slim hard-floor nozzle, combination tool, crevice tool, 4 mop pads, extra pre-filter; Vintage Wine (SG regional page; kit/battery count may vary by region)"
+          },
+          "warnings": [
+            "No Saudi/UAE LG page for A9K-PRO found; SG page used."
+          ]
+        }
+      ],
+      "alias_evidence": [],
+      "pairs": [
+        {
+          "a": 1,
+          "b": 2,
+          "relation": "DIFFERENT",
+          "basis": "Different trusted manufacturer codes (eXtra MPN A9N-LITE vs A9K-CORE), different LG product lines (A9N vs A9Kompressor): A9N-LITE 160W single battery vs A9K-CORE 200W dual battery per LG; stated capacities also conflict (1.5L vs 0.44L).",
+          "evidence": [
+            "https://www.extra.com/en-sa/small-appliances/home-environment-care/vacuum-cleaner/lg-cordzero-a9-wireless-vacuum-cleaner-1-5l-200w/p/100337688",
+            "https://www.lg.com/ae/vacuum-cleaners/lg-a9n-lite",
+            "https://www.lg.com/ae/vacuum-cleaners/lg-a9k-core-uae"
+          ],
+          "confidence": "high"
+        },
+        {
+          "a": 1,
+          "b": 3,
+          "relation": "DIFFERENT",
+          "basis": "Different trusted manufacturer codes (A9N-LITE vs A9K-PRO), different LG product lines; stated capacities conflict (1.5L vs 0.44L).",
+          "evidence": [
+            "https://www.extra.com/en-sa/small-appliances/home-environment-care/vacuum-cleaner/lg-cordzero-a9-wireless-vacuum-cleaner-1-5l-200w/p/100337688",
+            "https://www.almanea.sa/en/product/p-150200703999001",
+            "https://www.lg.com/ae/vacuum-cleaners/lg-a9n-lite",
+            "https://www.lg.com/sg/vacuum-cleaners/a9k-pro/"
+          ],
+          "confidence": "high"
+        },
+        {
+          "a": 2,
+          "b": 3,
+          "relation": "DIFFERENT",
+          "basis": "Two different trusted LG codes (A9K-CORE vs A9K-PRO) within the A9Kompressor line; LG sells them as distinct SKUs with different bundles (CORE: Power Drive nozzles/dual battery per LG UAE; PRO: mop pads/handy-tool kit per LG SG). Same 200W/0.44L is a family tuple only. No alias evidence.",
+          "evidence": [
+            "https://alnakheelk.com/en/%D9%85%D9%83%D9%86%D8%B3%D8%A9-%D8%A7%D9%84-%D8%AC%D9%8A-%D8%B9%D8%A7%D9%85%D9%88%D8%AF%D9%8A%D8%A9-%D8%AC%D8%A7%D9%81-044-%D9%84%D8%AA%D8%B1-200-%D9%88%D8%A7%D8%B7-%D8%B1%D9%85%D8%A7%D8%AF%D9%8A-a9k-core/p1847972105",
+            "https://www.almanea.sa/en/product/p-150200703999001",
+            "https://www.lg.com/ae/vacuum-cleaners/lg-a9k-core-uae",
+            "https://www.lg.com/sg/vacuum-cleaners/a9k-pro/",
+            "https://www.lg.com/sg/vacuum-cleaners/a9k-core/"
+          ],
+          "confidence": "high"
+        }
+      ]
+    }
+  ],
+  "inaccessible_pages": [
+    "https://www.noon.com/saudi-en/canister-vacuum-cleaner-6-l-1900-w-mc-cj911ry47-red/N70147514V/p/ (timeout x2, also saudi-ar variant)",
+    "https://www.amazon.sa/-/en/Consumption-Advanced-Cyclonic-Filtration-TW4B25HA/dp/B0D4ZL13M8/ref=sr_1_63 (HTTP 503; dp/B0D4ZL13M8 variant fetched OK)",
+    "https://www.panasonic.com/mea/en/consumer/home-appliances/vacuum-cleaners/bagged-canister/mc-cg711.specs.html (HTTP 403)",
+    "https://www.panasonic.com/mea/en/consumer/home-appliances/vacuum-cleaners/bagged-canister/mc-cj911.html (HTTP 403)",
+    "https://carrefourksa.com/... 2026K and 2026E pages (timeout)",
+    "https://gcc.luluhypermarket.com/en-sa/...1994k/p/1422611/ (HTTP 403)",
+    "aceuae.com 1994K/2027E pages (301 redirect, not followed)"
+  ]
+}

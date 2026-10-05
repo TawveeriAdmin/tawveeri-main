@@ -1,0 +1,271 @@
+{
+ "date": "2026-10-04T17:56:37.363Z",
+ "captures": 1700,
+ "rule": "LOW also when confirmable>=30 and confirmed<5% (never corroborated); HIGH n>=20, traps<2%, own-payload conflicts<5%, (confirmed>=20% or own-title>=80%); LOW traps>=20% or conflicts>=20%; n<20 UNMEASURED; else MEDIUM",
+ "coverage": {
+  "noon": {
+   "listings": 72,
+   "fetched_200": 0,
+   "with_items": 0,
+   "blocked": 70,
+   "failed": 2
+  },
+  "lulu": {
+   "listings": 19,
+   "fetched_200": 0,
+   "with_items": 0,
+   "blocked": 17,
+   "failed": 2
+  },
+  "almanea": {
+   "listings": 84,
+   "fetched_200": 84,
+   "with_items": 84,
+   "blocked": 0,
+   "failed": 0
+  },
+  "samsung_ksa": {
+   "listings": 101,
+   "fetched_200": 101,
+   "with_items": 75,
+   "blocked": 0,
+   "failed": 0
+  },
+  "najm": {
+   "listings": 314,
+   "fetched_200": 314,
+   "with_items": 180,
+   "blocked": 0,
+   "failed": 0
+  },
+  "alnakheelk": {
+   "listings": 293,
+   "fetched_200": 293,
+   "with_items": 215,
+   "blocked": 0,
+   "failed": 0
+  },
+  "shaker": {
+   "listings": 271,
+   "fetched_200": 271,
+   "with_items": 270,
+   "blocked": 0,
+   "failed": 0
+  },
+  "amazon": {
+   "listings": 87,
+   "fetched_200": 87,
+   "with_items": 0,
+   "blocked": 0,
+   "failed": 0
+  },
+  "jarir": {
+   "listings": 259,
+   "fetched_200": 258,
+   "with_items": 258,
+   "blocked": 0,
+   "failed": 1
+  },
+  "extra": {
+   "listings": 200,
+   "fetched_200": 174,
+   "with_items": 174,
+   "blocked": 0,
+   "failed": 26
+  }
+ },
+ "matrix": [
+  {
+   "merchant": "almanea",
+   "field": "page.jsonld.mpn",
+   "declared": 84,
+   "trap_pct": 0,
+   "own_title_pct": 84.5,
+   "confirmed_pct": 96.3,
+   "confirmable": 80,
+   "own_payload_conflict_pct": 0,
+   "own_payload_compared": 78,
+   "trust": "HIGH"
+  },
+  {
+   "merchant": "almanea",
+   "field": "page.jsonld.sku",
+   "declared": 84,
+   "trap_pct": 100,
+   "own_title_pct": 0,
+   "confirmed_pct": null,
+   "confirmable": 0,
+   "own_payload_conflict_pct": null,
+   "own_payload_compared": 0,
+   "trust": "LOW"
+  },
+  {
+   "merchant": "almanea",
+   "field": "page.jsonld.gtin",
+   "declared": 83,
+   "trap_pct": 3.6,
+   "own_title_pct": 0,
+   "confirmed_pct": 0,
+   "confirmable": 77,
+   "own_payload_conflict_pct": null,
+   "own_payload_compared": 0,
+   "trust": "LOW"
+  },
+  {
+   "merchant": "alnakheelk",
+   "field": "page.jsonld.sku",
+   "declared": 215,
+   "trap_pct": 29.3,
+   "own_title_pct": 0,
+   "confirmed_pct": 0,
+   "confirmable": 42,
+   "own_payload_conflict_pct": null,
+   "own_payload_compared": 0,
+   "trust": "LOW"
+  },
+  {
+   "merchant": "extra",
+   "field": "page.jsonld.sku",
+   "declared": 174,
+   "trap_pct": 95.4,
+   "own_title_pct": 0,
+   "confirmed_pct": 0,
+   "confirmable": 8,
+   "own_payload_conflict_pct": null,
+   "own_payload_compared": 0,
+   "trust": "LOW"
+  },
+  {
+   "merchant": "extra",
+   "field": "page.jsonld.mpn",
+   "declared": 166,
+   "trap_pct": 0,
+   "own_title_pct": 0,
+   "confirmed_pct": 81.9,
+   "confirmable": 138,
+   "own_payload_conflict_pct": 0,
+   "own_payload_compared": 136,
+   "trust": "HIGH"
+  },
+  {
+   "merchant": "extra",
+   "field": "page.script.modelNumber",
+   "declared": 166,
+   "trap_pct": 0,
+   "own_title_pct": 0,
+   "confirmed_pct": 81.9,
+   "confirmable": 138,
+   "own_payload_conflict_pct": 0,
+   "own_payload_compared": 136,
+   "trust": "HIGH"
+  },
+  {
+   "merchant": "jarir",
+   "field": "page.jsonld.mpn",
+   "declared": 258,
+   "trap_pct": 4.3,
+   "own_title_pct": 6.2,
+   "confirmed_pct": 11.1,
+   "confirmable": 90,
+   "own_payload_conflict_pct": null,
+   "own_payload_compared": 0,
+   "trust": "MEDIUM"
+  },
+  {
+   "merchant": "jarir",
+   "field": "page.jsonld.sku",
+   "declared": 258,
+   "trap_pct": 100,
+   "own_title_pct": 0,
+   "confirmed_pct": null,
+   "confirmable": 0,
+   "own_payload_conflict_pct": null,
+   "own_payload_compared": 0,
+   "trust": "LOW"
+  },
+  {
+   "merchant": "jarir",
+   "field": "page.jsonld.model",
+   "declared": 258,
+   "trap_pct": 16.7,
+   "own_title_pct": 10.9,
+   "confirmed_pct": 5.9,
+   "confirmable": 85,
+   "own_payload_conflict_pct": null,
+   "own_payload_compared": 0,
+   "trust": "MEDIUM"
+  },
+  {
+   "merchant": "jarir",
+   "field": "page.table.manufacturer_number",
+   "declared": 247,
+   "trap_pct": 4.5,
+   "own_title_pct": 6.5,
+   "confirmed_pct": 11.1,
+   "confirmable": 90,
+   "own_payload_conflict_pct": null,
+   "own_payload_compared": 0,
+   "trust": "MEDIUM"
+  },
+  {
+   "merchant": "jarir",
+   "field": "page.label.manufacturer_no",
+   "declared": 246,
+   "trap_pct": 4.5,
+   "own_title_pct": 6.1,
+   "confirmed_pct": 11.1,
+   "confirmable": 90,
+   "own_payload_conflict_pct": null,
+   "own_payload_compared": 0,
+   "trust": "MEDIUM"
+  },
+  {
+   "merchant": "jarir",
+   "field": "page.jsonld.gtin",
+   "declared": 168,
+   "trap_pct": 0,
+   "own_title_pct": 0,
+   "confirmed_pct": 0,
+   "confirmable": 57,
+   "own_payload_conflict_pct": null,
+   "own_payload_compared": 0,
+   "trust": "LOW"
+  },
+  {
+   "merchant": "najm",
+   "field": "page.jsonld.sku",
+   "declared": 180,
+   "trap_pct": 7.2,
+   "own_title_pct": 0,
+   "confirmed_pct": 0,
+   "confirmable": 39,
+   "own_payload_conflict_pct": null,
+   "own_payload_compared": 0,
+   "trust": "LOW"
+  },
+  {
+   "merchant": "samsung_ksa",
+   "field": "page.jsonld.sku",
+   "declared": 75,
+   "trap_pct": 0,
+   "own_title_pct": 98.7,
+   "confirmed_pct": 100,
+   "confirmable": 74,
+   "own_payload_conflict_pct": 1.3,
+   "own_payload_compared": 75,
+   "trust": "HIGH"
+  },
+  {
+   "merchant": "shaker",
+   "field": "page.jsonld.sku",
+   "declared": 270,
+   "trap_pct": 0,
+   "own_title_pct": 70.7,
+   "confirmed_pct": 74.9,
+   "confirmable": 167,
+   "own_payload_conflict_pct": null,
+   "own_payload_compared": 0,
+   "trust": "HIGH"
+  }
+ ]
+}

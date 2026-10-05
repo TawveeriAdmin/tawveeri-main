@@ -20,6 +20,7 @@ import { writeFileSync } from "fs";
 config({ path: resolve(process.cwd(), ".env.local") });
 import { Client } from "pg";
 import { toPoolerDbUrl } from "../tps-core/pooler-url";
+import { resolveApprovedSlug } from "../../src/lib/retailers/approved-retailers";
 import { extractManufacturerModel, extractManufacturerModelFromName } from "../../src/lib/identity/store-identifiers";
 
 const argv = process.argv.slice(2);
@@ -27,7 +28,8 @@ const arg = (k: string) => argv.find((a) => a.startsWith(`--${k}=`))?.split("=")
 const OUT = arg("out") ?? "docs/evidence/amazon-diagnostic-2026-10-03/phase3b/merchant-data-quality-2026-10-04.json";
 const MIN = Number(arg("min") ?? 20);
 const FRESH_H = 168;
-const STORE: Record<number, string> = { 1: "jarir", 2: "amazon", 3: "noon", 4: "extra", 5: "almanea", 6: "samsung_ksa", 7: "shaker", 8: "swsg", 9: "najm", 10: "lulu", 16: "sony_world", 18: "blackbox", 21: "sharafdg", 23: "alnakheelk" };
+// Store id -> slug from the ONE authority (approved-retailers STORE_ID_TO_SLUG). A hand-written map here once swapped 10/18/23 (blackbox/alnakheelk/lulu).
+const STORE: Record<number, string> = new Proxy({} as Record<number, string>, { get: (_t, k) => resolveApprovedSlug(Number(k)) ?? String(k) });
 
 type Row = { identity_key: string | null; store_id: number; category: string; name: string | null; observed_at: string | null; brand: string | null; mpn: string | null; modelNumber: string | null; model_number: string | null; model: string | null; gtin: string | null; ean: string | null; upc: string | null; barcode: string | null; condition: string | null; availability: string | null; spec_n: number | null };
 
