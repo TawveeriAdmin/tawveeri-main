@@ -1757,6 +1757,12 @@ function buildReasonAr(p: GroupedSearchProduct, isCheapest: boolean): string {
   return parts.length ? parts.join(' · ') : 'خيار مناسب';
 }
 
+const OFF_GRADE_RE = /(?<![\p{L}\p{N}])(?:renewed|refurbished|refurb|used|pre-?owned|open[- ]box|b-?grade|مجدد(?:ة)?|تم تجديده|مستعمل(?:ة)?|مستخدم(?:ة)?|معاد تجديده)(?![\p{L}\p{N}])/iu;
+/** True when a title (or a query) names a renewed / used / refurbished unit — generic, no merchant or product list. */
+export function isOffGradeTitle(text: string): boolean {
+  return OFF_GRADE_RE.test(text || '');
+}
+
 function buildDecisionLayer(
   products: GroupedSearchProduct[],
   queryIsMainProduct: boolean,
@@ -1778,7 +1784,12 @@ function buildDecisionLayer(
     (a, b) => scoreProduct(b, priceMin, priceMax, queryIsMainProduct, relevanceGroups, isAcQuery)
             - scoreProduct(a, priceMin, priceMax, queryIsMainProduct, relevanceGroups, isAcQuery),
   );
-  const top3 = ranked.slice(0, 3);
+  // NEW ≠ REFURBISHED / USED (executive closure, 2026-10-05): unless the query itself asks for an off-grade unit, a renewed / used /
+  // refurbished listing may not be the pick or one of its alternatives — it stays in the results grid below, labelled by its title.
+  // Script-aware boundaries (JS `\b` never matches beside Arabic letters, which is why extractSpecsFromTitle misses «مجدد»).
+  const wantsOffGrade = isOffGradeTitle(rawQuery);
+  const pickPool = wantsOffGrade ? ranked : ranked.filter((p) => !isOffGradeTitle(`${p.name_en || ''} ${p.name_ar || ''}`));
+  const top3 = pickPool.slice(0, 3);
   const best = top3[0] || null;
 
   // Trust gate: never present an accessory as the "smart pick" for a

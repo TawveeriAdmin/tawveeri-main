@@ -7,7 +7,7 @@
 import fs from 'fs';
 import path from 'path';
 import { isFreshObservation } from '@/lib/intelligence/evidence-engine';
-import { isCompatOnlyMention, isAccessoryShapedQuery } from '@/app/api/search/route';
+import { isCompatOnlyMention, isAccessoryShapedQuery, isOffGradeTitle } from '@/app/api/search/route';
 
 const read = (...p: string[]) => fs.readFileSync(path.join(process.cwd(), ...p), 'utf8');
 const routeSrc = read('src', 'app', 'api', 'search', 'route.ts');
@@ -79,5 +79,25 @@ describe('an out-of-stock current offer cannot win "cheapest" (executive closure
   it('latest_fresh marks a store with an out-of-stock CURRENT offer (observed no earlier than the chosen price row) as not fresh — coverage is untouched', () => {
     expect(builderSrc).toMatch(/cn\.payload->>'_availability' = 'out_of_stock'\s+and cn\.observed_at >= l\.observed_at/);
     expect(builderSrc).toMatch(/\) as is_fresh/);
+  });
+});
+
+describe('new is not refurbished (executive closure, 2026-10-05)', () => {
+  it('detects renewed / used / refurbished titles in both scripts, with script-aware boundaries', () => {
+    expect(isOffGradeTitle('Renewed - MacBook Air A1466 (2015) Laptop')).toBe(true);
+    expect(isOffGradeTitle('Apple iPhone 13 Refurbished 128GB')).toBe(true);
+    expect(isOffGradeTitle('ماك بوك اير تم تجديده')).toBe(true);
+    expect(isOffGradeTitle('لابتوب مجدد ديل')).toBe(true);
+    expect(isOffGradeTitle('جوال مستعمل')).toBe(true);
+  });
+  it('does not flag new units or look-alike words', () => {
+    expect(isOffGradeTitle('Apple MacBook Air M2 13-inch 256GB')).toBe(false);
+    expect(isOffGradeTitle('Samsung unused-slot SSD Tray')).toBe(false);
+    expect(isOffGradeTitle('مستخدمين متعددين جهاز جديد')).toBe(false);
+    expect(isOffGradeTitle('')).toBe(false);
+  });
+  it('the pick pool drops off-grade listings unless the query asks for one', () => {
+    expect(routeSrc).toMatch(/const wantsOffGrade = isOffGradeTitle\(rawQuery\)/);
+    expect(routeSrc).toMatch(/wantsOffGrade \? ranked : ranked\.filter/);
   });
 });
