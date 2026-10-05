@@ -1935,6 +1935,42 @@ function buildDecisionLayer(
  * separately (scripts/tps-analysis/algolia-remove-retired.ts). One cheap id lookup per search;
  * on a lookup error the hits are kept (search availability over tidiness).
  */
+/**
+ * ONE MEASURABLE EXIT PATH (Amazon closure, 2026-10-05). Algolia hits for STOREFRONT (legacy, non-TPS) products carry the raw merchant URL
+ * (for Amazon: a scraped search-result URL with session params) — handed to the shopper directly it is unmeasured and unattributed. Map each
+ * (product, store) back to its product_stores row and exit through /go/ps_<id> (ADR-244), where a human click is recorded and attributed by
+ * the provider framework and a bot is not tagged. One batched lookup per search; fail-open (any error keeps the direct URL).
+ */
+async function withLegacyGoExits(products: GroupedSearchProduct[]): Promise<GroupedSearchProduct[]> {
+  const legacy = products.filter((p) => !p.tps_identity_key && typeof p.product_id === 'string' && /^[0-9a-f-]{36}$/i.test(p.product_id));
+  if (!legacy.length) return products;
+  try {
+    const supabase = createServerClient();
+    const rows: { id: string; product_id: string; store_id: number | null }[] = [];
+    const ids = [...new Set(legacy.map((p) => p.product_id as string))];
+    for (let i = 0; i < ids.length; i += 100) {
+      const { data, error } = await supabase.from('product_stores').select('id, product_id, store_id').in('product_id', ids.slice(i, i + 100));
+      if (error) throw new Error(error.message);
+      rows.push(...((data ?? []) as unknown as { id: string; product_id: string; store_id: number | null }[]));
+    }
+    const psId = new Map<string, string>();
+    for (const r of rows) { const slug = resolveApprovedSlug(r.store_id); if (slug && !psId.has(`${r.product_id}|${slug}`)) psId.set(`${r.product_id}|${slug}`, r.id); }
+    const exit = (productId: string, storeName: string | undefined | null, current: string): string => {
+      const slug = resolveApprovedSlug(storeName ?? undefined);
+      const id = slug ? psId.get(`${productId}|${slug}`) : undefined;
+      return id ? buildGoUrl(`ps_${id}`) : current;
+    };
+    return products.map((p) => {
+      if (p.tps_identity_key || typeof p.product_id !== 'string' || !/^[0-9a-f-]{36}$/i.test(p.product_id)) return p;
+      const pid = p.product_id;
+      return { ...p, product_url: exit(pid, p.store_name || p.store, p.product_url), stores: p.stores.map((e) => ({ ...e, product_url: exit(pid, e.store_name || e.store, e.product_url) })) };
+    });
+  } catch (e) {
+    console.error('[search] legacy /go exit mapping failed — direct URLs kept:', e instanceof Error ? e.message : e);
+    return products;
+  }
+}
+
 async function dropRetiredProducts(products: GroupedSearchProduct[]): Promise<GroupedSearchProduct[]> {
   const ids = [...new Set(products.map((p) => p.product_id).filter((id): id is string => typeof id === 'string' && /^[0-9a-f-]{36}$/i.test(id)))];
   if (!ids.length) return products;
@@ -1946,12 +1982,12 @@ async function dropRetiredProducts(products: GroupedSearchProduct[]): Promise<Gr
       if (error) throw new Error(error.message);
       for (const r of (data ?? []) as { id: string }[]) retired.add(r.id);
     }
-    if (!retired.size) return products;
+    if (!retired.size) return withLegacyGoExits(products);
     console.log(`[search] dropped ${retired.size} retired product(s) from Algolia hits`);
-    return products.filter((p) => !(typeof p.product_id === 'string' && retired.has(p.product_id)));
+    return withLegacyGoExits(products.filter((p) => !(typeof p.product_id === 'string' && retired.has(p.product_id))));
   } catch (e) {
     console.error('[search] retired-product filter failed — hits kept:', e instanceof Error ? e.message : e);
-    return products;
+    return withLegacyGoExits(products);
   }
 }
 

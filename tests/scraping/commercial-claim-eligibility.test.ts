@@ -65,3 +65,12 @@ describe('store filter and legacy exits', () => {
     expect(routeSrc).toMatch(/product_url: ps\.id \? buildGoUrl\(`ps_\$\{ps\.id\}`\)/);
   });
 });
+
+describe('Algolia (legacy) hits also leave through /go', () => {
+  it('every Algolia result set passes through withLegacyGoExits (via dropRetiredProducts, fail-open) so no storefront product hands the shopper a raw merchant URL', () => {
+    expect(routeSrc).toMatch(/async function withLegacyGoExits/);
+    expect(routeSrc).toMatch(/buildGoUrl\(`ps_\$\{id\}`\) : current/);
+    expect(routeSrc).toMatch(/legacy \/go exit mapping failed — direct URLs kept/);
+    expect(routeSrc).toMatch(/return withLegacyGoExits\(products\.filter/);
+  });
+});
