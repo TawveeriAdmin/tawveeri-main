@@ -1,0 +1,109 @@
+{
+ "at": "2026-10-05T12:24:59.928Z",
+ "days": 7,
+ "tps": {
+  "valid": 1340,
+  "priced": 1298,
+  "claim_eligible": 730,
+  "h24": 173,
+  "h48": 247,
+  "stale_reference": 568,
+  "current_null_price": 42
+ },
+ "legacy": {
+  "visible": 4463,
+  "no_observation_time": 3286,
+  "no_canonical": 3780,
+  "search_url_with_session_params": 3890,
+  "sponsored_click_urls": 83
+ },
+ "current_null_in_cheapest": {
+  "n": 13
+ },
+ "asin_overlap": {
+  "legacy_asins": 6928,
+  "tps_asins": 1234,
+  "overlap": 1101
+ },
+ "exits": {
+  "total": 6,
+  "test": 0,
+  "bot_ua": 0,
+  "with_interaction_id": 0,
+  "render_token_valid": 1,
+  "raw_request": 5,
+  "tagged": 5,
+  "tagged_human_evidenced": 0,
+  "legacy_ps_exits": 0
+ },
+ "live_probes": [
+  {
+   "query": "ps5",
+   "card": null
+  },
+  {
+   "query": "nintendo switch",
+   "card": null
+  },
+  {
+   "query": "airpods pro",
+   "card": {
+    "store": "أمازون السعودية",
+    "tps": true,
+    "observed": true
+   }
+  },
+  {
+   "query": "samsung tv 65",
+   "card": {
+    "store": "المنيع",
+    "tps": true,
+    "observed": true
+   }
+  },
+  {
+   "query": "sony wh-1000xm5",
+   "card": null
+  },
+  {
+   "query": "iphone 15",
+   "card": {
+    "store": "إكسترا",
+    "tps": true,
+    "observed": true
+   }
+  },
+  {
+   "query": "dyson",
+   "card": null
+  },
+  {
+   "query": "gopro",
+   "card": null
+  },
+  {
+   "query": "mac book air",
+   "card": null
+  },
+  {
+   "query": "air fryer",
+   "card": null
+  }
+ ],
+ "summary": {
+  "claim_eligible_tps_offers": "730/1340 (54%)",
+  "reference_only_stale_tps": "568/1340 (42%)",
+  "current_null_offers": "42/1340 (3%)",
+  "legacy_visible_without_observation_time": "3286/4463 (74%)",
+  "current_null_offers_winning_cheapest": 13,
+  "human_evidenced_tagged_exits": "0/6 (0%)",
+  "legacy_exits_through_go": "0/6 (0%)",
+  "live": {
+   "queries": 10,
+   "cards": 3,
+   "cards_without_observation_time": 0,
+   "accessory_picks_for_device_queries": 0,
+   "store_filter_amazon_restricts_results": true
+  }
+ }
+}
