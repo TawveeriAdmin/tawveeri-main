@@ -217,6 +217,36 @@ export function ProductCard({
   const isOutOfStock = product.product_stores.every((ps) => ps.availability === 'out_of_stock');
   const bestPriceAgeHours = hoursSince(bestPrice?.observed_at ?? null);
 
+  // MULTI-STORE CARD WITHOUT A COMPARE PAGE (2026-10-06, external review: WA21A8376GV, MDRS710FGU50D). A card with more than one store
+  // has no single `externalProductUrl` and, when no TPS comparison exists either, used to print «رابط المتجر غير متاح» under an
+  // «أفضل سعر» claim — a priced, observed offer with a working exit that the shopper could not reach. The claim's own offer (the
+  // best-price store the card shows) now carries the button. Compare, when it exists, stays the primary path and nothing changes.
+  const multiStoreExitStore = isMultiStore && !product.tps_compare_url ? bestPrice : undefined;
+  const multiStoreExitRaw = multiStoreExitStore ? (multiStoreExitStore.product_url || multiStoreExitStore.affiliate_url || null) : null;
+  const multiStoreExitUrl = multiStoreExitRaw
+    ? (multiStoreExitRaw.startsWith('/go/')
+      ? multiStoreExitRaw
+      : (applyAffiliateTag(multiStoreExitRaw, multiStoreExitStore?.stores?.slug ?? multiStoreExitStore?.stores?.id ?? null) ?? multiStoreExitRaw))
+    : null;
+  const multiStoreExitName = multiStoreExitStore?.stores
+    ? (currentLocale === 'ar' ? multiStoreExitStore.stores.name_ar : multiStoreExitStore.stores.name_en) || ''
+    : '';
+  const openMultiStoreExit = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (!multiStoreExitUrl) return;
+    const storeKey = String(multiStoreExitStore?.stores?.slug ?? multiStoreExitStore?.stores?.id ?? '');
+    if (multiStoreExitUrl.startsWith('/go/')) {
+      // A /go exit is opened with the interaction id minted here (the human evidence /go needs to attach the tag) — same as the card link.
+      e.preventDefault();
+      const goId = (multiStoreExitUrl.match(/^\/go\/([^?]+)/) || [])[1] ?? null;
+      track('go_click', { canonical_id: product.id, store: storeKey, category: product.category ?? null, source: 'search_card', meta: { measured: true } });
+      const interactionId = recordFirstPartyInteraction({ goId, canonicalId: product.id, surface: 'search_card' });
+      window.open(goId ? appendInteractionId(multiStoreExitUrl, interactionId) : multiStoreExitUrl, '_blank', 'noopener,noreferrer');
+      return;
+    }
+    track('go_click', { canonical_id: product.id, store: storeKey, category: product.category ?? null, source: 'search_card', meta: { measured: false } });
+    recordFirstPartyInteraction({ goId: null, canonicalId: product.id, surface: 'search_card' });
+  };
+
   const currentImageUrl = availableImages[currentImageIndex] || null;
   const imageSrc = imageError || !currentImageUrl ? PRODUCT_PLACEHOLDER_IMAGE : currentImageUrl;
 
@@ -662,6 +692,17 @@ export function ProductCard({
               <a href={externalProductUrl} target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="w-3.5 h-3.5 shrink-0" />
                 <span className="truncate">{t('products.viewAtStore')}</span>
+              </a>
+            </Button>
+          ) : multiStoreExitUrl ? (
+            <Button variant="default" size="sm" className="w-full text-xs" asChild>
+              <a href={multiStoreExitUrl} target="_blank" rel="nofollow noopener noreferrer" onClick={openMultiStoreExit}>
+                <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">
+                  {multiStoreExitName
+                    ? (currentLocale === 'ar' ? `عرض في ${multiStoreExitName}` : `View at ${multiStoreExitName}`)
+                    : t('products.viewAtStore')}
+                </span>
               </a>
             </Button>
           ) : product.tps_compare_url ? null : (

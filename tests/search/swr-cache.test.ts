@@ -102,6 +102,13 @@ describe('search-latency SWR caches (2026-10-06)', () => {
       expect(routeSrc).toMatch(/observationIdByListing\.get\(`\$\{canonicalId\}\|\$\{slug\}\|url\|\$\{co\.url\}`\)/);
       expect(routeSrc).toMatch(/\.select\('identity_key, store_id, raw_obs_id, price, observed_at, url, payload'\)/);
     });
+    it('every current-offer exit is resolved by RAW id, not by whichever observation rows happened to be fetched (the 400-canonical window left 33–75% of broad-query entries without an exit)', () => {
+      expect(routeSrc).toMatch(/async function resolveExitObservationIds/);
+      expect(routeSrc).toMatch(/normalized_payload\.cs\.\{"_raw_id":\$\{r\}\}/);
+      expect(routeSrc).toMatch(/\/\^\\d\{1,18\}\$\/\.test\(id\)/);
+      expect(routeSrc).toMatch(/await resolveExitObservationIds\(supabase, \[\.\.\.new Set\(unresolved\)\]\)/);
+      expect(routeSrc).toMatch(/rawObsId: String\(co\.raw_obs_id\)/);
+    });
     it('the current-price cache has the shortest TTL', () => {
       expect(routeSrc).toMatch(/currentOffersCache = createPerIdSwrCache<TpsCurrentOfferRow>\(\{ ttlMs: 2 \* 60_000/);
     });

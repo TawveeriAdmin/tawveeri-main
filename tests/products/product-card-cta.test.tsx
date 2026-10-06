@@ -92,3 +92,33 @@ describe('ProductCard — Primary CTA vs "store link unavailable" (founder audit
     expect(screen.getByText(UNAVAILABLE_TEXT)).toBeInTheDocument();
   });
 });
+
+describe('ProductCard — a multi-store card with no compare page still exits through its best-price offer (external review 2026-10-06)', () => {
+  const two = (urls: [string | null, string | null]) => baseProduct({
+    tps_compare_url: null,
+    product_stores: [
+      baseStore({ id: 'ps-1', current_price: 3272, product_url: urls[0], stores: { id: 'amazon', slug: 'amazon', name_ar: 'أمازون', name_en: 'Amazon', logo_url: null } }),
+      baseStore({ id: 'ps-2', current_price: 4799, product_url: urls[1], stores: { id: 'samsung_ksa', slug: 'samsung_ksa', name_ar: 'سامسونج السعودية', name_en: 'Samsung KSA', logo_url: null } }),
+    ],
+  });
+
+  it('shows the button on the best-price store\'s own /go exit, and no «unavailable» message', () => {
+    render(<ProductCard product={two(['/go/aaaaaaaa-0000-4000-8000-000000000001?gt=1.x', '/go/bbbbbbbb-0000-4000-8000-000000000002?gt=1.x'])} locale="ar" />);
+    const link = screen.getByText('عرض في أمازون').closest('a');
+    expect(link).toHaveAttribute('href', expect.stringContaining('/go/aaaaaaaa-0000-4000-8000-000000000001'));
+    expect(screen.queryByText(UNAVAILABLE_TEXT)).not.toBeInTheDocument();
+  });
+
+  it('still says «unavailable» when the best-price offer genuinely has no exit (a true dead end is not hidden)', () => {
+    render(<ProductCard product={two([null, null])} locale="ar" />);
+    expect(screen.getByText(UNAVAILABLE_TEXT)).toBeInTheDocument();
+  });
+
+  it('Compare, when it exists, stays the only primary path (no second store button appears)', () => {
+    const p = two(['/go/aaaaaaaa-0000-4000-8000-000000000001?gt=1.x', null]);
+    p.tps_compare_url = '/ar/compare/x';
+    render(<ProductCard product={p} locale="ar" />);
+    expect(screen.getByText(COMPARE_TEXT)).toBeInTheDocument();
+    expect(screen.queryByText('عرض في أمازون')).not.toBeInTheDocument();
+  });
+});

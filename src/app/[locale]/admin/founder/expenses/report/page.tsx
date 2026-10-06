@@ -1,6 +1,9 @@
+import { CurrencyTotals } from '@/components/founder/currency-totals';
+import { paidExpenses } from '@/lib/founder/currency-totals';
+import { expenseSar } from '@/lib/founder/finance';
 import Link from 'next/link';
 import { fetchExpenses } from '@/lib/founder/finance';
-import { fetchSubscriptions, buildExpenseReport } from '@/lib/founder/subscriptions';
+import { fetchSubscriptions, buildExpenseReport, classify } from '@/lib/founder/subscriptions';
 import { monthWindow, riyadhMonthStart, windowFor, formatRiyadh, type MetricWindow } from '@/lib/founder/windows';
 import { FCard, SectionTitle, EmptyNote, Tag } from '@/components/founder/ui';
 
@@ -25,6 +28,8 @@ export default async function ExpenseReportPage({ params, searchParams }: { para
   const now = new Date();
   const { w, allTime, key } = resolve(sp, now);
   const [expenses, subs] = await Promise.all([fetchExpenses(), fetchSubscriptions()]);
+  const paid = paidExpenses(expenses, allTime ? undefined : w);
+  const unconverted = paid.some((row) => expenseSar(row) == null);
   const r = buildExpenseReport(expenses, subs, w, allTime);
   const base = `/${locale}/admin/founder/expenses/report`;
 
@@ -39,26 +44,28 @@ export default async function ExpenseReportPage({ params, searchParams }: { para
         <p className="text-[11px] text-on-surface-variant dark:text-white/55">{allTime ? 'منذ البداية: كل القيود المدفوعة بغض النظر عن التاريخ؛ لا ميزانية لفترة مفتوحة.' : <><b>{r.window.labelAr}</b> · {formatRiyadh(r.window.start)} → {formatRiyadh(r.window.end)} · {r.monthsInWindow} شهرًا {r.window.partial && <Tag tone="warn">جزئية</Tag>}</>}</p>
       </FCard>
 
+      <FCard><SectionTitle sub="جميع الدفعات بتاريخ الدفع، بالعملات الأصلية دون جمع العملات المختلفة.">إجمالي المصروف المدفوع</SectionTitle><CurrencyTotals rows={paid} /></FCard>
+      {unconverted && <p className="text-sm">توجد دفعات بعملات غير محوّلة؛ الفرق مع الميزانية بالريال غير متاح حتى توثيق التحويل.</p>}
       <FCard className="overflow-x-auto p-0">
         <table className="w-full min-w-[640px] text-xs">
-          <thead className="bg-[#f8fcfa] text-[11px] font-black text-on-surface-variant dark:bg-white/5 dark:text-white/60"><tr>{['التصنيف', 'الفعلي (ر.س)', 'المتوقع (ر.س)', 'الميزانية (ر.س)', 'الفرق (فعلي − ميزانية)', 'قيود'].map((h) => <th key={h} className="px-3 py-2 text-start">{h}</th>)}</tr></thead>
+          <thead className="bg-[#f8fcfa] text-[11px] font-black text-on-surface-variant dark:bg-white/5 dark:text-white/60"><tr>{['التصنيف', 'الفعلي حسب العملة', 'المتوقع (ر.س)', 'الميزانية (ر.س)', 'الفرق (فعلي − ميزانية)', 'قيود'].map((h) => <th key={h} className="px-3 py-2 text-start">{h}</th>)}</tr></thead>
           <tbody>
             {r.lines.map((l) => (
               <tr key={l.classification} className="border-t border-[#eef6f2] tabular-nums dark:border-white/10">
-                <td className="px-3 py-2 font-black">{l.labelAr}</td><td className="px-3 py-2">{sar(l.actualSar)}</td><td className="px-3 py-2">{sar(l.expectedSar)}</td><td className="px-3 py-2">{allTime ? '—' : sar(l.budgetSar)}</td>
-                <td className={`px-3 py-2 ${!allTime && l.varianceSar > 0 ? 'text-amber-700 dark:text-amber-300' : ''}`}>{allTime ? '—' : `${l.varianceSar >= 0 ? '+' : '−'}${sar(Math.abs(l.varianceSar))}`}</td>
+                <td className="px-3 py-2 font-black">{l.labelAr}</td><td className="px-3 py-2"><CurrencyTotals rows={paid.filter((row) => classify(row.category) === l.classification)} /></td><td className="px-3 py-2">{sar(l.expectedSar)}</td><td className="px-3 py-2">{allTime ? '—' : sar(l.budgetSar)}</td>
+                <td className={`px-3 py-2 ${!allTime && l.varianceSar > 0 ? 'text-amber-700 dark:text-amber-300' : ''}`}>{allTime || unconverted ? '—' : `${l.varianceSar >= 0 ? '+' : '−'}${sar(Math.abs(l.varianceSar))}`}</td>
                 <td className="px-3 py-2 text-on-surface-variant">{l.actualRows} مدفوع{l.expectedRows ? ` · ${l.expectedRows} متوقع` : ''}{l.undatedActualRows ? ` · ${l.undatedActualRows} بتاريخ يحتاج مراجعة` : ''}</td>
               </tr>
             ))}
             <tr className="border-t-2 border-[#d7ece5] bg-[#f8fcfa] font-black tabular-nums dark:border-[#263b33] dark:bg-white/5">
-              <td className="px-3 py-2">الإجمالي</td><td className="px-3 py-2">{sar(r.total.actualSar)}</td><td className="px-3 py-2">{sar(r.total.expectedSar)}</td><td className="px-3 py-2">{allTime ? '—' : sar(r.total.budgetSar)}</td>
-              <td className="px-3 py-2">{allTime ? '—' : `${r.total.varianceSar >= 0 ? '+' : '−'}${sar(Math.abs(r.total.varianceSar))}`}</td><td className="px-3 py-2">{r.total.actualRows} مدفوع{r.total.expectedRows ? ` · ${r.total.expectedRows} متوقع` : ''}</td>
+              <td className="px-3 py-2">الإجمالي</td><td className="px-3 py-2"><CurrencyTotals rows={paid} /></td><td className="px-3 py-2">{sar(r.total.expectedSar)}</td><td className="px-3 py-2">{allTime ? '—' : sar(r.total.budgetSar)}</td>
+              <td className="px-3 py-2">{allTime || unconverted ? '—' : `${r.total.varianceSar >= 0 ? '+' : '−'}${sar(Math.abs(r.total.varianceSar))}`}</td><td className="px-3 py-2">{r.total.actualRows} مدفوع{r.total.expectedRows ? ` · ${r.total.expectedRows} متوقع` : ''}</td>
             </tr>
           </tbody>
         </table>
       </FCard>
       {expenses.length === 0 && <EmptyNote>لا مصروفات مسجلة</EmptyNote>}
-      <p className="text-[11px] text-on-surface-variant dark:text-white/50">التصنيف: بنية = استضافة/بريد/قاعدة بيانات/استخراج بيانات/بيانات سوق؛ AI = اشتراكات وواجهات الذكاء الاصطناعي؛ تسويق = حملات X وTikTok وأدوات التسويق؛ تطوير خارجي = الشركة التقنية والمطور المستقل (متوقف، غير مسترد). القيود بتاريخ يحتاج مراجعة تظهر في «منذ البداية» فقط.</p>
+      <p className="text-[11px] text-on-surface-variant dark:text-white/50">التصنيف: بنية = استضافة/بريد/قاعدة بيانات/استخراج بيانات/بيانات سوق؛ AI = اشتراكات وواجهات الذكاء الاصطناعي؛ تسويق = حملات X وTikTok وأدوات التسويق؛ تطوير خارجي = الشركة التقنية والمطور المستقل (متوقف، غير مسترد). الدفعات ذات تاريخ الدفع المعروف تدخل الفترة حتى إن كانت فترة الخدمة مجهولة؛ الدفعات بلا تاريخ دفع تظهر في «منذ البداية» فقط.</p>
     </div>
   );
 }

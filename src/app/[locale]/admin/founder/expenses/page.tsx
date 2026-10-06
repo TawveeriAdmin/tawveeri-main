@@ -1,5 +1,7 @@
+import { CurrencyTotals } from '@/components/founder/currency-totals';
+import { paidExpenses } from '@/lib/founder/currency-totals';
 import { windowFromSearchParams } from '@/lib/founder/api';
-import { fetchExpenses, fetchBudgets, cashSpent, periodCost, dueUnpaid, totalSinceStart, breakdownBy, upcomingCommitments, budgetStatus, expenseSar } from '@/lib/founder/finance';
+import { fetchExpenses, fetchBudgets, periodCost, dueUnpaid, totalSinceStart, breakdownBy, upcomingCommitments, budgetStatus, expenseSar } from '@/lib/founder/finance';
 import { EXPENSE_CATEGORY_AR } from '@/lib/founder/registry';
 import { daysBetween, monthWindow, riyadhMonthStart, riyadhMidnightDaysAgo, formatRiyadh } from '@/lib/founder/windows';
 import { FCard, SectionTitle, WindowPicker, EmptyNote, KV, Sar, Tag } from '@/components/founder/ui';
@@ -24,9 +26,9 @@ export default async function ExpensesPage({ params, searchParams }: { params: P
   const base = `/${locale}/admin/founder/expenses`;
   const monthW = monthWindow(riyadhMonthStart(now));
   const todayW = { kind: 'day' as const, start: riyadhMidnightDaysAgo(0, now), end: now, partial: true, labelAr: 'اليوم' };
-  const cash = cashSpent(rows, w), period = periodCost(rows, w), due = dueUnpaid(rows, w.end), total = totalSinceStart(rows);
-  const monthCash = cashSpent(rows, monthW), monthPeriod = periodCost(rows, monthW), todayCash = cashSpent(rows, todayW);
-  const byCat = breakdownBy(rows, w, 'category'), byVendor = breakdownBy(rows, w, 'vendor'), byCampaign = breakdownBy(rows, w, 'campaign'), byKind = breakdownBy(rows, w, 'cost_kind');
+  const period = periodCost(rows, w), due = dueUnpaid(rows, w.end), total = totalSinceStart(rows);
+  const paidInWindow = paidExpenses(rows, w);
+  const groups = ['category', 'vendor', 'campaign', 'cost_kind'] as const;
   const budgetsView = budgetStatus(budgets, breakdownBy(rows, monthW, 'category'), daysBetween(monthW.start, now) / Math.max(1, daysBetween(monthW.start, monthW.end)));
   const upcoming = upcomingCommitments(rows, now);
   const unconverted = rows.filter((r) => expenseSar(r) == null).length;
@@ -35,10 +37,10 @@ export default async function ExpensesPage({ params, searchParams }: { params: P
     <div className="space-y-6">
       <FCard><WindowPicker current={w} basePath={base} sp={sp} /></FCard>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <FCard><KV rows={[{ k: 'إجمالي ما صُرف منذ البداية (F04)', v: <Sar v={total.sar} />, note: `${total.rows} سجل مدفوع${total.estimateRows ? ` · ${total.estimateRows} تقدير` : ''}${unconverted ? ` · ${unconverted} بلا تحويل` : ''}${total.undatedRows ? ` · ${total.undatedRows} بتاريخ يحتاج مراجعة (خارج النوافذ المؤرخة)` : ''}` }]} /></FCard>
-        <FCard><KV rows={[{ k: 'هذا الشهر: نقد / تكلفة', v: <><Sar v={monthCash.sar} /> / <Sar v={monthPeriod.sar} /></>, note: monthW.labelAr }]} /></FCard>
-        <FCard><KV rows={[{ k: 'اليوم نقدًا', v: <Sar v={todayCash.sar} /> }, { k: 'مستحق غير مدفوع (F03)', v: <Sar v={due.sar} /> }]} /></FCard>
-        <FCard><KV rows={[{ k: `${w.labelAr}: نقد (F01)`, v: <Sar v={cash.sar} /> }, { k: 'تكلفة الفترة (F02)', v: <Sar v={period.sar} />, note: 'موزعة على فترة الخدمة' }]} /></FCard>
+        <FCard><KV rows={[{ k: 'إجمالي ما صُرف منذ البداية (F04)', v: <CurrencyTotals rows={rows} />, note: `${total.rows} سجل مدفوع${total.estimateRows ? ` · ${total.estimateRows} تقدير` : ''}${unconverted ? ` · ${unconverted} بلا تحويل` : ''}${total.undatedRows ? ` · ${total.undatedRows} بفترة خدمة تحتاج مراجعة` : ''}` }]} /></FCard>
+        <FCard><KV rows={[{ k: 'المدفوع هذا الشهر حسب العملة', v: <CurrencyTotals rows={rows} window={monthW} />, note: monthW.labelAr }]} /></FCard>
+        <FCard><KV rows={[{ k: 'اليوم نقدًا', v: <CurrencyTotals rows={rows} window={todayW} /> }, { k: 'مستحق غير مدفوع (F03)', v: <Sar v={due.sar} /> }]} /></FCard>
+        <FCard><KV rows={[{ k: `${w.labelAr}: نقد (F01)`, v: <CurrencyTotals rows={rows} window={w} /> }, { k: 'تكلفة الفترة (F02)', v: <Sar v={period.sar} />, note: 'بالريال المتاح فقط؛ يستثني العملات غير المحوّلة وفترات الخدمة المجهولة' }]} /></FCard>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -53,11 +55,21 @@ export default async function ExpensesPage({ params, searchParams }: { params: P
         </div>
       </div>
 
+      <p className="text-xs text-on-surface-variant">المجاميع تشمل جميع الدفعات بتاريخ الدفع، كل عملة على حدة دون تحويل. فترة الخدمة المجهولة لا تستبعد دفعة مؤكدة.</p>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <FCard><SectionTitle>حسب الفئة</SectionTitle>{byCat.length ? <KV rows={byCat.map((b) => ({ k: b.labelAr, v: <Sar v={b.sar} />, note: b.unconvertedRows ? `${b.unconvertedRows} بلا تحويل` : undefined }))} /> : <EmptyNote>لا شيء في الفترة</EmptyNote>}</FCard>
-        <FCard><SectionTitle>حسب الأداة/المورد</SectionTitle>{byVendor.length ? <KV rows={byVendor.slice(0, 12).map((b) => ({ k: b.labelAr, v: <Sar v={b.sar} /> }))} /> : <EmptyNote>لا شيء</EmptyNote>}</FCard>
-        <FCard><SectionTitle>حسب الحملة</SectionTitle>{byCampaign.length ? <KV rows={byCampaign.map((b) => ({ k: b.labelAr, v: <Sar v={b.sar} /> }))} /> : <EmptyNote>لا شيء</EmptyNote>}</FCard>
-        <FCard><SectionTitle sub="سياسة التوزيع: المشترك يُعرض منفصلًا ولا يُوزع تلقائيًا على الحملات.">مباشر / مشترك</SectionTitle>{byKind.length ? <KV rows={byKind.map((b) => ({ k: b.labelAr, v: <Sar v={b.sar} /> }))} /> : <EmptyNote>لا شيء</EmptyNote>}</FCard>
+        {groups.map((key, index) => {
+          const grouped = new Map<string, typeof paidInWindow>();
+          for (const row of paidInWindow) {
+            const name = row[key] || 'بلا حملة';
+            grouped.set(name, [...(grouped.get(name) ?? []), row]);
+          }
+          return <FCard key={key}><SectionTitle>{['المدفوع حسب الفئة', 'المدفوع حسب المورد', 'المدفوع حسب الحملة', 'مباشر / مشترك'][index]}</SectionTitle>
+            {grouped.size ? <KV rows={[...grouped].map(([name, entries]) => ({
+              k: key === 'category' ? (EXPENSE_CATEGORY_AR[name as keyof typeof EXPENSE_CATEGORY_AR] ?? name) : key === 'cost_kind' ? (name === 'shared' ? 'مشترك' : 'مباشر') : name,
+              v: <CurrencyTotals rows={entries} />,
+            }))} /> : <EmptyNote>لا مدفوعات في الفترة</EmptyNote>}
+          </FCard>;
+        })}
       </div>
 
       <section id="subscriptions">
@@ -116,7 +128,7 @@ export default async function ExpensesPage({ params, searchParams }: { params: P
                   <div>
                     <p className="font-black">{e.vendor} <span className="font-normal text-on-surface-variant dark:text-white/60">· {EXPENSE_CATEGORY_AR[e.category]} · {e.description ?? ''}</span></p>
                     <p className="mt-0.5 tabular-nums text-on-surface-variant dark:text-white/60">
-                      {e.amount_original} {e.currency}{e.fees || e.tax ? ` (+${e.fees} رسوم، +${e.tax} ضريبة)` : ''} = <b>{expenseSar(e) == null ? 'غير محوّل' : `${expenseSar(e)} ر.س`}</b> · {e.date_precision === 'needs_review' || !e.service_period_start ? <Tag tone="warn">تاريخ تاريخي يحتاج مراجعة</Tag> : <>الخدمة {e.service_period_start} → {e.service_period_end} · {e.payment_status === 'paid' ? `دُفع ${e.paid_at ?? 'بلا تاريخ'}` : `مستحق ${e.due_at ?? ''}`}</>}
+                      {e.amount_original} {e.currency}{e.fees || e.tax ? ` (+${e.fees} رسوم، +${e.tax} ضريبة)` : ''} = <b>{expenseSar(e) == null ? 'غير محوّل' : `${expenseSar(e)} ر.س`}</b> · {e.payment_status === 'paid' ? `دُفع ${e.paid_at ?? 'بتاريخ غير معروف'}` : `مستحق ${e.due_at ?? ''}`} · {e.service_period_start ? <>الخدمة {e.service_period_start} → {e.service_period_end}</> : <Tag tone="warn">فترة الخدمة غير معروفة</Tag>}
                       {e.recurrence !== 'one_time' ? ` · ${e.recurrence === 'monthly' ? 'شهري' : e.recurrence === 'yearly' ? 'سنوي' : 'متكرر'}` : ''}{e.campaign ? ` · حملة ${e.campaign}` : ''}
                     </p>
                     <p className="mt-0.5 text-[11px] text-on-surface-variant dark:text-white/50">

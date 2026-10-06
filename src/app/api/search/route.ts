@@ -2183,6 +2183,44 @@ function stageTimer(label: string) {
   };
 }
 
+// raw observation id -> normalized observation id (the id `/go/<id>` resolves). The mapping never changes once written, so it is cached
+// for the life of the process; a miss is remembered for 10 minutes only (the normalizer may not have written the row yet).
+const exitObsIdByRaw = new Map<string, string>();
+const exitObsIdMisses = new Map<string, number>();
+async function resolveExitObservationIds(supabase: ReturnType<typeof createServerClient>, rawIds: string[]): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  const now = Date.now();
+  const want: string[] = [];
+  for (const id of rawIds) {
+    const hit = exitObsIdByRaw.get(id);
+    if (hit) { out.set(id, hit); continue; }
+    const missAt = exitObsIdMisses.get(id);
+    if (missAt && now - missAt < 10 * 60_000) continue;
+    if (/^\d{1,18}$/.test(id)) want.push(id);
+  }
+  if (!want.length) return out;
+  try {
+    const chunks = await mapLimit(chunked(want, 100), 6, (slice) =>
+      supabase.from('normalized_product_observations')
+        .select('id, raw_id:normalized_payload->>_raw_id')
+        .or(slice.map((r) => `normalized_payload.cs.{"_raw_id":${r}}`).join(',')));
+    for (const c of chunks) {
+      if (c.error) throw new Error(c.error.message);
+      for (const r of (c.data ?? []) as unknown as { id: string; raw_id: string | null }[]) {
+        if (r.raw_id && !exitObsIdByRaw.has(r.raw_id)) exitObsIdByRaw.set(String(r.raw_id), r.id);
+      }
+    }
+    if (exitObsIdByRaw.size > 200_000) { for (const k of [...exitObsIdByRaw.keys()].slice(0, 50_000)) exitObsIdByRaw.delete(k); }
+    for (const id of want) {
+      const hit = exitObsIdByRaw.get(id);
+      if (hit) out.set(id, hit); else exitObsIdMisses.set(id, now);
+    }
+  } catch (e) {
+    console.warn('[TPS Search] exit id resolution unavailable:', e instanceof Error ? e.message : e);   // fail-open: the old behaviour (no exit) for those entries
+  }
+  return out;
+}
+
 // Search-latency caches (2026-10-06, see src/lib/search/swr-cache.ts for the measurement and the contract).
 type TpsPriceRow = { canonical_product_id: string; store_name: string; price: number | string; observed_at: string; tps_observation_id: string };
 type TpsObsRow = { id: string; canonical_product_id: string; store_id: string | null; observed_at: string; raw_id?: string; url?: string };
@@ -2391,7 +2429,7 @@ async function searchTPSCanonical(
       : [];
     timer.mark(`current_offers(${identityKeys.length}keys,${currentOffers.length}rows)`);
 
-    const latest = new Map<string, Map<string, { price: number; obsId: string; observedAt: string; originalPrice?: number; availability?: SearchProduct['availability'] }>>();
+    const latest = new Map<string, Map<string, { price: number; obsId: string; rawObsId?: string; observedAt: string; originalPrice?: number; availability?: SearchProduct['availability'] }>>();
     for (const r of prices ?? []) {
       // Approved scope gate + ONE KEY PER RETAILER. This map used to be keyed on the raw
       // `price_history.store_name`, which is not an identity: the same retailer appears
@@ -2452,7 +2490,7 @@ async function searchTPSCanonical(
           m.delete(slug);
           continue;
         }
-        m.set(slug, { price: Number(co.price), obsId: exactObservationIds.get(`${canonicalId}|${slug}|${co.raw_obs_id}`) || (co.url ? observationIdByListing.get(`${canonicalId}|${slug}|url|${co.url}`) : undefined) || '', observedAt: co.observed_at,
+        m.set(slug, { price: Number(co.price), obsId: exactObservationIds.get(`${canonicalId}|${slug}|${co.raw_obs_id}`) || (co.url ? observationIdByListing.get(`${canonicalId}|${slug}|url|${co.url}`) : undefined) || '', rawObsId: String(co.raw_obs_id), observedAt: co.observed_at,
           originalPrice: Number(co.payload?._original_price) > Number(co.price) ? Number(co.payload?._original_price) : undefined,
           availability: co.payload?._availability === 'limited_stock' ? 'limited_stock' : co.payload?._availability === 'pre_order' ? 'pre_order' : 'in_stock' });
         // co.observed_at is already authoritative (tps_current_offers is the hot
@@ -2461,6 +2499,20 @@ async function searchTPSCanonical(
         trueObserved.set(`${canonicalId}|${slug}`, co.observed_at);
       }
     }
+
+    // EXIT RESOLUTION (2026-10-06): a current offer's exit is the normalized observation of its OWN raw observation. Only the first 400
+    // matched canonicals have their observation rows fetched above, so on a broad query every other card lost its exit (measured: 33–75% of
+    // card entries on «غسالة»/«laptop»/«tv» had no `product_url`; the observation rows for the offer simply were not loaded). Resolve the
+    // missing ids directly by raw id — an immutable mapping, GIN-indexed, cached for the life of the process.
+    {
+      const unresolved: string[] = [];
+      for (const byStoreMap of latest.values()) for (const v of byStoreMap.values()) if (!v.obsId && v.rawObsId) unresolved.push(v.rawObsId);
+      if (unresolved.length) {
+        const resolvedIds = await resolveExitObservationIds(supabase, [...new Set(unresolved)]);
+        for (const byStoreMap of latest.values()) for (const v of byStoreMap.values()) if (!v.obsId && v.rawObsId) v.obsId = resolvedIds.get(v.rawObsId) ?? '';
+      }
+    }
+    timer.mark('exit_ids');
 
     const out: GroupedSearchProduct[] = [];
     for (const p of matched) {
