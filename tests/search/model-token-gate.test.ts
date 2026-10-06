@@ -34,3 +34,15 @@ describe('model token gate (2026-10-06): the model code is the request, descript
     expect(modelNumberPrefixFilter('a;b')).not.toMatch(/;/);
   });
 });
+
+import fs from 'fs';
+import path from 'path';
+describe('the advisor endpoint never recommends for a model it cannot identify (wired)', () => {
+  const src = fs.readFileSync(path.join(process.cwd(), 'src', 'app', 'api', 'v1', 'agent', 'decide', 'route.ts'), 'utf8');
+  it('filters candidates by the named code and returns an honest zero when none carries it', () => {
+    expect(src).toMatch(/const namedCodes = typeof body\.text === "string" \? requiredCodeTokens\(body\.text\) : \[\]/);
+    expect(src).toMatch(/carriesCodes\(\[r\.display_name_en, r\.display_name_ar, r\.tps_identity_key\], namedCodes\)/);
+    expect(src).toMatch(/model_not_found: namedCodes\[0\]\.toUpperCase\(\)/);
+    expect(src).toMatch(/decide\(engineTask, rows\)/);
+  });
+});

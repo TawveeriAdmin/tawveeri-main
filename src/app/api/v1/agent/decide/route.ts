@@ -16,6 +16,7 @@ import { assessTrust, hoursSince, PICK_FRESHNESS_MAX_HOURS } from "@/lib/intelli
 import { getProviderByStoreId, getProvider } from "@/lib/providers/registry";
 import { getComparison, isComparisonError } from "@/lib/compare/get-comparison";
 import { dropUnconfirmedObservations } from "@/lib/identity/drop-unconfirmed-observations";
+import { requiredCodeTokens, carriesCodes } from "@/lib/search/model-token-gate";
 
 // Must match `MIN_RETAILERS` in resolve-comparison.ts — the compare page's own "is this a
 // comparison" threshold. Store-count consistency audit (2026-09-08): duplicated rather than
@@ -195,7 +196,7 @@ export async function POST(req: NextRequest) {
   const canon = cat.canon;
   const projById = new Map((cat.proj ?? []).map((p) => [p.canonical_id, p]));
 
-  const rows: CanonicalRow[] = (canon ?? [])
+  const allRows: CanonicalRow[] = (canon ?? [])
     .filter((c) => projById.has(c.id)) // only products that made it to the projection (have offers)
     .map((c) => {
       const p = projById.get(c.id)!;
@@ -206,6 +207,21 @@ export async function POST(req: NextRequest) {
         has_comparison: p.has_comparison, identity_confidence: p.identity_confidence, attributes: c.attributes ?? {},
       } as CanonicalRow;
     });
+
+  // A NAMED MODEL IS EXACT OR IT IS AN HONEST ZERO (2026-10-06, external review: «ECOVACS DEEBOT T50 PRO OMNI» → 200 with a 115 SAR handheld
+  // vacuum as the smart pick). The text parser resolved the CATEGORY from the brand/words and the engine ranked the whole category, ignoring the one
+  // token that named the product. A model code in the request must be carried (whole token) by a candidate; when none is, no recommendation is made.
+  const namedCodes = typeof body.text === "string" ? requiredCodeTokens(body.text) : [];
+  const rows: CanonicalRow[] = namedCodes.length
+    ? allRows.filter((r) => carriesCodes([r.display_name_en, r.display_name_ar, r.tps_identity_key], namedCodes))
+    : allRows;
+  if (namedCodes.length && rows.length === 0) {
+    return NextResponse.json({
+      version: "v1", task, supported: true, count: 0, smart_pick: null, recommendations: [], basket,
+      model_not_found: namedCodes[0].toUpperCase(),
+      note: "the named model is not in the catalogue — no recommendation is made for a product we cannot identify",
+    });
+  }
 
   const { supported, recommendations, anyWithinBudget } = decide(engineTask, rows);
   const scopedRecommendations = filterOverBudgetAlternatives(engineTask.category, engineTask.budget_total ?? null, recommendations);
