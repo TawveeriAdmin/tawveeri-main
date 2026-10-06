@@ -1,4 +1,4 @@
-import { strongModelToken, requiredCodeTokens, carriesCodes, modelNumberPrefixFilter } from '@/lib/search/model-token-gate';
+import { strongModelToken, requiredCodeTokens, carriesCodes, modelNumberPrefixFilter, knownModelFilter } from '@/lib/search/model-token-gate';
 
 describe('model token gate (2026-10-06): the model code is the request, descriptive words never veto it', () => {
   it('finds the strong model token inside a mixed Arabic/English sentence', () => {
@@ -44,5 +44,22 @@ describe('the advisor endpoint never recommends for a model it cannot identify (
     expect(src).toMatch(/carriesCodes\(\[r\.display_name_en, r\.display_name_ar, r\.tps_identity_key\], namedCodes\)/);
     expect(src).toMatch(/model_not_found: namedCodes\[0\]\.toUpperCase\(\)/);
     expect(src).toMatch(/decide\(engineTask, rows\)/);
+  });
+});
+
+describe('knownModelFilter (known model vs never heard of it — RF59A70T1SR, 2026-10-06)', () => {
+  it('matches the model-number column and the identity key MODEL segment, exact or with a region/market suffix, and nothing looser', () => {
+    const f = knownModelFilter('rf59a70t1sr');
+    expect(f).toContain('model_number.eq.RF59A70T1SR');
+    expect(f).toContain('model_number.like.RF59A70T1SR/%');
+    expect(f).toContain('tps_identity_key.ilike.%|MODEL:RF59A70T1SR,');
+    expect(f).toContain('tps_identity_key.ilike.%|MODEL:RF59A70T1SR/%');
+    expect(f).toContain('tps_identity_key.ilike.%|MODEL:RF59A70T1SR-%');
+    // never a bare prefix: «T50» must not be «known» because «T500» exists
+    expect(f).not.toMatch(/ilike\.%\|MODEL:RF59A70T1SR%/);
+    expect(knownModelFilter('T50')).not.toMatch(/T50%/);
+  });
+  it('strips characters that could escape the filter body', () => {
+    expect(knownModelFilter('X1,or=(id.eq.1)')).not.toContain('(');
   });
 });

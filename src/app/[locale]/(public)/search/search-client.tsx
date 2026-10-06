@@ -284,6 +284,8 @@ export default function SearchClient() {
   const [deviceNotFound, setDeviceNotFound] = useState<{ id: string; labelAr: string; labelEn: string } | null>(null);
   // The query carried a model code (T50, N30...) that no product has: say so instead of showing look-alikes (2026-10-06).
   const [modelNotFound, setModelNotFound] = useState<string | null>(null);
+  // the model is KNOWN to the catalogue but nothing is on sale now (RF59A70T1SR, 2026-10-06): different wording from «never heard of it».
+  const [modelKnownNoOffer, setModelKnownNoOffer] = useState(false);
   // Amazon Campaign V1 delivery-gap fix (category-resolution wiring): explicit user category
   // selection (selectedCategory) always wins; when the shopper has NOT picked a filter, this
   // falls back to the server's own query-resolved category (API's `resolvedCategory`, already
@@ -1091,6 +1093,7 @@ export default function SearchClient() {
       setCategoryEnforcedZero(!!((data as unknown) as { categoryEnforcedZero?: boolean }).categoryEnforcedZero);
       setDeviceNotFound(((data as unknown) as { deviceNotFound?: { id: string; labelAr: string; labelEn: string } | null }).deviceNotFound ?? null);
       setModelNotFound(((data as unknown) as { modelNotFound?: string | null }).modelNotFound ?? null);
+      setModelKnownNoOffer(!!((data as unknown) as { modelKnownNoOffer?: boolean }).modelKnownNoOffer);
       setClosestOptions(closestOptionsData);
       setCompareRoute(((data as unknown) as { compareRoute?: CompareRoute | null }).compareRoute ?? null);
       setSearchCache(query, selectedCategory || 'all', resolvedCategoryFromApi, mappedProducts, total);
@@ -1784,9 +1787,13 @@ export default function SearchClient() {
                 {/* MODEL NOT IN THE CATALOGUE (2026-10-06): the query carried a model code and no product has it. */}
                 {modelNotFound && !loading && (
                   <div className="mb-4 rounded-2xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container)] px-4 py-3 text-sm font-medium text-on-surface" data-testid="model-not-found">
-                    {locale === 'ar'
-                      ? `ما لقينا الموديل ${modelNotFound} في الكتالوج حاليًا — جرّب اسم المنتج أو العلامة بدون الرمز.`
-                      : `We don't have model ${modelNotFound} right now — try the product or brand name without the code.`}
+                    {modelKnownNoOffer
+                      ? (locale === 'ar'
+                          ? `نعرف الموديل ${modelNotFound} لكن ما فيه عرض متوفر ومؤكد له الآن عند المتاجر اللي نتابعها — جرّب اسم المنتج بدون الرمز أو ارجع لاحقًا.`
+                          : `We know model ${modelNotFound}, but none of the stores we track has a confirmed in-stock offer right now — try the product name without the code, or check back later.`)
+                      : (locale === 'ar'
+                          ? `ما لقينا الموديل ${modelNotFound} في الكتالوج حاليًا — جرّب اسم المنتج أو العلامة بدون الرمز.`
+                          : `We don't have model ${modelNotFound} right now — try the product or brand name without the code.`)}
                   </div>
                 )}
                 {/* DEVICE NOT IN THE CATALOGUE (2026-10-06): the query names a device and none of the results is that device. */}

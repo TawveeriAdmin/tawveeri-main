@@ -35,7 +35,7 @@ import { postgrestQuote } from '@/lib/database/postgrest-quote';
 import { filterByAcTypeIntent } from '@/lib/search/ac-type-intent';
 import { deviceIntentOf, isDeviceItself, queryNamesAccessory } from '@/lib/search/device-intent';
 import { attachMarketVariantCompanions, attachSameModelNumberCompanions } from '@/lib/search/market-variant-companions';
-import { strongModelToken as strongModelCode, requiredCodeTokens, carriesCodes, modelNumberPrefixFilter } from '@/lib/search/model-token-gate';
+import { knownModelFilter, strongModelToken as strongModelCode, requiredCodeTokens, carriesCodes, modelNumberPrefixFilter } from '@/lib/search/model-token-gate';
 import { manufacturerCategoryTerms, productQueryText } from '@/lib/search/manufacturer-category-terms';
 import { hoursSince, PICK_FRESHNESS_MAX_HOURS, productTrust, isFreshObservation, type TrustAssessment } from '@/lib/intelligence/evidence-engine';
 import { mergeVerifiedCanonicalSearchResults, mergeSameListingCards, attachStorefrontListingUrls, type StorefrontListingRow } from '@/lib/catalog/merge-verified-canonical-search-results';
@@ -3130,12 +3130,20 @@ export async function POST(request: NextRequest) {
   products = await enrichWithTPS(products, supabase);
   reqTimer.mark('enrich');
   let modelNotFound: string | null = null;
+  // true when the code names a model the catalogue KNOWS (a canonical carries it) but nothing is on sale now: «known, no current offer», not «never heard of it».
+  let modelKnownNoOffer = false;
   // CODE GATE (2026-10-06), run BEFORE cards merge so each card is judged on its own title/key/listing (a generic-spec canonical that absorbs a storefront card must not be dropped for lacking the code): a short model code in the query (T50, N30, S24) must be carried by every result as a WHOLE token; when no result
   // carries it the answer is 'we do not have this model', never a grid of products that merely share PRO / OMNI. See model-token-gate.ts.
   const codeTokens = rawQuery && !isAccessoryShapedQuery(rawQuery) ? requiredCodeTokens(rawQuery) : [];
   if (codeTokens.length) {
     const keptByCode = products.filter((p) => carriesCodes([p.name_en, p.name_ar, p.tps_identity_key, (p as { model?: string }).model, (p as { _absorbed_text?: string })._absorbed_text, ...p.stores.map((s) => s.listing_url)], codeTokens));
-    if (keptByCode.length === 0) modelNotFound = codeTokens[0].toUpperCase();
+    if (keptByCode.length === 0) {
+      modelNotFound = codeTokens[0].toUpperCase();
+      try {
+        const { data: known } = await supabase.from('canonical_products').select('id').or(knownModelFilter(modelNotFound)).eq('is_active', true).limit(1);
+        modelKnownNoOffer = (known?.length ?? 0) > 0;
+      } catch { /* unknown stays «not found» — the safe wording */ }
+    }
     if (keptByCode.length !== products.length) console.log(`[code-gate] "${rawQuery.slice(0, 60)}" — ${products.length - keptByCode.length} of ${products.length} result(s) did not carry ${codeTokens.join('+')}`);
     products = keptByCode;
   }
@@ -3594,6 +3602,7 @@ export async function POST(request: NextRequest) {
     categoryEnforcedZero: boolean;
     deviceNotFound: { id: string; labelAr: string; labelEn: string } | null;
     modelNotFound: string | null;
+    modelKnownNoOffer: boolean;
     inferredMaxPrice: number | null;
     cheapestIntentApplied: boolean;
     closestOptions: ClosestOption[];
@@ -3611,6 +3620,7 @@ export async function POST(request: NextRequest) {
     categoryEnforcedZero,
     deviceNotFound,
     modelNotFound,
+    modelKnownNoOffer,
     // Amazon Campaign V1 delivery-gap fix: the query's category, already resolved by the
     // SAME shared classifier (`constraintTask`) used for ranking/gating above, mapped to the
     // storefront taxonomy (see canonical-category.ts). The client uses this ONLY as a

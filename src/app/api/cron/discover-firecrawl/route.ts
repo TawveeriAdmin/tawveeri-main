@@ -8,16 +8,19 @@ import { slugCandidates } from '@/lib/scraping/services/slugify';
 import { classifyFromTitle } from '@/lib/scraping/utils/category-utils';
 import { ProductService } from '@/lib/scraping/services/product-service';
 import { AmazonScraper } from '@/lib/scraping/stores/amazon-scraper';
-import { loadKnownAmazonRows, partitionAmazonOffers, verifyAmazonOffers, asinOfOffer } from '@/lib/scraping/services/amazon-discovery-gate';
+import { loadKnownAmazonRows, partitionAmazonOffers, verifyAmazonOffers, verifiedSeedOffers, asinOfOffer } from '@/lib/scraping/services/amazon-discovery-gate';
+import { allAmazonSeeds } from '@/lib/scraping/config/amazon-seed-asins';
 import { asinFromUrl } from '@/lib/scraping/utils/amazon-asin';
 
 // ADR-396 — amazon tiles are discovery signals, not prices. Detail pages read per run,
 // bounded so the web service (this route runs under pg_cron, not the worker) stays cheap:
 // ~2.5 s per page => <= ~100 s per 6-hourly run. Reversible by env.
 const AMAZON_PDP_VERIFY_MAX = parseInt(process.env.AMAZON_DISCOVERY_PDP_VERIFY_MAX || '40', 10);
+// Targeted seeds (config/amazon-seed-asins.ts) read per run, on top of the tile budget above; a seed with a storefront row costs nothing. 0 disables the lane.
+const AMAZON_SEED_MAX = parseInt(process.env.AMAZON_SEED_MAX || '6', 10);
 const isUnverifiedTile = (p: NormalizedOffer) => (p._raw as { _price_source?: string } | null)?._price_source === 'search_tile_unverified';
 
-interface AmazonGateSummary { tiles: number; noAsin: number; knownLive: number; fresh: number; freshVerified: number; freshUnavailable: number; freshUnverified: number; resurrect: number; resurrected: number; resurrectUnavailable: number }
+interface AmazonGateSummary { tiles: number; noAsin: number; knownLive: number; fresh: number; freshVerified: number; freshUnavailable: number; freshUnverified: number; resurrect: number; resurrected: number; resurrectUnavailable: number; seeds?: { requested: number; verified: number; alreadyKnown: number; unavailable: number; failed: number } }
 
 /**
  * Known ASIN => never repriced from a tile; out_of_stock / dead-lettered rows get a detail-page
@@ -50,7 +53,19 @@ async function gateAmazonOffers(offers: NormalizedOffer[], storeId: number): Pro
         } else if (v.unavailable) summary.resurrectUnavailable++;
       }
     }
-    return { offers: fresh.map((v) => v.offer), summary };
+    // Targeted seeds: ASINs verified on amazon.sa that the generic queries never reach (config/amazon-seed-asins.ts). Only seeds with no storefront row are read.
+    let seedOffers: NormalizedOffer[] = [];
+    if (AMAZON_SEED_MAX > 0) {
+      try {
+        const seeds = allAmazonSeeds();
+        const seedKnown = await loadKnownAmazonRows(sb as any, storeId, seeds.map((s) => s.asin));
+        const taken = new Set(fresh.map((v) => asinOfOffer(v.offer)));
+        const r = await verifiedSeedOffers(seeds.filter((s) => !taken.has(s.asin.toUpperCase())), seedKnown, read, AMAZON_SEED_MAX);
+        seedOffers = r.offers;
+        summary.seeds = { requested: r.requested, verified: r.offers.length, alreadyKnown: r.alreadyKnown, unavailable: r.unavailable, failed: r.failed };
+      } catch (e: any) { console.error('[amazon-gate:seeds]', String(e?.message || e)); }
+    }
+    return { offers: [...fresh.map((v) => v.offer), ...seedOffers], summary };
   } finally {
     await scraper.cleanup().catch(() => {});
   }

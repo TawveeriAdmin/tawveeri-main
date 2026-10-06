@@ -131,6 +131,44 @@ export async function verifyAmazonOffers(
   return out;
 }
 
+/**
+ * TARGETED SEEDS (2026-10-06, external review item 7): ASINs a person verified on amazon.sa that the generic discovery queries never reach. Only a seed with NO storefront row is
+ * read (bounded by `max`), and only a detail page WITH a buy-box price in stock becomes an offer — a seed is never persisted from a guess, from a tile, or without a price. The offer is
+ * shaped exactly like a verified discovery tile (canonical /dp/ASIN URL, `_price_source: 'product_page'`) so it rides the normal price-truth / raw-observation path. Never throws.
+ */
+export async function verifiedSeedOffers(
+  seeds: Array<{ asin: string; brand?: string }>,
+  known: Map<string, KnownAmazonRow>,
+  fetchPage: (url: string) => Promise<ScrapedProduct | null>,
+  max: number,
+): Promise<{ offers: NormalizedOffer[]; requested: number; alreadyKnown: number; unavailable: number; failed: number }> {
+  const out = { offers: [] as NormalizedOffer[], requested: 0, alreadyKnown: 0, unavailable: 0, failed: 0 };
+  for (const seed of seeds) {
+    const asin = seed.asin.toUpperCase();
+    if (!isAsin(asin)) continue;
+    if (known.has(asin)) { out.alreadyKnown++; continue; }
+    if (out.requested >= max) break;
+    out.requested++;
+    const url = canonicalAmazonUrl(asin);
+    let page: ScrapedProduct | null = null;
+    try { page = await fetchPage(url); } catch { page = null; }
+    if (!page || !(page.current_price != null && page.current_price > 0)) { out.failed++; continue; }
+    if (page.availability === 'out_of_stock') { out.unavailable++; continue; }
+    const title = (page.name_en || page.name_ar || '').trim();
+    if (!title) { out.failed++; continue; }
+    const brand = seed.brand || (page.brand && page.brand !== 'Unknown' ? page.brand : '');
+    out.offers.push({
+      name_ar: page.name_ar || title, name_en: page.name_en || title, brand, category: page.category || '',
+      current_price: page.current_price, original_price: page.original_price ?? null, product_url: url,
+      image_url: page.image_urls?.[0] ?? null,
+      availability: 'in_stock', barcode: null, external_id: asin,
+      _raw: { ...(page as unknown as object), _price_source: 'product_page', _seed: true },
+      _source: 'amazon-search',
+    });
+  }
+  return out;
+}
+
 function markUnverified(offer: NormalizedOffer): NormalizedOffer {
   return { ...offer, _raw: { ...(offer._raw as object), _price_source: 'search_tile_unverified' } };
 }

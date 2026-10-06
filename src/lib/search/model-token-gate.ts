@@ -64,3 +64,13 @@ export function modelNumberPrefixFilter(token: string): string {
   const m = token.toUpperCase().replace(/[^A-Z0-9/-]/g, '');
   return `model_number.eq.${m},model_number.like.${m}/%,model_number.like.${m}-%`;
 }
+
+/**
+ * `canonical_products` filter (PostgREST `or` body) for «is this model number KNOWN to the catalogue at all»: the model-number column and the identity key's `|MODEL:<code>`
+ * segment, exact or with a region/market suffix (`/ZA`, `-AMAQ`). Used only to tell «we never heard of it» from «we know it, no current offer» (external review 2026-10-06,
+ * RF59A70T1SR: a known Samsung model whose only offers are out of stock was answered «ما لقينا الموديل»).
+ */
+export function knownModelFilter(token: string): string {
+  const m = token.toUpperCase().replace(/[^A-Z0-9/-]/g, '');
+  return `${modelNumberPrefixFilter(m)},tps_identity_key.ilike.%|MODEL:${m},tps_identity_key.ilike.%|MODEL:${m}/%,tps_identity_key.ilike.%|MODEL:${m}-%`;
+}
