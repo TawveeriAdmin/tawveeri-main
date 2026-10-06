@@ -116,3 +116,24 @@ export function createPerIdSwrCache<T>(opts: SwrOptions) {
     size() { return store.size; },
   };
 }
+
+/** Runs `fn` over `items` with at most `limit` in flight; results keep input order. */
+export async function mapLimit<I, R>(items: I[], limit: number, fn: (item: I) => PromiseLike<R>): Promise<R[]> {
+  const out = new Array<R>(items.length);
+  let next = 0;
+  const worker = async () => {
+    while (next < items.length) {
+      const i = next++;
+      out[i] = await fn(items[i]);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return out;
+}
+
+/** Splits `items` into arrays of at most `size`. */
+export function chunked<T>(items: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
+  return out;
+}

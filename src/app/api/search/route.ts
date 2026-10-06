@@ -30,7 +30,7 @@ import { toStorefrontCategory } from '@/lib/search/canonical-category';
 import { exactModelQuery } from '@/lib/search/exact-model-query';
 import { linkRetrievedCanonicals } from '@/lib/search/linked-canonical-products';
 import { collectCanonicalCandidates } from '@/lib/search/canonical-candidates';
-import { createSwrCache, createPerIdSwrCache } from '@/lib/search/swr-cache';
+import { createSwrCache, createPerIdSwrCache, mapLimit, chunked } from '@/lib/search/swr-cache';
 import { filterByAcTypeIntent } from '@/lib/search/ac-type-intent';
 import { manufacturerCategoryTerms, productQueryText } from '@/lib/search/manufacturer-category-terms';
 import { hoursSince, PICK_FRESHNESS_MAX_HOURS, productTrust, isFreshObservation, type TrustAssessment } from '@/lib/intelligence/evidence-engine';
@@ -2190,8 +2190,8 @@ type TpsCurrentOfferRow = { identity_key: string; store_id: number; raw_obs_id: 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const tpsCandidatesCache = createSwrCache<any[]>({ ttlMs: 5 * 60_000, staleMs: 30 * 60_000, maxEntries: 40 });
 const signalTableCache = createSwrCache<unknown[]>({ ttlMs: 60_000, staleMs: 5 * 60_000, maxEntries: 4 });
-const priceHistoryCache = createPerIdSwrCache<TpsPriceRow>({ ttlMs: 5 * 60_000, staleMs: 30 * 60_000, maxEntries: 6000 });
-const observationsCache = createPerIdSwrCache<TpsObsRow>({ ttlMs: 5 * 60_000, staleMs: 30 * 60_000, maxEntries: 6000 });
+const priceHistoryCache = createPerIdSwrCache<TpsPriceRow>({ ttlMs: 10 * 60_000, staleMs: 60 * 60_000, maxEntries: 8000 });
+const observationsCache = createPerIdSwrCache<TpsObsRow>({ ttlMs: 15 * 60_000, staleMs: 60 * 60_000, maxEntries: 8000 });
 const currentOffersCache = createPerIdSwrCache<TpsCurrentOfferRow>({ ttlMs: 2 * 60_000, staleMs: 10 * 60_000, maxEntries: 6000 });
 const legacyLinkCache = createPerIdSwrCache<{ id: string; canonical_product_id: string | null; model: string | null; brand: string | null }>({ ttlMs: 5 * 60_000, staleMs: 30 * 60_000, maxEntries: 20_000 });
 const ghostListingCache = createPerIdSwrCache<StorefrontListingRow>({ ttlMs: 5 * 60_000, staleMs: 30 * 60_000, maxEntries: 4000 });
@@ -2243,15 +2243,16 @@ async function searchTPSCanonical(
     // memory when ≤5 min old instead of from the 929 MB observation table on every request. A failed chunk is never cached.
     const prices = await priceHistoryCache.getMany(ids, async (want) => {
       const out = new Map<string, PriceRow[]>();
-      const chunks = await Promise.all(
-        Array.from({ length: Math.ceil(want.length / CHUNK) }, (_, i) =>
-          supabase
-            .from('price_history')
-            .select('canonical_product_id, store_name, price, observed_at, tps_observation_id')
-            .in('canonical_product_id', want.slice(i * CHUNK, (i + 1) * CHUNK))
-            .order('observed_at', { ascending: false })
-            .limit(4000),
-        ),
+      // SMALL chunks (5 ids ≈ 120 rows), not 40: PostgREST caps a response at 1,000 rows, so a 40-id chunk drops the OLDEST rows of
+      // whichever canonicals share it — and a cached row set must not depend on its neighbours (a warm-up chunk once cost the iPhone 15
+      // card its Jarir offer). Limited concurrency keeps the burst bounded.
+      const chunks = await mapLimit(chunked(want, 5), 16, (slice) =>
+        supabase
+          .from('price_history')
+          .select('canonical_product_id, store_name, price, observed_at, tps_observation_id')
+          .in('canonical_product_id', slice)
+          .order('observed_at', { ascending: false })
+          .limit(4000),
       );
       for (const c of chunks) {
         if (c.error) throw new Error(`price_history: ${c.error.message}`);
@@ -2271,15 +2272,15 @@ async function searchTPSCanonical(
     type ObsRow = TpsObsRow;
     const obsRows = await observationsCache.getMany(ids, async (want) => {
       const out = new Map<string, ObsRow[]>();
-      const chunks = await Promise.all(
-        Array.from({ length: Math.ceil(want.length / CHUNK) }, (_, i) =>
-          supabase
-            .from('normalized_product_observations')
-            .select('id, canonical_product_id, store_id, observed_at, raw_id:normalized_payload->>_raw_id, url:normalized_payload->>_url')
-            .in('canonical_product_id', want.slice(i * CHUNK, (i + 1) * CHUNK))
-            .order('observed_at', { ascending: false })
-            .limit(4000),
-        ),
+      // ONE canonical per request (≈195 rows avg, well under the 1,000-row cap): a shared chunk of 40 returned only the newest ~25 rows
+      // per canonical and dropped older stores entirely, so a cached row set would have depended on its neighbours.
+      const chunks = await mapLimit(chunked(want, 1), 16, (slice) =>
+        supabase
+          .from('normalized_product_observations')
+          .select('id, canonical_product_id, store_id, observed_at, raw_id:normalized_payload->>_raw_id, url:normalized_payload->>_url')
+          .in('canonical_product_id', slice)
+          .order('observed_at', { ascending: false })
+          .limit(4000),
       );
       for (const c of chunks) {
         if (c.error) throw new Error(`normalized_product_observations: ${c.error.message}`);
@@ -2580,7 +2581,7 @@ function ensureTpsWarm(): void {
   if (tpsWarmStarted || process.env.SEARCH_WARM_CACHES === '0') return;
   tpsWarmStarted = true;
   setTimeout(() => { void warmTpsCaches(); }, 3000).unref?.();
-  setInterval(() => { void warmTpsCaches(); }, 10 * 60_000).unref?.();
+  setInterval(() => { void warmTpsCaches(); }, 15 * 60_000).unref?.();
 }
 
 export async function POST(request: NextRequest) {
