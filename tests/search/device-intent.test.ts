@@ -1,4 +1,4 @@
-import { deviceIntentOf, isDeviceItself, DEVICE_INTENTS } from '@/lib/search/device-intent';
+import { deviceIntentOf, isDeviceItself, queryNamesAccessory, DEVICE_INTENTS } from '@/lib/search/device-intent';
 
 describe('device intent (2026-10-06): «ps5» asks for the device, not for what is sold for it', () => {
   it('recognises the device a query names, in both scripts, and nothing else', () => {
@@ -11,6 +11,14 @@ describe('device intent (2026-10-06): «ps5» asks for the device, not for what 
     expect(deviceIntentOf('ps5 headset')?.id).toBe('ps5');              // the caller decides accessory-shaped queries separately
     expect(deviceIntentOf('ps5 xbox')).toBeNull();                       // two devices → ambiguous
     expect(deviceIntentOf('ps50 tv')).toBeNull();                        // whole words only
+  });
+
+  it('a query that itself asks for an accessory or a game is not a device query', () => {
+    expect(queryNamesAccessory('ps5 controller')).toBe(true);
+    expect(queryNamesAccessory('ps5 headset')).toBe(true);
+    expect(queryNamesAccessory('nintendo switch games')).toBe(true);
+    expect(queryNamesAccessory('ps5')).toBe(false);
+    expect(queryNamesAccessory('PlayStation 5 Slim')).toBe(false);
   });
 
   it('accepts a title that IS the device and rejects accessories/software of it', () => {

@@ -32,7 +32,7 @@ import { linkRetrievedCanonicals } from '@/lib/search/linked-canonical-products'
 import { collectCanonicalCandidates } from '@/lib/search/canonical-candidates';
 import { createSwrCache, createPerIdSwrCache, mapLimit, chunked } from '@/lib/search/swr-cache';
 import { filterByAcTypeIntent } from '@/lib/search/ac-type-intent';
-import { deviceIntentOf, isDeviceItself } from '@/lib/search/device-intent';
+import { deviceIntentOf, isDeviceItself, queryNamesAccessory } from '@/lib/search/device-intent';
 import { strongModelToken as strongModelCode, requiredCodeTokens, carriesCodes, modelNumberPrefixFilter } from '@/lib/search/model-token-gate';
 import { manufacturerCategoryTerms, productQueryText } from '@/lib/search/manufacturer-category-terms';
 import { hoursSince, PICK_FRESHNESS_MAX_HOURS, productTrust, isFreshObservation, type TrustAssessment } from '@/lib/intelligence/evidence-engine';
@@ -3422,7 +3422,7 @@ export async function POST(request: NextRequest) {
 
   // DEVICE QUERY WITH NO DEVICE (2026-10-06): 'ps5' / 'PlayStation 5' / 'Nintendo Switch' returned 48/48/41 accessories and games and said
   // nothing. When the query names a device and no result IS that device, say so (the client renders it); the accessories stay below.
-  const deviceIntent = rawQuery && !isAccessoryShapedQuery(rawQuery) ? deviceIntentOf(rawQuery) : null;
+  const deviceIntent = rawQuery && !isAccessoryShapedQuery(rawQuery) && !queryNamesAccessory(rawQuery) ? deviceIntentOf(rawQuery) : null;
   const deviceItems = deviceIntent ? products.filter((p) => isDeviceItself(`${p.name_en || ''} ${p.name_ar || ''}`, deviceIntent)) : [];
   // MEASURED 2026-10-06: the catalogue DOES hold the PS5 Slim console and ten Nintendo Switch units; they ranked behind forty headsets. A device
   // query puts the device first (stable partition; the accessories keep their order below), and the decision pick is chosen among devices only.

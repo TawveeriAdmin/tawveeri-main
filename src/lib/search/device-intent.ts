@@ -57,6 +57,11 @@ const NOT_THE_DEVICE = new Set([
   'لعبة', 'العاب', 'سماعة', 'سماعات', 'كونترولر', 'يد', 'ذراع', 'شاحن', 'حافظة', 'جراب', 'غطاء', 'كيبل', 'حامل',
 ]);
 
+/** True when the QUERY itself asks for an accessory/software of a device («ps5 controller», «switch games», «ps5 headset»): not a device query. */
+export function queryNamesAccessory(query: string): boolean {
+  return tokens(query).some((w) => NOT_THE_DEVICE.has(w));
+}
+
 /**
  * Is this title the DEVICE ITSELF? It must name the device within its first five words («Sony PlayStation 5 Console Slim», «Nintendo Switch
  * OLED Model») and carry no accessory/software word anywhere («… Controller for PS5», «Mario Kart 8 – Nintendo Switch» fails the head test).
