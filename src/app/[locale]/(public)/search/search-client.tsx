@@ -293,6 +293,10 @@ export default function SearchClient() {
   // an answer to a 250 SAR ask. This flag lets the empty-state render suppress that rail
   // ONLY when the zero was budget-caused, never for a plain no-budget empty search.
   const [categoryEnforcedZero, setCategoryEnforcedZero] = useState(false);
+  // The query named a device (ps5, Nintendo Switch...) and no result IS that device: say so above the accessories (2026-10-06).
+  const [deviceNotFound, setDeviceNotFound] = useState<{ id: string; labelAr: string; labelEn: string } | null>(null);
+  // The query carried a model code (T50, N30...) that no product has: say so instead of showing look-alikes (2026-10-06).
+  const [modelNotFound, setModelNotFound] = useState<string | null>(null);
   // Amazon Campaign V1 delivery-gap fix (category-resolution wiring): explicit user category
   // selection (selectedCategory) always wins; when the shopper has NOT picked a filter, this
   // falls back to the server's own query-resolved category (API's `resolvedCategory`, already
@@ -911,6 +915,8 @@ export default function SearchClient() {
     setCompareRoute(null); // a stale comparison claim must never outlive its query
     setAppliedBudget(null); // a stale inferred-budget disclosure must never outlive its query
     setCategoryEnforcedZero(false); // a stale honest-zero flag must never outlive its query
+    setDeviceNotFound(null);
+    setModelNotFound(null);
     setScrapingProgress(t('search.searchingStores'));
     setStoreErrors({});
 
@@ -1116,6 +1122,8 @@ export default function SearchClient() {
       setSmartPick(decisionCard);
       setAppliedBudget(inferredMaxPrice);
       setCategoryEnforcedZero(!!((data as unknown) as { categoryEnforcedZero?: boolean }).categoryEnforcedZero);
+      setDeviceNotFound(((data as unknown) as { deviceNotFound?: { id: string; labelAr: string; labelEn: string } | null }).deviceNotFound ?? null);
+      setModelNotFound(((data as unknown) as { modelNotFound?: string | null }).modelNotFound ?? null);
       setClosestOptions(closestOptionsData);
       setCompareRoute(((data as unknown) as { compareRoute?: CompareRoute | null }).compareRoute ?? null);
       setSearchCache(query, selectedCategory || 'all', resolvedCategoryFromApi, mappedProducts, total);
@@ -1806,6 +1814,22 @@ export default function SearchClient() {
 
               {/* Results Area */}
               <div className="min-w-0 flex-1">
+                {/* MODEL NOT IN THE CATALOGUE (2026-10-06): the query carried a model code and no product has it. */}
+                {modelNotFound && !loading && (
+                  <div className="mb-4 rounded-2xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container)] px-4 py-3 text-sm font-medium text-on-surface" data-testid="model-not-found">
+                    {locale === 'ar'
+                      ? `ما لقينا الموديل ${modelNotFound} في الكتالوج حاليًا — جرّب اسم المنتج أو العلامة بدون الرمز.`
+                      : `We don't have model ${modelNotFound} right now — try the product or brand name without the code.`}
+                  </div>
+                )}
+                {/* DEVICE NOT IN THE CATALOGUE (2026-10-06): the query names a device and none of the results is that device. */}
+                {deviceNotFound && !loading && totalCount > 0 && (
+                  <div className="mb-4 rounded-2xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container)] px-4 py-3 text-sm font-medium text-on-surface" data-testid="device-not-found">
+                    {locale === 'ar'
+                      ? `ما لقينا ${deviceNotFound.labelAr} نفسه في الكتالوج حاليًا — هذي إكسسوارات وألعاب متوافقة معه.`
+                      : `We don't carry the ${deviceNotFound.labelEn} itself right now — these are compatible accessories and games.`}
+                  </div>
+                )}
                 {/* Related-results notice — honest empty-state: no exact match, showing nearby products */}
                 {relaxed && !loading && totalCount > 0 && (
                   <div className="mb-4 rounded-2xl border border-[color:var(--color-outline-variant)] bg-[var(--brand-bg-green)] px-4 py-3 text-sm font-medium text-[var(--brand-green-dark)]">

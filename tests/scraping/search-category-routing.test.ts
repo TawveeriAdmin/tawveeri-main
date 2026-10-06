@@ -159,7 +159,8 @@ describe('the search route wires category-aware routing (drift guard)', () => {
     expect(routeSrc).toMatch(/const exactModel = exactModelQuery\(rawQuery \|\| ''\)/);
     expect(routeSrc).toMatch(/if \(rawQuery && \(tpsCategories \|\| exactModel\)\)/);
     expect(routeSrc).toMatch(/searchTPSCanonical\([^)]*tpsCategories \|\| \[\], exactModel\)/);
-    expect(routeSrc).toMatch(/canonicalQuery\.eq\('model_number', exactModel\)/);
+    // 2026-10-06: a typed model code also matches its region-suffixed stored form (RF59A70T1SR finds RF59A70T1SR/ZA) — exact, then «/…» and «-…».
+    expect(routeSrc).toMatch(/canonicalQuery\.or\(modelNumberPrefixFilter\(exactModel\)\)/);
   });
   it('derives the UI category per canonical, since several may be searched at once', () => {
     expect(routeSrc).toMatch(/category\?: string \}\)\.category === 'mobile'/);

@@ -247,3 +247,14 @@ describe("freshness gate — the CHEAPEST claim only, never store_count", () => 
     expect(p.store_count).toBe(1);
   });
 });
+
+describe('display boundary (2026-10-06): a store the shopper may not be shown never prices a card', () => {
+  it('LuLu (hidden) at 999 is not the cheapest, not counted, and does not make a comparison; Almanea 1,099 is the price', () => {
+    const p = deriveProjection(row({ stores: ['لولو هايبر ماركت', 'المنيع'], prices: ['999.00', '1099.00'], fresh: [true, true] }));
+    expect(p.cheapest_store).toBe('المنيع'); expect(p.lowest_price).toBe(1099); expect(p.store_count).toBe(1); expect(p.has_comparison).toBe(false);
+  });
+  it('an unregistered store name is untouched (fixtures and future names keep working)', () => {
+    const p = deriveProjection(row({ stores: ['a', 'b'], prices: ['1000.00', '1333.00'], fresh: [true, true] }));
+    expect(p.store_count).toBe(2); expect(p.has_comparison).toBe(true);
+  });
+});

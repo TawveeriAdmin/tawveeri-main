@@ -42,7 +42,9 @@ function verifiedCategoryTerms(row: {
 
 export function productQueryText(row: {
   name_ar?: string | null; name_en?: string | null; brand?: string | null; _verified_category_terms?: string;
+  /** Titles of cards folded into this one as the SAME identity (search dedupe): searchable, never rendered, never a category signal. */
+  _absorbed_text?: string;
 }): string {
   return [normalizeArabic(row.name_ar || ''), row.name_en || '',
-    row.brand || '', row._verified_category_terms || ''].join(' ').toLowerCase();
+    row.brand || '', row._verified_category_terms || '', normalizeArabic(row._absorbed_text || '')].join(' ').toLowerCase();
 }

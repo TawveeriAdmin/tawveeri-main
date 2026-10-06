@@ -7,7 +7,7 @@
 import fs from 'fs';
 import path from 'path';
 import { isFreshObservation } from '@/lib/intelligence/evidence-engine';
-import { isCompatOnlyMention, isAccessoryShapedQuery, isOffGradeTitle } from '@/app/api/search/route';
+import { isCompatOnlyMention, isAccessoryShapedQuery, isOffGradeTitle, scopeProductToStores, absorbMissingStores } from '@/app/api/search/route';
 import { amazonSponsoredToProduct, normalizeExitUrl } from '@/lib/retailers/exit-url';
 
 const read = (...p: string[]) => fs.readFileSync(path.join(process.cwd(), ...p), 'utf8');
@@ -115,5 +115,53 @@ describe('Amazon sponsored-ad click URLs never reach the shopper as a destinatio
     expect(normalizeExitUrl(pdp)).toBe(pdp);
     expect(amazonSponsoredToProduct('https://example.com/sspa/click?url=%2Fdp%2FB0ABCDE123')).toBeNull();
     expect(amazonSponsoredToProduct('https://www.amazon.sa/-/en/sspa/click?url=%2Fno-asin-here')).toBeNull();
+  });
+});
+
+describe('store filter scopes the CARD (2026-10-06)', () => {
+  const entry = (store: string, price: number, observed_at: string | null) => ({ store, store_name: store, current_price: price, original_price: null, availability: 'in_stock', product_url: `/go/${store}`, observed_at }) as never;
+  const now = new Date().toISOString();
+  const product = (stores: unknown[]) => ({ name_ar: 'x', name_en: 'x', best_price: 973, current_price: 973, store: 'amazon', store_name: 'amazon', product_url: '/go/amazon', stores, store_count: stores.length }) as never;
+
+  it('the card price/store/exit become those of the SELECTED store (Noon 1,299, not Amazon 973)', () => {
+    const p = scopeProductToStores(product([entry('amazon', 973, now), entry('noon', 1299, now)]), new Set(['noon'])) as unknown as { best_price: number; store: string; product_url: string; stores: unknown[]; store_count: number };
+    expect(p.best_price).toBe(1299); expect(p.store).toBe('noon'); expect(p.product_url).toBe('/go/noon'); expect(p.stores).toHaveLength(1); expect(p.store_count).toBe(1);
+  });
+  it('a product with no offer from the selected stores is dropped; a fresh offer beats a cheaper stale one', () => {
+    expect(scopeProductToStores(product([entry('amazon', 973, now)]), new Set(['noon']))).toBeNull();
+    const stale = new Date(Date.now() - 20 * 86_400_000).toISOString();
+    const p = scopeProductToStores(product([entry('noon', 800, stale), entry('extra', 1000, now)]), new Set(['noon', 'extra'])) as unknown as { best_price: number; store: string };
+    expect(p.best_price).toBe(1000); expect(p.store).toBe('extra');
+  });
+  it('the route wires it, the off-grade demotion and the device flag', () => {
+    expect(routeSrc).toMatch(/scopeProductToStores\(product, wanted\)/);
+    expect(routeSrc).toMatch(/products\.filter\(\(p\) => !isOffGradeTitle\(/);
+    expect(routeSrc).toMatch(/const deviceNotFound = deviceIntent && !products\.some\(\(p\) => isDeviceItself\(/);
+    expect(routeSrc).toMatch(/\n    deviceNotFound,\n/);
+  });
+});
+
+describe('one identity keeps one card but never loses an offer (2026-10-06)', () => {
+  const e = (store: string, price: number, observed_at: string | null) => ({ store, store_name: store, current_price: price, original_price: null, availability: 'in_stock', product_url: `/go/${store}`, observed_at }) as never;
+  const card = (name: string, stores: unknown[], best: number) => ({ name_ar: name, name_en: name, best_price: best, current_price: best, store: 'x', store_name: 'x', product_url: '', stores, store_count: stores.length, tps_identity_key: 'samsung|top_load|21|washer' }) as never;
+  const now = new Date().toISOString();
+
+  it('stores the surviving card lacks are absorbed; a fresher cheaper one becomes the best price; titles stay searchable', () => {
+    const base = card('samsung top load washer 21kg', [e('extra', 4799, now), e('amazon', 3262, now)], 3262);
+    const dup = card('Samsung WA21A8376GV/YL Top Load', [e('amazon', 3272, now), e('سامسونج السعودية', 4799, now), e('noon', 2999, now)], 2999);
+    const out = absorbMissingStores(base, dup) as unknown as { stores: { store: string }[]; store_count: number; best_price: number; _absorbed_text: string };
+    expect(out.stores.map((s) => s.store)).toEqual(['extra', 'amazon', 'سامسونج السعودية', 'noon']);
+    expect(out.store_count).toBe(4); expect(out.best_price).toBe(2999);
+    expect(out._absorbed_text).toContain('WA21A8376GV');
+  });
+  it('an absorbed offer of UNKNOWN age never becomes the claimed best price', () => {
+    const base = card('a', [e('extra', 4799, now)], 4799);
+    const dup = card('b', [e('amazon', 100, null)], 100);
+    const out = absorbMissingStores(base, dup) as unknown as { stores: unknown[]; best_price: number };
+    expect(out.stores).toHaveLength(2); expect(out.best_price).toBe(4799);
+  });
+  it('a duplicate that adds no store changes nothing', () => {
+    const base = card('a', [e('extra', 4799, now)], 4799);
+    expect(absorbMissingStores(base, card('b', [e('extra', 4000, now)], 4000))).toBe(base);
   });
 });

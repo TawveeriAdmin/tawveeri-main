@@ -112,6 +112,22 @@ export function cardStoreCounts(stores: ProductStore[], nowMs: number = Date.now
   return { total, eligible: eligibleCount, excluded: Math.max(0, total - eligibleCount) };
 }
 
+/**
+ * CLAIMS NEED A KNOWN OBSERVATION TIME (2026-10-06). `cardStoreCounts` above keeps the legacy rule (a card whose offers carry no timestamp at all
+ * still COUNTS its stores, so coverage is never shrunk). A CLAIM is stricter: the best-price badge and the hot-deal flame assert that an offer is
+ * currently the cheapest / discounted, so each needs `observed_at` present and within the freshness window. Unknown age is not fresh.
+ */
+export function claimEligibleStoreCount(stores: ProductStore[], nowMs: number = Date.now()): number {
+  const key = (ps: ProductStore) => ps.stores?.slug ?? ps.stores?.id ?? ps.id;
+  const { eligible } = partitionEligible(stores, (ps) => ({ price: ps.current_price, availability: ps.availability, observed_at: ps.observed_at }), nowMs, { unknownAgeIsEligible: false });
+  return distinctStoreCount(eligible, key);
+}
+
+/** A discount claim needs a fresh, KNOWN-age offer that carries it. */
+export function hasClaimDeal(stores: ProductStore[]): boolean {
+  return stores.some((ps) => !!ps.original_price && ps.original_price > ps.current_price && ps.observed_at != null && isFreshObservation(ps.observed_at));
+}
+
 /** The pill's text: «3 مؤهلة من 5» when some offers are outside the comparison, else the plain count. */
 export function storePillLabel(c: { total: number; eligible: number; excluded: number }, locale: string): string {
   if (c.excluded === 0) return String(c.total);
@@ -397,7 +413,10 @@ export function ProductCard({
   const storeCounts = cardStoreCounts(product.product_stores);
   // ADR-401 (consultant contract 2): «🏆 أفضل سعر» is an absolute claim; a comparison whose
   // identity key carries an unknown-spec sentinel is a spec grouping and never earns it.
-  const isWinner = isMultiStore && bestPrice && storeCounts.eligible > 1 && !compareUrlIsSpecOnly(product.tps_compare_url);
+  const isWinner = isMultiStore && bestPrice && storeCounts.eligible > 1 && claimEligibleStoreCount(product.product_stores) > 1 && !compareUrlIsSpecOnly(product.tps_compare_url);
+  const claimsDeal = hasClaimDeal(product.product_stores);
+  // The price shown has no observation time: a reference price, never a claim (the wording the compare page already uses for stale offers).
+  const bestPriceIsReference = !!bestPrice && bestPrice.observed_at == null;
 
   // The store whose price the card actually shows. A multi-store card used to render only
   // two-letter avatar stubs ("اك" "أم" "جر"), so "من 840" named no store at all.
@@ -473,7 +492,7 @@ export function ProductCard({
                 {bestPriceCopy(currentLocale as 'ar' | 'en')}
               </Badge>
             )}
-            {hasDeal && !isWinner && (
+            {hasDeal && claimsDeal && !isWinner && (
               <Badge
                 variant="best"
                 className="shadow-[var(--elevation-1)] gap-1 bg-[var(--brand-gold)] text-[var(--brand-dark-text)]"
@@ -564,6 +583,11 @@ export function ProductCard({
                     {bestPriceAgeHours != null && (
                       <span className="t-caption text-on-surface-variant/80">
                         {observedAgoLabel(bestPriceAgeHours, currentLocale as 'ar' | 'en')}
+                      </span>
+                    )}
+                    {bestPriceAgeHours == null && bestPriceIsReference && (
+                      <span className="t-caption text-on-surface-variant/80" data-testid="reference-price-note">
+                        {currentLocale === 'ar' ? 'سعر مرجعي — لم نتحقق من حداثته' : 'Reference price — freshness not verified'}
                       </span>
                     )}
                   </div>

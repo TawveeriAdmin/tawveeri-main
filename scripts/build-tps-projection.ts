@@ -52,6 +52,7 @@ import { TPS_STORES } from "./tps-core/category-registry";
 import { toPoolerDbUrl } from './tps-core/pooler-url';
 import { PICK_FRESHNESS_MAX_HOURS } from "../src/lib/intelligence/evidence-engine";
 import { identityGateEnabled } from "./tps-core/identity-flags";
+import { isDisplayableRetailer } from "../src/lib/retailers/approved-retailers";
 
 // ADR-082: some price_history rows carry the numeric store_id as store_name (a
 // fallback from before a store was added to TPS_STORES). price_history is
@@ -115,6 +116,13 @@ interface Row {
   last_observed_at: string | null;
 }
 
+// DISPLAY BOUNDARY (2026-10-06, external review: the category card for UA43F6000FUXSA said «من 999» — LuLu's price). LuLu / Sharaf DG are
+// approved to INGEST but must never be named to a shopper as a price or comparison source (LAUNCH_VOCABULARY §3), and the stores below id 24 that are
+// not approved at all are out of the customer surface too. The live search path already applies isDisplayableRetailer; the projection that feeds
+// category cards, Algolia and «من X» did not, so a hidden store could be the cheapest, be counted as a store, and make a comparison. Names of
+// stores the registry knows but the display gate refuses; a store the registry does not know (a test fixture, a future name) is not touched.
+const HIDDEN_STORE_NAMES: ReadonlySet<string> = new Set(TPS_STORES.filter((s) => !isDisplayableRetailer(s.id)).map((s) => s.name));
+
 /** Exactly the v2 composition, order preserved. */
 function attrText(attrs: Record<string, unknown>): string {
   return [
@@ -141,7 +149,7 @@ export function deriveProjection(r: Row) {
   const pairs = (r.stores ?? []).map((store, i) => ({
     store, price: Number((r.prices ?? [])[i]), fresh: (r.fresh ?? [])[i] === true,
   }))
-    .filter((s) => Number.isFinite(s.price) && s.price > 0)
+    .filter((s) => Number.isFinite(s.price) && s.price > 0 && !HIDDEN_STORE_NAMES.has(s.store))
     .sort((a, b) => a.price - b.price || a.store.localeCompare(b.store));
 
   // store_count/has_comparison stay computed from ALL evidence, unchanged — they are a

@@ -122,3 +122,34 @@ describe('ProductCard — a multi-store card with no compare page still exits th
     expect(screen.queryByText('عرض في أمازون')).not.toBeInTheDocument();
   });
 });
+
+import { claimEligibleStoreCount, hasClaimDeal } from '@/components/products/product-card';
+
+describe('claims need a KNOWN observation time (2026-10-06)', () => {
+  const day = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString();
+  const st = (id: string, price: number, observed_at: string | null, extra: Record<string, unknown> = {}) =>
+    baseStore({ id, current_price: price, observed_at, stores: { id, slug: id, name_ar: id, name_en: id, logo_url: null }, ...extra } as never);
+
+  it('unknown-age offers never count toward the best-price claim; known-fresh ones do', () => {
+    expect(claimEligibleStoreCount([st('a', 10, null), st('b', 12, null)])).toBe(0);
+    expect(claimEligibleStoreCount([st('a', 10, null), st('b', 12, day(1))])).toBe(1);
+    expect(claimEligibleStoreCount([st('a', 10, day(1)), st('b', 12, day(2))])).toBe(2);
+    expect(claimEligibleStoreCount([st('a', 10, day(1)), st('b', 12, day(9))])).toBe(1);   // 9 days old: reference only
+  });
+
+  it('a discount claim needs a fresh, known-age offer carrying it', () => {
+    expect(hasClaimDeal([st('a', 80, null, { original_price: 100 })])).toBe(false);
+    expect(hasClaimDeal([st('a', 80, day(1), { original_price: 100 })])).toBe(true);
+    expect(hasClaimDeal([st('a', 80, day(10), { original_price: 100 })])).toBe(false);
+  });
+
+  it('a multi-store legacy card with no timestamps shows no winner badge and says «reference price»', () => {
+    const p = baseProduct({
+      tps_compare_url: null,
+      product_stores: [st('amazon', 815, null), st('noon', 899, null)],
+    });
+    render(<ProductCard product={p} locale="ar" />);
+    expect(screen.queryByText('🏆 أفضل سعر')).not.toBeInTheDocument();
+    expect(screen.getByTestId('reference-price-note')).toBeInTheDocument();
+  });
+});

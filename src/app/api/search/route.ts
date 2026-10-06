@@ -32,6 +32,8 @@ import { linkRetrievedCanonicals } from '@/lib/search/linked-canonical-products'
 import { collectCanonicalCandidates } from '@/lib/search/canonical-candidates';
 import { createSwrCache, createPerIdSwrCache, mapLimit, chunked } from '@/lib/search/swr-cache';
 import { filterByAcTypeIntent } from '@/lib/search/ac-type-intent';
+import { deviceIntentOf, isDeviceItself } from '@/lib/search/device-intent';
+import { strongModelToken as strongModelCode, requiredCodeTokens, carriesCodes, modelNumberPrefixFilter } from '@/lib/search/model-token-gate';
 import { manufacturerCategoryTerms, productQueryText } from '@/lib/search/manufacturer-category-terms';
 import { hoursSince, PICK_FRESHNESS_MAX_HOURS, productTrust, isFreshObservation, type TrustAssessment } from '@/lib/intelligence/evidence-engine';
 import { mergeVerifiedCanonicalSearchResults, mergeSameListingCards, attachStorefrontListingUrls, type StorefrontListingRow } from '@/lib/catalog/merge-verified-canonical-search-results';
@@ -192,6 +194,10 @@ const ARABIC_TO_ENGLISH: Record<string, string[]> = {
   'ثلاجة': ['refrigerator', 'fridge'],
   'فريزر': ['freezer'],
   'غسالة': ['washing machine', 'washer'],
+  // Capacity unit (2026-10-06): shoppers type «21 كيلو», catalogue titles say «21 كجم» / «21 KG». Without this the unit was a required word no title carried
+  // and «غسالة سامسونج 21 كيلو» returned zero while the washer existed.
+  'كيلو': ['كجم', 'kg', 'كغم'],
+  'كيلوجرام': ['كجم', 'kg'],
   'نشافة': ['dryer'],
   'مكنسة': ['vacuum', 'cleaner'],
   // The catalogue spells it مايكرويف (no و after ر) on EVERY microwave canonical, so a
@@ -1956,8 +1962,9 @@ function buildDecisionLayer(
  * LATENCY (2026-10-06): both lookups were SEQUENTIAL chunked queries (~5 round trips ≈ 1 s of every search). They now run together, the
  * chunks run in parallel, and each id's row is cached for minutes (SWR) — `is_active` and a product's store rows change at ingest cadence.
  */
+type LegacyPsRow = { id: string; product_id: string; store_id: number | null; last_seen_at?: string | null; last_scraped_at?: string | null };
 const productActiveCache = createPerIdSwrCache<{ id: string; is_active: boolean }>({ ttlMs: 5 * 60_000, staleMs: 30 * 60_000, maxEntries: 20_000 });
-const productStoresCache = createPerIdSwrCache<{ id: string; product_id: string; store_id: number | null }>({ ttlMs: 5 * 60_000, staleMs: 30 * 60_000, maxEntries: 20_000 });
+const productStoresCache = createPerIdSwrCache<LegacyPsRow>({ ttlMs: 5 * 60_000, staleMs: 30 * 60_000, maxEntries: 20_000 });
 
 async function fetchProductActive(want: string[]): Promise<Map<string, { id: string; is_active: boolean }[]>> {
   const supabase = createServerClient();
@@ -1971,14 +1978,14 @@ async function fetchProductActive(want: string[]): Promise<Map<string, { id: str
   return out;
 }
 
-async function fetchProductStores(want: string[]): Promise<Map<string, { id: string; product_id: string; store_id: number | null }[]>> {
+async function fetchProductStores(want: string[]): Promise<Map<string, LegacyPsRow[]>> {
   const supabase = createServerClient();
-  const out = new Map<string, { id: string; product_id: string; store_id: number | null }[]>();
+  const out = new Map<string, LegacyPsRow[]>();
   const chunks = await Promise.all(Array.from({ length: Math.ceil(want.length / 100) }, (_, i) =>
-    supabase.from('product_stores').select('id, product_id, store_id').in('product_id', want.slice(i * 100, (i + 1) * 100))));
+    supabase.from('product_stores').select('id, product_id, store_id, last_seen_at, last_scraped_at').in('product_id', want.slice(i * 100, (i + 1) * 100))));
   for (const c of chunks) {
     if (c.error) throw new Error(`product_stores: ${c.error.message}`);
-    for (const r of (c.data ?? []) as unknown as { id: string; product_id: string; store_id: number | null }[]) {
+    for (const r of (c.data ?? []) as unknown as LegacyPsRow[]) {
       const list = out.get(r.product_id);
       if (list) list.push(r); else out.set(r.product_id, [r]);
     }
@@ -1987,18 +1994,38 @@ async function fetchProductStores(want: string[]): Promise<Map<string, { id: str
 }
 
 /** Pure: rewrite a storefront (non-TPS) product's merchant URLs to `/go/ps_<product_stores.id>` where that row is known. */
-function applyLegacyGoExits(products: GroupedSearchProduct[], rows: { id: string; product_id: string; store_id: number | null }[]): GroupedSearchProduct[] {
+function applyLegacyGoExits(products: GroupedSearchProduct[], rows: LegacyPsRow[]): GroupedSearchProduct[] {
   const psId = new Map<string, string>();
-  for (const r of rows) { const slug = resolveApprovedSlug(r.store_id); if (slug && !psId.has(`${r.product_id}|${slug}`)) psId.set(`${r.product_id}|${slug}`, r.id); }
+  // The newest observation time the storefront row can prove (last_seen_at, else last_scraped_at). An Algolia hit carries none, so before
+  // this every legacy offer was 'age unknown' and could still wear a best-price badge; with it, the offers that CAN prove their age do, and
+  // the rest stay honest reference prices (observed_at stays null, never invented).
+  const psSeen = new Map<string, string>();
+  for (const r of rows) {
+    const slug = resolveApprovedSlug(r.store_id);
+    if (!slug) continue;
+    const key = `${r.product_id}|${slug}`;
+    if (!psId.has(key)) psId.set(key, r.id);
+    const seen = r.last_seen_at || r.last_scraped_at;
+    if (seen && (!psSeen.has(key) || new Date(seen).getTime() > new Date(psSeen.get(key)).getTime())) psSeen.set(key, seen);
+  }
   const exit = (productId: string, storeName: string | undefined | null, current: string): string => {
     const slug = resolveApprovedSlug(storeName ?? undefined);
     const id = slug ? psId.get(`${productId}|${slug}`) : undefined;
     return id ? buildGoUrl(`ps_${id}`) : current;
   };
+  const seenFor = (productId: string, storeName: string | undefined | null): string | null => {
+    const slug = resolveApprovedSlug(storeName ?? undefined);
+    return (slug && psSeen.get(`${productId}|${slug}`)) || null;
+  };
   return products.map((p) => {
     if (p.tps_identity_key || typeof p.product_id !== 'string' || !/^[0-9a-f-]{36}$/i.test(p.product_id)) return p;
     const pid = p.product_id;
-    return { ...p, product_url: exit(pid, p.store_name || p.store, p.product_url), stores: p.stores.map((e) => ({ ...e, product_url: exit(pid, e.store_name || e.store, e.product_url) })) };
+    return {
+      ...p,
+      product_url: exit(pid, p.store_name || p.store, p.product_url),
+      observed_at: p.observed_at ?? seenFor(pid, p.store_name || p.store),
+      stores: p.stores.map((e) => ({ ...e, product_url: exit(pid, e.store_name || e.store, e.product_url), observed_at: e.observed_at ?? seenFor(pid, e.store_name || e.store) })),
+    };
   });
 }
 
@@ -2089,14 +2116,43 @@ function algoliaHitToGrouped(hit: AlgoliaHit): GroupedSearchProduct | null {
 }
 
 // ── Deduplication ─────────────────────────────────────────────
+/**
+ * Two cards for ONE identity keep one card, but never lose an offer (2026-10-06). A storefront card whose declared complete model number links it to
+ * a retrieved canonical used to be DROPPED as a duplicate — together with any store the canonical does not list. Measured: once `WA21A8376GV` found
+ * its canonical (Samsung KSA 4,799) the legacy card's Amazon 3,272 vanished from the result, so the shopper saw only the dearer offer. The stores the
+ * first card lacks are absorbed into it; the card's own entries, order and claim fields are untouched. A store counts once, by resolved slug.
+ */
+export function absorbMissingStores(base: GroupedSearchProduct, dup: GroupedSearchProduct): GroupedSearchProduct {
+  const slugOf = (e: SearchProduct): string => resolveApprovedSlug(e.store_name || e.store) || (e.store_name || e.store || '').trim().toLowerCase();
+  const have = new Set(base.stores.map(slugOf));
+  const extra = dup.stores.filter((e) => !have.has(slugOf(e)));
+  if (!extra.length) return base;
+  const stores = [...base.stores, ...extra];
+  // The absorbed card's own titles stay searchable on the surviving card (hidden relevance text, never rendered): a generic-spec canonical that
+  // absorbs the storefront card titled by its model code must still match a query for that code.
+  const absorbedText = [(base as { _absorbed_text?: string })._absorbed_text || '', dup.name_en || '', dup.name_ar || ''].join(' ').trim();
+  const claimEligible = stores.filter((e) => e.current_price > 0 && isFreshObservation(e.observed_at));
+  const best = claimEligible.length ? claimEligible.reduce((a, b) => (b.current_price < a.current_price ? b : a)) : null;
+  const keepBest = best && best.current_price < base.best_price;
+  return {
+    ...base,
+    stores,
+    store_count: new Set(stores.map(slugOf)).size,
+    _absorbed_text: absorbedText,
+    ...(keepBest ? { best_price: best.current_price, current_price: best.current_price, store: best.store, store_name: best.store_name, product_url: best.product_url, observed_at: best.observed_at ?? null, original_price: best.original_price ?? null, availability: best.availability } : {}),
+  } as GroupedSearchProduct;
+}
+
 function deduplicateProducts(products: GroupedSearchProduct[]): GroupedSearchProduct[] {
-  const seen = new Set<string>();
-  return products.filter((p) => {
+  const firstAt = new Map<string, number>();
+  const out: GroupedSearchProduct[] = [];
+  for (const p of products) {
     const key = p.tps_identity_key || p.product_id || normalizeArabic(p.name_ar || '');
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
+    const at = firstAt.get(key);
+    if (at === undefined) { firstAt.set(key, out.length); out.push(p); continue; }
+    out[at] = absorbMissingStores(out[at], p);
+  }
+  return out;
 }
 // ─────────────────────────────────────────────────────────────
 
@@ -2250,7 +2306,8 @@ async function searchTPSCanonical(
       let canonicalQuery = supabase.from('canonical_products')
         .select('id, name_ar, name_en, brand, image_url, tps_identity_key, model_number, category, attributes')
         .eq('is_active', true);
-      canonicalQuery = exactModel ? canonicalQuery.eq('model_number', exactModel) : canonicalQuery.in('category', categories);
+      // A typed model code matches the stored model number with or without its region suffix (RF59A70T1SR finds RF59A70T1SR/ZA).
+      canonicalQuery = exactModel ? canonicalQuery.or(modelNumberPrefixFilter(exactModel)) : canonicalQuery.in('category', categories);
       return canonicalQuery.order('id').range(from, to);
     }));
 
@@ -2258,7 +2315,9 @@ async function searchTPSCanonical(
     if (!prods?.length) return [];
 
     const wordTermsList = words.map(expandWordTerms).filter((t) => t.length > 0);
-    const matched = prods.filter((p) => {
+    // When the request IS a model code, `prods` is already exactly that model's canonicals; matching the code again against the names would drop
+    // the ones whose title does not repeat it (a Samsung washer titled by its features, keyed by MODEL:WD18T6300GP/YL).
+    const matched = exactModel ? prods : prods.filter((p) => {
       const hay = (normalizeArabic(p.name_ar || '') + ' ' + normalizeArabic(p.name_en || '') + ' '
         + normalizeArabic(p.brand || '') + ' ' + manufacturerCategoryTerms(p)).toLowerCase();
       return wordTermsList.every((terms) => terms.some((t) => hay.includes(t)));
@@ -2608,6 +2667,12 @@ async function searchTPSCanonical(
         tps_identity_key: p.tps_identity_key,
         _verified_category_terms: manufacturerCategoryTerms(p),
         has_tps_comparison: byStore.size >= 2,
+        // The model number of a MANUFACTURER-keyed canonical (key ends |MODEL:<number>): searchable text a feature-style title may not repeat
+        // (a Samsung washer titled by its features, keyed MODEL:WD18T6300GP/YL). A spec-keyed canonical (samsung|french_door|390|standard) is
+        // deliberately NOT given its model_number: those rows can carry a model attached by the parser to the wrong spec group, and the title test
+        // (F-005) is what keeps them out of a model query. Hidden relevance text only, never rendered, never a category signal.
+        _absorbed_text: ((p as { model_number?: string | null }).model_number && String(p.tps_identity_key || '').toUpperCase().endsWith(`|MODEL:${String((p as { model_number?: string | null }).model_number).toUpperCase()}`))
+          ? String((p as { model_number?: string | null }).model_number) : '',
       } as GroupedSearchProduct);
     }
     timer.mark(`assemble(${out.length})`);
@@ -2676,10 +2741,14 @@ export async function POST(request: NextRequest) {
   // `resolveComparisonRoute` and used to extract the search subject exactly as before.
   const queryRoute = routeQuery(typedQuery);
   const compareIntent: CompareIntent = queryRoute.mode === 'comparison' ? queryRoute.compareIntent : { kind: 'none', reason: queryRoute.reason };
-  const rawQuery =
+  const subjectQuery =
     compareIntent.kind === 'single' ? compareIntent.subject
     : compareIntent.kind === 'pair' ? compareIntent.subjects.join(' ')
     : typedQuery;
+  // MODEL CODE = THE REQUEST (2026-10-06, see model-token-gate.ts): a strong model token inside a longer sentence reduces retrieval to the code, so
+  // the descriptive words (and the category they imply) cannot veto it. Accessory-shaped sentences keep their words (a case FOR that model).
+  const modelFocus = subjectQuery && !isAccessoryShapedQuery(subjectQuery) ? strongModelCode(subjectQuery) : null;
+  const rawQuery = modelFocus && modelFocus.toLowerCase() !== subjectQuery.trim().toLowerCase() ? modelFocus : subjectQuery;
   const queryIsMainProduct = isMainProductTypeQuery(rawQuery);
   // Structured constraints, parsed ONCE by the same deterministic parser the advisor uses.
   // A budget or quantity NUMBER is a constraint VALUE, not a product token: «5000» in
@@ -2955,7 +3024,7 @@ export async function POST(request: NextRequest) {
   // TPS Canonical Search — the categories the query is actually about (ADR-138). This was
   // hard-limited to mobile + air_conditioner, which hid 323 of our 459 comparable products.
   const tpsCategories = rawQuery ? detectCanonicalCategories(rawQuery) : null;
-  const exactModel = exactModelQuery(rawQuery || '');
+  const exactModel = exactModelQuery(rawQuery || '') ?? (modelFocus ? modelFocus.toUpperCase() : null);
   if (rawQuery && (tpsCategories || exactModel)) {
     const nq = normalizeArabic(rawQuery);
     const aw = nq.split(/\s+/).filter(Boolean);
@@ -3020,6 +3089,17 @@ export async function POST(request: NextRequest) {
   reqTimer.mark('tps_search');
   products = await enrichWithTPS(products, supabase);
   reqTimer.mark('enrich');
+  let modelNotFound: string | null = null;
+  // CODE GATE (2026-10-06), run BEFORE cards merge so each card is judged on its own title/key/listing (a generic-spec canonical that absorbs a storefront card must not be dropped for lacking the code): a short model code in the query (T50, N30, S24) must be carried by every result as a WHOLE token; when no result
+  // carries it the answer is 'we do not have this model', never a grid of products that merely share PRO / OMNI. See model-token-gate.ts.
+  const codeTokens = rawQuery && !isAccessoryShapedQuery(rawQuery) ? requiredCodeTokens(rawQuery) : [];
+  if (codeTokens.length) {
+    const keptByCode = products.filter((p) => carriesCodes([p.name_en, p.name_ar, p.tps_identity_key, (p as { model?: string }).model, (p as { _absorbed_text?: string })._absorbed_text, ...p.stores.map((s) => s.listing_url)], codeTokens));
+    if (keptByCode.length === 0) modelNotFound = codeTokens[0].toUpperCase();
+    if (keptByCode.length !== products.length) console.log(`[code-gate] "${rawQuery.slice(0, 60)}" — ${products.length - keptByCode.length} of ${products.length} result(s) did not carry ${codeTokens.join('+')}`);
+    products = keptByCode;
+  }
+
   products = deduplicateProducts(products);
   // ADR-388 — MEASURED DEFECT (2026-09-26, live): the same-listing merge above ran BEFORE the
   // TPS canonical cards were injected, so «مكيف سامسونج 18000» still returned THREE cards for
@@ -3254,7 +3334,9 @@ export async function POST(request: NextRequest) {
   // "ما لقينا" message it already renders for every other withheld-results path.
   const strongModelToken = rawQuery ? extractStrongModelToken(rawQuery) : null;
   if (strongModelToken && products.length > 0) {
-    const modelMatched = products.filter((p) => titleCarriesModelToken(p.name_ar, p.name_en, strongModelToken));
+    // A card that absorbed the storefront card titled by this model keeps that title searchable (`_absorbed_text`), so the generic-spec canonical
+    // holding the model's Amazon/Extra offers is not discarded for a title that does not repeat the code.
+    const modelMatched = products.filter((p) => titleCarriesModelToken(`${p.name_ar || ''} ${(p as { _absorbed_text?: string })._absorbed_text || ''}`, p.name_en, strongModelToken));
     if (modelMatched.length > 0) {
       products = modelMatched;
     } else {
@@ -3326,6 +3408,20 @@ export async function POST(request: NextRequest) {
   } else {
     products.sort(compareBySort(body.sort || 'relevance'));
   }
+
+  // NEW before RENEWED in the relevance order (2026-10-06, external review: 'MacBook' led with two renewed 2015/2019 units). A stable
+  // partition: relative order inside each group is untouched; an explicit sort, a 'cheapest' intent, or a query that itself asks for a
+  // renewed/used unit keeps the order it asked for.
+  if (rawQuery && !(body.sort && body.sort !== 'relevance') && !wantsCheapest && !isOffGradeTitle(rawQuery)) {
+    products = [...products.filter((p) => !isOffGradeTitle(`${p.name_en || ''} ${p.name_ar || ''}`)), ...products.filter((p) => isOffGradeTitle(`${p.name_en || ''} ${p.name_ar || ''}`))];
+  }
+
+  // DEVICE QUERY WITH NO DEVICE (2026-10-06): 'ps5' / 'PlayStation 5' / 'Nintendo Switch' returned 48/48/41 accessories and games and said
+  // nothing. When the query names a device and no result IS that device, say so (the client renders it); the accessories stay below.
+  const deviceIntent = rawQuery && !isAccessoryShapedQuery(rawQuery) ? deviceIntentOf(rawQuery) : null;
+  const deviceNotFound = deviceIntent && !products.some((p) => isDeviceItself(`${p.name_en || ''} ${p.name_ar || ''}`, deviceIntent))
+    ? { id: deviceIntent.id, labelAr: deviceIntent.labelAr, labelEn: deviceIntent.labelEn }
+    : null;
 
   reqTimer.mark('filter_rank');
   const decision = buildDecisionLayer(products, queryIsMainProduct, relevanceGroups, isAcQuery, rawQuery);
@@ -3429,6 +3525,8 @@ export async function POST(request: NextRequest) {
     topMatches: DecisionTopMatch[];
     relaxed: boolean;
     categoryEnforcedZero: boolean;
+    deviceNotFound: { id: string; labelAr: string; labelEn: string } | null;
+    modelNotFound: string | null;
     inferredMaxPrice: number | null;
     cheapestIntentApplied: boolean;
     closestOptions: ClosestOption[];
@@ -3444,6 +3542,8 @@ export async function POST(request: NextRequest) {
     // Observability for the honest-zero path (never silent): true when an explicit-category
     // need query matched nothing and unrelated results were withheld rather than shown.
     categoryEnforcedZero,
+    deviceNotFound,
+    modelNotFound,
     // Amazon Campaign V1 delivery-gap fix: the query's category, already resolved by the
     // SAME shared classifier (`constraintTask`) used for ranking/gating above, mapped to the
     // storefront taxonomy (see canonical-category.ts). The client uses this ONLY as a
@@ -3563,6 +3663,35 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({ ...result, compareRoute });
 }
 
+/**
+ * STORE FILTER SCOPES THE CARD, NOT JUST THE LIST (2026-10-06, external review: `samsung&stores=noon` showed Amazon 973 as the card price while
+ * Noon's offer was 1,299). With a store filter on, the card's price, store and exit are those of the SELECTED stores' cheapest fresh offer, the
+ * entry list holds only the selected stores, and a product with no offer from them is dropped. Pure; null = no selected store carries it.
+ */
+export function scopeProductToStores(product: GroupedSearchProduct, wanted: Set<string>): GroupedSearchProduct | null {
+  const entries = product.stores.filter((s) => { const slug = resolveApprovedSlug(s.store_name || s.store); return !!slug && wanted.has(slug); });
+  if (!entries.length) return null;
+  const storeCount = new Set(entries.map((e) => resolveApprovedSlug(e.store_name || e.store) || e.store)).size;
+  const priced = entries.filter((s) => s.current_price > 0);
+  const fresh = priced.filter((s) => isFreshObservation(s.observed_at));
+  const pool = fresh.length ? fresh : priced;
+  if (!pool.length) return { ...product, stores: entries, store_count: storeCount };
+  const best = pool.reduce((a, b) => (b.current_price < a.current_price ? b : a));
+  return {
+    ...product,
+    stores: entries,
+    store_count: storeCount,
+    best_price: best.current_price,
+    current_price: best.current_price,
+    original_price: best.original_price ?? null,
+    store: best.store,
+    store_name: best.store_name,
+    product_url: best.product_url,
+    availability: best.availability,
+    observed_at: best.observed_at ?? null,
+  } as GroupedSearchProduct;
+}
+
 function applyPostFilters(products: GroupedSearchProduct[], body: SearchBody): GroupedSearchProduct[] {
   let result = products;
   // MEASURED GAP (2026-08-09): `applyCommonFilters`/Algolia apply min/max_price at the
@@ -3595,10 +3724,7 @@ function applyPostFilters(products: GroupedSearchProduct[], body: SearchBody): G
   // to its approved slug and keep products that carry an offer from one of them; a request naming no known store yields an honest zero.
   if (body.stores && body.stores.length > 0) {
     const wanted = new Set(body.stores.map((s) => resolveApprovedSlug(s)).filter((s): s is string => !!s));
-    result = wanted.size === 0 ? [] : result.filter((product) => product.stores.some((s) => {
-      const slug = resolveApprovedSlug(s.store_name || s.store);
-      return !!slug && wanted.has(slug);
-    }));
+    result = wanted.size === 0 ? [] : result.map((product) => scopeProductToStores(product, wanted)).filter((p): p is GroupedSearchProduct => p !== null);
   }
   if (body.specs && Object.keys(body.specs).length > 0) {
     result = result.filter((product) => {
