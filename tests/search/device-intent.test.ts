@@ -26,3 +26,15 @@ describe('device intent (2026-10-06): «ps5» asks for the device, not for what 
     expect(isDeviceItself('Logitech G321 LIGHTSPEED Wireless Bluetooth Headset for Nintendo Switch', sw)).toBe(false);
   });
 });
+
+import fs from 'fs';
+import path from 'path';
+describe('device queries put the device first (wired in the route)', () => {
+  const routeSrc = fs.readFileSync(path.join(process.cwd(), 'src', 'app', 'api', 'search', 'route.ts'), 'utf8');
+  it('partitions device items ahead of accessories and picks the decision among devices only', () => {
+    expect(routeSrc).toMatch(/const deviceItems = deviceIntent \? products\.filter\(\(p\) => isDeviceItself\(/);
+    expect(routeSrc).toMatch(/products = \[\.\.\.deviceItems, \.\.\.products\.filter\(\(p\) => !isDev\.has\(p\)\)\]/);
+    expect(routeSrc).toMatch(/buildDecisionLayer\(deviceItems\.length \? deviceItems : products,/);
+    expect(routeSrc).toMatch(/const deviceNotFound = deviceIntent && deviceItems\.length === 0/);
+  });
+});

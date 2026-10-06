@@ -3423,12 +3423,19 @@ export async function POST(request: NextRequest) {
   // DEVICE QUERY WITH NO DEVICE (2026-10-06): 'ps5' / 'PlayStation 5' / 'Nintendo Switch' returned 48/48/41 accessories and games and said
   // nothing. When the query names a device and no result IS that device, say so (the client renders it); the accessories stay below.
   const deviceIntent = rawQuery && !isAccessoryShapedQuery(rawQuery) ? deviceIntentOf(rawQuery) : null;
-  const deviceNotFound = deviceIntent && !products.some((p) => isDeviceItself(`${p.name_en || ''} ${p.name_ar || ''}`, deviceIntent))
+  const deviceItems = deviceIntent ? products.filter((p) => isDeviceItself(`${p.name_en || ''} ${p.name_ar || ''}`, deviceIntent)) : [];
+  // MEASURED 2026-10-06: the catalogue DOES hold the PS5 Slim console and ten Nintendo Switch units; they ranked behind forty headsets. A device
+  // query puts the device first (stable partition; the accessories keep their order below), and the decision pick is chosen among devices only.
+  if (deviceIntent && deviceItems.length) {
+    const isDev = new Set(deviceItems);
+    products = [...deviceItems, ...products.filter((p) => !isDev.has(p))];
+  }
+  const deviceNotFound = deviceIntent && deviceItems.length === 0
     ? { id: deviceIntent.id, labelAr: deviceIntent.labelAr, labelEn: deviceIntent.labelEn }
     : null;
 
   reqTimer.mark('filter_rank');
-  const decision = buildDecisionLayer(products, queryIsMainProduct, relevanceGroups, isAcQuery, rawQuery);
+  const decision = buildDecisionLayer(deviceItems.length ? deviceItems : products, queryIsMainProduct, relevanceGroups, isAcQuery, rawQuery);
   reqTimer.mark('decision');
 
   // ✅ تم تصحيح حساب total بعد دمج TPS
