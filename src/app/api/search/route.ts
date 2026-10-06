@@ -30,6 +30,7 @@ import { toStorefrontCategory } from '@/lib/search/canonical-category';
 import { exactModelQuery } from '@/lib/search/exact-model-query';
 import { linkRetrievedCanonicals } from '@/lib/search/linked-canonical-products';
 import { collectCanonicalCandidates } from '@/lib/search/canonical-candidates';
+import { createSwrCache, createPerIdSwrCache } from '@/lib/search/swr-cache';
 import { manufacturerCategoryTerms, productQueryText } from '@/lib/search/manufacturer-category-terms';
 import { hoursSince, PICK_FRESHNESS_MAX_HOURS, productTrust, isFreshObservation, type TrustAssessment } from '@/lib/intelligence/evidence-engine';
 import { mergeVerifiedCanonicalSearchResults, mergeSameListingCards, attachStorefrontListingUrls, type StorefrontListingRow } from '@/lib/catalog/merge-verified-canonical-search-results';
@@ -2147,6 +2148,28 @@ async function enrichWithTPS(
 }
 // ─────────────────────────────────────────────────────────────
 
+/** One log line per request stage list (`[search-timing] …`): where a slow search spends its time. Logs only — never alters a result. */
+function stageTimer(label: string) {
+  const t0 = Date.now();
+  const stages: string[] = [];
+  let last = t0;
+  return {
+    mark(name: string) { const now = Date.now(); stages.push(`${name}=${now - last}`); last = now; },
+    done(extra = '') { console.log(`[search-timing] ${label} total=${Date.now() - t0} ${stages.join(' ')} ${extra}`.trim()); },
+  };
+}
+
+// Search-latency caches (2026-10-06, see src/lib/search/swr-cache.ts for the measurement and the contract).
+type TpsPriceRow = { canonical_product_id: string; store_name: string; price: number | string; observed_at: string; tps_observation_id: string };
+type TpsObsRow = { id: string; canonical_product_id: string; store_id: string | null; observed_at: string; raw_id?: string; url?: string };
+type TpsCurrentOfferRow = { identity_key: string; store_id: number; raw_obs_id: number | string; price: number | string; observed_at: string; payload?: { _availability?: string; _original_price?: number; _superseded_by_identity?: string } };
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const tpsCandidatesCache = createSwrCache<any[]>({ ttlMs: 5 * 60_000, staleMs: 30 * 60_000, maxEntries: 40 });
+const signalTableCache = createSwrCache<unknown[]>({ ttlMs: 60_000, staleMs: 5 * 60_000, maxEntries: 4 });
+const priceHistoryCache = createPerIdSwrCache<TpsPriceRow>({ ttlMs: 5 * 60_000, staleMs: 30 * 60_000, maxEntries: 6000 });
+const observationsCache = createPerIdSwrCache<TpsObsRow>({ ttlMs: 5 * 60_000, staleMs: 30 * 60_000, maxEntries: 6000 });
+const currentOffersCache = createPerIdSwrCache<TpsCurrentOfferRow>({ ttlMs: 2 * 60_000, staleMs: 10 * 60_000, maxEntries: 6000 });
+
 // ── TPS Canonical Search ──────────────────────────────────────
 async function searchTPSCanonical(
   words: string[],
@@ -2156,14 +2179,18 @@ async function searchTPSCanonical(
 ): Promise<GroupedSearchProduct[]> {
   try {
     if (!words.length || (!categories.length && !exactModel)) return [];
-    const prods = await collectCanonicalCandidates((from, to) => {
+    const timer = stageTimer(`tps[${categories.join('+') || exactModel}]`);
+    // SWR-cached per category set / exact model (search-latency fix, 2026-10-06): the active canonical list of a category changes at
+    // pipeline cadence, not per request — it cost ~2 s of every broad search.
+    const prods = await tpsCandidatesCache.get(exactModel ? `model:${exactModel}` : `cat:${[...categories].sort().join(',')}`, () => collectCanonicalCandidates((from, to) => {
       let canonicalQuery = supabase.from('canonical_products')
         .select('id, name_ar, name_en, brand, image_url, tps_identity_key, model_number, category, attributes')
         .eq('is_active', true);
       canonicalQuery = exactModel ? canonicalQuery.eq('model_number', exactModel) : canonicalQuery.in('category', categories);
       return canonicalQuery.order('id').range(from, to);
-    });
+    }));
 
+    timer.mark(`candidates(${prods?.length ?? 0})`);
     if (!prods?.length) return [];
 
     const wordTermsList = words.map(expandWordTerms).filter((t) => t.length > 0);
@@ -2185,34 +2212,59 @@ async function searchTPSCanonical(
     // lookup, so the extra round trips are cheap and only a broad query pays for them.
     const ids = matched.slice(0, 400).map((p) => p.id);
     const CHUNK = 40;
-    type PriceRow = { canonical_product_id: string; store_name: string; price: number | string; observed_at: string; tps_observation_id: string };
-    const priceChunks = await Promise.all(
-      Array.from({ length: Math.ceil(ids.length / CHUNK) }, (_, i) =>
-        supabase
-          .from('price_history')
-          .select('canonical_product_id, store_name, price, observed_at, tps_observation_id')
-          .in('canonical_product_id', ids.slice(i * CHUNK, (i + 1) * CHUNK))
-          .order('observed_at', { ascending: false })
-          .limit(4000),
-      ),
-    );
-    const prices = priceChunks.flatMap((c) => (c.data ?? []) as unknown as PriceRow[]);
+    type PriceRow = TpsPriceRow;
+    // Per-canonical SWR caches (search-latency fix, 2026-10-06): same rows, same newest-first order within each canonical, read from
+    // memory when ≤5 min old instead of from the 929 MB observation table on every request. A failed chunk is never cached.
+    const prices = await priceHistoryCache.getMany(ids, async (want) => {
+      const out = new Map<string, PriceRow[]>();
+      const chunks = await Promise.all(
+        Array.from({ length: Math.ceil(want.length / CHUNK) }, (_, i) =>
+          supabase
+            .from('price_history')
+            .select('canonical_product_id, store_name, price, observed_at, tps_observation_id')
+            .in('canonical_product_id', want.slice(i * CHUNK, (i + 1) * CHUNK))
+            .order('observed_at', { ascending: false })
+            .limit(4000),
+        ),
+      );
+      for (const c of chunks) {
+        if (c.error) throw new Error(`price_history: ${c.error.message}`);
+        for (const r of (c.data ?? []) as unknown as PriceRow[]) {
+          const list = out.get(r.canonical_product_id);
+          if (list) list.push(r); else out.set(r.canonical_product_id, [r]);
+        }
+      }
+      return out;
+    });
+    timer.mark(`price_history(${ids.length}ids,${prices.length}rows)`);
 
     // ADR-194 — TRUE per-store observation recency. price_history is append-only on CHANGED
     // prices, so its observed_at is when the price last MOVED; a stable price reads days
     // stale while the pipeline observes it daily. normalized_product_observations has a row
     // per observation, so its newest row per (canonical, store) is the honest «آخر رصد».
-    type ObsRow = { id: string; canonical_product_id: string; store_id: string | null; observed_at: string; raw_id?: string; url?: string };
-    const obsChunks = await Promise.all(
-      Array.from({ length: Math.ceil(ids.length / CHUNK) }, (_, i) =>
-        supabase
-          .from('normalized_product_observations')
-          .select('id, canonical_product_id, store_id, observed_at, raw_id:normalized_payload->>_raw_id, url:normalized_payload->>_url')
-          .in('canonical_product_id', ids.slice(i * CHUNK, (i + 1) * CHUNK))
-          .order('observed_at', { ascending: false })
-          .limit(4000),
-      ),
-    );
+    type ObsRow = TpsObsRow;
+    const obsRows = await observationsCache.getMany(ids, async (want) => {
+      const out = new Map<string, ObsRow[]>();
+      const chunks = await Promise.all(
+        Array.from({ length: Math.ceil(want.length / CHUNK) }, (_, i) =>
+          supabase
+            .from('normalized_product_observations')
+            .select('id, canonical_product_id, store_id, observed_at, raw_id:normalized_payload->>_raw_id, url:normalized_payload->>_url')
+            .in('canonical_product_id', want.slice(i * CHUNK, (i + 1) * CHUNK))
+            .order('observed_at', { ascending: false })
+            .limit(4000),
+        ),
+      );
+      for (const c of chunks) {
+        if (c.error) throw new Error(`normalized_product_observations: ${c.error.message}`);
+        for (const r of (c.data ?? []) as unknown as ObsRow[]) {
+          const list = out.get(r.canonical_product_id);
+          if (list) list.push(r); else out.set(r.canonical_product_id, [r]);
+        }
+      }
+      return out;
+    });
+    timer.mark(`observations(${obsRows.length}rows)`);
     // First (newest) row per (canonical, resolved retailer) wins — same windowing trade-off
     // as the price chunks above.
     const trueObserved = new Map<string, string>();
@@ -2223,7 +2275,7 @@ async function searchTPSCanonical(
     // storefront row and a TPS canonical, e.g. the Samsung 18000 case: three cards, one
     // Extra listing) by exact URL equality — evidence, not title similarity.
     const listingUrlByKey = new Map<string, string>();
-    for (const r of obsChunks.flatMap((c) => (c.data ?? []) as unknown as ObsRow[])) {
+    for (const r of obsRows) {
       const slug = resolveApprovedSlug(r.store_id ?? '');
       if (!slug || !isDisplayableRetailer(slug) || !r.observed_at) continue;
       const key = `${r.canonical_product_id}|${slug}`;
@@ -2235,11 +2287,13 @@ async function searchTPSCanonical(
     // ADR-196: offers measured GONE (404 on their own page) are excluded — a dead offer
     // must not win best-price. The table is small by construction (signals heal on the
     // next successful observation), so one unfiltered read covers every candidate.
-    const { data: delistRows } = await supabase
-      .from('tps_offer_delist_signals')
-      .select('canonical_product_id, store_slug')
-      .limit(10000);
+    const delistRows = await signalTableCache.get('delist', async () => {
+      const { data, error } = await supabase.from('tps_offer_delist_signals').select('canonical_product_id, store_slug').limit(10000);
+      if (error) throw new Error(`delist signals: ${error.message}`);
+      return (data ?? []) as unknown[];
+    }).catch(() => [] as unknown[]);   // unchanged behaviour on a failed read: no exclusions, never a failed search
     const delisted = new Set((delistRows ?? []).map((d) => `${(d as { canonical_product_id: string }).canonical_product_id}|${(d as { store_slug: string }).store_slug}`));
+    timer.mark('delist');
 
     // MEASURED DEFECT (2026-08-27, quality program P0 — the iPhone 16/16e incident, see
     // docs/TAWVEERI_QUALITY_PROGRAM_STATE.md §9.2): this function reads `price_history`
@@ -2251,10 +2305,11 @@ async function searchTPSCanonical(
     // everywhere else. Keyed on `canonical_product_id|store_display_name` — the SAME
     // display-name convention `price_history.store_name` already uses, so no slug
     // resolution is needed (unlike the delist signals, which are slug-keyed).
-    const { data: implausibleRows } = await supabase
-      .from('tps_price_implausibility_signals')
-      .select('canonical_product_id, store_display_name')
-      .limit(10000);
+    const implausibleRows = await signalTableCache.get('implausible', async () => {
+      const { data, error } = await supabase.from('tps_price_implausibility_signals').select('canonical_product_id, store_display_name').limit(10000);
+      if (error) throw new Error(`implausibility signals: ${error.message}`);
+      return (data ?? []) as unknown[];
+    }).catch(() => [] as unknown[]);
     const implausible = new Set((implausibleRows ?? []).map((d) => `${(d as { canonical_product_id: string }).canonical_product_id}|${(d as { store_display_name: string }).store_display_name}`));
 
     // INCIDENT FIX (2026-08-28, AirPods Pro 2 SAR-79 recurrence, live-search leg): this
@@ -2271,23 +2326,38 @@ async function searchTPSCanonical(
     // ADR-403 identity gate: per-listing verdicts (reject = a different item, review = unverified) computed
     // once per chain run by the SAME resolver the compare page calls. A signalled listing is not a store of
     // this canonical on this card. Flag-off: empty index, no table read, behaviour unchanged.
+    timer.mark('implausible');
     const identitySignals = await loadIdentitySignals(supabase, matched.map((p) => ({ id: p.id, category: (p as { category?: string | null }).category })));
+    timer.mark('identity_signals');
     const matchedForOffers = matched as unknown as { id: string; tps_identity_key: string | null }[];
     const identityKeyToCanonicalId = new Map(matchedForOffers.map((p) => [p.tps_identity_key, p.id]));
     const identityKeys = [...identityKeyToCanonicalId.keys()].filter((k): k is string => !!k);
-    type CurrentOfferRow = { identity_key: string; store_id: number; raw_obs_id: number | string; price: number | string; observed_at: string; payload?: { _availability?: string; _original_price?: number; _superseded_by_identity?: string } };
-    const currentOfferChunks = identityKeys.length
-      ? await Promise.all(
-          Array.from({ length: Math.ceil(identityKeys.length / CHUNK) }, (_, i) =>
-            supabase
-              .from('tps_current_offers')
-              .select('identity_key, store_id, raw_obs_id, price, observed_at, payload')
-              .or('status.eq.valid,payload->>_superseded_by_identity.not.is.null')
-              .in('identity_key', identityKeys.slice(i * CHUNK, (i + 1) * CHUNK)),
-          ),
-        )
+    type CurrentOfferRow = TpsCurrentOfferRow;
+    // Per-identity SWR cache, the SHORTEST TTL of the four (2 min fresh, 10 min stale-while-refresh): this is the current price.
+    // Errors were previously ignored (empty); a failed read is still never cached and degrades to the old empty behaviour.
+    const currentOffers = identityKeys.length
+      ? await currentOffersCache.getMany(identityKeys, async (want) => {
+          const out = new Map<string, CurrentOfferRow[]>();
+          const chunks = await Promise.all(
+            Array.from({ length: Math.ceil(want.length / CHUNK) }, (_, i) =>
+              supabase
+                .from('tps_current_offers')
+                .select('identity_key, store_id, raw_obs_id, price, observed_at, payload')
+                .or('status.eq.valid,payload->>_superseded_by_identity.not.is.null')
+                .in('identity_key', want.slice(i * CHUNK, (i + 1) * CHUNK)),
+            ),
+          );
+          for (const c of chunks) {
+            if (c.error) throw new Error(`tps_current_offers: ${c.error.message}`);
+            for (const r of (c.data ?? []) as unknown as CurrentOfferRow[]) {
+              const list = out.get(r.identity_key);
+              if (list) list.push(r); else out.set(r.identity_key, [r]);
+            }
+          }
+          return out;
+        }).catch((e) => { console.warn('[TPS Search] current offers unavailable:', e instanceof Error ? e.message : e); return [] as CurrentOfferRow[]; })
       : [];
-    const currentOffers = currentOfferChunks.flatMap((c) => (c.data ?? []) as unknown as CurrentOfferRow[]);
+    timer.mark(`current_offers(${identityKeys.length}keys,${currentOffers.length}rows)`);
 
     const latest = new Map<string, Map<string, { price: number; obsId: string; observedAt: string; originalPrice?: number; availability?: SearchProduct['availability'] }>>();
     for (const r of prices ?? []) {
@@ -2456,6 +2526,8 @@ async function searchTPSCanonical(
         has_tps_comparison: byStore.size >= 2,
       } as GroupedSearchProduct);
     }
+    timer.mark(`assemble(${out.length})`);
+    timer.done();
     return out;
   } catch (e) {
     console.error('[TPS Search] failed:', e);
@@ -2464,8 +2536,31 @@ async function searchTPSCanonical(
 }
 // ─────────────────────────────────────────────────────────────
 
+/**
+ * Keeps the search-latency caches warm for the categories shoppers actually browse, so no shopper pays the cold read.
+ * Runs searchTPSCanonical itself over a match-everything word (a blank matches every name), i.e. the SAME loaders and cache keys a
+ * real broad query uses — nothing duplicated. Sequential (one category at a time) to keep DB load flat; off with SEARCH_WARM_CACHES=0.
+ */
+const WARM_CATEGORIES = ['mobile', 'laptop', 'tv', 'washing_machine', 'air_conditioner', 'refrigerator', 'audio', 'tablet'];
+let tpsWarmStarted = false;
+async function warmTpsCaches(): Promise<void> {
+  const started = Date.now();
+  for (const cat of WARM_CATEGORIES) {
+    try { await searchTPSCanonical([' '], createServerClient(), [cat], null); } catch { /* a warm failure never matters to a shopper */ }
+  }
+  console.log(`[search-warm] ${WARM_CATEGORIES.length} categories in ${Date.now() - started}ms`);
+}
+function ensureTpsWarm(): void {
+  if (tpsWarmStarted || process.env.SEARCH_WARM_CACHES === '0') return;
+  tpsWarmStarted = true;
+  setTimeout(() => { void warmTpsCaches(); }, 3000).unref?.();
+  setInterval(() => { void warmTpsCaches(); }, 10 * 60_000).unref?.();
+}
+
 export async function POST(request: NextRequest) {
   const started = Date.now();
+  ensureTpsWarm();
+  const reqTimer = stageTimer('post');
   const body: SearchBody = await request.json().catch(() => ({} as SearchBody));
   const typedQuery = typeof body.query === 'string' ? body.query.trim() : '';
 
@@ -2679,6 +2774,7 @@ export async function POST(request: NextRequest) {
         dealsOnly: body.deals_only,
         hitsPerPage: categoryConfidentHitsPerPage,
       });
+      reqTimer.mark('algolia');
       console.log('[Algolia] hits count:', algoliaRes?.hits?.length ?? 'null');
       if (algoliaRes?.hits?.length) {
         const mapped = await dropRetiredProducts(algoliaRes.hits
@@ -2761,7 +2857,9 @@ export async function POST(request: NextRequest) {
   // (never a blanket merge); collapses any same-store duplicate on every card
   // regardless of source. Applied to both the Algolia and DB-fallback paths since
   // both converge to this one array.
+  reqTimer.mark('pre_merge');
   products = await mergeVerifiedCanonicalSearchResults(products);
+  reqTimer.mark('merge_verified');
 
   // TPS Canonical Search — the categories the query is actually about (ADR-138). This was
   // hard-limited to mobile + air_conditioner, which hid 323 of our 459 comparable products.
@@ -2808,7 +2906,9 @@ export async function POST(request: NextRequest) {
   // Deduplication after TPS merge
   // Resolve the existing legacy enrichment before deduplication; doing it after
   // pagination could create a second copy of an already-returned exact identity.
+  reqTimer.mark('tps_search');
   products = await enrichWithTPS(products, supabase);
+  reqTimer.mark('enrich');
   products = deduplicateProducts(products);
   // ADR-388 — MEASURED DEFECT (2026-09-26, live): the same-listing merge above ran BEFORE the
   // TPS canonical cards were injected, so «مكيف سامسونج 18000» still returned THREE cards for
@@ -3108,7 +3208,9 @@ export async function POST(request: NextRequest) {
     products.sort(compareBySort(body.sort || 'relevance'));
   }
 
+  reqTimer.mark('filter_rank');
   const decision = buildDecisionLayer(products, queryIsMainProduct, relevanceGroups, isAcQuery, rawQuery);
+  reqTimer.mark('decision');
 
   // ✅ تم تصحيح حساب total بعد دمج TPS
   const total = rawQuery
@@ -3337,6 +3439,8 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  reqTimer.mark('assemble');
+  reqTimer.done(`q=${JSON.stringify(typedQuery.slice(0, 40))} n=${enrichedProducts.length}`);
   return NextResponse.json({ ...result, compareRoute });
 }
 
