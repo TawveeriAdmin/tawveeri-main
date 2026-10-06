@@ -176,12 +176,30 @@ export async function getComparison(params: {
   // query at db-max-rows=1000 anyway). Only the newest row per displayable store is consumed
   // below, so a newest-first window of 1000 rows is the correct, intentionally-bounded page
   // for "latest price per store" — never a "give me everything" fetch in disguise.
-  const { data: prices, error: phErr } = await supabase
-    .from('price_history')
-    .select('store_name, price, availability, observed_at, tps_observation_id')
-    .eq('canonical_product_id', canonical.id)
-    .order('observed_at', { ascending: false })
-    .limit(1000);
+  // LATENCY (2026-10-06): the price, delist, current-offer and newest-observation reads depend only on the canonical row, yet ran as four
+  // SEQUENTIAL round trips (6 in all with the follow-ups). They start together now; every later step consumes exactly the same rows.
+  const NPO_NEWEST_WINDOW = 1000;
+  const [pricesRes, delistRes, currentRes, npoRes] = await Promise.all([
+    supabase
+      .from('price_history')
+      .select('store_name, price, availability, observed_at, tps_observation_id')
+      .eq('canonical_product_id', canonical.id)
+      .order('observed_at', { ascending: false })
+      .limit(1000),
+    supabase
+      .from('tps_offer_delist_signals')
+      .select('store_slug')
+      .eq('canonical_product_id', canonical.id),
+    (supabase as unknown as SupabaseClient).from('tps_current_offers')
+      .select('store_id, status, price, url, raw_obs_id, observed_at, payload').eq('identity_key', canonicalOut.tps_identity_key),
+    supabase
+      .from('normalized_product_observations')
+      .select('id, store_id, raw_name, confidence, observed_at, normalized_payload')
+      .eq('canonical_product_id', canonical.id)
+      .order('observed_at', { ascending: false })
+      .limit(NPO_NEWEST_WINDOW),
+  ]);
+  const { data: prices, error: phErr } = pricesRes;
 
   if (phErr) {
     console.error('[compare] price_history failed:', phErr.message);
@@ -191,10 +209,7 @@ export async function getComparison(params: {
   // ADR-196: offers measured GONE (404 on their own page) are excluded from the
   // comparison — a dead offer must not win best-price. Signals heal on the next
   // successful observation of the pair.
-  const { data: delistRows } = await supabase
-    .from('tps_offer_delist_signals')
-    .select('store_slug')
-    .eq('canonical_product_id', canonical.id);
+  const { data: delistRows } = delistRes;
   const delistedSlugs = new Set((delistRows ?? []).map((d) => (d as { store_slug: string }).store_slug));
   // CURRENT STATE, one row per (identity, store) — `tps_current_offers` (ADR-252's hot table,
   // maintained by the SAME normalize step that writes price_history/npo). Read for two things:
@@ -207,8 +222,7 @@ export async function getComparison(params: {
   //      window below: the newest-first npo window is still read (titles, provenance), but a
   //      store's currency can never again be lost to another store's volume.
   type CurrentOfferRow = { store_id: number | string; status: string | null; price: number | string | null; url: string | null; raw_obs_id: number | string | null; observed_at: string | null; payload: { _availability?: string; _superseded_by_identity?: string } | null };
-  const { data: currentOfferRows } = await (supabase as unknown as SupabaseClient).from('tps_current_offers')
-    .select('store_id, status, price, url, raw_obs_id, observed_at, payload').eq('identity_key', canonicalOut.tps_identity_key);
+  const { data: currentOfferRows } = currentRes;
   const currentBySlug = new Map<string, CurrentOfferRow>();
   for (const row of (currentOfferRows ?? []) as unknown as CurrentOfferRow[]) {
     const slug = resolveApprovedSlug(row.store_id);
@@ -286,13 +300,7 @@ export async function getComparison(params: {
   // outside the window is the price-CHANGE observation `price_history.tps_observation_id`
   // points at (needed for the provenance `scraped_at` of the price event) — fetched below by
   // id, so it can never be lost regardless of how many rows the canonical accumulates.
-  const NPO_NEWEST_WINDOW = 1000;
-  const { data: newestObservations } = await supabase
-    .from('normalized_product_observations')
-    .select('id, store_id, raw_name, confidence, observed_at, normalized_payload')
-    .eq('canonical_product_id', canonical.id)
-    .order('observed_at', { ascending: false })
-    .limit(NPO_NEWEST_WINDOW);
+  const { data: newestObservations } = npoRes;
   const observations: ObsRow[] = [...((newestObservations ?? []) as unknown as ObsRow[])];
   {
     // Same narrow loose view the raw_observations lookup below uses — the generated types
