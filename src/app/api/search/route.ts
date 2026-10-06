@@ -2261,7 +2261,9 @@ async function resolveExitObservationIds(supabase: ReturnType<typeof createServe
         .select('id, raw_id:normalized_payload->>_raw_id')
         // `->>` IN (text list) is the exact predicate idx_npo_raw_id_text (migration 040) serves: 100 ids in ~0.6 s. The earlier form (an OR of
         // 100 jsonb `@>` terms on the GIN index) was fine at 50 terms and hit the 20 s statement timeout at 100 once the table was re-analyzed.
-        .in('normalized_payload->>_raw_id', slice));
+        .in('normalized_payload->>_raw_id', slice)
+        // A slow database must never stall a search: past 4 s the lookup is abandoned and the entries keep the old (no exit) behaviour.
+        .abortSignal(AbortSignal.timeout(4000)));
     for (const c of chunks) {
       if (c.error) throw new Error(c.error.message);
       for (const r of (c.data ?? []) as unknown as { id: string; raw_id: string | null }[]) {
