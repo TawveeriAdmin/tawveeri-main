@@ -2568,14 +2568,21 @@ async function searchTPSCanonical(
  * Runs searchTPSCanonical itself over a match-everything word (a blank matches every name), i.e. the SAME loaders and cache keys a
  * real broad query uses — nothing duplicated. Sequential (one category at a time) to keep DB load flat; off with SEARCH_WARM_CACHES=0.
  */
-const WARM_CATEGORIES = ['mobile', 'laptop', 'tv', 'washing_machine', 'air_conditioner', 'refrigerator', 'audio', 'tablet'];
+// The category SETS come from the router itself (detectCanonicalCategories) for the queries shoppers type most — «tv» resolves to
+// tv+monitor, not tv — so the warmed cache keys are exactly the keys a real query computes. A category list kept by hand would drift.
+const WARM_SEED_QUERIES = ['ايفون', 'iphone', 'laptop', 'لابتوب', 'tv', 'تلفزيون', 'غسالة', 'مكيف', 'ثلاجة', 'سماعة', 'tablet', 'ساعة'];
 let tpsWarmStarted = false;
 async function warmTpsCaches(): Promise<void> {
   const started = Date.now();
-  for (const cat of WARM_CATEGORIES) {
-    try { await searchTPSCanonical([' '], createServerClient(), [cat], null); } catch { /* a warm failure never matters to a shopper */ }
+  const sets = new Map<string, string[]>();
+  for (const q of WARM_SEED_QUERIES) {
+    const cats = detectCanonicalCategories(q);
+    if (cats?.length) sets.set([...cats].sort().join(','), cats);
   }
-  console.log(`[search-warm] ${WARM_CATEGORIES.length} categories in ${Date.now() - started}ms`);
+  for (const cats of sets.values()) {
+    try { await searchTPSCanonical([' '], createServerClient(), cats, null); } catch { /* a warm failure never matters to a shopper */ }
+  }
+  console.log(`[search-warm] ${sets.size} category sets in ${Date.now() - started}ms`);
 }
 function ensureTpsWarm(): void {
   if (tpsWarmStarted || process.env.SEARCH_WARM_CACHES === '0') return;

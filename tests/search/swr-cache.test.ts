@@ -101,7 +101,8 @@ describe('search-latency SWR caches (2026-10-06)', () => {
       expect(routeSrc).toMatch(/currentOffersCache = createPerIdSwrCache<TpsCurrentOfferRow>\(\{ ttlMs: 2 \* 60_000/);
     });
     it('the warm-up reuses searchTPSCanonical and can be switched off', () => {
-      expect(routeSrc).toMatch(/searchTPSCanonical\(\[' '\], createServerClient\(\), \[cat\], null\)/);
+      expect(routeSrc).toMatch(/searchTPSCanonical\(\[' '\], createServerClient\(\), cats, null\)/);
+      expect(routeSrc).toMatch(/detectCanonicalCategories\(q\)/);
       expect(routeSrc).toMatch(/SEARCH_WARM_CACHES === '0'/);
     });
   });
