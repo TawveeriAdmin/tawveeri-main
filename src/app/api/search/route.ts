@@ -2186,12 +2186,12 @@ function stageTimer(label: string) {
 // Search-latency caches (2026-10-06, see src/lib/search/swr-cache.ts for the measurement and the contract).
 type TpsPriceRow = { canonical_product_id: string; store_name: string; price: number | string; observed_at: string; tps_observation_id: string };
 type TpsObsRow = { id: string; canonical_product_id: string; store_id: string | null; observed_at: string; raw_id?: string; url?: string };
-type TpsCurrentOfferRow = { identity_key: string; store_id: number; raw_obs_id: number | string; price: number | string; observed_at: string; payload?: { _availability?: string; _original_price?: number; _superseded_by_identity?: string } };
+type TpsCurrentOfferRow = { identity_key: string; store_id: number; raw_obs_id: number | string; price: number | string; observed_at: string; url?: string | null; payload?: { _availability?: string; _original_price?: number; _superseded_by_identity?: string } };
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const tpsCandidatesCache = createSwrCache<any[]>({ ttlMs: 5 * 60_000, staleMs: 30 * 60_000, maxEntries: 40 });
 const signalTableCache = createSwrCache<unknown[]>({ ttlMs: 60_000, staleMs: 5 * 60_000, maxEntries: 4 });
-const priceHistoryCache = createPerIdSwrCache<TpsPriceRow>({ ttlMs: 10 * 60_000, staleMs: 60 * 60_000, maxEntries: 8000 });
-const observationsCache = createPerIdSwrCache<TpsObsRow>({ ttlMs: 15 * 60_000, staleMs: 60 * 60_000, maxEntries: 8000 });
+const priceHistoryCache = createPerIdSwrCache<TpsPriceRow>({ ttlMs: 15 * 60_000, staleMs: 3 * 60 * 60_000, maxEntries: 8000 });
+const observationsCache = createPerIdSwrCache<TpsObsRow>({ ttlMs: 30 * 60_000, staleMs: 3 * 60 * 60_000, maxEntries: 8000 });
 const currentOffersCache = createPerIdSwrCache<TpsCurrentOfferRow>({ ttlMs: 2 * 60_000, staleMs: 10 * 60_000, maxEntries: 6000 });
 const legacyLinkCache = createPerIdSwrCache<{ id: string; canonical_product_id: string | null; model: string | null; brand: string | null }>({ ttlMs: 5 * 60_000, staleMs: 30 * 60_000, maxEntries: 20_000 });
 const ghostListingCache = createPerIdSwrCache<StorefrontListingRow>({ ttlMs: 5 * 60_000, staleMs: 30 * 60_000, maxEntries: 4000 });
@@ -2296,6 +2296,10 @@ async function searchTPSCanonical(
     // as the price chunks above.
     const trueObserved = new Map<string, string>();
     const exactObservationIds = new Map<string, string>();
+    // Newest cached observation per (canonical, store, listing URL). A current offer's own raw observation can be NEWER than the cached
+    // observation rows (they are cached for minutes, current offers for 2); the same listing's newest cached row opens the same merchant
+    // URL through /go, so the exit survives the gap instead of vanishing until the cache refreshes. Matched on URL, never on store alone.
+    const observationIdByListing = new Map<string, string>();
     // ADR-387: the newest RAW listing URL per (canonical, store) — carried on the store entry
     // as `listing_url` (never rendered; the exit stays the attributed /go link) so the
     // results merge can recognize the SAME merchant listing surfacing as two cards (a
@@ -2307,6 +2311,7 @@ async function searchTPSCanonical(
       if (!slug || !isDisplayableRetailer(slug) || !r.observed_at) continue;
       const key = `${r.canonical_product_id}|${slug}`;
       if (r.raw_id && r.url && r.id) exactObservationIds.set(`${key}|${r.raw_id}`, r.id);
+      if (r.url && r.id && !observationIdByListing.has(`${key}|url|${r.url}`)) observationIdByListing.set(`${key}|url|${r.url}`, r.id);
       if (r.url && !listingUrlByKey.has(key)) listingUrlByKey.set(key, r.url);
       if (!trueObserved.has(key)) trueObserved.set(key, r.observed_at);
     }
@@ -2369,7 +2374,7 @@ async function searchTPSCanonical(
             Array.from({ length: Math.ceil(want.length / CHUNK) }, (_, i) =>
               supabase
                 .from('tps_current_offers')
-                .select('identity_key, store_id, raw_obs_id, price, observed_at, payload')
+                .select('identity_key, store_id, raw_obs_id, price, observed_at, url, payload')
                 .or('status.eq.valid,payload->>_superseded_by_identity.not.is.null')
                 .in('identity_key', want.slice(i * CHUNK, (i + 1) * CHUNK)),
             ),
@@ -2447,7 +2452,7 @@ async function searchTPSCanonical(
           m.delete(slug);
           continue;
         }
-        m.set(slug, { price: Number(co.price), obsId: exactObservationIds.get(`${canonicalId}|${slug}|${co.raw_obs_id}`) || '', observedAt: co.observed_at,
+        m.set(slug, { price: Number(co.price), obsId: exactObservationIds.get(`${canonicalId}|${slug}|${co.raw_obs_id}`) || (co.url ? observationIdByListing.get(`${canonicalId}|${slug}|url|${co.url}`) : undefined) || '', observedAt: co.observed_at,
           originalPrice: Number(co.payload?._original_price) > Number(co.price) ? Number(co.payload?._original_price) : undefined,
           availability: co.payload?._availability === 'limited_stock' ? 'limited_stock' : co.payload?._availability === 'pre_order' ? 'pre_order' : 'in_stock' });
         // co.observed_at is already authoritative (tps_current_offers is the hot

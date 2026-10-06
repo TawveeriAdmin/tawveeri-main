@@ -97,6 +97,11 @@ describe('search-latency SWR caches (2026-10-06)', () => {
       expect(routeSrc).toMatch(/signalTableCache\.get\('implausible'/);
       expect(routeSrc).toMatch(/throw new Error\(`normalized_product_observations: /);
     });
+    it('an exit survives the gap between the 2-minute current-offers cache and the longer observation cache (same listing URL, never store alone)', () => {
+      expect(routeSrc).toMatch(/observationIdByListing\.set\(`\$\{key\}\|url\|\$\{r\.url\}`, r\.id\)/);
+      expect(routeSrc).toMatch(/observationIdByListing\.get\(`\$\{canonicalId\}\|\$\{slug\}\|url\|\$\{co\.url\}`\)/);
+      expect(routeSrc).toMatch(/\.select\('identity_key, store_id, raw_obs_id, price, observed_at, url, payload'\)/);
+    });
     it('the current-price cache has the shortest TTL', () => {
       expect(routeSrc).toMatch(/currentOffersCache = createPerIdSwrCache<TpsCurrentOfferRow>\(\{ ttlMs: 2 \* 60_000/);
     });
