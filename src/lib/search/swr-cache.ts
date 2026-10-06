@@ -14,7 +14,11 @@
 // Per-process only: Railway restarts clear it, a cold start pays the old cost once. No correctness claim depends on it — the data
 // is the same rows the request used to read, at most `staleMax` old (minutes, against an hourly ingest).
 
-export interface SwrOptions { ttlMs: number; staleMs: number; maxEntries: number }
+export interface SwrOptions {
+  ttlMs: number; staleMs: number; maxEntries: number;
+  /** When it returns true the cache is skipped entirely (every call loads). Used by suites that mock the database per test. */
+  bypass?: () => boolean;
+}
 
 interface Entry<T> { value: T; at: number }
 
@@ -42,6 +46,7 @@ export function createSwrCache<T>(opts: SwrOptions) {
 
   return {
     async get(key: string, loader: () => Promise<T>): Promise<T> {
+      if (opts.bypass?.()) return loader();
       const hit = store.get(key);
       const age = hit ? Date.now() - hit.at : Infinity;
       if (hit && age <= opts.ttlMs) return hit.value;
@@ -87,6 +92,7 @@ export function createPerIdSwrCache<T>(opts: SwrOptions) {
   return {
     /** Rows for each requested id, concatenated in request order. `fetchRows` must return a Map keyed by id (absent id = no rows). */
     async getMany(ids: string[], fetchRows: (ids: string[]) => Promise<Map<string, T[]>>): Promise<T[]> {
+      if (opts.bypass?.()) { const rows = await fetchRows(ids); return ids.flatMap((id) => rows.get(id) ?? []); }
       const now = Date.now();
       const missing: string[] = [];
       const refresh: string[] = [];

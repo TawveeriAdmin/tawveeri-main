@@ -18,6 +18,7 @@
 import { identityGateEnabled } from '../../../scripts/tps-core/identity-flags';
 import { modelCodeOfKey, resolveGroup } from '../../../scripts/tps-core/identity-verifier';
 import { fetchAllPaginated } from '../database/paginated-fetch';
+import { createPerIdSwrCache } from '../search/swr-cache';
 
 /** Bump when the verifier's rules change in a way that can move a verdict; rows carry it for audit. */
 export const IDENTITY_RULES_VERSION = 'identity-gate-2026-10-04';
@@ -85,22 +86,39 @@ type SignalReader = {
  * empty index (no table read at all) when no category is gated, so with the flags unset every caller
  * is byte-for-byte what it was.
  */
+type SignalRow = { canonical_product_id: string; store_id: number; store_slug: string | null; verdict: SignalVerdict };
+
+// Search-latency fix (2026-10-06): the signals change once per chain run (hourly) yet a TV search read them with ~17 SEQUENTIAL
+// 100-id queries per request (measured 4.9 s of a 9.6 s «tv» search). Per-canonical SWR cache (1 min fresh, 5 min stale-while-refresh;
+// «no signal» is cached too), chunks read in PARALLEL, a failed read is never cached and still fails OPEN below.
+const signalRowsCache = createPerIdSwrCache<SignalRow>({ ttlMs: 60_000, staleMs: 5 * 60_000, maxEntries: 20_000 });
+/** Test seam: drop every cached signal row. */
+export function resetIdentitySignalCache(): void { signalRowsCache.clear(); }
+
 export async function loadIdentitySignals(db: unknown, canonicals: { id: string; category?: string | null }[]): Promise<IdentitySignalIndex> {
   const ids = [...new Set(canonicals.filter((c) => c.category && identityGateEnabled(c.category)).map((c) => c.id))];
   if (!ids.length) return EMPTY_SIGNAL_INDEX;
   const index: IdentitySignalIndex = new Map();
   try {
     const reader = db as SignalReader;
-    for (let i = 0; i < ids.length; i += 100) {
-      const chunk = ids.slice(i, i + 100);
-      // fetchAllPaginated: a chunk can exceed PostgREST's db-max-rows cap (ADR-172/285).
-      const rows = await fetchAllPaginated<{ canonical_product_id: string; store_id: number; store_slug: string | null; verdict: SignalVerdict }>((from, to) =>
-        reader.from('tps_offer_identity_signals').select('canonical_product_id, store_id, store_slug, verdict').in('canonical_product_id', chunk)
-          .order('canonical_product_id').order('store_id').range(from, to) as never);
-      for (const r of rows) {
-        index.set(`${r.canonical_product_id}|${r.store_id}`, r.verdict);
-        if (r.store_slug) index.set(`${r.canonical_product_id}|${r.store_slug}`, r.verdict);
+    const rows = await signalRowsCache.getMany(ids, async (want) => {
+      const out = new Map<string, SignalRow[]>();
+      const chunks = await Promise.all(Array.from({ length: Math.ceil(want.length / 100) }, (_, i) => {
+        const chunk = want.slice(i * 100, (i + 1) * 100);
+        // fetchAllPaginated: a chunk can exceed PostgREST's db-max-rows cap (ADR-172/285).
+        return fetchAllPaginated<SignalRow>((from, to) =>
+          reader.from('tps_offer_identity_signals').select('canonical_product_id, store_id, store_slug, verdict').in('canonical_product_id', chunk)
+            .order('canonical_product_id').order('store_id').range(from, to) as never);
+      }));
+      for (const r of chunks.flat()) {
+        const list = out.get(r.canonical_product_id);
+        if (list) list.push(r); else out.set(r.canonical_product_id, [r]);
       }
+      return out;
+    });
+    for (const r of rows) {
+      index.set(`${r.canonical_product_id}|${r.store_id}`, r.verdict);
+      if (r.store_slug) index.set(`${r.canonical_product_id}|${r.store_slug}`, r.verdict);
     }
   } catch (e) {
     console.error('[identity-signals] read failed — serving WITHOUT the identity gate for this request:', e instanceof Error ? e.message : e);

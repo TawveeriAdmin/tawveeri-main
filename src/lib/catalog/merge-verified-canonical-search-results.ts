@@ -23,12 +23,19 @@ import type { GroupedSearchProduct } from '@/lib/scraping/search/product-grouper
 import type { SearchProduct } from '@/lib/scraping/search/types';
 import { isUnsignaled } from '@/lib/identity/identity-signals';
 import { loadStorefrontIdentitySignals } from '@/lib/catalog/storefront-identity-gate';
+import { createPerIdSwrCache } from '@/lib/search/swr-cache';
 
 const VERIFIED_LINK_FILTER = {
   status: 'active',
   rule_version: 'convergence-v1',
   identity_key_status: 'valid',
 } as const;
+
+// Search-latency fix (2026-10-06): verified storefront→canonical links change at convergence cadence (hourly), yet every search paid a
+// round trip (400 ms–1.4 s) for them. Per-product SWR cache (5 min fresh, 30 min stale-while-refresh; «no link» is cached too); chunks
+// run in parallel; a failed read is never cached and falls back to the un-merged list below. Skipped under jest (suites mock the db).
+type VerifiedLinkRow = { product_id: string; canonical_product_id: string };
+const verifiedLinksCache = createPerIdSwrCache<VerifiedLinkRow>({ ttlMs: 5 * 60_000, staleMs: 30 * 60_000, maxEntries: 20_000, bypass: () => !!process.env.JEST_WORKER_ID });
 
 /**
  * Live-caught (2026-09-25, same verification pass): a single card can already carry
@@ -296,13 +303,19 @@ export async function mergeVerifiedCanonicalSearchResults(
       };
     };
 
-    const { data: links } = await supabase
-      .from('storefront_identity_links')
-      .select('product_id, canonical_product_id')
-      .in('product_id', ids)
-      .match(VERIFIED_LINK_FILTER);
+    const links = await verifiedLinksCache.getMany(ids, async (want) => {
+      const out = new Map<string, VerifiedLinkRow[]>();
+      const chunks = await Promise.all(Array.from({ length: Math.ceil(want.length / 100) }, (_, i) =>
+        supabase.from('storefront_identity_links').select('product_id, canonical_product_id').in('product_id', want.slice(i * 100, (i + 1) * 100)).match(VERIFIED_LINK_FILTER)));
+      for (const c of chunks) {
+        const err = (c as { error?: { message: string } | null }).error;
+        if (err) throw new Error(`storefront_identity_links: ${err.message}`);   // never cache an error as «no link»
+        for (const l of c.data ?? []) { const list = out.get(l.product_id); if (list) list.push(l); else out.set(l.product_id, [l]); }
+      }
+      return out;
+    });
 
-    const canonicalByProductId = new Map((links ?? []).map((l) => [l.product_id, l.canonical_product_id]));
+    const canonicalByProductId = new Map(links.map((l) => [l.product_id, l.canonical_product_id]));
     if (!canonicalByProductId.size) return products.map(dedupeCardStores);
 
     // ADR-405 — identity gate: a card carrying a listing the verifier did not confirm as the same item

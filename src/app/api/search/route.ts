@@ -31,6 +31,7 @@ import { exactModelQuery } from '@/lib/search/exact-model-query';
 import { linkRetrievedCanonicals } from '@/lib/search/linked-canonical-products';
 import { collectCanonicalCandidates } from '@/lib/search/canonical-candidates';
 import { createSwrCache, createPerIdSwrCache } from '@/lib/search/swr-cache';
+import { filterByAcTypeIntent } from '@/lib/search/ac-type-intent';
 import { manufacturerCategoryTerms, productQueryText } from '@/lib/search/manufacturer-category-terms';
 import { hoursSince, PICK_FRESHNESS_MAX_HOURS, productTrust, isFreshObservation, type TrustAssessment } from '@/lib/intelligence/evidence-engine';
 import { mergeVerifiedCanonicalSearchResults, mergeSameListingCards, attachStorefrontListingUrls, type StorefrontListingRow } from '@/lib/catalog/merge-verified-canonical-search-results';
@@ -1944,62 +1945,85 @@ function buildDecisionLayer(
  * ADR-399 (F-007): a product retired after the last index rebuild (`products.is_active=false`,
  * e.g. the ADR-397 amazon de-duplication) is still an Algolia object, and a hit maps straight to
  * `/products/<id>` — a 404 for the shopper. Drop those hits at read time; the index is cleaned
- * separately (scripts/tps-analysis/algolia-remove-retired.ts). One cheap id lookup per search;
- * on a lookup error the hits are kept (search availability over tidiness).
- */
-/**
+ * separately (scripts/tps-analysis/algolia-remove-retired.ts). On a lookup error the hits are kept
+ * (search availability over tidiness).
+ *
  * ONE MEASURABLE EXIT PATH (Amazon closure, 2026-10-05). Algolia hits for STOREFRONT (legacy, non-TPS) products carry the raw merchant URL
- * (for Amazon: a scraped search-result URL with session params) — handed to the shopper directly it is unmeasured and unattributed. Map each
- * (product, store) back to its product_stores row and exit through /go/ps_<id> (ADR-244), where a human click is recorded and attributed by
- * the provider framework and a bot is not tagged. One batched lookup per search; fail-open (any error keeps the direct URL).
+ * (for Amazon: a scraped search-result URL with session params) — handed to the shopper directly it is unmeasured and unattributed. Each
+ * (product, store) is mapped back to its product_stores row and exits through /go/ps_<id> (ADR-244), where a human click is recorded and
+ * attributed by the provider framework and a bot is not tagged. Fail-open (any error keeps the direct URL).
+ *
+ * LATENCY (2026-10-06): both lookups were SEQUENTIAL chunked queries (~5 round trips ≈ 1 s of every search). They now run together, the
+ * chunks run in parallel, and each id's row is cached for minutes (SWR) — `is_active` and a product's store rows change at ingest cadence.
  */
-async function withLegacyGoExits(products: GroupedSearchProduct[]): Promise<GroupedSearchProduct[]> {
-  const legacy = products.filter((p) => !p.tps_identity_key && typeof p.product_id === 'string' && /^[0-9a-f-]{36}$/i.test(p.product_id));
-  if (!legacy.length) return products;
-  try {
-    const supabase = createServerClient();
-    const rows: { id: string; product_id: string; store_id: number | null }[] = [];
-    const ids = [...new Set(legacy.map((p) => p.product_id as string))];
-    for (let i = 0; i < ids.length; i += 100) {
-      const { data, error } = await supabase.from('product_stores').select('id, product_id, store_id').in('product_id', ids.slice(i, i + 100));
-      if (error) throw new Error(error.message);
-      rows.push(...((data ?? []) as unknown as { id: string; product_id: string; store_id: number | null }[]));
-    }
-    const psId = new Map<string, string>();
-    for (const r of rows) { const slug = resolveApprovedSlug(r.store_id); if (slug && !psId.has(`${r.product_id}|${slug}`)) psId.set(`${r.product_id}|${slug}`, r.id); }
-    const exit = (productId: string, storeName: string | undefined | null, current: string): string => {
-      const slug = resolveApprovedSlug(storeName ?? undefined);
-      const id = slug ? psId.get(`${productId}|${slug}`) : undefined;
-      return id ? buildGoUrl(`ps_${id}`) : current;
-    };
-    return products.map((p) => {
-      if (p.tps_identity_key || typeof p.product_id !== 'string' || !/^[0-9a-f-]{36}$/i.test(p.product_id)) return p;
-      const pid = p.product_id;
-      return { ...p, product_url: exit(pid, p.store_name || p.store, p.product_url), stores: p.stores.map((e) => ({ ...e, product_url: exit(pid, e.store_name || e.store, e.product_url) })) };
-    });
-  } catch (e) {
-    console.error('[search] legacy /go exit mapping failed — direct URLs kept:', e instanceof Error ? e.message : e);
-    return products;
+const productActiveCache = createPerIdSwrCache<{ id: string; is_active: boolean }>({ ttlMs: 5 * 60_000, staleMs: 30 * 60_000, maxEntries: 20_000 });
+const productStoresCache = createPerIdSwrCache<{ id: string; product_id: string; store_id: number | null }>({ ttlMs: 5 * 60_000, staleMs: 30 * 60_000, maxEntries: 20_000 });
+
+async function fetchProductActive(want: string[]): Promise<Map<string, { id: string; is_active: boolean }[]>> {
+  const supabase = createServerClient();
+  const out = new Map<string, { id: string; is_active: boolean }[]>();
+  const chunks = await Promise.all(Array.from({ length: Math.ceil(want.length / 200) }, (_, i) =>
+    supabase.from('products').select('id, is_active').in('id', want.slice(i * 200, (i + 1) * 200))));
+  for (const c of chunks) {
+    if (c.error) throw new Error(`products.is_active: ${c.error.message}`);
+    for (const r of (c.data ?? []) as { id: string; is_active: boolean }[]) out.set(r.id, [r]);
   }
+  return out;
+}
+
+async function fetchProductStores(want: string[]): Promise<Map<string, { id: string; product_id: string; store_id: number | null }[]>> {
+  const supabase = createServerClient();
+  const out = new Map<string, { id: string; product_id: string; store_id: number | null }[]>();
+  const chunks = await Promise.all(Array.from({ length: Math.ceil(want.length / 100) }, (_, i) =>
+    supabase.from('product_stores').select('id, product_id, store_id').in('product_id', want.slice(i * 100, (i + 1) * 100))));
+  for (const c of chunks) {
+    if (c.error) throw new Error(`product_stores: ${c.error.message}`);
+    for (const r of (c.data ?? []) as unknown as { id: string; product_id: string; store_id: number | null }[]) {
+      const list = out.get(r.product_id);
+      if (list) list.push(r); else out.set(r.product_id, [r]);
+    }
+  }
+  return out;
+}
+
+/** Pure: rewrite a storefront (non-TPS) product's merchant URLs to `/go/ps_<product_stores.id>` where that row is known. */
+function applyLegacyGoExits(products: GroupedSearchProduct[], rows: { id: string; product_id: string; store_id: number | null }[]): GroupedSearchProduct[] {
+  const psId = new Map<string, string>();
+  for (const r of rows) { const slug = resolveApprovedSlug(r.store_id); if (slug && !psId.has(`${r.product_id}|${slug}`)) psId.set(`${r.product_id}|${slug}`, r.id); }
+  const exit = (productId: string, storeName: string | undefined | null, current: string): string => {
+    const slug = resolveApprovedSlug(storeName ?? undefined);
+    const id = slug ? psId.get(`${productId}|${slug}`) : undefined;
+    return id ? buildGoUrl(`ps_${id}`) : current;
+  };
+  return products.map((p) => {
+    if (p.tps_identity_key || typeof p.product_id !== 'string' || !/^[0-9a-f-]{36}$/i.test(p.product_id)) return p;
+    const pid = p.product_id;
+    return { ...p, product_url: exit(pid, p.store_name || p.store, p.product_url), stores: p.stores.map((e) => ({ ...e, product_url: exit(pid, e.store_name || e.store, e.product_url) })) };
+  });
 }
 
 async function dropRetiredProducts(products: GroupedSearchProduct[]): Promise<GroupedSearchProduct[]> {
   const ids = [...new Set(products.map((p) => p.product_id).filter((id): id is string => typeof id === 'string' && /^[0-9a-f-]{36}$/i.test(id)))];
   if (!ids.length) return products;
+  const legacyIds = [...new Set(products.filter((p) => !p.tps_identity_key && typeof p.product_id === 'string' && /^[0-9a-f-]{36}$/i.test(p.product_id)).map((p) => p.product_id as string))];
+  let kept = products;
   try {
-    const supabase = createServerClient();
-    const retired = new Set<string>();
-    for (let i = 0; i < ids.length; i += 200) {
-      const { data, error } = await supabase.from('products').select('id').in('id', ids.slice(i, i + 200)).eq('is_active', false);
-      if (error) throw new Error(error.message);
-      for (const r of (data ?? []) as { id: string }[]) retired.add(r.id);
+    const activeRows = await productActiveCache.getMany(ids, fetchProductActive);
+    const retired = new Set(activeRows.filter((r) => r.is_active === false).map((r) => r.id));
+    if (retired.size) {
+      console.log(`[search] dropped ${retired.size} retired product(s) from Algolia hits`);
+      kept = products.filter((p) => !(typeof p.product_id === 'string' && retired.has(p.product_id)));
     }
-    if (!retired.size) return withLegacyGoExits(products);
-    console.log(`[search] dropped ${retired.size} retired product(s) from Algolia hits`);
-    return withLegacyGoExits(products.filter((p) => !(typeof p.product_id === 'string' && retired.has(p.product_id))));
   } catch (e) {
     console.error('[search] retired-product filter failed — hits kept:', e instanceof Error ? e.message : e);
-    return withLegacyGoExits(products);
+  }
+  if (!legacyIds.length) return kept;
+  try {
+    const psRows = await productStoresCache.getMany(legacyIds, fetchProductStores);
+    return applyLegacyGoExits(kept, psRows);
+  } catch (e) {
+    console.error('[search] legacy /go exit mapping failed — direct URLs kept:', e instanceof Error ? e.message : e);
+    return kept;
   }
 }
 
@@ -2169,6 +2193,8 @@ const signalTableCache = createSwrCache<unknown[]>({ ttlMs: 60_000, staleMs: 5 *
 const priceHistoryCache = createPerIdSwrCache<TpsPriceRow>({ ttlMs: 5 * 60_000, staleMs: 30 * 60_000, maxEntries: 6000 });
 const observationsCache = createPerIdSwrCache<TpsObsRow>({ ttlMs: 5 * 60_000, staleMs: 30 * 60_000, maxEntries: 6000 });
 const currentOffersCache = createPerIdSwrCache<TpsCurrentOfferRow>({ ttlMs: 2 * 60_000, staleMs: 10 * 60_000, maxEntries: 6000 });
+const legacyLinkCache = createPerIdSwrCache<{ id: string; canonical_product_id: string | null; model: string | null; brand: string | null }>({ ttlMs: 5 * 60_000, staleMs: 30 * 60_000, maxEntries: 20_000 });
+const ghostListingCache = createPerIdSwrCache<StorefrontListingRow>({ ttlMs: 5 * 60_000, staleMs: 30 * 60_000, maxEntries: 4000 });
 
 // ── TPS Canonical Search ──────────────────────────────────────
 async function searchTPSCanonical(
@@ -2875,13 +2901,21 @@ export async function POST(request: NextRequest) {
       // canonical appeared twice. Resolve persisted links before deduplication;
       // title regex enrichment later in this route cannot prove this relationship.
       const legacyIds = [...new Set(products.filter(p => !p.tps_identity_key && p.product_id).map(p => p.product_id))];
-      const links: Array<{ id: string; canonical_product_id: string | null; model: string | null; brand: string | null }> = [];
-      for (let start = 0; start < legacyIds.length; start += 100) {
-        const { data, error } = await supabase.from('products').select('id,canonical_product_id,model,brand')
-          .in('id', legacyIds.slice(start, start + 100));
-        if (error) console.warn('[TPS Search] persisted links unavailable:', error.message);
-        else links.push(...(data || []));
-      }
+      // Per-product SWR cache + parallel chunks (search-latency fix, 2026-10-06; was sequential 100-id queries). A failed read is
+      // never cached; the old behaviour on error (warn, no persisted links) is preserved.
+      const links: Array<{ id: string; canonical_product_id: string | null; model: string | null; brand: string | null }> =
+        legacyIds.length
+          ? await legacyLinkCache.getMany(legacyIds, async (want) => {
+              const out = new Map<string, Array<{ id: string; canonical_product_id: string | null; model: string | null; brand: string | null }>>();
+              const chunks = await Promise.all(Array.from({ length: Math.ceil(want.length / 100) }, (_, i) =>
+                supabase.from('products').select('id,canonical_product_id,model,brand').in('id', want.slice(i * 100, (i + 1) * 100))));
+              for (const c of chunks) {
+                if (c.error) throw new Error(c.error.message);
+                for (const r of c.data || []) out.set(r.id, [r]);
+              }
+              return out;
+            }).catch((e) => { console.warn('[TPS Search] persisted links unavailable:', e instanceof Error ? e.message : e); return []; })
+          : [];
       products = linkRetrievedCanonicals(products, tpsProducts, links);
       // ADR-389: identity-less memory canonicals carry no URL; attach their storefront row's
       // listing URL (writer's own key: exact name_ar, same store) so the same-listing lane can
@@ -2891,13 +2925,25 @@ export async function POST(request: NextRequest) {
         .filter((p) => !p.tps_identity_key && !p.stores.some((s) => (s.product_url || '').startsWith('http') || (s.listing_url || '').startsWith('http')))
         .map((p) => (p.name_ar || '').trim()).filter(Boolean))].slice(0, 50);
       if (ghostNames.length) {
-        const { data: ghostRows, error: ghostErr } = await supabase.from('products')
-          .select('id, name_ar, product_stores(store_id, product_url)')
-          .in('name_ar', ghostNames)
-          .eq('is_active', true)
-          .limit(100);
-        if (ghostErr) console.warn('[TPS Search] storefront listing lookup unavailable:', ghostErr.message);
-        else if (ghostRows?.length) products = attachStorefrontListingUrls(products, ghostRows as unknown as StorefrontListingRow[]);
+        try {
+          // Per-name SWR cache (rows grouped by name_ar); same query, same `limit(100)` per fetch.
+          const ghostRows = await ghostListingCache.getMany(ghostNames, async (want) => {
+            const { data, error } = await supabase.from('products')
+              .select('id, name_ar, product_stores(store_id, product_url)')
+              .in('name_ar', want)
+              .eq('is_active', true)
+              .limit(100);
+            if (error) throw new Error(error.message);
+            const out = new Map<string, StorefrontListingRow[]>();
+            for (const r of (data ?? []) as unknown as (StorefrontListingRow & { name_ar: string })[]) {
+              const list = out.get(r.name_ar); if (list) list.push(r); else out.set(r.name_ar, [r]);
+            }
+            return out;
+          });
+          if (ghostRows.length) products = attachStorefrontListingUrls(products, ghostRows);
+        } catch (ghostErr) {
+          console.warn('[TPS Search] storefront listing lookup unavailable:', ghostErr instanceof Error ? ghostErr.message : ghostErr);
+        }
       }
       console.log('[TPS Search] injected:', tpsProducts.length, '(', (tpsCategories || []).join('+'), ')');
     }
@@ -3169,6 +3215,14 @@ export async function POST(request: NextRequest) {
       console.warn(`[variant-tier-gate] "${rawQuery.slice(0, 60)}" — requested ${requestedTier}; dropped ${products.length - tierMatched.length} conflicting-variant card(s)`);
       products = tierMatched;
     }
+  }
+
+  // AC TYPE INTENT (2026-10-06): «مكيف سبليت» / «سبليت» / «split ac» returned window, cassette and cabinet units. A type named in the
+  // query is a requirement; the type is read from the identity key or the title, an undeterminable type is kept. See ac-type-intent.ts.
+  if (rawQuery && isAcQuery) {
+    const beforeAcType = products.length;
+    products = filterByAcTypeIntent(products, rawQuery);
+    if (products.length !== beforeAcType) console.log(`[ac-type-intent] "${rawQuery.slice(0, 60)}" — dropped ${beforeAcType - products.length} product(s) of a different AC type`);
   }
 
   // Part B eligibility hardening — see `excludeIneligibleCandidates`'s own doc comment for

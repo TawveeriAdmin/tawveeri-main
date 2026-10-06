@@ -1,5 +1,5 @@
 // tests/identity/identity-signals.test.ts — ADR-403 identity gate: one identity truth for every surface.
-import { computeIdentitySignals, loadIdentitySignals, isUnsignaled, verdictFor, EMPTY_SIGNAL_INDEX } from '../../src/lib/identity/identity-signals';
+import { computeIdentitySignals, loadIdentitySignals, isUnsignaled, verdictFor, EMPTY_SIGNAL_INDEX, resetIdentitySignalCache } from '../../src/lib/identity/identity-signals';
 import { assembleCanonicals } from '../../scripts/tps-core/build-identity-signals';
 
 const L = (storeId: number, title: string, model: string | null = null) => ({ storeId, title, model });
@@ -65,6 +65,7 @@ describe('assembleCanonicals', () => {
 });
 
 describe('loadIdentitySignals / isUnsignaled — flag-gated readers', () => {
+  beforeEach(() => resetIdentitySignalCache());
   const fakeDb = (rows: unknown[], spy: jest.Mock) => ({
     from: (t: string) => ({ select: () => ({ in: () => ({ order: () => ({ order: () => ({ range: (from: number) => { spy(t, from); return Promise.resolve({ data: from === 0 ? rows : [], error: null }); } }) }) }) }) }),
   });
