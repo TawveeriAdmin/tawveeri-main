@@ -104,7 +104,7 @@ describe('search-latency SWR caches (2026-10-06)', () => {
     });
     it('every current-offer exit is resolved by RAW id, not by whichever observation rows happened to be fetched (the 400-canonical window left 33–75% of broad-query entries without an exit)', () => {
       expect(routeSrc).toMatch(/async function resolveExitObservationIds/);
-      expect(routeSrc).toMatch(/normalized_payload\.cs\.\{"_raw_id":\$\{r\}\}/);
+      expect(routeSrc).toMatch(/\.in\('normalized_payload->>_raw_id', slice\)/);   // the predicate idx_npo_raw_id_text serves (100 jsonb @> terms timed out)
       expect(routeSrc).toMatch(/\/\^\\d\{1,18\}\$\/\.test\(id\)/);
       expect(routeSrc).toMatch(/await resolveExitObservationIds\(supabase, \[\.\.\.new Set\(unresolved\)\]\)/);
       expect(routeSrc).toMatch(/rawObsId: String\(co\.raw_obs_id\)/);
