@@ -24,6 +24,7 @@ import type { SearchProduct } from '@/lib/scraping/search/types';
 import { isUnsignaled } from '@/lib/identity/identity-signals';
 import { loadStorefrontIdentitySignals } from '@/lib/catalog/storefront-identity-gate';
 import { createPerIdSwrCache } from '@/lib/search/swr-cache';
+import { buildGoUrl } from '@/lib/analytics/build-go-url';
 
 const VERIFIED_LINK_FILTER = {
   status: 'active',
@@ -71,7 +72,9 @@ function dedupeCardStores(card: GroupedSearchProduct): GroupedSearchProduct {
   for (const s of card.stores) {
     const existing = byStore.get(storeKey(s));
     if (!existing) { byStore.set(storeKey(s), s); continue; }
-    if (isValidOffer(s) && !isValidOffer(existing)) byStore.set(storeKey(s), s);
+    if (isValidOffer(s) && !isValidOffer(existing)) { byStore.set(storeKey(s), s); continue; }
+    // The SAME offer (same store, same price) arriving twice: keep the copy the shopper can be sent to (a duplicate memory canonical may carry no exit).
+    if (!existing.product_url && s.product_url && isValidOffer(s) === isValidOffer(existing) && s.current_price === existing.current_price) byStore.set(storeKey(s), s);
   }
   if (byStore.size === card.stores.length) return card; // no-op, nothing collapsed
   const stores = [...byStore.values()];
@@ -93,7 +96,9 @@ function mergeCards(group: GroupedSearchProduct[]): GroupedSearchProduct {
   for (const s of allStores) {
     const existing = byStore.get(storeKey(s));
     if (!existing) { byStore.set(storeKey(s), s); continue; }
-    if (isValidOffer(s) && !isValidOffer(existing)) byStore.set(storeKey(s), s);
+    if (isValidOffer(s) && !isValidOffer(existing)) { byStore.set(storeKey(s), s); continue; }
+    // The SAME offer (same store, same price) arriving twice: keep the copy the shopper can be sent to (a duplicate memory canonical may carry no exit).
+    if (!existing.product_url && s.product_url && isValidOffer(s) === isValidOffer(existing) && s.current_price === existing.current_price) byStore.set(storeKey(s), s);
   }
   const stores = [...byStore.values()];
   const prices = stores.map((s) => s.current_price).filter((n): n is number => typeof n === 'number' && n > 0);
@@ -198,9 +203,16 @@ function pickRepresentativeFields(rep: GroupedSearchProduct) {
 export interface StorefrontListingRow {
   id: string;
   name_ar: string | null;
-  product_stores?: Array<{ store_id: number | string | null; product_url: string | null }> | null;
+  product_stores?: Array<{ id?: string | null; store_id: number | string | null; product_url: string | null }> | null;
 }
 
+/**
+ * EXIT FOR AN IDENTITY-LESS CARD (2026-10-06, external review: «macbook» — 45% of offers had no link, 8 of the first 25 cards read «رابط المتجر غير متاح»).
+ * These memory canonicals price their offer from `price_history` rows that carry no `tps_observation_id`, so the card could never build its own `/go` id.
+ * The same exact-`name_ar`, same-store storefront row that supplies the listing URL ALSO owns the measured exit: `/go/ps_<product_stores.id>` (ADR-244,
+ * the same path every legacy storefront card already uses). Measured 2026-10-06: 9,500 of 9,874 such canonicals with a recent price have that row.
+ * An entry that already has an exit is never touched; no row for the store = no exit (never a guess).
+ */
 export function attachStorefrontListingUrls(products: GroupedSearchProduct[], rows: StorefrontListingRow[]): GroupedSearchProduct[] {
   if (!rows.length) return products;
   const byName = new Map<string, StorefrontListingRow[]>();
@@ -211,7 +223,8 @@ export function attachStorefrontListingUrls(products: GroupedSearchProduct[], ro
   }
   return products.map((card) => {
     if (card.tps_identity_key) return card;
-    if (card.stores.some((s) => (s.listing_url && s.listing_url.startsWith('http')) || (s.product_url && s.product_url.startsWith('http')))) return card;
+    const needsExit = card.stores.some((s) => !s.product_url);
+    if (!needsExit && card.stores.some((s) => (s.listing_url && s.listing_url.startsWith('http')) || (s.product_url && s.product_url.startsWith('http')))) return card;
     const matches = byName.get((card.name_ar ?? '').trim().toLowerCase());
     if (!matches?.length) return card;
     let changed = false;
@@ -219,10 +232,12 @@ export function attachStorefrontListingUrls(products: GroupedSearchProduct[], ro
       const slug = storeKey(s);
       for (const row of matches) {
         for (const ps of row.product_stores ?? []) {
-          if (!ps.product_url || !/^https?:\/\//i.test(ps.product_url)) continue;
           if ((resolveApprovedSlug(ps.store_id) ?? String(ps.store_id)) !== slug) continue;
+          const hasUrl = !!ps.product_url && /^https?:\/\//i.test(ps.product_url);
+          const exit = !s.product_url && ps.id ? buildGoUrl(`ps_${ps.id}`) : s.product_url;
+          if (!hasUrl && exit === s.product_url) continue;
           changed = true;
-          return { ...s, listing_url: ps.product_url };
+          return { ...s, product_url: exit, listing_url: s.listing_url ?? (hasUrl ? ps.product_url : null) };
         }
       }
       return s;

@@ -132,6 +132,23 @@ export async function mapLimit<I, R>(items: I[], limit: number, fn: (item: I) =>
 }
 
 /** Splits `items` into arrays of at most `size`. */
+/**
+ * Chunks bounded by the ENCODED size of a value placed in a query string (`.in('name_ar', [...])`). Arabic text percent-encodes to 6 characters per letter, so a count-based
+ * chunk of 12 titles can exceed the request-URL limit and fail with a bare `fetch failed` (measured 2026-10-06 on a 160-card laptop query). `maxItems` still applies.
+ */
+export function chunkedByEncodedLength(items: string[], maxEncodedChars: number, maxItems = 25): string[][] {
+  const out: string[][] = [];
+  let cur: string[] = [];
+  let size = 0;
+  for (const it of items) {
+    const n = encodeURIComponent(it).length + 3;
+    if (cur.length && (size + n > maxEncodedChars || cur.length >= maxItems)) { out.push(cur); cur = []; size = 0; }
+    cur.push(it); size += n;
+  }
+  if (cur.length) out.push(cur);
+  return out;
+}
+
 export function chunked<T>(items: T[], size: number): T[][] {
   const out: T[][] = [];
   for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));

@@ -166,6 +166,22 @@ describe('market-variant companions are shown beside the card, outside its price
     expect(note.textContent).toContain('75QNED93A6A'); expect(note.textContent).toContain('AMAQ'); expect(note.textContent).toContain('4499'); expect(note.textContent).toContain('نون');
     expect(note.querySelector('a')).toHaveAttribute('href', '/go/ps_noon');
   });
+  it('a CHEAPER same-model-number companion removes the card\'s «أفضل سعر» claim and says so; a dearer one does not', () => {
+    const now = new Date().toISOString();
+    const stores = [
+      baseStore({ id: 'ps-1', current_price: 1799, observed_at: now, stores: { id: 'almanea', slug: 'almanea', name_ar: 'المنيع', name_en: 'Almanea', logo_url: null } }),
+      baseStore({ id: 'ps-2', current_price: 1899, observed_at: now, stores: { id: 'extra', slug: 'extra', name_ar: 'إكسترا', name_en: 'eXtra', logo_url: null } }),
+    ];
+    const comp = (price: number) => [{ store: 'amazon', store_name: 'أمازون', price, product_url: '/go/ps_amazon', observed_at: now, variant: '', model: 'XU2100/15', kind: 'same_model_number' as const }];
+    const cheaper = render(<ProductCard product={baseProduct({ tps_compare_url: `/ar/compare/${encodeURIComponent('philips|MODEL:XU2100/15')}`, product_stores: stores, market_variant_companions: comp(869) })} locale="ar" />);
+    expect(screen.queryByText('🏆 أفضل سعر')).not.toBeInTheDocument();
+    expect(screen.getByTestId('market-variant-companions').textContent).toContain('نفس رقم الموديل XU2100/15 عند أمازون');
+    expect(screen.getByTestId('market-variant-companions').textContent).toContain('أرخص');
+    cheaper.unmount();
+    render(<ProductCard product={baseProduct({ tps_compare_url: `/ar/compare/${encodeURIComponent('philips|MODEL:XU2100/15')}`, product_stores: stores, market_variant_companions: comp(1999) })} locale="ar" />);
+    expect(screen.getByText('🏆 أفضل سعر')).toBeInTheDocument();
+  });
+
   it('renders nothing when there is no companion', () => {
     render(<ProductCard product={baseProduct()} locale="ar" />);
     expect(screen.queryByTestId('market-variant-companions')).not.toBeInTheDocument();

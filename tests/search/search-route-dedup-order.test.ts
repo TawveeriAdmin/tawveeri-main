@@ -31,7 +31,10 @@ describe('search route — same-listing merge runs after TPS injection', () => {
     const merge = src.lastIndexOf('products = mergeSameListingCards(products);');
     expect(attach).toBeGreaterThan(injection);
     expect(merge).toBeGreaterThan(attach);
-    expect(src).toContain(".select('id, name_ar, product_stores(store_id, product_url)')");
+    // The lookup also needs the product_stores row id (the measured exit) and quotes each title itself: `.in('name_ar', …)` silently mis-parses a title containing `"`.
+    expect(src).toContain(".select('id, name_ar, product_stores(id, store_id, product_url)')");
+    expect(src).toContain('postgrestQuote(n)');
+    expect(src).not.toContain(".in('name_ar', slice)");
   });
 
   it('the merge still happens before pagination/slicing of the response', () => {

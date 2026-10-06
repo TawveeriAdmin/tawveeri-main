@@ -211,18 +211,6 @@ export function setSearchCache(query: string, category: string, resolvedCategory
   } catch { /* quota exceeded — ignore */ }
 }
 
-// MEASURED DEFECT (2026-08-20, «أبي تليفزيون ب 250ريال»): the empty-search state fell through
-// to a "Trending products" rail — an unfiltered last-8-inserted-products query with no relation
-// to the search or its budget. When the API's `categoryEnforcedZero` honestly zeroed out a query
-// that named an explicit budget (`appliedBudget`), this rail silently replaced a true "nothing
-// in your budget" with whatever was last added to the catalog (which happened to be TVs), making
-// a stated budget look ignored. Suppression must be conditioned on BOTH signals together — a
-// plain no-budget empty search (categoryEnforcedZero without a budget, or a budget without an
-// enforced zero) must keep the trending fallback, which is deliberate and useful there.
-export function shouldSuppressTrendingRail(categoryEnforcedZero: boolean, appliedBudget: number | null): boolean {
-  return categoryEnforcedZero && appliedBudget !== null;
-}
-
 // Category precedence (Amazon Campaign V1 delivery-gap fix — investigation traced a category
 // resolved correctly server-side that never reached usage_events/campaign eligibility because
 // the client only ever knew about an EXPLICIT category-filter click, never the query's own
@@ -287,11 +275,10 @@ export default function SearchClient() {
   const [appliedBudget, setAppliedBudget] = useState<number | null>(null);
   // MEASURED DEFECT (2026-08-20, «أبي تليفزيون ب 250ريال»): the API's `categoryEnforcedZero`
   // ("zero beats wrong" — no product matched the explicit category+budget, so retrieval
-  // honestly returned nothing) was never captured client-side. The empty state below fell
-  // through to the "Trending products" rail, which is an unfiltered last-8-inserted query
-  // with no relation to the search or its budget — so a luxury TV could appear as if it were
-  // an answer to a 250 SAR ask. This flag lets the empty-state render suppress that rail
-  // ONLY when the zero was budget-caused, never for a plain no-budget empty search.
+  // honestly returned nothing) was never captured client-side. The empty state below used to
+  // fall through to a rail of the last 8 INSERTED products, unrelated to the search or its
+  // budget — so a luxury TV could appear as if it were an answer to a 250 SAR ask. That rail
+  // is gone (2026-10-06); this flag now selects the budget message + closest-options lane.
   const [categoryEnforcedZero, setCategoryEnforcedZero] = useState(false);
   // The query named a device (ps5, Nintendo Switch...) and no result IS that device: say so above the accessories (2026-10-06).
   const [deviceNotFound, setDeviceNotFound] = useState<{ id: string; labelAr: string; labelEn: string } | null>(null);
@@ -341,7 +328,6 @@ export default function SearchClient() {
   // comparison intent — the client never decides whether a comparison can be delivered.
   const [compareRoute, setCompareRoute] = useState<CompareRoute | null>(null);
   const [relaxed, setRelaxed] = useState(false); // true when results are "nearby/related", not an exact match
-  const [trendingProducts, setTrendingProducts] = useState<Product[]>([]);
   const [saveSearchOpen, setSaveSearchOpen] = useState(false);
   const [saveSearchName, setSaveSearchName] = useState('');
   const [savingSearch, setSavingSearch] = useState(false);
@@ -404,25 +390,6 @@ export default function SearchClient() {
         }
       });
   }, [user]);
-
-  // Fetch trending products once to render as fallback in empty search state.
-  useEffect(() => {
-    let cancelled = false;
-    const supabase = getSupabaseBrowserClient();
-    supabase
-      .from('products')
-      .select(`id, name_ar, name_en, slug, category, brand, model, image_urls, specifications,
-        product_stores(id, current_price, original_price, availability, product_url,
-          stores(id, name_ar, name_en, logo_url, average_rating, total_reviews))`)
-      .eq('is_active', true)
-      .order('created_at', { ascending: false })
-      .limit(8)
-      .then(({ data }) => {
-        if (cancelled || !data) return;
-        setTrendingProducts((data as unknown as Product[]) || []);
-      });
-    return () => { cancelled = true; };
-  }, []);
 
   const [filters, setFilters] = useState<SearchFilters>({
     brands: [],
@@ -2059,16 +2026,9 @@ export default function SearchClient() {
                         );
                       })}
                     </div>
-                    {/* Trending products rail — fallback when user query yields no hits.
-                        MEASURED DEFECT (2026-08-20, «أبي تليفزيون ب 250ريال»): this rail is an
-                        unfiltered last-8-inserted-products query with no relation to the search
-                        or its budget. When the API honestly zeroed out a query that named an
-                        explicit budget (`categoryEnforcedZero` + `appliedBudget`), showing this
-                        rail silently replaced a true "nothing in your budget" with whatever was
-                        last added to the catalog — which can be a luxury item that looks like a
-                        contradicted budget. Suppressed ONLY in that specific case; a plain
-                        no-budget empty search still gets the trending fallback as before. */}
-                    {appliedBudget !== null && shouldSuppressTrendingRail(categoryEnforcedZero, appliedBudget) ? (
+                    {/* NO «TRENDING» RAIL ON AN EMPTY RESULT (2026-10-06, external review): the rail was the last 8 INSERTED products (not trending, and unrelated to the
+                        query), and its cards linked straight to the merchant — an unmeasured, un-attributed exit. An honest «no result» beats unrelated products. */}
+                    {appliedBudget !== null && categoryEnforcedZero ? (
                       <div className="space-y-4">
                         <div
                           data-testid="budget-zero-message"
@@ -2082,28 +2042,7 @@ export default function SearchClient() {
                             name the closest still-relevant options and why each missed. */}
                         <ClosestOptions options={closestOptions} locale={locale} />
                       </div>
-                    ) : (
-                      trendingProducts.length > 0 && (
-                        <div className="space-y-3 pt-4">
-                          <h3 className="text-headline-sm text-on-surface">
-                            {locale === 'ar' ? 'منتجات رائجة' : 'Trending products'}
-                          </h3>
-                          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-                            {trendingProducts.slice(0, 8).map((p) => (
-                              <ProductCard
-                                key={`trending-${p.id}`}
-                                product={p}
-                                locale={locale}
-                                onCompare={handleAddToCompare}
-                                onSave={handleSaveToWishlist}
-                                isSaved={savedProductNames.has(p.name_en)}
-                                isInCompare={compareIds.has(p.id)}
-                              />
-                            ))}
-                          </div>
-                        </div>
-                      )
-                    )}
+                    ) : null}
                   </div>
                 )}
 

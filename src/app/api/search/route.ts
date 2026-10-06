@@ -7,7 +7,7 @@ import type { ProductCategory } from '@/lib/database/types';
 import { extractSpecsFromTitle } from '@/lib/scraping/config/spec-configs';
 import { searchAlgolia, isAlgoliaConfigured, type AlgoliaHit } from '@/lib/algolia/search';
 import { identityKeyToSlug } from '@/lib/catalog/getProductComparison';
-import { isApprovedStore, isDisplayableRetailer, resolveApprovedSlug, retailerDisplayName } from '@/lib/retailers/approved-retailers';
+import { isApprovedStore, isDisplayableRetailer, resolveApprovedSlug, retailerDisplayName, storeNameVariants } from '@/lib/retailers/approved-retailers';
 import { loadIdentitySignals, isUnsignaled } from '@/lib/identity/identity-signals';
 import { buildGoUrl } from '@/lib/analytics/build-go-url';
 import { normalizeExitUrl } from '@/lib/retailers/exit-url';
@@ -30,10 +30,11 @@ import { toStorefrontCategory } from '@/lib/search/canonical-category';
 import { exactModelQuery } from '@/lib/search/exact-model-query';
 import { linkRetrievedCanonicals } from '@/lib/search/linked-canonical-products';
 import { collectCanonicalCandidates } from '@/lib/search/canonical-candidates';
-import { createSwrCache, createPerIdSwrCache, mapLimit, chunked } from '@/lib/search/swr-cache';
+import { createSwrCache, createPerIdSwrCache, mapLimit, chunked, chunkedByEncodedLength } from '@/lib/search/swr-cache';
+import { postgrestQuote } from '@/lib/database/postgrest-quote';
 import { filterByAcTypeIntent } from '@/lib/search/ac-type-intent';
 import { deviceIntentOf, isDeviceItself, queryNamesAccessory } from '@/lib/search/device-intent';
-import { attachMarketVariantCompanions } from '@/lib/search/market-variant-companions';
+import { attachMarketVariantCompanions, attachSameModelNumberCompanions } from '@/lib/search/market-variant-companions';
 import { strongModelToken as strongModelCode, requiredCodeTokens, carriesCodes, modelNumberPrefixFilter } from '@/lib/search/model-token-gate';
 import { manufacturerCategoryTerms, productQueryText } from '@/lib/search/manufacturer-category-terms';
 import { hoursSince, PICK_FRESHNESS_MAX_HOURS, productTrust, isFreshObservation, type TrustAssessment } from '@/lib/intelligence/evidence-engine';
@@ -81,6 +82,10 @@ interface ProductStoreRow {
   product_url: string;
   coupon_code: string | null;
   stores?: { name: string | null } | null;
+  store_id?: number | null;
+  last_seen_at?: string | null;
+  last_scraped_at?: string | null;
+  updated_at?: string | null;
 }
 
 interface CanonicalProductRow {
@@ -1963,7 +1968,17 @@ function buildDecisionLayer(
  * LATENCY (2026-10-06): both lookups were SEQUENTIAL chunked queries (~5 round trips ≈ 1 s of every search). They now run together, the
  * chunks run in parallel, and each id's row is cached for minutes (SWR) — `is_active` and a product's store rows change at ingest cadence.
  */
-type LegacyPsRow = { id: string; product_id: string; store_id: number | null; last_seen_at?: string | null; last_scraped_at?: string | null };
+/**
+ * The newest observation time a storefront `product_stores` row can PROVE (the same rule for the Algolia-hit path and the DB-fallback path). `last_seen_at` / `last_scraped_at`
+ * when present. Amazon rows never set them on a price write, but their `updated_at` advances ONLY on a credible (detail-page-verified) price write (ADR-394/396: unverified
+ * tiles persist with updated_at = null) — live check 2026-10-06: B0FFMQDCLK updated 10-03, amazon.sa/dp = SAR 869 available, the same as the row. No other store gets the
+ * `updated_at` fallback (theirs moves on any write). Null stays null: unknown age is never invented.
+ */
+function storefrontObservedAt(storeId: number | string | null | undefined, r: { last_seen_at?: string | null; last_scraped_at?: string | null; updated_at?: string | null }): string | null {
+  return r.last_seen_at || r.last_scraped_at || (resolveApprovedSlug(storeId) === 'amazon' ? r.updated_at ?? null : null);
+}
+
+type LegacyPsRow = { id: string; product_id: string; store_id: number | null; last_seen_at?: string | null; last_scraped_at?: string | null; updated_at?: string | null };
 const productActiveCache = createPerIdSwrCache<{ id: string; is_active: boolean }>({ ttlMs: 5 * 60_000, staleMs: 30 * 60_000, maxEntries: 20_000 });
 const productStoresCache = createPerIdSwrCache<LegacyPsRow>({ ttlMs: 5 * 60_000, staleMs: 30 * 60_000, maxEntries: 20_000 });
 
@@ -1983,7 +1998,7 @@ async function fetchProductStores(want: string[]): Promise<Map<string, LegacyPsR
   const supabase = createServerClient();
   const out = new Map<string, LegacyPsRow[]>();
   const chunks = await Promise.all(Array.from({ length: Math.ceil(want.length / 100) }, (_, i) =>
-    supabase.from('product_stores').select('id, product_id, store_id, last_seen_at, last_scraped_at').in('product_id', want.slice(i * 100, (i + 1) * 100))));
+    supabase.from('product_stores').select('id, product_id, store_id, last_seen_at, last_scraped_at, updated_at').in('product_id', want.slice(i * 100, (i + 1) * 100))));
   for (const c of chunks) {
     if (c.error) throw new Error(`product_stores: ${c.error.message}`);
     for (const r of (c.data ?? []) as unknown as LegacyPsRow[]) {
@@ -2006,7 +2021,7 @@ function applyLegacyGoExits(products: GroupedSearchProduct[], rows: LegacyPsRow[
     if (!slug) continue;
     const key = `${r.product_id}|${slug}`;
     if (!psId.has(key)) psId.set(key, r.id);
-    const seen = r.last_seen_at || r.last_scraped_at;
+    const seen = storefrontObservedAt(r.store_id, r);
     if (seen && (!psSeen.has(key) || new Date(seen).getTime() > new Date(psSeen.get(key)).getTime())) psSeen.set(key, seen);
   }
   const exit = (productId: string, storeName: string | undefined | null, current: string): string => {
@@ -2804,7 +2819,7 @@ export async function POST(request: NextRequest) {
   const selectClause = `
     id, slug, name_ar, name_en, brand, category, image_url,
     product_stores!inner (
-      id, store_name, current_price, original_price, availability, product_url, coupon_code,
+      id, store_name, store_id, current_price, original_price, availability, product_url, coupon_code, last_seen_at, last_scraped_at, updated_at,
       stores ( name )
     )
   `;
@@ -2844,6 +2859,13 @@ export async function POST(request: NextRequest) {
   // additively — every existing response field (`errors`, `count`, `products`) is unchanged.
   let algoliaFailed = false;
 
+  // RETRIEVAL filters by every stored spelling of the selected retailers; `applyPostFilters` (slug-resolving) stays the authority on what the card shows.
+  // A MODEL-CODE query is retrieved WITHOUT the store filter: the code gate keeps a spec-keyed canonical only when a retrieved listing that carries the code is
+  // absorbed into it, and that listing may belong to a different retailer than the selected one (WA21A8376GV: the code is on Amazon's title, Extra's offer is on the
+  // canonical). Narrowing retrieval to Extra would drop the card; `applyPostFilters` still scopes every card to the selected retailers.
+  const codeFocused = !!rawQuery && (!!modelFocus || !!exactModelQuery(rawQuery) || (!isAccessoryShapedQuery(rawQuery) && requiredCodeTokens(rawQuery).length > 0));
+  const retrievalStores = !codeFocused && body.stores && body.stores.length > 0 ? storeNameVariants(body.stores) : undefined;
+  const retrievalBody: SearchBody = retrievalStores ? { ...body, stores: retrievalStores } : body;
   let algoliaProducts: GroupedSearchProduct[] | null = null;
   if (rawQuery && isAlgoliaConfigured()) {
     console.log('[Algolia] search started:', rawQuery);
@@ -2932,7 +2954,7 @@ export async function POST(request: NextRequest) {
         query: algoliaQuery,
         optionalWords: optionalWords.length ? optionalWords : undefined,
         brands: body.brands,
-        stores: body.stores,
+        stores: retrievalStores,
         minPrice: body.min_price,
         maxPrice: body.max_price,
         inStockOnly: body.in_stock_only,
@@ -2970,7 +2992,7 @@ export async function POST(request: NextRequest) {
     let q = supabase.from('products').select(selectClause, { count: 'exact' }).eq('is_active', true);
     const orPool = buildOrPool(poolWords);
     if (orPool) q = q.or(orPool);
-    q = applyCommonFilters(q, body);
+    q = applyCommonFilters(q, retrievalBody);
     q = q.range(0, 1500);
     const { data, error } = await q;
     if (error) { console.error('[search:pool]', error.message); dbError = error.message; }
@@ -2998,7 +3020,7 @@ export async function POST(request: NextRequest) {
     totalCount = candidateRows.length;
   } else if (!rawQuery) {
     let q = supabase.from('products').select(selectClause, { count: 'exact' }).eq('is_active', true);
-    q = applyCommonFilters(q, body);
+    q = applyCommonFilters(q, retrievalBody);
     q = q.range(hasPostFilters ? 0 : offsetStart, hasPostFilters ? 4999 : offsetEnd);
     const { data, error, count } = await q;
     if (error) {
@@ -3060,28 +3082,41 @@ export async function POST(request: NextRequest) {
       // listing URL (writer's own key: exact name_ar, same store) so the same-listing lane can
       // merge them even when the storefront row itself was not retrieved this time.
       products = [...tpsProducts, ...products];
+      // A card needs the lookup when it has no direct URL at all OR some entry has no exit of its own (the memory canonical's offer comes from
+      // price_history rows without an observation id). Names are looked up in chunks, so no card is silently left out by a fixed cap.
       const ghostNames = [...new Set(products
-        .filter((p) => !p.tps_identity_key && !p.stores.some((s) => (s.product_url || '').startsWith('http') || (s.listing_url || '').startsWith('http')))
-        .map((p) => (p.name_ar || '').trim()).filter(Boolean))].slice(0, 50);
+        .filter((p) => !p.tps_identity_key && (p.stores.some((s) => !s.product_url) || !p.stores.some((s) => (s.product_url || '').startsWith('http') || (s.listing_url || '').startsWith('http'))))
+        .map((p) => (p.name_ar || '').trim()).filter(Boolean))].slice(0, 300);
       if (ghostNames.length) {
         try {
           // Per-name SWR cache (rows grouped by name_ar); same query, same `limit(100)` per fetch.
           const ghostRows = await ghostListingCache.getMany(ghostNames, async (want) => {
-            const { data, error } = await supabase.from('products')
-              .select('id, name_ar, product_stores(store_id, product_url)')
-              .in('name_ar', want)
-              .eq('is_active', true)
-              .limit(100);
-            if (error) throw new Error(error.message);
             const out = new Map<string, StorefrontListingRow[]>();
-            for (const r of (data ?? []) as unknown as (StorefrontListingRow & { name_ar: string })[]) {
-              const list = out.get(r.name_ar); if (list) list.push(r); else out.set(r.name_ar, [r]);
+            // Chunks are bounded by ENCODED length (Arabic titles are 6 chars per letter in a URL; a count-based chunk failed with `fetch failed`), with one retry per chunk:
+            // a transient socket error must not lose the whole lookup (a failed read is never cached, so it would only repeat next request).
+            const chunks = await mapLimit(chunkedByEncodedLength(want, 3000, 25), 4, async (slice) => {
+              // An `or` of quoted `name_ar.eq."…"` terms, NOT an `in` filter on name_ar: supabase-js wraps an `in` value in quotes only when it contains , ( ) and never escapes an inner double
+              // quote, so ONE title containing `14"` / `15.6"` made PostgREST mis-parse the list and silently return nothing for its neighbours (measured 2026-10-06: 348 of
+              // 1,000 laptop titles carry a quote; the chunk returned 0 rows where one-by-one lookups returned 2). Each value is quoted and escaped here.
+              const run = () => supabase.from('products')
+                .select('id, name_ar, product_stores(id, store_id, product_url)')
+                .or(slice.map((n) => `name_ar.eq.${postgrestQuote(n)}`).join(','))
+                .eq('is_active', true)
+                .limit(100);
+              const first = await run();
+              return first.error ? run() : first;
+            });
+            for (const c of chunks) {
+              if (c.error) throw new Error(c.error.message);
+              for (const r of (c.data ?? []) as unknown as (StorefrontListingRow & { name_ar: string })[]) {
+                const list = out.get(r.name_ar); if (list) list.push(r); else out.set(r.name_ar, [r]);
+              }
             }
             return out;
           });
           if (ghostRows.length) products = attachStorefrontListingUrls(products, ghostRows);
         } catch (ghostErr) {
-          console.warn('[TPS Search] storefront listing lookup unavailable:', ghostErr instanceof Error ? ghostErr.message : ghostErr);
+          console.warn('[TPS Search] storefront listing lookup unavailable:', ghostErr instanceof Error ? `${ghostErr.message} (${String((ghostErr as { cause?: unknown }).cause ?? 'no cause')})` : ghostErr);
         }
       }
       console.log('[TPS Search] injected:', tpsProducts.length, '(', (tpsCategories || []).join('+'), ')');
@@ -3117,6 +3152,9 @@ export async function POST(request: NextRequest) {
   // LG market-variant listings of the SAME model name (75QNED93A6A / 75QNED93A6A-AMAQ) are shown beside the primary card, never merged into its price or
   // claims; the duplicate card goes. Manufacturer-documented LG format only — see market-variant-companions.ts.
   products = attachMarketVariantCompanions(products);
+  // An un-linked listing that carries the EXACT model number a corroborated MODEL card is keyed on (Amazon's XU2100/15 at 869 beside Almanea/Extra at 1,799) rides
+  // beside that card and stops it claiming «best price» — see attachSameModelNumberCompanions.
+  products = attachSameModelNumberCompanions(products);
 
   // Relevance groups (hoisted): used by BOTH the gate (filter) and scoreProduct (rank) so the query's
   // product noun must be present. Generic tokens can't satisfy relevance on their own.
@@ -3422,6 +3460,20 @@ export async function POST(request: NextRequest) {
   // renewed/used unit keeps the order it asked for.
   if (rawQuery && !(body.sort && body.sort !== 'relevance') && !wantsCheapest && !isOffGradeTitle(rawQuery)) {
     products = [...products.filter((p) => !isOffGradeTitle(`${p.name_en || ''} ${p.name_ar || ''}`)), ...products.filter((p) => isOffGradeTitle(`${p.name_en || ''} ${p.name_ar || ''}`))];
+  }
+
+  // A CARD WHOSE EVERY OFFER IS KNOWN-STALE goes after the cards that have a current offer (2026-10-06, external review: «75QNED93A6A» printed a 🏆 card at 4,999 with
+  // a Noon card at 4,499 beside it, last observed 64 days earlier). Not hidden — a category whose whole result set is old (coffee machines: 16 of 16 cards older than 60
+  // days) must still answer — only never ranked above a card with a current price. Stable partition; an unknown age is not 'stale'; an explicit sort keeps its order.
+  if (rawQuery && !(body.sort && body.sort !== 'relevance') && !wantsCheapest) {
+    const staleOnly = (p: GroupedSearchProduct) => p.stores.length > 0 && p.stores.every((s) => !!s.observed_at && !isFreshObservation(s.observed_at));
+    products = [...products.filter((p) => !staleOnly(p)), ...products.filter(staleOnly)];
+    // A MODEL-CODE search is a narrow, exact question: when current cards answer it, a card whose newest offer is older than 60 days is not part of the answer (it is
+    // typically the same model's old listing — the reviewer's Noon 4,499, 64 days old, beside the current 4,999). Never applied to a broad query or when nothing is current.
+    if (codeFocused && products.some((p) => !staleOnly(p))) {
+      const ageDays = (p: GroupedSearchProduct) => Math.min(...p.stores.map((s) => (Date.now() - Date.parse(s.observed_at as string)) / 86_400_000));
+      products = products.filter((p) => !(staleOnly(p) && ageDays(p) > 60));
+    }
   }
 
   // DEVICE QUERY WITH NO DEVICE (2026-10-06): 'ps5' / 'PlayStation 5' / 'Nintendo Switch' returned 48/48/41 accessories and games and said
@@ -3773,6 +3825,7 @@ function toGroupedSearchProduct(row: ProductRow): GroupedSearchProduct | null {
     // recorded and attributed by the provider framework; the raw merchant URL (88% of legacy Amazon rows are scraped search URLs
     // with session params) is never handed to the shopper directly. Falls back to the repaired direct URL only when no row id exists.
     product_url: ps.id ? buildGoUrl(`ps_${ps.id}`) : (normalizeExitUrl(ps.product_url) || ''),
+    observed_at: storefrontObservedAt(ps.store_id ?? ps.store_name ?? ps.stores?.name, ps),
     image_urls: row.image_url ? [row.image_url] : [],
     specifications: {} as Record<string, unknown>,
     category: (row.category || '') as ProductCategory,

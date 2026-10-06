@@ -28,11 +28,13 @@ export interface MarketVariantCompanion {
   variant: string;
   /** The model name both listings share (the part before the variant). */
   model: string;
+  /** `market_variant`: LG's documented variant suffix. `same_model_number`: an un-linked listing that carries the primary's EXACT manufacturer model number. */
+  kind?: 'market_variant' | 'same_model_number';
 }
 
 interface CardLike {
   name_ar?: string | null; name_en?: string | null; brand?: string | null; tps_identity_key?: string | null;
-  stores: Array<{ store?: string; store_name?: string; current_price: number; product_url: string; observed_at?: string | null; listing_url?: string | null }>;
+  stores: Array<{ store?: string; store_name?: string; current_price: number; product_url: string; observed_at?: string | null; listing_url?: string | null; availability?: string | null }>;
 }
 
 const LG_VARIANT = /^A[A-Z]{2,4}$/;
@@ -109,7 +111,7 @@ export function attachMarketVariantCompanions<T extends CardLike>(products: T[])
         .filter((s) => s.current_price > 0 && isFreshObservation(s.observed_at) && !have.has(slugOf(s)))
         .map((s): MarketVariantCompanion => ({
           store: s.store || '', store_name: s.store_name || s.store || '', price: s.current_price, product_url: s.product_url,
-          observed_at: s.observed_at ?? null, variant: [...cv].find((v) => v) ?? '', model: base,
+          observed_at: s.observed_at ?? null, variant: [...cv].find((v) => v) ?? '', model: base, kind: 'market_variant',
         }));
       if (!entries.length) continue;                                  // nothing the primary lacks: leave the card alone
       attached.set(primary, [...(attached.get(primary) ?? []), ...entries]);
@@ -120,5 +122,74 @@ export function attachMarketVariantCompanions<T extends CardLike>(products: T[])
   if (!attached.size) return products;
   return products
     .map((p, i) => (attached.has(i) ? ({ ...p, market_variant_companions: attached.get(i), _absorbed_text: `${(p as { _absorbed_text?: string })._absorbed_text || ''} ${[...(byBase.get(info[i]!.base) ?? [])].filter((j) => drop.has(j)).map((j) => `${products[j].name_en || ''} ${products[j].name_ar || ''}`).join(' ')}`.trim() } as T) : p))
+    .filter((_, i) => !drop.has(i));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────────────────────────
+// SAME MANUFACTURER MODEL NUMBER, NOT YET LINKED (external review 2026-10-06, items 1–2).
+//
+// CASE: «XU2100» printed «🏆 أفضل سعر 1,799» (Almanea, Extra) while an Amazon card for the same Philips model sat in the same list at 869; «XC5041» the same at 749.
+// Live check the same day: amazon.sa/dp/B0FFMQDCLK = SAR 869, available; both Amazon titles end with the exact model number the comparable card is keyed on
+// («XU2100/15», «XC5041/61»). The Amazon listing lives in the storefront layer (no TPS observation yet), so the two were never one card.
+//
+// WHAT THIS DOES (read-time, no identity change): a card keyed on «|MODEL:<code>» with >= 2 stores (the model is already corroborated) takes an un-keyed card as a
+// companion when that card's own title carries the EXACT code as a whole token, begins with the same brand, is not an accessory/compat/renewed listing, is fresh,
+// in stock, and adds a store the primary lacks. The primary's price, store count and identity are untouched; the shopper sees «نفس رقم الموديل عند أمازون: 869» with
+// a measured exit, and the card stops claiming «أفضل سعر» while a cheaper same-model listing is on show (the card does that, from the companion list).
+// A title that merely CONTAINS a code is not identity (an accessory «for XU2100/15» does too) — hence the brand-first, accessory and renewed guards.
+// ─────────────────────────────────────────────────────────────────────────────────────────────────
+const MODEL_KEY = /\|MODEL:(.+)$/i;
+const NOT_A_MAIN_LISTING = /\b(compatible|replacement|spare|refill|fits?|accessor(?:y|ies))\b|(?:bag|bags|filter|filters|cover|case|charger|brush|hose|battery|remote)\s+for\b|للاستخدام مع|متوافق|بديل/i;
+const OFF_GRADE = /(?<![\p{L}\p{N}])(?:renewed|refurbished|refurb|used|pre-?owned|open[- ]box|b-?grade|مجدد(?:ة)?|مستعمل(?:ة)?|مستخدم(?:ة)?)(?![\p{L}\p{N}])/iu;
+const escapeRe = (s: string): string => s.replace(/[.*+?^${}()|[\]\\\/-]/g, '\\$&');
+
+function modelKeyOf(c: CardLike): { code: string; brand: string } | null {
+  const m = MODEL_KEY.exec(c.tps_identity_key || '');
+  if (!m) return null;
+  const brand = normalizeArabic(c.brand || (c.tps_identity_key || '').split('|')[0] || '').toLowerCase().trim();
+  return { code: m[1].toUpperCase(), brand };
+}
+
+function startsWithBrand(c: CardLike, brand: string): boolean {
+  if (!brand) return false;
+  const words = normalizeArabic(`${c.name_en || ''} ${c.name_ar || ''}`).toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+  const own = normalizeArabic(c.brand || '').toLowerCase().trim();
+  return own === brand || words.slice(0, 3).includes(brand);
+}
+
+export function attachSameModelNumberCompanions<T extends CardLike>(products: T[]): T[] {
+  const drop = new Set<number>();
+  const attached = new Map<number, MarketVariantCompanion[]>();
+  const absorbed = new Map<number, string[]>();
+  products.forEach((primary, pi) => {
+    const key = modelKeyOf(primary);
+    if (!key || key.code.length < 5) return;
+    const have = new Set(primary.stores.filter((s) => s.current_price > 0).map(slugOf));
+    if (have.size < 2) return;                                          // the model must already be corroborated by two stores
+    const re = new RegExp(`(?<![A-Z0-9])${escapeRe(key.code)}(?![A-Z0-9])`);
+    products.forEach((other, oi) => {
+      if (oi === pi || drop.has(oi) || other.tps_identity_key) return;
+      const title = `${other.name_en || ''} ${other.name_ar || ''}`;
+      if (!re.test(title.toUpperCase())) return;
+      if (!startsWithBrand(other, key.brand)) return;
+      if (NOT_A_MAIN_LISTING.test(title) || OFF_GRADE.test(title)) return;
+      const entries = other.stores
+        .filter((s) => s.current_price > 0 && isFreshObservation(s.observed_at) && s.availability !== 'out_of_stock' && !have.has(slugOf(s)))
+        .map((s): MarketVariantCompanion => ({
+          store: s.store || '', store_name: s.store_name || s.store || '', price: s.current_price, product_url: s.product_url,
+          observed_at: s.observed_at ?? null, variant: '', model: key.code, kind: 'same_model_number',
+        }));
+      if (!entries.length || entries.some((e) => !e.product_url)) return;   // never show a price we cannot send the shopper to
+      attached.set(pi, [...(attached.get(pi) ?? []), ...entries]);
+      absorbed.set(pi, [...(absorbed.get(pi) ?? []), title]);
+      entries.forEach((e) => have.add(slugOf(e)));
+      drop.add(oi);
+    });
+  });
+  if (!attached.size) return products;
+  return products
+    .map((p, i) => (attached.has(i)
+      ? ({ ...p, market_variant_companions: [...((p as { market_variant_companions?: MarketVariantCompanion[] }).market_variant_companions ?? []), ...attached.get(i)!], _absorbed_text: `${(p as { _absorbed_text?: string })._absorbed_text || ''} ${absorbed.get(i)!.join(' ')}`.trim() } as T)
+      : p))
     .filter((_, i) => !drop.has(i));
 }

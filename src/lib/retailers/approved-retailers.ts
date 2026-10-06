@@ -201,6 +201,23 @@ export function resolveApprovedSlug(identifier?: string | number | null): string
   return null;
 }
 
+/**
+ * Every spelling under which an approved retailer is stored (slug, Arabic/English display names, `price_history` strings): what a RETRIEVAL layer must match when the
+ * shopper filters by slug. Algolia's `store_names` facet and `product_stores.store_name` hold DISPLAY names («أمازون», «أمازون السعودية»), never the slug the filter
+ * sidebar sends — a slug filter used to retrieve nothing there (external review 2026-10-06: «WA21A8376GV» + Amazon = no result while Amazon's offer existed).
+ * An identifier that resolves to no approved retailer is kept verbatim (an honest zero downstream, never a silent widening).
+ */
+export function storeNameVariants(identifiers: readonly string[]): string[] {
+  const out = new Set<string>();
+  for (const id of identifiers) {
+    const slug = resolveApprovedSlug(id);
+    if (!slug) { if (id) out.add(id); continue; }
+    out.add(slug);
+    for (const [name, mapped] of Object.entries(NAME_TO_SLUG)) if (mapped === slug) out.add(name);
+  }
+  return [...out];
+}
+
 /** Customer-facing retailer name for an approved slug, in the requested locale. */
 export function retailerDisplayName(slug: string | null, locale: 'ar' | 'en' = 'ar'): string | null {
   if (!slug) return null;

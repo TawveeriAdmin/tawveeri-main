@@ -42,6 +42,20 @@ describe('attachStorefrontListingUrls', () => {
     expect(attachStorefrontListingUrls([ghost], [{ id: 'x', name_ar: NAME_AR + ' Pro', product_stores: [{ store_id: 4, product_url: EXTRA_URL }] }])[0].stores[0].listing_url).toBeUndefined();
     expect(attachStorefrontListingUrls([ghost], [{ id: 'x', name_ar: NAME_AR, product_stores: [{ store_id: 4, product_url: null }] }])[0].stores[0].listing_url).toBeUndefined();
   });
+  it('EXIT (2026-10-06, «macbook» 45% link-less): an identity-less card whose entry has no exit gets the storefront rows measured /go/ps_<id> — same exact name, same store only', () => {
+    const rows = [{ id: 'c938d587', name_ar: NAME_AR, product_stores: [{ id: 'ps-extra-1', store_id: 4, product_url: EXTRA_URL }, { id: 'ps-amazon-1', store_id: 2, product_url: 'https://www.amazon.sa/dp/B0X' }] }];
+    const out = attachStorefrontListingUrls([ghost], rows);
+    expect(out[0].stores[0].product_url).toMatch(/^\/go\/ps_ps-extra-1/);
+    expect(out[0].stores[0].listing_url).toBe(EXTRA_URL);
+    // a store the card does not list never borrows another store's row
+    const amazonOnly = card({ product_id: 'g3', name_ar: NAME_AR, name_en: 'x', stores: [offer('amazon', 900, { product_url: '' })] });
+    expect(attachStorefrontListingUrls([amazonOnly], rows)[0].stores[0].product_url).toMatch(/^\/go\/ps_ps-amazon-1/);
+    // no row id → no exit (never fabricated); an entry that already has an exit is untouched
+    expect(attachStorefrontListingUrls([ghost], [{ id: 'x', name_ar: NAME_AR, product_stores: [{ store_id: 4, product_url: EXTRA_URL }] }])[0].stores[0].product_url).toBe('');
+    const hasExit = card({ product_id: 'g4', name_ar: NAME_AR, name_en: 'x', stores: [offer('extra', 1155, { product_url: '/go/own-id' })] });
+    expect(attachStorefrontListingUrls([hasExit], rows)[0].stores[0].product_url).toBe('/go/own-id');
+  });
+
   it('a card that already has a URL or an identity key is never touched', () => {
     const withUrl = card({ product_id: 'w', name_ar: NAME_AR, name_en: 'w', stores: [offer('extra', 1155, { product_url: 'https://www.extra.com/p/other' })] });
     const out = attachStorefrontListingUrls([withUrl, tps], storefrontRows);

@@ -153,7 +153,7 @@ interface ProductCardProps {
     tps_identity_key?: string | null;
     has_tps_comparison?: boolean;
     /** Same-model-name listings under a different (manufacturer-documented) market variant: shown beside the card, never part of its price or claims. */
-    market_variant_companions?: Array<{ store: string; store_name: string; price: number; product_url: string; observed_at: string | null; variant: string; model: string }>;
+    market_variant_companions?: Array<{ store: string; store_name: string; price: number; product_url: string; observed_at: string | null; variant: string; model: string; kind?: 'market_variant' | 'same_model_number' }>;
   };
   locale: string;
   onCompare?: (productId: string) => void;
@@ -415,7 +415,9 @@ export function ProductCard({
   const storeCounts = cardStoreCounts(product.product_stores);
   // ADR-401 (consultant contract 2): «🏆 أفضل سعر» is an absolute claim; a comparison whose
   // identity key carries an unknown-spec sentinel is a spec grouping and never earns it.
-  const isWinner = isMultiStore && bestPrice && storeCounts.eligible > 1 && claimEligibleStoreCount(product.product_stores) > 1 && !compareUrlIsSpecOnly(product.tps_compare_url);
+  // A cheaper listing of the SAME model number is on show beside this card (companion): «أفضل سعر» is an absolute claim this card can no longer make.
+  const cheaperSameModelListing = !!bestPrice && (product.market_variant_companions ?? []).some((c) => c.price > 0 && c.price < Number(bestPrice.current_price));
+  const isWinner = isMultiStore && bestPrice && storeCounts.eligible > 1 && claimEligibleStoreCount(product.product_stores) > 1 && !compareUrlIsSpecOnly(product.tps_compare_url) && !cheaperSameModelListing;
   const claimsDeal = hasClaimDeal(product.product_stores);
   // The price shown has no observation time: a reference price, never a claim (the wording the compare page already uses for stale offers).
   const bestPriceIsReference = !!bestPrice && bestPrice.observed_at == null;
@@ -750,9 +752,13 @@ export function ProductCard({
               {product.market_variant_companions.map((c) => (
                 <p key={`${c.store}-${c.product_url}`} className="flex flex-wrap items-center gap-x-1">
                   <span>
-                    {currentLocale === 'ar'
-                      ? `نفس رقم الموديل ${c.model} بلاحقة سوق مختلفة${c.variant ? ` (${c.variant})` : ''}: ${c.price} ر.س عند ${c.store_name}`
-                      : `Same model number ${c.model}, different market variant${c.variant ? ` (${c.variant})` : ''}: SAR ${c.price} at ${c.store_name}`}
+                    {c.kind === 'same_model_number'
+                      ? (currentLocale === 'ar'
+                          ? `نفس رقم الموديل ${c.model} عند ${c.store_name}: ${c.price} ر.س${c.price < Number(bestPrice?.current_price ?? Infinity) ? ' — أرخص من أفضل سعر في هذه البطاقة' : ''}`
+                          : `Same model number ${c.model} at ${c.store_name}: SAR ${c.price}${c.price < Number(bestPrice?.current_price ?? Infinity) ? ' — lower than this card\'s best price' : ''}`)
+                      : (currentLocale === 'ar'
+                          ? `نفس رقم الموديل ${c.model} بلاحقة سوق مختلفة${c.variant ? ` (${c.variant})` : ''}: ${c.price} ر.س عند ${c.store_name}`
+                          : `Same model number ${c.model}, different market variant${c.variant ? ` (${c.variant})` : ''}: SAR ${c.price} at ${c.store_name}`)}
                   </span>
                   <a
                     href={c.product_url}
