@@ -197,6 +197,7 @@ export function mapGroupedToProductCard(
     tps_compare_url:    (grouped as any).tps_compare_url    ?? null,
     tps_identity_key:   (grouped as any).tps_identity_key   ?? null,
     has_tps_comparison: (grouped as any).has_tps_comparison ?? false,
+    market_variant_companions: (grouped as any).market_variant_companions ?? undefined,
   };
 }
 

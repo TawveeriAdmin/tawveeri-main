@@ -152,6 +152,8 @@ interface ProductCardProps {
     tps_compare_url?: string | null;
     tps_identity_key?: string | null;
     has_tps_comparison?: boolean;
+    /** Same-model-name listings under a different (manufacturer-documented) market variant: shown beside the card, never part of its price or claims. */
+    market_variant_companions?: Array<{ store: string; store_name: string; price: number; product_url: string; observed_at: string | null; variant: string; model: string }>;
   };
   locale: string;
   onCompare?: (productId: string) => void;
@@ -742,6 +744,36 @@ export function ProductCard({
                 : 'No store link available for this offer'}
             </p>
           )}
+
+          {product.market_variant_companions?.length ? (
+            <div className="w-full rounded-xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container)] px-3 py-2 text-[11px] leading-snug text-on-surface-variant" data-testid="market-variant-companions">
+              {product.market_variant_companions.map((c) => (
+                <p key={`${c.store}-${c.product_url}`} className="flex flex-wrap items-center gap-x-1">
+                  <span>
+                    {currentLocale === 'ar'
+                      ? `نفس رقم الموديل ${c.model} بلاحقة سوق مختلفة${c.variant ? ` (${c.variant})` : ''}: ${c.price} ر.س عند ${c.store_name}`
+                      : `Same model number ${c.model}, different market variant${c.variant ? ` (${c.variant})` : ''}: SAR ${c.price} at ${c.store_name}`}
+                  </span>
+                  <a
+                    href={c.product_url}
+                    target="_blank"
+                    rel="nofollow noopener noreferrer"
+                    className="font-semibold text-[var(--brand-green-dark)] underline"
+                    onClick={(e) => {
+                      if (!c.product_url.startsWith('/go/')) return;
+                      e.preventDefault();
+                      const goId = (c.product_url.match(/^\/go\/([^?]+)/) || [])[1] ?? null;
+                      track('go_click', { canonical_id: product.id, store: c.store, category: product.category ?? null, source: 'search_card', meta: { measured: true, market_variant: true } });
+                      const interactionId = recordFirstPartyInteraction({ goId, canonicalId: product.id, surface: 'search_card' });
+                      window.open(goId ? appendInteractionId(c.product_url, interactionId) : c.product_url, '_blank', 'noopener,noreferrer');
+                    }}
+                  >
+                    {currentLocale === 'ar' ? 'عرض' : 'View'}
+                  </a>
+                </p>
+              ))}
+            </div>
+          ) : null}
 
           {onCompare && (
             <button

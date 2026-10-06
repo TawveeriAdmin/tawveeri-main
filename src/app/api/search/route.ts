@@ -33,6 +33,7 @@ import { collectCanonicalCandidates } from '@/lib/search/canonical-candidates';
 import { createSwrCache, createPerIdSwrCache, mapLimit, chunked } from '@/lib/search/swr-cache';
 import { filterByAcTypeIntent } from '@/lib/search/ac-type-intent';
 import { deviceIntentOf, isDeviceItself, queryNamesAccessory } from '@/lib/search/device-intent';
+import { attachMarketVariantCompanions } from '@/lib/search/market-variant-companions';
 import { strongModelToken as strongModelCode, requiredCodeTokens, carriesCodes, modelNumberPrefixFilter } from '@/lib/search/model-token-gate';
 import { manufacturerCategoryTerms, productQueryText } from '@/lib/search/manufacturer-category-terms';
 import { hoursSince, PICK_FRESHNESS_MAX_HOURS, productTrust, isFreshObservation, type TrustAssessment } from '@/lib/intelligence/evidence-engine';
@@ -3113,6 +3114,9 @@ export async function POST(request: NextRequest) {
   // product_id / name and cannot see a shared listing. The pure lane runs again here, on the
   // FINAL array, so the merge covers every source that reaches the customer.
   products = mergeSameListingCards(products);
+  // LG market-variant listings of the SAME model name (75QNED93A6A / 75QNED93A6A-AMAQ) are shown beside the primary card, never merged into its price or
+  // claims; the duplicate card goes. Manufacturer-documented LG format only — see market-variant-companions.ts.
+  products = attachMarketVariantCompanions(products);
 
   // Relevance groups (hoisted): used by BOTH the gate (filter) and scoreProduct (rank) so the query's
   // product noun must be present. Generic tokens can't satisfy relevance on their own.

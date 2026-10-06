@@ -153,3 +153,21 @@ describe('claims need a KNOWN observation time (2026-10-06)', () => {
     expect(screen.getByTestId('reference-price-note')).toBeInTheDocument();
   });
 });
+
+describe('market-variant companions are shown beside the card, outside its price and claims', () => {
+  it('renders the same-model-number note with the store and price, and keeps the card price/winner logic untouched', () => {
+    const p = baseProduct({
+      tps_compare_url: '/ar/compare/lg-75qned93a6a',
+      product_stores: [baseStore({ id: 'ps-1', current_price: 4998.93, observed_at: new Date().toISOString(), stores: { id: 'amazon', slug: 'amazon', name_ar: 'أمازون', name_en: 'Amazon', logo_url: null } })],
+      market_variant_companions: [{ store: 'noon', store_name: 'نون', price: 4499, product_url: '/go/ps_noon', observed_at: null, variant: 'AMAQ', model: '75QNED93A6A' }],
+    });
+    render(<ProductCard product={p} locale="ar" />);
+    const note = screen.getByTestId('market-variant-companions');
+    expect(note.textContent).toContain('75QNED93A6A'); expect(note.textContent).toContain('AMAQ'); expect(note.textContent).toContain('4499'); expect(note.textContent).toContain('نون');
+    expect(note.querySelector('a')).toHaveAttribute('href', '/go/ps_noon');
+  });
+  it('renders nothing when there is no companion', () => {
+    render(<ProductCard product={baseProduct()} locale="ar" />);
+    expect(screen.queryByTestId('market-variant-companions')).not.toBeInTheDocument();
+  });
+});
