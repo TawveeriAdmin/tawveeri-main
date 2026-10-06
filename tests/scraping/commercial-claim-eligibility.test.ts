@@ -160,8 +160,9 @@ describe('one identity keeps one card but never loses an offer (2026-10-06)', ()
     const out = absorbMissingStores(base, dup) as unknown as { stores: unknown[]; best_price: number };
     expect(out.stores).toHaveLength(2); expect(out.best_price).toBe(4799);
   });
-  it('a duplicate that adds no store changes nothing', () => {
+  it('a duplicate that adds no store changes no offer or price, but its title stays searchable on the surviving card', () => {
     const base = card('a', [e('extra', 4799, now)], 4799);
-    expect(absorbMissingStores(base, card('b', [e('extra', 4000, now)], 4000))).toBe(base);
+    const out = absorbMissingStores(base, card('ثلاجة ميديا MDRS710FGU50D', [e('extra', 4000, now)], 4000)) as unknown as { stores: unknown[]; best_price: number; _absorbed_text: string };
+    expect(out.stores).toHaveLength(1); expect(out.best_price).toBe(4799); expect(out._absorbed_text).toContain('MDRS710FGU50D');
   });
 });

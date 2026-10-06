@@ -2126,11 +2126,11 @@ export function absorbMissingStores(base: GroupedSearchProduct, dup: GroupedSear
   const slugOf = (e: SearchProduct): string => resolveApprovedSlug(e.store_name || e.store) || (e.store_name || e.store || '').trim().toLowerCase();
   const have = new Set(base.stores.map(slugOf));
   const extra = dup.stores.filter((e) => !have.has(slugOf(e)));
-  if (!extra.length) return base;
-  const stores = [...base.stores, ...extra];
-  // The absorbed card's own titles stay searchable on the surviving card (hidden relevance text, never rendered): a generic-spec canonical that
-  // absorbs the storefront card titled by its model code must still match a query for that code.
+  // The absorbed card's own titles stay searchable on the surviving card (hidden relevance text, never rendered), EVEN WHEN it adds no store: a
+  // generic-spec canonical that absorbs the storefront card titled by its model code must still match a query for that code.
   const absorbedText = [(base as { _absorbed_text?: string })._absorbed_text || '', dup.name_en || '', dup.name_ar || ''].join(' ').trim();
+  if (!extra.length) return { ...base, _absorbed_text: absorbedText } as GroupedSearchProduct;
+  const stores = [...base.stores, ...extra];
   const claimEligible = stores.filter((e) => e.current_price > 0 && isFreshObservation(e.observed_at));
   const best = claimEligible.length ? claimEligible.reduce((a, b) => (b.current_price < a.current_price ? b : a)) : null;
   const keepBest = best && best.current_price < base.best_price;
