@@ -136,7 +136,7 @@ describe('store filter scopes the CARD (2026-10-06)', () => {
   it('the route wires it, the off-grade demotion and the device flag', () => {
     expect(routeSrc).toMatch(/scopeProductToStores\(product, wanted\)/);
     expect(routeSrc).toMatch(/products\.filter\(\(p\) => !isOffGradeTitle\(/);
-    expect(routeSrc).toMatch(/const deviceNotFound = deviceIntent && !products\.some\(\(p\) => isDeviceItself\(/);
+    expect(routeSrc).toMatch(/const deviceNotFound = deviceIntent && deviceItems\.length === 0/);
     expect(routeSrc).toMatch(/\n    deviceNotFound,\n/);
   });
 });
