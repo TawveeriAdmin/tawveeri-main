@@ -4,7 +4,7 @@ import { BaseScraper } from '../base/base-scraper';
 import { loadStoreConfig } from '../config/scraper-config';
 import { normalizeUrl } from '../utils/url-utils';
 import { determineCategory } from '../utils/category-utils';
-import { canonicalAmazonUrl } from '../utils/amazon-asin';
+import { asinFromUrl, canonicalAmazonUrl, hasAmazonAsinConflict } from '../utils/amazon-asin';
 import { isCreatorsApiConfigured, refreshPricesViaCreatorsApi } from '@/lib/providers/sourcing/amazon-creators-api';
 
 /** iOS Safari — the client Amazon serves the server-rendered mobile detail page to (ADR-397). */
@@ -287,6 +287,12 @@ export class AmazonScraper extends BaseScraper {
     const title = this.extractText($, '#productTitle') || '';
     if (!title) return null;
 
+    // A phone PDP can select a different capacity/ASIN than the requested URL.
+    // Never attach that variant's price or availability to the requested phone.
+    const requestedAsin = asinFromUrl(productUrl);
+    const selectedAsin = this.extractAttr($, 'input[name="ASIN"]', 'value')?.toUpperCase();
+    if (determineCategory(title) === 'smartphone' && requestedAsin && selectedAsin && requestedAsin !== selectedAsin) return null;
+
     // ADR-396 — «Currently unavailable» is a STATE, not an extraction failure. Visited live
     // (2026-10-01): 4 of 6 "failing" K pages were HTTP 200, no captcha, title present, buy box
     // replaced by #outOfStock, and the only prices on the page were the similar-items
@@ -337,7 +343,7 @@ export class AmazonScraper extends BaseScraper {
       // MOBILE page renders the same offer server-side inside #unqualifiedBuyBox (an offer
       // Amazon lists but does not "feature"). One extra request, only on this variant, scoped
       // to that box — the sponsored/lpo carousels on the mobile page are decoys too.
-      const mobilePrice = await this.fetchUnqualifiedOfferPrice(productUrl);
+      const mobilePrice = await this.fetchUnqualifiedOfferPrice(productUrl, determineCategory(title) === 'smartphone');
       if (mobilePrice === null) return null;
       price = mobilePrice;
     }
@@ -388,10 +394,11 @@ export class AmazonScraper extends BaseScraper {
   }
 
   /** ADR-397: mobile-rendered "unqualified" offer price, or null when the mobile page has no such box. */
-  async fetchUnqualifiedOfferPrice(productUrl: string): Promise<number | null> {
+  async fetchUnqualifiedOfferPrice(productUrl: string, verifyPhoneAsin = false): Promise<number | null> {
     try {
       const html = await this.fetchPage(productUrl, { 'User-Agent': AMAZON_MOBILE_UA });
       const $ = this.getCheerio(html);
+      if (verifyPhoneAsin && hasAmazonAsinConflict(productUrl, this.extractAttr($, 'input[name="ASIN"]', 'value'))) return null;
       if ($('#outOfStock').length > 0) return null;
       const text = this.extractText($, '#unqualifiedBuyBox .a-price .a-offscreen')
         || this.extractText($, '#unqualified_feature_div .a-price .a-offscreen');

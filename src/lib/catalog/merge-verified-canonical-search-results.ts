@@ -25,6 +25,7 @@ import { isUnsignaled } from '@/lib/identity/identity-signals';
 import { loadStorefrontIdentitySignals } from '@/lib/catalog/storefront-identity-gate';
 import { createPerIdSwrCache } from '@/lib/search/swr-cache';
 import { buildGoUrl } from '@/lib/analytics/build-go-url';
+import { conflictingPhoneModels } from '@/lib/search/phone-model-intent';
 
 const VERIFIED_LINK_FILTER = {
   status: 'active',
@@ -251,7 +252,16 @@ export function mergeSameListingCards(products: GroupedSearchProduct[]): Grouped
   // Union-find over cards by shared listing keys.
   const parent = products.map((_, i) => i);
   const find = (i: number): number => (parent[i] === i ? i : (parent[i] = find(parent[i])));
-  const union = (a: number, b: number) => { const ra = find(a), rb = find(b); if (ra !== rb) parent[rb] = ra; };
+  const union = (a: number, b: number) => {
+    const ra = find(a), rb = find(b);
+    if (ra === rb) return;
+    // A URL can be reused for a changed variant. Check entire groups so an
+    // identity-less intermediate card cannot bridge 256GB and 1TB phones.
+    const left = products.filter((_, i) => find(i) === ra);
+    const right = products.filter((_, i) => find(i) === rb);
+    if (left.some(l => right.some(r => conflictingPhoneModels(l.name_en || l.name_ar || '', r.name_en || r.name_ar || '')))) return;
+    parent[rb] = ra;
+  };
 
   const byListing = new Map<string, number>();
   products.forEach((card, i) => {

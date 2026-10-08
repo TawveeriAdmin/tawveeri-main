@@ -146,7 +146,9 @@ function availabilityLabel(offer: CompareOffer, isAr: boolean): { text: string; 
  *  (a fresh out-of-stock offer is not "old"; founder review 2026-09-26). */
 function exclusionReason(offer: CompareOffer, isAr: boolean): string {
   if (offer.identity_verdict?.outcome === 'review') return identityReviewLabel(isAr);   // ADR-403: unverified identity, not "old"
+  if (offer.phone_condition && !['in_stock', 'limited_stock', 'pre_order', 'out_of_stock'].includes(offer.availability ?? '')) return isAr ? 'التوفر غير مؤكد' : 'Availability unconfirmed';
   const reason = exclusionReasonFor({ price: offer.price, availability: offer.availability, observed_at: offer.observed_at });
+  if (!reason && offer.phone_condition) return isAr ? 'حالة جهاز مختلفة — خارج مقارنة السعر' : 'Different device condition — outside this price comparison';
   return exclusionLabelFor(reason ?? 'stale', offer.observed_at, isAr);
 }
 

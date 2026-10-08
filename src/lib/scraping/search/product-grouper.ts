@@ -2,6 +2,7 @@ import type { ScrapedProduct } from '../base/types';
 import type { SearchProduct } from './types';
 import { extractSpecsFromTitle } from '../config/spec-configs';
 import { matchProducts } from '../matching/fuzzy-matcher';
+import { phoneCondition } from '@/lib/search/phone-condition';
 
 export interface GroupedSearchProduct extends ScrapedProduct {
   stores: SearchProduct[];
@@ -117,7 +118,8 @@ function buildFingerprint(product: SearchProduct): string {
   const specs = extractSpecsFromTitle(title);
   const storage = specs.storage_gb || '';
 
-  return `${brand}|${model}|${storage}|${product.category}`;
+  const condition = product.category === 'smartphone' ? `|${product.phone_condition ?? phoneCondition(`${product.name_ar} ${product.name_en}`)}` : '';
+  return `${brand}|${model}|${storage}|${product.category}${condition}`;
 }
 
 /**
@@ -195,6 +197,9 @@ export function groupSearchProducts(
 
     for (const [key, group] of groupEntries) {
       const representative = group[0];
+      if ((product.category === 'smartphone' || representative.category === 'smartphone')
+        && (product.phone_condition ?? phoneCondition(`${product.name_ar} ${product.name_en}`))
+          !== (representative.phone_condition ?? phoneCondition(`${representative.name_ar} ${representative.name_en}`))) continue;
       const score = matchProducts(
         product.name_en || product.name_ar || '',
         product.brand,

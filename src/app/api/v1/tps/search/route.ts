@@ -8,6 +8,8 @@ import { mapFreeGiftToConditionalOffer, summarizeOffers, type ConditionalOfferEv
 import { deriveCampaignEligibility, type CampaignEligibilityEvidence } from '@/lib/providers/campaigns/blackbox-riyal-festival';
 import { buildGoUrl } from '@/lib/analytics/build-go-url';
 import { loadIdentitySignals, isUnsignaled } from '@/lib/identity/identity-signals';
+import { loadPhoneOfferPools } from '@/lib/search/phone-current-offers';
+import { phoneCondition } from '@/lib/search/phone-condition';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -103,6 +105,8 @@ export async function GET(req: NextRequest) {
   // from this filtered list rather than trusted from the projection row (fixed 2026-08-06,
   // alongside the same gap in get-comparison.ts and searchTPSCanonical).
   const now = new Date();
+  const phones = new Map([...canon, ...discovery].filter(c => c.category === 'mobile').map(c => [c.canonical_id, c.tps_identity_key]));
+  const phonePools = await loadPhoneOfferPools(supabase, [...phones.values()]);
   const offersByCanon = new Map<string, { offer_id: string; store_id: string; store_slug: string; store_name: string; price: number | null; go_url: string; availability: string; conditional_offer: ConditionalOfferEvidence | null; campaign_eligibility: CampaignEligibilityEvidence | null }[]>();
   if (ids.length) {
     const { data: obs } = await supabase
@@ -165,10 +169,14 @@ export async function GET(req: NextRequest) {
     for (const { o, slug } of kept) {
       const priceKey = [...latestPrice.keys()].find((k) => k.startsWith(`${o.canonical_product_id}|`) && resolveApprovedSlug(k.split('|')[1]) === slug);
       const rawId = o.normalized_payload?._raw_id;
+      const phoneOffer = (phonePools.get(phones.get(o.canonical_product_id) ?? '') ?? []).find(row => String(row.raw_obs_id) === String(rawId) && resolveApprovedSlug(row.store_id) === slug);
+      if (phones.has(o.canonical_product_id) && !phoneOffer) continue;
       const list = offersByCanon.get(o.canonical_product_id) ?? [];
       list.push({
         offer_id: o.id, store_id: o.store_id ?? '', store_slug: slug, store_name: retailerDisplayName(slug, 'ar') ?? slug,
-        price: priceKey ? latestPrice.get(priceKey) ?? null : null, go_url: buildGoUrl(o.id), availability: 'in_stock',
+        price: phoneOffer ? Number(phoneOffer.price) : priceKey ? latestPrice.get(priceKey) ?? null : null,
+        go_url: buildGoUrl(o.id), availability: phoneOffer?.payload?._availability ?? 'in_stock',
+        ...(phoneOffer ? { phone_condition: phoneCondition(phoneOffer.name), observed_at: phoneOffer.observed_at } : {}),
         conditional_offer: (Number.isFinite(rawId) ? conditionalByRawId.get(rawId as number) : undefined) ?? null,
         campaign_eligibility: (Number.isFinite(rawId) ? eligibilityByRawId.get(rawId as number) : undefined) ?? null,
       });

@@ -1789,8 +1789,8 @@ export default function SearchClient() {
                   <div className="mb-4 rounded-2xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container)] px-4 py-3 text-sm font-medium text-on-surface" data-testid="model-not-found">
                     {modelKnownNoOffer
                       ? (locale === 'ar'
-                          ? `نعرف الموديل ${modelNotFound} لكن ما فيه عرض متوفر ومؤكد له الآن عند المتاجر اللي نتابعها — جرّب اسم المنتج بدون الرمز أو ارجع لاحقًا.`
-                          : `We know model ${modelNotFound}, but none of the stores we track has a confirmed in-stock offer right now — try the product name without the code, or check back later.`)
+                          ? `لا يوجد حاليًا عرض موثوق لهذا الجهاز: ${modelNotFound}. تحقق لاحقًا من توفر عرض مؤهل.`
+                          : `There is currently no trusted offer for this device: ${modelNotFound}. Check back later for an eligible offer.`)
                       : (locale === 'ar'
                           ? `ما لقينا الموديل ${modelNotFound} في الكتالوج حاليًا — جرّب اسم المنتج أو العلامة بدون الرمز.`
                           : `We don't have model ${modelNotFound} right now — try the product or brand name without the code.`)}

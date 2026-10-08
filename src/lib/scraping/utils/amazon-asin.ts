@@ -15,6 +15,12 @@ export function isAsin(value: string | null | undefined): value is string {
   return /^[A-Z0-9]{10}$/i.test(value ?? '');
 }
 
+/** SKU is the selected PDP variant; a URL slug is not identity evidence. */
+export function hasAmazonAsinConflict(url: string | null | undefined, sku: unknown): boolean {
+  const requested = asinFromUrl(url);
+  return !!requested && typeof sku === 'string' && isAsin(sku) && requested !== sku.toUpperCase();
+}
+
 /** The affiliate tag is NOT part of the stored URL — `/go` adds it at exit time. */
 export function canonicalAmazonUrl(asin: string): string {
   return `https://www.amazon.sa/dp/${asin.toUpperCase()}`;

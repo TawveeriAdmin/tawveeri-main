@@ -1,0 +1,726 @@
+{
+  "at": "2026-10-07T12:31:54.579Z",
+  "phase": "production",
+  "base": "https://tawveeri.com",
+  "comparisons": [
+    {
+      "key": "apple|iPhone|18|Pro|1024",
+      "status": 200,
+      "pass": true,
+      "expectedLowest": 8699,
+      "selectedCondition": "UNKNOWN",
+      "response": {
+        "canonical": {
+          "id": "3abf2e3c-f55f-48a6-9844-e5e405414f99",
+          "name_ar": "جوال آبل iPhone 18 Pro 1024 جيجابايت",
+          "name_en": "Apple iPhone 18 Pro 1024GB",
+          "brand": "apple",
+          "category": "mobile",
+          "tps_identity_key": "apple|iPhone|18|Pro|1024",
+          "identity_confidence": 95,
+          "attributes": {
+            "family": "iPhone",
+            "source": "progressive",
+            "stores": [
+              5,
+              2
+            ],
+            "variant": "Pro",
+            "generation": "18",
+            "storage_gb": 1024,
+            "identity_key": "apple|iPhone|18|Pro|1024",
+            "offers_count": 2,
+            "identity_tier": "fallback",
+            "parser_version": "mobile-v1",
+            "comparison_eligible": true
+          },
+          "image_url": "https://imgs.dev-almanea.com/media/catalog/product/cache/3f5e2732ebf5252ed6c4cf6bde3bd738/a/p/apple_iphone_18_pro_1tb_12gb_ram_-_burgundy_1_.png"
+        },
+        "summary": {
+          "cheapest_store": "Almanea",
+          "lowest_price": 8699,
+          "highest_price": 8699,
+          "saving": null,
+          "store_count": 1,
+          "cheapest_stale": false,
+          "eligible_store_count": 1,
+          "excluded_offer_count": 0
+        },
+        "offers": [
+          {
+            "store_slug": "almanea",
+            "store_name": "Almanea",
+            "raw_name": "Apple iPhone 18 Pro, 1TB, 12GB RAM, 5G - Burgundy",
+            "phone_condition": "UNKNOWN",
+            "price": 8699,
+            "availability": "in_stock",
+            "product_url": "/go/d6b49731-f6bf-4239-a677-3ff90e8b9bb5?gt=1791376315900.154b3275b117dfc82af57da78ffb65a408ad857d2c45d8e5b45d5ddd368238a2",
+            "observed_at": "2026-10-05T04:17:09.037+00:00",
+            "stale": false,
+            "source_model": "MJRH4AH/A",
+            "confidence": 100,
+            "is_verified": true,
+            "campaign_eligibility": null
+          }
+        ]
+      }
+    },
+    {
+      "key": "apple|iPhone|12|Standard|128",
+      "status": 200,
+      "pass": true,
+      "expectedLowest": null,
+      "selectedCondition": null,
+      "response": {
+        "canonical": {
+          "id": "99ca6874-a83c-47fb-b48f-3ca99ff7c4a1",
+          "name_ar": "جوال آبل iPhone 12 128 جيجابايت",
+          "name_en": "Apple iPhone 12 128GB",
+          "brand": "apple",
+          "category": "mobile",
+          "tps_identity_key": "apple|iPhone|12|Standard|128",
+          "identity_confidence": 95,
+          "attributes": {
+            "family": "iPhone",
+            "source": "progressive",
+            "stores": [
+              4,
+              1
+            ],
+            "variant": "Standard",
+            "generation": "12",
+            "storage_gb": 128,
+            "identity_key": "apple|iPhone|12|Standard|128",
+            "offers_count": 2,
+            "identity_tier": "fallback",
+            "parser_version": "mobile-v1",
+            "comparison_eligible": true
+          },
+          "image_url": "https://www.jarir.com/cdn-cgi/image/fit=contain,width=380,height=380,quality=100,metadata=none/https://ak-asset.jarir.com/akeneo-prod/asset/4/1/5/3/415355005a0e6d97b78011fd9253fd85ddf00351_565535.jpg"
+        },
+        "summary": {
+          "cheapest_store": null,
+          "lowest_price": null,
+          "highest_price": null,
+          "saving": null,
+          "store_count": 2,
+          "cheapest_stale": false,
+          "eligible_store_count": 0,
+          "excluded_offer_count": 2
+        },
+        "offers": [
+          {
+            "store_slug": "extra",
+            "store_name": "eXtra",
+            "raw_name": "Apple iPhone 12, 5G, 128GB, Purple",
+            "phone_condition": "UNKNOWN",
+            "price": 840,
+            "availability": null,
+            "product_url": "/go/4985035a-0419-4ee4-ac68-c76dca0982ff?gt=1791376316819.8185562f0c6625586af37ec87207378a2ceaba7de05364fb4ff764189023a89c",
+            "observed_at": "2026-08-29T06:03:45.045967+00:00",
+            "stale": true,
+            "source_model": "MJNP3AA/A",
+            "confidence": 100,
+            "is_verified": true,
+            "campaign_eligibility": null
+          },
+          {
+            "store_slug": "jarir",
+            "store_name": "Jarir Bookstore",
+            "raw_name": "Renewed Grade B Apple iPhone 12, 128 GB, Black, 5G",
+            "phone_condition": "RENEWED",
+            "price": 1099,
+            "availability": "in_stock",
+            "product_url": "/go/74bacb0f-6e6d-4bbf-8efc-7c7378eb9bfa?gt=1791376316819.8fb1f5946525471d3393c9a39b7f92b04b232ef595ed43be4505f32987893f8b",
+            "observed_at": "2026-08-19T06:29:00.491+00:00",
+            "stale": true,
+            "source_model": null,
+            "confidence": 100,
+            "is_verified": true,
+            "campaign_eligibility": null
+          }
+        ],
+        "message": "لا يوجد حاليًا عرض موثوق لهذا الجهاز — تحقق من التوفر وحداثة الرصد"
+      }
+    },
+    {
+      "key": "apple|iPhone|11|Standard|128",
+      "status": 200,
+      "pass": true,
+      "expectedLowest": null,
+      "selectedCondition": null,
+      "response": {
+        "canonical": {
+          "id": "dff70080-0634-4c3d-93e5-781682a41ac2",
+          "name_ar": "جوال آبل iPhone 11 128 جيجابايت",
+          "name_en": "Apple iPhone 11 128GB",
+          "brand": "apple",
+          "category": "mobile",
+          "tps_identity_key": "apple|iPhone|11|Standard|128",
+          "identity_confidence": 95,
+          "attributes": {
+            "family": "iPhone",
+            "source": "progressive",
+            "stores": [
+              4,
+              2
+            ],
+            "variant": "Standard",
+            "generation": "11",
+            "storage_gb": 128,
+            "identity_key": "apple|iPhone|11|Standard|128",
+            "offers_count": 2,
+            "identity_tier": "fallback",
+            "parser_version": "mobile-v1",
+            "comparison_eligible": true
+          },
+          "image_url": "https://m.media-amazon.com/images/I/71iO2R+CLjL.jpg"
+        },
+        "summary": {
+          "cheapest_store": null,
+          "lowest_price": null,
+          "highest_price": null,
+          "saving": null,
+          "store_count": 1,
+          "cheapest_stale": false,
+          "eligible_store_count": 0,
+          "excluded_offer_count": 1
+        },
+        "offers": [
+          {
+            "store_slug": "extra",
+            "store_name": "eXtra",
+            "raw_name": "Apple iPhone 11, 128GB, Purple",
+            "phone_condition": "UNKNOWN",
+            "price": 1068,
+            "availability": null,
+            "product_url": "/go/2ba90feb-316e-41a9-9a5b-df5e1f144248?gt=1791376317651.e356f0fe33a83e61a7851c20426281d1cbd6a2ed26a6c1112c8506854489afe5",
+            "observed_at": "2026-10-06T18:04:43.611043+00:00",
+            "stale": false,
+            "source_model": "MWM52AH/A",
+            "confidence": 100,
+            "is_verified": true,
+            "campaign_eligibility": null
+          }
+        ],
+        "message": "لا يوجد حاليًا عرض موثوق لهذا الجهاز — تحقق من التوفر وحداثة الرصد"
+      }
+    },
+    {
+      "key": "apple|iPhone|12|Standard|64",
+      "status": 200,
+      "pass": true,
+      "expectedLowest": null,
+      "selectedCondition": null,
+      "response": {
+        "canonical": {
+          "id": "e0cc7454-10ef-488d-add6-48b76aae6f27",
+          "name_ar": "جوال آبل iPhone 12 64 جيجابايت",
+          "name_en": "Apple iPhone 12 64GB",
+          "brand": "apple",
+          "category": "mobile",
+          "tps_identity_key": "apple|iPhone|12|Standard|64",
+          "identity_confidence": 95,
+          "attributes": {
+            "family": "iPhone",
+            "source": "progressive",
+            "stores": [
+              4,
+              2
+            ],
+            "variant": "Standard",
+            "generation": "12",
+            "storage_gb": 64,
+            "identity_key": "apple|iPhone|12|Standard|64",
+            "offers_count": 2,
+            "identity_tier": "fallback",
+            "parser_version": "mobile-v1",
+            "comparison_eligible": true
+          },
+          "image_url": "https://m.media-amazon.com/images/I/71VpQCVgwnS.jpg"
+        },
+        "summary": {
+          "cheapest_store": null,
+          "lowest_price": null,
+          "highest_price": null,
+          "saving": null,
+          "store_count": 1,
+          "cheapest_stale": false,
+          "eligible_store_count": 0,
+          "excluded_offer_count": 1
+        },
+        "offers": [
+          {
+            "store_slug": "extra",
+            "store_name": "eXtra",
+            "raw_name": "Apple iPhone 12, 5G, 64GB, White",
+            "phone_condition": "UNKNOWN",
+            "price": 999,
+            "availability": null,
+            "product_url": "/go/741fce9e-9add-4b68-bbdf-bae0e098fee6?gt=1791376318668.66c418089374a96e1563c12fde013b3ef7207cfd7f60f12679f2a66fb3699013",
+            "observed_at": "2026-10-06T18:04:43.611043+00:00",
+            "stale": false,
+            "source_model": "MGJ63AA/A",
+            "confidence": 100,
+            "is_verified": true,
+            "campaign_eligibility": null
+          }
+        ],
+        "message": "لا يوجد حاليًا عرض موثوق لهذا الجهاز — تحقق من التوفر وحداثة الرصد"
+      }
+    },
+    {
+      "key": "apple|iPhone|12|Mini|128",
+      "status": 200,
+      "pass": true,
+      "expectedLowest": null,
+      "selectedCondition": null,
+      "response": {
+        "canonical": {
+          "id": "fb1e2d59-46ae-47f6-9bbf-fbdf12ef74f1",
+          "name_ar": "جوال آبل iPhone 12 Mini 128 جيجابايت",
+          "name_en": "Apple iPhone 12 Mini 128GB",
+          "brand": "apple",
+          "category": "mobile",
+          "tps_identity_key": "apple|iPhone|12|Mini|128",
+          "identity_confidence": 75,
+          "attributes": {
+            "family": "iPhone",
+            "source": "progressive",
+            "stores": [
+              2
+            ],
+            "variant": "Mini",
+            "generation": "12",
+            "storage_gb": 128,
+            "identity_key": "apple|iPhone|12|Mini|128",
+            "offers_count": 1,
+            "identity_tier": "fallback",
+            "parser_version": "mobile-v1",
+            "comparison_eligible": false
+          },
+          "image_url": "https://m.media-amazon.com/images/I/71uuDYxn3XL.jpg"
+        },
+        "summary": {
+          "cheapest_store": null,
+          "lowest_price": null,
+          "highest_price": null,
+          "saving": null,
+          "store_count": 0,
+          "cheapest_stale": false,
+          "eligible_store_count": 0,
+          "excluded_offer_count": 0
+        },
+        "offers": [],
+        "message": "No approved-retailer offers for this product yet"
+      }
+    },
+    {
+      "key": "apple|iPhone|18|Pro|256",
+      "status": 200,
+      "pass": true,
+      "expectedLowest": 5699,
+      "selectedCondition": "UNKNOWN",
+      "response": {
+        "canonical": {
+          "id": "ec13b0cd-109b-4518-8d7a-f7ea5e497268",
+          "name_ar": "جوال آبل iPhone 18 Pro 256 جيجابايت",
+          "name_en": "Apple iPhone 18 Pro 256GB",
+          "brand": "apple",
+          "category": "mobile",
+          "tps_identity_key": "apple|iPhone|18|Pro|256",
+          "identity_confidence": 95,
+          "attributes": {
+            "family": "iPhone",
+            "source": "progressive",
+            "stores": [
+              2,
+              5
+            ],
+            "variant": "Pro",
+            "generation": "18",
+            "storage_gb": 256,
+            "identity_key": "apple|iPhone|18|Pro|256",
+            "offers_count": 2,
+            "identity_tier": "fallback",
+            "parser_version": "mobile-v1",
+            "comparison_eligible": true
+          },
+          "image_url": "https://m.media-amazon.com/images/I/71PvCbPVCEL.jpg"
+        },
+        "summary": {
+          "cheapest_store": "Almanea",
+          "lowest_price": 5699,
+          "highest_price": 5699,
+          "saving": null,
+          "store_count": 2,
+          "cheapest_stale": false,
+          "eligible_store_count": 2,
+          "excluded_offer_count": 0
+        },
+        "offers": [
+          {
+            "store_slug": "almanea",
+            "store_name": "Almanea",
+            "raw_name": "Apple iPhone 18 Pro, 256GB, 12GB RAM, 5G - Glacier",
+            "phone_condition": "UNKNOWN",
+            "price": 5699,
+            "availability": "in_stock",
+            "product_url": "/go/f11e8024-03e8-41dd-8c31-bfc16fd31b1b?gt=1791376320771.8f0943b51fbf249d7b41c81419073ec8c5d7ea079f890862f3cdda6cd6597d36",
+            "observed_at": "2026-10-05T13:50:18.702+00:00",
+            "stale": false,
+            "source_model": "MJR84AH/A",
+            "confidence": 100,
+            "is_verified": true,
+            "campaign_eligibility": null
+          },
+          {
+            "store_slug": "amazon",
+            "store_name": "Amazon Saudi Arabia",
+            "raw_name": "Apple iPhone 18 Pro 256 GB: – Burgundy",
+            "phone_condition": "UNKNOWN",
+            "price": 5699,
+            "availability": "in_stock",
+            "product_url": "/go/580344a1-e604-4377-a5b8-a368d16503dd?gt=1791376320771.93b2d4f57e351e2b67f2fa57c44f42df8ec354bed968fc6751599ec884c49b7b",
+            "observed_at": "2026-10-07T00:32:20.179+00:00",
+            "stale": false,
+            "source_model": null,
+            "confidence": 100,
+            "is_verified": true,
+            "campaign_eligibility": null
+          }
+        ]
+      }
+    },
+    {
+      "key": "apple|iPhone|16|Pro|256",
+      "status": 200,
+      "pass": true,
+      "expectedLowest": 4799,
+      "selectedCondition": "RENEWED",
+      "response": {
+        "canonical": {
+          "id": "7c1ab8a9-44ef-4a81-a408-874b97092dea",
+          "name_ar": "جوال آبل iPhone 16 Pro 256 جيجابايت",
+          "name_en": "Apple iPhone 16 Pro 256GB",
+          "brand": "apple",
+          "category": "mobile",
+          "tps_identity_key": "apple|iPhone|16|Pro|256",
+          "identity_confidence": 95,
+          "attributes": {
+            "family": "iPhone",
+            "source": "progressive",
+            "stores": [
+              1,
+              3,
+              4
+            ],
+            "variant": "Pro",
+            "generation": "16",
+            "storage_gb": 256,
+            "identity_key": "apple|iPhone|16|Pro|256",
+            "offers_count": 3,
+            "identity_tier": "fallback",
+            "parser_version": "mobile-v1",
+            "comparison_eligible": true
+          },
+          "image_url": "https://ak-asset.jarir.com/akeneo-prod/asset/1/8/1/1/18112c1f19a0c80ed131f241d3d40d16f6f77d40_646816.jpg"
+        },
+        "summary": {
+          "cheapest_store": "Jarir Bookstore",
+          "lowest_price": 4799,
+          "highest_price": 4799,
+          "saving": null,
+          "store_count": 3,
+          "cheapest_stale": false,
+          "eligible_store_count": 1,
+          "excluded_offer_count": 2
+        },
+        "offers": [
+          {
+            "store_slug": "noon",
+            "store_name": "Noon",
+            "raw_name": "iPhone 16 Pro 256GB Desert Titanium 5G With FaceTime - Middle East Version",
+            "phone_condition": "UNKNOWN",
+            "price": 4596.6,
+            "availability": "limited_stock",
+            "product_url": "/go/dd73185d-d53d-4de9-b8c5-626ed46484d6?gt=1791376322044.ac87da166df27d192d21ffacc42923f78e42d5c3bae87266ba6e8ed729cf7092",
+            "observed_at": "2026-09-27T11:45:09.187+00:00",
+            "stale": true,
+            "source_model": null,
+            "confidence": 100,
+            "is_verified": true,
+            "campaign_eligibility": null
+          },
+          {
+            "store_slug": "jarir",
+            "store_name": "Jarir Bookstore",
+            "raw_name": "Renewed Grade B Apple iPhone 16 Pro, 256 GB, Desert Titanium, 5G",
+            "phone_condition": "RENEWED",
+            "price": 4799,
+            "availability": "in_stock",
+            "product_url": "/go/8c3c74db-6778-4c8d-b428-ccb73116b7ed?gt=1791376322044.2f170451081fdd6a10e52b56da10c80a94ceb0ada36979a19e16725987a69c6f",
+            "observed_at": "2026-10-07T07:11:54.626+00:00",
+            "stale": false,
+            "source_model": null,
+            "confidence": 100,
+            "is_verified": true,
+            "campaign_eligibility": null
+          },
+          {
+            "store_slug": "extra",
+            "store_name": "eXtra",
+            "raw_name": "Apple iPhone 16 Pro, 5G, 6.3 inch, 256GB, Natural Titanium",
+            "phone_condition": "UNKNOWN",
+            "price": 5199,
+            "availability": null,
+            "product_url": "/go/52cf620a-08ec-4f92-b32d-89e1f03fc9f7?gt=1791376322044.f7041400d236b93aa8e594750f17d77f6bc9cd92b8ec8c785d3296f78ae182a0",
+            "observed_at": "2026-09-20T12:04:01.16761+00:00",
+            "stale": true,
+            "source_model": "MYN33AH/A",
+            "confidence": 100,
+            "is_verified": true,
+            "campaign_eligibility": null
+          }
+        ]
+      }
+    },
+    {
+      "key": "samsung|Galaxy S|S26|Ultra|512",
+      "status": 200,
+      "pass": true,
+      "expectedLowest": null,
+      "selectedCondition": null,
+      "response": {
+        "canonical": {
+          "id": "db1e771c-20d9-4b8b-baaa-3c1258642b41",
+          "name_ar": "جوال سامسونج Galaxy S26 Ultra 512 جيجابايت",
+          "name_en": "Samsung Galaxy S26 Ultra 512GB",
+          "brand": "samsung",
+          "category": "mobile",
+          "tps_identity_key": "samsung|Galaxy S|S26|Ultra|512",
+          "identity_confidence": 95,
+          "attributes": {
+            "family": "Galaxy S",
+            "source": "progressive",
+            "stores": [
+              4,
+              2,
+              1
+            ],
+            "variant": "Ultra",
+            "generation": "S26",
+            "storage_gb": 512,
+            "identity_key": "samsung|Galaxy S|S26|Ultra|512",
+            "offers_count": 3,
+            "identity_tier": "fallback",
+            "parser_version": "mobile-v1",
+            "comparison_eligible": true
+          },
+          "image_url": "https://media.extra.com/s/aurora/100523384_800/SAMSUNG-Galaxy-S26-Ultra%2C-5G%2C-512-GB%2C-Silver-Shadow?locale=en-GB,en-*,*&$Listing-Product-2x$"
+        },
+        "summary": {
+          "cheapest_store": null,
+          "lowest_price": null,
+          "highest_price": null,
+          "saving": null,
+          "store_count": 3,
+          "cheapest_stale": false,
+          "eligible_store_count": 0,
+          "excluded_offer_count": 3
+        },
+        "offers": [
+          {
+            "store_slug": "jarir",
+            "store_name": "Jarir Bookstore",
+            "raw_name": "Renewed Grade A Samsung Galaxy S26 Ultra, 512 GB, Cobalt Violet, 5G",
+            "phone_condition": "RENEWED",
+            "price": 4199,
+            "availability": "in_stock",
+            "product_url": "/go/d82deed4-f4ba-498f-9547-fdd3f9d1ab5b?gt=1791376323716.595834cf3a7209ba47e5a0860013dc20a1bb52e3a18815700a2167da27bf3877",
+            "observed_at": "2026-08-19T06:29:00.491+00:00",
+            "stale": true,
+            "source_model": null,
+            "confidence": 100,
+            "is_verified": true,
+            "campaign_eligibility": null
+          },
+          {
+            "store_slug": "extra",
+            "store_name": "eXtra",
+            "raw_name": "SAMSUNG Galaxy S26 Ultra, 5G, 512 GB, Silver Shadow",
+            "phone_condition": "UNKNOWN",
+            "price": 4649,
+            "availability": "in_stock",
+            "product_url": "/go/6c95928f-eae7-487e-8fe5-c2a6fab80424?gt=1791376323715.a9e8b60c4fb5d70364a51d7f2f119d10291655141bf41d1441e1188195d9ad70",
+            "observed_at": "2026-09-29T15:48:33.753+00:00",
+            "stale": true,
+            "source_model": null,
+            "confidence": 100,
+            "is_verified": true,
+            "campaign_eligibility": null
+          },
+          {
+            "store_slug": "amazon",
+            "store_name": "Amazon Saudi Arabia",
+            "raw_name": "Galaxy S26 Ultra Cobalt Violet, 512GB Storage, AI Phone, 12GB RAM,Built-in Privacy Display(KSA Version) with Samsung Care+ 1Y Screen Damage for S edge, S Ultra smartphones [Digital Code]",
+            "phone_condition": "UNKNOWN",
+            "price": 4698,
+            "availability": "in_stock",
+            "product_url": "/go/feb7c255-6ebd-423b-8e01-8222e58466ee?gt=1791376323716.04c71dd277b3d166eea054d8b7fc8d0eb65e8e1297a85cc7d95508ea2dbe3935",
+            "observed_at": "2026-09-20T08:32:38.513+00:00",
+            "stale": true,
+            "source_model": null,
+            "confidence": 100,
+            "is_verified": true,
+            "campaign_eligibility": null
+          }
+        ],
+        "message": "لا يوجد حاليًا عرض موثوق لهذا الجهاز — تحقق من التوفر وحداثة الرصد"
+      }
+    },
+    {
+      "key": "samsung|Galaxy S|S26|Ultra|512|ram=12",
+      "status": 200,
+      "pass": true,
+      "expectedLowest": null,
+      "selectedCondition": null,
+      "response": {
+        "canonical": {
+          "id": "8a99390a-5831-4e44-9a8c-789532173154",
+          "name_ar": "سامسونج جالاكسي S26 ألترا 512 جيجابايت رام 12 جيجا",
+          "name_en": "Samsung Galaxy S S26 Ultra 512GB 12GB RAM",
+          "brand": "samsung",
+          "category": "mobile",
+          "tps_identity_key": "samsung|Galaxy S|S26|Ultra|512|ram=12",
+          "identity_confidence": 95,
+          "attributes": {
+            "ram": 12,
+            "colors": [
+              "بنفسجي كوبالت",
+              "أسود"
+            ],
+            "family": "Galaxy S",
+            "stores": [
+              "اكسترا",
+              "جرير"
+            ],
+            "storage": "512",
+            "variant": "Ultra",
+            "generation": "S26",
+            "ram_in_key": true,
+            "ram_values": [
+              12
+            ],
+            "identity_key": "samsung|Galaxy S|S26|Ultra|512|ram=12",
+            "offers_count": 4,
+            "parser_version": "mobile-v1"
+          },
+          "image_url": "https://www.jarir.com/cdn-cgi/image/fit=contain,width=380,height=380,quality=100,metadata=none/https://ak-asset.jarir.com/akeneo-prod/asset/0/7/4/b/074b362ef6c2a7c9275530f97f35ecbb740b7532_684918.jpg"
+        },
+        "summary": {
+          "cheapest_store": null,
+          "lowest_price": null,
+          "highest_price": null,
+          "saving": null,
+          "store_count": 3,
+          "cheapest_stale": false,
+          "eligible_store_count": 0,
+          "excluded_offer_count": 3
+        },
+        "offers": [
+          {
+            "store_slug": "jarir",
+            "store_name": "Jarir Bookstore",
+            "raw_name": "Renewed Grade B Samsung Galaxy S26 Ultra, 512 GB, Black, 5G",
+            "phone_condition": "RENEWED",
+            "price": 4199,
+            "availability": "in_stock",
+            "product_url": "/go/708dbb13-7f47-4b25-a537-6585abcb9db9?gt=1791376325057.c8acc0b431f2a9b26cbafc008837fee380a84325f7027b574e9ae5dbbd0124bd",
+            "observed_at": "2026-07-04T13:01:54.603+00:00",
+            "stale": true,
+            "source_model": null,
+            "confidence": 100,
+            "is_verified": true,
+            "campaign_eligibility": null
+          },
+          {
+            "store_slug": "almanea",
+            "store_name": "Almanea",
+            "raw_name": "Samsung Galaxy S26 Ultra, 512GB, 12GB RAM, 5G - Cobalt Violet",
+            "phone_condition": "UNKNOWN",
+            "price": 4899,
+            "availability": "in_stock",
+            "product_url": "/go/97db566d-70b9-49e0-bf0a-2ffffa990e68?gt=1791376325057.57a3161f5fc760a028fcead0a4cda3aefc2084ba171146c0935e99d375a39da9",
+            "observed_at": "2026-07-25T10:02:42.115+00:00",
+            "stale": true,
+            "source_model": "SM-S948BZVOMEA",
+            "confidence": 100,
+            "is_verified": true,
+            "campaign_eligibility": null
+          },
+          {
+            "store_slug": "extra",
+            "store_name": "eXtra",
+            "raw_name": "SAMSUNG Galaxy S26 Ultra, 5G, 512 GB, Cobalt Violet",
+            "phone_condition": "UNKNOWN",
+            "price": 4899,
+            "availability": null,
+            "product_url": "/go/ffce11eb-9cf9-4655-a28f-e22703b0c46c?gt=1791376325057.3382fa1d5dd6537220123c804d5108131ae73b2dce54fc30b167671ef828337c",
+            "observed_at": "2026-07-03T06:04:05.361178+00:00",
+            "stale": true,
+            "source_model": "SM-S948BZVOMEA",
+            "confidence": 100,
+            "is_verified": true,
+            "campaign_eligibility": null
+          }
+        ],
+        "message": "لا يوجد حاليًا عرض موثوق لهذا الجهاز — تحقق من التوفر وحداثة الرصد"
+      }
+    }
+  ],
+  "exits": [
+    {
+      "key": "apple|iPhone|18|Pro|1024",
+      "offerId": "733e87fa-7fcb-4738-84d7-d7eaf98998af",
+      "status": 410,
+      "location": null,
+      "pass": true
+    },
+    {
+      "key": "apple|iPhone|12|Standard|128",
+      "offerId": "ccfa90db-ba43-4ec5-8801-3cdf7aad41ff",
+      "status": 410,
+      "location": null,
+      "pass": true
+    },
+    {
+      "key": "apple|iPhone|11|Standard|128",
+      "offerId": "b9d176cf-915a-424a-9b2a-a4dea494cc9f",
+      "status": 410,
+      "location": null,
+      "pass": true
+    },
+    {
+      "key": "apple|iPhone|12|Standard|64",
+      "offerId": "cf7bd23b-1826-45fa-a426-03b47d6fb75d",
+      "status": 410,
+      "location": null,
+      "pass": true
+    },
+    {
+      "key": "apple|iPhone|12|Mini|128",
+      "offerId": "36730715-5415-4bd1-99bb-4ecd110cc0f5",
+      "status": 410,
+      "location": null,
+      "pass": true
+    },
+    {
+      "key": "apple|iPhone|18|Pro|256",
+      "status": 302,
+      "location": "https://www.amazon.sa/dp/B0HJ9ZYZQR",
+      "pass": true
+    }
+  ],
+  "pass": true
+}

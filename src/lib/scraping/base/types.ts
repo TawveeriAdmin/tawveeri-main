@@ -36,7 +36,7 @@ export interface ScrapedProduct {
    * 'product_page' reading may refresh an existing offer. Absent = legacy/unknown.
    */
   price_source?: 'search_tile' | 'product_page';
-  availability: 'in_stock' | 'out_of_stock' | 'limited_stock' | 'pre_order';
+  availability: 'in_stock' | 'out_of_stock' | 'limited_stock' | 'pre_order' | 'unknown';
   product_url: string;
   image_urls: string[];
   specifications: Record<string, unknown>;

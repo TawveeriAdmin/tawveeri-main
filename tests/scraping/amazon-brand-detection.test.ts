@@ -15,6 +15,19 @@ import { AmazonSearchScraper } from '../../src/lib/scraping/search/amazon-search
 import * as cheerio from 'cheerio';
 
 describe('detectBrandFromText — curated, evidence-backed brand detection from free text', () => {
+  it.each([
+    ['UGREEN 130W Car Charger Compatible for Samsung S24, iPhone 16 Pro', 'ugreen'],
+    ['Anker Prime Power Bank Compatible with MacBook, iPhone 16, Samsung S25', 'anker'],
+    ['ESR Case for Samsung Galaxy S26 Ultra', 'esr'],
+    ['Spigen Cover for Apple iPhone 16 Pro', 'spigen'],
+    ['شاحن سيارة من يو جرين متوافق مع سامسونج S24 و آيفون 15', 'ugreen'],
+  ])('keeps the accessory brand in %s', (title, brand) => {
+    expect(canonicalizeBrand(detectBrandFromText(title))).toBe(brand);
+  });
+
+  it('does not invent an accessory brand from a compatible phone', () => {
+    expect(detectBrandFromText('Protective Case Compatible with Samsung Galaxy S26 Ultra')).toBeNull();
+  });
   it('detects a genuine branded AC title (LG)', () => {
     expect(detectBrandFromText('Split Air Conditioner, LG, Jet Cool 2 Ton Cool')).toBe('LG');
   });

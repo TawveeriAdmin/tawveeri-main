@@ -34,6 +34,10 @@ import { createSwrCache, createPerIdSwrCache, mapLimit, chunked, chunkedByEncode
 import { postgrestQuote } from '@/lib/database/postgrest-quote';
 import { filterByAcTypeIntent } from '@/lib/search/ac-type-intent';
 import { deviceIntentOf, isDeviceItself, queryNamesAccessory } from '@/lib/search/device-intent';
+import { phoneModelIntent, matchesPhoneModel, phoneBudgetSubject } from '@/lib/search/phone-model-intent';
+import { eligiblePhoneCard } from '@/lib/search/phone-offer-eligibility';
+import { phoneCondition } from '@/lib/search/phone-condition';
+import { loadPhoneOfferPools } from '@/lib/search/phone-current-offers';
 import { attachMarketVariantCompanions, attachSameModelNumberCompanions } from '@/lib/search/market-variant-companions';
 import { knownModelFilter, strongModelToken as strongModelCode, requiredCodeTokens, carriesCodes, modelNumberPrefixFilter } from '@/lib/search/model-token-gate';
 import { manufacturerCategoryTerms, productQueryText } from '@/lib/search/manufacturer-category-terms';
@@ -869,10 +873,11 @@ export function excludeIneligibleCandidates<T extends { name_ar?: string | null;
   isCookerQuery = false,
   queryFuelType?: 'gas' | 'electric',
   isTvQuery = false,
+  isPhoneQuery = false,
 ): T[] {
   let result = products;
   const keywordFiltered = result.filter((p) => !hasAccessoryHint(p.name_ar || '', p.name_en || ''));
-  if (keywordFiltered.length > 0) result = keywordFiltered;
+  if (keywordFiltered.length > 0 || isPhoneQuery) result = keywordFiltered;
 
   // MEASURED DEFECT (2026-08-10, D→E mission Part F — founder follow-up "fix the ac token
   // leak"): GENERIC_EXPANSION_STOPWORDS stops "air" from being injected as an Algolia
@@ -2299,8 +2304,8 @@ async function resolveExitObservationIds(supabase: ReturnType<typeof createServe
 
 // Search-latency caches (2026-10-06, see src/lib/search/swr-cache.ts for the measurement and the contract).
 type TpsPriceRow = { canonical_product_id: string; store_name: string; price: number | string; observed_at: string; tps_observation_id: string };
-type TpsObsRow = { id: string; canonical_product_id: string; store_id: string | null; observed_at: string; raw_id?: string; url?: string };
-type TpsCurrentOfferRow = { identity_key: string; store_id: number; raw_obs_id: number | string; price: number | string; observed_at: string; url?: string | null; payload?: { _availability?: string; _original_price?: number; _superseded_by_identity?: string } };
+type TpsObsRow = { id: string; canonical_product_id: string; store_id: string | null; observed_at: string; raw_id?: string; url?: string; raw_name?: string; availability?: SearchProduct['availability'] };
+type TpsCurrentOfferRow = { identity_key: string; store_id: number; raw_obs_id: number | string; price: number | string; observed_at: string; name?: string; url?: string | null; payload?: { _availability?: string; _original_price?: number; _superseded_by_identity?: string; _identity_quarantine?: string } };
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const tpsCandidatesCache = createSwrCache<any[]>({ ttlMs: 5 * 60_000, staleMs: 30 * 60_000, maxEntries: 40 });
 const signalTableCache = createSwrCache<unknown[]>({ ttlMs: 60_000, staleMs: 5 * 60_000, maxEntries: 4 });
@@ -2337,7 +2342,9 @@ async function searchTPSCanonical(
     const wordTermsList = words.map(expandWordTerms).filter((t) => t.length > 0);
     // When the request IS a model code, `prods` is already exactly that model's canonicals; matching the code again against the names would drop
     // the ones whose title does not repeat it (a Samsung washer titled by its features, keyed by MODEL:WD18T6300GP/YL).
+    const phoneIntent = phoneModelIntent(words.join(' '));
     const matched = exactModel ? prods : prods.filter((p) => {
+      if (phoneIntent) return matchesPhoneModel(phoneIntent, p.name_ar, p.name_en);
       const hay = (normalizeArabic(p.name_ar || '') + ' ' + normalizeArabic(p.name_en || '') + ' '
         + normalizeArabic(p.brand || '') + ' ' + manufacturerCategoryTerms(p)).toLowerCase();
       return wordTermsList.every((terms) => terms.some((t) => hay.includes(t)));
@@ -2394,7 +2401,7 @@ async function searchTPSCanonical(
       const chunks = await mapLimit(chunked(want, 1), 16, (slice) =>
         supabase
           .from('normalized_product_observations')
-          .select('id, canonical_product_id, store_id, observed_at, raw_id:normalized_payload->>_raw_id, url:normalized_payload->>_url')
+          .select('id, canonical_product_id, store_id, observed_at, raw_name, availability:normalized_payload->>_availability, raw_id:normalized_payload->>_raw_id, url:normalized_payload->>_url')
           .in('canonical_product_id', slice)
           .order('observed_at', { ascending: false })
           .limit(4000),
@@ -2423,10 +2430,14 @@ async function searchTPSCanonical(
     // storefront row and a TPS canonical, e.g. the Samsung 18000 case: three cards, one
     // Extra listing) by exact URL equality — evidence, not title similarity.
     const listingUrlByKey = new Map<string, string>();
+    const listingNameByKey = new Map<string, string>();
+    const availabilityByKey = new Map<string, SearchProduct['availability']>();
     for (const r of obsRows) {
       const slug = resolveApprovedSlug(r.store_id ?? '');
       if (!slug || !isDisplayableRetailer(slug) || !r.observed_at) continue;
       const key = `${r.canonical_product_id}|${slug}`;
+      if (!availabilityByKey.has(key)) availabilityByKey.set(key, r.availability ?? 'unknown');
+      if (!listingNameByKey.has(key)) listingNameByKey.set(key, r.raw_name ?? '');
       if (r.raw_id && r.url && r.id) exactObservationIds.set(`${key}|${r.raw_id}`, r.id);
       if (r.url && r.id && !observationIdByListing.has(`${key}|url|${r.url}`)) observationIdByListing.set(`${key}|url|${r.url}`, r.id);
       if (r.url && !listingUrlByKey.has(key)) listingUrlByKey.set(key, r.url);
@@ -2480,6 +2491,7 @@ async function searchTPSCanonical(
     timer.mark('identity_signals');
     const matchedForOffers = matched as unknown as { id: string; tps_identity_key: string | null }[];
     const identityKeyToCanonicalId = new Map(matchedForOffers.map((p) => [p.tps_identity_key, p.id]));
+    const phoneCanonicalIds = new Set(matched.filter(p => (p as { category?: string }).category === 'mobile').map(p => p.id));
     const identityKeys = [...identityKeyToCanonicalId.keys()].filter((k): k is string => !!k);
     type CurrentOfferRow = TpsCurrentOfferRow;
     // Per-identity SWR cache, the SHORTEST TTL of the four (2 min fresh, 10 min stale-while-refresh): this is the current price.
@@ -2491,8 +2503,8 @@ async function searchTPSCanonical(
             Array.from({ length: Math.ceil(want.length / CHUNK) }, (_, i) =>
               supabase
                 .from('tps_current_offers')
-                .select('identity_key, store_id, raw_obs_id, price, observed_at, url, payload')
-                .or('status.eq.valid,payload->>_superseded_by_identity.not.is.null')
+                .select('identity_key, store_id, raw_obs_id, price, observed_at, name, url, payload')
+                .or('status.eq.valid,payload->>_superseded_by_identity.not.is.null,payload->>_identity_quarantine.not.is.null')
                 .in('identity_key', want.slice(i * CHUNK, (i + 1) * CHUNK)),
             ),
           );
@@ -2552,7 +2564,7 @@ async function searchTPSCanonical(
       if (!isUnsignaled(identitySignals, canonicalId, slug)) continue; // ADR-403
       if (!latest.has(canonicalId)) latest.set(canonicalId, new Map());
       const m = latest.get(canonicalId)!;
-      if (co.payload?._superseded_by_identity) { m.delete(slug); continue; }
+      if (co.payload?._superseded_by_identity || co.payload?._identity_quarantine) { m.delete(slug); continue; }
       const existing = m.get(slug);
       const existingEffective = existing ? (trueObserved.get(`${canonicalId}|${slug}`) ?? existing.observedAt) : null;
       // INCIDENT FOLLOW-UP (2026-08-28, live-verification): tps_current_offers and the
@@ -2565,13 +2577,14 @@ async function searchTPSCanonical(
       // the stated design intent ("ties favor tps_current_offers as the single-row-per-key,
       // actively-maintained source" — docs/P0_AIRPODS_PRO2_RECURRENCE_2026-08-28.md §3).
       if (!existing || !existingEffective || new Date(co.observed_at).getTime() >= new Date(existingEffective).getTime()) {
+        listingNameByKey.set(`${canonicalId}|${slug}`, co.name ?? '');
         if (co.payload?._availability === 'out_of_stock' || !(Number(co.price) > 0)) {
           m.delete(slug);
           continue;
         }
         m.set(slug, { price: Number(co.price), obsId: exactObservationIds.get(`${canonicalId}|${slug}|${co.raw_obs_id}`) || (co.url ? observationIdByListing.get(`${canonicalId}|${slug}|url|${co.url}`) : undefined) || '', rawObsId: String(co.raw_obs_id), observedAt: co.observed_at,
           originalPrice: Number(co.payload?._original_price) > Number(co.price) ? Number(co.payload?._original_price) : undefined,
-          availability: co.payload?._availability === 'limited_stock' ? 'limited_stock' : co.payload?._availability === 'pre_order' ? 'pre_order' : 'in_stock' });
+          availability: co.payload?._availability === 'limited_stock' ? 'limited_stock' : co.payload?._availability === 'pre_order' ? 'pre_order' : co.payload?._availability === 'in_stock' ? 'in_stock' : phoneCanonicalIds.has(canonicalId) ? 'unknown' : 'in_stock' });
         // co.observed_at is already authoritative (tps_current_offers is the hot
         // current-state table) — no borrowing needed; keep the later
         // `trueObserved ?? v.observedAt` lookup in sync so it can't override this back.
@@ -2608,9 +2621,13 @@ async function searchTPSCanonical(
         brand: p.brand || '', 
         model: '', 
         sku: null,
+        listing_name: listingNameByKey.get(`${p.id}|${storeSlug}`),
+        ...((p as { category?: string }).category === 'mobile'
+          ? { phone_condition: phoneCondition(listingNameByKey.get(`${p.id}|${storeSlug}`) ?? '') }
+          : {}),
         current_price: v.price, 
         original_price: v.originalPrice ?? null,
-        availability: v.availability ?? 'in_stock' as const,
+        availability: v.availability ?? (phoneCanonicalIds.has(p.id) ? availabilityByKey.get(`${p.id}|${storeSlug}`) ?? 'unknown' : 'in_stock') as SearchProduct['availability'],
         // An exit is rendered ONLY when we hold the observation id it needs. This emitted
         // `/go/undefined` / `/go/null` whenever the latest price row for a retailer carried a
         // NULL `tps_observation_id` — a button that looks healthy and lands nowhere.
@@ -2768,8 +2785,9 @@ export async function POST(request: NextRequest) {
   // MODEL CODE = THE REQUEST (2026-10-06, see model-token-gate.ts): a strong model token inside a longer sentence reduces retrieval to the code, so
   // the descriptive words (and the category they imply) cannot veto it. Accessory-shaped sentences keep their words (a case FOR that model).
   const modelFocus = subjectQuery && !isAccessoryShapedQuery(subjectQuery) ? strongModelCode(subjectQuery) : null;
-  const rawQuery = modelFocus && modelFocus.toLowerCase() !== subjectQuery.trim().toLowerCase() ? modelFocus : subjectQuery;
-  const queryIsMainProduct = isMainProductTypeQuery(rawQuery);
+  const rawQuery = modelFocus && modelFocus.toLowerCase() !== subjectQuery.trim().toLowerCase() ? modelFocus : phoneBudgetSubject(subjectQuery);
+  const phoneIntent = phoneModelIntent(rawQuery);
+  const queryIsMainProduct = !!phoneIntent || isMainProductTypeQuery(rawQuery);
   // Structured constraints, parsed ONCE by the same deterministic parser the advisor uses.
   // A budget or quantity NUMBER is a constraint VALUE, not a product token: «5000» in
   // «بميزانيتي 5000 ريال» must not retrieve products whose titles contain 5000, and «3»
@@ -3045,6 +3063,7 @@ export async function POST(request: NextRequest) {
   // regardless of source. Applied to both the Algolia and DB-fallback paths since
   // both converge to this one array.
   reqTimer.mark('pre_merge');
+  if (phoneIntent) products = products.filter((p) => matchesPhoneModel(phoneIntent, p.name_ar, p.name_en));
   products = await mergeVerifiedCanonicalSearchResults(products);
   reqTimer.mark('merge_verified');
 
@@ -3267,7 +3286,13 @@ export async function POST(request: NextRequest) {
   // which recognized noun it happens to contain.
   let categoryEnforcedZero = false;
   const isSentenceShaped = !!rawQuery && looksLikeSentenceNotProductQuery(rawQuery);
-  if (rawQuery && queryIsMainProduct) {
+  if (phoneIntent) {
+    // A phone's generation and tier must belong to the same model phrase.
+    // No fallback to compatibility accessories when all genuine offers are stale.
+    const beforePhoneGate = products.length;
+    products = products.filter((p) => matchesPhoneModel(phoneIntent, p.name_ar, p.name_en));
+    if (beforePhoneGate > 0 && products.length === 0) categoryEnforcedZero = true;
+  } else if (rawQuery && queryIsMainProduct) {
     // MEASURED DEFECT (2026-08-27, quality program §8 next-defect pass, TV-008): this branch
     // used to require `!looksLikeSentenceNotProductQuery(rawQuery)` to even TRY relevance
     // gating — any 6+-word query fell straight to the unconditional-zero branch below
@@ -3368,7 +3393,27 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  if ((phoneIntent || constraintTask?.category === 'mobile') && !isAccessoryShapedQuery(rawQuery)) {
+    const beforeEligibility = products.length;
+    // A legacy/Algolia card merged later can otherwise resurrect a quarantined
+    // merchant removed by searchTPSCanonical. Recheck the completed canonical card.
+    const pools = await loadPhoneOfferPools(supabase, products.map(p => p.tps_identity_key).filter((key): key is string => !!key));
+    products = products.map(p => !p.tps_identity_key ? p : ({ ...p, stores: p.stores.flatMap(s => {
+      const current = pools.get(p.tps_identity_key!)?.find(o => resolveApprovedSlug(o.store_id) === resolveApprovedSlug(s.store));
+      if (!current || Number(current.price) !== s.current_price) return [];
+      return [{ ...s, phone_condition: phoneCondition(current.name), listing_name: current.name,
+        availability: current.payload?._availability as SearchProduct['availability'], observed_at: current.observed_at }];
+    }) }));
+    products = products.map(eligiblePhoneCard).filter(p => p !== null);
+    if (beforeEligibility > 0 && !products.length) categoryEnforcedZero = true;
+  }
   products = applyPostFilters(products, body);
+  if (phoneIntent && !products.length) {
+    // The exact intent is known even when no merchant evidence qualifies. Do not
+    // imply that the model is absent from the catalogue or offer accessories instead.
+    modelNotFound = rawQuery;
+    modelKnownNoOffer = true;
+  }
 
   // ── F-005 / Q10 — A MODEL NUMBER IS EXACT, OR IT IS AN HONEST ZERO ──────────────────
   // MEASURED LIVE (production, 2026-09-29, `59b3a53c`): «Samsung WW90T554DAN» — a washing
@@ -3432,7 +3477,7 @@ export async function POST(request: NextRequest) {
   // accessory intent.
   if (rawQuery && queryIsMainProduct && !isAccessoryShapedQuery(rawQuery)) {
     const beforeCount = products.length;
-    products = excludeIneligibleCandidates(products, isAcQuery, isMonitorQuery, isWatchQuery, isDishwasherQuery, needShapedWithCategory, isOvenQuery, isCookerQuery, queryFuelType, hasUnambiguousTvNoun);
+    products = excludeIneligibleCandidates(products, isAcQuery, isMonitorQuery, isWatchQuery, isDishwasherQuery, needShapedWithCategory, isOvenQuery, isCookerQuery, queryFuelType, hasUnambiguousTvNoun, !!phoneIntent || constraintTask?.category === 'mobile');
     if (products.length !== beforeCount) {
       console.warn(`[candidate-eligibility] "${rawQuery.slice(0, 60)}" — excluded ${beforeCount - products.length} ineligible candidate(s) (accessory hint and/or statistical price-floor outlier)`);
     }

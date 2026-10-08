@@ -1,0 +1,42 @@
+[
+  {
+    "key": "apple|iPhone|18|Pro|1024",
+    "title": "Apple iPhone 18 Pro 1 TB: – Black",
+    "rawId": 3206948,
+    "requested": "B0HJ9ZYZQR",
+    "selected": "B0HJB3HBM8",
+    "at": "2026-10-02T20:11:48.169+00:00"
+  },
+  {
+    "key": "apple|iPhone|12|Standard|128",
+    "title": "Apple (Refurbished) iPhone 12 (128GB) - Black",
+    "rawId": 3294480,
+    "requested": "B0DLBDMG2Q",
+    "selected": "B0CQ2NFQ5Q",
+    "at": "2026-10-05T13:36:19.491+00:00"
+  },
+  {
+    "key": "apple|iPhone|11|Standard|128",
+    "title": "Apple (Refurbished) iPhone 11 (128GB) - Black",
+    "rawId": 3294523,
+    "requested": "B0CQ2RM6TX",
+    "selected": "B0CQ2LYYWV",
+    "at": "2026-10-05T13:40:39.46+00:00"
+  },
+  {
+    "key": "apple|iPhone|12|Standard|64",
+    "title": "Apple (Refurbished) iPhone 12 (64GB) - Purple",
+    "rawId": 3215464,
+    "requested": "B0DLBDMG2Q",
+    "selected": "B0CQ2Q2QDB",
+    "at": "2026-10-03T02:14:02.289+00:00"
+  },
+  {
+    "key": "apple|iPhone|12|Mini|128",
+    "title": "Apple (Refurbished) iPhone 12 mini (128GB) - Black",
+    "rawId": 2686947,
+    "requested": "B08X1RMTR3",
+    "selected": "B0CQ2S4G3C",
+    "at": "2026-09-15T20:08:37.032+00:00"
+  }
+]

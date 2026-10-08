@@ -32,6 +32,9 @@ import { partitionEligible, distinctStoreCount } from '@/lib/compare/offer-eligi
 import { deriveCampaignEligibility, type CampaignEligibilityEvidence } from '@/lib/providers/campaigns/blackbox-riyal-festival';
 import { buildGoUrl } from '@/lib/analytics/build-go-url';
 import { applyAffiliateTrueTieOrder } from '@/lib/compare/affiliate-true-tie';
+import { phoneCondition, phoneConditionPool } from '@/lib/search/phone-condition';
+import type { MerchantCondition } from '@/lib/campaigns/condition';
+import { conflictingPhoneModels, isPhoneAccessoryTitle } from '@/lib/search/phone-model-intent';
 import { extractManufacturerModel } from '../identity/store-identifiers';
 import { identityGateEnabled, identityEvidenceEnabled } from '../../../scripts/tps-core/identity-flags';
 import { declaredModelForListing, newestCaptures, type CapturedItem } from '../identity/manufacturer-model-evidence';
@@ -64,6 +67,7 @@ interface ObsRow {
 const NPO_PROVENANCE_TRUSTED_FROM = Date.parse('2026-07-31T00:00:00Z');
 
 export interface CompareOffer {
+  phone_condition?: MerchantCondition;
   store_slug: string;
   store_name: string;
   raw_name: string;
@@ -191,7 +195,7 @@ export async function getComparison(params: {
       .select('store_slug')
       .eq('canonical_product_id', canonical.id),
     (supabase as unknown as SupabaseClient).from('tps_current_offers')
-      .select('store_id, status, price, url, raw_obs_id, observed_at, payload').eq('identity_key', canonicalOut.tps_identity_key),
+      .select('store_id, status, price, url, raw_obs_id, observed_at, name, payload').eq('identity_key', canonicalOut.tps_identity_key),
     supabase
       .from('normalized_product_observations')
       .select('id, store_id, raw_name, confidence, observed_at, normalized_payload')
@@ -221,13 +225,13 @@ export async function getComparison(params: {
   //      have accumulated. This is what makes the derivation complete regardless of any row
   //      window below: the newest-first npo window is still read (titles, provenance), but a
   //      store's currency can never again be lost to another store's volume.
-  type CurrentOfferRow = { store_id: number | string; status: string | null; price: number | string | null; url: string | null; raw_obs_id: number | string | null; observed_at: string | null; payload: { _availability?: string; _superseded_by_identity?: string } | null };
+  type CurrentOfferRow = { store_id: number | string; status: string | null; price: number | string | null; url: string | null; raw_obs_id: number | string | null; observed_at: string | null; name?: string; payload: { _availability?: string; _superseded_by_identity?: string; _identity_quarantine?: string } | null };
   const { data: currentOfferRows } = currentRes;
   const currentBySlug = new Map<string, CurrentOfferRow>();
   for (const row of (currentOfferRows ?? []) as unknown as CurrentOfferRow[]) {
     const slug = resolveApprovedSlug(row.store_id);
     if (!slug) continue;
-    if (row.payload?._superseded_by_identity) { delistedSlugs.add(slug); continue; }
+    if (row.payload?._superseded_by_identity || row.payload?._identity_quarantine) { delistedSlugs.add(slug); continue; }
     if (row.status === 'valid' && isDisplayableRetailer(slug)) currentBySlug.set(slug, row);
   }
 
@@ -494,6 +498,9 @@ export async function getComparison(params: {
         store_slug: slug,
         store_name: retailerDisplayName(slug, locale) ?? slug,
         raw_name: listing?.rawName ?? (locale === 'en' ? canonical.name_en : canonical.name_ar),
+        ...(canonicalOut.category === 'mobile'
+          ? { phone_condition: phoneCondition(currentBySlug.get(slug)?.name ?? listing?.rawName ?? '') }
+          : {}),
         price: p.price,
         availability: availabilityByRawId.get(newestRawIdBySlug.get(slug)?.rawId ?? -1) ?? p.availability,
         product_url: exitId ? buildGoUrl(exitId) : listing?.url ?? null,
@@ -516,6 +523,8 @@ export async function getComparison(params: {
         })(),
       };
     })
+    .filter(o => canonicalOut.category !== 'mobile' || (!isPhoneAccessoryTitle(o.raw_name)
+      && !conflictingPhoneModels(canonicalOut.name_en || canonicalOut.name_ar, o.raw_name)))
     .sort((a, b) => a.price - b.price);
 
   // AFFILIATE_TRUE_TIE_POLICY (Founder decision, 2026-09-07 — ADR-304): an affiliate
@@ -533,7 +542,7 @@ export async function getComparison(params: {
   const gated: CompareOffer[] = identityGateEnabled(canonical.category)
     ? applyIdentityVerifierGate(priceOrdered, canonical.category, null, modelCodeOfKey(canonical.tps_identity_key))
     : priceOrdered;
-  const offers: CompareOffer[] = applyAffiliateTrueTieOrder(gated);
+  const offers: CompareOffer[] = canonicalOut.category === 'mobile' ? gated : applyAffiliateTrueTieOrder(gated);
 
   // ── 5. summary ───────────────────────────────────────────────
   const { summary, message } = deriveComparisonSummary(offers);
@@ -568,7 +577,7 @@ export function deriveComparisonSummary(offers: CompareOffer[], nowMs: number = 
   // (offer-eligibility.ts) — the multi-product page had re-derived its own and disagreed.
   const partitioned = partitionOffersByEligibility(offers, nowMs);
   const priceSortedFresh = partitioned.eligible.slice().sort((a, b) => a.price - b.price);
-  const freshOffers = applyAffiliateTrueTieOrder(priceSortedFresh);
+  const freshOffers = offers.some(o => o.phone_condition !== undefined) ? priceSortedFresh : applyAffiliateTrueTieOrder(priceSortedFresh);
   const noFreshEvidence = offers.length > 0 && freshOffers.length === 0;
 
   const cheapest = freshOffers[0] ?? null;
@@ -591,7 +600,9 @@ export function deriveComparisonSummary(offers: CompareOffer[], nowMs: number = 
       excluded_offer_count: partitioned.older.length,
     },
     ...(noFreshEvidence
-      ? { message: 'لا تتوفر مقارنة أسعار محدثة حالياً — كل الأسعار المتوفرة أقدم من أسبوع' }
+      ? { message: offers.some(o => o.phone_condition !== undefined)
+        ? 'لا يوجد حاليًا عرض موثوق لهذا الجهاز — تحقق من التوفر وحداثة الرصد'
+        : 'لا تتوفر مقارنة أسعار محدثة حالياً — كل الأسعار المتوفرة أقدم من أسبوع' }
       : {}),
   };
 }
@@ -615,8 +626,11 @@ export function partitionOffersByEligibility(
   // current competitor — a known-unknown (region tag, colour-code suffix) must not back a
   // "cheapest" claim. (Rejected offers never reach this list — see applyIdentityVerifierGate.)
   const p = partitionEligible(offers, (o) => ({ price: o.price, availability: o.availability, observed_at: o.observed_at }), nowMs);
-  const eligible = p.eligible.filter((o) => o.identity_verdict?.outcome !== 'review');
-  const older = [...p.excluded.map((e) => e.item), ...p.eligible.filter((o) => o.identity_verdict?.outcome === 'review')];
+  const verified = p.eligible.filter((o) => o.identity_verdict?.outcome !== 'review'
+    && (o.phone_condition === undefined || ['in_stock', 'limited_stock', 'pre_order'].includes(o.availability ?? '')));
+  const eligible = offers.some(o => o.phone_condition !== undefined)
+    ? phoneConditionPool(verified, o => o.phone_condition ?? 'UNKNOWN') : verified;
+  const older = [...p.excluded.map((e) => e.item), ...p.eligible.filter(o => !eligible.includes(o))];
   return { eligible, older };
 }
 

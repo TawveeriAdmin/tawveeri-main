@@ -15,6 +15,8 @@
 
 import { cache } from 'react';
 import { createServerClient } from '@/lib/database';
+import { loadPhoneOfferPools } from '@/lib/search/phone-current-offers';
+import { phoneCondition, phoneConditionLabel } from '@/lib/search/phone-condition';
 
 export interface CategoryProductSummary {
   identityKey: string;
@@ -105,7 +107,18 @@ export async function fetchProjectionRows(categoryKey: string): Promise<Projecti
     rows.push(...page);
     if (page.length < PAGE) break;
   }
-  return rows;
+  if (categoryKey !== 'mobile') return rows;
+  const pools = await loadPhoneOfferPools(db, rows.map(r => r.tps_identity_key).filter((key): key is string => !!key));
+  return rows.flatMap(row => {
+    const offers = pools.get(row.tps_identity_key ?? '') ?? [];
+    const count = new Set(offers.map(o => o.store_id)).size;
+    if (count < 2) return [];
+    const condition = phoneCondition(offers[0].name);
+    return [{ ...row, lowest_price: Math.min(...offers.map(o => Number(o.price))), highest_price: Math.max(...offers.map(o => Number(o.price))),
+      store_count: count, last_observed_at: offers.map(o => o.observed_at).sort().at(-1) ?? null,
+      display_name_ar: `${row.display_name_ar || row.display_name_en || ''} — ${phoneConditionLabel(condition, true)}`,
+      display_name_en: `${row.display_name_en || row.display_name_ar || ''} — ${phoneConditionLabel(condition, false)}` }];
+  });
 }
 
 /**

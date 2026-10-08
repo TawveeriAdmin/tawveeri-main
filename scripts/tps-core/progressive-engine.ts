@@ -8,6 +8,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { brandOrNull } from "./store-identity-guard";
 import { createHash } from "crypto";
+import { hasAmazonAsinConflict } from '../../src/lib/scraping/utils/amazon-asin';
 import { pickBestUrl } from "./url-util";
 import { CATEGORY_DEFS, TPS_STORES, type CategoryDef } from "./category-registry";
 import { TPS_MAX_OBSERVATIONS } from "./tps-batch";
@@ -292,6 +293,9 @@ export async function normalizeSweep(sb: SupabaseClient, defs: CategoryDef[], li
       }
       for (const def of defs) {
         if (manufacturer ? manufacturer.category !== def.category : !def.plugin.detect(nameAr, nameEn)) continue;
+        // Refuse historical raw captures as well as newly scraped PDPs: they may
+        // describe a selected capacity whose ASIN differs from the requested listing.
+        if (def.category === 'mobile' && row.store_id === 2 && hasAmazonAsinConflict(url, p.sku)) continue;
         const cm = m.byCategory[def.category]; cm.detected++;
         const norm = def.normalize(nameAr, nameEn, brand, p);
         const identity = manufacturer ? { key: manufacturer.key, status: 'valid' as const }

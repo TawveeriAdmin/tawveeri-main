@@ -43,6 +43,24 @@ function withPage(html: string) {
 }
 
 describe('ADR-204: buybox-scoped price extraction', () => {
+  it('also refuses an ASIN switch on the mobile unqualified-offer fallback', async () => {
+    let requests = 0;
+    scraper.fetchPage = async () => ++requests === 1
+      ? '<span id="productTitle">Apple iPhone 18 Pro 256GB</span><input name="ASIN" value="B0HJ9ZYZQR">'
+      : '<input name="ASIN" value="B0HJB3HBM8"><div id="unqualifiedBuyBox"><span class="a-price"><span class="a-offscreen">SAR8,699.00</span></span></div>';
+    expect(await scraper.scrapeProductPage('https://www.amazon.sa/dp/B0HJ9ZYZQR')).toBeNull();
+    expect(requests).toBe(2);
+  });
+  it('does not write a redirected phone capacity under the requested ASIN', async () => {
+    withPage('<span id="productTitle">Apple iPhone 18 Pro 1 TB</span><input name="ASIN" value="B0HJB3HBM8"><div id="corePrice_feature_div"><span class="a-offscreen">SAR8,699.00</span></div>');
+    expect(await scraper.scrapeProductPage('https://www.amazon.sa/dp/B0HJ9ZYZQR')).toBeNull();
+    expect((await scraper.scrapeProductPage('https://www.amazon.sa/dp/B0HJB3HBM8'))?.current_price).toBe(8699);
+  });
+
+  it('does not mark the requested phone unavailable when another ASIN is selected', async () => {
+    withPage('<span id="productTitle">Apple iPhone 18 Pro 1 TB</span><input name="ASIN" value="B0HJB3HBM8"><div id="outOfStock">Currently unavailable</div>');
+    expect(await scraper.scrapeProductPage('https://www.amazon.sa/dp/B0HJ9ZYZQR')).toBeNull();
+  });
   it('a page whose only prices are in the sims carousel yields NULL, never a price', async () => {
     withPage(SIMS_ONLY_PAGE);
     const p = await scraper.scrapeProductPage(URL);

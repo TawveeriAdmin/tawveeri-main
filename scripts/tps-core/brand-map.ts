@@ -136,6 +136,8 @@ const BRAND_ALIASES: Record<string, string> = {
   "bose": "bose", "بوز": "bose", "بوس": "bose",
   "beats": "beats", "بيتس": "beats",
   "anker": "anker", "انكر": "anker", "أنكر": "anker", "soundcore": "anker", "ساوند كور": "anker", "ساوندكور": "anker",
+  "ugreen": "ugreen", "يو جرين": "ugreen", "يوجرين": "ugreen",
+  "esr": "esr", "spigen": "spigen", "سبيجن": "spigen",
 
   // ── Wearables (ADR-066) ──────────────────────────────────────────────────
   // Saudi retailers carry a long tail of wearable-only brands that no other
@@ -248,6 +250,12 @@ const FREE_TEXT_SCAN_EXCLUDE = new Set(["general", "جنرال", "york", "aux", 
  */
 export function detectBrandFromText(text: string | null | undefined): string | null {
   if (!text) return null;
+  // Phone compatibility describes the destination device, never the accessory's
+  // manufacturer. Keep inference within the item's own portion of the title.
+  const compatibility = /\b(?:compatible\s+(?:with|for)|designed\s+for|works\s+with|for\s+(?=(?:apple|iphone|samsung|galaxy|google|pixel|redmi)\b))|متوافق\s+مع|مناسب\s+ل/i.exec(text);
+  if (compatibility && /iphone|galaxy|samsung|pixel|redmi|ايفون|آيفون|سامسونج|جالكسي|بكسل/i.test(text.slice(compatibility.index))) {
+    text = text.slice(0, compatibility.index);
+  }
   const keys = Object.keys(BRAND_ALIASES)
     .filter((k) => !FREE_TEXT_SCAN_EXCLUDE.has(k))
     .sort((a, b) => b.length - a.length);

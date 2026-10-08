@@ -11,6 +11,11 @@
  */
 import { looksLikeSentenceNotProductQuery, isAccessoryShapedQuery, excludeIneligibleCandidates, GENERIC_EXPANSION_STOPWORDS, hasStrongACSignal, hasStrongMonitorSignal, hasStrongWatchSignal, hasStrongDishwasherSignal, hasStrongOvenSignal, hasStrongCookerSignal, productFuelType, lookupArToEn, detectCanonicalCategories, hasAccessoryHint } from "@/app/api/search/route";
 
+it('does not restore an all-accessory set for a confirmed phone request', () => {
+  expect(excludeIneligibleCandidates([{ name_en: 'UGREEN Car Charger for Samsung Galaxy S26', best_price: 89 }],
+    false, false, false, false, false, false, false, undefined, false, true)).toEqual([]);
+});
+
 /**
  * FOUNDER AC-RELEVANCE CLOSURE, DEEPEST ROOT CAUSE (2026-09-08) — MEASURED LIVE: the exact
  * query "مكيف لغرفة 30 متر تحت 4000" returned `isAcQuery=false` because

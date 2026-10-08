@@ -100,7 +100,7 @@ describe('search-latency SWR caches (2026-10-06)', () => {
     it('an exit survives the gap between the 2-minute current-offers cache and the longer observation cache (same listing URL, never store alone)', () => {
       expect(routeSrc).toMatch(/observationIdByListing\.set\(`\$\{key\}\|url\|\$\{r\.url\}`, r\.id\)/);
       expect(routeSrc).toMatch(/observationIdByListing\.get\(`\$\{canonicalId\}\|\$\{slug\}\|url\|\$\{co\.url\}`\)/);
-      expect(routeSrc).toMatch(/\.select\('identity_key, store_id, raw_obs_id, price, observed_at, url, payload'\)/);
+      expect(routeSrc).toMatch(/\.select\('identity_key, store_id, raw_obs_id, price, observed_at, name, url, payload'\)/);
     });
     it('every current-offer exit is resolved by RAW id, not by whichever observation rows happened to be fetched (the 400-canonical window left 33–75% of broad-query entries without an exit)', () => {
       expect(routeSrc).toMatch(/async function resolveExitObservationIds/);

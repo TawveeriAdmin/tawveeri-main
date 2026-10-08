@@ -1,0 +1,1458 @@
+{
+  "generatedAt": "2026-10-07T07:15:51.682Z",
+  "deployed": false,
+  "denominators": {
+    "canonicalRows": 965,
+    "activeCanonicalRows": 953,
+    "projectedRows": 697,
+    "projectedComparisonRows": 264,
+    "observedCurrentOfferRowsForCatalogKeys": 1000,
+    "validNonRetiredOfferRows": 953,
+    "freshOfferRows": 659,
+    "explicitlyAvailableFreshOfferRows": 315,
+    "note": "Canonical rows/keys are not deduplicated commercial variants: model-code, storage and RAM keys coexist. No direct comparison to competitor listing counts."
+  },
+  "coverage": [
+    {
+      "model": "iPhone 18 Pro Max",
+      "activeCanonicalRows": 4,
+      "identityKeys": [
+        "apple|iPhone|18|Pro Max|512",
+        "apple|iPhone|18|Pro Max|1024",
+        "apple|iPhone|18|Pro Max|256",
+        "apple|iPhone|18|Pro Max|2048"
+      ],
+      "offers": 6,
+      "uniqueStores": [
+        5,
+        4,
+        2
+      ],
+      "freshOffers": 6,
+      "explicitlyAvailableFreshOffers": 3,
+      "nonNewTitleOffers": 0,
+      "availabilityNote": "Database observations, not independently rechecked merchant availability; identity signals can further exclude offers."
+    },
+    {
+      "model": "iPhone 18 Pro",
+      "activeCanonicalRows": 5,
+      "identityKeys": [
+        "apple|iPhone|18|Pro|1024",
+        "apple|iPhone|18|Pro|2048",
+        "apple|iPhone|18|Pro|NO_STORAGE",
+        "apple|iPhone|18|Pro|512",
+        "apple|iPhone|18|Pro|256"
+      ],
+      "offers": 9,
+      "uniqueStores": [
+        2,
+        5
+      ],
+      "freshOffers": 8,
+      "explicitlyAvailableFreshOffers": 8,
+      "nonNewTitleOffers": 0,
+      "availabilityNote": "Database observations, not independently rechecked merchant availability; identity signals can further exclude offers."
+    },
+    {
+      "model": "iPhone 17e",
+      "activeCanonicalRows": 3,
+      "identityKeys": [
+        "apple|iPhone|17e|Standard|NO_STORAGE",
+        "apple|iPhone|17e|Standard|512",
+        "apple|iPhone|17e|Standard|256"
+      ],
+      "offers": 4,
+      "uniqueStores": [
+        1,
+        5,
+        4
+      ],
+      "freshOffers": 0,
+      "explicitlyAvailableFreshOffers": 0,
+      "nonNewTitleOffers": 1,
+      "availabilityNote": "Database observations, not independently rechecked merchant availability; identity signals can further exclude offers."
+    },
+    {
+      "model": "iPhone 17",
+      "activeCanonicalRows": 4,
+      "identityKeys": [
+        "apple|iPhone|17|Standard|512",
+        "apple|iPhone|17|Standard|NO_STORAGE",
+        "apple|iPhone|17|Air|NO_STORAGE",
+        "apple|iPhone|17|Standard|256"
+      ],
+      "offers": 4,
+      "uniqueStores": [
+        5,
+        4
+      ],
+      "freshOffers": 4,
+      "explicitlyAvailableFreshOffers": 3,
+      "nonNewTitleOffers": 0,
+      "availabilityNote": "Database observations, not independently rechecked merchant availability; identity signals can further exclude offers."
+    },
+    {
+      "model": "iPhone 17 Pro",
+      "activeCanonicalRows": 4,
+      "identityKeys": [
+        "apple|iPhone|17|Pro|1024",
+        "apple|iPhone|17|Pro|NO_STORAGE",
+        "apple|iPhone|17|Pro|256",
+        "apple|iPhone|17|Pro|512"
+      ],
+      "offers": 6,
+      "uniqueStores": [
+        4,
+        1,
+        5
+      ],
+      "freshOffers": 5,
+      "explicitlyAvailableFreshOffers": 2,
+      "nonNewTitleOffers": 0,
+      "availabilityNote": "Database observations, not independently rechecked merchant availability; identity signals can further exclude offers."
+    },
+    {
+      "model": "iPhone 17 Pro Max",
+      "activeCanonicalRows": 7,
+      "identityKeys": [
+        "apple|iPhone|17|Pro Max|256",
+        "apple|iPhone|17|Pro Max|512",
+        "apple|iPhone|17|Pro Max|2048",
+        "apple|MODEL:MFYF4AHA",
+        "apple|iPhone|17|Pro Max|NO_STORAGE",
+        "apple|iPhone|17|Pro Max|1024",
+        "apple|MODEL:MFYG4AHA"
+      ],
+      "offers": 10,
+      "uniqueStores": [
+        5,
+        4,
+        1,
+        3
+      ],
+      "freshOffers": 8,
+      "explicitlyAvailableFreshOffers": 4,
+      "nonNewTitleOffers": 0,
+      "availabilityNote": "Database observations, not independently rechecked merchant availability; identity signals can further exclude offers."
+    },
+    {
+      "model": "iPhone 16",
+      "activeCanonicalRows": 4,
+      "identityKeys": [
+        "apple|iPhone|16|Standard|256",
+        "apple|iPhone|16|Standard|512",
+        "apple|iPhone|16|Standard|128",
+        "apple|iPhone|16|Standard|NO_STORAGE"
+      ],
+      "offers": 6,
+      "uniqueStores": [
+        4,
+        2,
+        5,
+        1
+      ],
+      "freshOffers": 4,
+      "explicitlyAvailableFreshOffers": 3,
+      "nonNewTitleOffers": 0,
+      "availabilityNote": "Database observations, not independently rechecked merchant availability; identity signals can further exclude offers."
+    },
+    {
+      "model": "iPhone 16 Plus",
+      "activeCanonicalRows": 4,
+      "identityKeys": [
+        "apple|iPhone|16|Plus|256",
+        "apple|iPhone|16|Plus|128",
+        "apple|iPhone|16|Plus|512",
+        "apple|iPhone|16|Plus|NO_STORAGE"
+      ],
+      "offers": 5,
+      "uniqueStores": [
+        5,
+        4,
+        1
+      ],
+      "freshOffers": 3,
+      "explicitlyAvailableFreshOffers": 2,
+      "nonNewTitleOffers": 0,
+      "availabilityNote": "Database observations, not independently rechecked merchant availability; identity signals can further exclude offers."
+    },
+    {
+      "model": "iPhone 16 Pro",
+      "activeCanonicalRows": 5,
+      "identityKeys": [
+        "apple|iPhone|16|Pro|1024",
+        "apple|iPhone|16|Pro|128",
+        "apple|iPhone|16|Pro|NO_STORAGE",
+        "apple|iPhone|16|Pro|256",
+        "apple|iPhone|16|Pro|512"
+      ],
+      "offers": 7,
+      "uniqueStores": [
+        1,
+        4,
+        3
+      ],
+      "freshOffers": 0,
+      "explicitlyAvailableFreshOffers": 0,
+      "nonNewTitleOffers": 4,
+      "availabilityNote": "Database observations, not independently rechecked merchant availability; identity signals can further exclude offers."
+    },
+    {
+      "model": "iPhone 16 Pro Max",
+      "activeCanonicalRows": 5,
+      "identityKeys": [
+        "apple|iPhone|16|Pro Max|512",
+        "apple|iPhone|16|Pro Max|256",
+        null,
+        "apple|iPhone|16|Pro Max|NO_STORAGE",
+        "apple|iPhone|16|Pro Max|1024"
+      ],
+      "offers": 5,
+      "uniqueStores": [
+        1,
+        3,
+        4
+      ],
+      "freshOffers": 1,
+      "explicitlyAvailableFreshOffers": 0,
+      "nonNewTitleOffers": 3,
+      "availabilityNote": "Database observations, not independently rechecked merchant availability; identity signals can further exclude offers."
+    },
+    {
+      "model": "Galaxy S24",
+      "activeCanonicalRows": 9,
+      "identityKeys": [
+        "samsung|Galaxy S|S24|Standard|NO_STORAGE",
+        "samsung|MODEL:SM-S921BZYBMEA",
+        "samsung|MODEL:SM-S921BZKBMEA",
+        "samsung|MODEL:SM-S921BZVBMEA",
+        "samsung|MODEL:SM-S921BZKCMEA",
+        "samsung|MODEL:SM-S921BZACMEA",
+        "samsung|MODEL:SM-S921BZABMEA",
+        "samsung|MODEL:SM-S921BZVCMEA",
+        "samsung|MODEL:SM-S921BZYCMEA"
+      ],
+      "offers": 10,
+      "uniqueStores": [
+        1,
+        6,
+        4
+      ],
+      "freshOffers": 8,
+      "explicitlyAvailableFreshOffers": 0,
+      "nonNewTitleOffers": 0,
+      "availabilityNote": "Database observations, not independently rechecked merchant availability; identity signals can further exclude offers."
+    },
+    {
+      "model": "Galaxy S24 Plus",
+      "activeCanonicalRows": 8,
+      "identityKeys": [
+        "samsung|MODEL:SM-S926BZOCMEA",
+        "samsung|MODEL:SM-S926BZOBMEA",
+        "samsung|MODEL:SM-S926BLBBMEA",
+        "samsung|Galaxy S|S24|Plus|512",
+        "samsung|MODEL:SM-S926BLGBMEA",
+        "samsung|Galaxy S|S24|Plus|256",
+        "samsung|MODEL:SM-S926BLBCMEA",
+        "samsung|MODEL:SM-S926BLGCMEA"
+      ],
+      "offers": 8,
+      "uniqueStores": [
+        6,
+        4
+      ],
+      "freshOffers": 6,
+      "explicitlyAvailableFreshOffers": 0,
+      "nonNewTitleOffers": 0,
+      "availabilityNote": "Database observations, not independently rechecked merchant availability; identity signals can further exclude offers."
+    },
+    {
+      "model": "Galaxy S24 Ultra",
+      "activeCanonicalRows": 3,
+      "identityKeys": [
+        "samsung|Galaxy S|S24|Ultra|NO_STORAGE",
+        "samsung|Galaxy S|S24|Ultra|512",
+        "samsung|Galaxy S|S24|Ultra|256"
+      ],
+      "offers": 2,
+      "uniqueStores": [
+        4
+      ],
+      "freshOffers": 0,
+      "explicitlyAvailableFreshOffers": 0,
+      "nonNewTitleOffers": 0,
+      "availabilityNote": "Database observations, not independently rechecked merchant availability; identity signals can further exclude offers."
+    },
+    {
+      "model": "Galaxy S25",
+      "activeCanonicalRows": 14,
+      "identityKeys": [
+        "samsung|MODEL:SM-S931BLGOMEA",
+        "samsung|Galaxy S|S25|Standard|128",
+        "samsung|Galaxy S|S25|Standard|256",
+        "samsung|MODEL:SM-S931BDBOMEA",
+        "samsung|MODEL:SM-S931BZSOMEA",
+        "samsung|MODEL:SM-S931BLBOMEA",
+        "samsung|MODEL:SM-S931BLGIMEA",
+        "samsung|MODEL:SM-S931BZSIMEA",
+        "samsung|MODEL:SM-S931BZKOMEA",
+        "samsung|MODEL:SM-S931BZROMEA",
+        "samsung|MODEL:SM-S931BZDOMEA",
+        "samsung|MODEL:SM-S931BLBIMEA",
+        "samsung|MODEL:SM-S931BDBIMEA",
+        "samsung|Galaxy S|S25|Standard|NO_STORAGE"
+      ],
+      "offers": 22,
+      "uniqueStores": [
+        4,
+        6,
+        1
+      ],
+      "freshOffers": 18,
+      "explicitlyAvailableFreshOffers": 4,
+      "nonNewTitleOffers": 0,
+      "availabilityNote": "Database observations, not independently rechecked merchant availability; identity signals can further exclude offers."
+    },
+    {
+      "model": "Galaxy S25 Plus",
+      "activeCanonicalRows": 17,
+      "identityKeys": [
+        "samsung|Galaxy S|S25|Plus|512",
+        "samsung|MODEL:SM-S936BZRIMEA",
+        "samsung|Galaxy S|S25|Plus|256",
+        "samsung|MODEL:SM-S936BDBIMEA",
+        "samsung|MODEL:SM-S936BLGOMEA",
+        "samsung|MODEL:SM-S936BZDOMEA",
+        "samsung|MODEL:SM-S936BZSIMEA",
+        "samsung|MODEL:SM-S936BZDIMEA",
+        "samsung|MODEL:SM-S936BZKOMEA",
+        "samsung|MODEL:SM-S936BZKIMEA",
+        "samsung|MODEL:SM-S936BDBOMEA",
+        "samsung|MODEL:SM-S936BLBOMEA",
+        "samsung|Galaxy S|S25|Plus|NO_STORAGE",
+        "samsung|MODEL:SM-S936BZROMEA",
+        "samsung|MODEL:SM-S936BZSOMEA",
+        "samsung|MODEL:SM-S936BLGIMEA",
+        "samsung|MODEL:SM-S936BLBIMEA"
+      ],
+      "offers": 20,
+      "uniqueStores": [
+        3,
+        4,
+        6
+      ],
+      "freshOffers": 17,
+      "explicitlyAvailableFreshOffers": 0,
+      "nonNewTitleOffers": 0,
+      "availabilityNote": "Database observations, not independently rechecked merchant availability; identity signals can further exclude offers."
+    },
+    {
+      "model": "Galaxy S25 Ultra",
+      "activeCanonicalRows": 25,
+      "identityKeys": [
+        "samsung|MODEL:SM-S938BZGIMEA",
+        "samsung|MODEL:SM-S938BZBIMEA",
+        "samsung|Galaxy S|S25|Ultra|256",
+        "samsung|MODEL:SM-S938BZKOMEA",
+        "samsung|MODEL:SM-S938BZTOMEA",
+        "samsung|MODEL:SM-S938BZTPMEA",
+        "samsung|Galaxy S|S25|Ultra|512",
+        "samsung|MODEL:SM-S938BZKPMEA",
+        "samsung|MODEL:SM-S938BZSOMEA",
+        "samsung|MODEL:SM-S938BAKPMEA",
+        "samsung|MODEL:SM-S938BZGOMEA",
+        "samsung|MODEL:SM-S938BZKIMEA",
+        "samsung|MODEL:SM-S938BZDPMEA",
+        "samsung|MODEL:SM-S938BZGPMEA",
+        "samsung|MODEL:SM-S938BZTIMEA",
+        "samsung|MODEL:SM-S938BAKIMEA",
+        "samsung|MODEL:SM-S938BZDIMEA",
+        "samsung|MODEL:SM-S938BZSPMEA",
+        "samsung|Galaxy S|S25|Ultra|1024",
+        "samsung|MODEL:SM-S938BZBOMEA",
+        "samsung|MODEL:SM-S938BZDOMEA",
+        "samsung|Galaxy S|S25|Ultra|NO_STORAGE",
+        "samsung|MODEL:SM-S938BZBPMEA",
+        "samsung|MODEL:SM-S938BAKOMEA",
+        "samsung|MODEL:SM-S938BZSIMEA"
+      ],
+      "offers": 41,
+      "uniqueStores": [
+        6,
+        4,
+        5,
+        3,
+        2,
+        1
+      ],
+      "freshOffers": 35,
+      "explicitlyAvailableFreshOffers": 15,
+      "nonNewTitleOffers": 2,
+      "availabilityNote": "Database observations, not independently rechecked merchant availability; identity signals can further exclude offers."
+    },
+    {
+      "model": "Galaxy S26",
+      "activeCanonicalRows": 15,
+      "identityKeys": [
+        "samsung|MODEL:SM-S942BZVPMEA",
+        "samsung|Galaxy S|S26|Standard|256",
+        "samsung|MODEL:SM-S942BLBOMEA",
+        "samsung|Galaxy S|S26|Standard|NO_STORAGE",
+        "samsung|MODEL:SM-S942BZSPMEA",
+        "samsung|MODEL:SM-S942BZSOMEA",
+        "samsung|MODEL:SM-S942BZVOMEA",
+        "samsung|MODEL:SM-S942BZKPMEA",
+        "samsung|MODEL:SM-S942BZWOMEA",
+        "samsung|MODEL:SM-S942BZDPMEA",
+        "samsung|MODEL:SM-S942BZDOMEA",
+        "samsung|MODEL:SM-S942BLBPMEA",
+        "samsung|MODEL:SM-S942BZKOMEA",
+        "samsung|Galaxy S|S26|Standard|512",
+        "samsung|MODEL:SM-S942BZWPMEA"
+      ],
+      "offers": 29,
+      "uniqueStores": [
+        4,
+        6,
+        5,
+        1
+      ],
+      "freshOffers": 22,
+      "explicitlyAvailableFreshOffers": 13,
+      "nonNewTitleOffers": 0,
+      "availabilityNote": "Database observations, not independently rechecked merchant availability; identity signals can further exclude offers."
+    },
+    {
+      "model": "Galaxy S26 Plus",
+      "activeCanonicalRows": 15,
+      "identityKeys": [
+        "samsung|Galaxy S|S26|Plus|256",
+        "samsung|MODEL:SM-S947BZVOMEA",
+        "samsung|MODEL:SM-S947BZSIMEA",
+        "samsung|MODEL:SM-S947BLBOMEA",
+        "samsung|MODEL:SM-S947BZDOMEA",
+        "samsung|Galaxy S|S26|Plus|512",
+        "samsung|MODEL:SM-S947BZVIMEA",
+        "samsung|MODEL:SM-S947BLBIMEA",
+        "samsung|MODEL:SM-S947BZSOMEA",
+        "samsung|MODEL:SM-S947BZKOMEA",
+        "samsung|MODEL:SM-S947BZKIMEA",
+        "samsung|MODEL:SM-S947BZDIMEA",
+        "samsung|MODEL:SM-S947BZWIMEA",
+        "samsung|Galaxy S|S26|Plus|NO_STORAGE",
+        "samsung|MODEL:SM-S947BZWOMEA"
+      ],
+      "offers": 30,
+      "uniqueStores": [
+        4,
+        6,
+        5
+      ],
+      "freshOffers": 26,
+      "explicitlyAvailableFreshOffers": 17,
+      "nonNewTitleOffers": 0,
+      "availabilityNote": "Database observations, not independently rechecked merchant availability; identity signals can further exclude offers."
+    },
+    {
+      "model": "Galaxy S26 Ultra",
+      "activeCanonicalRows": 22,
+      "identityKeys": [
+        "samsung|MODEL:SM-S948BZVPMEA",
+        "samsung|MODEL:SM-S948BZWIMEA",
+        "samsung|MODEL:SM-S948BZKOMEA",
+        "samsung|Galaxy S|S26|Ultra|NO_STORAGE",
+        "samsung|MODEL:SM-S948BLBOMEA",
+        "samsung|MODEL:SM-S948BLBIMEA",
+        "samsung|MODEL:SM-S948BZWOMEA",
+        "samsung|MODEL:SM-S948BZKPMEA",
+        "samsung|MODEL:SM-S948BZSIMEA",
+        "samsung|MODEL:SM-S948BZKIMEA",
+        "samsung|MODEL:SM-S948BZDOMEA",
+        "samsung|MODEL:SM-S948BZWPMEA",
+        "samsung|MODEL:SM-S948BZDIMEA",
+        "samsung|MODEL:SM-S948BZDPMEA",
+        "samsung|Galaxy S|S26|Ultra|256",
+        "samsung|MODEL:SM-S948BZSOMEA",
+        "samsung|Galaxy S|S26|Ultra|512",
+        "samsung|MODEL:SM-S948BZVOMEA",
+        "samsung|Galaxy S|S26|Ultra|1024",
+        "samsung|MODEL:SM-S948BZSPMEA",
+        "samsung|MODEL:SM-S948BLBPMEA",
+        "samsung|MODEL:SM-S948BZVIMEA"
+      ],
+      "offers": 45,
+      "uniqueStores": [
+        6,
+        4,
+        5,
+        1,
+        3,
+        2
+      ],
+      "freshOffers": 34,
+      "explicitlyAvailableFreshOffers": 16,
+      "nonNewTitleOffers": 3,
+      "availabilityNote": "Database observations, not independently rechecked merchant availability; identity signals can further exclude offers."
+    },
+    {
+      "model": "Galaxy S26 FE",
+      "activeCanonicalRows": 9,
+      "identityKeys": [
+        "samsung|MODEL:SM-S741BZKWMEA",
+        "samsung|MODEL:SM-S741BZVVMEA",
+        "samsung|MODEL:SM-S741BLGVMEA",
+        "samsung|MODEL:SM-S741BZKVMEA",
+        "samsung|MODEL:SM-S741BZVWMEA",
+        "samsung|MODEL:SM-S741BZVUMEA",
+        "samsung|MODEL:SM-S741BLGUMEA",
+        "samsung|MODEL:SM-S741BLGWMEA",
+        "samsung|MODEL:SM-S741BZKUMEA"
+      ],
+      "offers": 18,
+      "uniqueStores": [
+        6,
+        4,
+        5
+      ],
+      "freshOffers": 18,
+      "explicitlyAvailableFreshOffers": 15,
+      "nonNewTitleOffers": 0,
+      "availabilityNote": "Database observations, not independently rechecked merchant availability; identity signals can further exclude offers."
+    },
+    {
+      "model": "Galaxy A56",
+      "activeCanonicalRows": 4,
+      "identityKeys": [
+        "samsung|Galaxy A|A56|Standard|128",
+        "samsung|MODEL:GALAXYA565G",
+        "samsung|Galaxy A|A56|Standard|256",
+        "samsung|Galaxy A|A56|Standard|NO_STORAGE"
+      ],
+      "offers": 6,
+      "uniqueStores": [
+        3,
+        4,
+        2,
+        1
+      ],
+      "freshOffers": 4,
+      "explicitlyAvailableFreshOffers": 1,
+      "nonNewTitleOffers": 0,
+      "availabilityNote": "Database observations, not independently rechecked merchant availability; identity signals can further exclude offers."
+    },
+    {
+      "model": "Galaxy A57",
+      "activeCanonicalRows": 20,
+      "identityKeys": [
+        "samsung|MODEL:SM-A576BLBMMEA",
+        "samsung|MODEL:SM-A576BLBVMEA",
+        "samsung|MODEL:SM-A576BLBWMEA",
+        "samsung|MODEL:SM-A576BZAPMEA",
+        "samsung|MODEL:SM-A576BZVPMEA",
+        "samsung|MODEL:SM-A576BZAWMEA",
+        "samsung|MODEL:SM-A576BZAMMEA",
+        "samsung|MODEL:SM-A576BZVMMEA",
+        "samsung|MODEL:SM-A576BDBWMEA",
+        "samsung|Galaxy A|A57|Standard|512",
+        "samsung|Galaxy A|A57|Standard|128",
+        "samsung|MODEL:SM-A576BZAVMEA",
+        "samsung|MODEL:SM-A576BZVVMEA",
+        "samsung|Galaxy A|A57|Standard|256",
+        "samsung|MODEL:SM-A576BZVWMEA",
+        "samsung|MODEL:SM-A576BDBMMEA",
+        "samsung|MODEL:SM-A576BDBPMEA",
+        "samsung|MODEL:SM-A576BDBVMEA",
+        "samsung|Galaxy A|A57|Standard|NO_STORAGE",
+        "samsung|MODEL:SM-A576BLBPMEA"
+      ],
+      "offers": 46,
+      "uniqueStores": [
+        6,
+        4,
+        5,
+        3,
+        1
+      ],
+      "freshOffers": 40,
+      "explicitlyAvailableFreshOffers": 24,
+      "nonNewTitleOffers": 0,
+      "availabilityNote": "Database observations, not independently rechecked merchant availability; identity signals can further exclude offers."
+    },
+    {
+      "model": "Pixel 9 family",
+      "activeCanonicalRows": 0,
+      "identityKeys": [],
+      "offers": 0,
+      "uniqueStores": [],
+      "freshOffers": 0,
+      "explicitlyAvailableFreshOffers": 0,
+      "nonNewTitleOffers": 0,
+      "availabilityNote": "Database observations, not independently rechecked merchant availability; identity signals can further exclude offers."
+    },
+    {
+      "model": "Pixel 10 family",
+      "activeCanonicalRows": 0,
+      "identityKeys": [],
+      "offers": 0,
+      "uniqueStores": [],
+      "freshOffers": 0,
+      "explicitlyAvailableFreshOffers": 0,
+      "nonNewTitleOffers": 0,
+      "availabilityNote": "Database observations, not independently rechecked merchant availability; identity signals can further exclude offers."
+    },
+    {
+      "model": "Pixel 11 family",
+      "activeCanonicalRows": 0,
+      "identityKeys": [],
+      "offers": 0,
+      "uniqueStores": [],
+      "freshOffers": 0,
+      "explicitlyAvailableFreshOffers": 0,
+      "nonNewTitleOffers": 0,
+      "availabilityNote": "Database observations, not independently rechecked merchant availability; identity signals can further exclude offers."
+    },
+    {
+      "model": "Redmi Note 14 family",
+      "activeCanonicalRows": 7,
+      "identityKeys": [
+        "xiaomi|Redmi Note|14|Standard|256",
+        "xiaomi|Redmi Note|14|Standard|NO_STORAGE",
+        "xiaomi|Redmi Note|14|Pro Plus|256",
+        "xiaomi|Redmi Note|14|Pro Plus|512",
+        "xiaomi|Redmi Note|14|Pro Plus|NO_STORAGE",
+        "xiaomi|Redmi Note|14|Pro|256",
+        "xiaomi|Redmi Note|14|Pro|NO_STORAGE"
+      ],
+      "offers": 8,
+      "uniqueStores": [
+        3,
+        1,
+        4,
+        2
+      ],
+      "freshOffers": 0,
+      "explicitlyAvailableFreshOffers": 0,
+      "nonNewTitleOffers": 0,
+      "availabilityNote": "Database observations, not independently rechecked merchant availability; identity signals can further exclude offers."
+    },
+    {
+      "model": "Redmi Note 15 family",
+      "activeCanonicalRows": 8,
+      "identityKeys": [
+        "xiaomi|Redmi Note|15|Standard|256",
+        "xiaomi|Redmi Note|15|Standard|128",
+        "xiaomi|Redmi Note|15|Pro|256",
+        "xiaomi|Redmi Note|15|Pro|NO_STORAGE",
+        "xiaomi|Redmi Note|15|Standard|512",
+        "xiaomi|Redmi Note|15|Pro Plus|512",
+        "xiaomi|Redmi Note|15|Standard|NO_STORAGE",
+        "xiaomi|Redmi Note|15|Pro Plus|NO_STORAGE"
+      ],
+      "offers": 16,
+      "uniqueStores": [
+        5,
+        2,
+        3,
+        4,
+        23,
+        1
+      ],
+      "freshOffers": 8,
+      "explicitlyAvailableFreshOffers": 5,
+      "nonNewTitleOffers": 0,
+      "availabilityNote": "Database observations, not independently rechecked merchant availability; identity signals can further exclude offers."
+    }
+  ],
+  "searches": [
+    {
+      "query": "آيفون 16 برو",
+      "productionBefore": null,
+      "localAfter": 0,
+      "beforeError": "fetch failed",
+      "afterError": null,
+      "afterKeys": []
+    },
+    {
+      "query": "iphone 16 pro",
+      "productionBefore": 3,
+      "localAfter": 0,
+      "beforeError": null,
+      "afterError": null,
+      "beforeKeys": [
+        "e8d3afa9-c827-4d04-b8c7-182f0b214a2e",
+        "1d6c8162-f649-4127-9a60-6c4c9477baf2",
+        "4d82054b-06a9-4cd5-8e43-5a419cc79e52"
+      ],
+      "afterKeys": []
+    },
+    {
+      "query": "سامسونج S24",
+      "productionBefore": 19,
+      "localAfter": 0,
+      "beforeError": null,
+      "afterError": null,
+      "beforeKeys": [
+        "e32f3070-8514-492d-811e-425b6f206960",
+        "cccd2702-9025-41c3-b6f5-a91535608010",
+        "f8184d80-9e54-4fc0-8fa0-e19bac990e8c",
+        "9970995d-a669-4d42-84e7-9853419d95f9",
+        "4eac55f6-cec9-483f-afba-2df46d94c6df",
+        "9cc0ab3a-055d-4eed-8068-0566bff8441b",
+        "38f1d5ca-7aad-4ec7-ad9f-8e2ad146a2c8",
+        "254f8fd7-37f3-4be3-8fc7-9ab55309783e",
+        "89fbde85-2ff7-44b1-95c4-e847fd2d62cd",
+        "c0ba6738-f026-4fbb-b19d-2858c34e527a",
+        "14640c46-b15e-41d5-ae55-c0e31c8aec9c",
+        "9bb79ebf-27d2-4500-8ef7-ef39dd52aac2",
+        "be903a66-63cd-43f4-8b30-bc4b7ab92460",
+        "29a62aa2-b69e-4d1c-a62e-14b7044f391e",
+        "08afe288-4622-4387-8c39-efed3589f960",
+        "269a9af4-94d0-4d67-ad83-71d1e9c18322",
+        "167c61f5-a5b1-49ee-afe9-4d7d340f13dc",
+        "fa1f8c43-cfe4-464c-92ac-fa3721e168a3",
+        "849fc464-2018-4db2-a5e0-4a861dea31b3"
+      ],
+      "afterKeys": []
+    },
+    {
+      "query": "Galaxy S24 Ultra",
+      "productionBefore": 2,
+      "localAfter": 0,
+      "beforeError": null,
+      "afterError": null,
+      "beforeKeys": [
+        "6f446fc0-62d1-4b8b-aa1a-0cbc6e503b00",
+        "ecc0995b-73c0-4910-a1f4-47eb071425f2"
+      ],
+      "afterKeys": []
+    },
+    {
+      "query": "سامسونج S25",
+      "productionBefore": 20,
+      "localAfter": 7,
+      "beforeError": null,
+      "afterError": null,
+      "beforeKeys": [
+        "samsung|MODEL:SM-S938BZBIMEA",
+        "samsung|MODEL:SM-S731BLBVMEA",
+        "samsung|MODEL:SM-S731BDBVMEA",
+        "samsung|MODEL:SM-S938BZKIMEA",
+        "samsung|MODEL:SM-S938BZTIMEA",
+        "samsung|MODEL:SM-S731BDBUMEA",
+        "samsung|MODEL:SM-S731BZWUMEA",
+        "samsung|MODEL:SM-S731BZKUMEA",
+        "samsung|MODEL:SM-S731BLBUMEA",
+        "samsung|MODEL:SM-S731BZWVMEA",
+        "samsung|MODEL:SM-S731BZKVMEA",
+        "samsung|MODEL:SM-S931BLGOMEA",
+        "samsung|MODEL:SM-S931BDBOMEA",
+        "samsung|MODEL:SM-S931BZSOMEA",
+        "samsung|MODEL:SM-S931BLBOMEA",
+        "samsung|MODEL:SM-S937BZSIMEA",
+        "samsung|MODEL:SM-S937BLBIMEA",
+        "samsung|MODEL:SM-S937BZKIMEA",
+        "samsung|MODEL:SM-S937BZSOMEA",
+        "samsung|MODEL:SM-S937BLBOMEA"
+      ],
+      "afterKeys": [
+        "samsung|MODEL:SM-S931BLGOMEA",
+        "samsung|MODEL:SM-S931BDBOMEA",
+        "samsung|MODEL:SM-S931BZSOMEA",
+        "samsung|MODEL:SM-S931BLBOMEA",
+        "samsung|MODEL:SM-S931BLGIMEA",
+        "samsung|MODEL:SM-S931BLBIMEA",
+        "samsung|MODEL:SM-S931BDBIMEA"
+      ]
+    },
+    {
+      "query": "Galaxy S26 Ultra",
+      "productionBefore": 20,
+      "localAfter": 20,
+      "beforeError": null,
+      "afterError": null,
+      "beforeKeys": [
+        "samsung|MODEL:SM-S948BZWOMEA",
+        "samsung|MODEL:SM-S948BZKIMEA",
+        "samsung|MODEL:SM-S948BZKOMEA",
+        "samsung|MODEL:SM-S948BLBOMEA",
+        "samsung|MODEL:SM-S948BZKPMEA",
+        "samsung|MODEL:SM-S948BZWIMEA",
+        "samsung|MODEL:SM-S948BLBIMEA",
+        "samsung|MODEL:SM-S948BZVIMEA",
+        "samsung|MODEL:SM-S948BZSOMEA",
+        "samsung|MODEL:SM-S948BZVOMEA",
+        "samsung|MODEL:SM-S948BZVPMEA",
+        "samsung|MODEL:SM-S948BZWPMEA",
+        "38d7065f-2334-41b6-bad5-0e2f3dc6bfcc",
+        "samsung|Galaxy S|S26|Ultra|1024",
+        "samsung|MODEL:SM-S948BZSIMEA",
+        "samsung|MODEL:SM-S948BZDIMEA",
+        "samsung|MODEL:SM-S948BZDOMEA",
+        "samsung|MODEL:SM-S948BZDPMEA",
+        "samsung|MODEL:SM-S948BZSPMEA",
+        "bfd20196-14d5-4d50-a365-66716d8ce1a8"
+      ],
+      "afterKeys": [
+        "samsung|MODEL:SM-S948BZKPMEA",
+        "samsung|MODEL:SM-S948BZWIMEA",
+        "samsung|MODEL:SM-S948BLBIMEA",
+        "samsung|MODEL:SM-S948BZKIMEA",
+        "samsung|MODEL:SM-S948BZVIMEA",
+        "samsung|MODEL:SM-S948BZKOMEA",
+        "samsung|MODEL:SM-S948BLBOMEA",
+        "samsung|MODEL:SM-S948BZWOMEA",
+        "samsung|MODEL:SM-S948BZSOMEA",
+        "samsung|MODEL:SM-S948BZVOMEA",
+        "samsung|MODEL:SM-S948BZVPMEA",
+        "samsung|MODEL:SM-S948BZWPMEA",
+        "samsung|Galaxy S|S26|Ultra|1024",
+        "38d7065f-2334-41b6-bad5-0e2f3dc6bfcc",
+        "samsung|MODEL:SM-S948BZSIMEA",
+        "78030ad8-eb6e-4afb-b124-793c13455273",
+        "samsung|MODEL:SM-S948BZDIMEA",
+        "samsung|MODEL:SM-S948BZDOMEA",
+        "samsung|MODEL:SM-S948BZDPMEA",
+        "samsung|MODEL:SM-S948BZSPMEA"
+      ]
+    },
+    {
+      "query": "Galaxy S26+",
+      "productionBefore": 16,
+      "localAfter": 15,
+      "beforeError": null,
+      "afterError": null,
+      "beforeKeys": [
+        "samsung|MODEL:SM-S947BLBIMEA",
+        "samsung|MODEL:SM-S947BZWIMEA",
+        "samsung|MODEL:SM-S947BZVIMEA",
+        "samsung|MODEL:SM-S947BZVOMEA",
+        "samsung|MODEL:SM-S947BLBOMEA",
+        "samsung|MODEL:SM-S947BZKOMEA",
+        "samsung|MODEL:SM-S947BZWOMEA",
+        "samsung|MODEL:SM-S947BZKIMEA",
+        "2b0dd824-bec5-4bb7-ba17-72eeff65dbb7",
+        "6240b903-5b8b-47d8-977b-9affb96a0631",
+        "4a9e4207-7d99-426a-9982-4e2f0ecacb22",
+        "samsung|MODEL:SM-S947BZSIMEA",
+        "samsung|MODEL:SM-S947BZDIMEA",
+        "samsung|MODEL:SM-S947BZDOMEA",
+        "samsung|MODEL:SM-S947BZSOMEA",
+        "c77a2c23-db30-40db-bf1c-5d46ada02287"
+      ],
+      "afterKeys": [
+        "samsung|MODEL:SM-S947BLBIMEA",
+        "samsung|MODEL:SM-S947BZWIMEA",
+        "samsung|MODEL:SM-S947BZVOMEA",
+        "samsung|MODEL:SM-S947BLBOMEA",
+        "samsung|MODEL:SM-S947BZKOMEA",
+        "samsung|MODEL:SM-S947BZWOMEA",
+        "samsung|MODEL:SM-S947BZVIMEA",
+        "samsung|MODEL:SM-S947BZKIMEA",
+        "2b0dd824-bec5-4bb7-ba17-72eeff65dbb7",
+        "6240b903-5b8b-47d8-977b-9affb96a0631",
+        "4a9e4207-7d99-426a-9982-4e2f0ecacb22",
+        "samsung|MODEL:SM-S947BZSIMEA",
+        "samsung|MODEL:SM-S947BZDIMEA",
+        "samsung|MODEL:SM-S947BZDOMEA",
+        "samsung|MODEL:SM-S947BZSOMEA"
+      ]
+    },
+    {
+      "query": "آيفون 18 برو",
+      "productionBefore": 3,
+      "localAfter": 4,
+      "beforeError": null,
+      "afterError": null,
+      "beforeKeys": [
+        "apple|iPhone|18|Pro|512",
+        "apple|iPhone|18|Pro|1024",
+        "apple|iPhone|18|Pro|2048"
+      ],
+      "afterKeys": [
+        "apple|iPhone|18|Pro|256",
+        "apple|iPhone|18|Pro|512",
+        "apple|iPhone|18|Pro|1024",
+        "apple|iPhone|18|Pro|2048"
+      ]
+    },
+    {
+      "query": "iPhone 18 Pro",
+      "productionBefore": 3,
+      "localAfter": 4,
+      "beforeError": null,
+      "afterError": null,
+      "beforeKeys": [
+        "apple|iPhone|18|Pro|512",
+        "apple|iPhone|18|Pro|1024",
+        "apple|iPhone|18|Pro|2048"
+      ],
+      "afterKeys": [
+        "apple|iPhone|18|Pro|256",
+        "apple|iPhone|18|Pro|512",
+        "apple|iPhone|18|Pro|1024",
+        "apple|iPhone|18|Pro|2048"
+      ]
+    },
+    {
+      "query": "آيفون 17e",
+      "productionBefore": 0,
+      "localAfter": 0,
+      "beforeError": null,
+      "afterError": null,
+      "beforeKeys": [],
+      "afterKeys": []
+    },
+    {
+      "query": "Pixel 9",
+      "productionBefore": 4,
+      "localAfter": 0,
+      "beforeError": null,
+      "afterError": null,
+      "beforeKeys": [
+        "66e2a2b9-5d0a-463a-9cc9-4bf6b356da26",
+        "29a62aa2-b69e-4d1c-a62e-14b7044f391e",
+        "354f2486-2cda-4391-92e3-fde870336594",
+        "1d71da7b-85ca-42af-ac87-a46ab046801b"
+      ],
+      "afterKeys": []
+    },
+    {
+      "query": "بكسل 9",
+      "productionBefore": 8,
+      "localAfter": 0,
+      "beforeError": null,
+      "afterError": null,
+      "beforeKeys": [
+        "5346c972-6827-48ad-aa3e-bd75d7056e11",
+        "46691f2b-1cb0-46b8-929d-4496d942ed5d",
+        "0c677c5e-2139-4142-9b19-ec28e09ff8d7",
+        "d65012df-b492-4e91-bc79-6b5c7a3b9d6f",
+        "0816c325-1ec0-4e1b-8311-faf29ab8430e",
+        "dell|24.5|fhd|500|ips",
+        "3f8fdad6-d524-406c-b811-134058909e79",
+        "a5a8788b-b650-414f-9882-f508402da757"
+      ],
+      "afterKeys": []
+    },
+    {
+      "query": "Pixel 11",
+      "productionBefore": 20,
+      "localAfter": 0,
+      "beforeError": null,
+      "afterError": null,
+      "beforeKeys": [
+        "c307209f-d978-43a1-8e4f-d31ac1a47aa5",
+        "67015f06-5728-4802-b3c7-b8612e3c5376",
+        "ee824c80-2ee7-41c5-a92b-d53ab45caac0",
+        "863b777d-193b-4677-b758-abe48c6fb1ce",
+        "4bf89e70-2c91-4866-b29a-af52cdb60910",
+        "831506bc-a453-43e1-8ba4-8d86c42510a6",
+        "0c738d61-6709-46d5-8355-c1c4dcb1edc2",
+        "4d581ee1-5bcd-45e3-9658-f0cf8bf3180b",
+        "83a77e17-099f-49e7-a219-a204cdaff9d0",
+        "9b4e424f-ff6b-45fe-b2a5-b0e20c975f65",
+        "e263317f-a7e4-4bcf-a1bc-8a7abac431d7",
+        "a3a2e908-55bd-4404-834b-c9d21da844ab",
+        "37a7fc4f-1906-4ae4-85ed-638477795a5f",
+        "c54b27a4-db39-43bd-8d43-6d8c47a7d6f9",
+        "423dccf3-fc5a-4403-9339-84481d0719d1",
+        "e99d7ccf-f289-4e13-8237-495e21d699e7",
+        "b1f18ae3-692d-4b80-b0ab-b95a2440f630",
+        "3562ca35-3623-4b84-9cd4-ebfe5ab316d3",
+        "aa0bfa1e-a232-4437-b90d-97bb2c0e447e",
+        "60c81063-f73d-445d-96d9-417b2c0c66c5"
+      ],
+      "afterKeys": []
+    },
+    {
+      "query": "بكسل 11",
+      "productionBefore": 4,
+      "localAfter": 0,
+      "beforeError": null,
+      "afterError": null,
+      "beforeKeys": [
+        "847a605a-c265-441b-b094-0148337bc963",
+        "0aa3c582-59b9-48f5-b646-14c142a233e1",
+        "6c7bdbd4-8416-4a30-bd2f-34a454bbd958",
+        "4c2b65f2-a5ee-4f9a-84af-6d0b67cedaad"
+      ],
+      "afterKeys": []
+    },
+    {
+      "query": "جوال سامسونج",
+      "productionBefore": 20,
+      "localAfter": 20,
+      "beforeError": null,
+      "afterError": null,
+      "beforeKeys": [
+        "samsung|MODEL:SM-A276BZBIMEA",
+        "samsung|Galaxy A|A36|Standard|256",
+        "samsung|Galaxy A|A56|Standard|256",
+        "samsung|Galaxy A|A07|Standard|128",
+        "samsung|Galaxy Z|Z Fold 7|Standard|256",
+        "samsung|Galaxy A|A26|Standard|128",
+        "samsung|Galaxy A|A36|Standard|128",
+        "samsung|Galaxy A|A26|Standard|256",
+        "samsung|MODEL:SM-A276BZKIMEA",
+        "samsung|MODEL:SM-A276BLIIMEA",
+        "samsung|Galaxy A|A17|Standard|256",
+        "samsung|MODEL:SM-A376BLVPMEA",
+        "samsung|MODEL:SM-A276BZKJMEA",
+        "samsung|MODEL:SM-A376BZAPMEA",
+        "samsung|MODEL:SM-A376BZWPMEA",
+        "samsung|MODEL:SM-A276BZBJMEA",
+        "samsung|MODEL:SM-A376BDGPMEA",
+        "samsung|MODEL:SM-A276BLIJMEA",
+        "samsung|MODEL:SM-A576BLBMMEA",
+        "samsung|MODEL:SM-A576BZAPMEA"
+      ],
+      "afterKeys": [
+        "samsung|MODEL:SM-A276BZBIMEA",
+        "samsung|MODEL:SM-A276BZKIMEA",
+        "samsung|MODEL:SM-A276BLIIMEA",
+        "samsung|MODEL:SM-A376BLVPMEA",
+        "samsung|MODEL:SM-A276BZKJMEA",
+        "samsung|MODEL:SM-A376BZAPMEA",
+        "samsung|MODEL:SM-A376BZWPMEA",
+        "samsung|MODEL:SM-A276BZBJMEA",
+        "samsung|MODEL:SM-A376BDGPMEA",
+        "samsung|MODEL:SM-A276BLIJMEA",
+        "samsung|MODEL:SM-A576BLBMMEA",
+        "samsung|MODEL:SM-A576BZAPMEA",
+        "samsung|MODEL:SM-A576BZVPMEA",
+        "samsung|MODEL:SM-A576BZAMMEA",
+        "samsung|MODEL:SM-A576BZVMMEA",
+        "samsung|MODEL:SM-A576BDBMMEA",
+        "samsung|MODEL:SM-A576BDBPMEA",
+        "samsung|MODEL:SM-A576BLBPMEA",
+        "samsung|MODEL:SM-S731BDBVMEA",
+        "samsung|MODEL:SM-S741BZVVMEA"
+      ]
+    },
+    {
+      "query": "هاتف آيفون",
+      "productionBefore": 20,
+      "localAfter": 20,
+      "beforeError": null,
+      "afterError": null,
+      "beforeKeys": [
+        "apple|iPhone|15|Standard|128",
+        "apple|iPhone|16|Standard|128",
+        "apple|iPhone|17|Standard|512",
+        "apple|iPhone|17|Standard|256",
+        "apple|iPhone|17|Pro|256",
+        "apple|iPhone|17|Pro Max|256",
+        "apple|iPhone|16|Pro Max|256",
+        "apple|iPhone|16|Plus|256",
+        "apple|iPhone|Air|Standard|1024",
+        "apple|iPhone|12|Standard|128",
+        "apple|iPhone|17|Pro|512",
+        "apple|iPhone|13|Standard|256",
+        "apple|iPhone|15|Pro Max|256",
+        "apple|iPhone|17|Pro Max|512",
+        "apple|iPhone|13|Pro Max|256",
+        "apple|iPhone|17|Pro Max|1024",
+        "apple|iPhone|Air|Standard|256",
+        "apple|iPhone|16|Plus|128",
+        "apple|iPhone|13|Standard|128",
+        "apple|iPhone|Air|Standard|512"
+      ],
+      "afterKeys": [
+        "apple|iPhone|15|Standard|128",
+        "apple|iPhone|16|Standard|128",
+        "apple|iPhone|17|Standard|512",
+        "apple|iPhone|16|Plus|256",
+        "apple|iPhone|17|Standard|256",
+        "apple|iPhone|17|Pro|256",
+        "apple|iPhone|17|Pro Max|256",
+        "apple|iPhone|Air|Standard|1024",
+        "apple|iPhone|12|Standard|64",
+        "apple|iPhone|11|Standard|128",
+        "apple|iPhone|17|Pro|512",
+        "apple|iPhone|14|Standard|128",
+        "apple|iPhone|15|Pro Max|256",
+        "apple|iPhone|17|Pro Max|512",
+        "apple|iPhone|17|Pro Max|1024",
+        "apple|iPhone|18|Pro|256",
+        "apple|iPhone|18|Pro Max|256",
+        "apple|iPhone|18|Pro|512",
+        "apple|iPhone|18|Pro|1024",
+        "apple|iPhone|18|Pro|2048"
+      ]
+    },
+    {
+      "query": "جوال رخيص تحت 1000",
+      "productionBefore": 20,
+      "localAfter": 20,
+      "beforeError": null,
+      "afterError": null,
+      "beforeKeys": [
+        "samsung|Galaxy A|A07|Standard|64",
+        "xiaomi|Redmi Note|15|Standard|256",
+        "honor|Honor X|5|Plus|128",
+        "xiaomi|Redmi|17|Standard|256",
+        "samsung|Galaxy A|A26|Standard|128",
+        "samsung|Galaxy A|A36|Standard|128",
+        "samsung|Galaxy A|A26|Standard|256",
+        "samsung|MODEL:SM-A075FZKDMEA",
+        "honor|Honor X|7|Standard|256",
+        "xiaomi|Redmi|15|Standard|256",
+        "samsung|MODEL:SM-A176BZAEMEA",
+        "samsung|MODEL:SM-A176BZBEMEA",
+        "honor|Honor X|7|Standard|128",
+        "tecno|Tecno Spark|40|Standard|256",
+        "samsung|MODEL:SM-A276BZBIMEA",
+        "samsung|MODEL:SM-A276BZKIMEA",
+        "honor|Honor X|5|Standard|64",
+        "honor|Honor X|9|Standard|256",
+        "tecno|Tecno Spark|3|Standard|64",
+        "samsung|Galaxy A|A06|Standard|64"
+      ],
+      "afterKeys": [
+        "samsung|Galaxy A|A16|Standard|128",
+        "honor|Honor X|7|Standard|256",
+        "samsung|MODEL:SM-A276BZBIMEA",
+        "samsung|MODEL:SM-A276BZKIMEA",
+        "samsung|MODEL:SM-A276BLIIMEA",
+        "xiaomi|Redmi Note|15|Standard|256",
+        "xiaomi|Redmi|15|Standard|256",
+        "honor|Honor X|5|Plus|128",
+        "samsung|MODEL:SM-A075FZKDMEA",
+        "samsung|MODEL:SM-A075FZGDMEA",
+        "samsung|Galaxy A|A06|Standard|64",
+        "honor|Honor X|7|Standard|128",
+        "samsung|Galaxy A|A07|Standard|64",
+        "samsung|Galaxy A|A07|Standard|128",
+        "honor|Honor X|9|Standard|256",
+        "samsung|MODEL:SM-A075FZGGMEA",
+        "samsung|MODEL:SM-A075FLVGMEA",
+        "samsung|MODEL:SM-A075FZKGMEA",
+        "honor|Honor X|7|Plus|128",
+        "xiaomi|Redmi|17|Standard|128"
+      ]
+    },
+    {
+      "query": "جوال سامسونج تحت 1500",
+      "productionBefore": 20,
+      "localAfter": 20,
+      "beforeError": null,
+      "afterError": null,
+      "beforeKeys": [
+        "samsung|Galaxy A|A07|Standard|128",
+        "samsung|MODEL:SM-A276BZBIMEA",
+        "samsung|Galaxy A|A36|Standard|256",
+        "samsung|Galaxy A|A26|Standard|128",
+        "samsung|Galaxy A|A36|Standard|128",
+        "samsung|Galaxy A|A26|Standard|256",
+        "samsung|Galaxy A|A56|Standard|256",
+        "samsung|Galaxy A|A06|Standard|64",
+        "samsung|Galaxy A|A07|Standard|64",
+        "samsung|Galaxy A|A16|Standard|128",
+        "samsung|MODEL:SM-A276BZKIMEA",
+        "samsung|MODEL:SM-A276BLIIMEA",
+        "samsung|Galaxy A|A06|Standard|128",
+        "samsung|Galaxy A|A17|Standard|256",
+        "samsung|MODEL:SM-A176BZAEMEA",
+        "samsung|MODEL:SM-A376BLVPMEA",
+        "samsung|MODEL:SM-A276BZKJMEA",
+        "samsung|MODEL:SM-A376BZAPMEA",
+        "samsung|MODEL:SM-A376BZWPMEA",
+        "samsung|MODEL:SM-A276BZBJMEA"
+      ],
+      "afterKeys": [
+        "samsung|Galaxy A|A16|Standard|128",
+        "samsung|MODEL:SM-A276BZBIMEA",
+        "samsung|MODEL:SM-A276BZKIMEA",
+        "samsung|MODEL:SM-A276BLIIMEA",
+        "samsung|MODEL:SM-A376BLVPMEA",
+        "samsung|MODEL:SM-A276BZKJMEA",
+        "samsung|MODEL:SM-A376BZAPMEA",
+        "samsung|MODEL:SM-A376BZWPMEA",
+        "samsung|MODEL:SM-A276BZBJMEA",
+        "samsung|MODEL:SM-A376BDGPMEA",
+        "samsung|MODEL:SM-A276BLIJMEA",
+        "samsung|MODEL:SM-A075FZKDMEA",
+        "samsung|MODEL:SM-A075FZGDMEA",
+        "samsung|Galaxy A|A06|Standard|64",
+        "samsung|Galaxy A|A07|Standard|64",
+        "samsung|Galaxy A|A07|Standard|128",
+        "samsung|Galaxy A|A36|Standard|256",
+        "samsung|MODEL:SM-A075FZGGMEA",
+        "samsung|MODEL:SM-A075FLVGMEA",
+        "samsung|MODEL:SM-A075FZKGMEA"
+      ]
+    },
+    {
+      "query": "أفضل جوال تحت 2000",
+      "productionBefore": 20,
+      "localAfter": 20,
+      "beforeError": null,
+      "afterError": null,
+      "beforeKeys": [
+        "xiaomi|Redmi Note|15|Standard|256",
+        "samsung|Galaxy A|A36|Standard|256",
+        "xiaomi|Redmi|17|Standard|128",
+        "xiaomi|Redmi|17|Standard|256",
+        "samsung|Galaxy A|A26|Standard|128",
+        "samsung|Galaxy A|A36|Standard|128",
+        "samsung|Galaxy A|A26|Standard|256",
+        "honor|Honor X|5|Plus|128",
+        "samsung|Galaxy A|A06|Standard|64",
+        "samsung|MODEL:SM-A276BZBIMEA",
+        "samsung|MODEL:SM-A276BZKIMEA",
+        "samsung|MODEL:SM-A276BLIIMEA",
+        "samsung|Galaxy A|A07|Standard|64",
+        "samsung|Galaxy A|A16|Standard|128",
+        "samsung|Galaxy A|A07|Standard|128",
+        "samsung|Galaxy A|A06|Standard|128",
+        "samsung|MODEL:SM-A376BLVPMEA",
+        "samsung|MODEL:SM-A276BZKJMEA",
+        "samsung|MODEL:SM-A376BZAPMEA",
+        "samsung|MODEL:SM-A376BZWPMEA"
+      ],
+      "afterKeys": [
+        "samsung|MODEL:SM-A276BZBIMEA",
+        "samsung|MODEL:SM-A276BZKIMEA",
+        "samsung|MODEL:SM-A276BLIIMEA",
+        "xiaomi|Redmi Note|15|Standard|256",
+        "samsung|Galaxy A|A16|Standard|128",
+        "samsung|MODEL:SM-A376BLVPMEA",
+        "samsung|MODEL:SM-A276BZKJMEA",
+        "samsung|MODEL:SM-A376BZAPMEA",
+        "samsung|MODEL:SM-A376BZWPMEA",
+        "samsung|MODEL:SM-A276BZBJMEA",
+        "samsung|MODEL:SM-A376BDGPMEA",
+        "samsung|MODEL:SM-A276BLIJMEA",
+        "xiaomi|Redmi|15|Standard|256",
+        "honor|Honor X|7|Standard|256",
+        "samsung|MODEL:SM-A576BLBMMEA",
+        "samsung|MODEL:SM-A576BZAPMEA",
+        "samsung|MODEL:SM-A576BZVPMEA",
+        "samsung|MODEL:SM-A576BZAMMEA",
+        "samsung|MODEL:SM-A576BZVMMEA",
+        "samsung|MODEL:SM-A576BDBMMEA"
+      ]
+    },
+    {
+      "query": "جالكسي A56",
+      "productionBefore": 2,
+      "localAfter": 2,
+      "beforeError": null,
+      "afterError": null,
+      "beforeKeys": [
+        "samsung|Galaxy A|A56|Standard|128",
+        "samsung|Galaxy A|A56|Standard|256"
+      ],
+      "afterKeys": [
+        "samsung|Galaxy A|A56|Standard|256",
+        "samsung|Galaxy A|A56|Standard|128"
+      ]
+    },
+    {
+      "query": "ريدمي نوت 14",
+      "productionBefore": 7,
+      "localAfter": 0,
+      "beforeError": null,
+      "afterError": null,
+      "beforeKeys": [
+        "0e8fc643-86fd-4e44-bb8e-f75262320cd9",
+        "18830c14-9221-45ea-bd08-54a252ca1212",
+        "1718212f-f316-48a8-801a-e8c0282c0086",
+        "a87c55a2-4863-40d1-9d69-ef193bec04be",
+        "fcc36d0a-a599-4bc7-9ebc-547dcb50b838",
+        "669ee29b-03bf-4dd3-a3e3-a5b72e9a208a",
+        "786685c0-89dd-4bb2-8f2c-d26d5471665f"
+      ],
+      "afterKeys": []
+    },
+    {
+      "query": "Redmi Note 14 5G",
+      "productionBefore": 5,
+      "localAfter": 0,
+      "beforeError": null,
+      "afterError": null,
+      "beforeKeys": [
+        "669ee29b-03bf-4dd3-a3e3-a5b72e9a208a",
+        "a87c55a2-4863-40d1-9d69-ef193bec04be",
+        "fcc36d0a-a599-4bc7-9ebc-547dcb50b838",
+        "d4305ab9-0527-46ca-8648-45d3a0076983",
+        "fcc517d8-602d-4906-b6ae-fbc7699cc40b"
+      ],
+      "afterKeys": []
+    },
+    {
+      "query": "Redmi Note 15",
+      "productionBefore": 10,
+      "localAfter": 3,
+      "beforeError": null,
+      "afterError": null,
+      "beforeKeys": [
+        "xiaomi|Redmi Note|15|Standard|256",
+        "xiaomi|Redmi Note|15|Pro Plus|512",
+        "xiaomi|Redmi Note|15|Pro|256",
+        "xiaomi|Redmi Note|15|Standard|128",
+        "0d0c79d2-a648-46b2-b1b4-02837f6d41a8",
+        "903588b1-8f1f-4bc7-a5e2-7a2ace4cf4c7",
+        "6c8ee6c2-174e-46b4-870e-24026ee7799b",
+        "74f7b0af-177e-4170-b3fd-c133e7830aaa",
+        "1b4a0b85-22b0-41bc-aed2-e205a75c6b94",
+        "a17970da-28e7-4757-96f9-a1bc2858de2c"
+      ],
+      "afterKeys": [
+        "xiaomi|Redmi Note|15|Standard|256",
+        "xiaomi|Redmi Note|15|Standard|128",
+        "0d0c79d2-a648-46b2-b1b4-02837f6d41a8"
+      ]
+    },
+    {
+      "query": "آيفون ١٦ برو",
+      "productionBefore": 11,
+      "localAfter": 0,
+      "beforeError": null,
+      "afterError": null,
+      "beforeKeys": [
+        "d34fb1a2-900d-4212-974e-bccc960b3c6a",
+        "30c206c9-d99e-497c-8eb5-acbb40dbfd2f",
+        "5938829b-9cc9-40b6-bb55-e8d1b4037764",
+        "c525a614-88bb-486a-b985-a4b69ec6ddf9",
+        "608f9d42-f9bf-497a-8de1-3538ef4d2e88",
+        "441d49f6-a65a-46df-ad74-a2846ded10c2",
+        "ddf3718a-efaa-4e46-9611-0f31f2d8c660",
+        "e8d3afa9-c827-4d04-b8c7-182f0b214a2e",
+        "1d6c8162-f649-4127-9a60-6c4c9477baf2",
+        "4d82054b-06a9-4cd5-8e43-5a419cc79e52",
+        "1589d8c0-70cb-4ced-ac3e-1d6d758bae0f"
+      ],
+      "afterKeys": []
+    },
+    {
+      "query": "جالاكسي S٢٦ ألترا",
+      "productionBefore": 20,
+      "localAfter": 20,
+      "beforeError": null,
+      "afterError": null,
+      "beforeKeys": [
+        "samsung|MODEL:SM-S948BZWOMEA",
+        "samsung|MODEL:SM-S948BZKIMEA",
+        "samsung|MODEL:SM-S948BZKOMEA",
+        "samsung|MODEL:SM-S948BLBOMEA",
+        "samsung|MODEL:SM-S948BZKPMEA",
+        "samsung|MODEL:SM-S948BZWIMEA",
+        "samsung|MODEL:SM-S948BLBIMEA",
+        "samsung|MODEL:SM-S948BZVIMEA",
+        "samsung|MODEL:SM-S948BZSOMEA",
+        "samsung|MODEL:SM-S948BZVOMEA",
+        "samsung|MODEL:SM-S948BZVPMEA",
+        "samsung|MODEL:SM-S948BZWPMEA",
+        "e1424daa-a344-4186-8d92-cc2c42311291",
+        "38d7065f-2334-41b6-bad5-0e2f3dc6bfcc",
+        "samsung|Galaxy S|S26|Ultra|1024",
+        "e73f4c0e-e2e9-4313-ac0d-6df9100427ee",
+        "e6ec4120-2a8c-495d-a483-a13d29a6bbfc",
+        "a9c02add-c76d-43b5-911e-5fd23351a274",
+        "d5cb05a7-bba8-44af-94d8-a905a3ad89e2",
+        "samsung|MODEL:SM-S948BZSIMEA"
+      ],
+      "afterKeys": [
+        "samsung|MODEL:SM-S948BZKPMEA",
+        "samsung|MODEL:SM-S948BZWIMEA",
+        "samsung|MODEL:SM-S948BLBIMEA",
+        "samsung|MODEL:SM-S948BZKIMEA",
+        "samsung|MODEL:SM-S948BZVIMEA",
+        "samsung|MODEL:SM-S948BZKOMEA",
+        "samsung|MODEL:SM-S948BLBOMEA",
+        "samsung|MODEL:SM-S948BZWOMEA",
+        "samsung|MODEL:SM-S948BZSOMEA",
+        "samsung|MODEL:SM-S948BZVOMEA",
+        "samsung|MODEL:SM-S948BZVPMEA",
+        "samsung|MODEL:SM-S948BZWPMEA",
+        "samsung|Galaxy S|S26|Ultra|1024",
+        "38d7065f-2334-41b6-bad5-0e2f3dc6bfcc",
+        "samsung|MODEL:SM-S948BZSIMEA",
+        "78030ad8-eb6e-4afb-b124-793c13455273",
+        "samsung|MODEL:SM-S948BZDIMEA",
+        "samsung|MODEL:SM-S948BZDOMEA",
+        "samsung|MODEL:SM-S948BZDPMEA",
+        "samsung|MODEL:SM-S948BZSPMEA"
+      ]
+    },
+    {
+      "query": "iphone16 pro",
+      "productionBefore": 0,
+      "localAfter": 0,
+      "beforeError": null,
+      "afterError": null,
+      "beforeKeys": [],
+      "afterKeys": []
+    },
+    {
+      "query": "Galaxy S26 Plus",
+      "productionBefore": 1,
+      "localAfter": 15,
+      "beforeError": null,
+      "afterError": null,
+      "beforeKeys": [
+        "c77a2c23-db30-40db-bf1c-5d46ada02287"
+      ],
+      "afterKeys": [
+        "samsung|MODEL:SM-S947BLBIMEA",
+        "samsung|MODEL:SM-S947BZWIMEA",
+        "samsung|MODEL:SM-S947BZVOMEA",
+        "samsung|MODEL:SM-S947BLBOMEA",
+        "samsung|MODEL:SM-S947BZKOMEA",
+        "samsung|MODEL:SM-S947BZWOMEA",
+        "samsung|MODEL:SM-S947BZVIMEA",
+        "samsung|MODEL:SM-S947BZKIMEA",
+        "2b0dd824-bec5-4bb7-ba17-72eeff65dbb7",
+        "6240b903-5b8b-47d8-977b-9affb96a0631",
+        "4a9e4207-7d99-426a-9982-4e2f0ecacb22",
+        "samsung|MODEL:SM-S947BZSIMEA",
+        "samsung|MODEL:SM-S947BZDIMEA",
+        "samsung|MODEL:SM-S947BZDOMEA",
+        "samsung|MODEL:SM-S947BZSOMEA"
+      ]
+    }
+  ],
+  "asinConflicts": [
+    {
+      "key": "apple|iPhone|18|Pro|1024",
+      "title": "Apple iPhone 18 Pro 1 TB: – Black",
+      "rawId": 3206948,
+      "requested": "B0HJ9ZYZQR",
+      "selected": "B0HJB3HBM8",
+      "at": "2026-10-02T20:11:48.169+00:00"
+    },
+    {
+      "key": "apple|iPhone|12|Standard|128",
+      "title": "Apple (Refurbished) iPhone 12 (128GB) - Black",
+      "rawId": 3294480,
+      "requested": "B0DLBDMG2Q",
+      "selected": "B0CQ2NFQ5Q",
+      "at": "2026-10-05T13:36:19.491+00:00"
+    },
+    {
+      "key": "apple|iPhone|11|Standard|128",
+      "title": "Apple (Refurbished) iPhone 11 (128GB) - Black",
+      "rawId": 3294523,
+      "requested": "B0CQ2RM6TX",
+      "selected": "B0CQ2LYYWV",
+      "at": "2026-10-05T13:40:39.46+00:00"
+    },
+    {
+      "key": "apple|iPhone|12|Standard|64",
+      "title": "Apple (Refurbished) iPhone 12 (64GB) - Purple",
+      "rawId": 3215464,
+      "requested": "B0DLBDMG2Q",
+      "selected": "B0CQ2Q2QDB",
+      "at": "2026-10-03T02:14:02.289+00:00"
+    },
+    {
+      "key": "apple|iPhone|12|Mini|128",
+      "title": "Apple (Refurbished) iPhone 12 mini (128GB) - Black",
+      "rawId": 2686947,
+      "requested": "B08X1RMTR3",
+      "selected": "B0CQ2S4G3C",
+      "at": "2026-09-15T20:08:37.032+00:00"
+    }
+  ]
+}

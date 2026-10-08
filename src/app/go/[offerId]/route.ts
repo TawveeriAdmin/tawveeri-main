@@ -20,6 +20,7 @@ import { isKnownBotUserAgent } from "@/lib/analytics/bot-detection";
 import { normalizeStoreUrl } from "@/lib/catalog/normalizeStoreUrl";
 import type { AffiliateLinkResult } from "@/lib/providers/types";
 import { verifyGoToken } from "@/lib/analytics/go-token";
+import { hasAmazonAsinConflict } from '@/lib/scraping/utils/amazon-asin';
 
 // A measured exit is per-request and must never be cached (each hit records an
 // outbound click and resolves the current offer URL). Force dynamic + Node runtime.
@@ -121,6 +122,23 @@ export async function GET(req: NextRequest, props: { params: Promise<{ offerId: 
       .eq("id", offerId)
       .maybeSingle();
     const rawUrl = (offer?.normalized_payload as Record<string, unknown> | undefined)?._url as string | undefined;
+    const payload = offer?.normalized_payload as Record<string, unknown> | undefined;
+    if (offer && String(offer.store_id) === '2' && /^(iphone|galaxy s|galaxy a|pixel|redmi|redmi note)$/i.test(String(payload?.family ?? ''))) {
+      const { data: canonical, error: canonicalError } = await supabase.from('canonical_products')
+        .select('tps_identity_key').eq('id', offer.canonical_product_id).maybeSingle();
+      if (canonicalError || !canonical) return NextResponse.json({ error: 'Offer identity unavailable' }, { status: 503 });
+      const { data: current, error: currentError } = await supabase.from('tps_current_offers')
+        .select('payload').eq('category', 'mobile').eq('identity_key', canonical.tps_identity_key).eq('store_id', 2).maybeSingle();
+      if (currentError) return NextResponse.json({ error: 'Offer verification unavailable' }, { status: 503 });
+      if (current?.payload?._identity_quarantine) return NextResponse.json({ error: 'Offer identity requires verification' }, { status: 410 });
+      const rawId = payload?._raw_id;
+      if (rawId != null) {
+        const { data: raw, error: rawError } = await supabase.from('raw_observations').select('payload').eq('id', rawId).maybeSingle();
+        if (rawError || !raw || hasAmazonAsinConflict(rawUrl, (raw.payload as Record<string, unknown>)?.sku)) {
+          return NextResponse.json({ error: 'لا يتوفر رابط موثوق لهذا العرض / No verified destination for this offer' }, { status: 410 });
+        }
+      }
+    }
     if (!error && offer && rawUrl) {
       resolved = { offerId: offer.id, productStoreId: null, storeId: offer.store_id, canonicalId: offer.canonical_product_id, rawUrl };
     }

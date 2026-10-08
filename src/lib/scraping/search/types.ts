@@ -15,6 +15,8 @@ export interface StoreSearchResult {
 }
 
 export type SearchProduct = ScrapedProduct & {
+  phone_condition?: import('@/lib/campaigns/condition').MerchantCondition;
+  listing_name?: string;
   store: string;
   store_name: string;
   rating?: number | null;

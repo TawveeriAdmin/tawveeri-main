@@ -1,0 +1,39 @@
+{
+  "golden": {
+    "numerator": 24,
+    "denominator": 24
+  },
+  "exactModelSuccess": {
+    "numerator": 14,
+    "denominator": 14,
+    "unit": "exact queries with independently observed eligible current offers"
+  },
+  "honestZero": {
+    "numerator": 6,
+    "denominator": 6
+  },
+  "accessoryFalsePositives": {
+    "numerator": 0,
+    "denominator": 24,
+    "unit": "queries with returned accessory false positives"
+  },
+  "modelFamilyMismatches": {
+    "numerator": 0,
+    "denominator": 20,
+    "unit": "exact queries"
+  },
+  "conditionMismatches": {
+    "numerator": 0,
+    "denominator": 149,
+    "unit": "returned card appearances across all queries, not unique products"
+  },
+  "staleOnlyModels": {
+    "numerator": 1,
+    "denominator": 15
+  },
+  "freshEligibleModelCoverage": {
+    "numerator": 10,
+    "denominator": 15,
+    "unit": "15 focus model definitions; observed current-offer evidence, not market census"
+  }
+}

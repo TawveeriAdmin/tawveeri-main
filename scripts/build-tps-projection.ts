@@ -265,7 +265,7 @@ async function main() {
           join tps_current_offers retired on retired.identity_key=prior.tps_identity_key
           where prior.id=ph.canonical_product_id
             and (retired.store_id=ph.store_id or ${STORE_ID_NAME_CASE.replace(/co\./g, 'retired.')} = ${STORE_NAME_CASE})
-            and retired.payload->>'_superseded_by_identity' is not null
+            and (retired.payload->>'_superseded_by_identity' is not null or retired.payload->>'_identity_quarantine' is not null)
         )
         -- ADR-196: an offer whose page is measured GONE (404/410 after the store's own
         -- scraper failed) must not win best-price or count as a comparison store. The

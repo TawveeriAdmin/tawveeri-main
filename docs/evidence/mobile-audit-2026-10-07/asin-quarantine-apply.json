@@ -1,0 +1,762 @@
+{
+  "at": "2026-10-07T11:54:58.482Z",
+  "mode": "apply",
+  "cases": [
+    {
+      "key": "apple|iPhone|18|Pro|1024",
+      "title": "Apple iPhone 18 Pro 1 TB: – Black",
+      "rawId": 3206948,
+      "requested": "B0HJ9ZYZQR",
+      "selected": "B0HJB3HBM8",
+      "at": "2026-10-02T20:11:48.169+00:00",
+      "current": {
+        "category": "mobile",
+        "identity_key": "apple|iPhone|18|Pro|1024",
+        "store_id": 2,
+        "raw_obs_id": "3206948",
+        "status": "valid",
+        "price": "8699",
+        "url": "https://www.amazon.sa/-/en/Apple-iPhone-18-Pro-256/dp/B0HJ9ZYZQR/ref=sr_1_9?dib=eyJ2IjoiMSJ9._ZZKwldBqFoxqcZPovdHSlK45K3HKYt7qxGTY6LAa2kXi8YClZ7CjmOLkKe0KKvZjOdm_CfF5eIyUEEr5dKz562B6uCiVDyEK_GO6qmQVf86C0ccIxeaBgbG_e9Vx6L37UiD03eytkwXvOdf7-IzWhp-ciFPnIM-syd9g-YgvUW1SgUVUyF8BvOpC6fYaINHVfKTKXARhD0ztgKKEGKE-bmEBLW-ar09uq4FwfACBKBLI-wnLd337HrwM_QlRH8DkTD_kmYc7c1RA0Uipdojev8zbpst176u6V-s8HbJUDE.FMcg_V5KF6CbNvDi-oFI025x_Vf3zd6oluIKfdz4Fhw&dib_tag=se&keywords=%D8%AC%D9%88%D8%A7%D9%84&qid=1790532490&sr=8-9",
+        "name": "Apple iPhone 18 Pro 1 TB: – Black",
+        "confidence": 100,
+        "payload": {
+          "color": "black",
+          "_image": "https://m.media-amazon.com/images/I/71znxpGpOjL.jpg",
+          "family": "iPhone",
+          "ram_gb": null,
+          "network": null,
+          "variant": "Pro",
+          "generation": "18",
+          "storage_gb": 1024,
+          "_availability": "in_stock"
+        },
+        "observed_at": "2026-10-02T20:11:48.169Z",
+        "updated_at": "2026-10-02T20:42:48.279Z"
+      },
+      "raw": {
+        "id": "3206948",
+        "store_id": 2,
+        "scraped_at": "2026-10-02T20:11:48.169Z",
+        "payload": {
+          "sku": "B0HJB3HBM8",
+          "brand": "Apple",
+          "model": "iPhone 18 Pro 1 TB: – Black",
+          "name_ar": "Apple iPhone 18 Pro 1 TB: – Black",
+          "name_en": "Apple iPhone 18 Pro 1 TB: – Black",
+          "category": "smartphone",
+          "image_urls": [
+            "https://m.media-amazon.com/images/I/71znxpGpOjL.jpg",
+            "https://m.media-amazon.com/images/I/31bBG1jPYnL.jpg",
+            "https://m.media-amazon.com/images/I/21bs21WIhqL.jpg",
+            "https://m.media-amazon.com/images/I/41Nz1leUSpL.jpg",
+            "https://m.media-amazon.com/images/I/41MvRqZjBXL.jpg",
+            "https://m.media-amazon.com/images/I/313PrQWxWKL.jpg",
+            "https://m.media-amazon.com/images/I/315Tx2zxcFL.jpg",
+            "https://m.media-amazon.com/images/I/81pwKHf1CAL._SX35_SY46._CR0,0,35,46_BG85,85,85_BR-120_PKdp-play-icon-overlay__.png"
+          ],
+          "_store_slug": "amazon",
+          "product_url": "https://www.amazon.sa/-/en/Apple-iPhone-18-Pro-256/dp/B0HJ9ZYZQR/ref=sr_1_9?dib=eyJ2IjoiMSJ9._ZZKwldBqFoxqcZPovdHSlK45K3HKYt7qxGTY6LAa2kXi8YClZ7CjmOLkKe0KKvZjOdm_CfF5eIyUEEr5dKz562B6uCiVDyEK_GO6qmQVf86C0ccIxeaBgbG_e9Vx6L37UiD03eytkwXvOdf7-IzWhp-ciFPnIM-syd9g-YgvUW1SgUVUyF8BvOpC6fYaINHVfKTKXARhD0ztgKKEGKE-bmEBLW-ar09uq4FwfACBKBLI-wnLd337HrwM_QlRH8DkTD_kmYc7c1RA0Uipdojev8zbpst176u6V-s8HbJUDE.FMcg_V5KF6CbNvDi-oFI025x_Vf3zd6oluIKfdz4Fhw&dib_tag=se&keywords=%D8%AC%D9%88%D8%A7%D9%84&qid=1790532490&sr=8-9",
+          "availability": "in_stock",
+          "price_source": "product_page",
+          "_ingested_via": "ingestion-service-v1",
+          "current_price": 8699,
+          "description_ar": "Four gorgeous colors. One durable design—Built to last with an aluminum unibody design featuring color-matched back glass for a more uniform look.\nImmersive pro display—A 6.3‑inch Super Retina XDR display. Brighter. Better antireflection. ProMotion up to 120Hz.\nDurable Ceramic Shield. Front and back—Built to last with Ceramic Shield back—and Ceramic Shield 2 front, with 3x better scratch resistance than iPhone 16 Pro.\nUltimate Pro camera system—48MP Fusion Main camera with variable aperture for improved low-light photos and video and impressive depth of field. Custom Pro controls. And 8x optical-quality zoom.\n18MP Center Stage front camera—Flexible ways to frame your shot. Fit more people in the picture. Front and rear Dual Capture video. And more.\nA20 Pro chip. Total AI powerhouse—With next-generation vapor chamber and Dual 16-core Neural Engine. Up to 40% better GPU performance than iPhone 17 Pro. Purpose-built for AI.\nBIG LEAP IN battery life—Up to 3 more hours video playback than iPhone 17 Pro. Up to 24 hours of use per charge. Faster wired charging, up to 50% in around 15 minutes with compatible adapter.\nAPPLE INTELLIGENCE—Personal, private, powerful. Write, express yourself, and get things done effortlessly.\nVITAL SAFETY FEATURES—With Crash Detection, iPhone can detect a severe car crash and call for help if you can’t.",
+          "description_en": "Four gorgeous colors. One durable design—Built to last with an aluminum unibody design featuring color-matched back glass for a more uniform look.\nImmersive pro display—A 6.3‑inch Super Retina XDR display. Brighter. Better antireflection. ProMotion up to 120Hz.\nDurable Ceramic Shield. Front and back—Built to last with Ceramic Shield back—and Ceramic Shield 2 front, with 3x better scratch resistance than iPhone 16 Pro.\nUltimate Pro camera system—48MP Fusion Main camera with variable aperture for improved low-light photos and video and impressive depth of field. Custom Pro controls. And 8x optical-quality zoom.\n18MP Center Stage front camera—Flexible ways to frame your shot. Fit more people in the picture. Front and rear Dual Capture video. And more.\nA20 Pro chip. Total AI powerhouse—With next-generation vapor chamber and Dual 16-core Neural Engine. Up to 40% better GPU performance than iPhone 17 Pro. Purpose-built for AI.\nBIG LEAP IN battery life—Up to 3 more hours video playback than iPhone 17 Pro. Up to 24 hours of use per charge. Faster wired charging, up to 50% in around 15 minutes with compatible adapter.\nAPPLE INTELLIGENCE—Personal, private, powerful. Write, express yourself, and get things done effortlessly.\nVITAL SAFETY FEATURES—With Crash Detection, iPhone can detect a severe car crash and call for help if you can’t.",
+          "original_price": null,
+          "specifications": {
+            "Brand": "Apple",
+            "Model name": "iPhone 18 Pro",
+            "Resolution": "2622-by-1206-pixel resolution at 460 ppi",
+            "Screen size": "6.3 Inches",
+            "Operating system": "iOS 27",
+            "Wireless carrier": "Unlocked for All Carriers",
+            "Cellular technology": "5G",
+            "Connectivity technology": "Wi-Fi",
+            "Memory storage capacity": "1 TB",
+            "Installed RAM memory size": "1 TB"
+          },
+          "merchant_rating": 3.3,
+          "merchant_review_count": 21
+        }
+      },
+      "canonical": [
+        {
+          "id": "3abf2e3c-f55f-48a6-9844-e5e405414f99",
+          "name_ar": "جوال آبل iPhone 18 Pro 1024 جيجابايت",
+          "name_en": "Apple iPhone 18 Pro 1024GB",
+          "brand": "apple",
+          "model_number": null,
+          "category": "mobile",
+          "image_url": "https://imgs.dev-almanea.com/media/catalog/product/cache/3f5e2732ebf5252ed6c4cf6bde3bd738/a/p/apple_iphone_18_pro_1tb_12gb_ram_-_burgundy_1_.png",
+          "attributes": {
+            "family": "iPhone",
+            "source": "progressive",
+            "stores": [
+              5,
+              2
+            ],
+            "variant": "Pro",
+            "generation": "18",
+            "storage_gb": 1024,
+            "identity_key": "apple|iPhone|18|Pro|1024",
+            "offers_count": 2,
+            "identity_tier": "fallback",
+            "parser_version": "mobile-v1",
+            "comparison_eligible": true
+          },
+          "is_active": true,
+          "created_at": "2026-09-13T15:26:27.170Z",
+          "data_quality_score": 85,
+          "identity_confidence": 95,
+          "variant_key": "apple|iPhone|18|Pro|1024",
+          "data_updated_at": "2026-10-07T10:40:33.305Z",
+          "tps_identity_key": "apple|iPhone|18|Pro|1024",
+          "tps_version": "mobile-v1"
+        }
+      ],
+      "observations": [
+        {
+          "id": "733e87fa-7fcb-4738-84d7-d7eaf98998af",
+          "canonical_product_id": "3abf2e3c-f55f-48a6-9844-e5e405414f99",
+          "store_id": "2",
+          "raw_name": "Apple iPhone 18 Pro 1 TB: – Black",
+          "observed_at": "2026-10-02T20:11:48.169Z",
+          "normalized_payload": {
+            "_url": "https://www.amazon.sa/-/en/Apple-iPhone-18-Pro-256/dp/B0HJ9ZYZQR/ref=sr_1_9?dib=eyJ2IjoiMSJ9._ZZKwldBqFoxqcZPovdHSlK45K3HKYt7qxGTY6LAa2kXi8YClZ7CjmOLkKe0KKvZjOdm_CfF5eIyUEEr5dKz562B6uCiVDyEK_GO6qmQVf86C0ccIxeaBgbG_e9Vx6L37UiD03eytkwXvOdf7-IzWhp-ciFPnIM-syd9g-YgvUW1SgUVUyF8BvOpC6fYaINHVfKTKXARhD0ztgKKEGKE-bmEBLW-ar09uq4FwfACBKBLI-wnLd337HrwM_QlRH8DkTD_kmYc7c1RA0Uipdojev8zbpst176u6V-s8HbJUDE.FMcg_V5KF6CbNvDi-oFI025x_Vf3zd6oluIKfdz4Fhw&dib_tag=se&keywords=%D8%AC%D9%88%D8%A7%D9%84&qid=1790532490&sr=8-9",
+            "color": "black",
+            "_image": "https://m.media-amazon.com/images/I/71znxpGpOjL.jpg",
+            "family": "iPhone",
+            "ram_gb": null,
+            "_raw_id": 3206948,
+            "network": null,
+            "variant": "Pro",
+            "generation": "18",
+            "storage_gb": 1024,
+            "_availability": "in_stock"
+          }
+        }
+      ],
+      "action": "Quarantine conflicting Amazon current offer; preserve raw, normalized observations, canonicals, price history, product matches and outbound relationships",
+      "retainedOffers": [
+        {
+          "identity_key": "apple|iPhone|18|Pro|1024",
+          "store_id": 5,
+          "raw_obs_id": "3288186",
+          "status": "valid",
+          "name": "Apple iPhone 18 Pro, 1TB, 12GB RAM, 5G - Burgundy",
+          "price": "8699",
+          "url": "https://www.almanea.sa/en/product/p-170111802040020",
+          "observed_at": "2026-10-05T04:17:09.037Z",
+          "payload": {
+            "color": null,
+            "_image": "https://imgs.dev-almanea.com/media/catalog/product/cache/3f5e2732ebf5252ed6c4cf6bde3bd738/a/p/apple_iphone_18_pro_1tb_12gb_ram_-_burgundy_1_.png",
+            "family": "iPhone",
+            "ram_gb": 12,
+            "network": "5G",
+            "variant": "Pro",
+            "generation": "18",
+            "storage_gb": 1024,
+            "_availability": "in_stock"
+          }
+        }
+      ]
+    },
+    {
+      "key": "apple|iPhone|12|Standard|128",
+      "title": "Apple (Refurbished) iPhone 12 (128GB) - Black",
+      "rawId": 3294480,
+      "requested": "B0DLBDMG2Q",
+      "selected": "B0CQ2NFQ5Q",
+      "at": "2026-10-05T13:36:19.491+00:00",
+      "current": {
+        "category": "mobile",
+        "identity_key": "apple|iPhone|12|Standard|128",
+        "store_id": 2,
+        "raw_obs_id": "3294480",
+        "status": "valid",
+        "price": "1400",
+        "url": "https://www.amazon.sa/-/en/Apple-Refurbished-iPhone-12-64GB/dp/B0DLBDMG2Q/ref=sr_1_60?dib=eyJ2IjoiMSJ9.uaIpqzRje47GYwtE0_F-LbiEt1wfL1CafuIc5T9_ntnAu4k_f6SvH4k8Fp4NCFw4ExUaa-s0XfAN93l4euhj9L8r8YL2jMrOnV5hELKRJDSa0q8tRdiFxcfSiWQDW5zCfSa6bZFJ_UwSoXwZweivIUofeUdmlH3lyD0SXchB96b2koDRPv4szNo5y_ADzwe8r8RQD4x4R-ZBPLBOLmmh0GKr9ffwRPy7OgwUkKGfaxAxdVgvBEuF-LpfqPSVdT3DlSz5cmeBcPTu8r61_oSX7R-og1nvYogZRm2uOGUBctg.n87tt5dprRJLNeIgCGBGsNKHuqIA4hP-rY6-ZdUOpx4&dib_tag=se&keywords=%D8%AC%D9%88%D8%A7%D9%84&qid=1789409300&sbo=GW1QB%2BmqAsHTPf1jTZRSDA%3D%3D&sr=8-60",
+        "name": "Apple (Refurbished) iPhone 12 (128GB) - Black",
+        "confidence": 100,
+        "payload": {
+          "color": "black",
+          "_image": "https://m.media-amazon.com/images/I/71fVoqRC0wL.jpg",
+          "family": "iPhone",
+          "ram_gb": null,
+          "network": null,
+          "variant": "Standard",
+          "generation": "12",
+          "storage_gb": 128,
+          "_availability": "in_stock"
+        },
+        "observed_at": "2026-10-05T13:36:19.491Z",
+        "updated_at": "2026-10-05T13:56:28.989Z"
+      },
+      "raw": {
+        "id": "3294480",
+        "store_id": 2,
+        "scraped_at": "2026-10-05T13:36:19.491Z",
+        "payload": {
+          "sku": "B0CQ2NFQ5Q",
+          "brand": "Apple",
+          "model": "(Refurbished) iPhone 12 (128GB) - Black",
+          "name_ar": "Apple (Refurbished) iPhone 12 (128GB) - Black",
+          "name_en": "Apple (Refurbished) iPhone 12 (128GB) - Black",
+          "category": "smartphone",
+          "image_urls": [
+            "https://m.media-amazon.com/images/I/71fVoqRC0wL.jpg",
+            "https://m.media-amazon.com/images/I/31SOygUjpUL.jpg",
+            "https://m.media-amazon.com/images/I/41M59TidDML.jpg",
+            "https://m.media-amazon.com/images/I/41HRHkbRNrL.jpg",
+            "https://m.media-amazon.com/images/I/41P-fB68cZL.jpg",
+            "https://m.media-amazon.com/images/I/31-GuknGOnL.jpg"
+          ],
+          "_store_slug": "amazon",
+          "product_url": "https://www.amazon.sa/-/en/Apple-Refurbished-iPhone-12-64GB/dp/B0DLBDMG2Q/ref=sr_1_60?dib=eyJ2IjoiMSJ9.uaIpqzRje47GYwtE0_F-LbiEt1wfL1CafuIc5T9_ntnAu4k_f6SvH4k8Fp4NCFw4ExUaa-s0XfAN93l4euhj9L8r8YL2jMrOnV5hELKRJDSa0q8tRdiFxcfSiWQDW5zCfSa6bZFJ_UwSoXwZweivIUofeUdmlH3lyD0SXchB96b2koDRPv4szNo5y_ADzwe8r8RQD4x4R-ZBPLBOLmmh0GKr9ffwRPy7OgwUkKGfaxAxdVgvBEuF-LpfqPSVdT3DlSz5cmeBcPTu8r61_oSX7R-og1nvYogZRm2uOGUBctg.n87tt5dprRJLNeIgCGBGsNKHuqIA4hP-rY6-ZdUOpx4&dib_tag=se&keywords=%D8%AC%D9%88%D8%A7%D9%84&qid=1789409300&sbo=GW1QB%2BmqAsHTPf1jTZRSDA%3D%3D&sr=8-60",
+          "availability": "in_stock",
+          "price_source": "product_page",
+          "_ingested_via": "ingestion-service-v1",
+          "current_price": 1400,
+          "description_ar": "Brand: Apple\nModel name: iPhone 12\nOperating system: iOS 14\nDisplay Size: 6.1 inches\nBrand: Apple\nModel name: iPhone 12\nOperating system: iOS 14\n\nBrand:AppleModel Name:iPhone 12.Operating System:iOS 14.Screen Size:6.1 Inch",
+          "description_en": "Brand: Apple\nModel name: iPhone 12\nOperating system: iOS 14\nDisplay Size: 6.1 inches\nBrand: Apple\nModel name: iPhone 12\nOperating system: iOS 14\n\nBrand:AppleModel Name:iPhone 12.Operating System:iOS 14.Screen Size:6.1 Inch",
+          "original_price": null,
+          "specifications": {
+            "Brand": "Apple",
+            "CPU model": "A13",
+            "CPU speed": "2.5 GHz",
+            "Model name": "iPhone 12",
+            "Resolution": "3840 x 2160",
+            "Screen size": "6.1 Inches",
+            "Operating system": "iOS 14",
+            "Wireless carrier": "Cricket",
+            "Connectivity technology": "Bluetooth, NFC, Wi-Fi",
+            "Memory storage capacity": "128 GB"
+          },
+          "merchant_rating": 2.7,
+          "merchant_review_count": 270
+        }
+      },
+      "canonical": [
+        {
+          "id": "99ca6874-a83c-47fb-b48f-3ca99ff7c4a1",
+          "name_ar": "جوال آبل iPhone 12 128 جيجابايت",
+          "name_en": "Apple iPhone 12 128GB",
+          "brand": "apple",
+          "model_number": "MJNP3AA/A",
+          "category": "mobile",
+          "image_url": "https://www.jarir.com/cdn-cgi/image/fit=contain,width=380,height=380,quality=100,metadata=none/https://ak-asset.jarir.com/akeneo-prod/asset/4/1/5/3/415355005a0e6d97b78011fd9253fd85ddf00351_565535.jpg",
+          "attributes": {
+            "family": "iPhone",
+            "source": "progressive",
+            "stores": [
+              4,
+              1
+            ],
+            "variant": "Standard",
+            "generation": "12",
+            "storage_gb": 128,
+            "identity_key": "apple|iPhone|12|Standard|128",
+            "offers_count": 2,
+            "identity_tier": "fallback",
+            "parser_version": "mobile-v1",
+            "comparison_eligible": true
+          },
+          "is_active": true,
+          "created_at": "2026-07-03T18:48:37.869Z",
+          "data_quality_score": 85,
+          "identity_confidence": 95,
+          "variant_key": "apple|iPhone|12|Standard|128",
+          "data_updated_at": "2026-10-05T13:56:15.667Z",
+          "tps_identity_key": "apple|iPhone|12|Standard|128",
+          "tps_version": "mobile-v1"
+        }
+      ],
+      "observations": [],
+      "action": "Quarantine conflicting Amazon current offer; preserve raw, normalized observations, canonicals, price history, product matches and outbound relationships",
+      "retainedOffers": [
+        {
+          "identity_key": "apple|iPhone|12|Standard|128",
+          "store_id": 1,
+          "raw_obs_id": "1883861",
+          "status": "valid",
+          "name": "Renewed Grade B Apple iPhone 12, 128 GB, Black, 5G",
+          "price": "1099",
+          "url": "https://www.jarir.com/sa-en/apple-iphone-12-renewed-smartphones-565535.html",
+          "observed_at": "2026-08-19T06:29:00.491Z",
+          "payload": {
+            "color": "black",
+            "_image": "https://www.jarir.com/cdn-cgi/image/fit=contain,width=380,height=380,quality=100,metadata=none/https://ak-asset.jarir.com/akeneo-prod/asset/4/1/5/3/415355005a0e6d97b78011fd9253fd85ddf00351_565535.jpg",
+            "family": "iPhone",
+            "ram_gb": null,
+            "network": "5G",
+            "variant": "Standard",
+            "generation": "12",
+            "storage_gb": 128
+          }
+        },
+        {
+          "identity_key": "apple|iPhone|12|Standard|128",
+          "store_id": 4,
+          "raw_obs_id": "2181602",
+          "status": "valid",
+          "name": "Apple iPhone 12, 5G, 128GB, Purple",
+          "price": "840",
+          "url": "https://www.extra.com/en-sa/mobiles-tablets/mobiles/smartphone/apple-iphone-12-5g-128gb-purple/p/100260270",
+          "observed_at": "2026-08-29T06:03:45.045Z",
+          "payload": {
+            "color": "purple",
+            "family": "iPhone",
+            "ram_gb": null,
+            "network": "5G",
+            "variant": "Standard",
+            "generation": "12",
+            "storage_gb": 128
+          }
+        }
+      ]
+    },
+    {
+      "key": "apple|iPhone|11|Standard|128",
+      "title": "Apple (Refurbished) iPhone 11 (128GB) - Black",
+      "rawId": 3294523,
+      "requested": "B0CQ2RM6TX",
+      "selected": "B0CQ2LYYWV",
+      "at": "2026-10-05T13:40:39.46+00:00",
+      "current": {
+        "category": "mobile",
+        "identity_key": "apple|iPhone|11|Standard|128",
+        "store_id": 2,
+        "raw_obs_id": "3294523",
+        "status": "valid",
+        "price": "1099",
+        "url": "https://www.amazon.sa/-/en/Apple-Refurbished-iPhone-11-64GB/dp/B0CQ2RM6TX/ref=sr_1_30?dib=eyJ2IjoiMSJ9.1kxE3kkIhX9UP0Aj3tBzRWAauUjCHCcr3mKhv6xL2wwN2AT0PGBVz8GSJcq6sXnwFCB6Zf3NqjRRYvoqlinRoy7a5uSwQzR7jQ_tdh1khT0-l8yahmW8eXNPgMob8aZ4qyzQxdskAsh1hAk1BEIk2eMYz33M3u-tGMrIXitXvRq3hkP1R4eyZ8ImkMLwYu8ijjdOX6yb03u-_6QahN2HeVmgttuFX_WgsrJ7IlSjJriXhnFrYm3uiEvIM10ytSpAhVenPsaut6BL6jAITA2sCVRUocBBX3MmBUaeAFREbeo.BWr5Cp_Kz6nKGdlnaxtxgt0nDDVzcLno9IUpb48DTcg&dib_tag=se&keywords=%D8%AC%D9%88%D8%A7%D9%84&qid=1789992483&sbo=GW1QB%2BmqAsHTPf1jTZRSDA%3D%3D&sr=8-30",
+        "name": "Apple (Refurbished) iPhone 11 (128GB) - Black",
+        "confidence": 100,
+        "payload": {
+          "color": "black",
+          "_image": "https://m.media-amazon.com/images/I/71iO2R+CLjL.jpg",
+          "family": "iPhone",
+          "ram_gb": null,
+          "network": null,
+          "variant": "Standard",
+          "generation": "11",
+          "storage_gb": 128,
+          "_availability": "limited_stock"
+        },
+        "observed_at": "2026-10-05T13:40:39.460Z",
+        "updated_at": "2026-10-05T14:22:25.518Z"
+      },
+      "raw": {
+        "id": "3294523",
+        "store_id": 2,
+        "scraped_at": "2026-10-05T13:40:39.460Z",
+        "payload": {
+          "sku": "B0CQ2LYYWV",
+          "brand": "Apple",
+          "model": "(Refurbished) iPhone 11 (128GB) - Black",
+          "name_ar": "Apple (Refurbished) iPhone 11 (128GB) - Black",
+          "name_en": "Apple (Refurbished) iPhone 11 (128GB) - Black",
+          "category": "smartphone",
+          "image_urls": [
+            "https://m.media-amazon.com/images/I/71iO2R+CLjL.jpg",
+            "https://m.media-amazon.com/images/I/419VeNTE4mL.jpg",
+            "https://m.media-amazon.com/images/I/31XrlCowrcL.jpg",
+            "https://m.media-amazon.com/images/I/31u5XAvU+pL.jpg",
+            "https://m.media-amazon.com/images/I/51bSyHs3YPL.jpg",
+            "https://m.media-amazon.com/images/I/310kp-Dz94L.jpg"
+          ],
+          "_store_slug": "amazon",
+          "product_url": "https://www.amazon.sa/-/en/Apple-Refurbished-iPhone-11-64GB/dp/B0CQ2RM6TX/ref=sr_1_30?dib=eyJ2IjoiMSJ9.1kxE3kkIhX9UP0Aj3tBzRWAauUjCHCcr3mKhv6xL2wwN2AT0PGBVz8GSJcq6sXnwFCB6Zf3NqjRRYvoqlinRoy7a5uSwQzR7jQ_tdh1khT0-l8yahmW8eXNPgMob8aZ4qyzQxdskAsh1hAk1BEIk2eMYz33M3u-tGMrIXitXvRq3hkP1R4eyZ8ImkMLwYu8ijjdOX6yb03u-_6QahN2HeVmgttuFX_WgsrJ7IlSjJriXhnFrYm3uiEvIM10ytSpAhVenPsaut6BL6jAITA2sCVRUocBBX3MmBUaeAFREbeo.BWr5Cp_Kz6nKGdlnaxtxgt0nDDVzcLno9IUpb48DTcg&dib_tag=se&keywords=%D8%AC%D9%88%D8%A7%D9%84&qid=1789992483&sbo=GW1QB%2BmqAsHTPf1jTZRSDA%3D%3D&sr=8-30",
+          "availability": "limited_stock",
+          "price_source": "product_page",
+          "_ingested_via": "ingestion-service-v1",
+          "current_price": 1099,
+          "description_ar": "Brand: Apple\nModel name: iPhone 11\nOperating system: iOS 13\nDisplay Size: 6.1 inches\n\nBrand:AppleModel Name:iPhone 11.Operating System:iOS 13.Screen Size:6.1 Inch",
+          "description_en": "Brand: Apple\nModel name: iPhone 11\nOperating system: iOS 13\nDisplay Size: 6.1 inches\n\nBrand:AppleModel Name:iPhone 11.Operating System:iOS 13.Screen Size:6.1 Inch",
+          "original_price": null,
+          "specifications": {
+            "Brand": "Apple",
+            "Colour": "Black",
+            "CPU model": "A13",
+            "Model name": "iPhone 11",
+            "Resolution": "828 x 1792",
+            "Screen size": "6.1 Inches",
+            "Operating system": "iOS 13",
+            "Wireless carrier": "AT&T",
+            "Connectivity technology": "Bluetooth, NFC, Wi-Fi",
+            "Memory storage capacity": "128 GB"
+          },
+          "merchant_rating": 2.9,
+          "merchant_review_count": 294
+        }
+      },
+      "canonical": [
+        {
+          "id": "dff70080-0634-4c3d-93e5-781682a41ac2",
+          "name_ar": "جوال آبل iPhone 11 128 جيجابايت",
+          "name_en": "Apple iPhone 11 128GB",
+          "brand": "apple",
+          "model_number": "MHDJ3AA/A",
+          "category": "mobile",
+          "image_url": "https://m.media-amazon.com/images/I/71iO2R+CLjL.jpg",
+          "attributes": {
+            "family": "iPhone",
+            "source": "progressive",
+            "stores": [
+              4,
+              2
+            ],
+            "variant": "Standard",
+            "generation": "11",
+            "storage_gb": 128,
+            "identity_key": "apple|iPhone|11|Standard|128",
+            "offers_count": 2,
+            "identity_tier": "fallback",
+            "parser_version": "mobile-v1",
+            "comparison_eligible": true
+          },
+          "is_active": true,
+          "created_at": "2026-07-23T12:05:38.792Z",
+          "data_quality_score": 85,
+          "identity_confidence": 95,
+          "variant_key": "apple|iPhone|11|Standard|128",
+          "data_updated_at": "2026-10-06T19:59:33.795Z",
+          "tps_identity_key": "apple|iPhone|11|Standard|128",
+          "tps_version": "mobile-v1"
+        }
+      ],
+      "observations": [
+        {
+          "id": "b9d176cf-915a-424a-9b2a-a4dea494cc9f",
+          "canonical_product_id": "dff70080-0634-4c3d-93e5-781682a41ac2",
+          "store_id": "2",
+          "raw_name": "Apple (Refurbished) iPhone 11 (128GB) - Black",
+          "observed_at": "2026-10-05T13:40:39.460Z",
+          "normalized_payload": {
+            "_url": "https://www.amazon.sa/-/en/Apple-Refurbished-iPhone-11-64GB/dp/B0CQ2RM6TX/ref=sr_1_30?dib=eyJ2IjoiMSJ9.1kxE3kkIhX9UP0Aj3tBzRWAauUjCHCcr3mKhv6xL2wwN2AT0PGBVz8GSJcq6sXnwFCB6Zf3NqjRRYvoqlinRoy7a5uSwQzR7jQ_tdh1khT0-l8yahmW8eXNPgMob8aZ4qyzQxdskAsh1hAk1BEIk2eMYz33M3u-tGMrIXitXvRq3hkP1R4eyZ8ImkMLwYu8ijjdOX6yb03u-_6QahN2HeVmgttuFX_WgsrJ7IlSjJriXhnFrYm3uiEvIM10ytSpAhVenPsaut6BL6jAITA2sCVRUocBBX3MmBUaeAFREbeo.BWr5Cp_Kz6nKGdlnaxtxgt0nDDVzcLno9IUpb48DTcg&dib_tag=se&keywords=%D8%AC%D9%88%D8%A7%D9%84&qid=1789992483&sbo=GW1QB%2BmqAsHTPf1jTZRSDA%3D%3D&sr=8-30",
+            "color": "black",
+            "_image": "https://m.media-amazon.com/images/I/71iO2R+CLjL.jpg",
+            "family": "iPhone",
+            "ram_gb": null,
+            "_raw_id": 3294523,
+            "network": null,
+            "variant": "Standard",
+            "generation": "11",
+            "storage_gb": 128,
+            "_availability": "limited_stock"
+          }
+        }
+      ],
+      "action": "Quarantine conflicting Amazon current offer; preserve raw, normalized observations, canonicals, price history, product matches and outbound relationships",
+      "retainedOffers": [
+        {
+          "identity_key": "apple|iPhone|11|Standard|128",
+          "store_id": 4,
+          "raw_obs_id": "3324978",
+          "status": "valid",
+          "name": "Apple iPhone 11, 128GB, Purple",
+          "price": "1068",
+          "url": "https://www.extra.com/en-sa/iphone-11/apple-iphone-11-128gb-purple/p/100091663",
+          "observed_at": "2026-10-06T18:04:43.611Z",
+          "payload": {
+            "color": "purple",
+            "family": "iPhone",
+            "ram_gb": null,
+            "network": null,
+            "variant": "Standard",
+            "generation": "11",
+            "storage_gb": 128
+          }
+        }
+      ]
+    },
+    {
+      "key": "apple|iPhone|12|Standard|64",
+      "title": "Apple (Refurbished) iPhone 12 (64GB) - Purple",
+      "rawId": 3215464,
+      "requested": "B0DLBDMG2Q",
+      "selected": "B0CQ2Q2QDB",
+      "at": "2026-10-03T02:14:02.289+00:00",
+      "current": {
+        "category": "mobile",
+        "identity_key": "apple|iPhone|12|Standard|64",
+        "store_id": 2,
+        "raw_obs_id": "3215464",
+        "status": "valid",
+        "price": "890",
+        "url": "https://www.amazon.sa/-/en/Apple-Refurbished-iPhone-12-64GB/dp/B0DLBDMG2Q/ref=sr_1_60?dib=eyJ2IjoiMSJ9.uaIpqzRje47GYwtE0_F-LbiEt1wfL1CafuIc5T9_ntnAu4k_f6SvH4k8Fp4NCFw4ExUaa-s0XfAN93l4euhj9L8r8YL2jMrOnV5hELKRJDSa0q8tRdiFxcfSiWQDW5zCfSa6bZFJ_UwSoXwZweivIUofeUdmlH3lyD0SXchB96b2koDRPv4szNo5y_ADzwe8r8RQD4x4R-ZBPLBOLmmh0GKr9ffwRPy7OgwUkKGfaxAxdVgvBEuF-LpfqPSVdT3DlSz5cmeBcPTu8r61_oSX7R-og1nvYogZRm2uOGUBctg.n87tt5dprRJLNeIgCGBGsNKHuqIA4hP-rY6-ZdUOpx4&dib_tag=se&keywords=%D8%AC%D9%88%D8%A7%D9%84&qid=1789409300&sbo=GW1QB%2BmqAsHTPf1jTZRSDA%3D%3D&sr=8-60",
+        "name": "Apple (Refurbished) iPhone 12 (64GB) - Purple",
+        "confidence": 100,
+        "payload": {
+          "color": "purple",
+          "_image": "https://m.media-amazon.com/images/I/71VpQCVgwnS.jpg",
+          "family": "iPhone",
+          "ram_gb": null,
+          "network": null,
+          "variant": "Standard",
+          "generation": "12",
+          "storage_gb": 64,
+          "_availability": "limited_stock"
+        },
+        "observed_at": "2026-10-03T02:14:02.289Z",
+        "updated_at": "2026-10-03T02:43:38.144Z"
+      },
+      "raw": {
+        "id": "3215464",
+        "store_id": 2,
+        "scraped_at": "2026-10-03T02:14:02.289Z",
+        "payload": {
+          "sku": "B0CQ2Q2QDB",
+          "brand": "Apple",
+          "model": "(Refurbished) iPhone 12 (64GB) - Purple",
+          "name_ar": "Apple (Refurbished) iPhone 12 (64GB) - Purple",
+          "name_en": "Apple (Refurbished) iPhone 12 (64GB) - Purple",
+          "category": "smartphone",
+          "image_urls": [
+            "https://m.media-amazon.com/images/I/71VpQCVgwnS.jpg",
+            "https://m.media-amazon.com/images/I/31xdhNYkCjS.jpg",
+            "https://m.media-amazon.com/images/I/41EA-w6aLjS.jpg",
+            "https://m.media-amazon.com/images/I/41hT8sOhjJS.jpg",
+            "https://m.media-amazon.com/images/I/413lErHcznS.jpg",
+            "https://m.media-amazon.com/images/I/31Kb10raL7S.jpg",
+            "https://m.media-amazon.com/images/I/3154vBD8lSS.jpg"
+          ],
+          "_store_slug": "amazon",
+          "product_url": "https://www.amazon.sa/-/en/Apple-Refurbished-iPhone-12-64GB/dp/B0DLBDMG2Q/ref=sr_1_60?dib=eyJ2IjoiMSJ9.uaIpqzRje47GYwtE0_F-LbiEt1wfL1CafuIc5T9_ntnAu4k_f6SvH4k8Fp4NCFw4ExUaa-s0XfAN93l4euhj9L8r8YL2jMrOnV5hELKRJDSa0q8tRdiFxcfSiWQDW5zCfSa6bZFJ_UwSoXwZweivIUofeUdmlH3lyD0SXchB96b2koDRPv4szNo5y_ADzwe8r8RQD4x4R-ZBPLBOLmmh0GKr9ffwRPy7OgwUkKGfaxAxdVgvBEuF-LpfqPSVdT3DlSz5cmeBcPTu8r61_oSX7R-og1nvYogZRm2uOGUBctg.n87tt5dprRJLNeIgCGBGsNKHuqIA4hP-rY6-ZdUOpx4&dib_tag=se&keywords=%D8%AC%D9%88%D8%A7%D9%84&qid=1789409300&sbo=GW1QB%2BmqAsHTPf1jTZRSDA%3D%3D&sr=8-60",
+          "availability": "limited_stock",
+          "price_source": "product_page",
+          "_ingested_via": "ingestion-service-v1",
+          "current_price": 890,
+          "description_ar": "Brand: Apple\nModel name: MJNM3AA/A\nOperating system: iOS 14\nDisplay Size: 6.1 inches",
+          "description_en": "Brand: Apple\nModel name: MJNM3AA/A\nOperating system: iOS 14\nDisplay Size: 6.1 inches",
+          "original_price": null,
+          "specifications": {
+            "Brand": "Apple",
+            "CPU model": "A13",
+            "CPU speed": "2.5 GHz",
+            "Model name": "iPhone 12",
+            "Resolution": "3840 x 2160",
+            "Screen size": "6.1 Inches",
+            "Operating system": "iOS 14",
+            "Wireless carrier": "Unlocked for All Carriers",
+            "Memory storage capacity": "64 GB",
+            "Installed RAM memory size": "64 GB"
+          },
+          "merchant_rating": 2.7,
+          "merchant_review_count": 270
+        }
+      },
+      "canonical": [
+        {
+          "id": "e0cc7454-10ef-488d-add6-48b76aae6f27",
+          "name_ar": "جوال آبل iPhone 12 64 جيجابايت",
+          "name_en": "Apple iPhone 12 64GB",
+          "brand": "apple",
+          "model_number": "MJNM3AA/A",
+          "category": "mobile",
+          "image_url": "https://m.media-amazon.com/images/I/71VpQCVgwnS.jpg",
+          "attributes": {
+            "family": "iPhone",
+            "source": "progressive",
+            "stores": [
+              4,
+              2
+            ],
+            "variant": "Standard",
+            "generation": "12",
+            "storage_gb": 64,
+            "identity_key": "apple|iPhone|12|Standard|64",
+            "offers_count": 2,
+            "identity_tier": "fallback",
+            "parser_version": "mobile-v1",
+            "comparison_eligible": true
+          },
+          "is_active": true,
+          "created_at": "2026-07-23T12:05:38.792Z",
+          "data_quality_score": 85,
+          "identity_confidence": 95,
+          "variant_key": "apple|iPhone|12|Standard|64",
+          "data_updated_at": "2026-10-06T19:59:33.795Z",
+          "tps_identity_key": "apple|iPhone|12|Standard|64",
+          "tps_version": "mobile-v1"
+        }
+      ],
+      "observations": [
+        {
+          "id": "cf7bd23b-1826-45fa-a426-03b47d6fb75d",
+          "canonical_product_id": "e0cc7454-10ef-488d-add6-48b76aae6f27",
+          "store_id": "2",
+          "raw_name": "Apple (Refurbished) iPhone 12 (64GB) - Purple",
+          "observed_at": "2026-10-03T02:14:02.289Z",
+          "normalized_payload": {
+            "_url": "https://www.amazon.sa/-/en/Apple-Refurbished-iPhone-12-64GB/dp/B0DLBDMG2Q/ref=sr_1_60?dib=eyJ2IjoiMSJ9.uaIpqzRje47GYwtE0_F-LbiEt1wfL1CafuIc5T9_ntnAu4k_f6SvH4k8Fp4NCFw4ExUaa-s0XfAN93l4euhj9L8r8YL2jMrOnV5hELKRJDSa0q8tRdiFxcfSiWQDW5zCfSa6bZFJ_UwSoXwZweivIUofeUdmlH3lyD0SXchB96b2koDRPv4szNo5y_ADzwe8r8RQD4x4R-ZBPLBOLmmh0GKr9ffwRPy7OgwUkKGfaxAxdVgvBEuF-LpfqPSVdT3DlSz5cmeBcPTu8r61_oSX7R-og1nvYogZRm2uOGUBctg.n87tt5dprRJLNeIgCGBGsNKHuqIA4hP-rY6-ZdUOpx4&dib_tag=se&keywords=%D8%AC%D9%88%D8%A7%D9%84&qid=1789409300&sbo=GW1QB%2BmqAsHTPf1jTZRSDA%3D%3D&sr=8-60",
+            "color": "purple",
+            "_image": "https://m.media-amazon.com/images/I/71VpQCVgwnS.jpg",
+            "family": "iPhone",
+            "ram_gb": null,
+            "_raw_id": 3215464,
+            "network": null,
+            "variant": "Standard",
+            "generation": "12",
+            "storage_gb": 64,
+            "_availability": "limited_stock"
+          }
+        }
+      ],
+      "action": "Quarantine conflicting Amazon current offer; preserve raw, normalized observations, canonicals, price history, product matches and outbound relationships",
+      "retainedOffers": [
+        {
+          "identity_key": "apple|iPhone|12|Standard|64",
+          "store_id": 4,
+          "raw_obs_id": "3324977",
+          "status": "valid",
+          "name": "Apple iPhone 12, 5G, 64GB, White",
+          "price": "999",
+          "url": "https://www.extra.com/en-sa/mobiles-tablets/mobiles/smartphone/apple-iphone-12-5g-64gb-white/p/100199990",
+          "observed_at": "2026-10-06T18:04:43.611Z",
+          "payload": {
+            "color": "white",
+            "family": "iPhone",
+            "ram_gb": null,
+            "network": "5G",
+            "variant": "Standard",
+            "generation": "12",
+            "storage_gb": 64
+          }
+        }
+      ]
+    },
+    {
+      "key": "apple|iPhone|12|Mini|128",
+      "title": "Apple (Refurbished) iPhone 12 mini (128GB) - Black",
+      "rawId": 2686947,
+      "requested": "B08X1RMTR3",
+      "selected": "B0CQ2S4G3C",
+      "at": "2026-09-15T20:08:37.032+00:00",
+      "current": {
+        "category": "mobile",
+        "identity_key": "apple|iPhone|12|Mini|128",
+        "store_id": 2,
+        "raw_obs_id": "2686947",
+        "status": "valid",
+        "price": "900",
+        "url": "https://www.amazon.sa/-/en/Apple-Refurbished-iPhone-mini-64GB/dp/B08X1RMTR3/ref=sr_1_13?dib=eyJ2IjoiMSJ9.l6JSdsfVsssXCmdeDJt2epN0nKP1pqMmGgGYboFtdic1KFJnKL2gx1pQ0Ee8RTuDaL7I51vio4h8dXgdxu0A66rbfVwesqIW-CB5z_z7R7X6OSivh066fDhah0OKN8ufrFIJCuH2usqtNuwclue0ck9qYfem-jy03wJCpUefwWrjlljjO0aPVW6kLCH2JX8PiyWZ1zX25DM64k1TZXKizD_S6Xa596CFZDBmtHYeBXdRvipMsj5djH4DwrPZH79W6_TB8IWgTkrp3KRViMRoj_YecI_TbZpPDKKi9gCQPcU.5vXryZKzZ_jwOBSuVmSZkoL0GxOwbeNFDPrft97R_50&dib_tag=se&keywords=%D8%AC%D9%88%D8%A7%D9%84&qid=1789474087&sbo=GW1QB%2BmqAsHTPf1jTZRSDA%3D%3D&sr=8-13",
+        "name": "Apple (Refurbished) iPhone 12 mini (128GB) - Black",
+        "confidence": 100,
+        "payload": {
+          "color": "black",
+          "_image": "https://m.media-amazon.com/images/I/71uuDYxn3XL.jpg",
+          "family": "iPhone",
+          "ram_gb": null,
+          "network": null,
+          "variant": "Mini",
+          "generation": "12",
+          "storage_gb": 128
+        },
+        "observed_at": "2026-09-15T20:08:37.032Z",
+        "updated_at": "2026-09-15T20:26:26.265Z"
+      },
+      "raw": {
+        "id": "2686947",
+        "store_id": 2,
+        "scraped_at": "2026-09-15T20:08:37.032Z",
+        "payload": {
+          "sku": "B0CQ2S4G3C",
+          "brand": "Apple",
+          "model": "(Refurbished) iPhone 12 mini (128GB) - Black",
+          "name_ar": "Apple (Refurbished) iPhone 12 mini (128GB) - Black",
+          "name_en": "Apple (Refurbished) iPhone 12 mini (128GB) - Black",
+          "category": "smartphone",
+          "image_urls": [
+            "https://m.media-amazon.com/images/I/71uuDYxn3XL.jpg",
+            "https://m.media-amazon.com/images/I/31348z5DSJL.jpg",
+            "https://m.media-amazon.com/images/I/31A2BU0HFrL.jpg",
+            "https://m.media-amazon.com/images/I/41M59TidDML.jpg",
+            "https://m.media-amazon.com/images/I/41HRHkbRNrL.jpg",
+            "https://m.media-amazon.com/images/I/41HqfAIs2LL.jpg",
+            "https://m.media-amazon.com/images/I/31jparmlyYL.jpg"
+          ],
+          "_store_slug": "amazon",
+          "product_url": "https://www.amazon.sa/-/en/Apple-Refurbished-iPhone-mini-64GB/dp/B08X1RMTR3/ref=sr_1_13?dib=eyJ2IjoiMSJ9.l6JSdsfVsssXCmdeDJt2epN0nKP1pqMmGgGYboFtdic1KFJnKL2gx1pQ0Ee8RTuDaL7I51vio4h8dXgdxu0A66rbfVwesqIW-CB5z_z7R7X6OSivh066fDhah0OKN8ufrFIJCuH2usqtNuwclue0ck9qYfem-jy03wJCpUefwWrjlljjO0aPVW6kLCH2JX8PiyWZ1zX25DM64k1TZXKizD_S6Xa596CFZDBmtHYeBXdRvipMsj5djH4DwrPZH79W6_TB8IWgTkrp3KRViMRoj_YecI_TbZpPDKKi9gCQPcU.5vXryZKzZ_jwOBSuVmSZkoL0GxOwbeNFDPrft97R_50&dib_tag=se&keywords=%D8%AC%D9%88%D8%A7%D9%84&qid=1789474087&sbo=GW1QB%2BmqAsHTPf1jTZRSDA%3D%3D&sr=8-13",
+          "availability": "limited_stock",
+          "_ingested_via": "ingestion-service-v1",
+          "current_price": 900,
+          "description_ar": "Brand: Apple\nModel name: iPhone 12 mini\nOperating system: iOS 14\nDisplay Size: 5.4 inches\n\nApple iPhone 12 mini (128GB) - Black (Renewed)",
+          "description_en": "Brand: Apple\nModel name: iPhone 12 mini\nOperating system: iOS 14\nDisplay Size: 5.4 inches\n\nApple iPhone 12 mini (128GB) - Black (Renewed)",
+          "original_price": null,
+          "specifications": {
+            "Brand": "Apple",
+            "CPU model": "A13",
+            "CPU speed": "2.5 GHz",
+            "Model name": "iPhone 12 mini",
+            "Resolution": "2340 x 1080",
+            "Screen size": "5.4 Inches",
+            "Operating system": "iOS 14",
+            "Wireless carrier": "Cricket",
+            "Memory storage capacity": "128 GB",
+            "Installed RAM memory size": "4 GB"
+          },
+          "merchant_rating": 2.5,
+          "merchant_review_count": 232
+        }
+      },
+      "canonical": [
+        {
+          "id": "fb1e2d59-46ae-47f6-9bbf-fbdf12ef74f1",
+          "name_ar": "جوال آبل iPhone 12 Mini 128 جيجابايت",
+          "name_en": "Apple iPhone 12 Mini 128GB",
+          "brand": "apple",
+          "model_number": null,
+          "category": "mobile",
+          "image_url": "https://m.media-amazon.com/images/I/71uuDYxn3XL.jpg",
+          "attributes": {
+            "family": "iPhone",
+            "source": "progressive",
+            "stores": [
+              2
+            ],
+            "variant": "Mini",
+            "generation": "12",
+            "storage_gb": 128,
+            "identity_key": "apple|iPhone|12|Mini|128",
+            "offers_count": 1,
+            "identity_tier": "fallback",
+            "parser_version": "mobile-v1",
+            "comparison_eligible": false
+          },
+          "is_active": true,
+          "created_at": "2026-09-15T20:26:36.278Z",
+          "data_quality_score": 65,
+          "identity_confidence": 75,
+          "variant_key": "apple|iPhone|12|Mini|128",
+          "data_updated_at": "2026-09-15T20:26:36.278Z",
+          "tps_identity_key": "apple|iPhone|12|Mini|128",
+          "tps_version": "mobile-v1"
+        }
+      ],
+      "observations": [
+        {
+          "id": "36730715-5415-4bd1-99bb-4ecd110cc0f5",
+          "canonical_product_id": "fb1e2d59-46ae-47f6-9bbf-fbdf12ef74f1",
+          "store_id": "2",
+          "raw_name": "Apple (Refurbished) iPhone 12 mini (128GB) - Black",
+          "observed_at": "2026-09-15T20:08:37.032Z",
+          "normalized_payload": {
+            "_url": "https://www.amazon.sa/-/en/Apple-Refurbished-iPhone-mini-64GB/dp/B08X1RMTR3/ref=sr_1_13?dib=eyJ2IjoiMSJ9.l6JSdsfVsssXCmdeDJt2epN0nKP1pqMmGgGYboFtdic1KFJnKL2gx1pQ0Ee8RTuDaL7I51vio4h8dXgdxu0A66rbfVwesqIW-CB5z_z7R7X6OSivh066fDhah0OKN8ufrFIJCuH2usqtNuwclue0ck9qYfem-jy03wJCpUefwWrjlljjO0aPVW6kLCH2JX8PiyWZ1zX25DM64k1TZXKizD_S6Xa596CFZDBmtHYeBXdRvipMsj5djH4DwrPZH79W6_TB8IWgTkrp3KRViMRoj_YecI_TbZpPDKKi9gCQPcU.5vXryZKzZ_jwOBSuVmSZkoL0GxOwbeNFDPrft97R_50&dib_tag=se&keywords=%D8%AC%D9%88%D8%A7%D9%84&qid=1789474087&sbo=GW1QB%2BmqAsHTPf1jTZRSDA%3D%3D&sr=8-13",
+            "color": "black",
+            "_image": "https://m.media-amazon.com/images/I/71uuDYxn3XL.jpg",
+            "family": "iPhone",
+            "ram_gb": null,
+            "_raw_id": 2686947,
+            "network": null,
+            "variant": "Mini",
+            "generation": "12",
+            "storage_gb": 128
+          }
+        }
+      ],
+      "action": "Quarantine conflicting Amazon current offer; preserve raw, normalized observations, canonicals, price history, product matches and outbound relationships",
+      "retainedOffers": []
+    }
+  ]
+}

@@ -1,0 +1,137 @@
+{
+  "at": "2026-10-07T12:22:58.694Z",
+  "baseCommit": "869529fb8f6a36ef12a42f66ee5901192c8f23a8",
+  "release": "C:\\Users\\Hp\\AppData\\Local\\Temp\\tawveeri-mobile-closure-flGrZK",
+  "project": "2e609987-6415-4281-9dde-4b8102677a15",
+  "environment": "production",
+  "services": [
+    "tawveeri-main",
+    "tawveeri-worker"
+  ],
+  "previousDeployments": {
+    "tawveeri-main": "97507309-d961-45fc-8814-b5545b22f722",
+    "tawveeri-worker": "2fb34695-9620-4cdc-bd84-dd57a519ccf8"
+  },
+  "files": [
+    {
+      "file": "scripts/build-tps-projection.ts",
+      "sha256": "300fc247c58adb4eb710319fb23ff0fa1dffc03a474d33f1be815fcc5d83b038"
+    },
+    {
+      "file": "scripts/tps-core/brand-map.ts",
+      "sha256": "4dd76a891af3356d4c10a08a56fd14693bfb764f5707a7a0af04902dd5ab7631"
+    },
+    {
+      "file": "scripts/tps-core/progressive-engine.ts",
+      "sha256": "8dc080571c74772f787f184fa93c4b56e15dd0cf2229cd4b3b8373ab0cd693c9"
+    },
+    {
+      "file": "src/app/[locale]/(public)/compare/[key]/page.tsx",
+      "sha256": "f9562d28ce2caf8777490d68f4a19f3b4bdd0627370c4089c0af75b108175278"
+    },
+    {
+      "file": "src/app/[locale]/(public)/search/search-client.tsx",
+      "sha256": "046a60d837388bd5b5d68fbc97e285fcec8cca8b60da1f6720d3ff875c458c63"
+    },
+    {
+      "file": "src/app/api/search/route.ts",
+      "sha256": "acdd0cc89547fe6c5ca73007a453490f57f1507aa625450b3f39bb9989c03d50"
+    },
+    {
+      "file": "src/app/api/v1/tps/search/route.ts",
+      "sha256": "1b13d8d9dd9990fa922a4092b7304bae42ab828e177fde5e7403bea3e7aedeac"
+    },
+    {
+      "file": "src/app/go/[offerId]/route.ts",
+      "sha256": "925c388a8b4f7487c99bab6f12b274c9ae5bf4516150c83e2251264b22fc7dff"
+    },
+    {
+      "file": "src/lib/catalog/getCategoryOverview.ts",
+      "sha256": "09515726671606a651874a38bb552ca2a0c4a38ea5f38bf505e2ae32436c9d96"
+    },
+    {
+      "file": "src/lib/catalog/merge-verified-canonical-search-results.ts",
+      "sha256": "0eb028837cd5d47184df12430482e3881e4fe21ad5df8c6b48bc44f11ae81f8b"
+    },
+    {
+      "file": "src/lib/compare/get-comparison.ts",
+      "sha256": "c2ee2a3bb94c9f91951c307ecea0254e88f96b584722b3f562f125f0b24c9acb"
+    },
+    {
+      "file": "src/lib/scraping/base/types.ts",
+      "sha256": "a052dc1104acbacab3ab33056fff094f4a3a0dabc43b1e5bf51c7cbe3cbab3db"
+    },
+    {
+      "file": "src/lib/scraping/search/product-grouper.ts",
+      "sha256": "ae616e70e65bf21389097d8a31ddfd763e691d8cbdc2ff6ce5a8f7f88b7a3a2e"
+    },
+    {
+      "file": "src/lib/scraping/search/types.ts",
+      "sha256": "07d7bd41d6663275be5eaea67f6585485815b894706a7ed9a49474edc0ded184"
+    },
+    {
+      "file": "src/lib/scraping/stores/amazon-scraper.ts",
+      "sha256": "8d99c589916de52cb77de668e3b5c3b5b9c74be2e8ceb5bb8ec59412b298d18e"
+    },
+    {
+      "file": "src/lib/scraping/utils/amazon-asin.ts",
+      "sha256": "f285d17ea7dd10eceb4d522ac63d2d6f905760ba49b430231a08b197a5960368"
+    },
+    {
+      "file": "tests/catalog/merge-same-listing-cards.test.ts",
+      "sha256": "e9f4a0709b67d0c7a09dc49d9f26aa73ad50311be69490f0e026c5813078c1b0"
+    },
+    {
+      "file": "tests/scraping/amazon-brand-detection.test.ts",
+      "sha256": "26091b5b52284afbf4fa315809fe8b824e464f884a3ccba50f9827e486b91bab"
+    },
+    {
+      "file": "tests/scraping/amazon-product-price.test.ts",
+      "sha256": "d3458bd68bfed240c59bbb4234224a626b18fab11e78828423e9f3da2bf2e8ef"
+    },
+    {
+      "file": "tests/search/candidate-eligibility.test.ts",
+      "sha256": "2af548768d1ac805851623e6ea644f4ee771bb1e4f5458beb011e2a279304172"
+    },
+    {
+      "file": "tests/search/swr-cache.test.ts",
+      "sha256": "8302413e5e1d5e3dd3e126c8af5b20df0f97d8bc8e7965ad1b3e5473d125303a"
+    },
+    {
+      "file": "src/lib/search/phone-model-intent.ts",
+      "sha256": "22e8ef379b548e340083d23de2f467eef7e39cf93f496ebce06216a4db8f5ef9"
+    },
+    {
+      "file": "src/lib/search/phone-offer-eligibility.ts",
+      "sha256": "37612b330e9dd4da7a3501f7ccea01c38a34a23e386e53adf66c60753bc876fb"
+    },
+    {
+      "file": "src/lib/search/phone-condition.ts",
+      "sha256": "22a5f4698594a0521fd164fabb17238defea5d47a2cc1940aaf68a83600ea169"
+    },
+    {
+      "file": "src/lib/search/phone-current-offers.ts",
+      "sha256": "31ca61cf9e4fa7f6507f6b381726dfc82a9df5ae2201d0c48173c08bbce7e659"
+    },
+    {
+      "file": "tests/search/phone-model-intent.test.ts",
+      "sha256": "7c607975844910fb7d59ab1bdbf674e0466f31bb9f2d023a43e88e7eb2fb49df"
+    },
+    {
+      "file": "tests/search/phone-offer-eligibility.test.ts",
+      "sha256": "549a60079f20c4c146d066da466860c76c67dc18f0995dbd6988c08302306e59"
+    },
+    {
+      "file": "tests/search/phone-condition.test.ts",
+      "sha256": "156b92234961bdd196bd74308da5438399f3b6218211d53482c46a6ca55cc182"
+    },
+    {
+      "file": "tests/search/phone-current-offers.test.ts",
+      "sha256": "da276d886dce11c20c31f8120dd1534d55539a47a2d05ebf9574ca8c678c6ce2"
+    },
+    {
+      "file": "tests/go/phone-identity-exit.test.ts",
+      "sha256": "0eeff1a810d5f73e9025680e213d93eb30918e8b12c43b5a91df8b2637264bc4"
+    }
+  ]
+}

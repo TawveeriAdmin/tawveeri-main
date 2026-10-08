@@ -1,0 +1,16 @@
+# Representative search benchmark — 2026-10-07
+
+Evidence: `competitor-golden.json` contains eight actual browser searches (Arabic/English × Apple/Samsung/Pixel/Redmi), their URLs, visible text and product links. It is a first-page sample, not a catalogue census. Prices and store counts below are claims visible in that sample; merchant stock and observation freshness were not independently established.
+
+| Query pair | Observed on Rakhys | Implication relative to the Tawveeri closure |
+| --- | --- | --- |
+| iPhone 18 Pro / آيفون 18 برو | Both start with the requested Pro. English repeats the same long “Original New” title across different listing URLs and prices; Arabic starts with separate 512GB/1TB listings. | Exact family retrieval works, but title repetition is not proof of duplicate commercial SKUs. Tawveeri explicitly separates storage, preserves 256GB and quarantines the conflicting Amazon 1TB exit. |
+| Galaxy S26 Ultra / سامسونج S26 ألترا | Both start with Ultra. Titles show International/Middle East and bundles; the Arabic first card claims 9 stores. | Rakhys exposes richer region/bundle labels and broader visible merchant aggregation. Tawveeri should improve verified regional/manufacturer evidence; no unsupported merge was performed to imitate the count. |
+| Pixel 9 / بكسل 9 | English first result is a base Pixel 9; following results include Pro/Fold. Arabic first-page text includes cases, watches and a hair-removal device, as well as a renewed Pixel 9 Pro XL. | Rakhys has phone listings Tawveeri lacks, but Arabic relevance and base/tier isolation are weaker in this sample. Tawveeri returns an explicit no-trusted-offer result without accessory substitution. |
+| Redmi Note 15 / ريدمي نوت 15 | Exact Note 15 appears first in both languages, with 4G/5G, region and bundle distinctions visible in titles. English first card claims 5 stores; Arabic includes 2-store bundled listings. | Rakhys has more visible variants/merchant aggregation. Tawveeri keeps a narrower set backed by fresh, available current offers and labels unknown condition. |
+
+Filters observed: relevance, low/high price, discount, rating, recently added and store count; category navigation distinguishes smartphones and accessories. The existence of filters does not establish that accessories are absent from model-search results. Region/condition are sometimes merchant-title text rather than verified structured identity. “Newly Added” sorting is not a price-observation timestamp; no freshness advantage is claimed for either site without evidence.
+
+Practical priorities: recover reliable source freshness and exact phone coverage, capture verified manufacturer/region/condition evidence, then improve structured filters. Raw listing counts and advertised discount percentages are not success metrics. No additional merchant/source was added to Tawveeri.
+
+Source query URLs are preserved verbatim in `competitor-golden.json`; examples: [English Pixel 9](https://rakhys.com/en/products?q=Pixel%209), [Arabic Pixel 9](https://rakhys.com/ar/products?q=%D8%A8%D9%83%D8%B3%D9%84%209), [Galaxy S26 Ultra](https://rakhys.com/en/products?q=Galaxy%20S26%20Ultra), [Redmi Note 15](https://rakhys.com/en/products?q=Redmi%20Note%2015).

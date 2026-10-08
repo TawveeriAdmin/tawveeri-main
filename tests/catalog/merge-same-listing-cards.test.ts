@@ -33,6 +33,17 @@ describe('normalizeListingUrl', () => {
 });
 
 describe('mergeSameListingCards — the Samsung 18000 triple', () => {
+  it('does not merge 256GB and 1TB phones when a merchant URL was reused', () => {
+    const url = 'https://www.amazon.sa/dp/B0HJ9ZYZQR';
+    const small = card({ name_en: 'Apple iPhone 18 Pro 256GB', tps_identity_key: 'apple|iPhone|18|Pro|256', stores: [offer('amazon', 5699, { listing_url: url })] });
+    const large = card({ name_en: 'Apple iPhone 18 Pro 1024GB', tps_identity_key: 'apple|iPhone|18|Pro|1024', stores: [offer('amazon', 8699, { listing_url: url })] });
+    const bridge = card({ name_en: 'Apple iPhone 18 Pro', stores: [offer('amazon', 5699, { listing_url: url })] });
+    for (const input of [[small, large], [large, small], [bridge, small, large], [small, bridge, large]]) {
+      const out = mergeSameListingCards(input);
+      expect(out).toHaveLength(2);
+      expect(out.map(p => p.tps_identity_key).sort()).toEqual([small.tps_identity_key, large.tps_identity_key].sort());
+    }
+  });
   const storefront = card({ product_id: 'c938d587-65b2-4474-8a51-507060668aa0', product_slug: 'c938d587-65b2-4474-8a51-507060668aa0',
     name_ar: 'Samsung Split AC 18000 BTU Rotary Compressor Heat and Cold', name_en: 'Samsung Split AC, 18000 BTU,Rotary Compressor,Heat and Cold',
     stores: [offer('اكسترا', 1155, { product_url: EXTRA_URL })] });
