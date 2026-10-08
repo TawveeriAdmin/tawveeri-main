@@ -18,7 +18,7 @@ describe('search route — same-listing merge runs after TPS injection', () => {
 
   it('the final mergeSameListingCards(products) call comes after the TPS spread and after deduplicateProducts', () => {
     const injection = src.indexOf('products = [...tpsProducts, ...products]');
-    const dedupe = src.indexOf('products = deduplicateProducts(products);');
+    const dedupe = src.indexOf('products = deduplicateProducts(products, ');   // the call now carries the identity-gate predicate (2026-10-08)
     const merge = src.lastIndexOf('products = mergeSameListingCards(products);');
     expect(injection).toBeGreaterThan(0);
     expect(dedupe).toBeGreaterThan(injection);

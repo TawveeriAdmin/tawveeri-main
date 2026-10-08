@@ -2164,14 +2164,21 @@ export function absorbMissingStores(base: GroupedSearchProduct, dup: GroupedSear
   } as GroupedSearchProduct;
 }
 
-function deduplicateProducts(products: GroupedSearchProduct[]): GroupedSearchProduct[] {
+/**
+ * `allowStore` (optional) decides whether a DUPLICATE card's store entry may be absorbed into the surviving card. The identity gate is applied to every
+ * grouping surface except this one: a storefront card enriched with the canonical's key by model code (enrichWithTPS) was absorbed WHOLE, so a store the verifier
+ * had flagged `review` for that canonical (Noon's QA55Q6F listing on the QA55Q7F card, found by the 2026-10-08 canary audit) reappeared on the search card while
+ * the compare page correctly omitted it.
+ */
+export function deduplicateProducts(products: GroupedSearchProduct[], allowStore?: (keeper: GroupedSearchProduct, entry: SearchProduct) => boolean): GroupedSearchProduct[] {
   const firstAt = new Map<string, number>();
   const out: GroupedSearchProduct[] = [];
   for (const p of products) {
     const key = p.tps_identity_key || p.product_id || normalizeArabic(p.name_ar || '');
     const at = firstAt.get(key);
     if (at === undefined) { firstAt.set(key, out.length); out.push(p); continue; }
-    out[at] = absorbMissingStores(out[at], p);
+    const keeper = out[at];
+    out[at] = absorbMissingStores(keeper, allowStore ? { ...p, stores: p.stores.filter((e) => allowStore(keeper, e)) } : p);
   }
   return out;
 }
@@ -3167,7 +3174,9 @@ export async function POST(request: NextRequest) {
     products = keptByCode;
   }
 
-  products = deduplicateProducts(products);
+  // Identity gate on the absorb step: signals are read for the TPS-keyed cards (per-canonical cached, flag-off = empty index, read failure fails open like every reader).
+  const dedupeSignals = await loadIdentitySignals(supabase, products.filter((p) => p.tps_identity_key && p.product_id).map((p) => ({ id: p.product_id as string, category: (p as { category?: string | null }).category })));
+  products = deduplicateProducts(products, (keeper, e) => !keeper.tps_identity_key || !keeper.product_id || isUnsignaled(dedupeSignals, keeper.product_id as string, resolveApprovedSlug(e.store_name || e.store) ?? (e.store_name || e.store)));
   // ADR-388 — MEASURED DEFECT (2026-09-26, live): the same-listing merge above ran BEFORE the
   // TPS canonical cards were injected, so «مكيف سامسونج 18000» still returned THREE cards for
   // ONE Extra listing (/p/100226575): the storefront row (raw Extra URL), the TPS canonical
