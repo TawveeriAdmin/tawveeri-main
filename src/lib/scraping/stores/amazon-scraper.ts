@@ -588,7 +588,8 @@ export class AmazonScraper extends BaseScraper {
    * legacy brands. 'Unknown' stays the honest fallback when the title names no known brand.
    */
   private extractBrandAndModel(name: string): { brand: string; model: string } {
-    const detected = detectBrandFromText(name);
+    // A title leads with its brand («ASUS Zenbook Duo … Microsoft Copilot+ PC»): look at the head first, so a longer brand name mentioned later (Microsoft, Google) cannot outrank it.
+    const detected = detectBrandFromText(name.slice(0, 45)) ?? detectBrandFromText(name);
     if (!detected) return { brand: 'Unknown', model: name };
     // `detected` is the exact text matched in the title, so a plain string replace removes the brand word (no regex escaping needed).
     return { brand: detected, model: name.split(detected).join('').replace(/\s{2,}/g, ' ').trim() };

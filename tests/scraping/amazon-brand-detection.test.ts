@@ -186,3 +186,15 @@ describe('Amazon PDP scraper brand (2026-10-10): curated detection, not a 21-bra
     expect(r.model).toBe('Refrigerator Double Door MDRT765FGU46DO');
   });
 });
+
+describe('Amazon PDP scraper brand: the title leads with its brand (2026-10-10)', () => {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { AmazonScraper } = require('../../src/lib/scraping/stores/amazon-scraper');
+  const extract = (t: string) => (new AmazonScraper() as unknown as { extractBrandAndModel(n: string): { brand: string } }).extractBrandAndModel(t);
+  it('a later, longer brand name (Microsoft Copilot+) does not outrank the leading brand', () => {
+    expect(canonicalizeBrand(extract('ASUS Zenbook Duo 14" TOUCH FHD OLED / UX8406CA-QL078W / Intel Core Ultra 9 285H, Microsoft Copilot+ PC').brand)).toBe('asus');
+  });
+  it('a brand that appears only later in the title is still found by the full scan', () => {
+    expect(canonicalizeBrand(extract('Robot Vacuum and Mop with Auto Empty Station, Roborock Q Revo').brand)).toBe('roborock');
+  });
+});
