@@ -19,6 +19,8 @@ describe('verifiedSeedOffers', () => {
     expect(r.offers).toHaveLength(1);
     expect(r.offers[0]).toMatchObject({ external_id: 'B0FB3TL22Z', product_url: 'https://www.amazon.sa/dp/B0FB3TL22Z', brand: 'Midea', current_price: 2899, original_price: 6000, availability: 'in_stock', _source: 'amazon-search' });
     expect((r.offers[0]._raw as { _price_source: string })._price_source).toBe('product_page');
+    // the normalizer reads the RAW payload: the seed brand must be there, not the page's 'Unknown'
+    expect((r.offers[0]._raw as { brand: string }).brand).toBe('Midea');
   });
 
   it('skips a seed whose ASIN already has a storefront row (idempotent; never reprices a known row)', async () => {

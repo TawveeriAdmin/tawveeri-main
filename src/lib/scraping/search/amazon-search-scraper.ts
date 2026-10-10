@@ -5,6 +5,20 @@ import { detectBrandFromText } from '../../../../scripts/tps-core/brand-map';
 
 const BASE_URL = 'https://www.amazon.sa';
 
+/**
+ * SECOND-CHANCE FETCH (2026-10-10). Of the last 17 scheduled discovery runs (2026-10-06 to 10-10) 9 ended `partial` and the last five found 0 / 0 / 0 / 15 / 0 tiles: Amazon answers the
+ * datacenter egress with HTTP 503 or a result-less challenge page for the rotating DESKTOP headers this scraper sends (and those headers claim Firefox/Safari while sending Chrome
+ * client hints — an inconsistent fingerprint). From a different network the plain mobile-Safari request returned the same tiles 9 of 9 times (20 per page, 100% titled and
+ * priced) where the desktop request failed once in 9. So when a page fails or comes back without tiles it is retried ONCE as mobile Safari; the page is read with the same parser.
+ * `AMAZON_SEARCH_MOBILE_FALLBACK=0` switches it off.
+ */
+const MOBILE_FALLBACK_HEADERS: Record<string, string> = {
+  'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1',
+  'Accept': 'text/html,application/xhtml+xml',
+  'Accept-Language': 'en-US,en;q=0.9',
+};
+const mobileFallbackEnabled = () => process.env.AMAZON_SEARCH_MOBILE_FALLBACK !== '0';
+
 export class AmazonSearchScraper extends BaseSearchScraper {
   constructor() {
     super('amazon', 'Amazon SA');
@@ -20,17 +34,34 @@ export class AmazonSearchScraper extends BaseSearchScraper {
         if (page > startPage) await this.delay(500, 1500);
 
         const url = `${BASE_URL}/s?k=${encodeURIComponent(query)}&page=${page}&ref=sr_pg_${page}`;
-        let html: string;
+        let html = '';
+        let fetchErr: unknown = null;
         try {
           html = await this.fetchHtml(url, getBrowserHeaders());
         } catch (err) {
-          error = formatScrapeError(err);
+          fetchErr = err;
+        }
+
+        let $ = this.getCheerio(html);
+        let items = $("div[data-component-type='s-search-result']");
+
+        if (items.length === 0 && mobileFallbackEnabled()) {
+          try {
+            const retryHtml = await this.fetchHtml(url, MOBILE_FALLBACK_HEADERS);
+            const retry$ = this.getCheerio(retryHtml);
+            const retryItems = retry$("div[data-component-type='s-search-result']");
+            if (retryItems.length > 0) {
+              console.log(`[Amazon] Page ${page}: recovered via mobile fallback (${retryItems.length} tiles; first attempt: ${fetchErr ? formatScrapeError(fetchErr) : 'no result tiles'})`);
+              html = retryHtml; $ = retry$; items = retryItems; fetchErr = null;
+            }
+          } catch { /* keep the first failure below */ }
+        }
+
+        if (fetchErr) {
+          error = formatScrapeError(fetchErr);
           console.error(`[Amazon] Page ${page} fetch failed:`, error);
           break;
         }
-
-        const $ = this.getCheerio(html);
-        const items = $("div[data-component-type='s-search-result']");
 
         if (items.length === 0) {
           // A challenge/unknown template is not evidence that discovery completed.

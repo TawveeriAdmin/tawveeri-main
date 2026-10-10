@@ -10,6 +10,7 @@ import { isCreatorsApiConfigured, refreshPricesViaCreatorsApi } from '@/lib/prov
 /** iOS Safari — the client Amazon serves the server-rendered mobile detail page to (ADR-397). */
 const AMAZON_MOBILE_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1';
 import { isTechProduct } from '../product-filter';
+import { detectBrandFromText } from '../../../../scripts/tps-core/brand-map';
 
 const BASE_URL = 'https://www.amazon.sa';
 
@@ -578,25 +579,19 @@ export class AmazonScraper extends BaseScraper {
     return specs;
   }
 
+  /**
+   * BRAND FROM THE TITLE, THROUGH THE CURATED LIST (2026-10-10). This used to match a hard-coded list of 21 brands by plain SUBSTRING and answer 'Unknown' for everything
+   * else — Midea, ECOVACS, Philips, Hisense, Toshiba, Honor, Hitachi, Bosch … — the same defect ADR-305 fixed in the search-tile scraper
+   * (`amazon-search-scraper.ts` has used `detectBrandFromText` since 2026-09-07) and left in the detail-page scraper. Measured 2026-10-10 on production: 155 of 366 Amazon
+   * price_update observations in 30 h (42%) carried brand 'Unknown'; only 50% of them reached the knowledge layer (82% with a known brand), and 57% of the 7,544 active
+   * Amazon storefront products have no brand. `detectBrandFromText` is word-boundary safe (no 'HP' inside a model code), never invents a brand, and recognises all 21
+   * legacy brands. 'Unknown' stays the honest fallback when the title names no known brand.
+   */
   private extractBrandAndModel(name: string): { brand: string; model: string } {
-    const knownBrands = [
-      'Apple', 'Samsung', 'Xiaomi', 'Huawei', 'Dell', 'HP', 'Lenovo',
-      'LG', 'Sony', 'Asus', 'Acer', 'MSI', 'Nokia', 'Oppo', 'Vivo',
-      'OnePlus', 'Google', 'Microsoft', 'Anker', 'JBL', 'Bose',
-    ];
-
-    let brand = 'Unknown';
-    let model = name;
-
-    for (const knownBrand of knownBrands) {
-      if (name.toLowerCase().includes(knownBrand.toLowerCase())) {
-        brand = knownBrand;
-        model = name.replace(new RegExp(knownBrand, 'gi'), '').trim();
-        break;
-      }
-    }
-
-    return { brand, model };
+    const detected = detectBrandFromText(name);
+    if (!detected) return { brand: 'Unknown', model: name };
+    // `detected` is the exact text matched in the title, so a plain string replace removes the brand word (no regex escaping needed).
+    return { brand: detected, model: name.split(detected).join('').replace(/\s{2,}/g, ' ').trim() };
   }
 
   private parseAvailability(text: string): 'in_stock' | 'out_of_stock' | 'limited_stock' | 'pre_order' {

@@ -158,3 +158,31 @@ describe('AmazonSearchScraper.parseProduct — end-to-end brand wiring (current 
     expect(p?.brand).toBe('Gree');
   });
 });
+
+describe('Amazon PDP scraper brand (2026-10-10): curated detection, not a 21-brand substring list', () => {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { AmazonScraper } = require('../../src/lib/scraping/stores/amazon-scraper');
+  const extract = (t: string) => (new AmazonScraper() as unknown as { extractBrandAndModel(n: string): { brand: string; model: string } }).extractBrandAndModel(t);
+
+  it.each([
+    ['ECOVACS DEEBOT T50 PRO OMNI Robot Vacuum and Mop, 8.1 cm Ultra-Slim', 'ecovacs'],
+    ['Midea Refrigerator Double Door - 20.3 Cu Capacity - MDRT765FGU46DO', 'midea'],
+    ['Philips Vacuum & Mop Robot With Station, 6000Pa Suction, XU2100/15', 'philips'],
+    ['Hisense 55 inch QLED 4K Smart TV 55E7Q', 'hisense'],
+    ['75 inch LG QNED evo AI QNED9M MiniLED 4K 144Hz VRR Smart TV', 'lg'],
+    ['Apple 2026 MacBook Air 13-inch Laptop with M5 chip', 'apple'],
+    ['SAMSUNG Galaxy Tab S11 Ultra, 5G, 512 GB', 'samsung'],
+  ])('names the brand in "%s"', (title, brand) => {
+    expect(canonicalizeBrand(extract(title).brand)).toBe(brand);
+  });
+
+  it('keeps the honest Unknown fallback when the title names no known brand, and never invents one inside a model code', () => {
+    expect(extract('Portable Air Conditioner with Water Tank 4L 80W').brand).toBe('Unknown');
+    expect(extract('Window AC 18,000 BTU cold rotary GS1860CHP24').brand).toBe('Unknown');
+  });
+
+  it('removes the brand word from the model text and leaves the rest of the title intact', () => {
+    const r = extract('Midea Refrigerator Double Door MDRT765FGU46DO');
+    expect(r.model).toBe('Refrigerator Double Door MDRT765FGU46DO');
+  });
+});

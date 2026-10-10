@@ -192,6 +192,9 @@ const BRAND_ALIASES: Record<string, string> = {
   "tefal": "tefal", "تيفال": "tefal",
   "dyson": "dyson", "دايسون": "dyson",
   "shark": "shark", "شارك": "shark",
+  // Robot-vacuum makers present in our own catalogue and absent from this map (measured 2026-10-10 on active storefront titles: eufy 46, ecovacs 15, dreame 14, roborock 3),
+  // so a title naming them detected NO brand and the vacuum identity was invalid. Latin spellings only: the Arabic transliterations of these names are ambiguous or unmeasured.
+  "ecovacs": "ecovacs", "dreame": "dreame", "roborock": "roborock", "eufy": "eufy", "narwal": "narwal",
   "hitachi": "hitachi", "هيتاشي": "hitachi", "هيتاشى": "hitachi",
   "hoover": "hoover", "هوفر": "hoover",
   "ariston": "ariston", "أريستون": "ariston", "اريستون": "ariston",

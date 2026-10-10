@@ -162,7 +162,9 @@ export async function verifiedSeedOffers(
       current_price: page.current_price, original_price: page.original_price ?? null, product_url: url,
       image_url: page.image_urls?.[0] ?? null,
       availability: 'in_stock', barcode: null, external_id: asin,
-      _raw: { ...(page as unknown as object), _price_source: 'product_page', _seed: true },
+      // The RAW payload is what the normalizer reads: a seed's brand must be in it too, not only on the offer row (measured 2026-10-10: ECOVACS and Midea seeds were stored
+      // with payload brand 'Unknown' and never reached the knowledge layer).
+      _raw: { ...(page as unknown as object), brand: brand || (page.brand ?? ''), _price_source: 'product_page', _seed: true },
       _source: 'amazon-search',
     });
   }
