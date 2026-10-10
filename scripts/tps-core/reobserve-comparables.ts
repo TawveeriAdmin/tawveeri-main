@@ -24,13 +24,14 @@ config({ path: resolve(process.cwd(), ".env.local") });
 import pg from "pg";
 import { toPoolerDbUrl } from "./pooler-url";
 import { TPS_STORES } from "./category-registry";
+import { TARGET_SQL, CLAIM_WINDOW_HOURS, KEEP_FROM_HOURS, pickTargets } from "./reobserve-targets";
 
 const args = process.argv.slice(2);
 const GO = args.includes("--go");
 const num = (name: string, d: number) => parseInt(args.find((a) => a.startsWith(`--${name}=`))?.split("=")[1] || String(d), 10);
 const LIMIT = num("limit", 50);
 const PER_STORE = num("per-store", 25);
-const STALE_HOURS = num("stale-hours", 168);
+const INCLUDE_REVIVE = args.includes("--revive");
 const ONLY_STORES = args.find((a) => a.startsWith("--stores="))?.split("=")[1]?.split(",").map((s) => s.trim()).filter(Boolean) ?? null;
 
 // Same identity maps as seeded-discovery.ts — store_name namespaces as written into
@@ -51,121 +52,44 @@ const STORE_NAMES: Record<string, string[]> = {
 const NAME_TO_SLUG = new Map<string, string>();
 for (const [slug, names] of Object.entries(STORE_NAMES)) for (const n of names) NAME_TO_SLUG.set(n.toLowerCase(), slug);
 
-type Target = { cid: string; slug: string; raw_url: string | null; raw_name: string; last_observed: string | null; tps_identity_key: string | null; url_source: "npo" | "legacy_raw" | null; last_price: number | null };
+type Target = { rank: 1 | 2 | 3; cid: string; slug: string; raw_url: string | null; raw_name: string; last_observed: string | null; tps_identity_key: string | null; url_source: "npo" | "legacy_raw" | null; last_price: number | null };
 
 (async () => {
   const url = toPoolerDbUrl(process.env.SUPABASE_DB_URL!);
   if (!url.includes("vyceqrzttspyycdpojtn") || url.includes("ffpsjjazsluolysgithg")) {
     console.error("refusing: not production"); process.exit(1);
   }
-  const pgc = new pg.Client({ connectionString: url, ssl: { rejectUnauthorized: false } });
+  const newClient = () => { const c = new pg.Client({ connectionString: url, ssl: { rejectUnauthorized: false } }); c.on('error', (e) => console.error(`  pg client error (ignored): ${e.message}`)); return c; };
+  const pgc = newClient();
   await pgc.connect();
+  // The selection connection is closed as soon as the targets are read. A LIVE run spends minutes in slow merchant fetches: a connection held idle through them is
+  // killed by the pooler ("Connection terminated unexpectedly", an unhandled 'error' event that crashed the process, 2026-10-10). Writes open a short-lived client.
+  const withDb = async <R,>(fn: (c: pg.Client) => Promise<R>): Promise<R> => { const c = newClient(); await c.connect(); try { return await fn(c); } finally { await c.end().catch(() => {}); } };
 
-  // The store map, flattened for SQL.
-  const mapRows = Object.entries(STORE_NAMES).flatMap(([slug, names]) => names.map((n) => ({ k: n.toLowerCase(), slug })));
-  const mapValues = mapRows.map((_, i) => `($${i * 2 + 1}, $${i * 2 + 2})`).join(",");
-  const mapParams = mapRows.flatMap((r) => [r.k, r.slug]);
-
-  // Cheapest-offer-first: for every displayable comparable (>=2 approved retailers on
-  // active canonicals), take the CHEAPEST current offer; keep pairs whose TRUE last
-  // observation (normalized_product_observations, a row per observation — ADR-194) is
-  // older than STALE_HOURS; recover the offer's raw_url from its newest raw observation.
-  const { rows: targets } = await pgc.query<Target>(
-    `with m(k, slug) as (values ${mapValues}),
-     latest as (
-       select distinct on (ph.canonical_product_id, m.slug)
-              ph.canonical_product_id cid, m.slug, ph.price
-       from price_history ph
-       join canonical_products cp on cp.id = ph.canonical_product_id and cp.is_active
-       join m on m.k = lower(trim(ph.store_name))
-       order by ph.canonical_product_id, m.slug, ph.observed_at desc
-     ),
-     n as (select cid, count(*) s from latest group by 1),
-     cheapest as (
-       select distinct on (l.cid) l.cid, l.slug
-       from latest l join n on n.cid = l.cid and n.s >= 2
-       order by l.cid, l.price asc
-     ),
-     tru as (
-       select c.cid, c.slug,
-              (select max(npo.observed_at) from normalized_product_observations npo
-                 join m m2 on m2.k = lower(trim(npo.store_id::text))
-               where npo.canonical_product_id = c.cid and m2.slug = c.slug) last_observed
-       from cheapest c
-     ),
-     stale as (
-       select * from tru
-       where last_observed is null or last_observed < now() - ($${mapParams.length + 1}::int * interval '1 hour')
-     )
-     select s.cid, s.slug, s.last_observed::text, cp2.tps_identity_key,
-            (select ph3.price from price_history ph3 join m m5 on m5.k = lower(trim(ph3.store_name)) and m5.slug = s.slug
-             where ph3.canonical_product_id = s.cid order by ph3.observed_at desc limit 1) as last_price,
-            coalesce(ro.raw_url, legacy.raw_url) as raw_url,
-            coalesce(ro.raw_name, legacy.raw_name, '') raw_name,
-            case when ro.raw_url is not null then 'npo'
-                 when legacy.raw_url is not null then 'legacy_raw' end as url_source
-     from stale s
-     join canonical_products cp2 on cp2.id = s.cid
-     -- Primary URL source: the pair's newest normalized observation payload — the
-     -- normalizer stamps normalized_payload._url (raw_payload is NULL on current rows,
-     -- and npo.source_record_id is a stableUuid — it cannot join raw_observations).
-     left join lateral (
-       select npo.normalized_payload->>'_url' as raw_url, npo.raw_name
-       from normalized_product_observations npo
-       join m m3 on m3.k = lower(trim(npo.store_id::text)) and m3.slug = s.slug
-       where npo.canonical_product_id = s.cid
-         and coalesce(npo.normalized_payload->>'_url', '') <> ''
-       order by npo.observed_at desc
-       limit 1
-     ) ro on true
-     -- ADR-198 fallback: ORPHANED PRICE LINEAGES. For these pairs the price rows'
-     -- tps_observation_id resolves to an npo row that carries the URL — but under a
-     -- DIFFERENT canonical (identity churn moved the observation lineage; the old
-     -- canonical kept the price rows). The URL is still the offer's own provenance, so
-     -- follow the price row's own observation id and ignore the canonical mismatch.
-     -- (Two rejected routes, both measured 0/26: identityKeyToSlug→products.slug — the
-     -- layers are different identity namespaces, ADR-189's exact lesson re-learned — and
-     -- raw_observation_id, which these rows never carry.)
-     left join lateral (
-       select npo2.normalized_payload->>'_url' as raw_url, npo2.raw_name
-       from price_history ph2
-       join m m4 on m4.k = lower(trim(ph2.store_name)) and m4.slug = s.slug
-       join normalized_product_observations npo2 on npo2.id = ph2.tps_observation_id
-       where ph2.canonical_product_id = s.cid
-         and coalesce(npo2.normalized_payload->>'_url', '') <> ''
-       order by ph2.observed_at desc
-       limit 1
-     ) legacy on true
-     where not exists (
-       select 1 from tps_current_offers retired join m retirement_store on retirement_store.k=retired.store_id::text
-       where retired.identity_key=cp2.tps_identity_key and retirement_store.slug=s.slug
-         and retired.payload->>'_superseded_by_identity' is not null
-     )
-     order by s.last_observed asc nulls first`,
-    [...mapParams, STALE_HOURS],
+  // TARGET SELECTION (rewritten 2026-10-10): the old query scanned all of price_history + a correlated max() over normalized_product_observations and has
+  // timed out on every run since 2026-10-01. Now one cheap read of the hot current-state table, ranked by what a fetch buys — see reobserve-targets.ts.
+  const SLUG_BY_ID = new Map(Object.entries(STORE_ID).map(([slug, id]) => [id, slug]));
+  const { rows: rawTargets } = await pgc.query<{ cid: string; sid: number; raw_url: string | null; raw_name: string; last_observed: string | null; tps_identity_key: string; last_price: number | null; rank: number }>(
+    TARGET_SQL, [Object.values(STORE_ID), CLAIM_WINDOW_HOURS, KEEP_FROM_HOURS],
   );
+  const targets: Target[] = rawTargets.flatMap((r) => {
+    const slug = SLUG_BY_ID.get(r.sid);
+    return slug ? [{ cid: r.cid, slug, raw_url: r.raw_url, raw_name: r.raw_name, last_observed: r.last_observed, tps_identity_key: r.tps_identity_key, url_source: "npo" as const, last_price: r.last_price, rank: r.rank as 1 | 2 | 3 }] : [];
+  });
 
-  if (!GO) await pgc.end(); // LIVE keeps the connection for delist-signal writes/heals
+  await pgc.end().catch(() => {});
 
-  // Bound the run: per-store cap first (throttle safety — amazon especially), then total.
-  const perStore = new Map<string, number>();
-  const picked: Target[] = [];
-  for (const t of targets) {
-    if (ONLY_STORES && !ONLY_STORES.includes(t.slug)) continue;
-    if (!t.raw_url) continue; // counted below; a pair with no recoverable URL cannot be re-fetched
-    const c = perStore.get(t.slug) ?? 0;
-    if (c >= PER_STORE) continue;
-    perStore.set(t.slug, c + 1);
-    picked.push(t);
-    if (picked.length >= LIMIT) break;
-  }
-  const noUrl = targets.filter((t) => !t.raw_url).length;
-
+  // Bound the run: per-store cap first (throttle safety — amazon especially; noon is cost-sensitive), then total. Rank 1 (restore a comparison) first.
+  const { picked, perStore, noUrl } = pickTargets(targets, {
+    limit: LIMIT, perStore: PER_STORE, onlyStores: ONLY_STORES, includeRank3: INCLUDE_REVIVE,
+    perStoreCaps: { noon: num("noon-cap", 12), amazon: num("amazon-cap", 20) },
+  });
+  const rankCounts = picked.reduce((a, t) => { const k = "r" + t.rank; a[k] = (a[k] ?? 0) + 1; return a; }, {} as Record<string, number>);
   const srcCounts = picked.reduce((a, t) => { a[t.url_source ?? "npo"] = (a[t.url_source ?? "npo"] ?? 0) + 1; return a; }, {} as Record<string, number>);
-  console.log(`reobserve-comparables — ${GO ? "LIVE" : "DRY"} — stale pairs ${targets.length} (no-url ${noUrl}) → picked ${picked.length} (limit ${LIMIT}, per-store ${PER_STORE}, stale>=${STALE_HOURS}h) · url sources ${JSON.stringify(srcCounts)}`);
+  console.log(`reobserve-comparables — ${GO ? "LIVE" : "DRY"} — candidate offers ${targets.length} (no-url ${noUrl}) → picked ${picked.length} (limit ${LIMIT}, per-store ${PER_STORE}, window ${CLAIM_WINDOW_HOURS}h) · ranks ${JSON.stringify(rankCounts)} · url sources ${JSON.stringify(srcCounts)}`);
   for (const [slug, c] of perStore) console.log(`  ${slug.padEnd(12)} ${c}`);
   if (!GO) {
-    for (const t of picked.slice(0, 15)) console.log(`  ${t.slug.padEnd(10)} last=${t.last_observed ?? "never"} ${String(t.raw_url).slice(0, 90)}`);
+    for (const t of picked.slice(0, 15)) console.log(`  r${t.rank} ${t.slug.padEnd(10)} last=${t.last_observed ?? "never"} ${String(t.raw_url).slice(0, 90)}`);
     process.exit(0);
   }
 
@@ -195,7 +119,13 @@ type Target = { cid: string; slug: string; raw_url: string | null; raw_name: str
   const nullClasses: Record<string, number> = {};
   const goneOffers: Array<{ cid: string; slug: string; url: string; last_observed: string | null }> = [];
   const perStoreResult: Record<string, { ok: number; null_: number; err: number }> = {};
+  // Stop STARTING fetches one margin before the worker's hard timeout (15 min): the run then exits through the normal path and records what it refreshed, instead
+  // of being killed mid-write. Env-tunable; default leaves ~3 min of headroom for the in-flight fetch and the close-out.
+  const SOFT_DEADLINE_MS = parseInt(process.env.REOBSERVE_SOFT_DEADLINE_MS || String(12 * 60 * 1000), 10);
+  const startedAt = Date.now();
+  let stoppedEarly = 0;
   for (const t of picked) {
+    if (Date.now() - startedAt > SOFT_DEADLINE_MS) { stoppedEarly = picked.length - fetched - nulls - errors; console.log(`  soft deadline reached after ${Math.round((Date.now() - startedAt) / 1000)}s — ${stoppedEarly} target(s) left for the next run`); break; }
     const r = (perStoreResult[t.slug] ??= { ok: 0, null_: 0, err: 0 });
     try {
       const scraper = orch.getScraperForStore(t.slug);
@@ -225,7 +155,7 @@ type Target = { cid: string; slug: string; raw_url: string | null; raw_name: str
           ingested++; r.ok++;
           // HEAL: a successful observation of the pair retires any standing delist signal —
           // re-listed offers rejoin comparison the moment they are seen again.
-          await pgc.query(`delete from tps_offer_delist_signals where canonical_product_id = $1 and store_slug = $2`, [t.cid, t.slug])
+          await withDb((c) => c.query(`delete from tps_offer_delist_signals where canonical_product_id = $1 and store_slug = $2`, [t.cid, t.slug]))
             .catch((e) => console.error(`  heal failed ${t.slug}: ${e.message}`));
         } else { errors++; r.err++; }
       } else {
@@ -237,13 +167,13 @@ type Target = { cid: string; slug: string; raw_url: string | null; raw_name: str
           // ADR-196 phase 2 — persist the verdict so surfaces stop letting this offer win
           // best-price. Display name written from TPS_STORES (the one authoritative map).
           const display = TPS_STORES.find((s) => s.id === STORE_ID[t.slug])?.name ?? t.slug;
-          await pgc.query(
+          await withDb((c) => c.query(
             `insert into tps_offer_delist_signals (canonical_product_id, store_slug, store_display_name, url, status_code)
              values ($1, $2, $3, $4, 404)
              on conflict (canonical_product_id, store_slug)
              do update set url = excluded.url, observed_gone_at = now()`,
             [t.cid, t.slug, display, t.raw_url],
-          ).catch((e) => console.error(`  signal write failed ${t.slug}: ${e.message}`));
+          )).catch((e) => console.error(`  signal write failed ${t.slug}: ${e.message}`));
         }
         console.log(`  NULL(${cls}) ${t.slug} ${String(t.raw_url).slice(0, 80)}`);
       }
@@ -264,12 +194,10 @@ type Target = { cid: string; slug: string; raw_url: string | null; raw_name: str
       JSON.stringify({ measured_at: new Date().toISOString(), method: "updateProductPrice null + direct GET status 404/410", offers: goneOffers }, null, 2));
   }
 
-  await pgc.end();
-
   console.log(JSON.stringify({
     mode: "LIVE", stale_pairs: targets.length, no_url: noUrl, attempted: picked.length,
     fetched, ingested, nulls, null_classes: nullClasses, gone_offers: goneOffers.length,
-    errors, per_store: perStoreResult,
+    errors, stopped_early: stoppedEarly, per_store: perStoreResult,
     note: "observations queued for the hourly normalizer; re-measure after the next chain tick",
   }, null, 2));
   process.exit(errors > 0 && ingested === 0 ? 1 : 0);

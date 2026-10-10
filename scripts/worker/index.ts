@@ -138,7 +138,8 @@ const JOBS: JobDef[] = [
   },
   {
     name: 'reobserve',
-    intervalMs: parseInt(process.env.REOBSERVE_MS || String(6 * 60 * 60 * 1000), 10),
+    // 3 h (was 6 h, 2026-10-10): the job now targets only offers whose refresh restores a comparison (566 such offers measured) and needs ~340 fetches/day to hold the 168 h window.
+    intervalMs: parseInt(process.env.REOBSERVE_MS || String(3 * 60 * 60 * 1000), 10),
     timeoutMs: parseInt(process.env.WORKER_REOBSERVE_TIMEOUT_MS || String(15 * 60 * 1000), 10),
     spawn: () => {
       const runtime = resolveSamsungDeltaRuntime(REPO_ROOT, 'scripts/tps-core/reobserve-comparables.ts');
