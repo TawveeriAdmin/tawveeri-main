@@ -50,6 +50,16 @@ export const AMAZON_SEED_ASINS: AmazonSeed[] = [
   { asin: "B0HD9BM4H6", brand: "Samsung", note: "samsung QA65QN70HAUXSA (tv)", evidence: "amazon.sa/dp read 2026-10-10 by AmazonScraper: SAR 3599; exact part number in the title; the model had no Amazon offer (other stores 3399-3599.01 SAR)" },
   { asin: "B0BXLTTZDF", brand: "Samsung", note: "samsung WW11BBA046AEYL (washing_machine)", evidence: "amazon.sa/dp read 2026-10-10 by AmazonScraper: SAR 2599 (list 5299); exact part number in the title; the model had no Amazon offer (other stores 2699-3499 SAR)" },
   { asin: "B0HG7RG76M", brand: "Samsung", note: "samsung RR40H39G1TZA (refrigerator)", evidence: "amazon.sa/dp read 2026-10-10 by AmazonScraper: SAR 3499; exact part number in the title; the model had no Amazon offer (other stores 3499-3499 SAR)" },
+  // ADR-408 recovery, 2026-10-10: the variant each quarantined offer actually described. Each ASIN selects itself on amazon.sa/dp, in stock, with a buy-box price, and the title matches the quarantined row's identity.
+  { asin: "B0GR6P1VP1", brand: "Apple", note: "MacBook Neo 13-inch A18 Pro 8GB/256GB (was stored under B0GR6H82M1)", evidence: "amazon.sa/dp read 2026-10-10 by the ASIN-guard check: selects itself, SAR 3,055 (stored 3,060)" },
+  { asin: "B0DLHG1PK8", brand: "Apple", note: "MacBook Pro 16-inch M4 Max 16-core CPU 40-core GPU (was stored under B0DLJF6B54)", evidence: "amazon.sa/dp read 2026-10-10 by the ASIN-guard check: selects itself, SAR 17,485.67" },
+  { asin: "B0FWDBBGC4", brand: "Apple", note: "MacBook Pro 14.2-inch M5 24GB/1TB (was stored under B0FWD6T5TW)", evidence: "amazon.sa/dp read 2026-10-10 by the ASIN-guard check: selects itself, SAR 10,499 (stored 10,499)" },
+  { asin: "B0D47TVCFK", brand: "AOC", note: "AOC 24G4E 23.8-inch FHD 180Hz IPS monitor (was stored under B0D3LVH7PM)", evidence: "amazon.sa/dp read 2026-10-10 by the ASIN-guard check: selects itself, SAR 419 (stored 419)" },
+  { asin: "B0CWM7KF1L", brand: "Haier", note: "Haier side-by-side refrigerator 11.1 cu.ft + 4.2 cu.ft twin inverter (was stored under B0GS2QXW4Z)", evidence: "amazon.sa/dp read 2026-10-10 by the ASIN-guard check: selects itself, SAR 3,499 (stored 3,499)" },
+  { asin: "B0FWD6SM91", brand: "Apple", note: "iPad Pro 11-inch (M5) 1TB Wi-Fi Nano-Texture (was stored under B0FWD6C866)", evidence: "amazon.sa/dp read 2026-10-10 by the ASIN-guard check: selects itself, SAR 8,749 (stored 8,749)" },
+  { asin: "B0F8W1L48Q", brand: "Samsung", note: "Samsung 65-inch Neo QLED QN1EF (QA65QN1EFAUXSA) (was stored under B0F8VXRFYT)", evidence: "amazon.sa/dp read 2026-10-10 by the ASIN-guard check: selects itself, SAR 2,749 (stored 2,749)" },
+  { asin: "B0F8VY1F91", brand: "Samsung", note: "Samsung 75-inch Crystal UHD U8000F (UA75U8000FUXSA) (was stored under B0F9KSYSP2)", evidence: "amazon.sa/dp read 2026-10-10 by the ASIN-guard check: selects itself, SAR 2,599 (stored 2,599)" },
+  { asin: "B0GX6NBQ58", brand: "TCL", note: "TCL 55T61D 55-inch 4K QLED (was stored under B0GMX1Q2D1)", evidence: "amazon.sa/dp read 2026-10-10 by the ASIN-guard check: selects itself, SAR 1,699 (stored 1,719)" },
 ];
 
 const ASIN = /^[A-Z0-9]{10}$/;

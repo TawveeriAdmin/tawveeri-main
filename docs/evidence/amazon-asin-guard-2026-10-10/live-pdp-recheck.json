@@ -1,0 +1,464 @@
+[
+ {
+  "cat": "audio",
+  "key": "apple|earpods",
+  "stored_price": 69,
+  "url_asin": "B0DD413Q9J",
+  "sku": "B0D7MMZXT8",
+  "stored_name": "Apple EarPods with 3.5 mm Headphone Plug ​​​​​​​",
+  "req_page": {
+   "http": 200,
+   "title": "Apple EarPods (USB-C) ​​​​​​​",
+   "price": "SAR89.00",
+   "sel": "B0DD413Q9J",
+   "oos": false
+  },
+  "sku_page": {
+   "http": 200,
+   "title": "Apple EarPods with 3.5 mm Headphone Plug ​​​​​​​",
+   "price": "SAR89.00",
+   "sel": "B0D7MMZXT8",
+   "oos": false
+  }
+ },
+ {
+  "cat": "camera",
+  "key": "canon|eos 2000d|body",
+  "stored_price": null,
+  "url_asin": "B07B39M2MJ",
+  "sku": "B07B9R7K3G",
+  "stored_name": "Canon EOS 2000D - Appareil Photo numérique - Reflex - 24.1 MP - APS-C ",
+  "req_page": {
+   "http": 200,
+   "title": "Canon EOS 2000D - Appareil Photo numérique - Reflex - 24.1 MP - APS-C - 1080p / 30 pi/s - ",
+   "price": "",
+   "sel": "B07B9R7K3G",
+   "oos": true
+  },
+  "sku_page": {
+   "http": 200,
+   "title": "Canon EOS 2000D - Appareil Photo numérique - Reflex - 24.1 MP - APS-C - 1080p / 30 pi/s - ",
+   "price": "",
+   "sel": "B07B9R7K3G",
+   "oos": true
+  }
+ },
+ {
+  "cat": "laptop",
+  "key": "lenovo|NO_FAMILY|ryzen5-7|8|512|14|igpu",
+  "stored_price": 3693,
+  "url_asin": "B0GPCYPYH5",
+  "sku": "B0DTZ1KTFG",
+  "stored_name": "Lenovo Flex 5 14ABR8 2in1 Laptop, 14\" WUXGA Glossy Touch Display, Ryze",
+  "req_page": {
+   "http": 200,
+   "title": "Lenovo IdeaPad Flex 5 14ABR8 Laptop (UAE Version) | AMD Ryzen 7 5825U, 16GB RAM, 1TB SSD, ",
+   "price": "",
+   "sel": "B0GPCYPYH5",
+   "oos": true
+  },
+  "sku_page": {
+   "http": 200,
+   "title": "Lenovo Flex 5 14ABR8 2in1 Laptop, 14\" WUXGA Glossy Touch Display, Ryzen 5 7430U, 8GB RAM, ",
+   "price": "",
+   "sel": "B0DTZ1KTFG",
+   "oos": true
+  }
+ },
+ {
+  "cat": "laptop",
+  "key": "apple|macbook air|m4|16|512|13|igpu",
+  "stored_price": 5099,
+  "url_asin": "B0DZDXCFJQ",
+  "sku": "B0DZDK7L4V",
+  "stored_name": "Apple 2025 MacBook Air (13-inch, Apple M4 chip with 10-core CPU and 10",
+  "req_page": {
+   "http": 200,
+   "title": "Apple 2025 MacBook Air (13-inch, Apple M4 chip with 10-core CPU and 8-core GPU, 16GB Unifi",
+   "price": "",
+   "sel": "B0DZDGF7KP",
+   "oos": true
+  },
+  "sku_page": {
+   "http": 200,
+   "title": "Apple 2025 MacBook Air (13-inch, Apple M4 chip with 10-core CPU and 8-core GPU, 16GB Unifi",
+   "price": "",
+   "sel": "B0DZDGF7KP",
+   "oos": true
+  }
+ },
+ {
+  "cat": "laptop",
+  "key": "apple|NO_FAMILY|a18pro|8|256|13|igpu",
+  "stored_price": 3060,
+  "url_asin": "B0GR6H82M1",
+  "sku": "B0GR6P1VP1",
+  "stored_name": "Apple 2026 MacBook Neo 13-inch Laptop with A18 Pro chip: Built for AI ",
+  "req_page": {
+   "http": 200,
+   "title": "Apple 2026 MacBook Neo 13-inch Laptop with A18 Pro chip: Built for AI and Apple Intelligen",
+   "price": "SAR3,265.00",
+   "sel": "B0GR6PS9QQ",
+   "oos": false
+  },
+  "sku_page": {
+   "http": 200,
+   "title": "Apple 2026 MacBook Neo 13-inch Laptop with A18 Pro chip: Built for AI and Apple Intelligen",
+   "price": "SAR3,055.00",
+   "sel": "B0GR6P1VP1",
+   "oos": false
+  }
+ },
+ {
+  "cat": "laptop",
+  "key": "apple|macbook pro|m4max|48|1024|16|igpu",
+  "stored_price": 16999,
+  "url_asin": "B0DLJF6B54",
+  "sku": "B0DLHG1PK8",
+  "stored_name": "Apple 2024 MacBook Pro (16-inch, Apple M4 Max chip with 16‑core CPU an",
+  "req_page": {
+   "http": 200,
+   "title": "Apple 2024 MacBook Pro (16-inch, Apple M4 Max chip with 16‑core CPU and 40‑core GPU, 48GB ",
+   "price": "SAR17,485.67",
+   "sel": "B0DLHG1PK8",
+   "oos": false
+  },
+  "sku_page": {
+   "http": 200,
+   "title": "Apple 2024 MacBook Pro (16-inch, Apple M4 Max chip with 16‑core CPU and 40‑core GPU, 48GB ",
+   "price": "SAR17,485.67",
+   "sel": "B0DLHG1PK8",
+   "oos": false
+  }
+ },
+ {
+  "cat": "laptop",
+  "key": "apple|macbook pro|m4max|36|1024|16|igpu",
+  "stored_price": 15452,
+  "url_asin": "B0DLJF6B54",
+  "sku": "B0DLJ4X6Z8",
+  "stored_name": "Apple 2024 MacBook Pro (16-inch, Apple M4 Max chip with 14‑core CPU an",
+  "req_page": {
+   "http": 200,
+   "title": "Apple 2024 MacBook Pro (16-inch, Apple M4 Max chip with 16‑core CPU and 40‑core GPU, 48GB ",
+   "price": "SAR17,485.67",
+   "sel": "B0DLHG1PK8",
+   "oos": false
+  },
+  "sku_page": {
+   "http": 200,
+   "title": "Apple 2024 MacBook Pro (16-inch, Apple M4 Max chip with 16‑core CPU and 40‑core GPU, 48GB ",
+   "price": "SAR17,485.67",
+   "sel": "B0DLHG1PK8",
+   "oos": false
+  }
+ },
+ {
+  "cat": "laptop",
+  "key": "apple|macbook pro|m5|24|1024|14.2|igpu",
+  "stored_price": 10499,
+  "url_asin": "B0FWD6T5TW",
+  "sku": "B0FWDBBGC4",
+  "stored_name": "Apple 2025 MacBook Pro 14.2-inch Laptop with M5 chip with 10 core CPU ",
+  "req_page": {
+   "http": 200,
+   "title": "Apple 2025 MacBook Pro 14.2-inch Laptop with M5 chip with 10 core CPU and 10 core GPU: Bui",
+   "price": "SAR9,499.00",
+   "sel": "B0FWD7241B",
+   "oos": false
+  },
+  "sku_page": {
+   "http": 200,
+   "title": "Apple 2025 MacBook Pro 14.2-inch Laptop with M5 chip with 10 core CPU and 10 core GPU: Bui",
+   "price": "SAR10,499.00",
+   "sel": "B0FWDBBGC4",
+   "oos": false
+  }
+ },
+ {
+  "cat": "laptop",
+  "key": "apple|macbook pro|m4|24|1024|14|igpu",
+  "stored_price": 9217.19,
+  "url_asin": "B0DLHFQNDF",
+  "sku": "B0DLHTN2KK",
+  "stored_name": "Apple 2024 MacBook Pro (14-inch, Apple M4 chip with 10-core CPU and 10",
+  "req_page": {
+   "http": 200,
+   "title": "Apple 2024 MacBook Pro (14-inch, Apple M4 Max chip with 14‑core CPU and 32‑core GPU, 36GB ",
+   "price": "SAR13,979.07",
+   "sel": "B0DLHZJKC2",
+   "oos": false
+  },
+  "sku_page": {
+   "http": 200,
+   "title": "Apple 2024 MacBook Pro (14-inch, Apple M4 Max chip with 14‑core CPU and 32‑core GPU, 36GB ",
+   "price": "SAR13,979.07",
+   "sel": "B0DLHZJKC2",
+   "oos": false
+  }
+ },
+ {
+  "cat": "monitor",
+  "key": "aoc|23.8|fhd|180|ips",
+  "stored_price": 419,
+  "url_asin": "B0D3LVH7PM",
+  "sku": "B0D47TVCFK",
+  "stored_name": "AOC 24G4E 23.8-Inch Fast IPS Gaming Monitor, 1920 × 1080 (FHD), 180Hz,",
+  "req_page": {
+   "http": 200,
+   "title": "AOC 24G4E 23.8-Inch Fast IPS Gaming Monitor, 1920 × 1080 (FHD), 180Hz, 0.5ms, HDR10, Adapt",
+   "price": "SAR419.00",
+   "sel": "B0D47TVCFK",
+   "oos": false
+  },
+  "sku_page": {
+   "http": 200,
+   "title": "AOC 24G4E 23.8-Inch Fast IPS Gaming Monitor, 1920 × 1080 (FHD), 180Hz, 0.5ms, HDR10, Adapt",
+   "price": "SAR419.00",
+   "sel": "B0D47TVCFK",
+   "oos": false
+  }
+ },
+ {
+  "cat": "refrigerator",
+  "key": "haier|french_door|310|inverter",
+  "stored_price": 3499,
+  "url_asin": "B0GS2QXW4Z",
+  "sku": "B0CWM7KF1L",
+  "stored_name": "Haier Side by Side Refrigerator 11.1Cu.ft, Freezer 4.2Cu.ft, 4 Doors, ",
+  "req_page": {
+   "http": 200,
+   "title": "Haier Side by Side Refrigerator 11.1Cu.ft, Freezer 4.2Cu.ft, 4 Doors, Twin Inverter, Gemst",
+   "price": "SAR3,499.00",
+   "sel": "B0CWM7KF1L",
+   "oos": false
+  },
+  "sku_page": {
+   "http": 200,
+   "title": "Haier Side by Side Refrigerator 11.1Cu.ft, Freezer 4.2Cu.ft, 4 Doors, Twin Inverter, Gemst",
+   "price": "SAR3,499.00",
+   "sel": "B0CWM7KF1L",
+   "oos": false
+  }
+ },
+ {
+  "cat": "smartwatch",
+  "key": "apple|Apple Watch|11|Standard|42|gps",
+  "stored_price": null,
+  "url_asin": "B0FQFJQH8V",
+  "sku": "B0FQFQP6D5",
+  "stored_name": "Apple Watch Series 11 GPS 42mm Smartwatch with Jet Black Aluminium Cas",
+  "req_page": {
+   "http": 200,
+   "title": "Apple Watch Series 11 GPS 42mm Smartwatch with Silver Aluminium Case with Purple Fog Sport",
+   "price": "",
+   "sel": "B0FQFJQH8V",
+   "oos": false
+  },
+  "sku_page": {
+   "http": 200,
+   "title": "Apple Watch Series 11 GPS 42mm Smartwatch with Jet Black Aluminium Case with Black Sport B",
+   "price": "",
+   "sel": "B0FQFQP6D5",
+   "oos": true
+  }
+ },
+ {
+  "cat": "tablet",
+  "key": "apple|ipad pro|m5|1024|wifi|11",
+  "stored_price": 8749,
+  "url_asin": "B0FWD6C866",
+  "sku": "B0FWD6SM91",
+  "stored_name": "Apple iPad Pro 11-inch (M5) 1TB: Ultra Retina XDR display - Nano-Textu",
+  "req_page": {
+   "http": 200,
+   "title": "Apple iPad Pro 11-inch (M5) 1TB: Ultra Retina XDR display - Nano-Texture Glass, Landscape ",
+   "price": "SAR8,749.00",
+   "sel": "B0FWD6SM91",
+   "oos": false
+  },
+  "sku_page": {
+   "http": 200,
+   "title": "Apple iPad Pro 11-inch (M5) 1TB: Ultra Retina XDR display - Nano-Texture Glass, Landscape ",
+   "price": "SAR8,749.00",
+   "sel": "B0FWD6SM91",
+   "oos": false
+  }
+ },
+ {
+  "cat": "tablet",
+  "key": "apple|ipad|gen9|64|wifi|NO_SIZE",
+  "stored_price": 1049,
+  "url_asin": "B0CQ2XD7JZ",
+  "sku": "B0CQ2YB75G",
+  "stored_name": "Apple 2021 iPad (10.2-inch, Wi-Fi, 64GB) - Space Grey (9th Generation)",
+  "req_page": {
+   "http": 200,
+   "title": "Apple 2021 iPad (10.2-inch, Wi-Fi, 256GB) - Space Grey (9th Generation) (Renewed)",
+   "price": "SAR1,149.00",
+   "sel": "B0CQ2XD7JZ",
+   "oos": false
+  },
+  "sku_page": {
+   "http": 200,
+   "title": "Apple 2021 iPad (10.2-inch, Wi-Fi, 64GB) - Space Grey (9th Generation) (Renewed)",
+   "price": "SAR1,049.00",
+   "sel": "B0CQ2YB75G",
+   "oos": false
+  }
+ },
+ {
+  "cat": "tablet",
+  "key": "apple|ipad|gen9|256|cellular|NO_SIZE",
+  "stored_price": 1299,
+  "url_asin": "B0CQ2XTQT2",
+  "sku": "B0CQ2ZNK68",
+  "stored_name": "Apple (Refurbished) 2021 iPad (10.2-inch, Wi-Fi + Cellular, 256GB) - S",
+  "req_page": {
+   "http": 200,
+   "title": "Apple 2021 iPad (10.2-inch, Wi-Fi, 64GB) - Space Grey (9th Generation) (Renewed)",
+   "price": "SAR1,049.00",
+   "sel": "B0CQ2YB75G",
+   "oos": false
+  },
+  "sku_page": {
+   "http": 200,
+   "title": "Apple 2021 iPad (10.2-inch, Wi-Fi, 64GB) - Space Grey (9th Generation) (Renewed)",
+   "price": "SAR1,049.00",
+   "sel": "B0CQ2YB75G",
+   "oos": false
+  }
+ },
+ {
+  "cat": "tablet",
+  "key": "apple|ipad air|m2|1024|wifi|11",
+  "stored_price": 4949,
+  "url_asin": "B0D3J83VPF",
+  "sku": "B0D3J8V5RQ",
+  "stored_name": "Apple iPad Air 11-inch (M2): Liquid Retina display, 1TB, Landscape 12M",
+  "req_page": {
+   "http": 200,
+   "title": "Apple iPad Air 11-inch (M2): Liquid Retina display, 256GB, Landscape 12MP Front Camera/12M",
+   "price": "",
+   "sel": "B0D3J91FP9",
+   "oos": false
+  },
+  "sku_page": {
+   "http": 200,
+   "title": "Apple iPad Air 11-inch (M2): Liquid Retina display, 1TB, Landscape 12MP Front Camera/12MP ",
+   "price": "SAR4,746.68",
+   "sel": "B0D3J9QYNQ",
+   "oos": false
+  }
+ },
+ {
+  "cat": "tablet",
+  "key": "apple|ipad air|m2|1024|5g|11",
+  "stored_price": 5447.94,
+  "url_asin": "B0D3J83VPF",
+  "sku": "B0D3J9TPGG",
+  "stored_name": "Apple iPad Air 11-inch (M2): Liquid Retina display, 1TB, Landscape 12M",
+  "req_page": {
+   "http": 200,
+   "title": "Apple iPad Air 11-inch (M2): Liquid Retina display, 256GB, Landscape 12MP Front Camera/12M",
+   "price": "",
+   "sel": "B0D3J91FP9",
+   "oos": false
+  },
+  "sku_page": {
+   "http": 200,
+   "title": "Apple iPad Air 11-inch (M2): Liquid Retina display, 1TB, Landscape 12MP Front Camera/12MP ",
+   "price": "SAR5,447.94",
+   "sel": "B0D3J9TPGG",
+   "oos": false
+  }
+ },
+ {
+  "cat": "tv",
+  "key": "samsung|MODEL:QA65QN1EFAUXSA",
+  "stored_price": 2749,
+  "url_asin": "B0F8VXRFYT",
+  "sku": "B0F8W1L48Q",
+  "stored_name": "Samsung 65 Inch Neo QLED TV, QN1EF, 4K, Mini LED, NQ4 AI Gen2 Processo",
+  "req_page": {
+   "http": 200,
+   "title": "Samsung 65 Inch Neo QLED TV, QN1EF, 4K, Mini LED, NQ4 AI Gen2 Processor, 4K AI Upscaling, ",
+   "price": "SAR2,749.00",
+   "sel": "B0F8W1L48Q",
+   "oos": false
+  },
+  "sku_page": {
+   "http": 200,
+   "title": "Samsung 65 Inch Neo QLED TV, QN1EF, 4K, Mini LED, NQ4 AI Gen2 Processor, 4K AI Upscaling, ",
+   "price": "SAR2,749.00",
+   "sel": "B0F8W1L48Q",
+   "oos": false
+  }
+ },
+ {
+  "cat": "tv",
+  "key": "samsung|MODEL:QA50Q7FAAUXSA",
+  "stored_price": null,
+  "url_asin": "B0F9KVBQLY",
+  "sku": "B0F9KRWMFB",
+  "stored_name": "Samsung 50 Inch QLED TV, Q7F, 4K, Q4 AI Processor, 100% Color Volume w",
+  "req_page": {
+   "http": 200,
+   "title": "Samsung 50 Inch QLED TV, Q7F, 4K, Q4 AI Processor, 100% Color Volume with Quantum Dot, Sec",
+   "price": "",
+   "sel": "B0F9KRWMFB",
+   "oos": true
+  },
+  "sku_page": {
+   "http": 200,
+   "title": "Samsung 50 Inch QLED TV, Q7F, 4K, Q4 AI Processor, 100% Color Volume with Quantum Dot, Sec",
+   "price": "",
+   "sel": "B0F9KRWMFB",
+   "oos": true
+  }
+ },
+ {
+  "cat": "tv",
+  "key": "samsung|MODEL:UA75U8000FUXSA",
+  "stored_price": 2599,
+  "url_asin": "B0F9KSYSP2",
+  "sku": "B0F8VY1F91",
+  "stored_name": "Samsung 75 Inch Crystal UHD TV, U8000F, 4K, Crystal Processor, 4K Upsc",
+  "req_page": {
+   "http": 200,
+   "title": "Samsung 75 Inch Crystal UHD TV, U8000F, 4K, Crystal Processor, 4K Upscaling, Q-Symphony, F",
+   "price": "SAR2,599.00",
+   "sel": "B0F8VY1F91",
+   "oos": false
+  },
+  "sku_page": {
+   "http": 200,
+   "title": "Samsung 75 Inch Crystal UHD TV, U8000F, 4K, Crystal Processor, 4K Upscaling, Q-Symphony, F",
+   "price": "SAR2,599.00",
+   "sel": "B0F8VY1F91",
+   "oos": false
+  }
+ },
+ {
+  "cat": "tv",
+  "key": "google|55|4k|qled|60",
+  "stored_price": 1719,
+  "url_asin": "B0GMX1Q2D1",
+  "sku": "B0GX6NBQ58",
+  "stored_name": "TCL 55T61D Television 55 Inch Smart TV 4K Premium QLED Colorful Quantu",
+  "req_page": {
+   "http": 200,
+   "title": "TCL 55T61D Television 55 Inch Smart TV 4K Premium QLED Colorful Quantum Crystal HDR 10+ Ga",
+   "price": "SAR1,699.00",
+   "sel": "B0GX6NBQ58",
+   "oos": false
+  },
+  "sku_page": {
+   "http": 200,
+   "title": "TCL 55T61D Television 55 Inch Smart TV 4K Premium QLED Colorful Quantum Crystal HDR 10+ Ga",
+   "price": "SAR1,699.00",
+   "sel": "B0GX6NBQ58",
+   "oos": false
+  }
+ }
+]

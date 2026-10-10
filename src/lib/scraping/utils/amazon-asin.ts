@@ -21,6 +21,16 @@ export function hasAmazonAsinConflict(url: string | null | undefined, sku: unkno
   return !!requested && typeof sku === 'string' && isAsin(sku) && requested !== sku.toUpperCase();
 }
 
+/**
+ * ADR-408: the normalizer refuses a captured Amazon row (store 2) whose URL ASIN differs from the ASIN of the page that was
+ * described, in EVERY category. Colour, size, capacity, chip, connectivity and model-year variants share one parent, and the
+ * page serves whichever child it selected - so the title/price/specs belong to the SKU, not to the URL.
+ */
+export const AMAZON_STORE_ID = 2;
+export function isAmazonAsinConflictRow(storeId: number | string | null | undefined, url: string | null | undefined, sku: unknown): boolean {
+  return Number(storeId) === AMAZON_STORE_ID && hasAmazonAsinConflict(url, sku);
+}
+
 /** The affiliate tag is NOT part of the stored URL — `/go` adds it at exit time. */
 export function canonicalAmazonUrl(asin: string): string {
   return `https://www.amazon.sa/dp/${asin.toUpperCase()}`;

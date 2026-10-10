@@ -139,6 +139,15 @@ export async function GET(req: NextRequest, props: { params: Promise<{ offerId: 
         }
       }
     }
+    // ADR-408: every other Amazon exit gets the same URL-ASIN vs described-SKU check as a phone, on the raw capture alone (one
+    // indexed read, no canonical lookup). Defence in depth for historical exits; a failed read does not block the exit
+    // (the normalizer and the quarantine already keep new conflicts out of every ranked surface).
+    else if (offer && String(offer.store_id) === '2' && payload?._raw_id != null) {
+      const { data: raw, error: rawError } = await supabase.from('raw_observations').select('payload').eq('id', payload._raw_id).maybeSingle();
+      if (!rawError && raw && hasAmazonAsinConflict(rawUrl, (raw.payload as Record<string, unknown>)?.sku)) {
+        return NextResponse.json({ error: 'لا يتوفر رابط موثوق لهذا العرض / No verified destination for this offer' }, { status: 410 });
+      }
+    }
     if (!error && offer && rawUrl) {
       resolved = { offerId: offer.id, productStoreId: null, storeId: offer.store_id, canonicalId: offer.canonical_product_id, rawUrl };
     }

@@ -34,3 +34,18 @@ describe('phone current-state integrity', () => {
     expect((await loadPhoneOfferPools(db,['x'])).size).toBe(0);
   });
 });
+
+describe('ADR-408: the normalizer\'s Amazon ASIN conflict predicate is category-free and store-scoped', () => {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { isAmazonAsinConflictRow } = require('@/lib/scraping/utils/amazon-asin');
+  it('refuses a conflicting Amazon row whatever it is (the predicate takes no category)', () => {
+    expect(isAmazonAsinConflictRow(2, 'https://www.amazon.sa/dp/B0DLJF6B54', 'B0DLHG1PK8')).toBe(true);
+    expect(isAmazonAsinConflictRow('2', 'https://www.amazon.sa/Apple-MacBook-Pro/dp/B0DLJF6B54/ref=sr_1_3?tag=x', 'b0dlhg1pk8')).toBe(true);
+  });
+  it('keeps matching ASINs, rows with no SKU, non-ASIN SKUs and every other merchant', () => {
+    expect(isAmazonAsinConflictRow(2, 'https://www.amazon.sa/dp/B0DLJF6B54', 'B0DLJF6B54')).toBe(false);
+    expect(isAmazonAsinConflictRow(2, 'https://www.amazon.sa/dp/B0DLJF6B54', null)).toBe(false);
+    expect(isAmazonAsinConflictRow(2, 'https://www.amazon.sa/dp/B0DLJF6B54', 'MQTP3AE/A')).toBe(false);
+    expect(isAmazonAsinConflictRow(1, 'https://www.jarir.com/sa-en/x.html', 'B0DLHG1PK8')).toBe(false);
+  });
+});

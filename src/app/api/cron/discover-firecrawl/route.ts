@@ -17,7 +17,7 @@ import { asinFromUrl } from '@/lib/scraping/utils/amazon-asin';
 // ~2.5 s per page => <= ~100 s per 6-hourly run. Reversible by env.
 const AMAZON_PDP_VERIFY_MAX = parseInt(process.env.AMAZON_DISCOVERY_PDP_VERIFY_MAX || '40', 10);
 // Targeted seeds (config/amazon-seed-asins.ts) read per run, on top of the tile budget above; a seed with a storefront row costs nothing. 0 disables the lane.
-const AMAZON_SEED_MAX = parseInt(process.env.AMAZON_SEED_MAX || '6', 10);
+const AMAZON_SEED_MAX = parseInt(process.env.AMAZON_SEED_MAX || '10', 10);
 const isUnverifiedTile = (p: NormalizedOffer) => (p._raw as { _price_source?: string } | null)?._price_source === 'search_tile_unverified';
 
 interface AmazonGateSummary { tiles: number; noAsin: number; knownLive: number; fresh: number; freshVerified: number; freshUnavailable: number; freshUnverified: number; resurrect: number; resurrected: number; resurrectUnavailable: number; seeds?: { requested: number; verified: number; alreadyKnown: number; unavailable: number; failed: number } }

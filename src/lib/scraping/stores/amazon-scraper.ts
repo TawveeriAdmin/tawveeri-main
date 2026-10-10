@@ -288,11 +288,13 @@ export class AmazonScraper extends BaseScraper {
     const title = this.extractText($, '#productTitle') || '';
     if (!title) return null;
 
-    // A phone PDP can select a different capacity/ASIN than the requested URL.
-    // Never attach that variant's price or availability to the requested phone.
+    // A PDP can select a different variant/ASIN than the requested URL (capacity, size, chip, connectivity, model year).
+    // Never attach that variant's price, title or availability to the requested ASIN — in ANY category (ADR-408; phones
+    // were guarded first, but 21 offers across ten other categories carried the same defect: a 16" MacBook Pro stored at
+    // 15,452 whose URL page now selects a 17,485 variant, a 14" at 9,217 against 13,979).
     const requestedAsin = asinFromUrl(productUrl);
     const selectedAsin = this.extractAttr($, 'input[name="ASIN"]', 'value')?.toUpperCase();
-    if (determineCategory(title) === 'smartphone' && requestedAsin && selectedAsin && requestedAsin !== selectedAsin) return null;
+    if (requestedAsin && selectedAsin && requestedAsin !== selectedAsin) return null;
 
     // ADR-396 — «Currently unavailable» is a STATE, not an extraction failure. Visited live
     // (2026-10-01): 4 of 6 "failing" K pages were HTTP 200, no captcha, title present, buy box
